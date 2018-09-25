@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>KotOR</title>
+    <link rel="stylesheet" href="css/game.css" />
+    <script src="js/libs/jquery-1.12.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
+  </head>
+  <body>
+    <div id="renderer-container" class="ui-layout-center"></div>
+    <script type="text/javascript" src="js/_utility.js"></script>
+    <script type="text/javascript" src="js/libs/dexie.min.js"></script>
+    <script>
+      const THREE = require('three');
+    </script>
+    <!--script type="text/javascript" src="js/engine/Three.js"></script-->
+    <script type="text/javascript" src="js/engine/EffectComposer.js"></script>
+    <script type="text/javascript" src="js/engine/RenderPass.js"></script>
+    <script type="text/javascript" src="js/engine/ShaderPass.js"></script>
+    <script type="text/javascript" src="js/engine/BloomPass.js"></script>
+    <script type="text/javascript" src="js/engine/SSAARenderPass.js"></script>
+    <script type="text/javascript" src="js/engine/threeoctree.js"></script>
+    <script type="text/javascript" src="js/engine/TPCLoader.js"></script>
+    <script type="text/javascript" src="js/engine/TGALoader.js"></script>
+    <script type="text/javascript" src="js/engine/MDLLoader.js"></script>
+    <script type="text/javascript" src="js/engine/BufferGeometryUtils.js"></script>
+    <script type="text/javascript" src="js/engine/AuroraModel.js"></script>
+    <script type="text/javascript" src="js/engine/stats.min.js"></script>
+    <script type="text/javascript" src="js/engine/controls/TrackballControls.js"></script>
+    <script type="text/javascript" src="js/engine/TransformControls.js"></script>
+    <script type="text/javascript" src="js/engine/SPE.min.js"></script>
+    <script type="text/javascript" src="js/engine/shaders/CopyShader.js"></script>
+    <script type="text/javascript" src="js/engine/shaders/FilmShader.js"></script>
+    <script type="text/javascript" src="js/engine/FilmPass.js"></script>
+    <script type="text/javascript" src="js/engine/shaders/ConvolutionShader.js"></script>
+    <script type="text/javascript" src="js/engine/shaders/ColorCorrectionShader.js"></script>
+    <script type="text/javascript" src="game.js"></script>
+    <script>
+
+      console.log(_Game);
+      let db = new Dexie('K'+_Game);
+
+      let deleteDB = false;
+      if(deleteDB){
+        db.delete();
+        db = new Dexie('K'+_Game);
+      }
+
+      // Define a schema
+      db.version(1).stores({
+        tlkStrings: '++id, flags, SoundResRef, VolumeVariance, PitchVariance, Value'
+      });
+
+      // Open the database
+      db.open();
+
+      function gamePathVerify () {
+        let verified = { KOTOR: false, TSL: false };
+
+        if(Config.options.Games.KOTOR.Location != null){
+          try {
+            fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
+            verified.KOTOR = true;
+          } catch (e) { }
+        }
+
+        if(Config.options.Games.TSL.Location != null){
+          try {
+            fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
+            verified.TSL = true;
+          } catch (e) { }
+        }
+
+        return verified;
+
+      }
+
+      let verifiedPaths = gamePathVerify();
+
+      function initialize(){
+
+        verifyGame({
+          game: GameKey,
+          onVerify: () => {
+            loader.Show();
+            GameInitializer.Init({
+              game: Games[GameKey],
+              onLoad: () => {
+                loader.Hide();
+                Game.Init();
+                //window.mainmenu = new MainMenu();
+              }
+            });
+          },
+          onError: () => {
+            console.log('Failed to verify the path for', GameKey);
+            //loader.Dismiss();
+
+            
+            let dir = dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]});
+            console.log(dir);
+            if(typeof dir !== 'undefined'){
+              Config.options.Games[GameKey].Location = dir[0];
+              Config.Save( () => {
+                window.location.reload();
+              }, true);
+            }
+            
+          }
+        });
+
+      }
+
+      function verifyGame(args = {}){
+
+        args = $.extend({
+          game: _Game,
+          onVerify: null,
+          onError: null
+        }, args);
+
+        let verifiedPaths = gamePathVerify();
+
+        if(verifiedPaths[args.game]){
+          if(args.onVerify != null)
+            args.onVerify();
+        }else{
+          if(args.onError != null)
+            args.onError();
+        }
+
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>

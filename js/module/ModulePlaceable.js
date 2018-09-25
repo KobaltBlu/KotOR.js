@@ -1,0 +1,752 @@
+/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ */
+
+/* @file
+ * The ModulePlaceable class.
+ */
+
+class ModulePlaceable extends ModuleObject {
+
+  constructor ( gff = new GFFObject()) {
+    super();
+    this.template = gff;
+
+    this.openState = false;
+
+    this.animationState = 0;
+    this.appearance = 0;
+    this.autoRemoveKey = false;
+    this.bodyBag = 0;
+    this.closeLockDC = 0;
+    this.conversation = '';
+    this.currentHP = 0;
+    this.description = new CExoLocString();
+    this.disarmDC = 0;
+    this.faction = 0;
+    this.fort = 0;
+    this.genericType = 0;
+    this.hp = 0;
+    this.hasInventory = false;
+    this.hardness = 0;
+    this.interruptable = false;
+    this.keyName = '';
+    this.keyRequired = false;
+    this.loadScreenID = 0;
+    this.locName = new CExoLocString();
+    this.lockable = false;
+    this.locked = false;
+    this.min1HP = false;
+    this.name = '';
+    this.openLockDC = 100;
+    this.paletteID = 0;
+    this.partyInteract = false;
+    this.plot = false;
+    this.portraitId = 0;
+    this.ref = 0;
+    this.static = false;
+    this.tag = '';
+    this.templateResRef = '';
+    this.trapDetectDC = 0;
+    this.trapDetectable = false;
+    this.trapDisarmable = false;
+    this.trapFlag = 0;
+    this.trapOneShot = false;
+    this.trapType = 0;
+    this.will = 0;
+
+    this.x = 0;
+    this.y = 0;
+    this.z = 0;
+    this.bearing = 0;
+
+    this.inventory = [];
+
+    try{
+
+      this.audioEmitter = new AudioEmitter({
+        engine: Game.audioEngine,
+        props: this,
+        template: {
+          sounds: [],
+          isActive: true,
+          isLooping: false,
+          isRandom: false,
+          isRandomPosition: false,
+          interval: 0,
+          intervalVariation: 0,
+          maxDistance: 50,
+          volume: 100,
+          positional: 1
+        },
+        onLoad: () => {
+        },
+        onError: () => {
+        }
+      });
+
+      Game.audioEngine.AddEmitter(this.audioEmitter);
+    }catch(e){
+      console.error('AudioEmitter failed to create on object', e);
+    }
+
+  }
+
+  onClick(callee = null){
+
+    //You can't interact with yourself
+    if(this === Game.player && Game.getCurrentPlayer() === this){
+      return;
+    }
+
+    Game.getCurrentPlayer().actionQueue.push({
+      object: this,
+      goal: ModuleCreature.ACTION.USEOBJECT
+    });
+    
+  }
+
+  update(delta = 0){
+    
+    super.update(delta);
+
+    if(this.model instanceof THREE.AuroraModel){
+
+      if(this.room instanceof ModuleRoom){
+        if(this.room.model instanceof THREE.AuroraModel){
+          if(this.model){
+            this.model.visible = this.room.model.visible;
+          }
+        }
+      }
+
+      if(this.model.visible)
+        this.model.update(delta);
+
+      this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
+
+      let currentAnimation = this.model.getAnimationName();
+
+      if(this.model.animations.length){
+
+        let animState = this.getAnimationState();
+
+        if(animState == 0 && currentAnimation != 'default'){
+          this.model.playAnimation('default', false);
+        }
+
+        if(animState == 1 && currentAnimation != 'open'){
+          this.model.playAnimation('open', false);
+        }
+
+        if(animState == 2 && currentAnimation != 'close'){
+          this.model.playAnimation('close', false);
+        }
+
+        if(animState == 3 && currentAnimation != 'dead'){
+          this.model.playAnimation('dead', false);
+        }
+
+        if(animState == 4 && currentAnimation != 'on'){
+          this.model.playAnimation('on', false);
+        }
+        
+        if(animState == 5 && currentAnimation != 'off'){
+          this.model.playAnimation('off', false);
+        }
+
+      }
+      
+    }
+
+    this.action = this.actionQueue[0];
+
+    if(this.action != null){
+            
+      /*if(this.action.object instanceof ModuleObject){
+        
+      }else{*/
+        switch(this.action.goal){
+          case ModuleCreature.ACTION.DIALOGOBJECT:
+            Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
+            this.actionQueue.shift()
+          break;
+          case ModuleCreature.ACTION.WAIT:
+            this.action.elapsed += delta;
+            if(this.action.elapsed > this.action.time){
+              this.actionQueue.shift()
+            }
+          break;
+          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
+            //console.log('Action Script', this.action);
+            if(this.action.script instanceof NWScript){
+              this.action.action.script.caller = this;
+              this.action.action.script.beginLoop({
+                _instr: null, 
+                index: -1, 
+                seek: this.action.action.offset, 
+                onComplete: () => {
+                  //console.log('ACTION.SCRIPT', 'Complete');
+                }
+              });
+            }
+            this.actionQueue.shift();
+          break;
+        }
+      //}
+
+    } else {
+      
+    }
+
+  }
+
+  getName(){
+    return this.hasInventory && !this.getInventory().length ? this.name + ' (Empty)' : this.name;
+  }
+
+  getX(){
+    if(this.template.RootNode.HasField('X')){
+      return this.template.RootNode.GetFieldByLabel('X').GetValue();
+    }
+    return 0;
+  }
+
+  getY(){
+    if(this.template.RootNode.HasField('Y')){
+      return this.template.RootNode.GetFieldByLabel('Y').GetValue();
+    }
+    return 0;
+  }
+
+  getZ(){
+    if(this.template.RootNode.HasField('Z')){
+      return this.template.RootNode.GetFieldByLabel('Z').GetValue();
+    }
+    return 0;
+  }
+
+  getBearing(){
+    if(this.template.RootNode.HasField('Bearing')){
+      return this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
+    }
+    return 0;
+  }
+
+  getAnimationState(){
+    if(this.template.RootNode.HasField('AnimationState')){
+      return this.template.RootNode.GetFieldByLabel('AnimationState').GetValue();
+    }
+    return 0;
+  }
+
+  getOnClosed(){
+    if(this.template.RootNode.HasField('OnClosed')){
+      return this.template.RootNode.GetFieldByLabel('OnClosed').GetValue();
+    }
+    return 0;
+  }
+
+  getOnDamaged(){
+    if(this.template.RootNode.HasField('OnDamaged')){
+      return this.template.RootNode.GetFieldByLabel('OnDamaged').GetValue();
+    }
+    return 0;
+  }
+  
+  getOnDeath(){
+    if(this.template.RootNode.HasField('OnDeath')){
+      return this.template.RootNode.GetFieldByLabel('OnDeath').GetValue();
+    }
+    return 0;
+  }
+  
+  getOnDialog(){
+    if(this.template.RootNode.HasField('OnDialog')){
+      return this.template.RootNode.GetFieldByLabel('OnDialog').GetValue();
+    }
+    return 0;
+  }
+
+  getOnUsed(){
+    if(this.template.RootNode.HasField('OnUsed')){
+      return this.template.RootNode.GetFieldByLabel('OnUsed').GetValue();
+    }
+    return 0;
+  }
+
+  isStatic(){
+    return this.static;
+  }
+
+  isUseable(){
+    return this.useable;
+  }
+
+  isOpen(){
+    return this.openState;
+  }
+
+  GetConversation(){
+    if(this.HasTemplate()){
+      if(typeof this.template.json.fields.Conversation !== 'undefined')
+        return this.template.json.fields.Conversation.value;
+
+    }
+
+    return '';
+  }
+
+  getItemList(){
+    if(this.template.RootNode.HasField('ItemList')){
+      return this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+    }
+    return [];
+  }
+
+  getItem(resRef = ''){
+    for(let i = 0; i<this.inventory.length; i++){
+      let item = this.inventory[i];
+      if(item.getTag().toLowerCase() == resRef.toLowerCase())
+        return item;
+    }
+    return false;
+  }
+
+  getInventory(){
+    return this.inventory;
+  }
+
+  getAppearanceId(){
+    if(this.template.RootNode.HasField('Appearance')){
+      return this.template.RootNode.GetFieldByLabel('Appearance').GetValue();
+    }
+    return 0;
+  }
+
+  getAppearance(){
+    return Global.kotor2DA['placeables'].rows[this.getAppearanceId()];
+  }
+
+  retrieveInventory(){
+    while(this.inventory.length){
+      InventoryManager.addItem(this.inventory.pop())
+    }
+
+    if(this.scripts.onInvDisturbed instanceof NWScript){
+      this.scripts.onInvDisturbed.run(Game.player);
+    }
+
+  }
+
+  getModel(){
+    return this.model;
+  }
+
+  use(object = null){
+
+    if(this.hasInventory){
+      Game.MenuContainer.Show(this);
+    }else if(this.GetConversation() != ''){
+      Game.InGameDialog.StartConversation(this.GetConversation(), object);
+    }
+
+    if(this.scripts.onUsed instanceof NWScript){
+      //console.log('Running script', this.scripts.onUsed)
+      this.scripts.onUsed.run(this);
+    }
+
+  }
+
+  close(object = null){
+    if(this.scripts.onClosed instanceof NWScript){
+      //console.log('Running script', this.scripts.onUsed)
+      this.scripts.onClosed.run(this);
+    }
+  }
+
+  Load( onLoad = null ){
+    if(this.getTemplateResRef()){
+      //Load template and merge fields
+
+      TemplateLoader.Load({
+        ResRef: this.getTemplateResRef(),
+        ResType: UTPObject.ResType,
+        onLoad: (gff) => {
+          this.template.Merge(gff);
+          this.InitProperties();
+          this.LoadInventory( () => {
+            this.LoadScripts( () => {
+
+              if(onLoad != null)
+                onLoad(this.template);
+            });
+          });          
+        },
+        onFail: () => {
+          console.error('Failed to load placeable template');
+        }
+      });
+
+    }else{
+      //We already have the template (From SAVEGAME)
+      this.InitProperties();
+      this.LoadInventory( () => {
+        this.LoadScripts( () => {
+          if(onLoad != null)
+            onLoad(this.template);
+        });
+      });
+    }
+  }
+
+  LoadModel ( onLoad = null ){
+    let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    //console.log('modelName', modelName);
+
+    Game.ModelLoader.load({
+      file: modelName,
+      onLoad: (mdl) => {
+        THREE.AuroraModel.FromMDL(mdl, {
+          onComplete: (plc) => {
+            if(this.model != null){
+              var scene = this.model.parent;
+              var position = this.model.position;
+              var rotation = this.model.rotation;
+              scene.remove(this.model);
+            }
+
+            this.model = plc;
+            this.model.moduleObject = this;
+            this.model.name = modelName;
+
+            if(typeof scene != 'undefined'){
+              scene.add(this.model);
+              Game.octree.add( this.model );
+              this.model.translateX(position.x);
+              this.model.translateY(position.y);
+              this.model.translateZ(position.z);
+
+              this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+              for(let i = 0; i < this.model.lights.length; i++){
+                //LightManager.addLight(this.model.lights[i]);
+              }
+              //this.model.turnLightsOn();
+            }
+
+            this.position = this.model.position;
+            this.rotation = this.model.rotation;
+
+            TextureLoader.LoadQueue(() => {
+              //console.log(this.model);
+              if(onLoad != null)
+                onLoad(this.model);
+            }, (texName) => {
+              //loader.SetMessage('Loading Textures: '+texName);
+            });
+          },
+          context: this.context,
+          castShadow: true,
+          receiveShadow: true
+        });
+      }
+    });
+  }
+
+  LoadScripts (onLoad = null){
+    this.scripts = {
+      onClosed: undefined,
+      onDamaged: undefined,
+      onDeath: undefined,
+      onDisarm: undefined,
+      onEndDialogue: undefined,
+      onHeartbeat: undefined,
+      onInvDisturbed: undefined,
+      onLock: undefined,
+      onMeleeAttacked: undefined,
+      onOpen: undefined,
+      onSpellCastAt: undefined,
+      onTrapTriggered: undefined,
+      onUnlock: undefined,
+      onUsed: undefined,
+      onUserDefined: undefined
+    };
+
+    //console.log(this);
+
+    if(this.template.RootNode.HasField('OnClosed'))
+      this.scripts.onClosed = this.template.GetFieldByLabel('OnClosed').GetValue();
+    
+    if(this.template.RootNode.HasField('OnDamaged'))
+      this.scripts.onDamaged = this.template.GetFieldByLabel('OnDamaged').GetValue();
+
+    if(this.template.RootNode.HasField('OnDeath'))
+      this.scripts.onDeath = this.template.GetFieldByLabel('OnDeath').GetValue();
+
+    if(this.template.RootNode.HasField('OnDisarm'))
+      this.scripts.onDisarm = this.template.GetFieldByLabel('OnDisarm').GetValue();
+
+    if(this.template.RootNode.HasField('OnEndDialogue'))
+      this.scripts.onEndDialogue = this.template.GetFieldByLabel('OnEndDialogue').GetValue();
+
+    if(this.template.RootNode.HasField('OnHeartbeat'))
+      this.scripts.onHeartbeat = this.template.GetFieldByLabel('OnHeartbeat').GetValue();
+
+    if(this.template.RootNode.HasField('OnInvDisturbed'))
+      this.scripts.onInvDisturbed = this.template.GetFieldByLabel('OnInvDisturbed').GetValue();
+
+    if(this.template.RootNode.HasField('OnLock'))
+      this.scripts.onLock = this.template.GetFieldByLabel('OnLock').GetValue();
+    
+    if(this.template.RootNode.HasField('OnMeleeAttacked'))
+      this.scripts.onMeleeAttacked = this.template.GetFieldByLabel('OnMeleeAttacked').GetValue();
+
+    if(this.template.RootNode.HasField('OnOpen'))
+      this.scripts.onOpen = this.template.GetFieldByLabel('OnOpen').GetValue();
+
+    if(this.template.RootNode.HasField('OnSpellCastAt'))
+      this.scripts.onSpellCastAt = this.template.GetFieldByLabel('OnSpellCastAt').GetValue();
+
+    if(this.template.RootNode.HasField('OnTrapTriggered'))
+      this.scripts.onTrapTriggered = this.template.GetFieldByLabel('OnTrapTriggered').GetValue();
+
+    if(this.template.RootNode.HasField('OnUnlock'))
+      this.scripts.onUnlock = this.template.GetFieldByLabel('OnUnlock').GetValue();
+
+    if(this.template.RootNode.HasField('OnUsed'))
+      this.scripts.onUsed = this.template.GetFieldByLabel('OnUsed').GetValue();
+
+    if(this.template.RootNode.HasField('OnUserDefined'))
+      this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
+
+    let keys = Object.keys(this.scripts);
+    let len = keys.length;
+    let loadScript = ( onLoad = null, i = 0 ) => {
+      
+      if(i < len){
+        let script = this.scripts[keys[i]];
+        if(script != '' && script != undefined){
+          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
+            if(buffer.length){
+              this.scripts[keys[i]] = new NWScript(buffer);
+              this.scripts[keys[i]].name = script;
+            }
+            loadScript( onLoad, ++i );
+          }, () => {
+            loadScript( onLoad, ++i );
+          });
+        }else{
+          loadScript( onLoad, ++i );
+        }
+      }else{
+        if(typeof onLoad === 'function')
+          onLoad();
+      }
+  
+    };
+
+    loadScript(onLoad, 0);
+
+  }
+
+  LoadInventory( onLoad = null ){
+
+    let inventory = this.getItemList();
+
+    let itemLoop = (i = 0) => {
+      if(i < inventory.length){
+        this.LoadItem(GFFObject.FromStruct(inventory[i]), () => {
+          i++
+          itemLoop(i);
+        });
+      }else{
+        if(typeof onLoad === 'function')
+          onLoad();
+      }
+    };
+    itemLoop(0);
+  }
+
+  LoadItem( template, onLoad = null){
+
+    let item = new ModuleItem(template);
+    item.InitProperties();
+    item.Load( () => {
+      let hasItem = this.getItem(item.getTag());
+      if(hasItem){
+        hasItem.setStackSize(hasItem.getStackSize() + 1);
+        if(typeof onLoad === 'function')
+          onLoad(hasItem);
+      }else{
+        this.inventory.push(item);
+        if(typeof onLoad === 'function')
+          onLoad(item);
+      }
+    });
+
+  }
+
+  LoadWalkmesh(ResRef = '', onLoad = null ){
+    
+    let wokKey = Global.kotorKEY.GetFileKey(ResRef, ResourceTypes['pwk']);
+    if(wokKey != null){
+      Global.kotorKEY.GetFileData(wokKey, (buffer) => {
+
+        this.pwk = new AuroraWalkMesh(new BinaryReader(buffer));
+        this.model.add(this.pwk.mesh);
+
+        if(typeof onLoad === 'function')
+          onLoad(this.pwk);
+
+      });
+
+    }else{
+      if(typeof onLoad === 'function')
+        onLoad(null);
+    }
+
+  }
+
+  InitProperties(){
+
+    if(this.template.RootNode.HasField('LocName'))
+      this.name = this.template.GetFieldByLabel('LocName').GetCExoLocString().GetValue()
+
+    if(this.template.RootNode.HasField('AnimationState'))
+      this.animationState = this.template.GetFieldByLabel('AnimationState').GetValue();
+
+    if(this.template.RootNode.HasField('Appearance'))
+      this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
+
+    if(this.template.RootNode.HasField('AutoRemoveKey'))
+      this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();
+
+    if(this.template.RootNode.HasField('BodyBag'))
+      this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
+
+    if(this.template.RootNode.HasField('CloseLockDC'))
+      this.closeLockDC = this.template.GetFieldByLabel('CloseLockDC').GetValue();
+
+    if(this.template.RootNode.HasField('Conversation'))
+      this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
+
+    if(this.template.RootNode.HasField('CurrentHP'))
+      this.currentHP = this.template.GetFieldByLabel('CurrentHP').GetValue();
+
+    if(this.template.RootNode.HasField('DisarmDC'))
+      this.disarmDC = this.template.GetFieldByLabel('DisarmDC').GetValue();
+
+    if(this.template.RootNode.HasField('Faction'))
+      this.faction = this.template.GetFieldByLabel('Faction').GetValue();
+
+    if(this.template.RootNode.HasField('Fort'))
+      this.fort = this.template.GetFieldByLabel('Fort').GetValue();
+        
+    if(this.template.RootNode.HasField('HP'))
+      this.hp = this.template.RootNode.GetFieldByLabel('HP').GetValue();
+
+    if(this.template.RootNode.HasField('Hardness'))
+      this.hardness = this.template.RootNode.GetFieldByLabel('Hardness').GetValue();
+    
+    if(this.template.RootNode.HasField('HasInventory'))
+      this.hasInventory = this.template.RootNode.GetFieldByLabel('HasInventory').GetValue();
+
+    if(this.template.RootNode.HasField('Interruptable'))
+      this.interruptable = this.template.RootNode.GetFieldByLabel('Interruptable').GetValue();
+        
+    if(this.template.RootNode.HasField('KeyName'))
+      this.keyName = this.template.RootNode.GetFieldByLabel('KeyName').GetValue();
+  
+    if(this.template.RootNode.HasField('KeyRequired'))
+      this.keyRequired = this.template.RootNode.GetFieldByLabel('KeyRequired').GetValue();
+
+    if(this.template.RootNode.HasField('LocName'))
+      this.locName = this.template.GetFieldByLabel('LocName').GetCExoLocString();
+
+    if(this.template.RootNode.HasField('Locked'))
+      this.locked = this.template.GetFieldByLabel('Locked').GetValue();
+
+    if(this.template.RootNode.HasField('Min1HP'))
+      this.min1HP = this.template.GetFieldByLabel('Min1HP').GetValue();
+
+    if(this.template.RootNode.HasField('OpenLockDC'))
+      this.openLockDC = this.template.GetFieldByLabel('OpenLockDC').GetValue();
+
+    if(this.template.RootNode.HasField('PaletteID'))
+      this.paletteID = this.template.GetFieldByLabel('PaletteID').GetValue();
+
+    if(this.template.RootNode.HasField('PartyInteract'))
+      this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
+
+    if(this.template.RootNode.HasField('Plot'))
+      this.plot = this.template.GetFieldByLabel('Plot').GetValue();
+
+    if(this.template.RootNode.HasField('PortraidId'))
+      this.portraidId = this.template.GetFieldByLabel('PortraidId').GetValue();
+
+    if(this.template.RootNode.HasField('Ref'))
+      this.ref = this.template.GetFieldByLabel('Ref').GetValue();
+
+    if(this.template.RootNode.HasField('Static'))
+      this.static = this.template.GetFieldByLabel('Static').GetValue();
+
+    if(this.template.RootNode.HasField('Tag'))
+      this.tag = this.template.GetFieldByLabel('Tag').GetValue();
+
+    if(this.template.RootNode.HasField('TemplateResRef'))
+      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+
+    if(this.template.RootNode.HasField('TrapDetectDC'))
+      this.trapDetectDC = this.template.GetFieldByLabel('TrapDetectDC').GetValue();
+  
+    if(this.template.RootNode.HasField('TrapDetectable'))
+      this.trapDetectable = this.template.RootNode.GetFieldByLabel('TrapDetectable').GetValue();
+
+    if(this.template.RootNode.HasField('TrapDisarmable'))
+      this.trapDisarmable = this.template.RootNode.GetFieldByLabel('TrapDisarmable').GetValue();
+  
+    if(this.template.RootNode.HasField('TrapFlag'))
+      this.trapFlag = this.template.RootNode.GetFieldByLabel('TrapFlag').GetValue();
+
+    if(this.template.RootNode.HasField('TrapOneShot'))
+      this.trapOneShot = this.template.GetFieldByLabel('TrapOneShot').GetValue();
+
+    if(this.template.RootNode.HasField('TemplateResRef'))
+      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+
+    if(this.template.RootNode.HasField('TrapType'))
+      this.trapType = this.template.GetFieldByLabel('TrapType').GetValue();
+
+    if(this.template.RootNode.HasField('Useable'))
+      this.useable = this.template.GetFieldByLabel('Useable').GetValue();
+
+    if(this.template.RootNode.HasField('Will'))
+      this.will = this.template.GetFieldByLabel('Will').GetValue();
+
+    if(this.template.RootNode.HasField('X'))
+      this.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
+
+    if(this.template.RootNode.HasField('Y'))
+      this.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
+
+    if(this.template.RootNode.HasField('Z'))
+      this.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
+
+    if(this.template.RootNode.HasField('Bearing'))
+      this.bearing = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
+
+    if(this.template.RootNode.HasField('SWVarTable')){
+      let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
+      //console.log(localBools);
+      for(let i = 0; i < localBools.length; i++){
+        let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+        for(let bit = 0; bit < 32; bit++){
+          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        }
+      }
+    }
+
+  }
+
+}
+
+module.exports = ModulePlaceable;

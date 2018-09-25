@@ -1,0 +1,11 @@
+html {
+  cursor: none;
+}
+
+body {
+  background: black;
+  color:white;
+  margin: 0;
+  overflow: hidden;
+  cursor: none;
+}

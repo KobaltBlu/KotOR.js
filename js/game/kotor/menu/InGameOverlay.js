@@ -1,0 +1,797 @@
+/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ */
+
+/* @file
+ * The InGameOverlay menu class.
+ */
+
+class InGameOverlay extends GameMenu {
+  
+    constructor( args = {} ){
+      super(args);
+
+      this.args = $.extend({
+        loadscreen: '',
+      }, this.args);
+
+      this.lastTarget = undefined;
+      this.targetSkills = undefined;
+      this.target0_idx = 0;
+      this.target1_idx = 0;
+      this.target2_idx = 0;
+  
+      this.LoadMenu({
+        name: 'mipc28x6',
+        scale: true,
+        onLoad: () => {
+
+          this.lbl_combatbg2 = this.getControlByName('LBL_COMBATBG2');
+          this.lbl_combatbg3 = this.getControlByName('LBL_COMBATBG3');
+          this.lbl_combatbg1 = this.getControlByName('LBL_COMBATBG1');
+          //this.LBL_MOULDING3 = this.getControlByName('LBL_MOULDING3');
+          //this.LBL_MOULDING4 = this.getControlByName('LBL_MOULDING4');
+          this.LBL_ACTIONDESC = this.getControlByName('LBL_ACTIONDESC');
+          /*this.LBL_ACTIONTYPE1 = this.getControlByName('LBL_ACTIONTYPE1');
+          this.LBL_ACTIONTYPE2 = this.getControlByName('LBL_ACTIONTYPE2');
+          this.LBL_ACTIONTYPE3 = this.getControlByName('LBL_ACTIONTYPE3');
+          this.LBL_ACTIONTYPE4 = this.getControlByName('LBL_ACTIONTYPE4');
+          this.LBL_ACTIONTYPE5 = this.getControlByName('LBL_ACTIONTYPE5');*/
+          this.LBL_MENUBG = this.getControlByName('LBL_MENUBG');
+          this.LBL_MOULDING2 = this.getControlByName('LBL_MOULDING2');
+          this.LBL_MOULDING1 = this.getControlByName('LBL_MOULDING1');
+          //this.LBL_INDICATE = this.getControlByName('LBL_INDICATE');
+          //this.LBL_INDICATEBG = this.getControlByName('LBL_INDICATEBG');
+
+          /*this.LBL_ACTIONTYPE0 = this.getControlByName('LBL_ACTIONTYPE0');
+          this.LB_ACTIONS1 = this.getControlByName('LBL_ACTIONS1');
+          this.LB_ACTIONS0 = this.getControlByName('LBL_ACTIONS0');
+          this.LB_ACTIONS3 = this.getControlByName('LBL_ACTIONS3');
+          this.LB_ACTIONS5 = this.getControlByName('LBL_ACTIONS5');
+          this.LB_ACTIONS2 = this.getControlByName('LBL_ACTIONS2');
+          this.LB_ACTIONS4 = this.getControlByName('LBL_ACTIONS4');*/
+          this.LBL_STEALTHXP = this.getControlByName('LBL_STEALTHXP');
+          this.BTN_ACTION0 = this.getControlByName('BTN_ACTION0');
+          this.BTN_ACTIONUP0 = this.getControlByName('BTN_ACTIONUP0');
+          this.BTN_ACTIONDOWN0 = this.getControlByName('BTN_ACTIONDOWN0');
+
+          this.TB_PAUSE = this.getControlByName('TB_PAUSE');
+          this.TB_STEALTH = this.getControlByName('TB_STEALTH');
+          this.TB_SOLO = this.getControlByName('TB_SOLO');
+
+          //Menu Buttons
+          this.BTN_MSG = this.getControlByName('BTN_MSG');
+          this.BTN_JOU = this.getControlByName('BTN_JOU');
+          this.BTN_MAP = this.getControlByName('BTN_MAP');
+          this.BTN_OPT = this.getControlByName('BTN_OPT');
+          this.BTN_CHAR = this.getControlByName('BTN_CHAR');
+          this.BTN_ABI = this.getControlByName('BTN_ABI');
+          this.BTN_INV = this.getControlByName('BTN_INV');
+          this.BTN_EQU = this.getControlByName('BTN_EQU');
+
+          //Map
+          this.BTN_MINIMAP = this.getControlByName('BTN_MINIMAP');
+          this.LBL_MAP = this.getControlByName('LBL_MAP');
+          this.LBL_MAPBORDER = this.getControlByName('LBL_MAPBORDER');
+          this.LBL_MAPVIEW = this.getControlByName('LBL_MAPVIEW');
+          this.LBL_ARROW = this.getControlByName('LBL_ARROW');
+          this.LBL_ARROW_MARGIN = this.getControlByName('LBL_ARROW_MARGIN');
+
+          //Character 1
+          this.LBL_CMBTEFCTRED1 = this.getControlByName('LBL_CMBTEFCTRED1');
+          this.LBL_CMBTEFCTINC1 = this.getControlByName('LBL_CMBTEFCTINC1');
+          this.LBL_LEVELUP1 = this.getControlByName('LBL_LEVELUP1');
+          this.LBL_LVLUPBG1 = this.getControlByName('LBL_LVLUPBG1');
+          this.LBL_DEBILATATED1 = this.getControlByName('LBL_DEBILATATED1');
+          this.LBL_DISABLE1 = this.getControlByName('LBL_DISABLE1');
+          this.LBL_CHAR1 = this.getControlByName('LBL_CHAR1');
+          this.BTN_CHAR1 = this.getControlByName('BTN_CHAR1');
+          this.LBL_BACK1 = this.getControlByName('LBL_BACK1');
+          this.PB_FORCE1 = this.getControlByName('PB_FORCE1');
+          this.PB_VIT1 = this.getControlByName('PB_VIT1');
+
+          //Character 2
+          this.LBL_CMBTEFCTRED2 = this.getControlByName('LBL_CMBTEFCTRED2');
+          this.LBL_CMBTEFCTINC2 = this.getControlByName('LBL_CMBTEFCTINC2');
+          this.LBL_LEVELUP2 = this.getControlByName('LBL_LEVELUP2');
+          this.LBL_LVLUPBG2 = this.getControlByName('LBL_LVLUPBG2');
+          this.LBL_DEBILATATED2 = this.getControlByName('LBL_DEBILATATED2');
+          this.LBL_DISABLE2 = this.getControlByName('LBL_DISABLE2');
+          this.LBL_CHAR2 = this.getControlByName('LBL_CHAR2');
+          this.BTN_CHAR2 = this.getControlByName('BTN_CHAR2');
+          this.LBL_BACK2 = this.getControlByName('LBL_BACK2');
+          this.PB_FORCE2 = this.getControlByName('PB_FORCE2');
+          this.PB_VIT2 = this.getControlByName('PB_VIT2');
+
+          //Character 3
+          this.LBL_CMBTEFCTRED3 = this.getControlByName('LBL_CMBTEFCTRED3');
+          this.LBL_CMBTEFCTINC3 = this.getControlByName('LBL_CMBTEFCTINC3');
+          this.LBL_LEVELUP3 = this.getControlByName('LBL_LEVELUP3');
+          this.LBL_LVLUPBG3 = this.getControlByName('LBL_LVLUPBG3');
+          this.LBL_DEBILATATED3 = this.getControlByName('LBL_DEBILATATED3');
+          this.LBL_DISABLE3 = this.getControlByName('LBL_DISABLE3');
+          this.LBL_CHAR3 = this.getControlByName('LBL_CHAR3');
+          this.BTN_CHAR3 = this.getControlByName('BTN_CHAR3');
+          this.LBL_BACK3 = this.getControlByName('LBL_BACK3');
+          this.PB_FORCE3 = this.getControlByName('PB_FORCE3');
+          this.PB_VIT3 = this.getControlByName('PB_VIT3');
+
+          //Nameplate
+          this.LBL_NAME = this.getControlByName('LBL_NAME');
+          this.LBL_NAMEBG = this.getControlByName('LBL_NAMEBG');
+          this.PB_HEALTH = this.getControlByName('PB_HEALTH');
+          this.LBL_HEALTHBG = this.getControlByName('LBL_HEALTHBG');
+
+          //Action Description
+          this.LBL_ACTIONDESC = this.getControlByName('LBL_ACTIONDESC');
+          this.LBL_ACTIONDESCBG = this.getControlByName('LBL_ACTIONDESCBG');
+
+          //Statuses
+          this.LBL_LIGHTSHIFT = this.getControlByName('LBL_LIGHTSHIFT');
+          this.LBL_DARKSHIFT = this.getControlByName('LBL_DARKSHIFT');
+          this.LBL_JOURNAL = this.getControlByName('LBL_JOURNAL');
+          this.LBL_CASH = this.getControlByName('LBL_CASH');
+          this.LBL_PLOTXP = this.getControlByName('LBL_PLOTXP');
+          this.LBL_STEALTHXP = this.getControlByName('LBL_STEALTHXP');
+          this.LBL_ITEMRCVD = this.getControlByName('LBL_ITEMRCVD');
+          this.LBL_ITEMLOST = this.getControlByName('LBL_ITEMLOST');
+
+
+          //Combat
+          this.BTN_CLEARALL = this.getControlByName('BTN_CLEARALL');
+          this.BTN_CLEARONE = this.getControlByName('BTN_CLEARONE'); //Holds the graphic of the current attack icon
+          this.LBL_COMBATBG1 = this.getControlByName('LBL_COMBATBG1');
+          this.LBL_COMBATBG2 = this.getControlByName('LBL_COMBATBG2');
+          this.LBL_COMBATBG3 = this.getControlByName('LBL_COMBATBG3');
+          this.LBL_QUEUE0 = this.getControlByName('LBL_QUEUE0');
+          this.LBL_QUEUE1 = this.getControlByName('LBL_QUEUE1');
+          this.LBL_QUEUE2 = this.getControlByName('LBL_QUEUE2');
+          this.LBL_QUEUE3 = this.getControlByName('LBL_QUEUE3');
+
+          this.LBL_TARGET0 = this.getControlByName('LBL_TARGET0');
+          this.BTN_TARGET0 = this.getControlByName('BTN_TARGET0');
+          this.BTN_TARGETDOWN0 = this.getControlByName('BTN_TARGETDOWN0');
+          this.BTN_TARGETUP0 = this.getControlByName('BTN_TARGETUP0');
+          this.LBL_TARGET1 = this.getControlByName('LBL_TARGET1');
+          this.BTN_TARGET1 = this.getControlByName('BTN_TARGET1');
+          this.BTN_TARGETDOWN1 = this.getControlByName('BTN_TARGETDOWN1');
+          this.BTN_TARGETUP1 = this.getControlByName('BTN_TARGETUP1');
+          this.LBL_TARGET2 = this.getControlByName('LBL_TARGET2');
+          this.BTN_TARGET2 = this.getControlByName('BTN_TARGET2');
+          this.BTN_TARGETDOWN2 = this.getControlByName('BTN_TARGETDOWN2');
+          this.BTN_TARGETUP2 = this.getControlByName('BTN_TARGETUP2');
+
+          this.LBL_CMBTMSGBG = this.getControlByName('LBL_CMBTMSGBG');
+          this.LBL_CMBTMODEMSG = this.getControlByName('LBL_CMBTMODEMSG');
+
+          this.tGuiPanel.widget.fill.visible = false;
+
+          this.TB_STEALTH.hideBorder();
+          this.TB_PAUSE.hideBorder();
+          this.TB_SOLO.hideBorder();
+
+          this.LBL_LIGHTSHIFT.hide();
+          this.LBL_DARKSHIFT.hide();
+          this.LBL_JOURNAL.hide();
+          this.LBL_CASH.hide();
+          this.LBL_PLOTXP.hide();
+          this.LBL_STEALTHXP.hide();
+          this.LBL_ITEMRCVD.hide();
+          this.LBL_ITEMLOST.hide();
+
+          //Map INIT
+          this.LBL_MAPBORDER.hideBorder();
+          this.LBL_MAP.hide();
+          this.LBL_ARROW_MARGIN.hide();
+
+          this.LBL_CMBTEFCTRED1.hide();
+          this.LBL_CMBTEFCTINC1.hide();
+          this.LBL_LEVELUP1.hide();
+          this.LBL_LVLUPBG1.hide();
+          this.LBL_DEBILATATED1.hide();
+          this.LBL_DISABLE1.hide();
+
+          this.LBL_CMBTEFCTRED2.hide();
+          this.LBL_CMBTEFCTINC2.hide();
+          this.LBL_LEVELUP2.hide();
+          this.LBL_LVLUPBG2.hide();
+          this.LBL_DEBILATATED2.hide();
+          this.LBL_DISABLE2.hide();
+
+          this.LBL_CMBTEFCTRED3.hide();
+          this.LBL_CMBTEFCTINC3.hide();
+          this.LBL_LEVELUP3.hide();
+          this.LBL_LVLUPBG3.hide();
+          this.LBL_DEBILATATED3.hide();
+          this.LBL_DISABLE3.hide();
+
+
+          this.LBL_ACTIONDESC.hide();
+          this.LBL_ACTIONDESCBG.hide();
+
+          this.LBL_NAME.hide();
+          this.LBL_NAMEBG.hide();
+          this.PB_HEALTH.hide();
+          this.LBL_HEALTHBG.hide();
+
+          this.LBL_CMBTMSGBG.hide();
+          this.LBL_CMBTMODEMSG.hide();
+          this.BTN_CLEARALL.hideBorder();
+
+
+          this.BTN_MSG.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuMessages.Show();
+          };
+
+          this.BTN_JOU.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuJournal.Show();
+          };
+
+          this.BTN_MAP.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuMap.Show();
+          };
+
+          this.BTN_OPT.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuOptions.Show();
+          };
+
+          this.BTN_CHAR.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuCharacter.Show();
+          };
+
+          this.BTN_ABI.onClick = (e) => {
+            e.stopPropagation();
+            //Game.MenuCharacter.Show();
+          };
+
+          this.BTN_INV.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuInventory.Show();
+          };
+
+          this.BTN_EQU.onClick = (e) => {
+            e.stopPropagation();
+            Game.MenuEquipment.Show();
+          };
+
+          this.TB_PAUSE.onClick = (e) => {
+            e.stopPropagation();
+
+            if(Game.State == Game.STATES.PAUSED){
+              Game.State = Game.STATES.RUNNING;
+            }else{
+              Game.State = Game.STATES.PAUSED
+            }
+
+          };
+
+          this.TB_SOLO.onClick = (e) => {
+            e.stopPropagation();
+          };
+
+          this.TB_STEALTH.onClick = (e) => {
+            e.stopPropagation();
+          };
+
+          this.BTN_CHAR1.onClick = (e) => {
+            Game.MenuEquipment.Show()
+          };
+
+          this.BTN_CHAR2.onClick = (e) => {
+            PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
+          };
+
+          this.BTN_CHAR3.onClick = (e) => {
+            PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
+          };
+
+          this.BTN_CLEARALL.onClick = (e) => {
+            e.stopPropagation();
+            Game.getCurrentPlayer().clearAllActions();
+            Game.getCurrentPlayer().combatState = false;
+          };
+
+          this.LBL_QUEUE0.onClick = (e) => {
+            e.stopPropagation();
+            Game.getCurrentPlayer().combatAction = undefined;
+          };
+
+          this.LBL_QUEUE1.onClick = (e) => {
+            e.stopPropagation();
+            Game.getCurrentPlayer().combatQueue.splice(0, 1);
+          };
+
+          this.LBL_QUEUE2.onClick = (e) => {
+            e.stopPropagation();
+            Game.getCurrentPlayer().combatQueue.splice(1, 1);
+          };
+
+          this.LBL_QUEUE3.onClick = (e) => {
+            e.stopPropagation();
+            Game.getCurrentPlayer().combatQueue.splice(2, 1);
+          };
+
+          for(let i = 0; i < 3; i++){
+            
+            //this['BTN_TARGET'+i]
+
+            this['LBL_TARGET'+i].onClick = (e) => {
+              e.stopPropagation();
+              let action = this.targetSkills['target'+i][this['target'+i+'_idx']];
+              if(action){
+                Game.getCurrentPlayer().actionQueue.push(
+                  action.action
+                );
+              }
+
+            };
+
+            this['BTN_TARGETUP'+i].onClick = (e) => {
+              e.stopPropagation();
+            };
+
+            this['BTN_TARGETDOWN'+i].onClick = (e) => {
+              e.stopPropagation();
+            };
+
+          }
+
+          this.lbl_combatbg2.visible = false;
+
+          if(typeof this.onLoad === 'function')
+            this.onLoad();
+
+        }
+      })
+  
+    }
+
+    showCombatUI(){
+      this.BTN_CLEARALL.show();
+      this.BTN_CLEARONE.show(); //Holds the graphic of the current attack icon
+      this.LBL_COMBATBG1.show();
+      this.LBL_COMBATBG2.show();
+      this.LBL_COMBATBG3.show();
+      this.LBL_QUEUE0.show();
+      this.LBL_QUEUE1.show()
+
+      /*this.LBL_TARGET0.show();
+      this.BTN_TARGET0.show();
+      this.BTN_TARGETDOWN0.show();
+      this.BTN_TARGETUP0.show();
+      this.LBL_TARGET1.show();
+      this.BTN_TARGET1.show();
+      this.BTN_TARGETDOWN1.show();
+      this.BTN_TARGETUP1.show();
+      this.LBL_TARGET2.show();
+      this.BTN_TARGET2.show();
+      this.BTN_TARGETDOWN2.show();
+      this.BTN_TARGETUP2.show();*/
+
+      //this.LBL_CMBTMSGBG.show();
+      //this.LBL_CMBTMODEMSG.show();
+    }
+
+    hideCombatUI(){
+      this.BTN_CLEARALL.hide();
+      this.BTN_CLEARONE.hide(); //Holds the graphic of the current attack icon
+      this.LBL_COMBATBG1.hide();
+      this.LBL_COMBATBG2.hide();
+      this.LBL_COMBATBG3.hide();
+      this.LBL_QUEUE0.hide();
+      this.LBL_QUEUE1.hide()
+
+      /*this.LBL_TARGET0.hide();
+      this.BTN_TARGET0.hide();
+      this.BTN_TARGETDOWN0.hide();
+      this.BTN_TARGETUP0.hide();
+      this.LBL_TARGET1.hide();
+      this.BTN_TARGET1.hide();
+      this.BTN_TARGETDOWN1.hide();
+      this.BTN_TARGETUP1.hide();
+      this.LBL_TARGET2.hide();
+      this.BTN_TARGET2.hide();
+      this.BTN_TARGETDOWN2.hide();
+      this.BTN_TARGETUP2.hide();*/
+
+      this.LBL_CMBTMSGBG.hide();
+      this.LBL_CMBTMODEMSG.hide();
+    }
+
+    TogglePartyMember(nth = 0, bVisible = false){
+
+      if(!bVisible){
+        this['LBL_CMBTEFCTRED'+(nth+1)].hide();
+        this['LBL_CMBTEFCTINC'+(nth+1)].hide();
+        this['LBL_LEVELUP'+(nth+1)].hide();
+        this['LBL_LVLUPBG'+(nth+1)].hide();
+        this['LBL_DEBILATATED'+(nth+1)].hide();
+        this['LBL_DISABLE'+(nth+1)].hide();
+        this['LBL_CHAR'+(nth+1)].hide();
+        this['BTN_CHAR'+(nth+1)].hide();
+        this['LBL_BACK'+(nth+1)].hide();
+        this['PB_FORCE'+(nth+1)].hide();
+        this['PB_VIT'+(nth+1)].hide();
+      }else{
+        this['LBL_CHAR'+(nth+1)].show();
+        this['BTN_CHAR'+(nth+1)].show();
+        this['LBL_BACK'+(nth+1)].show();
+        this['PB_FORCE'+(nth+1)].show();
+        this['PB_VIT'+(nth+1)].show();
+      }
+    }
+
+    SetMapTexture(sTexture = ''){
+      try{
+        this.LBL_MAPVIEW.widget.fill.children[0].material.transparent = false;
+        this.LBL_MAPVIEW.setFillTextureName(sTexture);
+        TextureLoader.tpcLoader.fetch(sTexture, (texture) => {
+          this.LBL_MAPVIEW.setFillTexture(texture);
+          texture.repeat.x = 0.25;
+          texture.repeat.y = 0.50;
+        });
+      }catch(e){}
+    }
+
+    UpdateTargetUISkills(){
+
+      let skills = {
+        target0: [],
+        target1: [],
+        target2: []
+      }
+
+      if(Game.selectedObject instanceof ModuleObject){
+
+        if(Game.selectedObject instanceof ModulePlaceable){
+
+        }else if(Game.selectedObject instanceof ModuleDoor){
+          if(Game.selectedObject.isLocked() && !Game.selectedObject.requiresKey()){
+            skills.target1.push({
+              action: {
+                goal: ModuleCreature.ACTION.OPENLOCK,
+                object:Game.selectedObject
+              },
+              icon: 'isk_security'
+            });
+
+            skills.target0.push({
+              action: 'bash',
+              icon: 'i_attack'
+            });
+          }
+        }
+
+      }
+
+      return (!skills.target0.length && !skills.target1.length && !skills.target2.length) ? null : skills;
+
+    }
+
+    _canShowTargetUI(){
+      return (!Game.MenuContainer.bVisible && CursorManager.reticle2.visible && Game.selectedObject instanceof ModuleObject && !(Game.selectedObject instanceof ModuleRoom));
+    }
+
+    UpdateTargetUI(){
+
+      if(this._canShowTargetUI()){
+
+        if(this.lastTarget != Game.selectedObject){
+          this.targetSkills = this.UpdateTargetUISkills();
+        }
+
+        if(Game.selectedObject instanceof ModuleCreature){
+          if(Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'bluefill'){
+            this.PB_HEALTH.setFillTextureName('redfill');
+            TextureLoader.Load('redfill', (map) => {
+              this.PB_HEALTH.setFillTexture(map)
+            });
+          }else if(!Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'redfill'){
+            this.PB_HEALTH.setFillTextureName('bluefill');
+            TextureLoader.Load('bluefill', (map) => {
+              this.PB_HEALTH.setFillTexture(map)
+            });
+          }
+        }else{
+          if(this.PB_HEALTH.getFillTextureName() != 'bluefill'){
+            this.PB_HEALTH.setFillTextureName('bluefill');
+            TextureLoader.Load('bluefill', (map) => {
+              this.PB_HEALTH.setFillTexture(map)
+            });
+          }
+        }
+
+        if(Game.InGameOverlay.LBL_NAME.text.text != Game.selectedObject.getName()){
+          this.LBL_NAME.setText(Game.selectedObject.getName(), 25);
+        }
+
+        //if(Game.selectedObject instanceof ModuleObject){
+          let health = 100 * Game.selectedObject.getHP()/Game.selectedObject.getMaxHP();
+          if(health > 100)
+            health = 100;
+          this.PB_HEALTH.setProgress(health)
+        //}
+
+        let maxBoundsX = (window.innerWidth / 2 + 640/2) - 125;
+        let maxBoundsX2 = (window.innerWidth / 2) - (640/2) - 125;
+
+        let targetScreenPosition = new THREE.Vector3(
+          640/2,
+          480/2,
+          0
+        );
+
+        let pos = new THREE.Vector3();
+        pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
+        pos.project(Game.currentCamera);
+        
+        let widthHalf = window.innerWidth / 2;
+        let heightHalf = window.innerHeight / 2;
+
+        pos.x = (pos.x * widthHalf);
+        pos.y = - (pos.y * heightHalf);
+        pos.z = 0;
+
+        targetScreenPosition.add(pos);
+        
+        if(targetScreenPosition.x > maxBoundsX){
+              targetScreenPosition.x = maxBoundsX;
+        }
+
+        if(targetScreenPosition.x < -maxBoundsX2){
+              targetScreenPosition.x = -maxBoundsX2;
+        }
+
+        if(targetScreenPosition.y > (640/2)){
+            targetScreenPosition.y = (640/2);
+        }
+
+        if(targetScreenPosition.y < 100){
+            targetScreenPosition.y = 100;
+        }
+
+
+        this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
+        
+        this.LBL_NAME.show();
+        this.LBL_NAMEBG.show();
+        this.PB_HEALTH.show();
+        this.LBL_HEALTHBG.show();
+
+        this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
+        this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
+        this.PB_HEALTH.extent.left = targetScreenPosition.x - 20;
+        this.LBL_HEALTHBG.extent.left = targetScreenPosition.x - 20;
+
+        this.LBL_NAME.extent.top = targetScreenPosition.y - (38);
+        this.LBL_NAMEBG.extent.top = targetScreenPosition.y - (38);
+        this.PB_HEALTH.extent.top = targetScreenPosition.y - 12;
+        this.LBL_HEALTHBG.extent.top = targetScreenPosition.y - 12;
+
+        this.LBL_NAME.recalculate();
+        this.LBL_NAMEBG.recalculate();
+        this.PB_HEALTH.recalculate();
+        this.LBL_HEALTHBG.recalculate();
+
+        if(this.targetSkills){
+
+          for(let i = 0; i < 3; i++){
+            let xPos = ((this['BTN_TARGET'+i].extent.width + 5) *i) + 20;
+
+            this['BTN_TARGET'+i].scale = false;
+            this['BTN_TARGET'+i].extent.left = targetScreenPosition.x + xPos;
+            this['BTN_TARGET'+i].extent.top = targetScreenPosition.y;
+
+            this['LBL_TARGET'+i].scale = false;
+            this['LBL_TARGET'+i].extent.left = targetScreenPosition.x + xPos + 3;
+            this['LBL_TARGET'+i].extent.top = targetScreenPosition.y + 14;
+
+            this['BTN_TARGETUP'+i].scale = false;
+            this['BTN_TARGETUP'+i].extent.left = targetScreenPosition.x + xPos;
+            this['BTN_TARGETUP'+i].extent.top = targetScreenPosition.y + 5;
+
+            this['BTN_TARGETDOWN'+i].scale = false;
+            this['BTN_TARGETDOWN'+i].extent.left = targetScreenPosition.x + xPos;
+            this['BTN_TARGETDOWN'+i].extent.top = targetScreenPosition.y + ((this['BTN_TARGET'+i].extent.height/2) + 12);
+            this['BTN_TARGETDOWN'+i].widget.rotation.z = Math.PI;
+
+            if(this.targetSkills['target'+i].length){
+              let action = this.targetSkills['target'+i][this['target'+i+'_idx']];
+
+              if(this['LBL_TARGET'+i].getFillTextureName() != action.icon){
+                TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
+                  this['LBL_TARGET'+i].setFillTexture(texture);
+                });
+              }
+              
+            }else{
+              this['LBL_TARGET'+i].setFillTexture(null);
+            }
+            
+            this['BTN_TARGET'+i].recalculate();
+            this['LBL_TARGET'+i].recalculate();
+            this['BTN_TARGETUP'+i].recalculate();
+            this['BTN_TARGETDOWN'+i].recalculate();
+            this['BTN_TARGET'+i].show();
+            this['LBL_TARGET'+i].show();
+            this['BTN_TARGETUP'+i].show();
+            this['BTN_TARGETDOWN'+i].show();
+          }
+
+        }else{
+          for(let i = 0; i < 3; i++){
+            this['BTN_TARGET'+i].hide();
+            this['LBL_TARGET'+i].hide();
+            this['BTN_TARGETUP'+i].hide();
+            this['BTN_TARGETDOWN'+i].hide();
+          }
+        }
+
+        this.lastTarget = Game.selectedObject;
+
+      }else{
+        this.targetSkills = undefined;
+        this.lastTarget = undefined;
+        this.LBL_NAME.hide();
+        this.LBL_NAMEBG.hide();
+        this.PB_HEALTH.hide();
+        this.LBL_HEALTHBG.hide();
+        for(let i = 0; i < 3; i++){
+          this['BTN_TARGET'+i].hide();
+          this['LBL_TARGET'+i].hide();
+          this['BTN_TARGETUP'+i].hide();
+          this['BTN_TARGETDOWN'+i].hide();
+        }
+      }
+
+    }
+
+    Update(delta = 0){
+      super.Update(delta);
+
+      this.UpdateTargetUI();
+
+      let mapTexture = this.LBL_MAPVIEW.getFillTexture();
+      if(mapTexture){
+        //mapTexture.repeat.x = 0.25;
+        //mapTexture.repeat.y = 0.50;
+        
+        let pointX = ( (Game.getCurrentPlayer().position.x - Game.module.area.Map.WorldPt1X) / (Game.module.area.Map.WorldPt2X + Game.module.area.Map.WorldPt1X) );
+        let pointY = ( (Game.getCurrentPlayer().position.y - Game.module.area.Map.WorldPt1Y) / (Game.module.area.Map.WorldPt2Y + Game.module.area.Map.WorldPt1Y) );
+
+        //pointX = ( (pointX - Game.module.area.Map.MapPt1X) / (Game.module.area.Map.MapPt2X + Game.module.area.Map.MapPt1X) );
+        //pointY = ( (pointY - Game.module.area.Map.MapPt1Y) / (Game.module.area.Map.MapPt2Y + Game.module.area.Map.MapPt1Y) );
+
+        mapTexture.offset.x = (pointX) + 0.125;
+        mapTexture.offset.y = (pointY) + 0.350;
+
+        //console.log(pointX, pointY);
+      }
+
+      this.TogglePartyMember(0, false);
+      this.TogglePartyMember(1, false);
+      this.TogglePartyMember(2, false);
+
+      this.LBL_ARROW.widget.rotation.set(0, 0, PartyManager.party[0].facing - Math.PI/2);
+
+      for(let i = 0; i < PartyManager.party.length; i++){
+        let partyMember = PartyManager.party[i];
+        let portraitId = partyMember.getPortraitId();
+        let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+
+        let id = i;
+        switch(i){
+          case 1:
+            id = 2;
+          break;
+          case 2:
+            id = 1;
+          break;
+        }
+
+        this.TogglePartyMember(id, true);
+
+        let pmBG = this['LBL_CHAR'+(id+1)];
+
+        if(pmBG.getFillTextureName() != portrait.baseresref){
+          pmBG.setFillTextureName(portrait.baseresref)
+          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture) => {
+            pmBG.setFillTexture(texture);
+          });
+        }
+
+        this['PB_VIT'+(id+1)].setProgress((partyMember.getHP() / partyMember.getMaxHP()) * 100);
+
+      }
+
+      if(Game.getCurrentPlayer().combatState){
+        this.showCombatUI();
+
+        let action0 = Game.getCurrentPlayer().combatAction;
+        let action1 = Game.getCurrentPlayer().combatQueue[0];
+        let action2 = Game.getCurrentPlayer().combatQueue[1];
+        let action3 = Game.getCurrentPlayer().combatQueue[2];
+
+        if(action0 != undefined){
+          if(this.LBL_QUEUE0.getFillTextureName() != action0.icon){
+            this.LBL_QUEUE0.setFillTextureName(action0.icon)
+            TextureLoader.tpcLoader.fetch(action0.icon, (texture) => {
+              this.LBL_QUEUE0.setFillTexture(texture)
+            });
+
+          }
+        }else{
+          this.LBL_QUEUE0.setFillTextureName('');
+          this.LBL_QUEUE0.setFillTexture(undefined);
+        }
+
+        if(action1 != undefined){
+          if(this.LBL_QUEUE1.getFillTextureName() != action1.icon){
+            this.LBL_QUEUE1.setFillTextureName(action1.icon)
+            TextureLoader.tpcLoader.fetch(action1.icon, (texture) => {
+              this.LBL_QUEUE1.setFillTexture(texture)
+            });
+          }
+        }else{
+          this.LBL_QUEUE1.setFillTextureName('');
+          this.LBL_QUEUE1.setFillTexture(undefined);
+        }
+
+        if(action2 != undefined){
+          if(this.LBL_QUEUE2.getFillTextureName() != action2.icon){
+            this.LBL_QUEUE2.setFillTextureName(action2.icon)
+            TextureLoader.tpcLoader.fetch(action2.icon, (texture) => {
+              this.LBL_QUEUE2.setFillTexture(texture)
+            });
+          }
+        }else{
+          this.LBL_QUEUE2.setFillTextureName('');
+          this.LBL_QUEUE2.setFillTexture(undefined);
+        }
+
+        if(action3 != undefined){
+          if(this.LBL_QUEUE3.getFillTextureName() != action3.icon){
+            this.LBL_QUEUE3.setFillTextureName(action3.icon)
+            TextureLoader.tpcLoader.fetch(action3.icon, (texture) => {
+              this.LBL_QUEUE3.setFillTexture(texture)
+            });
+          }
+        }else{
+          this.LBL_QUEUE3.setFillTextureName('');
+          this.LBL_QUEUE3.setFillTexture(undefined);
+        }
+
+      }else{
+        this.hideCombatUI();
+      }
+
+    }
+
+
+    Show(){
+      super.Show();
+
+      Game.MenuActive = false;
+
+      //Game.InGameOverlay.Hide();
+      Game.MenuOptions.Hide();
+      Game.MenuCharacter.Hide();
+      Game.MenuEquipment.Hide();
+      Game.MenuMessages.Hide();
+      Game.MenuJournal.Hide();
+      Game.MenuMap.Hide();
+      Game.MenuInventory.Hide();
+      Game.MenuOptions.Hide();
+      Game.MenuPartySelection.Hide();
+      Game.MenuTop.Hide();
+
+    }
+
+  
+  }
+  
+  module.exports = InGameOverlay;

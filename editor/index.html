@@ -1,0 +1,269 @@
+<!Doctype html>
+<html style="background: #333;">
+<head>
+  <title>KotOR Forge</title>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="js/jquery-1.12.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
+  <script src="js/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="js/jquery.layout.min.js"></script>
+  <script type="text/javascript" src="js/md5.min.js"></script>
+  <script type="text/javascript" src="js/utility.js"></script>
+  <script type="text/javascript" src="js/engine/three.js"></script>
+  <script type="text/javascript" src="js/engine/TPCLoader.js"></script>
+  <script type="text/javascript" src="js/engine/TGALoader.js"></script>
+  <script type="text/javascript" src="js/engine/MDLLoader.js"></script>
+  <script type="text/javascript" src="js/engine/AuroraModel.js"></script>
+  <script type="text/javascript" src="js/engine/stats.min.js"></script>
+  <script type="text/javascript" src="js/engine/controls/TrackballControls.js"></script>
+  <script type="text/javascript" src="js/engine/TransformControls.js"></script>
+  <script type="text/javascript" src="js/engine/SPE.min.js"></script>
+  <script type="text/javascript" src="js/dexie.min.js"></script>
+  <script type="text/javascript" src="js/perfect-scrollbar.jquery.min.js"></script>
+  <script type="text/javascript" src="js/bootstrap-colorpicker.min.js"></script>
+  <script type="text/javascript" src="js/ace/ace.js"></script>
+  <script type="text/javascript" src="js/ace/ext-language_tools.js"></script>
+  <script type="text/javascript" src="js/jquery-ace.min.js"></script>
+  <script type="text/javascript" src="js/squish.js"></script>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+  <link type="text/css" rel="stylesheet" href="css/main.css" />
+  <link type="text/css" rel="stylesheet" href="css/layout-default.css" />
+  <link type="text/css" rel="stylesheet" href="css/perfect-scrollbar.min.css" />
+  <link type="text/css" rel="stylesheet" href="css/bootstrap-colorpicker.min.css" />
+  <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+</head>
+<body>
+  <div id="container" class="content">
+    <!-- Center Pane : Render View -->
+    <div id="renderer-container" class="ui-layout-center">
+      <div id="tabs-container">
+      </div>
+    </div>
+    <!-- Right Pane : Project View -->
+    <!--div class="ui-layout-east" style="overflow: hidden; padding-right:0px;">
+      <div id="project-templates" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Scene</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul id="scene-tree" class="tree css-treeview"></ul>
+        </div>
+      </div>
+      <div id="project-explorer" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Project Explorer</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul class="tree css-treeview" style="width:100%;">
+
+          </ul>
+        </div>
+      </div>
+      <div id="object-properties" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Object Properties</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <div class="content">
+
+          </div>
+        </div>
+      </div>
+    </div-->
+    <!-- Left Pane -->
+    <div class="ui-layout-west" style="overflow: hidden; padding-right:0px;">
+      <div id="game-explorer" class="tree-container" style="height:100%; width:100%; position: relative;">
+        <label>Game Explorer</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul class="tree css-treeview js">
+
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Classes -->
+  <script type="text/javascript" src="js/app.main.js"></script>
+  <script>
+
+  'use strict';
+  const tabManager = new EditorTabManager();
+
+  /* DATABASE */
+  console.log(Game);
+  let db = new Dexie('K'+Game);
+
+  let deleteDB = false;
+  if(deleteDB){
+    db.delete();
+    db = new Dexie('K'+Game);
+  }
+
+  // Define a schema
+  db.version(1).stores({
+   tlkStrings: '++id, flags, SoundResRef, VolumeVariance, PitchVariance, Value'
+  });
+
+  // Open the database
+  db.open();
+
+  $('#container').layout({
+    applyDefaultStyles: false,
+    'onopen': (pane) => {
+      switch(pane){
+        case 'west':
+          Config.options.Panes.left.open = true;
+        break;
+        case 'east':
+          Config.options.Panes.right.open = true;
+        break;
+      }
+      Config.Save(null, true);
+    },
+    'onclose': (pane) => {
+      switch(pane){
+        case 'west':
+          Config.options.Panes.left.open = false;
+        break;
+        case 'east':
+          Config.options.Panes.right.open = false;
+        break;
+      }
+      Config.Save(null, true);
+    }, 'onresize': (pane) => {
+      switch(pane){
+        case 'center':
+          //Make sure the ModuleEditorTab canvas is updated on resize
+          tabManager.TriggerResize();
+        break;
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    try{
+      tabManager.TriggerResize();
+    }catch(e){
+      console.error(e);
+    }
+  });
+
+  if(!Config.options.Panes.left.open)
+    $('#container').layout().close('west');
+  if(!Config.options.Panes.right.open)
+    $('#container').layout().close('east');
+
+    function gamePathVerify () {
+      let verified = { KOTOR: false, TSL: false };
+
+      if(Config.options.Games.KOTOR.Location != null){
+        try {
+          fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
+          verified.KOTOR = true;
+        } catch (e) { }
+      }
+
+      if(Config.options.Games.TSL.Location != null){
+        try {
+          fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
+          verified.TSL = true;
+        } catch (e) { }
+      }
+
+      return verified;
+
+    }
+
+    let verifiedPaths = gamePathVerify();
+
+    if(Config.options.first_run || (!verifiedPaths.KOTOR && !verifiedPaths.TSL) ){
+      loader.Dismiss();
+      let gameFinderWizard = new GameFinderWizard({
+        onUpdate: () => {
+          initialize();
+        },
+        onCancel: () => {
+          window.canUnload = true;
+          ipcRenderer.send('CloseMain', true);
+        }
+      });
+    }else{
+      initialize();
+    }
+
+    function initialize(){
+
+      verifyGame({
+        game: GameKey,
+        onVerify: () => {
+          loader.Show();
+          GameInitializer.Init({
+            game: Games[GameKey],
+            onLoad: () => {
+              tabManager.AddTab(new QuickStartTab());
+              tabManager.AttachTo($('#renderer-container #tabs-container'));
+            }
+          });
+        },
+        onError: () => {
+          console.log('Failed to verify the path for', GameKey);
+          loader.Dismiss();
+          let gameFinderWizard = new GameFinderWizard({
+            onUpdate: () => {
+              initialize();
+            },
+            onCancel: () => {
+              window.canUnload = true;
+              ipcRenderer.send('CloseMain', true);
+            }
+          });
+        }
+      });
+
+    }
+
+    function verifyGame(args = {}){
+
+      args = $.extend({
+        game: Game,
+        onVerify: null,
+        onError: null
+      }, args);
+
+      let verifiedPaths = gamePathVerify();
+
+      if(verifiedPaths[args.game]){
+        if(args.onVerify != null)
+          args.onVerify();
+      }else{
+        if(args.onError != null)
+          args.onError();
+      }
+
+    }
+
+
+
+
+
+  //inlineAudioPlayer.OpenAudio(new AudioFile('D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_area_acad.wav'));
+
+  window.canUnload = false;
+
+  // window.onbeforeunload = (e) => {
+  //   if(!window.canUnload)
+  //     console.log('I do not want to be closed');
+  //
+  //   //let closeDialog = new Dialog();
+  //
+  //   // Unlike usual browsers that a message box will be prompted to users, returning
+  //   // a non-void value will silently cancel the close.
+  //   // It is recommended to use the dialog API to let the user confirm closing the
+  //   // application.
+  //   e.returnValue = true;//window.canUnload;
+  // };
+
+
+  </script>
+  <!--script type="text/javascript" src="js/script.js"></script-->
+</body>
+</html>

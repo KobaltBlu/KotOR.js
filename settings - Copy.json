@@ -1,0 +1,165 @@
+{
+	"first_run": false,
+	"Games": {
+		"KOTOR": {
+			"Location": "D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic"
+		},
+		"TSL": {
+			"Location": "D:\\Games\\LucasArts\\Star Wars - KotOR2"
+		}
+	},
+	"Theme": {
+		"NSS": {
+			"keywords": {
+				"color": "#ffb800",
+				"fontSize": "inherit"
+			},
+			"methods": {
+				"color": "#1d7fd9",
+				"fontSize": "inherit"
+			},
+			"constants": {
+				"color": "#9648ba",
+				"fontSize": "inherit"
+			}
+		},
+		"GFF": {
+			"struct": {
+				"label": {
+					"color": "#FFF",
+					"fontSize": "inherit"
+				},
+				"color": "#8476a2"
+			},
+			"field": {
+				"label": {
+					"color": "#FFF",
+					"fontSize": "inherit"
+				},
+				"color": "#337a9c"
+			}
+		}
+	},
+	"look_in_override": false,
+	"Editor": {
+		"Module": {
+			"Helpers": {
+				"creature": {
+					"visible": true
+				},
+				"door": {
+					"visible": true
+				},
+				"encounter": {
+					"visible": false
+				},
+				"placeable": {
+					"visible": true
+				},
+				"merchant": {
+					"visible": false
+				},
+				"sound": {
+					"visible": false
+				},
+				"trigger": {
+					"visible": false
+				},
+				"waypoint": {
+					"visible": false
+				}
+			}
+		}
+	},
+	"Panes": {
+		"left": {
+			"open": true
+		},
+		"right": {
+			"open": false
+		},
+		"top": {
+			"open": false
+		},
+		"bottom": {
+			"open": false
+		}
+	},
+	"Projects_Directory": "C:\\Users\\James\\Projects\\Electron\\KotOR\\projects",
+	"recent_projects": [
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\projects\\ebon-hawk",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\projects\\new-project-1",
+		"C:\\Users\\James\\Projects\\Electron\\Old\\KotOR\\projects\\tatooine"
+	],
+	"recent_files": [
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k2_assets\\textures\\EBO_Astr.tpc",
+		"bif.items://w_dblsbr_001.mdl",
+		"bif.textures://lma_water03bmp.tga",
+		"bif.lightmaps://m01aa_01a_lm1.tga",
+		"bif.lightmaps4://m09aa.vis",
+		"bif.models://m01aa_01a.wok",
+		"bif.items://w_warblade_001.mdl",
+		"bif.items://w_vbroswrd_006.mdl",
+		"bif.items://w_vbroswrd_004.mdl",
+		"bif.items://w_shortsbr_003.mdl",
+		"bif.items://w_shortsbr_001.mdl",
+		"bif.items://w_rptnblstr_002.mdl",
+		"bif.items://w_rptnblstr_001.mdl",
+		"bif.items://w_qtrstaff_002.mdl",
+		"bif.items://w_qtrstaff_001.mdl",
+		"bif.items://w_notready01.mdl",
+		"bif.items://w_qtrstaff_003.mdl",
+		"bif.items://w_poisngren_001.mdl",
+		"bif.items://w_lghtsbr_002.mdl",
+		"bif.items://w_lfire_pb_bc1.mdl",
+		"bif.items://shirt_001.mdl",
+		"bif.items://pmbjm.mdl",
+		"bif.items://shirt_002.mdl",
+		"bif.items://pmbdm.mdl",
+		"bif.items://pmbdl.mdl",
+		"bif.items://pmbcm.mdl",
+		"bif.items://pmbcl.mdl",
+		"bif.items://pmbgl.mdl",
+		"bif.items://pmbil.mdl",
+		"bif.items://pfbdm.mdl",
+		"bif.items://pfbcs.mdl",
+		"bif.items://pfbcm.mdl",
+		"bif.items://i_drdshld_005.mdl",
+		"bif.items://i_drdshld_004.mdl",
+		"bif.items://i_drdshld_001.mdl",
+		"bif.items://i_bithsax.mdl",
+		"bif.items://i_belt_adren_amp.mdl",
+		"bif.items://i_belt_cardio.mdl",
+		"bif.items://i_belt_003.mdl",
+		"bif.items://i_belt_006.mdl",
+		"bif.items://i_adrnaline_004.mdl",
+		"bif.items://i_adrnaline_001.mdl",
+		"bif.items://a_jedirobe_003.mdl",
+		"bif.items://a_jedirobe_002.mdl",
+		"bif.items://a_jedirobe_001.mdl",
+		"bif.player://pfbal.mdl",
+		"bif.lightmaps9://m28aa_01a_lm0.tga",
+		"bif.lightmaps9://m28aa_01a_lm1.tga",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\model\\c_bantha.mdl",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\model\\c_drdwar.mdl",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k2_assets\\models\\p_handmaidenba.mdl",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\l_selkath.mdl",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\07.wav",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k2_assets\\models\\p_handmaidenh.mdl",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\l_sithsoldier.mdl",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\LMA_wall02.tpc",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\dan13_ambdrd01.utc",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_theme_sith.wav",
+		"C:\\Users\\jamez\\Documents\\Electron\\KotOR\\k_assets\\textures\\CM_m02ab.tpc",
+		"C:\\Users\\jamez\\Documents\\Electron\\KotOR\\k_assets\\textures\\CM_m02aa.tpc",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\al_en_rmmedium.wav",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\kor35_sithfreed1.dlg",
+		"C:\\Users\\James\\Projects\\Electron\\KotOR\\k_assets\\k_pebn_pophawk.ncs",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\800x600map.tga",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\m33ab.are",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_theme_malak - Copy.mp3",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_area_hrakert.wav",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\l_drdprot.mdl",
+		"D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\Override\\m02af_02a.mdl"
+	]
+}

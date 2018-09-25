@@ -1,0 +1,38 @@
+<!-- CExoLocString Modal -->
+<div class="modal" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">CExoLocString Editor</h4>
+      </div>
+      <div class="modal-body">
+        <fieldset>
+          <legend>TLK String</legend>
+          <label for="modal-cexolocstring-resref-lbl">ResRef</label>
+          <input id="modal-cexolocstring-resref" type="number" min="-1" />
+
+          <label for="modal-cexolocstring-string-lbl">String</label>
+          <input id="modal-cexolocstring-string" type="text" disabled />
+        </fieldset>
+
+        <fieldset>
+          <legend>SubStrings</legend>
+          <div id="modal-cexolocstring-substrings-holder">
+            <button id="modal-cexolocstring-btn-add-string">Add String</button>
+            <ul id="modal-cexolocstring-substrings" style="list-style: none;">
+
+            </ul>
+          </div>
+        </fieldset>
+
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cexolocstring-save" type="button" class="btn btn-default">Save</button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,402 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>KotOR Forge</title>
+    <!-- Latest compiled and minified JavaScript -->
+  <script type="text/javascript" src="js/libs/jquery-1.12.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
+  <script type="text/javascript" src="js/libs/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="js/libs/bootstrap.min.js"></script>
+  <script type="text/javascript" src="js/libs/jquery.layout.min.js"></script>
+  <script type="text/javascript" src="js/libs/md5.min.js"></script>
+  <script type="text/javascript" src="js/_utility.js"></script>
+  <script>
+    const THREE = require('three');
+  </script>
+  <script type="text/javascript" src="js/engine/TPCLoader.js"></script>
+  <script type="text/javascript" src="js/engine/TGALoader.js"></script>
+  <script type="text/javascript" src="js/engine/MDLLoader.js"></script>
+  <script type="text/javascript" src="js/engine/AuroraModel.js"></script>
+  <script type="text/javascript" src="js/engine/stats.min.js"></script>
+  <script type="text/javascript" src="js/engine/controls/MapControls.js"></script>
+  <script type="text/javascript" src="js/engine/TransformControls.js"></script>
+  <script type="text/javascript" src="js/engine/SPE.min.js"></script>
+  <script type="text/javascript" src="js/libs/dexie.min.js"></script>
+  <script type="text/javascript" src="js/libs/perfect-scrollbar.jquery.min.js"></script>
+  <script type="text/javascript" src="js/libs/bootstrap-colorpicker.min.js"></script>
+  <script type="text/javascript" src="js/libs/ace/ace.js"></script>
+  <script type="text/javascript" src="js/libs/ace/ext-language_tools.js"></script>
+  <script type="text/javascript" src="js/libs/jquery-ace.min.js"></script>
+  <script type="text/javascript" src="js/libs/squish.js"></script>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="css/editor/bootstrap.min.css">
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="css/editor/bootstrap-theme.min.css">
+  <link type="text/css" rel="stylesheet" href="css/editor.css" />
+  <link type="text/css" rel="stylesheet" href="css/editor/layout-default.css" />
+  <link type="text/css" rel="stylesheet" href="css/editor/perfect-scrollbar.min.css" />
+  <link type="text/css" rel="stylesheet" href="css/editor/bootstrap-colorpicker.min.css" />
+  <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+</head>
+<body>
+  <div id="container" class="content">
+    <!-- Center Pane : Render View -->
+    <div id="renderer-container" class="ui-layout-center">
+      <div id="tabs-container">
+      </div>
+    </div>
+    <!-- Right Pane : Project View -->
+    <!-- THIS WAS MOVED TO THE ModuleEditorTab -->
+    <!--div class="ui-layout-east" style="overflow: hidden; padding-right:0px;">
+      <div id="project-templates" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Scene</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul id="scene-tree" class="tree css-treeview"></ul>
+        </div>
+      </div>
+      <div id="project-explorer" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Project Explorer</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul class="tree css-treeview" style="width:100%;">
+
+          </ul>
+        </div>
+      </div>
+      <div id="object-properties" class="tree-container" style="height:33.33%; width:100%; position: relative;">
+        <label>Object Properties</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <div class="content">
+
+          </div>
+        </div>
+      </div>
+    </div-->
+    <!-- Left Pane -->
+    <div class="ui-layout-west" style="overflow: hidden; padding-right:0px;">
+      <div id="game-explorer" class="tree-container" style="height:100%; width:100%; position: relative;">
+        <label>Game Explorer</label>
+        <div class="scroll-container" style="width:100%; overflow:scroll;">
+          <ul class="tree css-treeview js">
+
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Classes -->
+  <script type="text/javascript" src="editor.js"></script>
+  <script>
+
+  'use strict';
+  const tabManager = new EditorTabManager();
+
+  /* DATABASE */
+  console.log(_Game);
+  let db = new Dexie('K'+_Game);
+
+  let deleteDB = false;
+  if(deleteDB){
+    db.delete();
+    db = new Dexie('K'+_Game);
+  }
+
+  // Define a schema
+  db.version(1).stores({
+   tlkStrings: '++id, flags, SoundResRef, VolumeVariance, PitchVariance, Value'
+  });
+
+  // Open the database
+  db.open();
+
+  $('#container').layout({
+    applyDefaultStyles: false,
+    'onopen': (pane) => {
+      switch(pane){
+        case 'west':
+          Config.options.Panes.left.open = true;
+        break;
+        case 'east':
+          Config.options.Panes.right.open = true;
+        break;
+      }
+      Config.Save(null, true);
+    },
+    'onclose': (pane) => {
+      switch(pane){
+        case 'west':
+          Config.options.Panes.left.open = false;
+        break;
+        case 'east':
+          Config.options.Panes.right.open = false;
+        break;
+      }
+      Config.Save(null, true);
+    },
+    'onresize_end': (pane) => {
+      //Make sure the ModuleEditorTab canvas is updated on resize
+      tabManager.TriggerResize();
+      /*switch(pane){
+        case 'center':
+          //Make sure the ModuleEditorTab canvas is updated on resize
+          tabManager.TriggerResize();
+        break;
+      }*/
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    try{
+      //tabManager.TriggerResize();
+    }catch(e){
+      console.error(e);
+    }
+  });
+
+  if(!Config.options.Panes.left.open)
+    $('#container').layout().close('west');
+  if(!Config.options.Panes.right.open)
+    $('#container').layout().close('east');
+
+    function gamePathVerify () {
+      let verified = { KOTOR: false, TSL: false };
+
+      if(Config.options.Games.KOTOR.Location != null){
+        try {
+          fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
+          verified.KOTOR = true;
+        } catch (e) { }
+      }
+
+      if(Config.options.Games.TSL.Location != null){
+        try {
+          fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
+          verified.TSL = true;
+        } catch (e) { }
+      }
+
+      return verified;
+
+    }
+
+    let verifiedPaths = gamePathVerify();
+
+    if(Config.options.first_run || (!verifiedPaths.KOTOR && !verifiedPaths.TSL) ){
+      loader.Dismiss();
+      let gameFinderWizard = new GameFinderWizard({
+        onUpdate: () => {
+          initialize();
+        },
+        onCancel: () => {
+          window.canUnload = true;
+          ipcRenderer.send('CloseMain', true);
+        }
+      });
+    }else{
+      initialize();
+    }
+
+    let treeIndex = 0;
+
+    function buildNodeList(nodeList = [], canOrphan = false){
+
+      let str = '';
+      if(nodeList instanceof Array){
+        for(let i = 0; i < nodeList.length; i++){
+          str += buildNodeList(nodeList[i], canOrphan);
+        }
+      }else{
+
+        let node = nodeList;
+        if(node.type == 'group'){
+          if(node.nodeList.length == 1 && canOrphan){
+            for(let i = 0; i < node.nodeList.length; i++){
+              str += buildNodeList(node.nodeList[i], true);
+            }
+          }else{
+            str += '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+node.name+'</label><span></span><ul>';
+            for(let i = 0; i < node.nodeList.length; i++){
+              str += buildNodeList(node.nodeList[i], true);
+            }
+            str += '</ul></li>';
+          }
+        }else{
+          str += '<li class="link" data-archive="'+node.data.archive+'" data-type="'+node.data.type+'" data-resref="'+node.data.resref+'" data-resid="'+node.data.resid+'">'+node.name+'</li>';
+        }
+
+      }
+
+      return str;
+
+    }
+
+    function initialize(){
+
+      verifyGame({
+        game: GameKey,
+        onVerify: () => {
+          loader.Show();
+          GameInitializer.Init({
+            game: Games[GameKey],
+            onLoad: () => {
+              let treeIndex = 0;
+              let $ul = $('ul.tree.css-treeview.js');
+              let nodeList = [];
+              let bifs = [];
+              for(let bif in Global.kotorBIF){
+                if(Global.kotorBIF.hasOwnProperty(bif))
+                  bifs.push(Global.kotorBIF[bif]);
+              }
+              let str = '';
+              let bifLoader = new AsyncLoop({
+                array: bifs,
+                onLoop: (bif, asyncLoop) => {
+                  let name = bif.file.split('\\').pop().split('.')[0];
+                  //let bifEle = '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+name+'</label><span></span><ul>';
+                  let subTypes = {};
+
+                  let node = {
+                    name: name,
+                    type: 'group',
+                    nodeList: []
+                  };
+
+                  nodeList.push(node)
+
+                  for(let i = 0; i < bif.resources.length; i++){
+                    let resource = bif.resources[i];
+                    let resref = Global.kotorKEY.GetFileLabel(resource.ID);
+                    
+                    if(subTypes[resource.ResType] == undefined){
+                      subTypes[resource.ResType] = {
+                        name: ResourceTypes.getKeyByValue(resource.ResType),
+                        type: 'group',
+                        nodeList: []
+                      }
+                      node.nodeList.push(subTypes[resource.ResType]);
+                    }
+
+                    subTypes[resource.ResType].nodeList.push({
+                      name: resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
+                      type: 'resource',
+                      data: {
+                        archive: name,
+                        type: 'bif',
+                        resref: resref,
+                        resid: resource.ResType
+                      },
+                      nodeList: []
+                    });
+
+                    //bifEle += '<li class="link" data-archive="'+name+'" data-type="bif" data-resref="'+resref+'" data-resid="'+resource.ResType+'">'+resref+'</li>';
+                  }
+
+                  //bifEle += '</ul></li>';
+                  
+                  //str += bifEle;
+                  asyncLoop._Loop();
+                }
+              });
+              bifLoader.Begin(() => {
+                //console.log(str);
+                $ul.html(buildNodeList(nodeList));
+                
+                $('li.link', $ul).on('click', (e) => {
+                  e.preventDefault();
+
+                  let resref = e.target.dataset.resref;
+                  let resid = parseInt(e.target.dataset.resid);
+
+                  let type = e.target.dataset.type;
+                  let archive = e.target.dataset.archive;
+
+                  let file_path = type+'.'+archive+'://'+resref+'.'+ResourceTypes.getKeyByValue(resid);
+                  FileTypeManager.onOpenResource(file_path);
+                  console.log('open', resref, resid, file_path);
+                  /*switch(resid){
+                    case ResourceTypes['mdl']:
+                    case ResourceTypes['mdx']:
+                      let modelTab = tabManager.AddTab(
+                        new ModelViewerTab(
+                          file_path
+                        )
+                      );
+                    break;
+                  }*/
+
+                })
+
+                loader.Hide();
+                tabManager.AddTab(new QuickStartTab());
+                tabManager.AttachTo($('#renderer-container #tabs-container'));
+
+                console.log(nodeList);
+                window.temp1 = nodeList;
+              });
+              
+            }
+          });
+        },
+        onError: () => {
+          console.log('Failed to verify the path for', GameKey);
+          loader.Dismiss();
+          let gameFinderWizard = new GameFinderWizard({
+            onUpdate: () => {
+              initialize();
+            },
+            onCancel: () => {
+              window.canUnload = true;
+              ipcRenderer.send('CloseMain', true);
+            }
+          });
+        }
+      });
+
+    }
+
+    function verifyGame(args = {}){
+
+      args = $.extend({
+        game: _Game,
+        onVerify: null,
+        onError: null
+      }, args);
+
+      let verifiedPaths = gamePathVerify();
+
+      if(verifiedPaths[args.game]){
+        if(args.onVerify != null)
+          args.onVerify();
+      }else{
+        if(args.onError != null)
+          args.onError();
+      }
+
+    }
+
+
+
+
+
+  //inlineAudioPlayer.OpenAudio(new AudioFile('D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_area_acad.wav'));
+
+  window.canUnload = false;
+
+  // window.onbeforeunload = (e) => {
+  //   if(!window.canUnload)
+  //     console.log('I do not want to be closed');
+  //
+  //   //let closeDialog = new Dialog();
+  //
+  //   // Unlike usual browsers that a message box will be prompted to users, returning
+  //   // a non-void value will silently cancel the close.
+  //   // It is recommended to use the dialog API to let the user confirm closing the
+  //   // application.
+  //   e.returnValue = true;//window.canUnload;
+  // };
+
+
+  </script>
+  <!--script type="text/javascript" src="js/script.js"></script-->
+  </body>
+</html>

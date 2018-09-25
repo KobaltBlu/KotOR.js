@@ -1,0 +1,29 @@
+{
+  "name": "kotor",
+  "version": "1.0.0",
+  "description": "KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "install-app-deps"
+  },
+  "author": "KobaltBlu",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "electron-rebuild": "^1.5.11"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "blueimp-md5": "^2.10.0",
+    "electron": "^2.0.9",
+    "electron-is-running-in-asar": "^1.0.0",
+    "jquery": "^3.2.1",
+    "node-int64": "^0.4.0",
+    "object-hash": "^1.3.0",
+    "recursive-readdir": "^2.2.2",
+    "signals": "^1.0.0",
+    "string_decoder": "^1.1.1",
+    "three": "^0.93.0",
+    "three-bmfont-text": "^2.3.0"
+  }
+}

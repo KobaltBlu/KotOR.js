@@ -1,0 +1,184 @@
+<div>
+  <div class="col-sm-12">
+    <h3>Creature Editor</h3>
+  </div>
+  <div class="vertical-tabs">
+    <div class="col-sm-3 navbar navbar-sidebar-wizard" role="navigation">
+      <ul class="nav sidebar-nav">
+        <li class="active"><a href="#utc-tab-basic-{tabId}"><span class="glyphicon glyphicon-user"></span> Basic</a></li>
+        <li><a href="#utc-tab-stats-{tabId}"><span class="glyphicon glyphicon-knight"></span> Stats</a></li>
+        <li><a href="#utc-tab-skills-{tabId}"><span class="glyphicon glyphicon-wrench"></span> Skills</a></li>
+        <li><a href="#utc-tab-advanced-{tabId}"><span class="glyphicon glyphicon-chevron-up"></span> Advanced</a></li>
+        <li><a href="#utc-tab-feats-{tabId}"><span class="glyphicon glyphicon-screenshot"></span> Feats</a></li>
+        <li><a href="#utc-tab-force-{tabId}"><span class="glyphicon glyphicon-certificate"></span> Force Powers</a></li>
+        <li><a href="#utc-tab-class-{tabId}"><span class="glyphicon glyphicon-fire"></span> Class</a></li>
+        <li><a href="#utc-tab-special-{tabId}"><span class="glyphicon glyphicon-flash"></span> Special Abilities</a></li>
+        <li><a href="#utc-tab-scripts-{tabId}"><span class="glyphicon glyphicon-play"></span> Scripts</a></li>
+        <li><a href="#utc-tab-inventory-{tabId}"><span class="glyphicon glyphicon-play"></span> Inventory</a></li>
+        <li><a href="#utc-tab-comments-{tabId}"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
+      </ul>
+    </div>
+    <div id="editor-content" class="col-sm-9 tabs">
+      <!-- Basic -->
+      <div id="utc-tab-basic-{tabId}" class="tab-pane" style="display: block;">
+        <h3>Basic</h3>
+
+        <label for="utc-first-name-{tabId}">First Name</label>
+        <input id="utc-first-name-{tabId}" type="text" disabled />
+
+        <label for="utc-last-name-{tabId}">Last Name</label>
+        <input id="utc-last-name-{tabId}" type="text" disabled />
+
+        <label for="utc-tag-{tabId}">Tag</label>
+        <input id="utc-tag-{tabId}" type="text" maxlength="16" />
+
+        <label for="utc-race-{tabId}">Race</label>
+        <select id="utc-race-{tabId}"></select>
+
+        <label for="utc-appearance-{tabId}">Appearance</label>
+        <select id="utc-appearance-{tabId}"></select>
+
+        <label for="utc-phenotype-{tabId}">Phenotype</label>
+        <select id="utc-phenotype-{tabId}"></select>
+
+        <label for="utc-gender-{tabId}">Gender</label>
+        <select id="utc-gender-{tabId}"></select>
+
+        <label for="utc-description-{tabId}">Description</label>
+        <input id="utc-description-{tabId}" type="text" />
+
+        <label for="utc-bodybag-{tabId}">BodyBag</label>
+        <select id="utc-bodybag-{tabId}"></select>
+
+        <fieldset>
+          <legend>Portrait</legend>
+          <select id="utc-portrait-{tabId}"></select>
+        </fieldset>
+
+        <label for="utc-dialog-{tabId}">Dialog</label>
+        <input id="utc-dialog-{tabId}" type="text" />
+
+        <input id="utc-dialog-no-interrupt-{tabId}" type="checkbox" /><label for="utc-dialog-no-interrupt-{tabId}">No Interrupt</label>
+      </div>
+      <!-- Stats -->
+      <div id="utc-tab-stats-{tabId}" class="tab-pane">
+        <h3>Stats</h3>
+
+        <label for="utc-strength-{tabId}">Strength</label>
+        <input id="utc-strength-{tabId}" type="number" min="0" />
+
+        <label for="utc-dexterity-{tabId}">Dexterity</label>
+        <input id="utc-dexterity-{tabId}" type="number" min="0" />
+
+        <label for="utc-constitution-{tabId}">Constitution</label>
+        <input id="utc-constitution-{tabId}" type="number" min="0" />
+
+        <label for="utc-itelligence-{tabId}">Intelligence</label>
+        <input id="utc-itelligence-{tabId}" type="number" min="0" />
+
+        <label for="utc-wisdom-{tabId}">Wisdom</label>
+        <input id="utc-wisdom-{tabId}" type="number" min="0" />
+
+        <label for="utc-charisma-{tabId}">Charisma</label>
+        <input id="utc-charisma-{tabId}" type="number" min="0" />
+
+        <label for="utc-fortitude-save-{tabId}">Fortitude Save</label>
+        <input id="utc-fortitude-save-{tabId}" type="number" min="0" />
+
+        <label for="utc-reflex-save-{tabId}">Reflex Save</label>
+        <input id="utc-reflex-save-{tabId}" type="number" min="0" />
+
+        <label for="utc-will-save-{tabId}">Will Save</label>
+        <input id="utc-will-save-{tabId}" type="number" min="0" />
+
+        <label for="utc-natural-ac-{tabId}">Natural AC</label>
+        <input id="utc-natural-ac-{tabId}" type="number" min="0" />
+
+        <label for="utc-base-hp-{tabId}">Base Hit Points</label>
+        <input id="utc-base-hp-{tabId}" type="number" min="0" />
+
+        <label for="utc-current-hp-{tabId}">Current Hit Points</label>
+        <input id="utc-current-hp-{tabId}" type="number" min="0" />
+
+        <label for="utc-max-hp-{tabId}">Max Hit Points</label>
+        <input id="utc-max-hp-{tabId}" type="number" min="0" />
+
+        <label for="utc-walk-rate-{tabId}">Movement Rate</label>
+        <select id="utc-walk-rate-{tabId}"></select>
+
+      </div>
+      <!-- Skills -->
+      <div id="utc-tab-skills-{tabId}" class="tab-pane">
+        <h3>Skills</h3>
+
+        <label for="utc-computer-use-{tabId}">Computer Use</label>
+        <input id="utc-computer-use-{tabId}" type="number" min="0" />
+
+        <label for="utc-demolitions-{tabId}">Demolitions</label>
+        <input id="utc-demolitions-{tabId}" type="number" min="0" />
+
+        <label for="utc-stealth-{tabId}">Stealth</label>
+        <input id="utc-stealth-{tabId}" type="number" min="0" />
+
+        <label for="utc-awareness-{tabId}">Awareness</label>
+        <input id="utc-awareness-{tabId}" type="number" min="0" />
+
+        <label for="utc-persuade-{tabId}">Persuade</label>
+        <input id="utc-persuade-{tabId}" type="number" min="0" />
+
+        <label for="utc-repair-{tabId}">Repair</label>
+        <input id="utc-repair-{tabId}" type="number" min="0" />
+
+        <label for="utc-security-{tabId}">Security</label>
+        <input id="utc-security-{tabId}" type="number" min="0" />
+
+        <label for="utc-treat-injury-{tabId}">Treat Injury</label>
+        <input id="utc-treat-injury-{tabId}" type="number" min="0" />
+
+      </div>
+      <!-- Advanced -->
+      <div id="utc-tab-advanced-{tabId}" class="tab-pane">
+        <h3>Advanced</h3>
+      </div>
+      <!-- Feats -->
+      <div id="utc-tab-feats-{tabId}" class="tab-pane">
+        <h3>Feats</h3>
+      </div>
+      <!-- Force -->
+      <div id="utc-tab-force-{tabId}" class="tab-pane">
+        <h3>Force</h3>
+      </div>
+      <!-- Class -->
+      <div id="utc-tab-class-{tabId}" class="tab-pane">
+        <h3>Class</h3>
+      </div>
+      <!-- Special -->
+      <div id="utc-tab-special-{tabId}" class="tab-pane">
+        <h3>Special</h3>
+      </div>
+      <!-- Scripts -->
+      <div id="utc-tab-scripts-{tabId}" class="tab-pane">
+        <h3>Scripts</h3>
+      </div>
+      <!-- Stats -->
+      <div id="utc-tab-inventory-{tabId}" class="tab-pane">
+        <h3>Inventory</h3>
+        <div id="utc-inventory-slots-{tabId}" class="iSlots">
+          <div id="utc-inventory-slot-implant-{tabId}" class="iSlot iimplant"></div>
+          <div id="utc-inventory-slot-head-{tabId}"    class="iSlot ihead"></div>
+          <div id="utc-inventory-slot-wrists-{tabId}"  class="iSlot ihands"></div>
+          <div id="utc-inventory-slot-larm-{tabId}"    class="iSlot iforearm_l"></div>
+          <div id="utc-inventory-slot-chest-{tabId}"   class="iSlot iarmor"></div>
+          <div id="utc-inventory-slot-rarm-{tabId}"    class="iSlot iforearm_r"></div>
+          <div id="utc-inventory-slot-lhand-{tabId}"   class="iSlot ihand_l"></div>
+          <div id="utc-inventory-slot-belt-{tabId}"    class="iSlot ibelt"></div>
+          <div id="utc-inventory-slot-rhand-{tabId}"   class="iSlot ihand_r"></div>
+        </div>
+      </div>
+      <!-- Comments -->
+      <div id="utc-tab-comments-{tabId}" class="tab-pane">
+        <h3>Comments</h3>
+      </div>
+    </div>
+  </div>
+</div>

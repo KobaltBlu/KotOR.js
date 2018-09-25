@@ -1,0 +1,91 @@
+{
+	"first_run": true,
+	"Games": {
+		"KOTOR": {
+			"Location": null
+		},
+		"TSL": {
+			"Location": "D:\\Games\\LucasArts\\Star Wars - KotOR2"
+		}
+	},
+	"Theme": {
+		"NSS": {
+			"keywords": {
+				"color": "#ffb800",
+				"fontSize": "inherit"
+			},
+			"methods": {
+				"color": "#1d7fd9",
+				"fontSize": "inherit"
+			},
+			"constants": {
+				"color": "#9648ba",
+				"fontSize": "inherit"
+			}
+		},
+		"GFF": {
+			"struct": {
+				"label": {
+					"color": "#FFF",
+					"fontSize": "inherit"
+				},
+				"color": "#8476a2"
+			},
+			"field": {
+				"label": {
+					"color": "#FFF",
+					"fontSize": "inherit"
+				},
+				"color": "#337a9c"
+			}
+		}
+	},
+	"look_in_override": false,
+	"Editor": {
+		"Module": {
+			"Helpers": {
+				"creature": {
+					"visible": false
+				},
+				"door": {
+					"visible": false
+				},
+				"encounter": {
+					"visible": false
+				},
+				"placeable": {
+					"visible": false
+				},
+				"merchant": {
+					"visible": false
+				},
+				"sound": {
+					"visible": false
+				},
+				"trigger": {
+					"visible": false
+				},
+				"waypoint": {
+					"visible": false
+				}
+			}
+		}
+	},
+	"Panes": {
+		"left": {
+			"open": false
+		},
+		"right": {
+			"open": true
+		},
+		"top": {
+			"open": false
+		},
+		"bottom": {
+			"open": false
+		}
+	},
+	"Projects_Directory": "C:\\Users\\James\\Projects\\Electron\\KotOR\\js\\projects",
+	"recent_projects": [],
+	"recent_files": []
+}

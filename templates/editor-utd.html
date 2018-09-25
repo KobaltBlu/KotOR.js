@@ -1,0 +1,159 @@
+<div>
+  <div class="col-sm-12">
+    <h3>Creature Editor</h3>
+  </div>
+  <div class="vertical-tabs">
+    <div class="col-sm-3 navbar navbar-sidebar-wizard" role="navigation">
+      <ul class="nav sidebar-nav">
+        <li class="active"><a href="#utd-tab-basic-{tabId}"><span class="glyphicon glyphicon-user"></span> Basic</a></li>
+        <li><a href="#utd-tab-lock-{tabId}"><span class="glyphicon glyphicon-wrench"></span> Lock</a></li>
+        <li><a href="#utd-tab-advanced-{tabId}"><span class="glyphicon glyphicon-chevron-up"></span> Advanced</a></li>
+        <li><a href="#utd-tab-scripts-{tabId}"><span class="glyphicon glyphicon-play"></span> Scripts</a></li>
+        <li><a href="#utd-tab-description-{tabId}"><span class="glyphicon glyphicon-flash"></span> Description</a></li>
+        <li><a href="#utd-tab-comments-{tabId}"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
+      </ul>
+    </div>
+    <div id="editor-content" class="col-sm-9 tabs">
+      <!-- Basic -->
+      <div id="utd-tab-basic-{tabId}" class="tab-pane" style="display: block;">
+        <h3>Basic</h3>
+
+        <label for="utd-name-{tabId}">Name</label>
+        <input id="utd-name-{tabId}" type="cexolocstring" />
+
+        <label for="utd-tag-{tabId}">Tag</label>
+        <input id="utd-tag-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-door-type-{tabId}">Door Type</label>
+        <select id="utd-door-type-{tabId}"></select>
+
+        <label for="utd-plot-item-{tabId}">Plot Item</label>
+        <input id="utd-plot-item-{tabId}" type="checkbox" />
+
+        <label for="utd-static-{tabId}">Static</label>
+        <input id="utd-static-{tabId}" type="checkbox" />
+
+        <label for="utd-hardness-{tabId}">Hardness</label>
+        <input id="utd-hardness-{tabId}" type="number" min="0" />
+
+        <label for="utd-hit-points-{tabId}">Hitpoints</label>
+        <input id="utd-hit-points-{tabId}" type="number" min="0" />
+
+        <label for="utd-fortitude-save-{tabId}">Forititude Save</label>
+        <input id="utd-fortitude-save-{tabId}" type="number" min="0" />
+
+        <label for="utd-reflex-save-{tabId}">Reflex Save</label>
+        <input id="utd-reflex-save-{tabId}" type="number" min="0" />
+
+        <label for="utd-will-save-{tabId}">Will Save</label>
+        <input id="utd-will-save-{tabId}" type="number" min="0" />
+
+      </div>
+      <!-- Lock -->
+      <div id="utd-tab-lock-{tabId}" class="tab-pane">
+        <h3>Lock</h3>
+
+        <label for="utd-locked-{tabId}">Locked</label>
+        <input id="utd-locked-{tabId}" type="checkbox" />
+
+        <label for="utd-relockable-{tabId}">Lockable</label>
+        <input id="utd-relockable-{tabId}" type="checkbox" />
+
+        <label for="utd-open-lock-dc-{tabId}">Open Lock DC</label>
+        <input id="utd-open-lock-dc-{tabId}" type="number" />
+
+        <label for="utd-close-lock-dc-{tabId}">Open Lock DC</label>
+        <input id="utd-close-lock-dc-{tabId}" type="number" />
+
+        <label for="utd-auto-remove-key-{tabId}">Auto Remove Key</label>
+        <input id="utd-auto-remove-key-{tabId}" type="checkbox" />
+
+        <label for="utd-key-required-{tabId}">Key Required</label>
+        <input id="utd-key-required-{tabId}" type="checkbox" />
+
+        <label for="utd-key-tag-{tabId}">Key Tag</label>
+        <input id="utd-key-tag-{tabId}" type="text" />
+
+      </div>
+      <!-- Advanced -->
+      <div id="utd-tab-advanced-{tabId}" class="tab-pane">
+        <h3>Advanced</h3>
+
+        <label for="utd-templateresref-{tabId}">TemplateResRef</label>
+        <input id="utd-templateresref-{tabId}" type="text" maxlength="16" disabled />
+
+        <label for="utd-faction-{tabId}">Faction</label>
+        <select id="utd-faction-{tabId}" ></select>
+
+        <label for="utd-conversation-{tabId}">Conversation</label>
+        <input id="utd-conversation-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-conversation-no-interrupt-{tabId}">Auto Remove Key</label>
+        <input id="utd-conversation-no-interrupt-{tabId}" type="checkbox" />
+
+        <label for="utd-animation-state{tabId}">Animation State</label>
+        <input id="utd-animation-state-{tabId}" type="number" />
+
+      </div>
+      <!-- Scripts -->
+      <div id="utd-tab-scripts-{tabId}" class="tab-pane">
+        <h3>Scripts</h3>
+
+        <label for="utd-on-click-{tabId}">OnClick</label>
+        <input id="utd-on-click-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-closed-{tabId}">OnClosed</label>
+        <input id="utd-on-closed-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-damaged-{tabId}">OnDamaged</label>
+        <input id="utd-on-damaged-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-death-{tabId}">OnDeath</label>
+        <input id="utd-on-death-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-disarm-{tabId}">OnDisarm</label>
+        <input id="utd-on-disarm-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-fail-to-open-{tabId}">OnFailToOpen</label>
+        <input id="utd-on-fail-to-open-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-heartbeat-{tabId}">OnHeartbeat</label>
+        <input id="utd-on-heartbeat-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-lock-{tabId}">OnLock</label>
+        <input id="utd-on-lock-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-melee-attacked-{tabId}">OnMeleeAttacked</label>
+        <input id="utd-on-melee-attacked-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-open-{tabId}">OnOpen</label>
+        <input id="utd-on-open-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-spell-cast-at-{tabId}">OnSpellCastAt</label>
+        <input id="utd-on-spell-cast-at-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-trap-triggered-{tabId}">OnTrapTriggered</label>
+        <input id="utd-on-trap-triggered-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-unlock-{tabId}">OnUnlock</label>
+        <input id="utd-on-unlock-{tabId}" type="text" maxlength="16" />
+
+        <label for="utd-on-user-defined-{tabId}">OnUserDefined</label>
+        <input id="utd-on-user-defined-{tabId}" type="text" maxlength="16" />
+
+      </div>
+      <!-- Description -->
+      <div id="utd-tab-description-{tabId}" class="tab-pane">
+        <h3>Description</h3>
+        <label for="utd-description-{tabId}">Description</label>
+        <textarea id="utd-description-{tabId}" type="cexolocstring" ></textarea>
+      </div>
+      <!-- Comments -->
+      <div id="utd-tab-comments-{tabId}" class="tab-pane">
+        <h3>Comments</h3>
+        <label for="utd-comments-{tabId}">Comments</label>
+        <textarea id="utd-comments-{tabId}" ></textarea>
+      </div>
+    </div>
+  </div>
+</div>

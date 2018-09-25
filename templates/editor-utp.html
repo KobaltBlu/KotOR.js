@@ -1,0 +1,82 @@
+<div>
+  <div class="col-sm-12">
+    <h3>Creature Editor</h3>
+  </div>
+  <div class="vertical-tabs">
+    <div class="col-sm-3 navbar navbar-sidebar-wizard" role="navigation">
+      <ul class="nav sidebar-nav">
+        <li class="active"><a href="#utp-tab-basic-{tabId}"><span class="glyphicon glyphicon-user"></span> Basic</a></li>
+        <li><a href="#utp-tab-lock-{tabId}"><span class="glyphicon glyphicon-wrench"></span> Lock</a></li>
+        <li><a href="#utp-tab-advanced-{tabId}"><span class="glyphicon glyphicon-chevron-up"></span> Advanced</a></li>
+        <li><a href="#utp-tab-scripts-{tabId}"><span class="glyphicon glyphicon-play"></span> Scripts</a></li>
+        <li><a href="#utp-tab-description-{tabId}"><span class="glyphicon glyphicon-flash"></span> Description</a></li>
+        <li><a href="#utp-tab-comments-{tabId}"><span class="glyphicon glyphicon-comment"></span> Comments</a></li>
+        <li><a href="#utp-tab-trap-{tabId}"><span class="glyphicon glyphicon-comment"></span> Trap</a></li>
+      </ul>
+    </div>
+    <div id="editor-content" class="col-sm-9 tabs">
+      <!-- Basic -->
+      <div id="utp-tab-basic-{tabId}" class="tab-pane" style="display: block;">
+        <h3>Basic</h3>
+
+        <label for="utp-name-{tabId}">Name</label>
+        <input id="utp-name-{tabId}" type="cexolocstring" />
+
+        <label for="utp-tag-{tabId}">Tag</label>
+        <input id="utp-tag-{tabId}" type="text" maxlength="16" />
+
+        <label for="utp-appearance-{tabId}">Appearance</label>
+        <select id="utp-appearance-{tabId}"></select>
+
+        <label for="utp-plot-item-{tabId}">Plot Item</label>
+        <input id="utp-plot-item-{tabId}" type="checkbox" />
+
+        <label for="utp-static-{tabId}">Static</label>
+        <input id="utp-static-{tabId}" type="checkbox" />
+
+        <label for="utp-min-1hp-{tabId}">Min 1HP</label>
+        <input id="utp-min-1hp-{tabId}" type="checkbox" />
+
+        <label for="utp-hardness-{tabId}">Hardness</label>
+        <input id="utp-hardness-{tabId}" type="number" min="0" />
+
+        <label for="utp-hit-points-{tabId}">Hitpoints</label>
+        <input id="utp-hit-points-{tabId}" type="number" min="0" />
+
+        <label for="utp-fortitude-save-{tabId}">Forititude Save</label>
+        <input id="utp-fortitude-save-{tabId}" type="number" min="0" />
+
+        <label for="utp-reflex-save-{tabId}">Reflex Save</label>
+        <input id="utp-reflex-save-{tabId}" type="number" min="0" />
+
+        <label for="utp-will-save-{tabId}">Will Save</label>
+        <input id="utp-will-save-{tabId}" type="number" min="0" />
+
+      </div>
+      <!-- Lock -->
+      <div id="utp-tab-lock-{tabId}" class="tab-pane">
+        <h3>Lock</h3>
+      </div>
+      <!-- Advanced -->
+      <div id="utp-tab-advanced-{tabId}" class="tab-pane">
+        <h3>Advanced</h3>
+      </div>
+      <!-- Scripts -->
+      <div id="utp-tab-scripts-{tabId}" class="tab-pane">
+        <h3>Scripts</h3>
+      </div>
+      <!-- Comments -->
+      <div id="utp-tab-comments-{tabId}" class="tab-pane">
+        <h3>Comments</h3>
+      </div>
+      <!-- Description -->
+      <div id="utp-tab-description-{tabId}" class="tab-pane">
+        <h3>Description</h3>
+      </div>
+      <!-- Trap -->
+      <div id="utp-tab-trap-{tabId}" class="tab-pane">
+        <h3>Trap</h3>
+      </div>
+    </div>
+  </div>
+</div>
