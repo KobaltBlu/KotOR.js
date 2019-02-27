@@ -1455,48 +1455,56 @@ class ModuleCreature extends ModuleCreatureController {
       let equipment = this.template.RootNode.GetFieldByLabel('Equip_ItemList').GetChildStructs() || [];
       for(let i = 0; i < equipment.length; i++){
         let strt = equipment[i];
-        let equippedRes = new ModuleItem(strt.GetFieldByLabel('EquippedRes').Value);
-        switch(strt.Type){
+        let equipped_item = undefined;
+        let slot_type = strt.Type;
+        if(strt.HasField('EquippedRes')){
+          equipped_item = new ModuleItem(strt.GetFieldByLabel('EquippedRes').GetValue());
+        }else{
+          console.log(this, GFFObject.FromStruct(strt));
+          equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
+        }
+        
+        switch(slot_type){
           case UTCObject.SLOT.HEAD:
-            this.equipment.HEAD = equippedRes;
+            this.equipment.HEAD = equipped_item;
           break;
           case UTCObject.SLOT.ARMS:
-            this.equipment.ARMS = equippedRes;
+            this.equipment.ARMS = equipped_item;
           break;
           case UTCObject.SLOT.ARMOR:
-            this.equipment.ARMOR = equippedRes;
+            this.equipment.ARMOR = equipped_item;
           break;
           case UTCObject.SLOT.LEFTHAND:
-            this.equipment.LEFTHAND = equippedRes;
+            this.equipment.LEFTHAND = equipped_item;
           break;
           case UTCObject.SLOT.RIGHTHAND:
-            this.equipment.RIGHTHAND = equippedRes;
+            this.equipment.RIGHTHAND = equipped_item;
           break;
           case UTCObject.SLOT.LEFTARMBAND:
-            this.equipment.LEFTARMBAND = equippedRes;
+            this.equipment.LEFTARMBAND = equipped_item;
           break;
           case UTCObject.SLOT.RIGHTARMBAND:
-            this.equipment.RIGHTARMBAND = equippedRes;
+            this.equipment.RIGHTARMBAND = equipped_item;
           break;
           case UTCObject.SLOT.IMPLANT:
-          this.equipment.IMPLANT = equippedRes;
+          this.equipment.IMPLANT = equipped_item;
           break;
           case UTCObject.SLOT.BELT:
-            this.equipment.BELT = equippedRes;
+            this.equipment.BELT = equipped_item;
           break;
 
           //Simple Creature Slots
           case UTCObject.SLOT.HIDE:
-            this.equipment.HIDE = equippedRes;
+            this.equipment.HIDE = equipped_item;
           break;
           case UTCObject.SLOT.CLAW1:
-            this.equipment.CLAW1 = equippedRes;
+            this.equipment.CLAW1 = equipped_item;
           break;
           case UTCObject.SLOT.CLAW2:
-            this.equipment.CLAW2 = equippedRes;
+            this.equipment.CLAW2 = equipped_item;
           break;
           case UTCObject.SLOT.CLAW3:
-            this.equipment.CLAW3 = equippedRes;
+            this.equipment.CLAW3 = equipped_item;
           break;
         }
       }
