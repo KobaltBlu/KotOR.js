@@ -25,8 +25,6 @@ var saturationShader = {
   ].join("\n")
 };
 
-
-
 function pad(n, width, z) {
   z = z || '0';
   n = n + '';
@@ -50,6 +48,8 @@ const StringDecoder = require('string_decoder').StringDecoder;
 const createGeometry = require('three-bmfont-text');
 const objectHash = require('object-hash');
 var Promise = require("bluebird");
+
+const isRunningInAsar = require('electron-is-running-in-asar');
 
 
 const Games = {
@@ -91,27 +91,8 @@ const FileLoader = require(path.join(app.getAppPath(), 'js/FileLoader.js'));
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
 const GameInitializer = require(path.join(app.getAppPath(), 'js/GameInitializer.js'));
 const AppearanceLoader = require(path.join(app.getAppPath(), 'js/AppearanceLoader.js'));
-const OffscreenRenderer = require(path.join(app.getAppPath(), 'js/OffscreenRenderer.js'));
+//const UI3DRenderer = require(path.join(app.getAppPath(), 'js/UI3DRenderer.js'));
 const PixelManager = require(path.join(app.getAppPath(), 'js/PixelManager.js'));
-
-/* Editor */
-
-//const VerticalTabs = require(path.join(app.getAppPath(), 'js/VerticalTabs.js'));
-//const NotificationManager = require(path.join(app.getAppPath(), 'js/NotificationManager.js'));
-//const Wizard = require(path.join(app.getAppPath(), 'js/Wizard.js'));
-//const Modal = require(path.join(app.getAppPath(), 'js/Modal.js'));
-//const Project = require(path.join(app.getAppPath(), 'js/Project.js'));
-//const GameFinderWizard = require(path.join(app.getAppPath(), 'js/GameFinderWizard.js'));
-//const NewProjectWizard = require(path.join(app.getAppPath(), 'js/NewProjectWizard.js'));
-//const LevelSelectWizard = require(path.join(app.getAppPath(), 'js/LevelSelectWizard.js'));
-//const ObjectPropertiesWizard = require(path.join(app.getAppPath(), 'js/ObjectPropertiesWizard.js'));
-//const TemplateResRefPickerWizard = require(path.join(app.getAppPath(), 'js/TemplateResRefPickerWizard.js'));
-//const CExoLocStringWizard = require(path.join(app.getAppPath(), 'js/CExoLocStringWizard.js'));
-//const CExoLocSubStringWizard = require(path.join(app.getAppPath(), 'js/CExoLocSubStringWizard.js'));
-//const CreatureAppearanceWizard = require(path.join(app.getAppPath(), 'js/CreatureAppearanceWizard.js'));
-//const ConfigWizard = require(path.join(app.getAppPath(), 'js/ConfigWizard.js'));
-//const {TreeView} = require(path.join(app.getAppPath(), 'js/editor/TreeView.js'));
-//const {TreeViewNode} = require(path.join(app.getAppPath(), 'js/editor/TreeView.js'));
 
 /* Aurora */
 
@@ -146,6 +127,8 @@ const LIPObject = require(path.join(app.getAppPath(), 'js/LIPObject.js'));
 const LYTObject = require(path.join(app.getAppPath(), 'js/LYTObject.js'));
 const RIMObject = require(path.join(app.getAppPath(), 'js/RIMObject.js'));
 const TGAObject = require(path.join(app.getAppPath(), 'js/TGAObject.js'));
+const SSFObject = require(path.join(app.getAppPath(), 'js/SSFObject.js'));
+const LTRObject = require(path.join(app.getAppPath(), 'js/LTRObject.js'));
 const TLKObject = require(path.join(app.getAppPath(), 'js/TLKObject.js'));
 const TLKString = require(path.join(app.getAppPath(), 'js/TLKString.js'));
 const TPCObject = require(path.join(app.getAppPath(), 'js/TPCObject.js'));
@@ -221,7 +204,7 @@ const ResourceLoader = require(path.join(app.getAppPath(), 'js/ResourceLoader.js
 const IngameControls = require(path.join(app.getAppPath(), 'js/IngameControls.js'));
 const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
 
-let Config = new ConfigManager('./settings.json');
+let Config = new ConfigManager('settings.json');
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
 let Global = remote.getCurrentWebContents().MyGlobal;
 let Clipboard = null;
@@ -253,18 +236,33 @@ const Engine = require(path.join(app.getAppPath(), 'js/Engine.js'));
 
 let Game;
 if(GameKey == 'TSL'){
+
+  let menus = fs.readdirSync(path.join(app.getAppPath(), 'js/game/', 'tsl', 'menu'));
+  for(let i = 0; i < menus.length; i++){
+    let menuPath = path.parse(menus[i]);
+    window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/tsl/menu/', menuPath.base)); 
+  }
+
+
   /* GUI Menus */
-  window.MainMenu = require(path.join(app.getAppPath(), 'js/game/tsl/menu/MainMenu.js')); 
+  /*window.MainMenu = require(path.join(app.getAppPath(), 'js/game/tsl/menu/MainMenu.js')); 
   window.LoadScreen = require(path.join(app.getAppPath(), 'js/game/tsl/menu/LoadScreen.js')); 
   window.InGameOverlay = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameOverlay.js'));
   window.InGameDialog = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameDialog.js'));
   window.InGameComputer = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameComputer.js'));
   window.MenuContainer = require(path.join(app.getAppPath(), 'js/game/tsl/menu/MenuContainer.js'));
+  window.InGameConfirm = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameConfirm.js'));*/
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
 }else{
 
+  let menus = fs.readdirSync(path.join(app.getAppPath(), 'js/game/', 'kotor', 'menu'));
+  for(let i = 0; i < menus.length; i++){
+    let menuPath = path.parse(menus[i]);
+    window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/kotor/menu/', menuPath.base)); 
+  }
+
   /* GUI Menus */
-  window.MainMenu = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainMenu.js')); 
+  /*window.MainMenu = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainMenu.js')); 
   window.MainOptions = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainOptions.js')); 
   window.MainMovies = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainMovies.js')); 
   window.MenuSaveLoad = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuSaveLoad.js')); 
@@ -297,7 +295,7 @@ if(GameKey == 'TSL'){
   window.MenuGraphics = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuGraphics.js'));
   window.MenuResolutions = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuResolutions.js'));
   window.MenuSound = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuSound.js'));
-  window.MenuTop = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuTop.js'));
+  window.MenuTop = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuTop.js'));*/
 
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
 }
@@ -320,13 +318,13 @@ let ControllerType = {
   ColorEnd             : 380,
   ColorStart           : 392,
   CombineTime          : 96,
-  Drag                 : 124,
+  Drag                 : 100,
   FPS                  : 104,
   FrameEnd             : 108,
   FrameStart           : 112,
   Grav                 : 116,
   LifeExp              : 120,
-  Mass                 : 116,
+  Mass                 : 124,
   Threshold            : 164,
   P2P_Bezier2          : 128,
   P2P_Bezier3          : 132,
@@ -341,7 +339,7 @@ let ControllerType = {
   Velocity             : 168,
   XSize                : 172,
   YSize                : 176,
-  BlurLength           : 204,
+  BlurLength           : 180,
   LightningDelay       : 184,
   LightningRadius      : 188,
   LightningScale       : 192,

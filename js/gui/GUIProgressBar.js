@@ -27,7 +27,9 @@ class GUIProgressBar extends GUIControl {
 
   setProgress(val = 100){
 
-    this.curValue = val;
+    this.curValue = val < 0 ? 0 : val;
+    this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
+    
     let value = this.curValue / this.maxValue;
 
     let extent = this.getFillExtent();

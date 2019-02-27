@@ -12,11 +12,14 @@ class ModuleTrigger extends ModuleObject {
 
     this.template = gff;
     this.objectsInside = [];
+    this.objectsInsideIdx = 0;
     this.lastObjectEntered = null;
     this.lastObjectExited = null;
 
     this.tag = '';
     this.vertices = [];
+
+    this.triggered = false;
 
   }
 
@@ -112,6 +115,8 @@ class ModuleTrigger extends ModuleObject {
           this.template.Merge(gff);
           this.InitProperties();
           this.LoadScripts( () => {
+            this.buildGeometry();
+            this.initObjectsInside();
             if(onLoad != null)
               onLoad(this.template);
           });
@@ -127,10 +132,88 @@ class ModuleTrigger extends ModuleObject {
       //console.log('Trigger savegame')
       this.InitProperties();
       this.LoadScripts( () => {
+        this.buildGeometry();
+        this.initObjectsInside();
         if(onLoad != null)
           onLoad(this.template);
       });
 
+    }
+  }
+
+  buildGeometry(){
+    var trigGeom = this.getGeometry();
+
+    let material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color( 0xFFFFFF ),
+      side: THREE.DoubleSide
+    });
+
+    switch(this.getType()){
+      case UTTObject.Type.GENERIC:
+        material.color.setHex(0xFF0000)
+      break;
+      case UTTObject.Type.TRANSITION:
+        material.color.setHex(0x00FF00)
+      break;
+      case UTTObject.Type.TRAP:
+        material.color.setHex(0xFFEB00)
+      break;
+    }
+
+    this.mesh = new THREE.Mesh( trigGeom, material );
+    this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
+
+    this.mesh.box = this.box = new THREE.Box3().setFromObject(this.mesh);
+
+    this.mesh.box.min.z -= 100;
+    this.mesh.box.max.z += 100;
+
+    /*
+    Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
+    */
+
+    //this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
+
+    this.mesh.moduleObject = this;
+    this.mesh.visible = false;
+    Game.group.triggers.add(this.mesh);
+  }
+
+  //Some modules have exit triggers that are placed in the same location that the player spawns into
+  //This is my way of keeping the player from immediately activating the trigger
+  //They will be added to the objectsInside array without triggering the onEnter script
+  //If they leave the trigger and then return it will then fire normally
+  initObjectsInside(){
+    //Check to see if this trigger is linked to another module
+    if(this.linkedToModule){
+      //Check Party Members
+      let partyLen = PartyManager.party.length;
+      for(let i = 0; i < partyLen; i++){
+        let partymember = PartyManager.party[i];
+        if(this.box.containsPoint(partymember.position)){
+          if(this.objectsInside.indexOf(partymember) == -1){
+            this.objectsInside.push(partymember);
+
+            partymember.lastTriggerEntered = this;
+            this.lastObjectEntered = partymember;
+          }
+        }
+      }
+    }else{
+      //Check Creatures
+      let creatureLen = Game.module.area.creatures.length;
+      for(let i = 0; i < creatureLen; i++){
+        let creature = Game.module.area.creatures[i];
+        if(this.box.containsPoint(creature.position)){
+          if(this.objectsInside.indexOf(creature) == -1){
+            this.objectsInside.push(creature);
+
+            creature.lastTriggerEntered = this;
+            this.lastObjectEntered = creature;
+          }
+        }
+      }
     }
   }
 
@@ -139,8 +222,10 @@ class ModuleTrigger extends ModuleObject {
     super.update(delta);
     
     this.getCurrentRoom();
-    if(!this.room.model.visible)
-      return;
+    try{
+      if(!this.room.model.visible)
+        return;
+    }catch(e){}
 
     this.action = this.actionQueue[0];
 
@@ -202,23 +287,26 @@ class ModuleTrigger extends ModuleObject {
     for(let i = 0; i < creatureLen; i++){
       let creature = Game.module.area.creatures[i];
       let pos = creature.position.clone();
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(creature) == -1){
-          this.objectsInside.push(creature);
+      if(!this.triggered && this.isHostile(creature)){
+        if(this.box.containsPoint(pos)){
+          if(this.objectsInside.indexOf(creature) == -1){
+            this.objectsInside.push(creature);
 
-          creature.lastTriggerEntered = this;
-          this.lastObjectEntered = creature;
+            creature.lastTriggerEntered = this;
+            this.lastObjectEntered = creature;
 
-          this.onEnter(creature);
-        }
-      }else{
-        if(this.objectsInside.indexOf(creature) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
+            this.onEnter(creature);
+            this.triggered = true;
+          }
+        }else{
+          if(this.objectsInside.indexOf(creature) >= 0){
+            this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
 
-          creature.lastTriggerExited = this;
-          this.lastObjectExited = creature;
+            creature.lastTriggerExited = this;
+            this.lastObjectExited = creature;
 
-          this.onExit(creature);
+            this.onExit(creature);
+          }
         }
       }
     }
@@ -228,27 +316,29 @@ class ModuleTrigger extends ModuleObject {
     for(let i = 0; i < partyLen; i++){
       let partymember = PartyManager.party[i];
       let pos = partymember.position.clone();
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(partymember) == -1){
-          this.objectsInside.push(partymember);
+      if(!this.triggered && this.isHostile(partymember)){
+        if(this.box.containsPoint(pos)){
+          if(this.objectsInside.indexOf(partymember) == -1){
+            this.objectsInside.push(partymember);
 
-          partymember.lastTriggerEntered = this;
-          this.lastObjectEntered = partymember;
+            partymember.lastTriggerEntered = this;
+            this.lastObjectEntered = partymember;
 
-          this.onEnter(partymember);
-        }
-      }else{
-        if(this.objectsInside.indexOf(partymember) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
+            this.onEnter(partymember);
+            this.triggered = true;
+          }
+        }else{
+          if(this.objectsInside.indexOf(partymember) >= 0){
+            this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
 
-          partymember.lastTriggerExited = this;
-          this.lastObjectExited = partymember;
+            partymember.lastTriggerExited = this;
+            this.lastObjectExited = partymember;
 
-          this.onExit(partymember);
+            this.onExit(partymember);
+          }
         }
       }
     }
-
   }
 
   onEnter(object = undefined){
@@ -260,8 +350,10 @@ class ModuleTrigger extends ModuleObject {
       }
     }else{
       if(this.scripts.onEnter instanceof NWScript){
-        this.scripts.onEnter.enteringObject = object;
-        this.scripts.onEnter.run(this)
+        let script = this.scripts.onEnter.clone();
+        script.enteringObject = object;
+        script.run(this);
+        //console.log('trigger', object, this);
       }
     }
   }

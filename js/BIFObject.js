@@ -21,7 +21,7 @@ class BIFObject {
             throw 'BIFObject: Failed to open '+this.file+' for reading.';
             return;
         }
-        var header = new Buffer(this.HeaderSize);
+        var header = Buffer.alloc(this.HeaderSize);
         fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
           this.reader = new BinaryReader(header);
 
@@ -37,7 +37,7 @@ class BIFObject {
           header = this.reader = null;
 
           //Read variable tabs blocks
-          var variableTable = new Buffer(this.VariableTableSize);
+          var variableTable = Buffer.alloc(this.VariableTableSize);
           fs.read(fd, variableTable, 0, this.VariableTableSize, this.VariableTableOffset, (err, num) => {
             this.reader = new BinaryReader(variableTable);
 
@@ -53,7 +53,7 @@ class BIFObject {
             variableTable = this.reader = null;
 
             if(typeof onComplete == 'function')
-              onComplete();
+              onComplete(this);
 
             fs.close(fd, function(error) {
               if (error) {
@@ -72,7 +72,7 @@ class BIFObject {
     }catch(e){
       console.log('BIF Open Error', e);
       if(typeof onComplete == 'function')
-        onComplete();
+        onComplete(this);
     }
 
   }
@@ -141,7 +141,7 @@ class BIFObject {
 
       }else{
         if(typeof onComplete == 'function')
-          onComplete(new Buffer(0));
+          onComplete(Buffer.alloc(0));
       }
     }else{
       if(typeof onError == 'function')
@@ -152,7 +152,7 @@ class BIFObject {
   GetResourceDataSync(res = null){
     if(res != null){
       let fd = fs.openSync(this.file, 'r');
-      let buffer = new Buffer(res.FileSize);
+      let buffer = Buffer.alloc(res.FileSize);
       fs.readSync(fd, buffer, 0, res.FileSize, res.Offset);
       fs.closeSync(fd);
       return buffer;

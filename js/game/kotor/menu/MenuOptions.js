@@ -28,36 +28,36 @@ class MenuOptions extends GameMenu {
         this.BTN_EXIT = this.getControlByName('BTN_EXIT');
         this.BTN_QUIT = this.getControlByName('BTN_QUIT');
 
-        this.BTN_EXIT.onClick = (e) => {
+        this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.InGameOverlay.Show();
-        }
+        });
 
-        this.BTN_LOADGAME.onClick = (e) => {
+        this.BTN_LOADGAME.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuSaveLoad.mode = 'load';
           Game.MenuSaveLoad.Show();
-        }
+        });
 
-        this.BTN_SAVEGAME.onClick = (e) => {
+        this.BTN_SAVEGAME.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuSaveLoad.mode = 'save';
           Game.MenuSaveLoad.Show();
-        }
+        });
 
-        this.BTN_GRAPHICS.onClick = (e) => {
+        this.BTN_GRAPHICS.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MenuTop.Hide();
           Game.MenuGraphics.Show();
-        }
+        });
 
-        this.BTN_SOUND.onClick = (e) => {
+        this.BTN_SOUND.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MenuTop.Hide();
           Game.MenuSound.Show();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

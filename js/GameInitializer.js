@@ -224,15 +224,24 @@ class GameInitializer {
       let res = Global.kotorBIF['2da'].resources[i];
       let ResKey = Global.kotorKEY.GetFileKeyByRes(res);
 
-      Global.kotorBIF["2da"].GetResourceData(Global.kotorBIF["2da"].GetResourceByLabel(ResKey.ResRef, ResourceTypes['2da']), (d) => {
+      //Load 2da's with the resource loader to it can pick up ones in the override folder
+      ResourceLoader.loadResource(ResourceTypes['2da'], ResKey.ResRef, (d) => {
         Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
           loaded++;
           if(loaded == resourceCount)
             if(onSuccess != null)
               onSuccess();
         });
-
       });
+
+      /*Global.kotorBIF["2da"].GetResourceData(Global.kotorBIF["2da"].GetResourceByLabel(ResKey.ResRef, ResourceTypes['2da']), (d) => {
+        Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
+          loaded++;
+          if(loaded == resourceCount)
+            if(onSuccess != null)
+              onSuccess();
+        });
+      });*/
     }
 
   }
@@ -280,9 +289,6 @@ class GameInitializer {
     let root = path.join(Config.options.Games[GameKey].Location, args.folder);
     let dir = {name: args.folder, dirs: [], files: []};
 
-    /*if(args.onSuccess != null)
-      args.onSuccess();*/
-
     recursive(root, (err, files) => {
       // Files is an array of filename
       for(let i = 0; i!=files.length; i++){
@@ -294,7 +300,7 @@ class GameInitializer {
         
         if(typeof ResourceTypes[ext] != 'undefined'){
           //console.log(ext);
-          ResourceLoader.setResource(ResourceTypes[ext], _parsed.name, {
+          ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
             inArchive: false,
             file: f,
             resref: _parsed.name,

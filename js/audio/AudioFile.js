@@ -109,7 +109,7 @@ class AudioFile {
 
       this.data = this.data.Slice(470, this.data.Length()); //Remove the fake data
       this.header = this.ReadWavHeader(this.data);
-      console.log(this.header);
+      //console.log(this.header);
       this.data.Seek(0);
 
       if(onComplete != null)
@@ -185,11 +185,11 @@ class AudioFile {
         if(this.header.format == AudioFile.WAVE_ENCODING.ADPCM){
 
           let rawDataOffset = 60;
-          console.log('rawDataOffset', rawDataOffset);
+          //console.log('rawDataOffset', rawDataOffset);
           this.data.Seek(rawDataOffset);
           let dataADPCM = this.data.ReadBytes(this.data.Length() - (rawDataOffset));
           let adpcm = new ADPCMDecoder({header: this.header, data: Buffer.from(dataADPCM)});
-          console.log('ADPCMDecoder', adpcm);
+          //console.log('ADPCMDecoder', adpcm);
 
           let decompiled = this.BuildWave({
             sampleRate: this.header.sampleRate,
@@ -294,9 +294,9 @@ class AudioFile {
 
     let riffSize = data.length + waveHeaderLen;
 
-    console.log(header)
-    console.log((header.channels == 2 ? 4 : 2))
-    console.log(header.sampleRate * (header.channels == 2 ? 4 : 2));
+    //console.log(header)
+    //console.log((header.channels == 2 ? 4 : 2))
+    //console.log(header.sampleRate * (header.channels == 2 ? 4 : 2));
 
     //header.sampleRate = header.sampleRate / 2;
     //header.channels = 2;

@@ -23,12 +23,10 @@ class CharGenName extends GameMenu {
 
         this.NAME_BOX_EDIT = this.getControlByName('NAME_BOX_EDIT');
 
-        this.NAME_BOX_EDIT.setText('Hello World');
-
-        this.NAME_BOX_EDIT.onClick = (e) => {
+        this.NAME_BOX_EDIT.addEventListener('click', (e) => {
           e.stopPropagation();
 
-        }
+        });
 
         this.NAME_BOX_EDIT.onKeyDown = (e) => {
           //e.stopPropagation();
@@ -60,21 +58,21 @@ class CharGenName extends GameMenu {
 
         }
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           
           this.Hide();
           Game.CharGenMain.Show();
 
-        }
+        });
 
-        this.END_BTN.onClick = (e) => {
+        this.END_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
-
+          Game.player.firstName = this.NAME_BOX_EDIT.text.text;
           this.Hide();
           Game.CharGenMain.Show();
 
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -82,6 +80,11 @@ class CharGenName extends GameMenu {
       }
     })
 
+  }
+
+  Show(){
+    super.Show();
+    this.NAME_BOX_EDIT.setText(Game.player.firstName);
   }
 
 }

@@ -1,31 +1,6 @@
 class ScriptEditorTab extends EditorTab {
-  constructor(){
-    super({
-      toolbar: {
-        items: [
-          {name: 'File', items: [
-            {name: 'Open File', onClick: () => {
-              this.OpenFileDialog();
-            }},
-            {name: 'Save File', onClick: () => {
-              //Save the image data as a TGA image
-              this.SaveFileDialog();
-            }},
-            {name: 'Compile File', onClick: () => {
-              //Save the image data as a TGA image
-              this.Compile({
-                path: this.info
-              });
-            }}
-          ]},
-          {name: 'Edit', items: [
-            /*{name: 'TXI Data', onClick: () => {
-              this.ShowTXI();
-            }}*/
-          ]}
-        ]
-      }
-    });
+  constructor(file){
+    super();
 
     this.$nssContainer = $('<div id="nssContainer" style="position: relative; overflow: hidden; height: 100%; width:75%; float: left;" />');
     this.$nssProperties = $('<div id="nssProperties" style="position: relative; overflow: auto; height: 100%; width:25%; float: left;" />');
@@ -51,102 +26,49 @@ class ScriptEditorTab extends EditorTab {
       enableLiveAutocompletion: true
     });
 
+    if(file){
+      this.OpenFile(file);
+    }
+
   }
 
   OpenFile(file){
-    let info = Utility.filePathInfo(file);
+
+    /*this.nwScript = new NWScript(data, (nwScript) => {
+      console.log(nwScript);
+      let decompiled = nwScript.initialBlock.source;
+      this.editor.setValue(decompiled);
+      this.tabLoader.Dismiss();
+    });*/
 
     this.tabLoader.Show();
     this.tabLoader.SetMessage("Loading NSS File");
 
-    console.log(file, info);
-
-    if(info.location == 'local'){
-
-      this.file = info.path;
-      this.fileName = info.file.name;
-      this.info = info;
-
-      fs.readFile(info.path, (err, buffer) => {
-        if (err) throw err;
+    if(file instanceof EditorFile){
+      file.readFile( (buffer) => {
         try{
-          switch(info.file.ext){
-            case 'nss':
-              fs.readFile(info.path, 'utf-8', (err, data) => {
-                if (err) throw err;
-                console.log(data);
-                this.editor.setValue(data);
-                this.tabLoader.Dismiss();
-              });
 
-              this.$tabName.text(file.path.split('\\').pop());
+          switch(file.reskey){
+            case ResourceTypes.nss:
+              this.editor.setValue(buffer.toString('utf8'));
+              this.tabLoader.Dismiss();
             break;
-            case 'ncs':
-              fs.readFile(info.path, (err, data) => {
-                if (err) throw err;
-                console.log(data);
-                this.nwScript = new NWScript(data, (nwScript) => {
-                  console.log(nwScript);
-                  let decompiled = nwScript.initialBlock.source;
-                  this.editor.setValue(decompiled);
-                  this.tabLoader.Dismiss();
-                });
-              });
-
-              this.$tabName.text(file.path.split('\\').pop());
+            case ResourceTypes.ncs:
+              this.editor.setValue(buffer.toString('utf8'));
+              this.tabLoader.Dismiss();
             break;
             default:
-              throw 'File is not a nss or ncs';
-
               this.tabLoader.Dismiss();
             break;
           }
         }
         catch (e) {
           console.log(e);
-
-          this.tabLoader.Dismiss();
+          this.Remove();
         }
-
       });
-
-    }else if(info.location == 'archive'){
-
-      this.file = '';
-      this.fileName = info.file.name;
-
-      switch(info.archive.type){
-        case 'bif':
-          Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
-
-            if(info.file.ext == 'ncs'){
-              this.nwScript = new NWScript(buffer, (nwScript) => {
-                console.log(nwScript)
-                let decompiled = nwScript.initialBlock.source;
-                this.editor.setValue(decompiled);
-                this.tabLoader.Dismiss();
-              });
-
-            }else{
-              let decoder = new StringDecoder('utf8');
-              console.log(decoder.write(buffer), buffer);
-              this.editor.setValue(decoder.write(buffer));
-
-              this.tabLoader.Dismiss();
-            }
-            
-          }, (e) => {
-            throw 'Resource not found in BIF archive '+pathInfo.archive.name;
-
-            this.tabLoader.Dismiss();
-          });
-        break;
-      }
-
     }
 
-    this.fileType = info.file.ext;
-    this.location = info.location;
   }
 
   SaveFileDialog(){

@@ -7,6 +7,7 @@
   </head>
   <body>
     <div id="renderer-container" class="ui-layout-center"></div>
+    <div class="console"><input type="text"></div>
     <script type="text/javascript" src="js/_utility.js"></script>
     <script type="text/javascript" src="js/libs/dexie.min.js"></script>
     <script>
@@ -27,7 +28,7 @@
     <script type="text/javascript" src="js/engine/stats.min.js"></script>
     <script type="text/javascript" src="js/engine/controls/TrackballControls.js"></script>
     <script type="text/javascript" src="js/engine/TransformControls.js"></script>
-    <script type="text/javascript" src="js/engine/SPE.min.js"></script>
+    <script type="text/javascript" src="js/engine/SPE.js"></script>
     <script type="text/javascript" src="js/engine/shaders/CopyShader.js"></script>
     <script type="text/javascript" src="js/engine/shaders/FilmShader.js"></script>
     <script type="text/javascript" src="js/engine/FilmPass.js"></script>
@@ -131,6 +132,46 @@
       }
 
       initialize();
+
+      window.addEventListener('keyup', function(e) {
+        if(e.keyCode == 192){
+          let $ele = $('.console');
+          if($ele.hasClass('on')){
+            $ele.removeClass('on');
+            $('input', $ele).val('');
+          }else{
+            $ele.addClass('on');
+            $('input', $ele).focus();
+          }
+        }
+      });
+
+      $('.console input').keyup(function(e){
+        if(e.keyCode == 13) {
+          let $ele = $('.console');
+          $ele.removeClass('on');
+
+          let console_text = $(this).val().toLowerCase();
+          processConsoleText(console_text);
+          $(this).val('');
+        }
+      });
+
+      function processConsoleText(text){
+
+        text = text.trim();
+        let args = text.split(' ');
+
+        switch(args[0]){
+          case 'warp':
+            if(args[1]){
+              Game.LoadModule(args[1]);
+            }
+          break;
+        }
+
+      }
+
     </script>
   </body>
 </html>

@@ -129,7 +129,7 @@ class BinaryReader {
     for(var i = 0; i!=num; i++){
       bytes[i] = this.ReadInt8();
     }
-    return new Buffer(bytes);
+    return Buffer.from(bytes);
   }
 
   ReadSingle(){

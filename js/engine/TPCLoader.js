@@ -131,8 +131,6 @@ THREE.TPCLoader.prototype.findTPC = function ( tex, onComplete = null, onError =
 
 THREE.TPCLoader.prototype.fetch = function ( url = '', onLoad = null, onProgress = null, onError = null ) {
 
-	let scope = this;
-
 	if ( Array.isArray( url ) ) {
 		let loaded = 0;
 		for ( let i = 0, il = url.length; i < il; i++ )
@@ -148,67 +146,15 @@ THREE.TPCLoader.prototype.fetch = function ( url = '', onLoad = null, onProgress
 THREE.TPCLoader.prototype.loadTexture = function(texName, onLoad = null, onProgress = null, onError = null ){
   // compressed cubemap texture stored in a single DDS file
   //console.log('Texture', texName);
-  let scope = this;
 
   this.findTPC(texName, (buffer) => {
-    let images = [];
-    let texture = new THREE.CompressedTexture();
-    texture.txi = null;
-
-    texture.clone = function () {
-
-      let cloned = new this.constructor().copy( this );
-    
-      cloned.format = this.format;
-      cloned.needsUpdate = true;
-      cloned.bumpMapType = this.bumpMapType;
-      cloned.header = this.header;
-      cloned.txi = this.txi;
-      return cloned;
-    
-    }
-    
 
     let tpc = new TPCObject({
       filename: texName,
       file: buffer
     });
 
-    let texDatas = tpc.getDDS( true );
-
-    //console.log('TPCLoader', texName, texDatas);
-
-    texture.name = texName;
-    if ( texDatas.isCubemap ) {
-      let faces = texDatas.mipmaps.length / texDatas.mipmapCount;
-      for ( let f = 0; f < faces; f ++ ) {
-        images[ f ] = { mipmaps : [] };
-        for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
-          images[ f ].mipmaps.push( texDatas.mipmaps[ f * texDatas.mipmapCount + i ] );
-          images[ f ].format = texDatas.format;
-          images[ f ].width = texDatas.width;
-          images[ f ].height = texDatas.height;
-        }
-      }
-      texture.image = images;
-      texture.image.width = texDatas.width;
-      texture.image.height = texDatas.height;
-    } else {
-      texture.image.width = texDatas.width;
-      texture.image.height = texDatas.height;
-      texture.mipmaps = texDatas.mipmaps;
-    }
-
-    if ( texDatas.mipmapCount === 1 ) {
-      texture.minFilter = THREE.LinearFilter;
-    }
-
-    texture.format = texDatas.format;
-    texture.needsUpdate = true;
-    texture.bumpMapType = 'NORMAL';
-
-    texture.txi = new TXI( tpc.getTXIData() );
-    texture.header = tpc.header;
+    let texture = tpc.toCompressedTexture();
     delete tpc;
     //console.log("loaded texture", texName);
 
@@ -223,64 +169,48 @@ THREE.TPCLoader.prototype.loadTexture = function(texName, onLoad = null, onProgr
 
 THREE.TPCLoader.prototype.fetch_override = function ( name = '', onLoad = null, onProgress = null, onError = null ) {
   
-  var dir = path.join(Config.options.Games.KOTOR.Location, 'Override');
-	var scope = this;
-	var texture = new THREE.Texture();
+  let dir = path.join(Config.options.Games.KOTOR.Location, 'Override');
 
 	fs.readFile(path.join(dir, name)+'.tpc', (err, buffer) => {
 		if (err) throw err; // Fail if the file can't be read.
-
-		let images = [];
-    let texture = new THREE.CompressedTexture();
-    texture.txi = null;
-    texture.name = name;
 
     let tpc = new TPCObject({
       filename: texName,
       file: buffer
     });
 
-    let texDatas = tpc.getDDS( true );
-
-    //console.log('TPCLoader', texName, texDatas);
-
-    texture.name = texName;
-    if ( texDatas.isCubemap ) {
-      let faces = texDatas.mipmaps.length / texDatas.mipmapCount;
-      for ( let f = 0; f < faces; f ++ ) {
-        images[ f ] = { mipmaps : [] };
-        for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
-          images[ f ].mipmaps.push( texDatas.mipmaps[ f * texDatas.mipmapCount + i ] );
-          images[ f ].format = texDatas.format;
-          images[ f ].width = texDatas.width;
-          images[ f ].height = texDatas.height;
-        }
-      }
-      texture.image = images;
-      texture.image.width = texDatas.width;
-      texture.image.height = texDatas.height;
-    } else {
-      texture.image.width = texDatas.width;
-      texture.image.height = texDatas.height;
-      texture.mipmaps = texDatas.mipmaps;
-    }
-
-    if ( texDatas.mipmapCount === 1 ) {
-      texture.minFilter = THREE.LinearFilter;
-    }
-
-    texture.format = texDatas.format;
-    texture.needsUpdate = true;
-    texture.bumpMapType = 'NORMAL';
-
-    texture.txi = new TXI( tpc.getTXIData() );
-    texture.header = tpc.header;
-
+    let texture = tpc.toCompressedTexture();
+    delete tpc;
     //console.log("loaded texture", texName);
 
     if ( onLoad ) onLoad( texture );
 
 	});
+
+};
+
+THREE.TPCLoader.prototype.fetch_local = function ( name = '', onLoad = null, onProgress = null, onError = null ) {
+
+  let file_info = path.parse(name);
+  if(file_info.ext == '.tpc'){
+    fs.readFile(name, (err, buffer) => {
+      if (err) throw err; // Fail if the file can't be read.
+
+      let tpc = new TPCObject({
+        filename: file_info.name,
+        file: buffer
+      });
+
+      let texture = tpc.toCompressedTexture();
+      delete tpc;
+      //console.log("loaded texture", texName);
+
+      if ( onLoad ) onLoad( texture );
+
+    });
+  }else{
+    onError('Unsupported File Format');
+  }
 
 };
 

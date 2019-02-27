@@ -760,12 +760,12 @@ class Engine {
 
   }
 
-  static GetFirstObjectInArea(oArea = null, nObjectFilter = 0){
+  static GetFirstObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
     Game.objSearchIndex = 0;
     switch(nObjectFilter){
       case    OBJECT_TYPE_CREATURE:
-        if(Game.module.area.creatures.length){
-          return Game.module.area.creatures[Game.objSearchIndex];
+        if(oArea.creatures.length){
+          return oArea.creatures[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -773,14 +773,14 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_TRIGGER:
-        if(Game.module.area.triggers.length){
-          return Game.module.area.triggers[Game.objSearchIndex];
+        if(oArea.triggers.length){
+          return oArea.triggers[Game.objSearchIndex];
         }
         return undefined;
       break;
       case    OBJECT_TYPE_DOOR:
-        if(Game.module.area.doors.length){
-          return Game.module.area.doors[Game.objSearchIndex];
+        if(oArea.doors.length){
+          return oArea.doors[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -788,14 +788,14 @@ class Engine {
 
       break;
       case    OBJECT_TYPE_WAYPOINT:
-        if(Game.module.area.waypoints.length){
-          return Game.module.area.waypoints[Game.objSearchIndex];
+        if(oArea.waypoints.length){
+          return oArea.waypoints[Game.objSearchIndex];
         }
         return undefined;
       break;
       case    OBJECT_TYPE_PLACEABLE:
-        if(Game.module.area.placeables.length){
-          return Game.module.area.placeables[Game.objSearchIndex];
+        if(oArea.placeables.length){
+          return oArea.placeables[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -812,8 +812,8 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_SOUND:
-        if(Game.module.area.sounds.length){
-          return Game.module.area.sounds[Game.objSearchIndex];
+        if(oArea.sounds.length){
+          return oArea.sounds[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -823,12 +823,12 @@ class Engine {
     }
   }
 
-  static GetNextObjectInArea(oArea = null, nObjectFilter = 0){
+  static GetNextObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
     ++Game.objSearchIndex;
     switch(nObjectFilter){
       case    OBJECT_TYPE_CREATURE:
-        if(Game.objSearchIndex < Game.module.area.creatures.length-1){
-          return Game.module.area.creatures[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.creatures.length-1){
+          return oArea.creatures[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -836,14 +836,14 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_TRIGGER:
-        if(Game.objSearchIndex < Game.module.area.triggers.length-1){
-          return Game.module.area.triggers[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.triggers.length-1){
+          return oArea.triggers[Game.objSearchIndex];
         }
         return undefined;
       break;
       case    OBJECT_TYPE_DOOR:
-        if(Game.objSearchIndex < Game.module.area.doors.length-1){
-          return Game.module.area.doors[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.doors.length-1){
+          return oArea.doors[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -851,14 +851,14 @@ class Engine {
 
       break;
       case    OBJECT_TYPE_WAYPOINT:
-        if(Game.objSearchIndex < Game.module.area.waypoints.length-1){
-          return Game.module.area.waypoints[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.waypoints.length-1){
+          return oArea.waypoints[Game.objSearchIndex];
         }
         return undefined;
       break;
       case    OBJECT_TYPE_PLACEABLE:
-        if(Game.objSearchIndex < Game.module.area.placeables.length-1){
-          return Game.module.area.placeables[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.placeables.length-1){
+          return oArea.placeables[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -875,8 +875,8 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_SOUND:
-        if(Game.objSearchIndex < Game.module.area.sounds.length-1){
-          return Game.module.area.sounds[Game.objSearchIndex];
+        if(Game.objSearchIndex < oArea.sounds.length-1){
+          return oArea.sounds[Game.objSearchIndex];
         }
         return undefined;
       break;
@@ -886,9 +886,13 @@ class Engine {
     }
   }
 
-  static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarget=null, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1 ){
+  static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarget=null, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list = null ){
     
-    let list = Game.module.area.creatures;
+    if(!list){
+      list = Game.module.area.creatures;
+      list = list.concat(PartyManager.party);
+    }
+
     let results = [];
     
     switch(nFirstCriteriaType){
@@ -904,11 +908,11 @@ class Engine {
       case CREATURE_TYPE_REPUTATION:
         switch(nFirstCriteriaValue){
           case REPUTATION_TYPE_FRIEND:
-          for(let i = 0; i < list.length; i++){
-            if(list[i].isFriendly(oTarget)){
-              results.push(list[i]);
+            for(let i = 0; i < list.length; i++){
+              if(list[i].isFriendly(oTarget)){
+                results.push(list[i]);
+              }
             }
-          }
           break;
           case REPUTATION_TYPE_ENEMY:
             for(let i = 0; i < list.length; i++){
@@ -940,8 +944,16 @@ class Engine {
 
       break;
       case CREATURE_TYPE_PERCEPTION:
-
+        for(let i = 0; i < list.length; i++){
+          if(oTarget.perceptionList.indexOf(list[i]) >= 0){
+            results.push(list[i]);
+          }
+        }
       break;
+    }
+
+    if(nSecondCriteriaType >= 0){
+      return Game.GetNearestCreature(nSecondCriteriaType, nSecondCriteriaValue, oTarget, nNth, nThirdCriteriaType, nThirdCriteriaValue, -1, -1, results);
     }
 
     if(results.length){
@@ -949,6 +961,87 @@ class Engine {
     }
 
     return undefined;
+  }
+
+  static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, objectFilter = -1, origin = new THREE.Vector3, idx = -1){
+
+    let object_pool = [];
+    let results = [];
+
+    /*
+    int    OBJECT_TYPE_CREATURE         = 1;
+    int    OBJECT_TYPE_ITEM             = 2;
+    int    OBJECT_TYPE_TRIGGER          = 4;
+    int    OBJECT_TYPE_DOOR             = 8;
+    int    OBJECT_TYPE_AREA_OF_EFFECT   = 16;
+    int    OBJECT_TYPE_WAYPOINT         = 32;
+    int    OBJECT_TYPE_PLACEABLE        = 64;
+    int    OBJECT_TYPE_STORE            = 128;
+    int    OBJECT_TYPE_ENCOUNTER        = 256;
+    int    OBJECT_TYPE_SOUND            = 512;
+    int    OBJECT_TYPE_ALL              = 32767;
+    */
+
+    console.log('GetObjectsInShape', objectFilter, shape);
+
+    if(objectFilter & 1 == 1){ //CREATURE
+      object_pool = object_pool.concat(Game.module.area.creatures);
+    }
+
+    if(objectFilter & 1 == 2){ //ITEM
+      object_pool = object_pool.concat(Game.module.area.items);
+    }
+
+    if(objectFilter & 1 == 4){ //TRIGGER
+      object_pool = object_pool.concat(Game.module.area.triggers); 
+    }
+
+    if(objectFilter & 1 == 8){ //DOOR
+      object_pool = object_pool.concat(Game.module.area.doors); 
+    }
+
+    if(objectFilter & 1 == 16){ //AOE
+              
+    }
+
+    if(objectFilter & 1 == 32){ //WAYPOINTS
+      object_pool = object_pool.concat(Game.module.area.waypoints);
+    }
+    
+    if(objectFilter & 1 == 64){ //PLACEABLE
+      object_pool = object_pool.concat(Game.module.area.placeables);
+    }
+
+    if(objectFilter & 1 == 128){ //STORE
+          
+    }
+    
+    if(objectFilter & 1 == 256){ //ENCOUNTER
+          
+    }
+    
+    if(objectFilter & 1 == 512){ //SOUND
+      object_pool = object_pool.concat(Game.module.area.sounds);
+    }
+
+    if(objectFilter & 1 == 32767){ //ALL
+          
+    }
+
+    for(let i = 0, len = object_pool.length; i < len; i++){
+      if(object_pool[i] instanceof ModuleObject){
+        if(object_pool[i].position.distanceTo(target) < size){
+          results.push(object_pool[i]);
+        }
+      }
+    }
+
+    if(idx == -1){
+      return results;
+    }else{
+      return results[idx];
+    }
+
   }
 
   static getNPCResRefById(nId){
@@ -988,9 +1081,6 @@ class Engine {
     return Game.player === object;
   }
 
-
-
-
   static setGlobalBoolean(name = '', bValue = false){
     Game.Globals.Boolean[name.toLowerCase()] = bValue ? true : false;
   }
@@ -1007,7 +1097,38 @@ class Engine {
     return Game.Globals.Number[name.toLowerCase()];
   }
 
+  static updateTime(delta){
+    Game.time += 1 * delta;
+    
+    //let minutes = Math.floor(Game.time / 60);
+    //let seconds = Game.timer - minutes * 60;
+    //let milSeconds = Math.floor( (seconds - Math.floor(seconds)) * 100);
 
+    /*let minTens = Math.floor(minutes / 10);
+    let minOnes = minutes - minTens * 10;
+
+    let secTens = Math.floor(seconds / 10);
+    let secOnes = seconds - secTens * 10;
+
+    let milTens = Math.floor(milSeconds / 10);
+    let milOnes = milSeconds - milTens * 10;*/
+  }
+
+  static getHours(){
+    return Math.floor(Game.time / 3600);
+  }
+
+  static getMinutes(){
+    return Math.floor(Game.time / 60);
+  }
+
+  static getSeconds(){
+    return Math.floor(Game.time - Game.getMinutes() * 60);
+  }
+
+  static getMiliseconds(){
+    return Math.floor( ( (Game.time - Game.getMinutes() * 60) - Math.floor(Game.getSeconds())) * 100);
+  }
 
   static setTestingGlobals(){
     //Set the current planet
@@ -1048,7 +1169,13 @@ class Engine {
     }
   }
 
+  static togglePause(){
+    Game.State = (Game.State == Game.STATES.RUNNING ? Game.STATES.PAUSED : Game.STATES.RUNNING);
+  }
+
 }
+
+Engine.CameraDebugZoom = 1;
 
 Engine.raycaster = new THREE.Raycaster();
 Engine.mouse = new THREE.Vector3();

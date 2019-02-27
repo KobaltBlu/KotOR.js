@@ -41,6 +41,9 @@ class GFFObject {
     this.BWFieldIndicies;
     this.BWListIndicies;
 
+    this.FileType = '';
+    this.FileVersion = 'V3.2';
+
     this.StructCount = 0;
     this.FieldCount = 0;
     this.LabelCount = 0;
@@ -48,6 +51,7 @@ class GFFObject {
     this.exportedLabels = [];
     this.path = null;
     this.resourceID = null;
+    this.ext = null;
 
     this.signals = {
 		    onSaved: new Signal(),
@@ -68,9 +72,10 @@ class GFFObject {
         let fileInfo = path.parse(this.file);
         this.path = fileInfo.dir;
         this.file = fileInfo.name;
+        this.ext = fileInfo.ext.substr(1);
 
         //let start = performance.now();
-        console.log(file)
+        //console.log(file)
         fs.readFile(file, (err, binary) => {
           this.resourceID = file;
           this.Parse(binary, onComplete);
@@ -256,7 +261,7 @@ class GFFObject {
             field.SetValue(data.readUInt16LE());
             break;
         case GFFDataTypes.SHORT: //Int16
-            field.SetValue(data.readInt16LE());
+            field.SetValue(data.readUInt16LE());
             break;
         case GFFDataTypes.DWORD: //UInt32
             field.SetValue(data.readUInt32LE());
@@ -517,18 +522,46 @@ class GFFObject {
     this.Export(file, onExport, onError);
   }
 
-  Export(file = '', onExport = null, onError = null){
+  Export(file = null, onExport = null, onError = null){
 
-    if(file != ''){
-      this.file = file;
+    let savePath = file ? file : this.file;
+
+    if(!savePath){
+      console.error('Export GFF: Missing Export Path');
+      return;
     }
-    console.log('Export GFF', file, this);
-    let templateResRef = this.GetFieldByLabel('TemplateResRef');
-    let fileInfo = path.parse(this.file);
+
+    console.log('Export GFF', savePath, this);
+    let fileInfo = path.parse(savePath);
+
     //Update the TemplateResRef field if it exists
+    let templateResRef = this.GetFieldByLabel('TemplateResRef');
     if(templateResRef instanceof Field){
-      this.file = templateResRef.Value = fileInfo.name.substr(0, 16);
+      fileInfo.name = templateResRef.Value = fileInfo.name.substr(0, 16);
+      //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
+      fileInfo.base = fileInfo.name + fileInfo.ext;
     }
+
+    let buffer = this.GetExportBuffer();
+
+    console.log('Export GFF', fileInfo, this);
+
+    fs.writeFile( path.join(fileInfo.dir, fileInfo.base), buffer, (err) => {
+      if (err){
+        if(typeof onError === 'function')
+          onError(err);
+      }else{
+        if(typeof onExport === 'function')
+          onExport(err);
+      }
+    });
+
+    this.signals.onSaved.dispatch( this );
+    this.signals.onUpdated.dispatch( this );
+
+  }
+
+  GetExportBuffer(){
 
     this.BWStructs = new BinaryWriter();
     this.BWFields = new BinaryWriter();
@@ -603,8 +636,6 @@ class GFFObject {
 
     bw.position = 0;
 
-    //console.log(_header);
-
     bw.WriteChars(this.PadRight(_header.FileType, '\0', 4).substr(0, 4));
     bw.WriteChars(this.PadRight(_header.FileVersion, '\0', 4).substr(0, 4));
     bw.WriteUInt32(_header.StructOffset);
@@ -622,23 +653,14 @@ class GFFObject {
 
     bw.Close();
 
-    let savePath = path.join( ( this.path != null ? this.path : '.' ), this.file + '.' + this.FileType.substr(0, 3).toLowerCase() );
+    this.BWStructs = undefined;
+    this.BWFields = undefined;
+    this.BWFieldData = undefined;
+    this.BWLabels = undefined;
+    this.BWFieldIndicies = undefined;
+    this.BWListIndicies = undefined;
 
-    console.log('Export GFF', savePath, this);
-
-    fs.writeFile( savePath, bw.buffer, (err) => {
-      if (err){
-        if(typeof onError === 'function')
-          onError(err);
-      }else{
-        if(typeof onExport === 'function')
-          onExport(err);
-      }
-    });
-
-    this.signals.onSaved.dispatch( this );
-    this.signals.onUpdated.dispatch( this );
-
+    return bw.buffer;
   }
 
   ExportStruct(strt = null){
@@ -928,6 +950,18 @@ class Field {
     this.CExoLocString = null;
     this.Vector = null;
     this.Orientation = null;
+
+    switch(this.Type){
+      case GFFDataTypes.CEXOSTRING:
+      case GFFDataTypes.RESREF:
+        if(typeof this.Value !== 'string')
+          this.Value = '';
+      break;
+      case GFFDataTypes.CEXOLOCSTRING:
+        this.CExoLocString = new CExoLocString();
+      break;
+    }
+
   }
 
   GetType(){
@@ -943,7 +977,12 @@ class Field {
   }
 
   GetValue(){
-    return this.Value;
+    switch(this.Type){
+      case GFFDataTypes.CEXOLOCSTRING:
+        return this.CExoLocString.GetValue();
+      default:
+        return this.Value;
+    }
   }
 
   GetVector(){
@@ -952,6 +991,14 @@ class Field {
 
   GetChildStructs(){
     return this.ChildStructs;
+  }
+
+  GetChildStructByType(type = -1){
+    for(let i = 0; i < this.ChildStructs.length; i++){
+      if(this.ChildStructs[i].Type == type)
+        return this.ChildStructs[i];
+    }
+    return null;
   }
 
   GetCExoLocString(){
@@ -967,7 +1014,20 @@ class Field {
   }
 
   SetValue(val){
-    this.Value = val;
+
+    switch(this.Type){
+      case GFFDataTypes.CEXOLOCSTRING:
+        if(typeof val === 'number'){
+          this.CExoLocString.SetRESREF(val);
+        }else if(typeof val === 'string'){
+          this.CExoLocString.AddSubString(val, 0);
+        }
+      break;
+      default:
+        this.Value = val;
+      break;
+    }
+
   }
 
   SetType(type){
@@ -994,6 +1054,13 @@ class Field {
     this.ChildStructs.push(strt);
   }
 
+  RemoveChildStruct(strt){
+    let index = this.ChildStructs.indexOf(strt);
+    if(index >= 0){
+      this.ChildStructs.splice(index, 1);
+    }
+  }
+
   SetChildStructs(strts){
     this.ChildStructs = strts;
   }
@@ -1007,8 +1074,11 @@ class CExoLocString
         this.strings = [];
     }
 
-    AddSubString(subString) {
-      this.strings[this.strings.length] = subString;
+    AddSubString(subString, index = -1) {
+      if(!index == -1)
+        index = this.strings.length;
+
+      this.strings[index] = subString;
       return this;
     }
 
@@ -1039,7 +1109,7 @@ class CExoLocString
 
     GetValue(){
       if(this.strings.length){
-        return this.strings[0].str;
+        return this.strings[0];
       }else{
         if(this.RESREF > -1)
           return Global.kotorTLK.TLKStrings[this.RESREF].Value;

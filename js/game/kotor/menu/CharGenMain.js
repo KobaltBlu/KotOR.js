@@ -73,8 +73,6 @@ class CharGenMain extends GameMenu {
         control._3dViewModel = model;
         control._3dView.addModel(control._3dViewModel);
 
-        control._3dViewModel.rebuildEmitters();
-
         control.camerahook = control._3dViewModel.getObjectByName('camerahook');
         
         control._3dView.camera.position.set(
@@ -102,24 +100,14 @@ class CharGenMain extends GameMenu {
   }
 
   Update(delta = 0){
+
+    super.Update(delta);
+      if(!this.bVisible)
+        return;
+
     try{
       
       let modelControl = this.MODEL_LBL;
-      /*if(modelControl.char){
-        //console.log('UPDATE');
-        let currentAnimation = modelControl.char.getAnimationName();
-        let randomPauseIdx = Math.round(Math.random()*1) + 1;
-        if(currentAnimation != 'pause1' && currentAnimation != 'pause2'){
-          modelControl.char.playAnimation('pause'+randomPauseIdx, false);
-        }
-        modelControl.char.update(delta);
-      }
-      //console.log('UPDATE');
-      let currentAnimation = Game.player.model.getAnimationName();
-      let randomPauseIdx = Math.round(Math.random()*1) + 1;
-      if(currentAnimation != 'pause1' && currentAnimation != 'pause2'){
-        Game.player.model.playAnimation('pause'+randomPauseIdx, false);
-      }*/
       Game.player.update(delta);
       modelControl._3dView.render(delta);
       modelControl.widget.fill.children[0].material.needsUpdate = true;

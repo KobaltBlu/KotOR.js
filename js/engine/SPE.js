@@ -968,7 +968,7 @@ SPE.shaders = {
         '    #endif',
 
         // Convert pos to a world-space value
-        '    vec4 mvPos = modelViewMatrix * vec4( pos, 1.0 );',
+        '    vec4 mvPos = modelViewMatrix * vec4( pos, 1.0);',
 
         // Determine point size.
         '    highp float pointSize = getFloatOverLifetime( positionInTime, size ) * isAlive;',
@@ -1036,9 +1036,19 @@ SPE.shaders = {
         // Write values
         //
 
+        //'   mat4 myMat4 = mat4()',
+        //'   myMat4 *= cameraPosition;',
+
         // Set PointSize according to size at current point in time.
         '    gl_PointSize = pointSizePerspective;',
-        '    gl_Position = projectionMatrix * mvPos;',
+        `
+        mat4 matProj = projectionMatrix;
+        //matProj[3][2] = 0.0;
+        //matProj[3][3] = 0.0;
+        gl_Position    = matProj * modelViewMatrix * vec4(pos, 1.0);
+        `,
+        //'    gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );',
+        //'    gl_Position.y = 0.0;',
 
         THREE.ShaderChunk.logdepthbuf_vertex,
 

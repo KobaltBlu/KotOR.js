@@ -322,13 +322,28 @@ class ModuleArea extends ModuleObject {
     //Waypoints
     for(let i = 0; i != waypoints.ChildStructs.length; i++ ){
       let strt = waypoints.ChildStructs[i];
-      if(this.transWP == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
-        this.transWP = GFFObject.FromStruct(strt);
+
+      if(this.transWP){
+        if(typeof this.transWP === 'string'){
+          if(this.transWP.toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
+            this.transWP = GFFObject.FromStruct(strt);
+          }
+        }else if(this.transWP instanceof GFFObject){
+          if(this.transWP.GetFieldByLabel('Tag').GetValue().toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
+            this.transWP = GFFObject.FromStruct(strt);
+          }
+        }
       }
+      
       this.waypoints.push( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
     }
 
+    if(!(this.transWP instanceof GFFObject)){
+      this.transWP = null;
+    }
+
     if(this.git.RootNode.HasField('SWVarTable')){
+      console.log("SWVarTable", this.git);
       let localBools = this.git.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
       //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
@@ -339,7 +354,7 @@ class ModuleArea extends ModuleObject {
       }
     }
 
-    Game.AlphaTest = 0.5;//this.Alphatest;
+    Game.AlphaTest = this.Alphatest;
 
     this.loadPath( () => {
       this.LoadVis( () => {

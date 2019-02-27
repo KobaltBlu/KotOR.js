@@ -32,25 +32,34 @@ class CharGenQuickPanel extends GameMenu {
         this.BTN_STEPNAME2 = this.getControlByName('BTN_STEPNAME2');
         this.BTN_STEPNAME3 = this.getControlByName('BTN_STEPNAME3');
 
-        this.BTN_STEPNAME1.onClick = (e) => {
+        this.BTN_STEPNAME1.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.CharGenMain.Hide();
           Game.CharGenPortCust.Show();
-        };
+        });
 
-        this.BTN_STEPNAME2.onClick = (e) => {
+        this.BTN_STEPNAME2.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.CharGenMain.Hide();
           Game.CharGenName.Show();
-        };
+        });
+
+        this.BTN_STEPNAME3.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Game.CharGenMain.Hide();
+          Game.CharGenName.Hide();
+          Game.player.equipment.ARMOR = undefined;
+          Game.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
+          Game.LoadModule('end_m01aa');
+        });
 
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
 
           e.stopPropagation();
           Game.CharGenQuickOrCustom.Show();
 
-        };
+        });
 
         this.BTN_BACK.reattach(this.tGuiPanel);
 

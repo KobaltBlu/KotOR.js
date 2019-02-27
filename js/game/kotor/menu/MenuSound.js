@@ -34,7 +34,7 @@ class MenuSound extends GameMenu {
         this.BTN_ADVANCED = this.getControlByName('BTN_ADVANCED');
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           if(Game.Mode == Game.MODES.INGAME){
@@ -42,7 +42,7 @@ class MenuSound extends GameMenu {
           }else{
             Game.MainOptions.Show();
           }
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -69,53 +69,53 @@ class MenuSound extends GameMenu {
           AudioEngine.GAIN_MOVIE = value;
         };
 
-        this.LBL_MUSIC.onMouseIn = () => {
+        this.LBL_MUSIC.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
-        }
+        });
 
-        this.SLI_MUSIC.onMouseIn = () => {
+        this.SLI_MUSIC.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
-        }
+        });
 
-        this.LBL_VO.onMouseIn = () => {
+        this.LBL_VO.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_VO.getHintText())
-        }
+        });
 
-        this.SLI_VO.onMouseIn = () => {
+        this.SLI_VO.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_VO.getHintText())
-        }
+        });
 
-        this.LBL_FX.onMouseIn = () => {
+        this.LBL_FX.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_FX.getHintText())
-        }
+        });
 
-        this.SLI_FX.onMouseIn = () => {
+        this.SLI_FX.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_FX.getHintText())
-        }
+        });
 
-        this.LBL_MOVIE.onMouseIn = () => {
+        this.LBL_MOVIE.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
-        }
+        });
 
-        this.SLI_MOVIE.onMouseIn = () => {
+        this.SLI_MOVIE.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());
           this.LB_DESC.clearItems();
           this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
-        }
+        });
 
       }
     })

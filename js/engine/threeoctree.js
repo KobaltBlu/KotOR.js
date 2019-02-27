@@ -777,7 +777,7 @@
 			this.visual = new THREE.LineSegments( this.tree.visualGeometry, this.tree.visualMaterial );
 			this.visual.scale.set( this.radiusOverlap * 2, this.radiusOverlap * 2, this.radiusOverlap * 2 );
 			this.visual.position.copy( this.position );
-			this.tree.scene.add( this.visual );
+			//this.tree.scene.add( this.visual );
 
 		}
 

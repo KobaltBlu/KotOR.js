@@ -101,6 +101,7 @@ class AuroraModel {
      */
 
     //START: TEST - Loading Root Node
+    this.nodes = {};
     let tmpPos = this.mdlReader.position;
     let nodeOffset = this.fileHeader.ModelDataOffset + this.geometryHeader.RootNodeOffset;
     this.rootNode = this.ReadNode(nodeOffset);
@@ -126,8 +127,8 @@ class AuroraModel {
   LoadSuperModel(name){
     let archive = Global.kotorBIF["models"];
 
-    let mdlReader = new BinaryReader(new Buffer(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdl']))));
-    let mdxReader = new BinaryReader(new Buffer(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdx']))));
+    let mdlReader = new BinaryReader(Buffer.from(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdl']))));
+    let mdxReader = new BinaryReader(Buffer.from(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdx']))));
 
     return new AuroraModel(mdlReader, mdxReader);
   }
@@ -154,6 +155,8 @@ class AuroraModel {
     }else{
       node.name = '';
     }
+
+    this.nodes[node.name] = node;
 
     //Non static objects in room meshes are children of the node that is the name of the model plus a
     //like: MODELNAMEa or m02ac_02ba
@@ -183,7 +186,7 @@ class AuroraModel {
     let controllerData = AuroraModel.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _contDataDef.offset, _contDataDef.count);
 
     node.controllers = this.ReadNodeControllers(node, this.fileHeader.ModelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData);
-    node.NodeType = NodeType;
+    
     if ((NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
       this.ReadLightNode(node);
     }
@@ -206,18 +209,17 @@ class AuroraModel {
     }
 
     if ((NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
-      this.mdlReader.position += 0x18;
+      this.ReadDanglyNode(node, parent);
     }
 
     if ((NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB) {
-      this.mdlReader.position += 0x4;
+      node.rootAABB = this.ReadAABBNode(node, this.mdlReader.ReadUInt32());
     }
 
     if ((NodeType & AuroraModel.NODETYPE.Anim) == AuroraModel.NODETYPE.Anim) {
       this.mdlReader.position += 0x38;
     }
 
-    node.NodeType = NodeType;
     let childrenLen = children.length;
     for (let i = 0; i != childrenLen; i++){
       node.add( this.ReadNode(this.fileHeader.ModelDataOffset + children[i], node ) );
@@ -246,26 +248,21 @@ class AuroraModel {
     mesh.Diffuse = new THREE.Color(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
     mesh.Ambient = new THREE.Color(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
 
-    mesh.TransparencyHint = this.mdlReader.ReadUInt32();
-
-    let _hasTransparencyHint = true;
-    let _transparencyHint = (mesh.TransparencyHint != 0);
+    mesh.Transparent = this.mdlReader.ReadUInt32() ? true : false;
 
     mesh.TextureMap1 = this.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,''); //This stores the texture filename
     mesh.TextureMap2 = this.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,''); //This stores the lightmap filename
     mesh.TextureMap3 = this.mdlReader.ReadChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
-    mesh.TextureMap4 = this.mdlReader.ReadChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
+    mesh.TextureMap4 = this.mdlReader.ReadChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 4th texture filename (?)
 
     mesh.IndexCountArrayDef = AuroraModel.ReadArrayDefinition(this.mdlReader); //IndexCounterArray
     mesh.VertexLocArrayDef = AuroraModel.ReadArrayDefinition(this.mdlReader); //vertex_indices_offset
 
     if (mesh.VertexLocArrayDef.count > 1)
-        throw ("Face offsets offsets count wrong "+ mesh.VertexLocArrayDef.count);
+      throw ("Face offsets offsets count wrong "+ mesh.VertexLocArrayDef.count);
 
     mesh.InvertedCountArrayDef = AuroraModel.ReadArrayDefinition(this.mdlReader); //MeshInvertedCounterArray
-    //mesh.InvertedCountArrayDefDuplicate = AuroraModel.ReadArrayDefinition(this.mdlReader); //MeshInvertedCounterArray
-
-    this.mdlReader.position += 12;
+    mesh.InvertedCountArrayDefDuplicate = AuroraModel.ReadArrayDefinition(this.mdlReader); //MeshInvertedCounterArray
 
     mesh.saberBytes = [
       this.mdlReader.ReadByte(),
@@ -278,7 +275,7 @@ class AuroraModel {
       this.mdlReader.ReadByte()
     ];
 
-    mesh.nAnimateUV = this.mdlReader.ReadUInt32();
+    mesh.nAnimateUV = this.mdlReader.ReadUInt32() ? true : false;
     mesh.fUVDirectionX = this.mdlReader.ReadSingle();
     mesh.fUVDirectionY = this.mdlReader.ReadSingle();
     mesh.fUVJitter = this.mdlReader.ReadSingle();
@@ -286,36 +283,31 @@ class AuroraModel {
 
     mesh.MDXDataSize = this.mdlReader.ReadUInt32();
     mesh.MDXDataBitmap = this.mdlReader.ReadUInt32();
-    let MDXVertexVertexOffset = this.mdlReader.ReadUInt32();
+
+    let MDXVertexOffset = this.mdlReader.ReadUInt32();
     let MDXVertexNormalsOffset = this.mdlReader.ReadUInt32();
     let MDXVertexNormalsUnunsed = this.mdlReader.ReadUInt32();
+    let MDXUVOffset1 = this.mdlReader.ReadInt32();
+    let MDXUVOffset2 = this.mdlReader.ReadInt32();
+    let MDXUVOffset3 = this.mdlReader.ReadInt32();
+    let MDXUVOffset4 = this.mdlReader.ReadInt32();
 
-    //mesh.UV
-    let UVOffsets = [
-      this.mdlReader.ReadInt32(),
-      this.mdlReader.ReadInt32(),
-      this.mdlReader.ReadInt32(),
-      this.mdlReader.ReadInt32()
-    ];
-
-    mesh.OffsetToMdxTangent1 = this.mdlReader.ReadInt32();
-    mesh.OffsetToMdxTangent2 = this.mdlReader.ReadInt32();
-    mesh.OffsetToMdxTangent3 = this.mdlReader.ReadInt32();
-    mesh.OffsetToMdxTangent4 = this.mdlReader.ReadInt32();
+    let OffsetToMdxTangent1 = this.mdlReader.ReadInt32();
+    let OffsetToMdxTangent2 = this.mdlReader.ReadInt32();
+    let OffsetToMdxTangent3 = this.mdlReader.ReadInt32();
+    let OffsetToMdxTangent4 = this.mdlReader.ReadInt32();
 
     mesh.VerticiesCount = this.mdlReader.ReadUInt16();
     mesh.TextureCount = this.mdlReader.ReadUInt16();
 
     mesh.HasLightmap = this.mdlReader.ReadByte() ? true : false;
-    mesh.RotateTexture = this.mdlReader.ReadByte();
-    mesh.BackgroundGeometry = this.mdlReader.ReadByte();
-    mesh.FlagShadow = this.mdlReader.ReadByte();
-    mesh.Beaming = this.mdlReader.ReadByte();
-    mesh.FlagRender = this.mdlReader.ReadByte();
+    mesh.RotateTexture = this.mdlReader.ReadByte() ? true : false;
+    mesh.BackgroundGeometry = this.mdlReader.ReadByte() ? true : false;
+    mesh.FlagShadow = this.mdlReader.ReadByte() ? true : false;
+    mesh.Beaming = this.mdlReader.ReadByte() ? true : false;
+    mesh.FlagRender = this.mdlReader.ReadByte() ? true : false;
 
-    //Skipping these bytes will let TSL work
     if (GameInitializer.currentGame == Games.TSL){
-      //this.mdlReader.position += 8; //Skip 8 Bytes
       mesh.DirtEnabled = this.mdlReader.ReadByte();
       mesh.tslPadding1 = this.mdlReader.ReadByte();
       mesh.DirtTexture = this.mdlReader.ReadUInt16();
@@ -346,6 +338,7 @@ class AuroraModel {
     mesh.normals = [];
     mesh.tvectors = [[], [], [], []];
     mesh.texCords = [[], [], [], []];
+    mesh.tangents = [[], [], [], []];
     mesh.indexArray = [];
     mesh.uvs = [];
     mesh.faces = [];
@@ -358,31 +351,79 @@ class AuroraModel {
     }
 
     for (let i = 0; i < mesh.VerticiesCount; i++) {
-      // Position
-      this.mdxReader.position = (MDXNodeDataOffset + (i * mesh.MDXDataSize));
-      mesh.vertices[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-      // Normal
-      mesh.normals[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      // Base Position Offset
+      let basePosition = (MDXNodeDataOffset + (i * mesh.MDXDataSize));
 
-      // TexCoords
-      for (let t = 0; t < mesh.TextureCount; t++) {
-        try {
-          if (UVOffsets[t] != -1) {
-            this.mdxReader.position = (MDXNodeDataOffset + i * mesh.MDXDataSize + UVOffsets[t]);
-            mesh.tvectors[t][i] = (new THREE.Vector2(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle()));
-          } else {
-            //mesh.tvectors[t].Add(new vec2(0.0f));
-          }
-        }catch(e){
-          
+      // Vertex
+      this.mdxReader.position = basePosition + MDXVertexOffset;
+      mesh.vertices[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+
+      // Normal
+      this.mdxReader.position = basePosition + MDXVertexNormalsOffset;
+      mesh.normals[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      
+      // TexCoords1
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV1){
+        this.mdxReader.position = basePosition + MDXUVOffset1;
+        mesh.tvectors[0][i] = (new THREE.Vector2(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle()));
+      }
+
+      // TexCoords2
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV2){
+        this.mdxReader.position = basePosition + MDXUVOffset2;
+        mesh.tvectors[1][i] = (new THREE.Vector2(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle()));
+      }
+
+      // TexCoords3
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV3){
+        //TODO
+      }
+
+      // TexCoords4
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV4){
+        //TODO
+      }
+
+      //Tangent1
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
+        this.mdxReader.position = basePosition + OffsetToMdxTangent1;
+        mesh.tangents[0][i] = [];
+        for(let j= 0; j < 3; j++){
+          mesh.tangents[0][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
         }
       }
+
+      //Tangent2
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2){
+        this.mdxReader.position = basePosition + OffsetToMdxTangent2;
+        mesh.tangents[1][i] = [];
+        for(let j= 0; j < 3; j++){
+          mesh.tangents[1][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        }
+      }
+
+      //Tangent1
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3){
+        this.mdxReader.position = basePosition + OffsetToMdxTangent3;
+        mesh.tangents[2][i] = [];
+        for(let j= 0; j < 3; j++){
+          mesh.tangents[2][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        }
+      }
+
+      //Tangent1
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4){
+        this.mdxReader.position = basePosition + OffsetToMdxTangent4;
+        mesh.tangents[3][i] = [];
+        for(let j= 0; j < 3; j++){
+          mesh.tangents[3][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        }
+      }
+
     }
 
     this.mdlReader.position = this.fileHeader.ModelDataOffset + mesh.VertexLocArrayDef.offset;
     let offVerts = this.mdlReader.ReadUInt32();
-
-    mesh.faces2 = [];
 
     this.mdlReader.position = this.fileHeader.ModelDataOffset + offVerts;
 
@@ -412,94 +453,111 @@ class AuroraModel {
 
   ReadSkinNode(node){
 
-      node.weights_def = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    node.weights_def = AuroraModel.ReadArrayDefinition(this.mdlReader);
 
-      node.mdx_vertex_struct_offset_bone_weights = this.mdlReader.ReadUInt32();
-      node.mdx_vertex_struct_offset_bone_mapping_id = this.mdlReader.ReadUInt32();
-      node.p_bone_mapping = this.mdlReader.ReadUInt32();
-      node.count_bone_mapping = this.mdlReader.ReadUInt32();
+    node.MDXBoneWeightOffset = this.mdlReader.ReadUInt32();
+    node.MDXBoneIndexOffset = this.mdlReader.ReadUInt32();
+    node.BoneMapOffset = this.mdlReader.ReadUInt32();
+    node.BoneMapCount = this.mdlReader.ReadUInt32();
 
-      node.bone_quats_def = AuroraModel.ReadArrayDefinition(this.mdlReader);
-      node.bone_vertex_def = AuroraModel.ReadArrayDefinition(this.mdlReader);
-      node.bone_constants_def = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    node.BoneQuaternionDef = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    node.BoneVertexDef = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    node.BoneConstantsDef = AuroraModel.ReadArrayDefinition(this.mdlReader);
 
-      node.bone_parts = [];//new Array(17);
+    node.bone_parts = [];//new Array(17);
 
-      //this.mdlReader.position -= (2*3);
+    for(let i = 0; i < 16; i++){
+      node.bone_parts[i] = this.mdlReader.ReadUInt16();
+    }
 
-      for(let i = 0; i < 16; i++){
-        node.bone_parts[i] = this.mdlReader.ReadInt16();
+    node.spare = this.mdlReader.ReadInt32();
+
+    node.weights = [];//new Array(node.VerticiesCount*4);
+    node.boneIdx = [];//new Array(node.VerticiesCount*4);
+
+    for (let i = 0; i < node.VerticiesCount; i++) {
+      // Position
+      this.mdxReader.position = (node._mdxNodeDataOffset + (i * node.MDXDataSize)) + node.MDXBoneWeightOffset;
+      
+      node.weights[i] = [0, 0, 0, 0];
+      for(let i2 = 0; i2 < 4; i2++){
+        let float = this.mdxReader.ReadSingle();
+        node.weights[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
       }
 
-      node.spare = this.mdlReader.ReadInt32();
+      this.mdxReader.position = (node._mdxNodeDataOffset + (i * node.MDXDataSize)) + node.MDXBoneIndexOffset;
 
-      node.weights = [];//new Array(node.VerticiesCount*4);
-      node.boneIdx = [];//new Array(node.VerticiesCount*4);
-
-      for (let i = 0; i < node.VerticiesCount; i++) {
-        // Position
-        this.mdxReader.position = (node._mdxNodeDataOffset + (i * node.MDXDataSize)) + node.mdx_vertex_struct_offset_bone_weights;
-        
-        node.weights[i] = [0, 0, 0, 0];
-        for(let i2 = 0; i2 < 4; i2++){
-          let float = this.mdxReader.ReadSingle();
-          node.weights[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
-        }
-
-        node.boneIdx[i] = [0, 0, 0, 0];
-        for(let i2 = 0; i2 < 4; i2++){
-          let float = this.mdxReader.ReadSingle();
-          node.boneIdx[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
-        }
+      node.boneIdx[i] = [0, 0, 0, 0];
+      for(let i2 = 0; i2 < 4; i2++){
+        let float = this.mdxReader.ReadSingle();
+        node.boneIdx[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
       }
+    }
 
-      if (node.count_bone_mapping > 0) {
-        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.p_bone_mapping);
-        node.bone_mapping = new Array(node.count_bone_mapping);
-        for(let i = 0; i < node.count_bone_mapping; i++){
-          node.bone_mapping[i] = this.mdlReader.ReadSingle();
-        }
+    if (node.BoneMapCount > 0) {
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneMapOffset);
+      node.bone_mapping = new Array(node.BoneMapCount);
+      for(let i = 0; i < node.BoneMapCount; i++){
+        node.bone_mapping[i] = this.mdlReader.ReadSingle();
       }
+    }
 
-      if (node.bone_quats_def.count > 0) {
-        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.bone_quats_def.offset);
-        node.bone_quats = new Array(node.bone_quats_def.count);
-        for(let i = 0; i < node.bone_quats_def.count; i++){
-          let w = this.mdlReader.ReadSingle();
-          node.bone_quats[i] = new THREE.Quaternion(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), w);
-          node.bone_quats[i].normalize();
-        }
+    if (node.BoneQuaternionDef.count > 0) {
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneQuaternionDef.offset);
+      node.bone_quats = new Array(node.BoneQuaternionDef.count);
+      for(let i = 0; i < node.BoneQuaternionDef.count; i++){
+        let w = this.mdlReader.ReadSingle();
+        node.bone_quats[i] = new THREE.Quaternion(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), w);
+        //node.bone_quats[i].normalize();
       }
+    }
 
-      if (node.bone_vertex_def.count > 0) {
-        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.bone_vertex_def.offset);
-        node.bone_vertex = new Array(node.bone_vertex_def.count);
-        for(let i = 0; i < node.bone_vertex_def.count; i++){
-          node.bone_vertex[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-        }
+    if (node.BoneVertexDef.count > 0) {
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneVertexDef.offset);
+      node.bone_vertex = new Array(node.BoneVertexDef.count);
+      for(let i = 0; i < node.BoneVertexDef.count; i++){
+        node.bone_vertex[i] = new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
+        //node.bone_vertex[i].normalize();
       }
+    }
 
-      if (node.bone_constants_def.count > 0) {
-        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.bone_constants_def.offset);
-        node.bone_constants = new Array(node.bone_constants_def.count);
-        for(let i = 0; i < node.bone_constants_def.count; i++){
-          node.bone_constants[i] = this.mdlReader.ReadUInt16();
-        }
+    if (node.BoneConstantsDef.count > 0) {
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneConstantsDef.offset);
+      node.bone_constants = new Array(node.BoneConstantsDef.count);
+      for(let i = 0; i < node.BoneConstantsDef.count; i++){
+        node.bone_constants[i] = this.mdlReader.ReadByte();
       }
+    }
 
+  }
+
+  ReadDanglyNode(node, parent){
+    let contraintArray = AuroraModel.ReadArrayDefinition(this.mdlReader);
+
+    node.danglyDisplacement = this.mdlReader.ReadSingle();
+    node.danglyTightness = this.mdlReader.ReadSingle();
+    node.danglyPeriod = this.mdlReader.ReadSingle();
+
+    node.danglyMDLOffset = this.mdlReader.ReadUInt32();
+    
+    node.constraints = AuroraModel.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + contraintArray.offset, contraintArray.count);
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.danglyMDLOffset);
+    node.danglyVec4 = new Array(contraintArray.count);
+    for(let i = 0; i < contraintArray.count; i++){
+      node.danglyVec4[i] = new THREE.Vector4(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), node.constraints[i]);
+    }
   }
 
   ReadLightNode(light){
 
-    light.FlareRadius = this.mdlReader.ReadSingle();
+    let flareRadius = this.mdlReader.ReadSingle();
 
     this.mdlReader.Skip(0x0C); //Unknown UInt32 array
 
-    light.FlareSizes = new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
-    light.FlarePositions = new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
-    light.FlareColorShifts = new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
-
-    light.PointerArray = this.mdlReader.ReadChars(0x0C);
+    let FlareSizes = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    let FlarePositions = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    let FlareColorShifts = AuroraModel.ReadArrayDefinition(this.mdlReader);
+    let FlareTextures = AuroraModel.ReadArrayDefinition(this.mdlReader);
 
     light.LightPriority = this.mdlReader.ReadUInt32();
     light.AmbientFlag = this.mdlReader.ReadUInt32(); //Flag
@@ -508,6 +566,37 @@ class AuroraModel {
     light.ShadowFlag = this.mdlReader.ReadUInt32();
     light.GenerateFlareFlag = this.mdlReader.ReadUInt32();
     light.FadingLightFlag = this.mdlReader.ReadUInt32();
+
+    light.flare = {
+      radius: flareRadius,
+      sizes: [],
+      positions: [],
+      colorShifts: [],
+      textures: []
+    };
+
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareTextures.offset);
+    for(let i = 0; i < FlareTextures.count; i++){
+      let size = this.mdlReader.ReadInt32();
+      light.flare.textures.push(this.mdlReader.ReadChars(size).replace(/\0[\s\S]*$/g,'').trim().toLowerCase())
+    }
+
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareSizes.offset);
+    for(let i = 0; i < FlareSizes.count; i++){
+      light.flare.sizes.push(this.mdlReader.ReadSingle())
+    }
+
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlarePositions.offset);
+    for(let i = 0; i < FlarePositions.count; i++){
+      light.flare.positions.push(this.mdlReader.ReadSingle())
+    }
+
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareColorShifts.offset);
+    for(let i = 0; i < FlareColorShifts.count; i++){
+      light.flare.colorShifts.push(
+        new THREE.Color(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle())
+        );
+    }
 
     return light;
   }
@@ -554,11 +643,46 @@ class AuroraModel {
 
   }
 
+  ReadAABBNode(node = null, aabbNodeOffset = -1){
+    
+    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + aabbNodeOffset);
+
+    let aabb = {
+      type: 'AABB',
+      box: new THREE.Box3(
+        new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle()),
+        new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle())
+      ),
+      leftNodeOffset: this.mdlReader.ReadInt32(),
+      rightNodeOffset: this.mdlReader.ReadInt32(),
+      faceIdx: this.mdlReader.ReadInt32(),
+      unk1: this.mdlReader.ReadInt32(),
+      leftNode: undefined,
+      rightNode: undefined,
+      face: undefined
+    };
+
+    if(aabb.leftNodeOffset > 0){
+      aabb.leftNode = this.ReadAABBNode(node, aabb.leftNodeOffset);
+    }
+
+    if(aabb.rightNodeOffset > 0){
+      aabb.rightNode = this.ReadAABBNode(node, aabb.rightNodeOffset);
+    }
+
+    if(node.faceIdx > -1){
+      aabb.face = node.faces[node.faceIdx];
+    }
+
+    return aabb;
+    
+  }
+
   ReadNodeControllers(node, offset, count, data, data2){
     let pos = this.mdlReader.position;
     this.mdlReader.Seek(offset);
 
-    let controllers = {};
+    let controllers = new Map();
     for(let i = 0; i < count; i++){
 
       let controller = {
@@ -574,190 +698,256 @@ class AuroraModel {
       this.mdlReader.Skip(3); //Skip unused padding
       
       let tmpQuat = new THREE.Quaternion();
+
+      let NodeType = node.NodeType;
+      if(this.nodes[node.name]){
+        NodeType = node.NodeType = this.nodes[node.name].NodeType;
+      }
     
       if(controller.rowCount != -1){
 
-        controllers[controller.type] = controller;
-        controller.data = new Array(controller.rowCount);
+        if(node instanceof AuroraModelAnimationNode || node instanceof AuroraModelNode){
 
-        switch(controller.type){
-          case ControllerType.P2P_Bezier3:
-          case ControllerType.Position:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {
-                isBezier: false,
-                time: data[controller.timeKeyIndex + r]
-              };
+          //Default Controllers
+          switch(controller.type){
+            case ControllerType.Position:
+              for (let r = 0; r < controller.rowCount; r++) {
+                let frame = {
+                  isBezier: false,
+                  time: data[controller.timeKeyIndex + r]
+                };
 
-              let vec3 = {x: 0, y: 0, z: 0};
+                let vec3 = {x: 0, y: 0, z: 0};
 
-              if(controller.columnCount == 1){
+                if(controller.columnCount == 1){
                   vec3.x = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
                   vec3.y = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
                   vec3.z = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
-              }else if(controller.columnCount == 3){
-                vec3.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                vec3.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
-                vec3.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
-              }else{
-                //I think this might be a bezier curve?!?
-                //pointB and pointC are relative to pointA
+                }else if(controller.columnCount == 3){
+                  vec3.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                  vec3.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
+                  vec3.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
+                }else{
+                  //This is a bezier curve this controller contains 3 vector3's packed end to end:
+                  //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
+                  //pointB and pointC are relative to pointA
 
-                frame.isBezier = true;
-                frame.bezier = {
-                  pointA: {
-                    x: data[controller.dataValueIndex + (r * 9) + 0] || 0.0,
-                    y: data[controller.dataValueIndex + (r * 9) + 1] || 0.0,
-                    z: data[controller.dataValueIndex + (r * 9) + 2] || 0.0
-                  },
-                  pointB: {
-                    x: data[controller.dataValueIndex + (r * 9) + 3] || 0.0,
-                    y: data[controller.dataValueIndex + (r * 9) + 4] || 0.0,
-                    z: data[controller.dataValueIndex + (r * 9) + 5] || 0.0
-                  },
-                  pointC: {
-                    x: data[controller.dataValueIndex + (r * 9) + 6] || 0.0,
-                    y: data[controller.dataValueIndex + (r * 9) + 7] || 0.0,
-                    z: data[controller.dataValueIndex + (r * 9) + 8] || 0.0
+                  let rowOffset = controller.dataValueIndex + (r * 9);
+
+                  frame.isBezier = true;
+                  frame.bezier = new THREE.QuadraticBezierCurve3(
+                    //POINT A
+                    new THREE.Vector3(
+                      data[rowOffset + 0] || 0.0,
+                      data[rowOffset + 1] || 0.0,
+                      data[rowOffset + 2] || 0.0
+                    ),
+                    //POINT B
+                    new THREE.Vector3(
+                      (data[rowOffset + 0] + data[rowOffset + 3]) || 0.0,
+                      (data[rowOffset + 1] + data[rowOffset + 4]) || 0.0,
+                      (data[rowOffset + 2] + data[rowOffset + 5]) || 0.0
+                    ),
+                    //POINT C
+                    new THREE.Vector3(
+                      (data[rowOffset + 0] + data[rowOffset + 6]) || data[rowOffset + 0] || 0.0,
+                      (data[rowOffset + 1] + data[rowOffset + 7]) || data[rowOffset + 1] || 0.0,
+                      (data[rowOffset + 2] + data[rowOffset + 8]) || data[rowOffset + 2] || 0.0
+                    )
+                  );
+
+                  if(frame.bezier.v1.x == 0 && frame.bezier.v1.y == 0){
+                    frame.isBezier = false;
+                  }else if(frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6)){
+                    frame.bezier.v1.copy(frame.bezier.v0);
+                  }else{
+                    var dir = frame.bezier.v2.clone().sub(frame.bezier.v0);
+                    var len = dir.length();
+                    dir = dir.normalize().multiplyScalar(len*0.5);
+                    frame.bezier.v1 = frame.bezier.v0.clone().add(dir);
                   }
-                };
 
-                vec3.x = data[controller.dataValueIndex + (r * 9) + 0] || 0.0;
-                vec3.y = data[controller.dataValueIndex + (r * 9) + 1] || 0.0;
-                vec3.z = data[controller.dataValueIndex + (r * 9) + 2] || 0.0;
+                  vec3.x = data[rowOffset + 0] || 0.0;
+                  vec3.y = data[rowOffset + 1] || 0.0;
+                  vec3.z = data[rowOffset + 2] || 0.0;
 
+                }
+    
+                frame.x = vec3.x;
+                frame.y = vec3.y;
+                frame.z = vec3.z;
+    
+                controller.data[r] = (frame);
               }
-  
-              frame.x = vec3.x;
-              frame.y = vec3.y;
-              frame.z = vec3.z;
-  
-              controller.data[r] =(frame);
-            }
-          break;
-          case ControllerType.Orientation:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {};
-              frame.time = data[controller.timeKeyIndex + r];
+            break;
+            case ControllerType.Orientation:
+              for (let r = 0; r < controller.rowCount; r++) {
+                let frame = {};
+                frame.time = data[controller.timeKeyIndex + r];
 
-              if(controller.columnCount == 2){
-                let temp = data2[controller.dataValueIndex + r];
-                let original = data[controller.dataValueIndex + r];
-                
-                let x, y, z, w = 0;
+                if(controller.columnCount == 2){
+                  let temp = data2[controller.dataValueIndex + r];
+                  let original = data[controller.dataValueIndex + r];
+                  
+                  let x, y, z, w = 0;
 
-                if(isNaN(temp)){
-                  temp = 0;
+                  if(isNaN(temp)){
+                    temp = 0;
+                  }
+
+                  x = (parseInt(temp & 0x07ff) / 1023.0) - 1.0;
+                  y = (parseInt((temp >> 11) & 0x07ff) / 1023.0) - 1.0;
+                  z = (parseInt((temp >> 22) & 0x3FF) / 511.0) - 1.0;
+
+                  let fSquares =  (Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0));
+
+                  if(fSquares < 1.0){
+                    w = Math.sqrt(1.0 - fSquares);
+                    tmpQuat.set(x, y, z, w);
+                  } else {
+                    tmpQuat.set(x, y, z, 0);
+                  }
+
+                }else{
+                  tmpQuat.set(
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0,
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0,
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0,
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 3] || 1.0
+                  );
                 }
 
-                x = (parseInt(temp & 0x07ff) / 1023.0) - 1.0;
-                y = (parseInt((temp >> 11) & 0x07ff) / 1023.0) - 1.0;
-                z = (parseInt((temp >> 22) & 0x3FF) / 511.0) - 1.0;
-
-                let fSquares =  (Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0));
-
-                if(fSquares < 1.0){
-                  w = Math.sqrt(1.0 - fSquares);
-                  tmpQuat.set(x, y, z, w);
-                } else {
-                  tmpQuat.set(x, y, z, 0);
-                }
-
-              }else{
-                tmpQuat.set(
-                  data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0,
-                  data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0,
-                  data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0,
-                  data[controller.dataValueIndex + (r * controller.columnCount) + 3] || 1.0
-                );
+                tmpQuat.normalize();
+    
+                frame.x = tmpQuat.x;
+                frame.y = tmpQuat.y;
+                frame.z = tmpQuat.z;
+                frame.w = tmpQuat.w;
+    
+                controller.data[r] = frame;
               }
+            break;
+            case ControllerType.Scale:
+              for (let r = 0; r < controller.rowCount; r++) {
+                let frame = {};
+                frame.time = data[controller.timeKeyIndex + r];
+                frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                controller.data[r] = frame;
+              }
+            break;
+          }
 
-              tmpQuat.normalize();
-  
-              frame.x = tmpQuat.x;
-              frame.y = tmpQuat.y;
-              frame.z = tmpQuat.z;
-              frame.w = tmpQuat.w;
-  
-              controller.data[r] = frame;
+          //Mesh Controllers
+          if ((NodeType & AuroraModel.NODETYPE.Mesh) == AuroraModel.NODETYPE.Mesh) {
+            switch(controller.type){
+              case ControllerType.Alpha:
+                for (let r = 0; r < controller.rowCount; r++) {
+                  let frame = {};
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                  controller.data[r] = frame;
+                }
+              break;
+              case ControllerType.SelfIllumColor:
+                for (let r = 0; r < controller.rowCount; r++) {
+      
+                  let frame = {};
+      
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
+                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
+      
+                  controller.data[r] = frame;
+                }
+              break;
             }
-          break;
-          case ControllerType.Color:
-          case ControllerType.ColorStart:
-          case ControllerType.ColorMid:
-          case ControllerType.ColorEnd:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {};
-              frame.time = data[controller.timeKeyIndex + r];
-              frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-              frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-              frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
-              controller.data[r] = frame
+          }
+
+          //Light Controllers
+          if ((NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
+            switch(controller.type){
+              case ControllerType.Color:
+                for (let r = 0; r < controller.rowCount; r++) {
+                  let frame = {};
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+                  controller.data[r] = frame
+                }
+              break;
+              case ControllerType.ShadowRadius:
+              case ControllerType.Radius:
+              case ControllerType.VerticalDisplacement:
+              case ControllerType.Multiplier:
+                for (let r = 0; r < controller.rowCount; r++) {
+                  let frame = {};
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  controller.data[r] = frame
+                }
+              break;
             }
-          break;
-          case ControllerType.ShadowRadius:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {};
-              frame.time = data[controller.timeKeyIndex + r];
-              frame.shadowRadius = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-              controller.data[r] = frame
+          }
+
+          //Emitter Controllers
+          if ((NodeType & AuroraModel.NODETYPE.Emitter) == AuroraModel.NODETYPE.Emitter) {
+            switch(controller.type){
+              //case ControllerType.P2P_Bezier3:
+              case ControllerType.ColorStart:
+              case ControllerType.ColorMid:
+              case ControllerType.ColorEnd:
+                for (let r = 0; r < controller.rowCount; r++) {
+                  let frame = {};
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+                  controller.data[r] = frame
+                }
+              break;
+              case ControllerType.LifeExp:
+              case ControllerType.BirthRate:
+              case ControllerType.Bounce_Co:
+              case ControllerType.Drag:
+              case ControllerType.Grav:
+              case ControllerType.FPS:
+              case ControllerType.Detonate:
+              case ControllerType.Spread:
+              case ControllerType.Velocity:
+              case ControllerType.RandVel:
+              case ControllerType.Mass:
+              case ControllerType.ParticleRot:
+              case ControllerType.SizeStart:
+              case ControllerType.SizeMid:
+              case ControllerType.SizeEnd:
+              case ControllerType.SizeStart_Y:
+              case ControllerType.SizeMid_Y:
+              case ControllerType.SizeEnd_Y:
+              case ControllerType.AlphaStart:
+              case ControllerType.AlphaMid:
+              case ControllerType.AlphaEnd:
+              case ControllerType.Threshold:
+              case ControllerType.XSize:
+              case ControllerType.YSize:
+              case ControllerType.FrameStart:
+              case ControllerType.FrameEnd:
+              case 240:
+                for (let r = 0; r < controller.rowCount; r++) {
+                  let frame = {};
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  controller.data[r] = frame
+                }
+              break;
             }
-          break;
-          case ControllerType.LifeExp:
-          case ControllerType.BirthRate:
-          case ControllerType.Bounce_Co:
-          case ControllerType.Drag:
-          case ControllerType.Grav:
-          case ControllerType.FPS:
-          case ControllerType.Detonate:
-          case ControllerType.Spread:
-          case ControllerType.Velocity:
-          case ControllerType.RandVel:
-          case ControllerType.Mass:
-          case ControllerType.Multiplier:
-          case ControllerType.ParticleRot:
-          case ControllerType.SizeStart:
-          case ControllerType.SizeMid:
-          case ControllerType.SizeEnd:
-          case ControllerType.SizeStart_Y:
-          case ControllerType.SizeMid_Y:
-          case ControllerType.SizeEnd_Y:
-          case ControllerType.Threshold:
-          case ControllerType.XSize:
-          case ControllerType.YSize:
-          case ControllerType.FrameStart:
-          case ControllerType.FrameEnd:
-          case ControllerType.Scale:
-          case 240:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {};
-              frame.time = data[controller.timeKeyIndex + r];
-              frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-              controller.data[r] = frame
-            }
-          break;
-          case ControllerType.SelfIllumColor:
-            for (let r = 0; r < controller.rowCount; r++) {
-  
-              let frame = {};
-  
-              frame.time = data[controller.timeKeyIndex + r];
-              frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-              frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-              frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
-  
-              controller.data[r] = frame
-            }
-          break;
-          /*case ControllerType.Radius:
-            for (let r = 0; r < controller.rowCount; r++) {
-              let frame = {};
-              frame.time = data[controller.timeKeyIndex + r];
-              frame.radius = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-              controller.data.push(frame);
-            }
-          break;*/
+          }
+
         }
+
+        controllers.set(controller.type, controller);//controllers[controller.type] = controller;
+        
       }
 
     }
@@ -864,7 +1054,7 @@ class AuroraModel {
     let controllerData = AuroraModel.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _contDataDef.offset, _contDataDef.count);
     let controllerData2 = AuroraModel.ReadArray(this.mdlReader, this.fileHeader.ModelDataOffset + _contDataDef.offset, _contDataDef.count);
     //console.log('animation', node.name, controllerData);
-    node.controllers = this.ReadNodeControllers(this.mdlReader, this.fileHeader.ModelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData, controllerData2);
+    node.controllers = this.ReadNodeControllers(node, this.fileHeader.ModelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData, controllerData2);
     
     anim.nodes.push(node);
     let len = children.length;

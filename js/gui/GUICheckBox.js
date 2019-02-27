@@ -95,27 +95,27 @@ class GUICheckBox extends GUIControl{
     //unset the border so the background isn't set
     this.border.fill = '';
 
-    this.onMouseMove = () => {
+    this.addEventListener( 'mouseMove', () => {
       //this.mouseInside();
-    }
+    });
 
-    this.onClick = () =>{
+    this.addEventListener( 'click', () =>{
       /*let mouseX = Mouse.Client.x - (window.innerWidth / 2);
 
       let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
       this.mouseInside();*/
-    }
+    });
 
-    this.onMouseDown = (e) => {
+    this.addEventListener( 'mouseDown', (e) => {
       e.stopPropagation();
       /*let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;*/
-    };
+    });
 
-    this.onMouseUp = () => {
+    this.addEventListener( 'mouseUp', () => {
       //this.mouseInside();
-    };
+    });
 
   }
 

@@ -73,10 +73,9 @@ class InlineAudioPlayer {
       
     });
 
-    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    this.gainNode = this.audioCtx.createGain();
+    this.gainNode = Game.audioEngine.audioCtx.createGain();
     this.gainNode.gain.value = 0.25;
-    this.source = this.audioCtx.createBufferSource();
+    this.source = Game.audioEngine.audioCtx.createBufferSource();
 
     this.buffer = null;
 
@@ -104,16 +103,27 @@ class InlineAudioPlayer {
   OpenAudio(file){
     this.Reset();
     this.Stop();
-    this.audioFile = file;
-    this.$title.text(this.audioFile.filename);
-    if(this.isPlaying()){
-      this.Stop();
+    
+    if(file instanceof EditorFile){
+      file.readFile( (buffer) => {
+        try{
+          this.$title.text(file.resref+'.'+file.ext);
+          this.audioFile = new AudioFile(buffer);
+          if(this.isPlaying()){
+            this.Stop();
+          }
+          if(this.buffer){
+            this.buffer = null;
+          }
+          this.Play();
+          this.Show();
+        }
+        catch (e) {
+          console.error(e);
+          //this.Hide();
+        }
+      });
     }
-    if(this.buffer){
-      this.buffer = null;
-    }
-    this.Play();
-    this.Show();
   }
 
   GetAudioBuffer(onBuffered = null){
@@ -121,7 +131,7 @@ class InlineAudioPlayer {
       this.audioFile.GetPlayableByteStream((data) => {
         //console.log('format', )
         try{
-          this.audioCtx.decodeAudioData(data, (buffer) => {
+          Game.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
             this.buffer = buffer;
             if(onBuffered != null)
               onBuffered(this.buffer);
@@ -144,7 +154,7 @@ class InlineAudioPlayer {
   }
 
   Play(){
-    this.source = this.audioCtx.createBufferSource();
+    this.source = Game.audioEngine.audioCtx.createBufferSource();
     if(!this.loading){
       this.loader.Show();
       this.GetAudioBuffer((data) => {
@@ -152,11 +162,11 @@ class InlineAudioPlayer {
         let offset = this.pausedAt;
         this.source.buffer = this.buffer;
         this.source.connect(this.gainNode);
-        this.gainNode.connect(this.audioCtx.destination);
+        this.gainNode.connect(Game.audioEngine.audioCtx.destination);
         this.source.loop = false;
         this.source.start(0, offset);
 
-        this.startedAt = this.audioCtx.currentTime - offset;
+        this.startedAt = Game.audioEngine.audioCtx.currentTime - offset;
         this.pausedAt = 0;
         this.playing = true;
 
@@ -214,7 +224,7 @@ class InlineAudioPlayer {
   }
 
   Pause(){
-    var elapsed = this.audioCtx.currentTime - this.startedAt;
+    var elapsed = Game.audioEngine.audioCtx.currentTime - this.startedAt;
     this.Stop();
     this.pausedAt = elapsed;
 
@@ -264,7 +274,7 @@ class InlineAudioPlayer {
           return this.pausedAt;
       }
       if(this.startedAt) {
-          return this.audioCtx.currentTime - this.startedAt;
+          return Game.audioEngine.audioCtx.currentTime - this.startedAt;
       }
     }catch(e){
       return 0;

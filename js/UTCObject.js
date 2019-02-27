@@ -519,6 +519,89 @@ class UTCObject {
     return utc;
   }
 
+  static GenerateTemplate(){
+    let template = new GFFObject();
+    template.FileType = 'UTC ';
+
+    template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Appearance_Type') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyVariation') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Cha') );
+    template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ChallengeRating') );
+    template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ClassList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Comment') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Con') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Conversation') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentForce') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentHitPoints') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Deity') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Description') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Dex') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Disarmable') );
+    template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Equip_ItemList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') );
+    template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'FeatList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'FirstName') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'ForcePoints') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Gender') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GoodEvil') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'HitPoints') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Int') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Interruptable') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsPC') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LastName') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'LawfulChaotic') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'MaxHitPoints') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Min1HP') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NaturalAC') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NoPermDeath') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NotReorienting') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PalletID') ).SetValue(4);
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PartyInteract') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PerceptionRange') );
+    template.RootNode.AddField( new Field(GFFDataTypes.INT, 'Phenotype') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Plot') );
+    template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Race') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptAttacked') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDamaged') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDeath') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDialogue') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDisturbed') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptEndDialogu') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptEndRound') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptHeartbeat') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnBlocked') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnNotice') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptRested') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpawn') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpellAt') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptUserDefine') );
+    let skillList = template.RootNode.AddField( new Field(GFFDataTypes.List, 'SkillList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') )
+    template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'SpecAbilityList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Str') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Subrace') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'SubraceIndex') );
+    template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') );
+    template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'TemplateList') );
+    template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'TemplateResRef') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TextureVar') );
+    template.RootNode.AddField( new Field(GFFDataTypes.INT, 'WalkRate') );
+    template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Wis') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'fortbonus') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'refbonus') );
+    template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'willbonus') );
+
+    for(let i = 0; i < 8; i++){
+      let _skill = new Struct();
+      _skill.AddField( new Field(GFFDataTypes.RESREF, 'Rank') ).SetValue(0);
+      skillList.AddChildStruct(_skill);
+    }
+
+    return template;
+  }
+
 }
 
 UTCObject.ResType = ResourceTypes['utc'];
@@ -539,5 +622,40 @@ UTCObject.SLOT = {
   CLAW3: 0x10000,
   HIDE:  0x20000,
 };
+
+UTCObject.NWScriptSlot = (slot = 0) => {
+  switch(slot){
+    case 0:
+      return UTCObject.SLOT.HEAD;
+    case 1:
+      return UTCObject.SLOT.ARMOR;
+    case 2:
+      return UTCObject.SLOT.ARMS;
+    case 3:
+      return UTCObject.SLOT.RIGHTHAND;
+    case 4:
+      return UTCObject.SLOT.LEFTHAND;
+    case 5:
+      return UTCObject.SLOT.LEFTARMBAND;
+    case 6:
+      return UTCObject.SLOT.RIGHTARMBAND;
+    case 7:
+      return UTCObject.SLOT.IMPLANT;
+    case 8:
+      return UTCObject.SLOT.BELT;
+    case 9:
+      return UTCObject.SLOT.CLAW1;
+    case 10:
+      return UTCObject.SLOT.CLAW2;
+    case 14:
+      return UTCObject.SLOT.CLAW3;
+    case 15:
+      return UTCObject.SLOT.HIDE;
+    case 16:
+      return UTCObject.SLOT.HEAD;
+    case 17:
+      return UTCObject.SLOT.ARMOR; //Creature Armor
+  }
+}
 
 module.exports = UTCObject;

@@ -33,8 +33,12 @@ class NWScriptStack {
     return this.stack[(this.pointer - 4) / 4];
   }
 
+  getPointerPositionRelative(relPos = -4){
+    return (this.pointer + relPos) / 4;
+  }
+
   getAtPointer(index = -4){
-    return this.stack[(this.pointer + index) / 4];
+    return this.stack[this.getPointerPositionRelative(index)];
   }
 
   getAtTop(index = -4){
@@ -156,12 +160,12 @@ class NWScriptStack {
 NWScriptStack.intToUint8Array = function(integer) {
   return integer;
   try{
-    let _temp = new Buffer(4);
+    let _temp = Buffer.alloc(4);
     _temp.writeInt32LE(parseInt(integer));
     // we want to represent the input as a 4-byte array
     return new Uint8Array(_temp);
   }catch(e){
-    return new Uint8Array(new Buffer(4));
+    return new Uint8Array(Buffer.alloc(4));
     console.error(e, integer);
   }
 };
@@ -173,7 +177,7 @@ NWScriptStack.uint8ArrayToInt = function(byteArray) {
     //byteArray = new Uint8Array([1, 0, 0, 0]);
   }
   //try{
-    let _temp = new Buffer(byteArray);
+    let _temp = Buffer.from(byteArray);
     return _temp.readInt32LE();
   /*}catch(e){
     console.error(e, byteArray);

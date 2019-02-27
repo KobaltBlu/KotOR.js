@@ -68,17 +68,19 @@ onmessage = function (e){
           }
         }
 
-        switch(face){
-          case 3:
-            console.log('Face 4')
-            byteArray = PixelManager.Rotate90deg(PixelManager.Rotate90deg(byteArray, 4, width, height), 4, width, height);
-          break;
-          case 1:
-            byteArray = PixelManager.Rotate90deg(byteArray, 4, width, height);
-          break;
-          case 0:
-            byteArray = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(byteArray, 4, width, height), 4, width, height), 4, width, height);
-          break;
+        if(Header.faces == 6){
+          switch(face){
+            case 3:
+              console.log('Face 4')
+              byteArray = PixelManager.Rotate90deg(PixelManager.Rotate90deg(byteArray, 4, width, height), 4, width, height);
+            break;
+            case 1:
+              byteArray = PixelManager.Rotate90deg(byteArray, 4, width, height);
+            break;
+            case 0:
+              byteArray = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(byteArray, 4, width, height), 4, width, height), 4, width, height);
+            break;
+          }
         }
 
 

@@ -108,10 +108,10 @@ THREE.MDLLoader.prototype = {
           if(mdlBuffer){
             if(mdxBuffer){
 
-              let mdlData2 = new Buffer(mdlBuffer.length);
+              let mdlData2 = Buffer.alloc(mdlBuffer.length);
               mdlBuffer.copy(mdlData2);
 
-              let mdxData2 = new Buffer(mdxBuffer.length);
+              let mdxData2 = Buffer.alloc(mdxBuffer.length);
               mdxBuffer.copy(mdxData2);
           
               let mdlReader = new BinaryReader(mdlData2);

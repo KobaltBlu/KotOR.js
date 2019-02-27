@@ -6,7 +6,7 @@ class EditorControls {
     this.element = element || document;
     this.editor = editor;
     this.cameraMode = EditorControls.CameraMode.EDITOR;
-    this.CameraMoveSpeed = 10.0;
+    this.CameraMoveSpeed = 1.0;
 
     this.camera.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
     this.camera.pitch = 0.00;
@@ -37,12 +37,12 @@ class EditorControls {
       'shift':false
     };
 
-    this.workerPointer = new Worker('worker/worker-pointer-raycaster.js');
+    /*this.workerPointer = new Worker('worker/worker-pointer-raycaster.js');
     this.workerPointer.addEventListener('message', function(e) {
       this.workerPointerWorking = false;
     }, false);
 
-    this.workerPointerWorking = false;
+    this.workerPointerWorking = false;*/
 
     this.element.requestPointerLock = this.element.requestPointerLock ||
 			     this.element.webkitRequestPointerLock;

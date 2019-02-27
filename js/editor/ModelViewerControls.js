@@ -7,10 +7,12 @@ class ModelViewerControls {
     this.editor = editor;
 
     this.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
-    this.CameraMoveSpeed = 10.0;
+    this.CameraMoveSpeed = 3.0;
 
     this.pitch = 0;
     this.yaw = -90;
+
+    this.pointerLockVector = new THREE.Vector2();
 
     this.TOOL = {
       NONE: 0,
@@ -31,7 +33,7 @@ class ModelViewerControls {
       'shift':false
     };
 
-    this.element.requestPointerLock = this.element.requestPointerLock;
+    //this.element.requestPointerLock = this.element.requestPointerLock;
 
     // Ask the browser to release the pointer
     document.exitPointerLock = document.exitPointerLock;
@@ -83,7 +85,42 @@ class ModelViewerControls {
         Mouse.MouseDownY = event.pageY - parentOffset.top;
 
         if(Mouse.ButtonState == Mouse.State.LEFT){
+          //let axisMoverSelected = false;
+          //this.editor.axes.selected = null;
+          this.editor.raycaster.setFromCamera( Mouse.Vector, this.camera );
+          /*let axisMoverIntersects = this.editor.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
+          if(axisMoverIntersects.length){
+            this.editor.axes.selected = axisMoverIntersects[0].object.name;
+            axisMoverSelected = true;
+          }*/
 
+          //if(!axisMoverSelected){
+            let intersects = this.editor.raycaster.intersectObjects( this.editor.selectable.children, true );
+
+            this.editor.selectionBox.visible = false;
+            this.editor.selectionBox.update();
+            this.editor.selected = null;
+
+            this.editor.$ui_selected.$selected_object.hide();
+
+            if(intersects.length){
+
+              let intersection = intersects[ 0 ],
+                  obj = intersection.object;
+
+              if(obj instanceof THREE.Mesh){
+                this.editor.select(obj);
+              }else{
+                obj.traverseAncestors( (obj) => {
+                  if(obj instanceof THREE.Mesh){
+                    this.editor.select(obj);
+                    return;
+                  }
+                });
+              }
+              
+            }
+          //}
         }else{
           // Ask the browser to lock the pointer
           this.element.requestPointerLock();
@@ -167,12 +204,12 @@ class ModelViewerControls {
     this.camera.position.z = _cacheZ;
 
     if(this.keys['space']){
-      this.camera.position.z += speed;
+      this.camera.position.z += speed/2;
       this.camera.updateProjectionMatrix();
     }
 
     if(this.keys['shift']){
-      this.camera.position.z -= speed;
+      this.camera.position.z -= speed/2;
       this.camera.updateProjectionMatrix();
     }
 
@@ -229,22 +266,28 @@ class ModelViewerControls {
     //console.log('ModelViewerControls', document.pointerLockElement, this.element);
     if(document.pointerLockElement === this.element) {
       //console.log('The pointer lock status is now locked');
-      this.element.addEventListener("mousemove", this.plMoveEvent = (e) => { this.plMouseMove(e); }, true);
+      document.body.addEventListener("mousemove", this.plMoveEvent = (e) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;
     } else {
-      //console.log('The pointer lock status is now unlocked');
-      this.element.removeEventListener("mousemove", this.plMoveEvent, true);
+      console.log('The pointer lock status is now unlocked');
+      document.body.removeEventListener("mousemove", this.plMoveEvent, true);
+      //this.plMoveEvent = undefined;
       Mouse.Dragging = false;
       //document.removeEventListener('pointerlockchange', this.plEvent, true);
     }
   }
 
   plMouseMove(event){
-
-    Mouse.OffsetX = event.movementX || 0;
-    Mouse.OffsetY = (event.movementY || 0)*-1.0;
-
-    //console.log(Mouse.OffsetX, Mouse.OffsetY, Mouse.Dragging, event);
+    if(Mouse.Dragging && (event.movementX || event.movementY)){
+      let range = 100;
+      //console.log(event.movementX, event.movementY);
+      if(event.movementX > -range && event.movementX < range){
+        Mouse.OffsetX = event.movementX || 0;
+      }
+      if(event.movementY > -range && event.movementY < range){
+        Mouse.OffsetY = (event.movementY || 0)*-1.0;
+      }
+    }
   }
 
 }

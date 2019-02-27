@@ -22,15 +22,15 @@ class MenuMap extends GameMenu {
         this.BTN_PRTYSLCT = this.getControlByName('BTN_PRTYSLCT');
         this.BTN_RETURN = this.getControlByName('BTN_RETURN');
 
-        this.BTN_PRTYSLCT.onClick = (e) => {
+        this.BTN_PRTYSLCT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MenuPartySelection.Show();
-        }
+        });
 
-        this.BTN_RETURN.onClick = (e) => {
+        this.BTN_RETURN.addEventListener('click', (e) => {
           e.stopPropagation();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

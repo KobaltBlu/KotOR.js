@@ -49,7 +49,7 @@ class AudioEmitter {
 
     this.volume = this.options.template.volume;
 
-    this.gainNode.gain.value = ( ( ( this.volume * 100 ) / 127 ) * 0.01 );
+    this.gainNode.gain.value = (Math.PI/2) * ( ( ( this.volume * 100 ) / 127 ) * 0.01 );
 
     //console.log('GainValue', this.gainNode.gain.value);
 
@@ -288,7 +288,7 @@ class AudioEmitter {
 
       if(typeof this.currentSound.buffer.onEnd === 'function')
         this.currentSound.buffer.onEnd();
-
+      
       this.currentTimeout = window.setTimeout( () => {
         //console.log('AudioEmitter', 'PlayNextSound', 'Timeout')
         if(this.isRandom){
@@ -298,7 +298,8 @@ class AudioEmitter {
           if(this.index >= this.sounds.length)
             this.index = 0;
         }
-        this.PlayNextSound();
+        if(this.isActive)
+          this.PlayNextSound();
       }, delay );
     };
 

@@ -91,21 +91,26 @@ class GUIListBox extends GUIControl {
       this.cullOffscreen();
     }else{
 
+      let index = -1;
+      let ctrl;
+      let widget;
+
       switch(type){
         case 4:
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(node);
-          let _ctrl = new GUIProtoItem(this.menu, control, this.widget, this.scale);
-          _ctrl.setList( this );
-          this.children.push(_ctrl);
-          let idx = this.itemGroup.children.length;
-          let item = _ctrl.createControl();
-          this.itemGroup.add(item);
+          ctrl = new GUIProtoItem(this.menu, control, this.widget, this.scale);
+          ctrl.setList( this );
+          this.children.push(ctrl);
 
-          _ctrl.onClick = (e) => {
+          index = this.itemGroup.children.length;
+          widget = ctrl.createControl();
+          this.itemGroup.add(widget);
+
+          ctrl.addEventListener('click', (e) => {
             e.stopPropagation();
             if(typeof onClick === 'function')
               onClick();
-          };
+          });
 
           //this.calculatePosition();
           //this.cullOffscreen();
@@ -115,16 +120,17 @@ class GUIListBox extends GUIControl {
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
             node.getName()
           );
-          let _ctrl2 = new GUIProtoItem(this.menu, control, this.widget, this.scale);
-          _ctrl2.extent.width -= 52;
-          _ctrl2.extent.left += 52;
-          _ctrl2.setList( this );
-          this.children.push(_ctrl2);
-          let idx2 = this.itemGroup.children.length;
-          let item2 = _ctrl2.createControl();
+          ctrl = new GUIProtoItem(this.menu, control, this.widget, this.scale);
+          ctrl.setList( this );
+          this.children.push(ctrl);
+          ctrl.extent.width -= 52;
+          ctrl.extent.left += 52;
 
-          //
-          //item2.resizeControl();
+          ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+          ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
+
+          index = this.itemGroup.children.length;
+          widget = ctrl.createControl();
 
           let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
           iconMaterial.transparent = true;
@@ -132,11 +138,12 @@ class GUIListBox extends GUIControl {
           //console.log(node.getIcon());
           TextureLoader.enQueue(node.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
           
-          item2.spriteGroup = new THREE.Group();
-          item2.spriteGroup.position.x = -(_ctrl2.extent.width/2)-(52/2); //HACK
-          item2.spriteGroup.position.y -= 4;
+          widget.spriteGroup = new THREE.Group();
+          widget.spriteGroup.position.x = -(ctrl.extent.width/2)-(52/2); //HACK
+          widget.spriteGroup.position.y -= 4;
           iconSprite.scale.x = 52;
           iconSprite.scale.y = 52;
+          iconSprite.position.z = 1;
 
           for(let i = 0; i < 7; i++){
             let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
@@ -152,19 +159,64 @@ class GUIListBox extends GUIControl {
               TextureLoader.enQueue('lbl_hex_'+(i+1), hexMaterial, TextureLoader.Type.TEXTURE);
               hexSprite.visible = false;
             }
+
             hexSprite.scale.x = hexSprite.scale.y = 64;
-            item2.spriteGroup.add(hexSprite);
+            hexSprite.position.z = 1;
+            widget.spriteGroup.add(hexSprite);
           }
 
-          item2.add(item2.spriteGroup);
-          item2.spriteGroup.add(iconSprite);
-          this.itemGroup.add(item2);
+          ctrl.onSelect = () => {
+            if(ctrl.selected){
+              ctrl.showHighlight();
+              ctrl.hideBorder();
+              if(node.getStackSize() > 1){
+                widget.spriteGroup.children[0].visible = false;
+                widget.spriteGroup.children[1].visible = false;
+                widget.spriteGroup.children[2].visible = false;
+                widget.spriteGroup.children[3].visible = false;
+                widget.spriteGroup.children[4].visible = true;
+              }else{
+                widget.spriteGroup.children[0].visible = false;
+                widget.spriteGroup.children[1].visible = true;
+                widget.spriteGroup.children[2].visible = false;
+                widget.spriteGroup.children[3].visible = false;
+                widget.spriteGroup.children[4].visible = false;
+              }
+            }else{
+              ctrl.hideHighlight();
+              ctrl.showBorder();
+              if(node.getStackSize() > 1){
+                widget.spriteGroup.children[0].visible = false;
+                widget.spriteGroup.children[1].visible = false;
+                widget.spriteGroup.children[2].visible = false;
+                widget.spriteGroup.children[3].visible = true;
+                widget.spriteGroup.children[4].visible = false;
+              }else{
+                widget.spriteGroup.children[0].visible = true;
+                widget.spriteGroup.children[1].visible = false;
+                widget.spriteGroup.children[2].visible = false;
+                widget.spriteGroup.children[3].visible = false;
+                widget.spriteGroup.children[4].visible = false;
+              }
+            }
+          };
+          ctrl.onSelect();
 
-          _ctrl2.onClick = (e) => {
+          //StackCount Text
+
+
+
+          widget.add(widget.spriteGroup);
+          widget.spriteGroup.add(iconSprite);
+          this.itemGroup.add(widget);
+
+          ctrl.addEventListener('click', (e) => {
             e.stopPropagation();
+            this.select(ctrl);
+
             if(typeof onClick === 'function')
               onClick();
-          };
+          });
 
           //this.calculatePosition();
           //this.cullOffscreen();
@@ -176,6 +228,25 @@ class GUIListBox extends GUIControl {
 
     this.updateList();
     this.scrollbar.update();
+
+  }
+
+  select(item = null){
+
+    let len = this.children.length;
+    for(let i = 0; i < len; i++){
+      this.children[i].selected = false;
+      if(typeof this.children[i].onSelect === 'function'){
+        this.children[i].onSelect();
+      }
+    }
+
+    if(item instanceof GUIControl){
+      item.selected = true;
+      if(typeof item.onSelect === 'function'){
+        item.onSelect();
+      }
+    }
 
   }
 

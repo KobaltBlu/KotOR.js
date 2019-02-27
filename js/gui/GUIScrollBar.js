@@ -24,7 +24,7 @@ class GUIScrollBar extends GUIControl{
       if(this._dir.HasField('IMAGE')){
         TextureLoader.tpcLoader.fetch(this._dir.GetFieldByLabel('IMAGE').GetValue(), (texture) => {
           this.arrowTex = texture;
-          console.log(this.arrowTex);
+          
           //Up Arrow
           this.upArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
           this.upArrowMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, map: this.arrowTex, side: THREE.DoubleSide} );
@@ -116,7 +116,7 @@ class GUIScrollBar extends GUIControl{
         )
       )
 
-      this.thumb.onClick = (e) => {
+      this.thumb.click = (e) => {
         console.log('scroll thumb')
       };
 
@@ -126,13 +126,13 @@ class GUIScrollBar extends GUIControl{
       }
     }
 
-    this.onMouseMove = () => {
+    this.addEventListener('mouseMove', () => {
       if(this.inner_box.containsPoint(Game.mouseUI)){
         this.mouseInside();
       }
-    }
+    });
 
-    this.onClick = () =>{
+    this.addEventListener('click', () =>{
       /*console.log('click')
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
@@ -147,16 +147,19 @@ class GUIScrollBar extends GUIControl{
       }else if(this.downArrow.containsPoint(Game.mouseUI)){
         this.list.scrollDown();
       }*/
-    }
+    })
 
-    this.onMouseDown = (e) => {
+    this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
+      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
+      let mouseY = Mouse.Client.y - (window.innerHeight / 2);
+      console.log('scroll offset', thumb.position.y - mouseY);
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
       console.log('hi', this.mouseOffset);
-    };
+    });
 
-    this.onMouseUp = () => {
+    this.addEventListener('mouseUp', () => {
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
@@ -172,7 +175,7 @@ class GUIScrollBar extends GUIControl{
         console.log('down');
         this.list.scrollDown();
       }
-    };
+    });
 
   }
 

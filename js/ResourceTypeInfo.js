@@ -6,7 +6,8 @@
  */
 
 module.exports = {
-    "NA" : 'Unknown',
+    "NA"  : 'Unknown',
+    "res" : "Resource",
     "bmp" : 'Bitmap Image',
     "tga" : 'TGA Image',
     "wav" : 'Wave File',

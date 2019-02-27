@@ -18,15 +18,15 @@ class InGameConfirm extends GameMenu {
         this.BTN_CANCEL = this.getControlByName('BTN_CANCEL');
         this.BTN_OK = this.getControlByName('BTN_OK');
 
-        this.BTN_OK.onClick = (e) => {
+        this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide()
-        }
+        });
 
-        this.BTN_CANCEL.onClick = (e) => {
+        this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide()
-        }
+        });
 
         this.tGuiPanel.widget.position.z = 10;
 
@@ -44,36 +44,42 @@ class InGameConfirm extends GameMenu {
 
   Update(delta){
 
-    this.tGuiPanel.widget.position.x = 0;//(window.innerWidth/2) - (Game.InGamePause.width/2) - 20;
-    this.tGuiPanel.widget.position.y = 0;//(window.innerHeight/2) - (Game.InGamePause.height/2) - 55;
+    super.Update(delta);
+    if(!this.bVisible)
+      return;
 
-    //this.tGuiPanel.update(delta);
-    //this.LBL_PAUSEREASON.update(delta);
-    //this.LBL_PRESS.update(delta);
+    this.tGuiPanel.widget.position.x = 0;
+    this.tGuiPanel.widget.position.y = 0;
 
   }
 
   ShowTutorialMessage(id = 39, nth = 0){
 
-    this.LB_MESSAGE.extent.top = 0;
-    let tlkId = parseInt(Global.kotor2DA.tutorial.rows[id]['message'+nth]);
-    this.LB_MESSAGE.clearItems();
-    this.LB_MESSAGE.addItem(Global.kotorTLK.GetStringById(tlkId))
+    if(!Game.TutorialWindowTracker[id]){
 
-    let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
+      this.LB_MESSAGE.extent.top = 0;
+      let tlkId = parseInt(Global.kotor2DA.tutorial.rows[id]['message'+nth]);
+      this.LB_MESSAGE.clearItems();
+      this.LB_MESSAGE.addItem(Global.kotorTLK.GetStringById(tlkId))
 
-    this.LB_MESSAGE.extent.height = messageHeight;
-    this.tGuiPanel.extent.height = 87 + messageHeight;
+      let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
 
-    this.BTN_CANCEL.hide();
-    this.BTN_OK.extent.top = this.tGuiPanel.extent.height/2 + this.BTN_OK.extent.height/2;
+      this.LB_MESSAGE.extent.height = messageHeight;
+      this.tGuiPanel.extent.height = 87 + messageHeight;
 
-    this.tGuiPanel.resizeControl();
-    this.LB_MESSAGE.resizeControl();
+      this.BTN_CANCEL.hide();
+      this.BTN_OK.extent.top = this.tGuiPanel.extent.height/2 + this.BTN_OK.extent.height/2;
 
-    this.tGuiPanel.recalculate();
+      this.tGuiPanel.resizeControl();
+      this.LB_MESSAGE.resizeControl();
 
-    this.Show();
+      this.tGuiPanel.recalculate();
+
+      this.Show();
+
+      Game.TutorialWindowTracker[id] = 0;
+
+    }
 
   }
 

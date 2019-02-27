@@ -20,12 +20,12 @@ class CharGenCustomPanel extends GameMenu {
 
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
 
           e.stopPropagation();
           Game.CharGenQuickOrCustom.Show();
 
-        };
+        });
 
         this.tGuiPanel.offset.x = 138;
         this.tGuiPanel.offset.y = 13;

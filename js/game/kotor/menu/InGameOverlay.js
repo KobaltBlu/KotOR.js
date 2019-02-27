@@ -15,6 +15,7 @@ class InGameOverlay extends GameMenu {
       }, this.args);
 
       this.lastTarget = undefined;
+      this.lastCurrentPlayer = undefined;
       this.targetSkills = undefined;
       this.target0_idx = 0;
       this.target1_idx = 0;
@@ -218,47 +219,47 @@ class InGameOverlay extends GameMenu {
           this.BTN_CLEARALL.hideBorder();
 
 
-          this.BTN_MSG.onClick = (e) => {
+          this.BTN_MSG.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuMessages.Show();
-          };
+          });
 
-          this.BTN_JOU.onClick = (e) => {
+          this.BTN_JOU.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuJournal.Show();
-          };
+          });
 
-          this.BTN_MAP.onClick = (e) => {
+          this.BTN_MAP.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuMap.Show();
-          };
+          });
 
-          this.BTN_OPT.onClick = (e) => {
+          this.BTN_OPT.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuOptions.Show();
-          };
+          });
 
-          this.BTN_CHAR.onClick = (e) => {
+          this.BTN_CHAR.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuCharacter.Show();
-          };
+          });
 
-          this.BTN_ABI.onClick = (e) => {
+          this.BTN_ABI.addEventListener('click', (e) => {
             e.stopPropagation();
             //Game.MenuCharacter.Show();
-          };
+          });
 
-          this.BTN_INV.onClick = (e) => {
+          this.BTN_INV.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuInventory.Show();
-          };
+          });
 
-          this.BTN_EQU.onClick = (e) => {
+          this.BTN_EQU.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.MenuEquipment.Show();
-          };
+          });
 
-          this.TB_PAUSE.onClick = (e) => {
+          this.TB_PAUSE.addEventListener('click', (e) => {
             e.stopPropagation();
 
             if(Game.State == Game.STATES.PAUSED){
@@ -267,76 +268,119 @@ class InGameOverlay extends GameMenu {
               Game.State = Game.STATES.PAUSED
             }
 
-          };
+          });
 
-          this.TB_SOLO.onClick = (e) => {
+          this.TB_SOLO.addEventListener('click', (e) => {
             e.stopPropagation();
-          };
+          });
 
-          this.TB_STEALTH.onClick = (e) => {
+          this.TB_STEALTH.addEventListener('click', (e) => {
             e.stopPropagation();
-          };
+          });
 
-          this.BTN_CHAR1.onClick = (e) => {
+          this.BTN_CHAR1.addEventListener('click', (e) => {
             Game.MenuEquipment.Show()
-          };
+          });
 
-          this.BTN_CHAR2.onClick = (e) => {
+          this.BTN_CHAR2.addEventListener('click', (e) => {
             PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
-          };
+            switch(Math.floor(Math.random() * (4 - 1) + 1)){
+              case 2:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_2);
+              break;
+              case 3:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_3);
+              break;
+              default:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_1);
+              break;
+            }
+          });
 
-          this.BTN_CHAR3.onClick = (e) => {
+          this.BTN_CHAR3.addEventListener('click', (e) => {
             PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
-          };
+            switch(Math.floor(Math.random() * (4 - 1) + 1)){
+              case 2:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_2);
+              break;
+              case 3:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_3);
+              break;
+              default:
+                PartyManager.party[0].PlaySoundSet(SSFObject.TYPES.SELECT_1);
+              break;
+            }
+          });
 
-          this.BTN_CLEARALL.onClick = (e) => {
+          this.BTN_CLEARALL.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.getCurrentPlayer().clearAllActions();
             Game.getCurrentPlayer().combatState = false;
-          };
+          });
 
-          this.LBL_QUEUE0.onClick = (e) => {
+          this.LBL_QUEUE0.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.getCurrentPlayer().combatAction = undefined;
-          };
+          });
 
-          this.LBL_QUEUE1.onClick = (e) => {
+          this.LBL_QUEUE1.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.getCurrentPlayer().combatQueue.splice(0, 1);
-          };
+          });
 
-          this.LBL_QUEUE2.onClick = (e) => {
+          this.LBL_QUEUE2.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.getCurrentPlayer().combatQueue.splice(1, 1);
-          };
+          });
 
-          this.LBL_QUEUE3.onClick = (e) => {
+          this.LBL_QUEUE3.addEventListener('click', (e) => {
             e.stopPropagation();
             Game.getCurrentPlayer().combatQueue.splice(2, 1);
-          };
+          });
 
           for(let i = 0; i < 3; i++){
             
             //this['BTN_TARGET'+i]
 
-            this['LBL_TARGET'+i].onClick = (e) => {
+            this['LBL_TARGET'+i].addEventListener('click', (e) => {
               e.stopPropagation();
               let action = this.targetSkills['target'+i][this['target'+i+'_idx']];
+
               if(action){
-                Game.getCurrentPlayer().actionQueue.push(
-                  action.action
-                );
+                if(i==0){
+                  Game.getCurrentPlayer().attackCreature(action.action.object, action.action.feat);
+                }else{
+                  Game.getCurrentPlayer().actionQueue.push(
+                    action.action
+                  );
+                }
               }
 
-            };
+            });
 
-            this['BTN_TARGETUP'+i].onClick = (e) => {
+            this['BTN_TARGETUP'+i].addEventListener('click', (e) => {
               e.stopPropagation();
-            };
+              
+              this['target'+i+'_idx'] -= 1;
+              if(this['target'+i+'_idx'] < 0){
+                this['target'+i+'_idx'] = this.targetSkills['target'+i].length - 1;
+              }
 
-            this['BTN_TARGETDOWN'+i].onClick = (e) => {
+              this.UpdateTargetUIIcon(i);
+
+            });
+
+            this['BTN_TARGETDOWN'+i].addEventListener('click', (e) => {
               e.stopPropagation();
-            };
+
+              this['target'+i+'_idx'] += 1;
+              if(this['target'+i+'_idx'] >= this.targetSkills['target'+i].length){
+                this['target'+i+'_idx'] = 0;
+              }
+
+              this.UpdateTargetUIIcon(i);
+
+            });
 
           }
 
@@ -439,6 +483,12 @@ class InGameOverlay extends GameMenu {
 
     UpdateTargetUISkills(){
 
+      let currentPlayer = Game.getCurrentPlayer();
+      
+      this.target0_idx = 0;
+      this.target1_idx = 0;
+      this.target2_idx = 0;
+
       let skills = {
         target0: [],
         target1: [],
@@ -460,10 +510,214 @@ class InGameOverlay extends GameMenu {
             });
 
             skills.target0.push({
-              action: 'bash',
+              action: {
+                goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                object:Game.selectedObject,
+                feat: 0
+              },
               icon: 'i_attack'
             });
           }
+        }else if(Game.selectedObject instanceof ModuleCreature && Game.selectedObject.isHostile(Game.player)){
+          skills.target0.push({
+            action: {
+              goal: ModuleCreature.ACTION.ATTACKOBJECT,
+              object: Game.selectedObject,
+              feat: 0
+            },
+            icon: 'i_attack'
+          });
+
+          if(currentPlayer.getEquippedWeaponType() == 1){
+
+            //Critical
+            if(currentPlayer.getFeat(81)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (81)
+                },
+                icon: currentPlayer.getFeat(81).icon
+              });
+            }else if(currentPlayer.getFeat(19)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (19)
+                },
+                icon: currentPlayer.getFeat(19).icon
+              });
+            }else if(currentPlayer.getFeat(8)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (8)
+                },
+                icon: currentPlayer.getFeat(8).icon
+              });
+            }
+
+            //Powerstrike
+            if(currentPlayer.getFeat(83)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (83)
+                },
+                icon: currentPlayer.getFeat(83).icon
+              });
+            }else if(currentPlayer.getFeat(17)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (17)
+                },
+                icon: currentPlayer.getFeat(17).icon
+              });
+            }else if(currentPlayer.getFeat(28)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (28)
+                },
+                icon: currentPlayer.getFeat(28).icon
+              });
+            }
+
+            //Flurry
+            if(currentPlayer.getFeat(53)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (53)
+                },
+                icon: currentPlayer.getFeat(53).icon
+              });
+            }else if(currentPlayer.getFeat(91)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (91)
+                },
+                icon: currentPlayer.getFeat(91).icon
+              });
+            }else if(currentPlayer.getFeat(11)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (11)
+                },
+                icon: currentPlayer.getFeat(11).icon
+              });
+            }
+
+          }
+
+          if(currentPlayer.getEquippedWeaponType() == 4){
+
+            //Snipershot
+            if(currentPlayer.getFeat(77)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (77)
+                },
+                icon: currentPlayer.getFeat(77).icon
+              });
+            }else if(currentPlayer.getFeat(20)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (20)
+                },
+                icon: currentPlayer.getFeat(20).icon
+              });
+            }else if(currentPlayer.getFeat(31)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (31)
+                },
+                icon: currentPlayer.getFeat(31).icon
+              });
+            }
+
+
+            //Powerblast
+            if(currentPlayer.getFeat(82)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (82)
+                },
+                icon: currentPlayer.getFeat(82).icon
+              });
+            }else if(currentPlayer.getFeat(18)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (18)
+                },
+                icon: currentPlayer.getFeat(18).icon
+              });
+            }else if(currentPlayer.getFeat(29)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (29)
+                },
+                icon: currentPlayer.getFeat(29).icon
+              });
+            }
+
+
+            //Rapidshot
+            if(currentPlayer.getFeat(26)){ //Master
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (26)
+                },
+                icon: currentPlayer.getFeat(26).icon
+              });
+            }else if(currentPlayer.getFeat(92)){ //Imporved
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (92)
+                },
+                icon: currentPlayer.getFeat(92).icon
+              });
+            }else if(currentPlayer.getFeat(30)){ //Basic
+              skills.target0.push({
+                action: {
+                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  object: Game.selectedObject,
+                  feat: (30)
+                },
+                icon: currentPlayer.getFeat(30).icon
+              });
+            }
+
+          }
+
         }
 
       }
@@ -473,14 +727,33 @@ class InGameOverlay extends GameMenu {
     }
 
     _canShowTargetUI(){
+      if(Game.selectedObject instanceof ModuleCreature && Game.selectedObject.isDead())
+        return false;
+
       return (!Game.MenuContainer.bVisible && CursorManager.reticle2.visible && Game.selectedObject instanceof ModuleObject && !(Game.selectedObject instanceof ModuleRoom));
+    }
+
+    UpdateTargetUIIcon(index = 0){
+      if(this.targetSkills['target'+index].length){
+        let action = this.targetSkills['target'+index][this['target'+index+'_idx']];
+
+        if(this['LBL_TARGET'+index].getFillTextureName() != action.icon){
+          TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
+            this['LBL_TARGET'+index].setFillTexture(texture);
+          });
+        }
+        
+      }else{
+        this['LBL_TARGET'+index].setFillTexture(null);
+      }
     }
 
     UpdateTargetUI(){
 
       if(this._canShowTargetUI()){
 
-        if(this.lastTarget != Game.selectedObject){
+        if(this.lastTarget != Game.selectedObject || this.lastCurrentPlayer != Game.getCurrentPlayer()){
+          this.lastCurrentPlayer = Game.getCurrentPlayer();
           this.targetSkills = this.UpdateTargetUISkills();
         }
 
@@ -526,7 +799,12 @@ class InGameOverlay extends GameMenu {
         );
 
         let pos = new THREE.Vector3();
-        pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
+        if(Game.selectedObject instanceof ModuleCreature){
+          pos.copy(Game.selectedObject.position);
+          pos.z += 2;
+        }else{
+          pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
+        }
         pos.project(Game.currentCamera);
         
         let widthHalf = window.innerWidth / 2;
@@ -563,9 +841,13 @@ class InGameOverlay extends GameMenu {
         this.LBL_HEALTHBG.show();
 
         this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
+        this.LBL_NAME.anchor = 'user';
         this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
+        this.LBL_NAMEBG.anchor = 'user';
         this.PB_HEALTH.extent.left = targetScreenPosition.x - 20;
+        this.PB_HEALTH.anchor = 'user';
         this.LBL_HEALTHBG.extent.left = targetScreenPosition.x - 20;
+        this.LBL_HEALTHBG.anchor = 'user';
 
         this.LBL_NAME.extent.top = targetScreenPosition.y - (38);
         this.LBL_NAMEBG.extent.top = targetScreenPosition.y - (38);
@@ -585,33 +867,26 @@ class InGameOverlay extends GameMenu {
             this['BTN_TARGET'+i].scale = false;
             this['BTN_TARGET'+i].extent.left = targetScreenPosition.x + xPos;
             this['BTN_TARGET'+i].extent.top = targetScreenPosition.y;
+            this['BTN_TARGET'+i].anchor = 'user';
 
             this['LBL_TARGET'+i].scale = false;
             this['LBL_TARGET'+i].extent.left = targetScreenPosition.x + xPos + 3;
             this['LBL_TARGET'+i].extent.top = targetScreenPosition.y + 14;
+            this['LBL_TARGET'+i].anchor = 'user';
 
             this['BTN_TARGETUP'+i].scale = false;
             this['BTN_TARGETUP'+i].extent.left = targetScreenPosition.x + xPos;
             this['BTN_TARGETUP'+i].extent.top = targetScreenPosition.y + 5;
+            this['BTN_TARGETUP'+i].anchor = 'user';
 
             this['BTN_TARGETDOWN'+i].scale = false;
             this['BTN_TARGETDOWN'+i].extent.left = targetScreenPosition.x + xPos;
             this['BTN_TARGETDOWN'+i].extent.top = targetScreenPosition.y + ((this['BTN_TARGET'+i].extent.height/2) + 12);
             this['BTN_TARGETDOWN'+i].widget.rotation.z = Math.PI;
+            this['BTN_TARGETDOWN'+i].anchor = 'user';
 
-            if(this.targetSkills['target'+i].length){
-              let action = this.targetSkills['target'+i][this['target'+i+'_idx']];
+            this.UpdateTargetUIIcon(i);
 
-              if(this['LBL_TARGET'+i].getFillTextureName() != action.icon){
-                TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
-                  this['LBL_TARGET'+i].setFillTexture(texture);
-                });
-              }
-              
-            }else{
-              this['LBL_TARGET'+i].setFillTexture(null);
-            }
-            
             this['BTN_TARGET'+i].recalculate();
             this['LBL_TARGET'+i].recalculate();
             this['BTN_TARGETUP'+i].recalculate();
@@ -651,7 +926,10 @@ class InGameOverlay extends GameMenu {
     }
 
     Update(delta = 0){
+      
       super.Update(delta);
+      if(!this.bVisible)
+        return;
 
       this.UpdateTargetUI();
 

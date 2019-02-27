@@ -14,6 +14,17 @@ class ModuleSound extends ModuleObject {
     this.template = gff;
     this.audioEngine = audioEngine;
 
+    this.active = 0;
+    this.looping = 0;
+    this.random = 0;
+    this.randomPosition = 0;
+    this.interval = 0;
+    this.intervalVariation = 0;
+    this.maxDistance = 0;
+    this.volume = 0;
+    this.positional = 0;
+    this.sounds = [];
+
   }
 
   Load( onLoad = null ){
@@ -26,6 +37,7 @@ class ModuleSound extends ModuleObject {
         onLoad: (gff) => {
 
           this.template.Merge(gff);
+          this.InitProperties();
 
           if(onLoad != null)
             onLoad(this.template);
@@ -36,6 +48,7 @@ class ModuleSound extends ModuleObject {
       });
 
     }else{
+      this.InitProperties();
       //We already have the template (From SAVEGAME)
       if(onLoad != null)
         onLoad(this.template);
@@ -80,73 +93,43 @@ class ModuleSound extends ModuleObject {
   }
 
   getActive(){
-    if(this.template.RootNode.HasField('Active')){
-      return this.template.RootNode.GetFieldByLabel('Active').GetValue() ? true : false;
-    }
-    return false;
+    return this.active ? true : false;
   }
 
   getLooping(){
-    if(this.template.RootNode.HasField('Looping')){
-      return this.template.RootNode.GetFieldByLabel('Looping').GetValue() ? true : false;
-    }
-    return false;
+    return this.looping ? true : false;
   }
 
   getRandom(){
-    if(this.template.RootNode.HasField('Random')){
-      return this.template.RootNode.GetFieldByLabel('Random').GetValue() ? true : false;
-    }
-    return false;
+    return this.random ? true : false;
   }
 
   getRandomPosition(){
-    if(this.template.RootNode.HasField('RandomPosition')){
-      return this.template.RootNode.GetFieldByLabel('RandomPosition').GetValue() ? true : false;
-    }
-    return false;
+    return this.randomPosition ? true : false;
   }
 
   getInterval(){
-    if(this.template.RootNode.HasField('Interval')){
-      return this.template.RootNode.GetFieldByLabel('Interval').GetValue();
-    }
-    return 0;
+    return this.interval;
   }
 
   getInternalVrtn(){
-    if(this.template.RootNode.HasField('IntervalVrtn')){
-      return this.template.RootNode.GetFieldByLabel('IntervalVrtn').GetValue();
-    }
-    return 0;
+    return this.intervalVariation;
   }
 
   getMaxDistance(){
-    if(this.template.RootNode.HasField('MaxDistance')){
-      return this.template.RootNode.GetFieldByLabel('MaxDistance').GetValue();
-    }
-    return 0;
+    return this.maxDistance;
   }
 
   getVolume(){
-    if(this.template.RootNode.HasField('Volume')){
-      return this.template.RootNode.GetFieldByLabel('Volume').GetValue();
-    }
-    return 0;
+    return this.volume;
   }
 
   getPositional(){
-    if(this.template.RootNode.HasField('Positional')){
-      return this.template.RootNode.GetFieldByLabel('Positional').GetValue() ? true : false;
-    }
-    return false;
+    return this.positional ? true : false;
   }
 
   getSounds(){
-    if(this.template.RootNode.HasField('Sounds')){
-      return this.template.RootNode.GetFieldByLabel('Sounds').GetChildStructs();
-    }
-    return [];
+    return this.sounds;
   }
 
 
@@ -187,6 +170,65 @@ class ModuleSound extends ModuleObject {
     });
 
     this.audioEngine.AddEmitter(this.emitter);
+
+  }
+
+  InitProperties(){
+
+    if(this.template.RootNode.HasField('Active'))
+      this.active = this.template.GetFieldByLabel('Active').GetValue()
+
+    if(this.template.RootNode.HasField('Looping'))
+      this.looping = this.template.GetFieldByLabel('Looping').GetValue();
+
+    if(this.template.RootNode.HasField('Random'))
+      this.random = this.template.GetFieldByLabel('Random').GetValue();
+
+    if(this.template.RootNode.HasField('RandomPosition'))
+      this.randomPosition = this.template.GetFieldByLabel('RandomPosition').GetValue();
+
+    if(this.template.RootNode.HasField('Interval'))
+      this.interval = this.template.GetFieldByLabel('Interval').GetValue();
+
+    if(this.template.RootNode.HasField('InternalVrtn'))
+      this.intervalVariation = this.template.GetFieldByLabel('InternalVrtn').GetValue();
+
+    if(this.template.RootNode.HasField('MaxDistance'))
+      this.maxDistance = this.template.GetFieldByLabel('MaxDistance').GetValue();
+
+    if(this.template.RootNode.HasField('Volume'))
+      this.volume = this.template.GetFieldByLabel('Volume').GetValue();
+
+    if(this.template.RootNode.HasField('Positional'))
+      this.positional = this.template.GetFieldByLabel('Positional').GetValue();
+
+    if(this.template.RootNode.HasField('Sounds'))
+      this.sounds = this.template.GetFieldByLabel('Sounds').GetChildStructs();
+
+    if(this.template.RootNode.HasField('Tag'))
+      this.tag = this.template.GetFieldByLabel('Tag').GetValue();
+
+    if(this.template.RootNode.HasField('TemplateResRef'))
+      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+
+    if(this.template.RootNode.HasField('XPosition'))
+      this.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+
+    if(this.template.RootNode.HasField('YPosition'))
+      this.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+
+    if(this.template.RootNode.HasField('ZPosition'))
+      this.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+
+    if(this.template.RootNode.HasField('SWVarTable')){
+      let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
+      for(let i = 0; i < localBools.length; i++){
+        let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+        for(let bit = 0; bit < 32; bit++){
+          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        }
+      }
+    }
 
   }
 

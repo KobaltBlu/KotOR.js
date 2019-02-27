@@ -51,6 +51,14 @@ class MenuDialog extends GameMenu {
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
+        this.LBL_MESSAGE.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.audioEmitter.Stop();
+          if(this.isListening){
+            this.PlayerSkipEntry(this.currentEntry);
+          }
+        });
+
         this._resetLetterBox();
 
         this.tGuiPanel.widget.add(this.topBar);
@@ -79,21 +87,20 @@ class MenuDialog extends GameMenu {
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
+    this.ended = false;
     this.currentEntry = null;
-
     this.state = -1;
+
+    if(this.owner == Game.player){
+      let old_listener = this.listener;
+      this.listener = this.owner;
+      this.owner = old_listener;
+    }
 
     this.unequipHeadItem = false;
     this.unequipItems = false;
 
     this.animatedCamera = null;
-
-    this.LBL_MESSAGE.onClick = (e) => {
-      e.stopPropagation();
-      if(this.isListening){
-        this.PlayerSkipEntry(this.currentEntry);
-      }
-    };
 
     if(this.audioEmitter === undefined){
       this.audioEmitter = new AudioEmitter({
@@ -105,7 +112,7 @@ class MenuDialog extends GameMenu {
           ZPosition: 0
         },
         template: {
-          sounds: [],//this.gff.GetFieldByLabel('Sounds').GetChildStructs(),
+          sounds: [],
           isActive: true,
           isLooping: false,
           isRandom: false,
@@ -113,7 +120,7 @@ class MenuDialog extends GameMenu {
           interval: 0,
           intervalVariation: 0,
           maxDistance: 50,
-          volume: 100,
+          volume: 127,
           positional: 0
         },
         onLoad: () => {
@@ -137,22 +144,19 @@ class MenuDialog extends GameMenu {
     //this.audioEmitter.SetPosition(Game.player.model.position.x, Game.player.model.position.y, Game.player.model.position.z);
 
     this.isListening = true;
-
-    this._resetLetterBox();
+    
     this.canLetterbox = false;
     this.letterBoxed = false;
+    this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
+    this.bottomBar.position.y = -this.topBar.position.y;
+    this._resetLetterBox();
 
     this.LB_REPLIES.hide();
-
-    if(Game.Mode == Game.MODES.INGAME){
-      Game.InGameOverlay.Hide();
-    }
 
     if(typeof dlg != 'string' || dlg == ''){
       dlg = this.owner.GetConversation();
     }
 
-    Game.currentCamera = Game.camera_dialog;
     this.UpdateCamera();
     if(typeof dlg === 'string' && dlg != ''){
       this.LoadDialog(dlg, (gff) => {
@@ -182,7 +186,7 @@ class MenuDialog extends GameMenu {
         if(gff.json.fields.UnequipItems)
           this.unequipItems = gff.json.fields.UnequipItems.value ? true : false;
 
-        this.canLetterbox = true;
+        this.canLetterbox = false;
 
         for(let i = 0; i < gff.json.fields.EntryList.structs.length; i++){
           this.entryList.push(
@@ -219,7 +223,7 @@ class MenuDialog extends GameMenu {
         this.updateTextPosition();
 
         //Face the listener towards the owner of the conversation
-        if(!this.isAnimatedCutscene){
+        /*if(!this.isAnimatedCutscene){
           if(this.listener instanceof ModuleCreature && this.owner instanceof ModuleObject){
             if(!this.listener.lockDialogOrientation){
               this.listener.rotation.z = Math.atan2(
@@ -237,42 +241,57 @@ class MenuDialog extends GameMenu {
               ) + Math.PI/2;
             }
           }
-        }
+        }*/
 
-        let canStart = () => {
+        let letterBoxTimeout = () => {
+          Game.currentCamera = Game.camera_dialog;
+          if(Game.Mode == Game.MODES.INGAME){
+            Game.InGameOverlay.Hide();
+          }
           if(this.letterBoxed){
             if(this.ambientTrack != ''){
               AudioLoader.LoadMusic(this.ambientTrack, (data) => {
                 //console.log('Loaded Background Music', bgMusic);
                 Game.audioEngine.stopBackgroundMusic();
                 Game.audioEngine.SetDialogBackgroundMusic(data);
-                this.getNextEntry(this.startingList);
+                this.showEntry(this.startingEntry);
               }, () => {
-                this.getNextEntry(this.startingList);
+                this.showEntry(this.startingEntry);
               });
             }else{
-              this.getNextEntry(this.startingList);
+              this.showEntry(this.startingEntry);
             }
-            
           }else{
-            setTimeout(canStart, 300);
+            setTimeout(letterBoxTimeout, 300);
           }
         };
 
-        if(this.isAnimatedCutscene){
-          Game.holdWorldFadeInForDialog = true;
-          this.loadStuntCamera( () => {
-            this.loadStuntActors(0, () => {
-              canStart();
-            });
-          });
-        }else{
-          this.loadStuntCamera( () => {
-            this.loadStuntActors(0, () => {
-              canStart();
-            });
-          });
-        }
+        this.startingEntry = null;
+        this.getNextEntry(this.startingList, (entry) => {
+          this.startingEntry = entry;
+          if(entry.replies.length == 1 && this.isEndDialog(this.replyList[entry.replies[0].index])){
+            //Bark
+            this.EndConversation();
+            Game.InGameBark.bark(entry);
+          }else{
+            this.canLetterbox = true;
+            if(this.isAnimatedCutscene){
+              Game.holdWorldFadeInForDialog = true;
+              this.loadStuntCamera( () => {
+                this.loadStuntActors(0, () => {
+                  letterBoxTimeout();
+                });
+              });
+            }else{
+              Game.holdWorldFadeInForDialog = false;
+              this.loadStuntCamera( () => {
+                this.loadStuntActors(0, () => {
+                  letterBoxTimeout();
+                });
+              });
+            }
+          }
+        });
 
         if(typeof options.onLoad === 'function')
           options.onLoad();
@@ -323,13 +342,22 @@ class MenuDialog extends GameMenu {
               onComplete: (actorSuperModel) => {
                 Game.player.model.animations = Game.player.model.animations.concat(actorSuperModel.animations);
                 console.log('actor', actorSuperModel.animations)
-                Game.player.anim = true;
+                //Game.player.anim = true;
+
+                if(this.isAnimatedCutscene)
+                  Game.player.setFacing(0, true);
 
                 if(this.unequipItems)
                   Game.player.UnequipItems();
 
                 if(this.unequipHeadItem)
                   Game.player.UnequipHeadItem();
+
+                if(Game.player.model.skins){
+                  for(let i = 0; i < Game.player.model.skins.length; i++){
+                    Game.player.model.skins[i].frustumCulled = false;
+                  }
+                }
     
                 this.stunt[actor.participant.toLowerCase()] = Game.player;
                 console.log('STUNT', actor.participant, this.stunt[actor.participant]);
@@ -338,6 +366,11 @@ class MenuDialog extends GameMenu {
             });
           }
         });
+      }else if(actor.participant == 'OWNER'){
+        this.stunt['OWNER'.toLowerCase()] = this.owner;
+        if(this.isAnimatedCutscene)
+          this.owner.setFacing(0, true);
+        this.loadStuntActors(++i, onLoad);
       }else{
         let creature = Game.GetObjectByTag(actor.participant);
         if(creature){
@@ -350,16 +383,23 @@ class MenuDialog extends GameMenu {
                 onComplete: (actorSuperModel) => {
                   model.animations = actorSuperModel.animations;
                   console.log('actor', actorSuperModel.animations)
-                  model.rotation.z = 0;
+                  if(this.isAnimatedCutscene)
+                    creature.setFacing(0, true);
                   model.box = new THREE.Box3().setFromObject(model);
 
-                  creature.anim = true;
+                  //creature.anim = true;
 
-                  if(this.unequipItems)
+                  if(this.unequipItems && creature instanceof ModuleCreature)
                     creature.UnequipItems();
 
-                  if(this.unequipHeadItem)
+                  if(this.unequipHeadItem && creature instanceof ModuleCreature)
                     creature.UnequipHeadItem();
+
+                  if(model.skins){
+                    for(let i = 0; i < model.skins.length; i++){
+                      model.skins[i].frustumCulled = false;
+                    }
+                  }
       
                   this.stunt[actor.participant.toLowerCase()] = creature;
                   console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
@@ -377,7 +417,7 @@ class MenuDialog extends GameMenu {
 
   }
 
-  getNextEntry(entries = []){
+  getNextEntry(entries = [], callback = null){
     console.log('getNextEntry', entries);
     if(!entries.length){
       this.EndConversation();
@@ -387,26 +427,32 @@ class MenuDialog extends GameMenu {
     this.isListening = true;
     this.updateTextPosition();
 
-    
-
     let totalEntries = entries.length;
 
     let entryLoop = (idx = 0) => {
       if(idx < totalEntries){
         let entry = entries[idx];
         if(entry.isActive == ''){
-          this.showEntry(this.entryList[entry.index]);
+          if(typeof callback === 'function'){
+            callback(this.entryList[entry.index]);
+          }else{
+            this.showEntry(this.entryList[entry.index]);
+          }
         }else{
           ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
             let script = new NWScript(buffer);
             console.log('dialog', script);
             script.name = entry.isActive;
             console.log(this.owner);
-            script.run(Game.player, 0, (bSuccess) => {
+            script.run(this.owner, 0, (bSuccess) => {
               console.log('dialog', script, bSuccess);
-              this.listener = Game.player;
+              //this.listener = Game.player;
               if(bSuccess){
-                this.showEntry(this.entryList[entry.index]);
+                if(typeof callback === 'function'){
+                  callback(this.entryList[entry.index]);
+                }else{
+                  this.showEntry(this.entryList[entry.index]);
+                }
               }else{
                 entryLoop(++idx);
               }
@@ -456,8 +502,14 @@ class MenuDialog extends GameMenu {
   }
 
   showEntry(entry){
+
+    this.state = 0;
+
+    if(!Game.inDialog)
+      return;
+
     console.log('showEntry', entry);
-    this.LBL_MESSAGE.setText(entry.text.split('##')[0]);
+    this.LBL_MESSAGE.setText(this.StringTokenParser(entry.text.split('##')[0]), entry);
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
     this.updateTextPosition();
@@ -470,17 +522,41 @@ class MenuDialog extends GameMenu {
       entry.speaker = this.owner;
     }
 
+    if(typeof entry.speaker == 'undefined'){
+      entry.speaker = this.owner;
+    }
+
     if(entry.listenerTag != ''){
       if(entry.listenerTag == 'PLAYER'){
-        this.listener = Game.player;
+        entry.listener = Game.player;
       }else{
-        this.listener = Game.GetObjectByTag(entry.listenerTag);
+        entry.listener = Game.GetObjectByTag(entry.listenerTag);
       }
     }else{
       entry.listener = Game.player;
     }
 
+    if(typeof entry.listener == 'undefined'){
+      entry.listener = this.listener;
+    }
+
     this.UpdateEntryAnimations(entry);
+
+    if(!this.isAnimatedCutscene){
+      if(this.currentEntry.listener instanceof ModuleObject && this.currentEntry.speaker instanceof ModuleObject){
+        if(!this.currentEntry.listener.lockDialogOrientation && this.currentEntry.listener instanceof ModuleCreature){
+          this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
+        }
+
+        if(!this.currentEntry.speaker.lockDialogOrientation && this.currentEntry.speaker instanceof ModuleCreature){
+          this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
+        }
+      }
+    }
+
+    if(!this.isAnimatedCutscene && entry.dealy > -1){
+      nodeDelay = node.delay * 1000;
+    }
 
     /*this.owner.anim = true;
     this.owner.model.playAnimation(this.owner.model.getAnimationByName('talknorm'), true, () => {
@@ -576,10 +652,13 @@ class MenuDialog extends GameMenu {
     this._pauseLoop( ()=>{
       //this.audioEmitter.Stop();
 
-      //I currently believe that entry.sound is a backup for when vo_resref fails...
-      //Alien vo seems to be missing. Maybe they were pefilled by the bioware dialog editor
-      //So vo in basic could be dropped in later into the proper folder.
       if(entry.sound != ''){
+        console.log('lip', entry.sound);
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer) => {
+          if(entry.speaker instanceof ModuleCreature){
+            entry.speaker.setLIP(new LIPObject(buffer));
+          }
+        });
         this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           checkList.voiceOverComplete = true;
           if(checkList.isComplete()){
@@ -587,6 +666,12 @@ class MenuDialog extends GameMenu {
           }
         });
       }else if(entry.vo_resref != ''){
+        console.log('lip', entry.vo_resref);
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, (buffer) => {
+          if(entry.speaker instanceof ModuleCreature){
+            entry.speaker.setLIP(new LIPObject(buffer));
+          }
+        });
         this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           checkList.voiceOverComplete = true;
           if(checkList.isComplete()){
@@ -603,8 +688,6 @@ class MenuDialog extends GameMenu {
         }, nodeDelay);
       }
     });
-
-    this.state = 0;
     
   }
 
@@ -617,6 +700,11 @@ class MenuDialog extends GameMenu {
   }
 
   showReplies(entry){
+
+    this.state = 1;
+
+    if(!Game.inDialog)
+      return;
 
     console.log('showReplies', entry);
     if(entry.replies.length == 1 && this.isContinueDialog(this.replyList[entry.replies[0].index])){
@@ -686,17 +774,24 @@ class MenuDialog extends GameMenu {
       console.log('No more replies and can\'t continue');
       this.EndConversation();
     }
-    
 
-    this.owner.anim = true;
-    this.owner.model.playAnimation(this.owner.model.getAnimationByName('talknorm'), true, () => {
+    //this.owner.anim = true;
+    /*this.owner.model.playAnimation(this.owner.model.getAnimationByName('talknorm'), true, () => {
       this.owner.anim = null;
-    });
+    });*/
 
-    this.listener.anim = true;
-    this.listener.model.playAnimation(this.listener.model.getAnimationByName('talknorm'), true, () => {
+    //this.listener.anim = true;
+    /*this.listener.model.playAnimation(this.listener.model.getAnimationByName('talknorm'), true, () => {
       this.listener.anim = null;
-    });
+    });*/
+
+    try{
+      this.owner.dialogPlayAnimation('listen', true);
+    }catch(e){}
+    
+    try{
+      this.listener.dialogPlayAnimation('listen', true);
+    }catch(e){}
 
     this.isListening = false;
     this.updateTextPosition();
@@ -717,7 +812,7 @@ class MenuDialog extends GameMenu {
         if(reply.isActive == ''){
           let _reply = this.replyList[reply.index];
           console.log('showEntry.replies', _reply);
-          this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
+          this.LB_REPLIES.addItem(this.StringTokenParser(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0]), (e) => {
             this.onReplySelect(_reply);
           });
           replyLoop(++idx);
@@ -728,12 +823,12 @@ class MenuDialog extends GameMenu {
               console.log('dialog', script);
               script.name = entry.isActive;
               console.log(this.owner);
-              script.run(this.listener, 0, (bSuccess) => {
+              script.run(this.owner, 0, (bSuccess) => {
                 console.log('dialog', script, bSuccess);
                 if(bSuccess){
                   let _reply = this.replyList[reply.index];
                   console.log('showEntry.replies', _reply);
-                  this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
+                  this.LB_REPLIES.addItem(this.StringTokenParser(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0]), () => {
                     this.onReplySelect(_reply);
                   });
                 }
@@ -752,6 +847,26 @@ class MenuDialog extends GameMenu {
       }
     };
     replyLoop();
+  }
+
+  StringTokenParser(text = '', entry = null){
+
+    if(this.owner instanceof ModuleCreature){
+      text = text.replace('<FullName>', Game.player.firstName);
+      text = text.replace('<CUSTOM31>', () => { return 3; });
+      text = text.replace('<CUSTOM32>', () => { return 5; });
+      text = text.replace('<CUSTOM33>', () => { return 8; });
+      text = text.replace('<CUSTOM34>', () => { return 10; });
+      text = text.replace('<CUSTOM35>', () => { return 2; });
+
+      text = text.replace('<CUSTOM41>', () => { return 1; });
+      text = text.replace('<CUSTOM42>', () => { return 4; });
+      text = text.replace('<CUSTOM43>', () => { return 4; });
+      text = text.replace('<CUSTOM44>', () => { return 5; });
+      text = text.replace('<CUSTOM45>', () => { return 6; });
+    }
+
+    return text;
   }
 
   onReplySelect(reply = null){
@@ -802,15 +917,24 @@ class MenuDialog extends GameMenu {
 
   }
 
+  PauseConversation(){
+    this.paused = true;
+  }
+
+  ResumeConversation(){
+    this.paused = false;
+    if(this.ended){
+      this.EndConversation()
+    }
+  }
+
   EndConversation(aborted = false){
     console.log('EndConversation')
-    if(this.onEndConversation != '')
 
-    if(this.owner)
-      this.owner.anim = false;
-    
-    if(this.listener)
-      this.listener.anim = false;
+    if(this.paused){
+      this.ended = true;
+      //return;
+    }
     
     this.audioEmitter.Stop();
     this.Hide();
@@ -866,7 +990,12 @@ class MenuDialog extends GameMenu {
     for(let actor in this.stunt){
       try{
         this.stunt[actor].model.buildSkeleton();
-        this.stunt[actor].anim = false;
+        if(this.stunt[actor].model.skins){
+          for(let i = 0; i < this.stunt[actor].model.skins.length; i++){
+            this.stunt[actor].model.skins[i].frustumCulled = true;
+          }
+        }
+        this.stunt[actor].clearAllActions();
       }catch(e){
         
       }
@@ -881,7 +1010,7 @@ class MenuDialog extends GameMenu {
     if(this.paused){
       this.pauseLoop = setTimeout( () => {
         this._pauseLoop(onResume);
-      }, 300);
+      }, 100);
     }else{
       if(typeof onResume === 'function')
         onResume();
@@ -902,16 +1031,21 @@ class MenuDialog extends GameMenu {
       for(let i = 0; i < entry.animations.length; i++){
         let participant = entry.animations[i];
         if(this.stunt[participant.participant]){
-          console.log('STUNT', this.stunt[participant.participant], participant.animation-1200, this.GetActorAnimation(participant.animation));
-          this.stunt[participant.participant].model.playAnimation(this.GetActorAnimation(participant.animation), false);
+          //console.log('STUNT', this.stunt[participant.participant], participant.animation-1200, this.GetActorAnimation(participant.animation));
+          //this.stunt[participant.participant].model.playAnimation(this.GetActorAnimation(participant.animation), false);
+          try{
+            //this.stunt[participant.participant].model.poseAnimation(this.GetActorAnimation(participant.animation));
+            this.stunt[participant.participant].dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
+          }catch(e){}
         }else{
           let actor = Game.GetObjectByTag(participant.participant);
           if(actor && participant.animation >= 10000){
             let anim = this.GetDialogAnimation(participant.animation-10000);
             console.log('DialogAnim', participant.animation-10000, anim)
             if(anim){
-              actor.anim = true;
-              actor.model.playAnimation(anim.name, anim.looping  == '1');
+              //actor.anim = true;
+              //actor.model.playAnimation(anim.name, anim.looping  == '1');
+              actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
             }else{
               console.error('Anim', participant.animation-10000)
             }
@@ -919,6 +1053,15 @@ class MenuDialog extends GameMenu {
         }
       }
     }else{
+
+      if(this.currentEntry.speaker instanceof ModuleCreature){
+        this.currentEntry.speaker.dialogPlayAnimation('tlknorm', true);
+      }
+
+      if(this.currentEntry.listener instanceof ModuleCreature){
+        this.currentEntry.listener.dialogPlayAnimation('listen', true);
+      }
+
       for(let i = 0; i < entry.animations.length; i++){
         let participant = entry.animations[i];
         let actor = Game.GetObjectByTag(participant.participant);
@@ -926,8 +1069,9 @@ class MenuDialog extends GameMenu {
           let anim = this.GetDialogAnimation(participant.animation-10000);
           console.log('DialogAnim', participant.animation-10000, anim)
           if(anim){
-            actor.anim = true;
-            actor.model.playAnimation(anim.name, anim.looping  == '1');
+            //actor.anim = true;
+            //actor.model.playAnimation(anim.name, anim.looping  == '1');
+            actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
           }else{
             console.error('Anim', participant.animation-10000)
           }
@@ -1009,20 +1153,95 @@ class MenuDialog extends GameMenu {
       //Show the speaker
 
       if(this.currentEntry){
+
         if(this.currentEntry.cameraAngle == 4 && this.animatedCamera instanceof THREE.AuroraModel){
           this.SetAnimatedCamera(this.currentEntry.cameraAnimation);
           Game.currentCamera = Game.camera_animated;
         }else{
-          let position = this.currentEntry.speaker.position.clone().sub(
-            new THREE.Vector3(
-              1*Math.cos(this.currentEntry.speaker.rotation.z - Math.PI/1.5), 
-              1*Math.sin(this.currentEntry.speaker.rotation.z - Math.PI/1.5), 
-              -1.75
-            )
-          );
-  
-          Game.camera_dialog.position.set(position.x, position.y, position.z);
-          Game.camera_dialog.lookAt(this.currentEntry.speaker.position.clone().add({x:0, y:0, z: 1.5}));
+
+          if(this.currentEntry.cameraAngle == 1 && this.currentEntry.listener instanceof ModuleObject){
+            let position = this.currentEntry.speaker.position.clone();
+            let lposition = this.currentEntry.listener.position.clone();
+            let lookAt = this.currentEntry.speaker.position.clone();
+
+            if(this.currentEntry.speaker.model instanceof THREE.AuroraModel){
+              if(this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D){
+                lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+                position = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+              }else{
+                position.add({x:0, y:0, z: this.currentEntry.speaker.getCameraHeight()})
+              }
+            }
+
+            if(this.currentEntry.listener.model instanceof THREE.AuroraModel){
+              if(this.currentEntry.listener.model.camerahook instanceof THREE.Object3D){
+                lposition = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
+              }else{
+                lposition.add({x:0, y:0, z: this.currentEntry.listener.getCameraHeight()})
+              }
+            }
+
+            position.add({x:-.5, y:.25, z: 0});
+
+            let AxisFront = new THREE.Vector3();
+            let tangent = lookAt.clone().sub(lposition.clone());
+            let atan = Math.atan2(-tangent.y, -tangent.x);
+            AxisFront.x = Math.cos(atan);
+            AxisFront.y = Math.sin(atan);
+            AxisFront.normalize();
+            position.add(AxisFront);
+            
+
+            Game.camera_dialog.position.copy(position);
+            Game.camera_dialog.lookAt(lookAt);  
+          }else if(this.currentEntry.cameraAngle == 2 && this.currentEntry.listener instanceof ModuleObject){
+            let position = this.currentEntry.listener.position.clone();
+            let lookAt = this.currentEntry.speaker.position.clone();
+
+            if(this.currentEntry.speaker.model instanceof THREE.AuroraModel){
+              if(this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D){
+                lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+                lookAt.add({x:0, y:0, z: .5});
+              }else{
+                position.add({x:0, y:0, z: 1.5})
+              }
+            }
+
+            if(this.currentEntry.listener.model instanceof THREE.AuroraModel){
+              if(this.currentEntry.listener.model.camerahook instanceof THREE.Object3D){
+                position = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
+                //position.add({x:0, y:0, z: .5});
+              }else{
+                position.add({x:0, y:0, z: 1.5})
+              }
+            }
+
+            position.add({x:-1, y:1, z: 0});
+
+            let AxisFront = new THREE.Vector3();
+            let tangent = lookAt.clone().sub(position.clone());
+            let atan = Math.atan2(-tangent.y, -tangent.x);
+            AxisFront.x = Math.cos(atan);
+            AxisFront.y = Math.sin(atan);
+            AxisFront.normalize();
+            position.add(AxisFront);
+            
+
+            Game.camera_dialog.position.copy(position);
+            Game.camera_dialog.lookAt(lookAt);  
+          }else{
+            let position = this.currentEntry.speaker.position.clone().sub(
+              new THREE.Vector3(
+                1*Math.cos(this.currentEntry.speaker.rotation.z - Math.PI/1.5), 
+                1*Math.sin(this.currentEntry.speaker.rotation.z - Math.PI/1.5), 
+                -1.75
+              )
+            );
+    
+            Game.camera_dialog.position.set(position.x, position.y, position.z);
+            Game.camera_dialog.lookAt(this.currentEntry.speaker.position.clone().add({x:0, y:0, z: this.currentEntry.speaker.getCameraHeight()}));
+          }
+          
         }
       }else{
         let position = this.listener.position.clone().sub(
@@ -1033,8 +1252,9 @@ class MenuDialog extends GameMenu {
           )
         );
   
-        Game.camera_dialog.position.set(position.x, position.y, position.z)
-        Game.camera_dialog.lookAt(this.owner.position.clone().add({x:0, y:0, z: 1.5}));  
+        Game.camera_dialog.position.set(position.x, position.y, position.z);
+        Game.camera_dialog.lookAt(this.owner.position.clone().add({x:0, y:0, z: this.owner.getCameraHeight()}));  
+        
       }
 
     }else{
@@ -1047,7 +1267,7 @@ class MenuDialog extends GameMenu {
         )
       );
       Game.camera_dialog.position.set(position.x, position.y, position.z);
-      Game.camera_dialog.lookAt(this.listener.position.clone().add({x:0, y:0, z: 1.6}));
+      Game.camera_dialog.lookAt(this.listener.position.clone().add({x:0, y:0, z: this.listener.getCameraHeight()}));
 
     }
 
@@ -1063,9 +1283,6 @@ class MenuDialog extends GameMenu {
 
   Update(delta){
     super.Update(delta);
-
-    if(!this.canLetterbox)
-      return;
 
     if(this.isAnimatedCutscene){
 
@@ -1094,6 +1311,12 @@ class MenuDialog extends GameMenu {
         //this.stunt[actor].model.update(delta)
       }
 
+      if(this.canLetterbox){
+        this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+        this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+        this.letterBoxed = true;
+      }
+
     }else{
       if(this.animatedCamera instanceof THREE.AuroraModel){
         this.animatedCamera.update(delta);
@@ -1110,17 +1333,24 @@ class MenuDialog extends GameMenu {
           this.animatedCamera.camerahook.quaternion
         );
         Game.camera_animated.updateProjectionMatrix();
+      }else{
+        this.UpdateCamera()
       }
+
+      if(this.canLetterbox){
+        if(this.bottomBar.position.y < -(window.innerHeight / 2) + (100 / 2)){
+          this.bottomBar.position.y += 5;
+          this.topBar.position.y -= 5;
+        }else{
+          this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+          this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+          this.letterBoxed = true;
+        }
+      }
+
     }
 
-    if(this.bottomBar.position.y < -(window.innerHeight / 2) + (100 / 2)){
-      this.bottomBar.position.y += 5;
-      this.topBar.position.y -= 5;
-    }else{
-      this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
-      this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
-      this.letterBoxed = true;
-    }
+    
 
     /*if(this.topBar.position.y > (window.innerHeight / 2) - (100 / 2)){
       
@@ -1163,11 +1393,12 @@ class MenuDialog extends GameMenu {
   }
 
   LoadDialog(resref = '', onLoad = null){
-
+    this.conversation_name = resref;
     TemplateLoader.Load({
       ResRef: resref,
       ResType: ResourceTypes.dlg,
       onLoad: (gff) => {
+        this.conversation = gff;
         if(typeof onLoad === 'function')
           onLoad(gff);
       },
@@ -1198,9 +1429,13 @@ class MenuDialog extends GameMenu {
   _resetLetterBox(){
     this.topBar.scale.x = this.bottomBar.scale.x = window.innerWidth;
     this.topBar.scale.y = this.bottomBar.scale.y = this.barHeight;
-
-    this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
-    this.bottomBar.position.y = -this.topBar.position.y;
+    if(!this.letterBoxed){
+      this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
+      this.bottomBar.position.y = -this.topBar.position.y;
+    }else{
+      this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+      this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+    }
   }
 
   _parseEntryStruct(struct){

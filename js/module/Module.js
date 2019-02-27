@@ -43,71 +43,16 @@ class Module {
         party: [],
         player: null
       },
-      area: {
-        AlphaTest: 0.200000002980232,
-        CameraStyle: 0,
-        ChanceLightning: 0,
-        ChanceRain: 0,
-        ChanceSnow: 0,
-        Comments: '',
-        Creator_ID: 0,
-        DayNightCycle: 0,
-        DefaultEnvMap: '',
-        DynAmbientColor: 6312778,
-        Expansion_List: [],
-        Flags: 1,
-        Grass: {
-          Ambient: 0,
-          Density: 0,
-          Diffuse: 0,
-          Prob_LL: 0.25,
-          Prob_LR: 0.25,
-          Prob_UL: 0.25,
-          Prob_UR: 0.25,
-          QuadSize: 0,
-          TexName: ''
-        },
-        ID: 0,
-        IsNight: 0,
-        LightingScheme: 0,
-        LoadScreenID: 0,
-        Map: {
-          MapPt1X: 0.0,
-          MapPt1Y: 0.0,
-          MapPt2X: 0.0,
-          MapPt2Y: 0.0,
-          MapResX: 0,
-          MapZoom: 1,
-          NorthAxis: 3,
-          WorldPt1X: 0.0,
-          WorldPt1Y: 0.0,
-          WorldPt2X: 0.0,
-          WorldPt2Y: 0.0
-        },
-        scripts: {
-          OnHangBack: '',
-          OnRest: '',
-          OnEnter: '',
-          OnExit: '',
-          OnHeartbeat: '',
-          OnUserDefined: ''
-        }
-      }
+      area: new ModuleArea()
     });
+    
+    this.rooms = [];
   }
 
   loadScene( onLoad = null, onProgress = null ){
 
-    // this.doors = [];
-    // this.placeables = [];
     PartyManager.party = [];
-    // this.sounds = [];
-    // this.stores = [];
-    // this.encounters = [];
-    // this.triggers = [];
-    // this.waypoints = [];
-    // this.creatures = [];
-    this.rooms = [];
+    this.rooms = []; // <------ Need to move this to the ModuleArea class
 
     for(let ri = 0; ri != this.area.rooms.length; ri++ ){
       let room = this.area.rooms[ri];
@@ -124,7 +69,12 @@ class Module {
       );
     }
 
-    Game.globalLight.color.setHex('0x'+this.area.DynAmbientColor.toString(16));
+    if(this.area.SunFogOn){
+      Game.globalLight.color.setHex('0x'+this.area.SunFogColor.toString(16));
+    }else{
+      Game.globalLight.color.setHex('0x'+this.area.DynAmbientColor.toString(16));
+    }
+    //Game.globalLight.color.setRGB(0.8, 0.8, 0.8);
 
     Game.camera.position.setX(this['Mod_Entry_X']);
     Game.camera.position.setY(this['Mod_Entry_Y']);
@@ -150,8 +100,11 @@ class Module {
       let camera = new THREE.PerspectiveCamera(cam.fov, $(window).innerWidth() / $(window).innerHeight(), 0.1, 1500);
       camera.up = new THREE.Vector3( 0, 1, 0 );
       camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
+      camera.rotation.reorder('YZX');
+      let quat = new THREE.Quaternion().copy(cam.orientation);
+      let rot = quat.multiplyVector3(new THREE.Vector3(1, 1, 0));
       camera.rotation.x = THREE.Math.degToRad(cam.pitch);
-      camera.rotation.y = Math.atan2(cam.orientation.w, cam.orientation.x) * 2;
+      camera.rotation.z = -Math.atan2(cam.orientation.w, -cam.orientation.x)*2;
       camera.ingameID = cam.cameraID;
       Game.staticCameras.push(camera);
 
@@ -169,49 +122,79 @@ class Module {
     }
     
     this.loadRooms( () => {
-      Game.LoadScreen.setProgress(10);
-      this.loadPlaceables( () => {
-        Game.LoadScreen.setProgress(20);
-        this.loadWaypoints( () => {
-          Game.LoadScreen.setProgress(30);
-          this.loadCreatures( () => {
-            Game.LoadScreen.setProgress(40);
-            this.loadSoundTemplates( () => {
-              Game.LoadScreen.setProgress(50);
-              this.loadTriggers( () => {
-                Game.LoadScreen.setProgress(60);
-                this.loadMGTracks( () => {
-                  this.loadMGPlayer( () => {
-                    this.loadMGEnemies( () => {
-                      this.loadPlayer( () => {
-                        this.loadParty( () => {
-                          Game.LoadScreen.setProgress(70);
-                          this.loadDoors( () => {
-                            Game.LoadScreen.setProgress(80);
-                            this.loadTextures( () => {
-                              Game.LoadScreen.setProgress(90);
-                              this.loadAudio( () => {
-                                Game.LoadScreen.setProgress(100);
-                                
-                                
-                                //console.log('Running module onEnter scripts');]
-                                
+      this.loadGrass( () => {
+        Game.LoadScreen.setProgress(10);
+        this.loadPlaceables( () => {
+          Game.LoadScreen.setProgress(20);
+          this.loadWaypoints( () => {
+            Game.LoadScreen.setProgress(30);
+            this.loadCreatures( () => {
+              this.loadPlayer( () => {
+                this.loadParty( () => {
+                  Game.LoadScreen.setProgress(40);
+                  //this.loadSoundTemplates( () => {
+                    Game.LoadScreen.setProgress(50);
+                    this.loadTriggers( () => {
+                      Game.LoadScreen.setProgress(60);
+                      this.loadMGTracks( () => {
+                        this.loadMGPlayer( () => {
+                          this.loadMGEnemies( () => {
+                            Game.LoadScreen.setProgress(70);
+                            this.loadDoors( () => {
+                              Game.LoadScreen.setProgress(80);
+                              this.loadTextures( () => {
+                                Game.LoadScreen.setProgress(90);
+                                this.loadAudio( () => {
+                                  Game.LoadScreen.setProgress(100);
+                                  
+                                  
+                                  //console.log('Running module onEnter scripts');]
 
-                                
 
-                                Game.isLoadingSave = false;
+                                  if(this.area.ChanceSnow == 100){
+                                    Game.ModelLoader.load({
+                                      file: 'fx_snow',
+                                      onLoad: (mdl) => {
+                                        THREE.AuroraModel.FromMDL(mdl, { 
+                                          onComplete: (model) => {
+                                            Game.weather_effects.push(model);
+                                            Game.group.weather_effects.add(model);
+                                            TextureLoader.LoadQueue();
+                                          },
+                                          manageLighting: false
+                                        });
+                                      }
+                                    });
+                                  }
 
-                                //Game.onHeartbeat();
+                                  if(this.area.ChanceRain == 100){
+                                    Game.ModelLoader.load({
+                                      file: 'fx_rain',
+                                      onLoad: (mdl) => {
+                                        THREE.AuroraModel.FromMDL(mdl, { 
+                                          onComplete: (model) => {
+                                            Game.weather_effects.push(model);
+                                            Game.group.weather_effects.add(model);
+                                            TextureLoader.LoadQueue();
+                                          },
+                                          manageLighting: false
+                                        });
+                                      }
+                                    });
+                                  }
 
-                                if(typeof onLoad === 'function')
-                                  onLoad();
+                                  //Game.onHeartbeat();
+
+                                  if(typeof onLoad === 'function')
+                                    onLoad();
+                                });
                               });
                             });
                           });
                         });
                       });
                     });
-                  });
+                  //});
                 });
               });
             });
@@ -222,27 +205,78 @@ class Module {
 
   }
 
-  initScripts(){
+  initScripts(onComplete = null){
+
+    let initScripts = [];
+
     if(this.scripts.OnModLoad != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], this.scripts.OnModLoad, (buffer) => {
-        let name = this.scripts.OnModLoad;
-        
-        this.scripts.OnModLoad = new NWScript(buffer);
-        this.scripts.OnModLoad.enteringObject = Game.player;
-        this.scripts.OnModLoad.name = name;
-        this.scripts.OnModLoad.run(Game.module.area);
-      });
+      initScripts.push('OnModLoad');
+    }
+    
+    if(this.scripts.OnClientEntr != ''){
+      initScripts.push('OnClientEntr');
     }
 
-    if(this.scripts.OnClientEntr != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], this.scripts.OnClientEntr, (buffer) => {
-        let name = this.scripts.OnClientEntr;
-        this.scripts.OnClientEntr = new NWScript(buffer);
-        this.scripts.OnClientEntr.enteringObject = Game.player;
-        this.scripts.OnClientEntr.name = name;
-        this.scripts.OnClientEntr.run(Game.module.area);
+    let loop = new AsyncLoop({
+      array: initScripts,
+      onLoop: (script, asyncLoop) => {
+        ResourceLoader.loadResource(ResourceTypes['ncs'], this.scripts[script], (buffer) => {
+          console.log('InitScript', script, this.scripts[script]);
+          let name = this.scripts[script];
+          this.scripts[script] = new NWScript(buffer);
+          this.scripts[script].enteringObject = Game.player;
+          this.scripts[script].name = name;
+          this.scripts[script].run(Game.module.area, 0, () => {
+            asyncLoop._Loop();
+          });
+        });
+      }
+    });
+    loop.Begin(() => {
+      //Load any MiniGame scripts if available
+      this.miniGameScripts( () => {
+        //Load the Module Area's OnEnter Script
+        if(this.area.scripts.OnEnter instanceof NWScript){
+          console.log('onEnter', this.area.scripts.OnEnter)
+          this.area.scripts.OnEnter.enteringObject = Game.player;
+          this.area.scripts.OnEnter.run(this.area, 0, () => {
+            if(typeof onComplete === 'function')
+              onComplete();
+          });
+        }else{
+          if(typeof onComplete === 'function')
+              onComplete();
+        }
       });
+    });
+    
+  }
+
+  miniGameScripts(onComplete = null){
+
+    if(!Game.module.area.MiniGame){
+      if(typeof onComplete === 'function')
+        onComplete();
+      return;
     }
+
+    let loop = new AsyncLoop({
+      array: this.area.MiniGame.Enemies,
+      onLoop: (enemy, asyncLoop) => {
+        if(enemy.scripts.onCreate instanceof NWScript){
+          enemy.scripts.onCreate.run(enemy, 0, () => {
+            asyncLoop._Loop();
+          });
+        }else{
+          asyncLoop._Loop();
+        }
+      }
+    });
+    loop.Begin(() => {
+      if(typeof onComplete === 'function')
+        onComplete();
+    });
+
   }
 
   getSpawnLocation(){
@@ -284,15 +318,18 @@ class Module {
       let pTPL = new GFFObject();
 
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Appearance_Type') ).SetValue(GameKey == 'TSL' ? 134 : 177);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'FirstName') ).SetValue(GameKey == 'TSL' ? 'Leia Organa' : 'Galen Urso');
       pTPL.RootNode.AddField( new Field(GFFDataTypes.INT, 'Age') ).SetValue(0);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'ArmorClass') ).SetValue(10);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') ).SetValue(0);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ChallengeRating') ).SetValue(0);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(0);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(26);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(25);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(20);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(100);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'MaxHitPoints') ).SetValue(100);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(70);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'ForcePoints') ).SetValue(15);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'MaxForcePoints') ).SetValue(15);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Commandable') ).SetValue(1);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentForce') ).SetValue(10);
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'DeadSelectable') ).SetValue(1);
@@ -350,13 +387,13 @@ class Module {
         skillList.AddChildStruct(_skill);
       }
   
-      /*let armorStruct = new Struct(UTCObject.SLOT.ARMOR);
+      let armorStruct = new Struct(UTCObject.SLOT.ARMOR);
       armorStruct.AddField( new Field(GFFDataTypes.RESREF, 'EquippedRes') ).SetValue('g_a_jedirobe01');
       let rhStruct = new Struct(UTCObject.SLOT.RIGHTHAND);
       rhStruct.AddField( new Field(GFFDataTypes.RESREF, 'EquippedRes') ).SetValue('g_w_lghtsbr01');
   
       equipment.AddChildStruct( armorStruct );
-      equipment.AddChildStruct( rhStruct );*/
+      equipment.AddChildStruct( rhStruct );
   
       // SoundSetFile
       pTPL.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(85);
@@ -392,7 +429,7 @@ class Module {
                 model.translateX(spawnLoc.XPosition);
                 model.translateY(spawnLoc.YPosition);
                 model.translateZ(spawnLoc.ZPosition + 1);*/
-                model.box = new THREE.Box3().setFromObject(model);
+                
                 model.moduleObject = player;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
                 //model.buildSkeleton();
@@ -408,6 +445,7 @@ class Module {
                 player.quaternion = player.model.quaternion;*/
       
                 player.getCurrentRoom();
+                player.computeBoundingBox();
       
                 if(typeof onLoad === 'function')
                   onLoad();
@@ -440,6 +478,11 @@ class Module {
       Game.player.animState = ModuleCreature.AnimState.IDLE;
 
       Game.player.Load( () => {
+        if(GameKey == 'TSL'){
+          Game.player.appearance = 134;
+          Game.player.gender = 1;
+          Game.player.portrait = 10;
+        }
         Game.player.LoadScripts( () => {
           Game.player.LoadModel( (model) => {
             Game.player.model = model;
@@ -447,8 +490,13 @@ class Module {
             Game.player.position.x = spawnLoc.XPosition;
             Game.player.position.y = spawnLoc.YPosition;
             Game.player.position.z = spawnLoc.ZPosition;
-            Game.player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-            Game.player.model.box = new THREE.Box3().setFromObject(Game.player.model);
+            Game.player.setFacing(-Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation), true);
+
+            //Game.player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+            //Game.player.setFacing(Game.player.rotation.z);
+
+            //Game.player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+            Game.player.computeBoundingBox();
             Game.player.model.hasCollision = true;
 
             if(!this.area.MiniGame)
@@ -466,7 +514,14 @@ class Module {
       player.partyID = -1;
       if(!this.area.MiniGame)
         PartyManager.party.push(player);
+
+      
       player.Load( () => {
+        if(GameKey == 'TSL'){
+          player.appearance = 134;
+          player.gender = 1;
+          player.portrait = 10;
+        }
         player.LoadScripts( () => {
           player.LoadModel( (model) => {
   
@@ -475,8 +530,9 @@ class Module {
             player.position.x = spawnLoc.XPosition;
             player.position.y = spawnLoc.YPosition;
             player.position.z = spawnLoc.ZPosition;
-            player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-            model.box = new THREE.Box3().setFromObject(model);
+            player.setFacing(-Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation), true);
+            //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+            player.computeBoundingBox();
             model.moduleObject = player;
             model.hasCollision = true;
 
@@ -506,13 +562,13 @@ class Module {
           track.Load( () => {
             track.LoadModel( (model) => {
               console.log(model);
-              model.box = new THREE.Box3().setFromObject(model);
               model.moduleObject = track;
               //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
               //model.buildSkeleton();
               model.hasCollision = true;
               Game.group.creatures.add( model );
     
+              track.computeBoundingBox();
               track.getCurrentRoom();
               asyncLoop._Loop();
             });
@@ -543,9 +599,10 @@ class Module {
                   model.moduleObject = enemy;
                   model.hasCollision = true;
                   enemy.setTrack(track.model);
-                  model.box = new THREE.Box3().setFromObject(model);
+                  enemy.computeBoundingBox();
                   enemy.getCurrentRoom();
                   asyncLoop._Loop();
+
                 });
               });
             });
@@ -585,15 +642,15 @@ class Module {
         door.LoadModel( (model) => {
           door.LoadWalkmesh(model.name, (dwk) => {
 
-            model.translateX(door.getX());
-            model.translateY(door.getY());
-            model.translateZ(door.getZ());
-
+            door.position.x = door.getX();
+            door.position.y = door.getY();
+            door.position.z = door.getZ();
             model.rotation.set(0, 0, door.getBearing());
-            door.model.box = door.box = new THREE.Box3().setFromObject(door.getModel());
+            door.computeBoundingBox();
+
             try{
               
-              model.dwk = dwk;
+              model.walkmesh = dwk;
               door.walkmesh = dwk;
               Game.walkmeshList.push( dwk.mesh );
 
@@ -601,15 +658,20 @@ class Module {
               dwk.mesh.position.copy(model.getWorldPosition());
               dwk.mesh.quaternion.copy(model.getWorldQuaternion());
 
-              Game.octree_walkmesh.add( dwk.mesh, {useFaces: true} );
-              
+              if(door.openState){
+                if(door.walkmesh && door.walkmesh.mesh){
+                  if(Game.octree_walkmesh.objectsMap[door.walkmesh.mesh.uuid] == door.walkmesh.mesh){
+                    Game.octree_walkmesh.remove(door.walkmesh.mesh)
+                  }
+                }
+                door.model.playAnimation('opened1', true);
+              }else{
+                Game.octree_walkmesh.add( dwk.mesh, {useFaces: true} );
+              }
 
             }catch(e){
               console.error('Failed to add dwk', model.name, pwk);
             }
-
-            //try{ model.buildSkeleton(); }catch(e){}
-            model.rebuildEmitters();
 
             door.getCurrentRoom();
 
@@ -642,17 +704,16 @@ class Module {
             model.translateY(plc.getY());
             model.translateZ(plc.getZ());
             model.rotation.set(0, 0, plc.getBearing());
-            try{ 
-              //model.buildSkeleton();
-              model.rebuildEmitters(); 
-            }catch(e){}
-            //model.rebuildEmitters();
 
             Game.group.placeables.add( model );
 
+            plc.computeBoundingBox();
+
             try{
-              model.add(pwk.model);
-              model.pwk = pwk;
+              if(pwk.model instanceof THREE.Object3D)
+                model.add(pwk.model);
+                
+              model.walkmesh = pwk;
               Game.walkmeshList.push(pwk.mesh);
               Game.octree_walkmesh.add( pwk.mesh, {useFaces: true} );
               Game.octree_walkmesh.rebuild();
@@ -694,7 +755,8 @@ class Module {
           let wpObj = new THREE.Object3D();
           wpObj.name = waypnt.getTag();
           wpObj.position.set(waypnt.getXPosition(), waypnt.getYPosition(), waypnt.getZPosition());
-          wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(waypnt.getXOrientation(), waypnt.getYOrientation()))
+          wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
+          waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
           Game.group.waypoints.add(wpObj);
 
           let _distance = 1000000000;
@@ -735,43 +797,6 @@ class Module {
       //console.log('tli', i, this.area.triggers.length);
       trig.InitProperties();
       trig.Load( () => {
-
-        var trigGeom = trig.getGeometry();
-
-        let material = new THREE.MeshBasicMaterial({
-          color: new THREE.Color( 0xFFFFFF ),
-          side: THREE.DoubleSide
-        });
-    
-        switch(trig.getType()){
-          case UTTObject.Type.GENERIC:
-            material.color.setHex(0xFF0000)
-          break;
-          case UTTObject.Type.TRANSITION:
-            material.color.setHex(0x00FF00)
-          break;
-          case UTTObject.Type.TRAP:
-            material.color.setHex(0xFFEB00)
-          break;
-        }
-
-        trig.mesh = new THREE.Mesh( trigGeom, material );
-        trig.mesh.position.set(trig.getXPosition(), trig.getYPosition(), trig.getZPosition());
-
-        /*
-        Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
-        */
-
-        //trig.mesh.rotation.set(trig.getXOrientation(), trig.getYOrientation(), trig.getZOrientation());
-
-        trig.mesh.box = trig.box = new THREE.Box3().setFromObject(trig.mesh);
-
-        trig.mesh.box.min.z -= 100;
-        trig.mesh.box.max.z += 100;
-
-        trig.mesh.moduleObject = trig;
-        trig.mesh.visible = false;
-        Game.group.triggers.add(trig.mesh);
 
         let _distance = 1000000000;
         let _currentRoom = null;
@@ -820,8 +845,11 @@ class Module {
             crt.position.x = (crt.getXPosition());
             crt.position.y = (crt.getYPosition());
             crt.position.z = (crt.getZPosition());
+
             
-            model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(crt.getXOrientation(), crt.getYOrientation()));
+            //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
+            
+            crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);
 
             model.hasCollision = true;
             model.name = crt.getTag();
@@ -856,8 +884,6 @@ class Module {
       room.load( (room) => {
         if(room.model instanceof THREE.AuroraModel){
           if(room.walkmesh instanceof AuroraWalkMesh){
-
-            room.model.wok = room.walkmesh;
             
             Game.walkmeshList.push( room.walkmesh.mesh );
             Game.octree_walkmesh.add( room.walkmesh.mesh, {useFaces: true} );
@@ -876,10 +902,7 @@ class Module {
           room.model.name = room.room['RoomName'];
           Game.group.rooms.add(room.model);
 
-          //room.model.rebuildEmitters();
-          //Game.octree.add( this.room );
-
-          room.model.box = new THREE.Box3().setFromObject(room.model);
+          room.computeBoundingBox();
           if(room.model.animations.length){
 
             for(let animI = 0; animI < room.model.animations.length; animI++){
@@ -907,29 +930,402 @@ class Module {
 
   }
 
+  //This function is responsible for generating the grass for the current module.
+  //I already see a lot of room for improvement here. The shader code will need to be moved to seprate shader files
+  //to be pulled in at startup somehow. 
+  loadGrass( onLoad = null ){
+
+    let vertexShader = `
+    //precision highp float; //Already defined in shader code
+    //uniform mat4 modelViewMatrix; //Already defined in shader code
+    //uniform mat4 projectionMatrix; //Already defined in shader code
+    uniform float time;
+    uniform float windPower;
+    uniform vec3 playerPosition;
+    uniform float alphaTest;
+    //attribute vec3 position; //Already defined in shader code
+    attribute vec3 offset;
+    //attribute vec2 uv; //Already defined in shader code
+    attribute vec2 uv2;
+    attribute vec2 uv3;
+    attribute vec2 uv4;
+    attribute vec4 orientation;
+    attribute float constraint;
+    attribute vec4 grassUV;
+    attribute float quadIdx;
+    varying vec2 vUv;
+    varying float vVi;
+    varying float dist;
+    varying float distCulled;
+
+    ${THREE.ShaderChunk['fog_pars_vertex']}
+
+    // http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
+    vec3 applyQuaternionToVector( vec4 q, vec3 v ){
+      return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
+    }
+
+    void main() {
+      float wind = constraint * windPower * ( cos(time) * 0.1 );
+        
+      vec3 vPosition = applyQuaternionToVector( orientation, position );
+      vec3 newPos = offset + vPosition - vec3(0.5, 0.5, 0.0);
+
+      vec3 windOffset = vec3(cos(wind), sin(wind), 0.0);
+
+      dist = distance(vec2(playerPosition), vec2(offset));
+      float radius = 1.0;
+
+      vec3 trample = vec3(0.0, 0.0, 0.0);
+
+      if(constraint == 1.0){
+        
+        if(dist < radius){
+          vec3 collisionVector = playerPosition - offset;
+          float strength = dist/radius;
+          trample.x = collisionVector.x * (1.0 - strength);
+          trample.y = collisionVector.y * (1.0 - strength);
+          trample.z = -strength;
+        }
+
+      }
+
+      float texIndex = grassUV.x;
+      vVi = texIndex;
+
+      if(quadIdx == 0.0){
+        texIndex = grassUV.x;
+      }else if(quadIdx == 1.0){
+        texIndex = grassUV.y;
+      }else if(quadIdx == 2.0){
+        texIndex = grassUV.z;
+      }else{
+        texIndex = grassUV.w;
+      }
+      
+      if(texIndex == 0.0){
+        vUv = uv;
+      }else if(texIndex == 1.0){
+        vUv = uv4;
+      }else if(texIndex == 2.0){
+        vUv = uv3;
+      }else{
+        vUv = uv2;
+      }
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos + windOffset, 1.0);
+    }`;
+
+    
+
+    let fragmentShader = `
+    precision highp float;
+    uniform sampler2D map;
+    uniform vec3 ambientColor;
+    uniform float alphaTest;
+    varying vec2 vUv;
+    varying float vVi;
+    varying float dist;
+    varying float distCulled;
+
+    ${THREE.ShaderChunk[ "common" ]}
+    ${THREE.ShaderChunk[ "fog_pars_fragment" ]}
+
+    void main() {
+
+      vec4 textureColor = texture2D(map, vUv);
+
+      if (textureColor[3] < alphaTest) {
+        discard;
+      } else {
+        gl_FragColor = textureColor;// * vec4(ambientColor, 1.0);
+        ${THREE.ShaderChunk[ "fog_fragment" ]}
+      }
+
+    }`;
+
+    this.grassMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge( [
+        THREE.UniformsLib[ "fog" ],
+        {
+          map: { value: null },
+          time: { value: 0 },
+          ambientColor: { value: new THREE.Color().setHex('0x'+(this.area.SunFogColor).toString(16)) },
+          windPower: { value: Game.module.area.WindPower },
+          playerPosition: { value: new THREE.Vector3 },
+          alphaTest: { value: this.area.AlphaTest }
+        }
+      ]),
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      color: new THREE.Color( 1, 1, 1 ),
+      side: THREE.DoubleSide,
+      transparent: false,
+      fog: true,
+      //blending: 5
+    });
+
+    this.grassMaterial.defines.USE_FOG = '';
+
+    let getRandomGrassSpriteIndex = function(){
+      let rnd = Math.random();
+      if(rnd < Game.module.area.Grass.Prob_UL){
+        return 0;
+      }else if(rnd < Game.module.area.Grass.Prob_UL + Game.module.area.Grass.Prob_UR){
+        return 1;
+      }else if(rnd < Game.module.area.Grass.Prob_UL + Game.module.area.Grass.Prob_UR + Game.module.area.Grass.Prob_LL){
+        return 2;
+      }else{
+        return 3;
+      }
+    };
+
+    if(this.area.Grass.TexName){
+
+      //Load in the grass texture
+      TextureLoader.Load(this.area.Grass.TexName, (grassTexture) => {
+        this.grassMaterial.uniforms.map.value = grassTexture;
+        this.grassMaterial.uniformsNeedUpdate = true;
+        this.grassMaterial.needsUpdate = true;
+      });
+
+      //Build the grass instance
+      let grassGeometry = new THREE.Geometry();
+
+      let uvs_array = [
+        [], [], [], []
+      ]
+      
+      for(let i = 0; i < 4; i++){
+        let blade = new THREE.PlaneGeometry(this.area.Grass.QuadSize, this.area.Grass.QuadSize, 1);
+        
+        let uv1 = new THREE.Vector2(0, 0);
+        let uv2 = new THREE.Vector2(1, 1);
+
+        for(let j = 0; j < 4; j++){
+
+          switch(j){
+            case 1:
+              uv1.set(0.5, 0);
+              uv2.set(1, 0.5);
+            break;
+            case 2: 
+              uv1.set(0, 0.5);
+              uv2.set(0.5, 1);
+            break;
+            case 3:
+              uv1.set(0.5, 0.5);
+              uv2.set(1, 1);
+            break;
+            default:
+              uv1.set(0, 0);
+              uv2.set(0.5, 0.5);
+            break;
+          }
+
+          let faceUV1 = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()];
+          let faceUV2 = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()];
+
+          faceUV1[ 0 ].set( uv1.x, uv2.y );
+          faceUV1[ 1 ].set( uv1.x, uv1.y );
+          faceUV1[ 2 ].set( uv2.x, uv2.y );
+          faceUV2[ 0 ].set( uv1.x, uv1.y );
+          faceUV2[ 1 ].set( uv2.x, uv1.y );
+          faceUV2[ 2 ].set( uv2.x, uv2.y );
+
+          uvs_array[j].push(faceUV1[0]);
+          uvs_array[j].push(faceUV1[1]);
+          uvs_array[j].push(faceUV1[2]);
+          uvs_array[j].push(faceUV2[0]);
+          uvs_array[j].push(faceUV2[1]);
+          uvs_array[j].push(faceUV2[2]);
+
+        }
+        
+        blade.rotateX(Math.PI/2);
+        blade.rotateZ(Math.PI/4 * i);
+        
+        grassGeometry.merge(blade, new THREE.Matrix4());
+        blade.dispose();
+      }
+
+      //Convert the geometry object to a BufferGeometry instance
+      grassGeometry = new THREE.BufferGeometry().fromGeometry(grassGeometry);
+
+      //The constraint array is a per vertex array to determine if the current vertex in the vertex shader
+      //can be affected by wind. 1 = Wind 0 = No Wind
+      let constraint = new Float32Array([
+        1, 0, 1, 0, 0, 1,
+        1, 0, 1, 0, 0, 1,
+        1, 0, 1, 0, 0, 1,
+        1, 0, 1, 0, 0, 1
+      ]);
+      grassGeometry.addAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
+
+      //QuadIdx is used to track the current quad index inside the vertex shader
+      let quadIdx = new Float32Array([
+        0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1,
+        2, 2, 2, 2, 2, 2,
+        3, 3, 3, 3, 3, 3,
+      ]);
+      grassGeometry.addAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
+      
+      let geometry = new THREE.InstancedBufferGeometry();
+      geometry.index = grassGeometry.index;
+      geometry.attributes.position = grassGeometry.attributes.position;
+      geometry.attributes.constraint = grassGeometry.attributes.constraint;
+      geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
+
+      for(let i = 0; i < 4; i++){
+        let uvs = new Float32Array( uvs_array[i].length * 2 );
+        switch(i){
+          case 1:
+          case 2:
+          case 3:
+            grassGeometry.addAttribute( 'uv'+(i+1), new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
+          break;
+          default:
+            grassGeometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
+          break;
+        }
+      }
+
+      geometry.attributes.uv = grassGeometry.attributes.uv;
+      geometry.attributes.uv2 = grassGeometry.attributes.uv2;
+      geometry.attributes.uv3 = grassGeometry.attributes.uv3;
+      geometry.attributes.uv4 = grassGeometry.attributes.uv4;
+
+      // per instance data
+      let offsets = [];
+      //let offsetsVec3 = [];
+      let orientations = [];
+      let grassUVs = [];
+      let vector = new THREE.Vector4();
+
+      this.grassInstances = [];
+
+      let density = this.area.Grass.Density;
+
+      let rLen = this.rooms.length;
+      for(let i = 0; i < rLen; i++){
+        let room = this.rooms[i];
+        if(room.model.wok instanceof AuroraWalkMesh){
+          if(room.model.wok.grassFaces.length){
+            for(let i = 0; i < room.model.wok.grassFaces.length; i++){
+              let face = room.model.wok.grassFaces[i];
+  
+              //FACE A
+              let FA = room.model.wok.vertices[face.a];
+              //FACE B
+              let FB = room.model.wok.vertices[face.b];
+              //FACE C
+              let FC = room.model.wok.vertices[face.c];
+  
+              let triangle = new THREE.Triangle(FA,FB,FC);
+              let area = triangle.getArea();
+              let grassCount = ((area) * density)*.25;
+  
+              if(grassCount < 1){
+                grassCount = 1;
+              }
+
+              let quadOffsetZ = Game.module.area.Grass.QuadSize/2;
+  
+              for(let j = 0; j < grassCount; j++){
+
+                let instance = {
+                  position: {x: 0, y: 0, z: 0},
+                  orientation: {x: 0, y: 0, z: 0, w: 0},
+                  uvs: {uv1: getRandomGrassSpriteIndex(), uv2: getRandomGrassSpriteIndex(), uv3: getRandomGrassSpriteIndex(), uv4: getRandomGrassSpriteIndex()}
+                };
+  
+                // offsets
+                let a = Math.random();
+                let b = Math.random();
+  
+                if (a + b > 1) {
+                  a = 1 - a;
+                  b = 1 - b;
+                }
+  
+                let c = 1 - a - b;
+  
+                vector.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
+                vector.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
+                vector.z = (a * FA.z) + (b * FB.z) + (c * FC.z) + quadOffsetZ;
+
+                instance.position = {x: vector.x, y: vector.y, z: vector.z};
+  
+                // orientations
+                let r = Math.floor(Math.random() * 360) + 0;
+                let c1 = Math.cos( 0 / 2 );
+                let c2 = Math.cos( 0 / 2 );
+                let c3 = Math.cos( r / 2 );
+  
+                let s1 = Math.sin( 0 / 2 );
+                let s2 = Math.sin( 0 / 2 );
+                let s3 = Math.sin( r / 2 );
+  
+                vector.x = s1 * c2 * c3 + c1 * s2 * s3;
+                vector.y = c1 * s2 * c3 - s1 * c2 * s3;
+                vector.z = c1 * c2 * s3 + s1 * s2 * c3;
+                vector.w = c1 * c2 * c3 - s1 * s2 * s3;
+                
+                instance.orientation = {x: vector.x, y: vector.y, z: vector.z, w: vector.w};
+
+                this.grassInstances.push(instance);
+
+              }
+            }
+          }
+        }
+      }
+
+      let origin = new THREE.Vector3(0, 0, 0);
+      this.grassInstances.sort( (a, b) => {
+        let distA = origin.distanceTo(a.position);
+        let distB = origin.distanceTo(b.position);
+        return distA - distB;
+      });
+
+      for(let i = 0, il = this.grassInstances.length; i < il; i++){
+        let instance = this.grassInstances[i];
+        offsets.push( instance.position.x, instance.position.y, instance.position.z );
+        orientations.push(instance.orientation.x, instance.orientation.y, instance.orientation.z, instance.orientation.w);
+        grassUVs.push(instance.uvs.uv1, instance.uvs.uv2, instance.uvs.uv3, instance.uvs.uv4);
+      }
+
+      let offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setDynamic( true );
+      let orientationAttribute = new THREE.InstancedBufferAttribute( new Float32Array( orientations ), 4 ).setDynamic( true );
+      let grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 ).setDynamic( true );
+      geometry.addAttribute( 'offset', offsetAttribute );
+      geometry.addAttribute( 'orientation', orientationAttribute );
+      geometry.addAttribute( 'grassUV', grassUVAttribute );
+      //this.grassOffsets = offsetsVec3;
+      this.grassMesh = new THREE.Mesh( geometry, Game.module.grassMaterial );
+      this.grassMesh.frustumCulled = false;
+      Game.group.grass.add(this.grassMesh);
+    }
+
+    if(typeof onLoad === 'function')
+      onLoad();
+
+  }
+
   loadSoundTemplates ( onLoad = null, i = 0 ){
 
     console.log('Loading Sound Emitter')
 
     if(i < this.area.sounds.length){
-      //console.log('sli', i, this.area.sounds.length);
-      
       let snd = this.area.sounds[i];
       snd.Load( () => {
         snd.LoadSound( () => {
-          //snd.LoadModel( (mesh) => {
-
-            /*template.mesh.position.set(snd.props.XPosition, snd.props.YPosition, snd.props.ZPosition);
-            template.mesh.moduleObject = snd;
-            Game.group.sounds.add(template.mesh);*/
-
-            process.nextTick( () => {
-              this.loadSoundTemplates( onLoad, ++i );
-            })
-          //});
+          process.nextTick( () => {
+            this.loadSoundTemplates( onLoad, ++i );
+          });
         });
       });
-
     }else{
       if(typeof onLoad === 'function')
         onLoad();
@@ -1011,19 +1407,111 @@ class Module {
       let _rim_s = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim');
       new RIMObject(_rim_s, (rim_s) => {
         archives.push(rim_s);
-        if(GameKey == 'TSL'){
-          let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
-          let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
-            archives.push(erf_dlg);
-            if(typeof onLoad == 'function')
-              onLoad(archives);
-          });
-        }else{
-          if(typeof onLoad == 'function')
-            onLoad(archives);
-        }
+
+        //localization.mod
+        fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (dirExists) => {
+          if(dirExists){
+    
+            let mod_loc = new ERFObject( path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), () => {
+              archives.push(mod_loc);
+
+              fs.exists( path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
+                if(dirExists){
+                  let mod_loc2 = new ERFObject( path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), () => {
+                    archives.push(mod_loc2);
+                    if(GameKey == 'TSL'){
+                      let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+                      let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
+                        archives.push(erf_dlg);
+                        if(typeof onLoad == 'function')
+                          onLoad(archives);
+                      });
+                    }else{
+                      if(typeof onLoad == 'function')
+                        onLoad(archives);
+                    }
+                  });
+                }else{
+                  if(GameKey == 'TSL'){
+                    let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+                    let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
+                      archives.push(erf_dlg);
+                      if(typeof onLoad == 'function')
+                        onLoad(archives);
+                    });
+                  }else{
+                    if(typeof onLoad == 'function')
+                      onLoad(archives);
+                  }
+                }
+              });
+
+            });
+
+          } else {
+            fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
+              if(dirExists){
+                let mod_loc2 = new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), () => {
+                  archives.push(mod_loc2);
+                  if(GameKey == 'TSL'){
+                    let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+                    let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
+                      archives.push(erf_dlg);
+                      if(typeof onLoad == 'function')
+                        onLoad(archives);
+                    });
+                  }else{
+                    if(typeof onLoad == 'function')
+                      onLoad(archives);
+                  }
+                });
+              }else{
+                if(GameKey == 'TSL'){
+                  let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+                  let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
+                    archives.push(erf_dlg);
+                    if(typeof onLoad == 'function')
+                      onLoad(archives);
+                  });
+                }else{
+                  if(typeof onLoad == 'function')
+                    onLoad(archives);
+                }
+              }
+            });
+          }
+
+        });
+        
       });
     });
+  }
+
+  static GetLipArchives(modName = '', onLoad = null){
+
+    fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (dirExists) => {
+      if(dirExists){
+
+        let mod_loc = new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), () => {
+          archives.push(mod_loc);
+
+          fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
+            if(dirExists){
+
+            }
+          });
+
+        });
+
+      }else{
+        fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
+          if(dirExists){
+
+          }
+        });
+      }
+    })
+
   }
 
   //ex: end_m01aa end_m01aa_s
@@ -1033,116 +1521,122 @@ class Module {
     module.transWP = waypoint;
     Game.module = module;
     if(modName != null){
+      try{
+        Module.GetModuleArchives(modName, (archives) => {
+          Game.module.archives = archives;
 
-      Module.GetModuleArchives(modName, (archives) => {
-        Game.module.archives = archives;
-
-        ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {
-          
-          new GFFObject(ifo_data, (gff, rootNode) => {
+          ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {
             
-            let Mod_Area_list = gff.GetFieldByLabel('Mod_Area_list');
-            let Mod_Area_listLen = Mod_Area_list.GetChildStructs().length;
-            let Mod_Area = Mod_Area_list.ChildStructs[0];
-
-            module.Area_Name = gff.GetFieldByLabel('Area_Name', Mod_Area.GetFields()).GetValue();
-
-            module.Mod_Area_list = [];
-            //KOTOR modules should only ever have one area. But just incase lets loop through the list
-            for(let i = 0; i < Mod_Area_listLen; i++){
+            new GFFObject(ifo_data, (gff, rootNode) => {
+              
+              let Mod_Area_list = gff.GetFieldByLabel('Mod_Area_list');
+              let Mod_Area_listLen = Mod_Area_list.GetChildStructs().length;
               let Mod_Area = Mod_Area_list.ChildStructs[0];
-              let area = { 'Area_Name': Mod_Area.GetFieldByLabel('Area_Name').GetValue() };
-              module.Mod_Area_list.push(area);
-            }
 
-            //LISTS
-            if(gff.RootNode.HasField('Expansion_Pack')){
-              module.Expansion_Pack = gff.GetFieldByLabel('Expansion_Pack').GetValue();
-            }else{
-              module.Expansion_Pack = 0;
-            }
-            module.Mod_CutSceneList = [];
-            module.Mod_Expan_List = [];
-            module.Mod_GVar_List = [];
+              module.Area_Name = gff.GetFieldByLabel('Area_Name', Mod_Area.GetFields()).GetValue();
 
-            module.Mod_Creator_ID = gff.GetFieldByLabel('Mod_Creator_ID').GetValue();
-            module.Mod_DawnHour = gff.GetFieldByLabel('Mod_DawnHour').GetValue();
-            module.Mod_Description = gff.GetFieldByLabel('Mod_Description').GetValue();
-            module.Mod_DuskHour = gff.GetFieldByLabel('Mod_DuskHour').GetValue();
-
-            module.Mod_Entry_Area = gff.GetFieldByLabel('Mod_Entry_Area').GetValue();
-            module.Mod_Entry_Dir_X = gff.GetFieldByLabel('Mod_Entry_Dir_X').GetValue();
-            module.Mod_Entry_Dir_Y = gff.GetFieldByLabel('Mod_Entry_Dir_Y').GetValue();
-            module.Mod_Entry_X = gff.GetFieldByLabel('Mod_Entry_X').GetValue();
-            module.Mod_Entry_Y = gff.GetFieldByLabel('Mod_Entry_Y').GetValue();
-            module.Mod_Entry_Z = gff.GetFieldByLabel('Mod_Entry_Z').GetValue();
-
-            module.Mod_Hak = gff.GetFieldByLabel('Mod_Hak').GetValue();
-            module.Mod_ID = gff.GetFieldByLabel('Mod_ID').GetVoid(); //Generated by the toolset (Not sure if it is used in game)
-            module.Mod_MinPerHour = gff.GetFieldByLabel('Mod_MinPerHour').GetValue();
-            module.Mod_Name = gff.GetFieldByLabel('Mod_Name').GetCExoLocString();
-
-            if(gff.RootNode.HasField('Mod_PlayerList') && Game.isLoadingSave){
-              let playerList = gff.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
-              if(playerList.length){
-                PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+              module.Mod_Area_list = [];
+              //KOTOR modules should only ever have one area. But just incase lets loop through the list
+              for(let i = 0; i < Mod_Area_listLen; i++){
+                let Mod_Area = Mod_Area_list.ChildStructs[0];
+                let area = { 'Area_Name': Mod_Area.GetFieldByLabel('Area_Name').GetValue() };
+                module.Mod_Area_list.push(area);
               }
-            }
 
-            //Scripts
-            module.scripts.OnAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
-            module.scripts.OnActvtItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
-            module.scripts.OnClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
-            module.scripts.OnClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
-            module.scripts.OnHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
-            module.scripts.OnModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
-            module.scripts.OnModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
-            module.scripts.OnPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
-            module.scripts.OnPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
-            module.scripts.OnPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
-            module.scripts.OnPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
-            module.scripts.OnSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
-            module.scripts.OnUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
-            module.scripts.OnUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
+              //LISTS
+              if(gff.RootNode.HasField('Expansion_Pack')){
+                module.Expansion_Pack = gff.GetFieldByLabel('Expansion_Pack').GetValue();
+              }else{
+                module.Expansion_Pack = 0;
+              }
+              module.Mod_CutSceneList = [];
+              module.Mod_Expan_List = [];
+              module.Mod_GVar_List = [];
 
-            module.Mod_StartDay = gff.GetFieldByLabel('Mod_StartDay').GetValue();
-            module.Mod_StartHour = gff.GetFieldByLabel('Mod_StartHour').GetValue();
-            module.Mod_StartMonth = gff.GetFieldByLabel('Mod_StartMonth').GetValue();
-            if(gff.RootNode.HasField('Mod_StartMovie')){
-              module.Mod_StartMovie = gff.GetFieldByLabel('Mod_StartMovie').GetValue();
-            }else{
-              module.Mod_StartMovie = '';
-            }
-            module.Mod_StartYear = gff.GetFieldByLabel('Mod_StartYear').GetValue();
+              module.Mod_Creator_ID = gff.GetFieldByLabel('Mod_Creator_ID').GetValue();
+              module.Mod_DawnHour = gff.GetFieldByLabel('Mod_DawnHour').GetValue();
+              module.Mod_Description = gff.GetFieldByLabel('Mod_Description').GetValue();
+              module.Mod_DuskHour = gff.GetFieldByLabel('Mod_DuskHour').GetValue();
 
-            module.Mod_Tag = gff.GetFieldByLabel('Mod_Tag').GetValue();
-            if(gff.RootNode.HasField('Mod_VO_ID')){
-              module.Mod_VO_ID = gff.GetFieldByLabel('Mod_VO_ID').GetValue();
-            }else{
-              module.Mod_VO_ID = '';
-            }
-            module.Mod_Version = gff.GetFieldByLabel('Mod_Version').GetValue();
-            module.Mod_XPScale = gff.GetFieldByLabel('Mod_XPScale').GetValue();
+              module.Mod_Entry_Area = gff.GetFieldByLabel('Mod_Entry_Area').GetValue();
+              module.Mod_Entry_Dir_X = gff.GetFieldByLabel('Mod_Entry_Dir_X').GetValue();
+              module.Mod_Entry_Dir_Y = gff.GetFieldByLabel('Mod_Entry_Dir_Y').GetValue();
+              module.Mod_Entry_X = gff.GetFieldByLabel('Mod_Entry_X').GetValue();
+              module.Mod_Entry_Y = gff.GetFieldByLabel('Mod_Entry_Y').GetValue();
+              module.Mod_Entry_Z = gff.GetFieldByLabel('Mod_Entry_Z').GetValue();
 
-            ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data) => {
-              new GFFObject(data, (git, rootNode) => {
-                ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data) => {
-                  new GFFObject(data, (are, rootNode) => {
-                    module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
-                    module.area.module = module;
-                    module.area.SetTransitionWaypoint(module.transWP);
-                    module.area.Load( () => {
-                      //console.log(module);
-                      if(typeof onComplete == 'function')
-                        onComplete(module);
-                    });                        
+              module.Mod_Hak = gff.GetFieldByLabel('Mod_Hak').GetValue();
+              module.Mod_ID = gff.GetFieldByLabel('Mod_ID').GetVoid(); //Generated by the toolset (Not sure if it is used in game)
+              module.Mod_MinPerHour = gff.GetFieldByLabel('Mod_MinPerHour').GetValue();
+              module.Mod_Name = gff.GetFieldByLabel('Mod_Name').GetCExoLocString();
+
+              if(gff.RootNode.HasField('Mod_PlayerList') && Game.isLoadingSave){
+                let playerList = gff.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
+                if(playerList.length){
+                  PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+                }
+              }
+
+              //Scripts
+              module.scripts.OnAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
+              module.scripts.OnActvtItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
+              module.scripts.OnClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
+              module.scripts.OnClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
+              module.scripts.OnHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
+              module.scripts.OnModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
+              module.scripts.OnModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
+              module.scripts.OnPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
+              module.scripts.OnPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
+              module.scripts.OnPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
+              module.scripts.OnPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
+              module.scripts.OnSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
+              module.scripts.OnUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
+              module.scripts.OnUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
+
+              module.Mod_StartDay = gff.GetFieldByLabel('Mod_StartDay').GetValue();
+              module.Mod_StartHour = gff.GetFieldByLabel('Mod_StartHour').GetValue();
+              module.Mod_StartMonth = gff.GetFieldByLabel('Mod_StartMonth').GetValue();
+              if(gff.RootNode.HasField('Mod_StartMovie')){
+                module.Mod_StartMovie = gff.GetFieldByLabel('Mod_StartMovie').GetValue();
+              }else{
+                module.Mod_StartMovie = '';
+              }
+              module.Mod_StartYear = gff.GetFieldByLabel('Mod_StartYear').GetValue();
+
+              module.Mod_Tag = gff.GetFieldByLabel('Mod_Tag').GetValue();
+              if(gff.RootNode.HasField('Mod_VO_ID')){
+                module.Mod_VO_ID = gff.GetFieldByLabel('Mod_VO_ID').GetValue();
+              }else{
+                module.Mod_VO_ID = '';
+              }
+              module.Mod_Version = gff.GetFieldByLabel('Mod_Version').GetValue();
+              module.Mod_XPScale = gff.GetFieldByLabel('Mod_XPScale').GetValue();
+
+              ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data) => {
+                new GFFObject(data, (git, rootNode) => {
+                  ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data) => {
+                    new GFFObject(data, (are, rootNode) => {
+                      module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
+                      module.area.module = module;
+                      module.area.SetTransitionWaypoint(module.transWP);
+                      module.area.Load( () => {
+                        //console.log(module);
+                        if(typeof onComplete == 'function')
+                          onComplete(module);
+                      });                        
+                    });
                   });
                 });
               });
             });
+          }, (err) => {
+            console.error('LoadModule', err);
+            Game.module = undefined;
           });
         });
-      });
+      }catch(e){
+        Game.module = undefined;
+      }
     }
     return module;
   }
@@ -1287,6 +1781,21 @@ class Module {
     return {yaw: yaw, pitch: pitch, roll: roll};
   }
 
+  Save(){
+
+    //Export .ifo
+
+    //Export .are
+
+    //Export .git
+
+    return {
+      are: null,
+      git: null,
+      ifo: null
+    };
+
+  }
 
   static FromJSON(path){
     let module = new Module();

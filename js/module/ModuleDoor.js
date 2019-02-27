@@ -73,7 +73,7 @@ class ModuleDoor extends ModuleObject {
           interval: 0,
           intervalVariation: 0,
           maxDistance: 50,
-          volume: 100,
+          volume: 127,
           positional: 1
         },
         onLoad: () => {
@@ -135,9 +135,9 @@ class ModuleDoor extends ModuleObject {
 
   getObjectSounds(){
     let door = this.getDoorAppearance();
-    let soundIdx = door.soundapptype.replace(/\0[\s\S]*$/g,'');
-    if(soundIdx != '****'){
-      return Global.kotor2DA['placeableobjsnds'].rows[parseInt(soundIdx)];
+    let soundIdx = parseInt(door.soundapptype.replace(/\0[\s\S]*$/g,''));
+    if(!isNaN(soundIdx)){
+      return Global.kotor2DA['placeableobjsnds'].rows[soundIdx];
     }
     return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
   }
@@ -155,7 +155,7 @@ class ModuleDoor extends ModuleObject {
   }
 
   isUseable(){
-    return !this.openState;
+    return !this.openState && !this.static;
   }
 
   isOpen(){
@@ -219,6 +219,13 @@ class ModuleDoor extends ModuleObject {
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
         this.locked = false;
+        if(object instanceof ModuleCreature){
+          object.PlaySoundSet(SSFObject.TYPES.UNLOCK_SUCCESS);
+        }
+      }else{
+        if(object instanceof ModuleCreature){
+          object.PlaySoundSet(SSFObject.TYPES.UNLOCK_FAIL);
+        }
       }
       this.use(object);
       return true;
@@ -257,12 +264,12 @@ class ModuleDoor extends ModuleObject {
     this.model.playAnimation('opening1', false, () => {
       console.log('opening1');
       setTimeout( () => {
-        if(this.dwk && this.dwk.mesh){
-          if(Game.octree_walkmesh.objectsMap[this.dwk.mesh.uuid] == this.dwk.mesh){
-            Game.octree_walkmesh.remove(this.dwk.mesh)
+        if(this.walkmesh && this.walkmesh.mesh){
+          if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == this.walkmesh.mesh){
+            Game.octree_walkmesh.remove(this.walkmesh.mesh)
           }
         }
-        this.model.playAnimation('opened1', true);
+        //this.model.poseAnimation('opened1');
       }, 100);
     });
   }
@@ -277,24 +284,26 @@ class ModuleDoor extends ModuleObject {
       this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
     }
 
-    if(this.dwk && this.dwk.mesh){
-      if(Game.octree_walkmesh.objectsMap[this.dwk.mesh.uuid] == undefined){
-        Game.octree_walkmesh.add(this.dwk.mesh)
+    if(this.walkmesh && this.walkmesh.mesh){
+      if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == undefined){
+        Game.octree_walkmesh.add(this.walkmesh.mesh)
       }
     }
 
     this.model.playAnimation('closing1', false, () => {
       console.log('closing1');
       this.openState = false;
-      //this.model.playAnimation('trans', false, () => {
-        this.model.playAnimation('closed', false);
-      //});
+      this.model.playAnimation('closed', true);
     });
   }
 
   update(delta = 0){
     
     super.update(delta);
+
+    if(this.walkmesh && this.model){
+      this.walkmesh.matrixWorld = this.model.matrix.clone();
+    }
 
     if(this.model instanceof THREE.AuroraModel){
       this.model.update(delta);
@@ -478,7 +487,9 @@ class ModuleDoor extends ModuleObject {
               //loader.SetMessage('Loading Textures: '+texName);
             });
           },
-          context: this.context
+          context: this.context,
+          //castShadow: true,
+          //receiveShadow: true
         });
       }
     });
@@ -585,9 +596,9 @@ class ModuleDoor extends ModuleObject {
     if(wokKey != null){
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
-        this.dwk = new AuroraWalkMesh(new BinaryReader(buffer));
+        this.walkmesh = new AuroraWalkMesh(new BinaryReader(buffer));
         if(typeof onLoad === 'function')
-          onLoad(this.dwk);
+          onLoad(this.walkmesh);
 
       });
 
@@ -659,6 +670,9 @@ class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.HasField('OpenLockDC'))
       this.openLockDC = this.template.GetFieldByLabel('OpenLockDC').GetValue();
+
+    if(this.template.RootNode.HasField('OpenState'))
+      this.openState = this.template.GetFieldByLabel('OpenState').GetValue();
 
     if(this.template.RootNode.HasField('PaletteID'))
       this.paletteID = this.template.GetFieldByLabel('PaletteID').GetValue();

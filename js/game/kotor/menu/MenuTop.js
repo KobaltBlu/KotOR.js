@@ -41,45 +41,45 @@ class MenuTop extends GameMenu {
         this.LBLH_INV.hideBorder();
         this.LBLH_EQU.hideBorder();
 
-        this.BTN_MSG.onClick = (e) => {
+        this.BTN_MSG.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuMessages.Show();
-        };
+        });
 
-        this.BTN_JOU.onClick = (e) => {
+        this.BTN_JOU.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuJournal.Show();
-        };
+        });
 
-        this.BTN_MAP.onClick = (e) => {
+        this.BTN_MAP.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuMap.Show();
-        };
+        });
 
-        this.BTN_OPT.onClick = (e) => {
+        this.BTN_OPT.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuOptions.Show();
-        };
+        });
 
-        this.BTN_CHAR.onClick = (e) => {
+        this.BTN_CHAR.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuCharacter.Show();
-        };
+        });
 
-        this.BTN_ABI.onClick = (e) => {
+        this.BTN_ABI.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.MenuCharacter.Show();
-        };
+        });
 
-        this.BTN_INV.onClick = (e) => {
+        this.BTN_INV.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuInventory.Show();
-        };
+        });
 
-        this.BTN_EQU.onClick = (e) => {
+        this.BTN_EQU.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuEquipment.Show();
-        };
+        });
 
         this.tGuiPanel.offset.y = 198;
         this.RecalculatePosition();

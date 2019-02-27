@@ -9,7 +9,7 @@ class EditorTab {
     this.id = EditorTabManager.GetNewTabID();
     this.tabManager = null;
     this.visible = false;
-    this.tabName = 'New Tab';
+    this.tabName = 'Script Editor';
     this.resource = null;
     this.$tab = $('<li class="btn btn-tab"><a href="#tab-'+this.id+'">'+this.tabName+'</a> <button type="button" class="close" data-dismiss="modal">×</button></li>');
     this.$tabName = $('a', this.$tab);
@@ -18,6 +18,21 @@ class EditorTab {
 
     this.tabLoader = new LoadingScreen(this.$tabContent, false);
     this.tabLoader.Hide();
+
+    this.tabLoader.$loader.css({
+      'position': 'absolute',
+      'top': 0,
+    });
+
+    this.tabLoader.$loading_container.css({
+      'left': 0,
+      'top': 0,
+      'bottom': 0,
+      'right': 0,
+      'text-align': 'center',
+      'position': 'absolute',
+      'padding-top': 'calc(50% - 50px)',
+    });
 
     this.$tab.on('click', (e) => {
       e.preventDefault();
@@ -51,6 +66,8 @@ class EditorTab {
     $('li.btn-tab', this.$tab.parent()).removeClass('current');
     this.$tab.removeClass('current').addClass('current');
     this.$tabContent.show();
+
+    this.tabManager.currentTab = this;
   }
 
   Hide(){
@@ -174,29 +191,165 @@ class EditorTab {
     this.isDestroyed = true;
   }
 
-  InitCExoLocStringField ($field) {
+  InitCExoLocStringField ($field, field) {
 
-    let cexolocstring = $field.data('CExoLocString');
+    $field.prop('disabled', true);
 
-    let $newField = $field.clone( true );
+    if(field instanceof Field){
 
-    let $fieldHolder = $('<div class="CExoLocString-holder row"><div class="input-holder col-xs-11"></div><div class="btn-edit-holder col-xs-1"><a href="#" class="btn-edit glyphicon glyphicon-cog" title="Edit CExoLocString"></a></div></div>');
-    let $btnFieldEdit = $('div.btn-edit-holder > a.btn-edit', $fieldHolder);
-    $('div.input-holder', $fieldHolder).append($newField);
+      $field.val(field.GetCExoLocString().GetValue())
 
-    $field.replaceWith($fieldHolder);
+      let cexolocstring = field.GetCExoLocString();
 
-    $btnFieldEdit.on('click', (e) => {
-      e.preventDefault();
-      //TODO: Create the popup window that allows the user to edit a CExoLocString
-      let wiz = new CExoLocStringWizard({
-        'CExoLocString': cexolocstring,
-        'onSave': () => {
-          $newField.val( ipcRenderer.sendSync( 'TLKGetStringById', cexolocstring.RESREF ).Value );
-        }
+      let $newField = $field.clone( true );
+
+      let $fieldHolder = $('<div class="CExoLocString-holder row"><div class="input-holder col-xs-11"></div><div class="btn-edit-holder col-xs-1"><a href="#" class="btn-edit glyphicon glyphicon-edit" title="Edit CExoLocString"></a></div></div>');
+      let $btnFieldEdit = $('div.btn-edit-holder > a.btn-edit', $fieldHolder);
+      $('div.input-holder', $fieldHolder).append($newField);
+
+      $field.replaceWith($fieldHolder);
+
+      $newField.css({
+        cursor: 'pointer'
       });
-    });
+      $newField.on('click', (e) => {
+        e.preventDefault();
+        let wiz = new CExoLocStringWizard({
+          'CExoLocString': cexolocstring,
+          'onSave': () => {
+            $newField.val( cexolocstring.GetValue() );
+          }
+        });
+      });
+      $newField.attr('title', 'Click to edit this CExoLocString field');
 
+      $btnFieldEdit.on('click', (e) => {
+        e.preventDefault();
+        let wiz = new CExoLocStringWizard({
+          'CExoLocString': cexolocstring,
+          'onSave': () => {
+            $newField.val( cexolocstring.GetValue() );
+          }
+        });
+      });
+
+    }
+
+  }
+
+  InitResRefField($field, field){
+    if(field instanceof Field){
+      $field.val(field.Value);
+      $field.on('input', (e) => {
+        field.Value = $field.val();
+      });
+    }
+  }
+
+  InitDropDownField(args){
+
+    args = Object.assign({
+      $field: null,       //jQuery Element
+      fieldName: null,        //GFF Field Name
+      fieldType: null,    //GFF Field Type
+      objOrArray: null,   //Elements of data
+      propertyName: null, //Property name to target inside objOrArray
+      selectionOffset: 0,
+      onChange: null,      //onChange callback function for UI updates
+      onLabel: null
+    }, args);
+
+    if(!(this.gff instanceof GFFObject)){
+      return;
+    }
+
+    if(args.$field){
+
+      if(args.objOrArray instanceof Array){
+        for (let i = 0; i < args.objOrArray.length; i++) {
+          let obj = args.objOrArray[i];
+          let label = obj[args.propertyName];
+
+          if(typeof args.onLabel === 'function')
+            label = args.onLabel(label);
+
+          args.$field.append('<option value="'+i+'">'+label+'</option>');
+        }
+      }else if(typeof args.objOrArray === 'object'){
+        for (let key in args.objOrArray) {
+          let obj = args.objOrArray[key];
+          let label = obj[args.propertyName];
+
+          if(typeof args.onLabel === 'function')
+            label = args.onLabel(label);
+
+          args.$field.append('<option value="'+key+'">'+label+'</option>');
+        }
+      }
+
+      let field = this.gff.GetFieldByLabel(args.fieldName);
+      if(!(field instanceof Field)){
+        field = this.gff.AddField(new Field(args.fieldType, args.fieldName));
+      }
+
+      let $options = $('option', args.$field);
+      let arr = $options.map(function(_, o) { return { t: $(o).text(), v: o.value }; }).get();
+      arr.sort(function(o1, o2) { return o1.t > o2.t ? 1 : o1.t < o2.t ? -1 : 0; });
+      $options.each(function(i, o) {
+        o.value = arr[i].v;
+        $(o).text(arr[i].t);
+      });
+
+      args.$field.val(field.GetValue()-args.selectionOffset).prop('disabled', false);
+      args.$field.change( () => {
+        field.Value = parseFloat(args.$field.val())+args.selectionOffset;
+        if(typeof args.onChange === 'function')
+          args.onChange();
+      });
+
+    }
+
+  }
+
+  InitCheckBoxField(args){
+
+    args = Object.assign({
+      $field: null,       //jQuery Element
+      fieldName: null,     //GFF Field Name
+      fieldType: null,    //GFF Field Type
+      onChange: null,      //onChange callback function for UI updates
+    }, args);
+
+    if(!(this.gff instanceof GFFObject)){
+      return;
+    }
+
+    if(args.$field){
+
+      let field = this.gff.GetFieldByLabel(args.fieldName);
+      if(!(field instanceof Field)){
+        field = this.gff.AddField(new Field(args.fieldType, args.fieldName));
+      }
+
+      args.$field.prop('checked', field.Value ? true : false)
+      args.$field.change( () => {
+        field.Value = args.$field.is(':checked') ? 1 : 0;
+        if(typeof args.onChange === 'function')
+          args.onChange();
+      });
+
+    }
+
+  }
+
+  InitNumericField($field, field){
+    if(field instanceof Field){
+      $field.val(field.Value);
+      $field.attr('min', 0);
+      $field.on('input', (e) => {
+        field.Value = parseInt($field.val());
+      });
+    }
   }
 
   ElementId(str){

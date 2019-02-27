@@ -20,6 +20,7 @@ class AuroraModelAnimation {
       lastTime: 0,
       delta: 0,
       lastEvent: 0,
+      events: [],
       callback: undefined
     };
     this.callback = null;

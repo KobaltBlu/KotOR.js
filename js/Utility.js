@@ -198,6 +198,11 @@ class Utility {
     }
     return mipmaps;
   }
+  
+  static Distance2D(v0, v1){
+    var dx = v0.x - v1.x, dy = v0.y - v1.y;
+		return Math.abs(Math.sqrt( dx * dx + dy * dy ));
+  }
 
 
 }

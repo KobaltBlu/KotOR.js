@@ -21,6 +21,7 @@ class GUISlider extends GUIControl{
       this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.thumbMaterial.transparent = true;
       this.thumb = new THREE.Sprite( this.thumbMaterial );
+      this.thumb.position.z = 2;
       this.widget.add(this.thumb);
       this.thumb.name = 'SCROLLBAR thumb';
       this.thumb.scale.x = 8;//this.extent.width/2;
@@ -39,37 +40,42 @@ class GUISlider extends GUIControl{
         )
       )
 
-      this.thumb.onClick = (e) => {
+      this.thumb.addEventListener('click', (e) => {
         this.mouseInside();
-      };
+      });
 
       if(this._thumb.HasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumbMaterial, TextureLoader.Type.TEXTURE);
+        TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumbMaterial, TextureLoader.Type.TEXTURE, () => {
+          this.thumbMaterial.transparent = false;
+          this.thumbMaterial.alphaTest = 0.5;
+          this.thumbMaterial.needsUpdate = true;
+        });
         TextureLoader.LoadQueue();
       }
     }
 
-    this.onMouseMove = () => {
+    this.addEventListener('mouseMove', () => {
       this.mouseInside();
-    }
+    })
 
-    this.onClick = () =>{
+    this.addEventListener('click', () =>{
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
 
       let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
       this.mouseInside();
-    }
+    });
 
-    this.onMouseDown = (e) => {
+    this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
+      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
-    };
+    });
 
-    this.onMouseUp = () => {
+    this.addEventListener('mouseUp', () => {
       this.mouseInside();
-    };
+    });
 
     this.setValue(this.value);
 

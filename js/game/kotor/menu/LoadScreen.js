@@ -28,7 +28,7 @@ class LoadScreen extends GameMenu {
 
         this.lbl_hint.visible = false;
 
-        //this.lbl_name.setText('SAVING')
+        this.defaultTex = this.tGuiPanel.widget.fill.children[0].material.map;
 
         if(this.args.loadscreen.length){
           this.LoadTexture(this.args.loadscreen, (texture) => {
@@ -55,12 +55,17 @@ class LoadScreen extends GameMenu {
   setLoadBackground(resref = null, onLoad = null){
     if(resref){
       this.LoadTexture(resref, (texture) => {
-        
-        this.tGuiPanel.widget.fill.children[0].material.map = texture;
-
-        if(typeof onLoad === 'function')
-          onLoad();
-
+        if(texture){
+          this.tGuiPanel.widget.fill.children[0].material.map = texture;
+          if(typeof onLoad === 'function')
+            onLoad();
+        }else{
+          this.LoadTexture('load_default', (texture) => {
+            this.tGuiPanel.widget.fill.children[0].material.map = this.defaultTex = texture;
+            if(typeof onLoad === 'function')
+              onLoad();
+          });
+        }
       });
     }else{
       if(typeof onLoad === 'function')
@@ -70,14 +75,24 @@ class LoadScreen extends GameMenu {
 
   showRandomHint(){
     let id = Math.floor(Math.random() * (Global.kotor2DA.loadscreenhints.RowCount - 0 + 1)) + 0;
+    let hint = Global.kotor2DA.loadscreenhints.rows[id];
+    if(!hint){
+      console.log('showRandomHint', id);
+      hint = Global.kotor2DA.loadscreenhints.rows[0];
+    }
 
-    let hint = Global.kotor2DA.loadscreenhints.rows[id].gameplayhint;
-    this.lbl_hint.setText(Global.kotorTLK.TLKStrings[hint].Value);
+    this.lbl_hint.setText(Global.kotorTLK.TLKStrings[hint.gameplayhint].Value);
   }
 
   Show(){
     super.Show();
     Game.InGameAreaTransition.Hide();
+    Game.FadeOverlay.plane.visible = false;
+  }
+
+  Hide(){
+    super.Hide();
+    Game.FadeOverlay.plane.visible = true;
   }
 
 }

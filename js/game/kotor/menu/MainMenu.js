@@ -36,7 +36,7 @@ class MainMenu extends GameMenu {
         this.btn_options.hideBorder();
         this.btn_exit.hideBorder();
 
-        this.btn_newgame.onClick = (e) => {
+        this.btn_newgame.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
           Game.LoadScreen.setLoadBackground('load_chargen' ,() => {
@@ -46,31 +46,31 @@ class MainMenu extends GameMenu {
               Game.CharGenClass.Show();
             });
           });
-        };
+        });
 
-        this.btn_loadgame.onClick = (e) => {
+        this.btn_loadgame.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
           Game.MenuSaveLoad.Show()
-        };
+        });
 
-        this.btn_movies.onClick = (e) => {
+        this.btn_movies.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MainMovies.Show();
           //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        };
+        });
 
-        this.btn_options.onClick = (e) => {
+        this.btn_options.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MainOptions.Show();
-        };
+        });
 
-        this.btn_exit.onClick = (e) => {
+        this.btn_exit.addEventListener('click', (e) => {
           e.stopPropagation();
-          //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        };
+          window.close();
+        });
 
         let bgMusic = 'mus_theme_cult';            
       
@@ -78,7 +78,7 @@ class MainMenu extends GameMenu {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('mainmenu', ResourceTypes['mdx']), (mdxBuffer) => {
             try{
     
-              let model = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
+              let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
 
               this.tGuiPanel.widget.fill.visible = false;
 
@@ -92,8 +92,6 @@ class MainMenu extends GameMenu {
                 onComplete: (model) => {
                   //console.log('Model Loaded', model);
                   this._3dViewModel = model;
-
-                  this._3dViewModel.rebuildEmitters();
 
                   this.camerahook = this._3dViewModel.getObjectByName('camerahook');
                   
@@ -157,6 +155,7 @@ class MainMenu extends GameMenu {
   }
 
   Update(delta = 0){
+    super.Update(delta);
     try{
       this._3dView.render(delta);
       this.lbl_3dview.fill.children[0].material.needsUpdate = true;

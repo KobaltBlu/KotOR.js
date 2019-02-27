@@ -30,7 +30,7 @@ class MenuGraphics extends GameMenu {
         this.BTN_ADVANCED = this.getControlByName('BTN_ADVANCED');
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           if(Game.Mode == Game.MODES.INGAME){
@@ -38,17 +38,18 @@ class MenuGraphics extends GameMenu {
           }else{
             Game.MainOptions.Show();
           }
-        }
+        });
 
         this.SLI_GAMMA.onValueChanged = (value) => {
-          let gamma = (1.5 * value) + .25;
-          let contrast = (10 * (value + 0.5) )
+          //let gamma = (1.5 * value) + .25;
+          let contrast = (50 * ((value*2) - 1) )*-1;
+
           Game.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
         };
 
-        this.BTN_RESOLUTION.onClick = (e) => {
+        this.BTN_RESOLUTION.addEventListener('click', (e) => {
           Game.MenuResolutions.Show();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

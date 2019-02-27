@@ -242,12 +242,14 @@ class ModuleEditorTab extends EditorTab {
     }*/
 
     for(let i = 0; i < AnimatedTextures.length; i++){
-      AnimatedTextures[i].Update(1000 * delta);
+      AnimatedTextures[i].Update(delta);
     }
 
-    this.audio.Update(this.camera.position, this.camera.rotation);
+    this.audio.Update(this.currentCamera.position, this.currentCamera.rotation);
 
     this.cam_controls.update();
+
+    LightManager.update(delta, this.currentCamera);
 
     this.renderer.clear();
     this.renderer.render( this.scene, this.currentCamera );
@@ -947,7 +949,6 @@ class ModuleEditorTab extends EditorTab {
 
             model.rotation.set(0, 0, door.getBearing());
             door.model.box = door.box = new THREE.Box3().setFromObject(door.getModel());
-            //model.rebuildEmitters();
             this.group.doors.add( model );
 
             asyncLoop._Loop();
@@ -978,17 +979,12 @@ class ModuleEditorTab extends EditorTab {
             model.translateY(plc.getY());
             model.translateZ(plc.getZ());
             model.rotation.set(0, 0, plc.getBearing());
-            try{ 
-              //model.buildSkeleton();
-              //model.rebuildEmitters(); 
-            }catch(e){}
-            //model.rebuildEmitters();
 
             this.group.placeables.add( model );
 
             try{
               //model.add(pwk.model);
-              //model.pwk = pwk;
+              //model.walkmesh = pwk;
               //Game.walkmeshList.push(pwk.mesh);
             }catch(e){
               console.error('Failed to add pwk', model.name, pwk);

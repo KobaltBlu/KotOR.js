@@ -51,6 +51,13 @@ class MenuDialog extends GameMenu {
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
+        this.LBL_MESSAGE.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(this.isListening){
+            this.PlayerSkipEntry(this.currentEntry);
+          }
+        });
+
         this._resetLetterBox();
 
         this.tGuiPanel.widget.add(this.topBar);
@@ -67,6 +74,12 @@ class MenuDialog extends GameMenu {
 
   StartConversation(dlg, owner, listener = Game.player, options = {}){
 
+    //I'm seeing instances where dialogs are being started multiple times.
+    //It may be a bug in scripting or what. I'm just going to place this here ...
+    //for now so that dialogs can't be started when there is currently one in progress
+    if(Game.inDialog)
+      return;
+
     options = Object.assign({
       onLoad: null
     }, options);
@@ -79,19 +92,13 @@ class MenuDialog extends GameMenu {
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
+    this.ended = false;
     this.currentEntry = null;
 
     this.unequipHeadItem = false;
     this.unequipItems = false;
 
     this.animatedCamera = null;
-
-    this.LBL_MESSAGE.onClick = (e) => {
-      e.stopPropagation();
-      if(this.isListening){
-        this.PlayerSkipEntry(this.currentEntry);
-      }
-    };
 
     if(this.audioEmitter === undefined){
 
@@ -110,10 +117,12 @@ class MenuDialog extends GameMenu {
     //this.audioEmitter.SetPosition(Game.player.model.position.x, Game.player.model.position.y, Game.player.model.position.z);
 
     this.isListening = true;
-
-    this._resetLetterBox();
+    
     this.canLetterbox = false;
     this.letterBoxed = false;
+    this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
+    this.bottomBar.position.y = -this.topBar.position.y;
+    this._resetLetterBox();
 
     this.LB_REPLIES.hide();
 
@@ -195,7 +204,7 @@ class MenuDialog extends GameMenu {
         if(Game.Mode == Game.MODES.INGAME){
           Game.InGameOverlay.Hide();
         }
-        this.canLetterbox = true;
+        this.canLetterbox = false;
 
         for(let i = 0; i < gff.json.fields.StuntList.structs.length; i++){
           let stnt = gff.json.fields.StuntList.structs[i].fields;
@@ -212,7 +221,7 @@ class MenuDialog extends GameMenu {
         this.updateTextPosition();
 
         //Face the listener towards the owner of the conversation
-        if(!this.isAnimatedCutscene){
+        /*if(!this.isAnimatedCutscene){
           if(this.listener instanceof ModuleCreature && this.owner instanceof ModuleObject){
             if(!this.listener.lockDialogOrientation && !this.listener.notReorienting){
               this.listener.rotation.z = Math.atan2(
@@ -230,45 +239,57 @@ class MenuDialog extends GameMenu {
               ) + Math.PI/2;
             }
           }
-        }
+        }*/
 
-        let canStart = () => {
+        let letterBoxTimeout = () => {
+          Game.currentCamera = Game.camera_dialog;
+          if(Game.Mode == Game.MODES.INGAME){
+            Game.InGameOverlay.Hide();
+          }
           if(this.letterBoxed){
-
-            Game.holdWorldFadeInForDialog = false;
-
             if(this.ambientTrack != ''){
               AudioLoader.LoadMusic(this.ambientTrack, (data) => {
                 //console.log('Loaded Background Music', bgMusic);
                 Game.audioEngine.stopBackgroundMusic();
                 Game.audioEngine.SetDialogBackgroundMusic(data);
-                this.getNextEntry(this.startingList);
+                this.showEntry(this.startingEntry);
               }, () => {
-                this.getNextEntry(this.startingList);
+                this.showEntry(this.startingEntry);
               });
             }else{
-              this.getNextEntry(this.startingList);
+              this.showEntry(this.startingEntry);
             }
-            
           }else{
-            setTimeout(canStart, 300);
+            setTimeout(letterBoxTimeout, 300);
           }
         };
 
-        if(this.isAnimatedCutscene){
-          Game.holdWorldFadeInForDialog = true;
-          this.loadStuntCamera( () => {
-            this.loadStuntActors(0, () => {
-              canStart();
-            });
-          });
-        }else{
-          this.loadStuntCamera( () => {
-            this.loadStuntActors(0, () => {
-              canStart();
-            });
-          });
-        }
+        this.startingEntry = null;
+        this.getNextEntry(this.startingList, (entry) => {
+          this.startingEntry = entry;
+          if(entry.replies.length == 1 && this.isEndDialog(this.replyList[entry.replies[0].index])){
+            //Bark
+            this.EndConversation();
+            Game.InGameBark.bark(entry);
+          }else{
+            this.canLetterbox = true;
+            if(this.isAnimatedCutscene){
+              Game.holdWorldFadeInForDialog = true;
+              this.loadStuntCamera( () => {
+                this.loadStuntActors(0, () => {
+                  letterBoxTimeout();
+                });
+              });
+            }else{
+              Game.holdWorldFadeInForDialog = false;
+              this.loadStuntCamera( () => {
+                this.loadStuntActors(0, () => {
+                  letterBoxTimeout();
+                });
+              });
+            }
+          }
+        });
 
         if(typeof options.onLoad === 'function')
           options.onLoad();
@@ -289,7 +310,7 @@ class MenuDialog extends GameMenu {
         Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel(this.cameraModel, ResourceTypes['mdx']), (mdxBuffer) => {
           try{
   
-            let model = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
+            let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
             THREE.AuroraModel.FromMDL(model, { 
               onComplete: (model) => {
                 
@@ -322,81 +343,75 @@ class MenuDialog extends GameMenu {
       let actor = this.stuntActors[i];
       let model;
       if(actor.participant == 'PLAYER'){
-        let stunt = new ModuleCreature(GFFObject.FromStruct(Game.player.template.RootNode));
+        model = Game.player.model;
+        //Load the actor's supermodel
+        Game.ModelLoader.load({
+          file: actor.model,
+          onLoad: (actorModel) => {
+            THREE.AuroraModel.FromMDL(actorModel, { 
+              onComplete: (actorSuperModel) => {
+                Game.player.model.animations = Game.player.model.animations.concat(actorSuperModel.animations);
+                console.log('actor', actorSuperModel.animations)
+                //Game.player.anim = true;
 
-        stunt.Load( () => {
-          stunt.LoadModel( (model) => {
-            model = Game.player.model;
-            //Load the actor's supermodel
-            Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel(actor.model, ResourceTypes['mdl']), (mdlBuffer) => {
-              Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel(actor.model, ResourceTypes['mdx']), (mdxBuffer) => {
-                try{
-        
-                  let actorModel = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
-                  THREE.AuroraModel.FromMDL(actorModel, { 
-                    onComplete: (actorSuperModel) => {
+                if(this.unequipItems)
+                  Game.player.UnequipItems();
 
-                      model.animations = actorSuperModel.animations;
-                      //console.log('actor', actorSuperModel.animations)
-                      Game.player.anim = true;
+                if(this.unequipHeadItem)
+                  Game.player.UnequipHeadItem();
 
-                      if(this.unequipItems)
-                        Game.player.UnequipItems();
-
-                      if(this.unequipHeadItem)
-                        Game.player.UnequipHeadItem();
-          
-                      this.stunt[actor.participant] = Game.player;
-                      //console.log('STUNT', this.stunt[actor.participant]);
-                      this.loadStuntActors(++i, onLoad);
-
-                    }
-                  });
-                }catch(e){
-                  //canStart();
+                if(Game.player.model.skins){
+                  for(let i = 0; i < Game.player.model.skins.length; i++){
+                    Game.player.model.skins[i].frustumCulled = false;
+                  }
                 }
-              });
+    
+                this.stunt[actor.participant.toLowerCase()] = Game.player;
+                console.log('STUNT', actor.participant, this.stunt[actor.participant]);
+                this.loadStuntActors(++i, onLoad);
+              }
             });
-          });
+          }
         });
       }else if(actor.participant == 'OWNER'){
         this.stunt['OWNER'.toLowerCase()] = this.owner;
+        this.owner.rotation.z = 0;
         this.loadStuntActors(++i, onLoad);
       }else{
         let creature = Game.GetObjectByTag(actor.participant);
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
-          Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel(actor.model, ResourceTypes['mdl']), (mdlBuffer) => {
-            Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel(actor.model, ResourceTypes['mdx']), (mdxBuffer) => {
-              try{
-      
-                let actorModel = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
-                THREE.AuroraModel.FromMDL(actorModel, { 
-                  onComplete: (actorSuperModel) => {
-                    model.animations = actorSuperModel.animations;
-                    //console.log('actor', actorSuperModel.animations)
-                    model.rotation.z = 0;
-                    model.box = new THREE.Box3().setFromObject(model);
+          Game.ModelLoader.load({
+            file: actor.model,
+            onLoad: (actorModel) => {
+              THREE.AuroraModel.FromMDL(actorModel, { 
+                onComplete: (actorSuperModel) => {
+                  model.animations = actorSuperModel.animations;
+                  console.log('actor', actorSuperModel.animations)
+                  model.rotation.z = 0;
+                  model.box = new THREE.Box3().setFromObject(model);
 
-                    creature.anim = true;
+                  //creature.anim = true;
 
-                    if(this.unequipItems)
-                      creature.UnequipItems();
+                  if(this.unequipItems && creature instanceof ModuleCreature)
+                    creature.UnequipItems();
 
-                    if(this.unequipHeadItem)
-                      creature.UnequipHeadItem();
-        
-                    this.stunt[actor.participant.toLowerCase()] = creature;
-                    //console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
-                    this.loadStuntActors(++i, onLoad);
+                  if(this.unequipHeadItem && creature instanceof ModuleCreature)
+                    creature.UnequipHeadItem();
 
+                  if(model.skins){
+                    for(let i = 0; i < model.skins.length; i++){
+                      model.skins[i].frustumCulled = false;
+                    }
                   }
-                });
-              }catch(e){
-                //canStart();
-              }
-            });
+      
+                  this.stunt[actor.participant.toLowerCase()] = creature;
+                  console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
+                  this.loadStuntActors(++i, onLoad);
+                }
+              });
+            }
           });
         }
       }
@@ -407,7 +422,7 @@ class MenuDialog extends GameMenu {
 
   }
 
-  getNextEntry(entries = []){
+  getNextEntry(entries = [], callback = null){
 
     if(!entries.length){
       this.EndConversation();
@@ -416,16 +431,18 @@ class MenuDialog extends GameMenu {
     this.isListening = true;
     this.updateTextPosition();
 
-    //console.log('getNextEntry', entries);
-
     let totalEntries = entries.length;
 
     let entryLoop = (idx = 0) => {
       if(idx < totalEntries){
         let entry = entries[idx];
-        if(entry.isActive == ''){
-          this.showEntry(this.entryList[entry.index]);
-        }else{
+        if(entry.isActive == '' && entry.isActive2 == ''){
+          if(typeof callback === 'function'){
+            callback(this.entryList[entry.index]);
+          }else{
+            this.showEntry(this.entryList[entry.index]);
+          }
+        }else if(entry.isActive != ''){
           ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
             let script = new NWScript(buffer);
             script.setScriptParam(1, entry.isActiveParams.Param1);
@@ -438,7 +455,7 @@ class MenuDialog extends GameMenu {
             //console.log('dialog conditional', script);
             script.name = entry.isActive;
             //console.log(this.owner);
-            script.run(Game.player, 0, (bSuccess) => {
+            script.run(this.owner, 0, (bSuccess) => {
               console.log('dialog cond1', {
                 entry: entry,
                 script: entry.isActive, 
@@ -449,7 +466,11 @@ class MenuDialog extends GameMenu {
               this.listener = Game.player;
               if((entry.isActiveParams.Not == 1 && !bSuccess) || (entry.isActiveParams.Not == 0 && bSuccess)){
                 if(entry.isActive2 == ''){
-                  this.showEntry(this.entryList[entry.index]);
+                  if(typeof callback === 'function'){
+                    callback(this.entryList[entry.index]);
+                  }else{
+                    this.showEntry(this.entryList[entry.index]);
+                  }
                 }else{
                   ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
                     let script = new NWScript(buffer);
@@ -461,7 +482,7 @@ class MenuDialog extends GameMenu {
                     script.setScriptStringParam(entry.isActive2Params.String)
                     script.name = entry.isActive2;
                     //console.log(this.owner);
-                    script.run(Game.player, 0, (bSuccess) => {
+                    script.run(this.owner, 0, (bSuccess) => {
                       console.log('dialog cond2', {
                         entry: entry,
                         script: entry.isActive2, 
@@ -471,14 +492,55 @@ class MenuDialog extends GameMenu {
                       });
                       this.listener = Game.player;
                       if(entry.isActive2Params.Not == 1 && !bSuccess){
-                        this.showEntry(this.entryList[entry.index]);
+                        if(typeof callback === 'function'){
+                          callback(this.entryList[entry.index]);
+                        }else{
+                          this.showEntry(this.entryList[entry.index]);
+                        }
                       }else if(entry.isActive2Params.Not == 0 && bSuccess){
-                        this.showEntry(this.entryList[entry.index]);
+                        if(typeof callback === 'function'){
+                          callback(this.entryList[entry.index]);
+                        }else{
+                          this.showEntry(this.entryList[entry.index]);
+                        }
                       }else{
                         entryLoop(++idx);
                       }
                     })
                   });
+                }
+              }else{
+                entryLoop(++idx);
+              }
+            })
+          });
+        }else if(entry.isActive2 != ''){
+          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
+            let script = new NWScript(buffer);
+            script.setScriptParam(1, entry.isActive2Params.Param1);
+            script.setScriptParam(2, entry.isActive2Params.Param2);
+            script.setScriptParam(3, entry.isActive2Params.Param3);
+            script.setScriptParam(4, entry.isActive2Params.Param4);
+            script.setScriptParam(5, entry.isActive2Params.Param5);
+            script.setScriptStringParam(entry.isActive2Params.String)
+
+            //console.log('dialog conditional', script);
+            script.name = entry.isActive;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              console.log('dialog cond2', {
+                entry: entry,
+                script: entry.isActive2, 
+                returnValue: bSuccess,
+                params: entry.isActive2Params,
+                shouldPass: (entry.isActive2Params.Not == 1 && !bSuccess) || (entry.isActive2Params.Not == 0 && bSuccess)
+              });
+              this.listener = Game.player;
+              if((entry.isActive2Params.Not == 1 && !bSuccess) || (entry.isActive2Params.Not == 0 && bSuccess)){
+                if(typeof callback === 'function'){
+                  callback(this.entryList[entry.index]);
+                }else{
+                  this.showEntry(this.entryList[entry.index]);
                 }
               }else{
                 entryLoop(++idx);
@@ -606,17 +668,29 @@ class MenuDialog extends GameMenu {
       Game.camera_animated.fov = entry.camFieldOfView;
     }
 
-    if(!entry.cameraID){
+    /*if(!entry.cameraID){
       Game.currentCamera = Game.camera_dialog;
       this.UpdateCamera();
     }else{
       Game.currentCamera = Game.getCameraById(entry.cameraID);
-    }
+    }*/
 
     this.GetAvailableReplies(entry);
 
-    if(!this.isAnimatedCutscene && entry.dealy > -1){
-      nodeDelay = node.delay * 1000;
+    if(!this.isAnimatedCutscene){
+      if(this.currentEntry.listener instanceof ModuleObject && this.currentEntry.speaker instanceof ModuleObject){
+        if(!this.currentEntry.listener.lockDialogOrientation && !this.currentEntry.listener.notReorienting && this.currentEntry.listener instanceof ModuleCreature){
+          this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
+        }
+
+        if(!this.currentEntry.speaker.lockDialogOrientation && !this.currentEntry.speaker.notReorienting && this.currentEntry.speaker instanceof ModuleCreature){
+          this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
+        }
+      }
+    }
+
+    if(!this.isAnimatedCutscene && entry.delay > -1){
+      nodeDelay = entry.delay * 1000;
     }
 
     if((entry.cameraAngle == 4 && this.cameraModel)){
@@ -639,6 +713,7 @@ class MenuDialog extends GameMenu {
     }
 
     if(entry.script != ''){
+      checkList.scriptComplete = false;
       ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
         let script = new NWScript(buffer);
         script.setScriptParam(1, entry.scriptParams.Param1);
@@ -648,23 +723,30 @@ class MenuDialog extends GameMenu {
         script.setScriptParam(5, entry.scriptParams.Param5);
         script.setScriptStringParam(entry.scriptParams.String)
         script.name = entry.script;
-        script.run(this.owner);
-        if(entry.script2 != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
-            let script = new NWScript(buffer);
-            script.setScriptParam(1, entry.script2Params.Param1);
-            script.setScriptParam(2, entry.script2Params.Param2);
-            script.setScriptParam(3, entry.script2Params.Param3);
-            script.setScriptParam(4, entry.script2Params.Param4);
-            script.setScriptParam(5, entry.script2Params.Param5);
-            script.setScriptStringParam(entry.scriptParams.String)
-            script.name = entry.script;
-            script.run(this.owner);
-          });
-        }
+        script.run(this.owner, 0, () => {
+          if(entry.script2 != ''){
+            ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
+              let script = new NWScript(buffer);
+              script.setScriptParam(1, entry.script2Params.Param1);
+              script.setScriptParam(2, entry.script2Params.Param2);
+              script.setScriptParam(3, entry.script2Params.Param3);
+              script.setScriptParam(4, entry.script2Params.Param4);
+              script.setScriptParam(5, entry.script2Params.Param5);
+              script.setScriptStringParam(entry.script2Params.String)
+              script.name = entry.script2;
+              script.run(this.owner, 0, () => {
+                checkList.scriptComplete = true;
+              });
+            });
+          }else{
+            checkList.scriptComplete = true;
+          }
+        });
+        
       });
     }else if(entry.script2 != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
+      checkList.scriptComplete = false;
+      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
         let script = new NWScript(buffer);
         script.setScriptParam(1, entry.script2Params.Param1);
         script.setScriptParam(2, entry.script2Params.Param2);
@@ -672,8 +754,10 @@ class MenuDialog extends GameMenu {
         script.setScriptParam(4, entry.script2Params.Param4);
         script.setScriptParam(5, entry.script2Params.Param5);
         script.setScriptStringParam(entry.script2Params.String)
-        script.name = entry.script;
-        script.run(this.owner);
+        script.name = entry.script2;
+        script.run(this.owner, 0, () => {
+          checkList.scriptComplete = true;
+        });
       });
     }
 
@@ -682,16 +766,14 @@ class MenuDialog extends GameMenu {
       nodeDelay = fadeDuration;
     }
 
-    if(entry.fade.type == 0){
-      Game.FadeOverlay.FadeIn(1, 0, 0, 0);
-    }else if(entry.fade.type == 3){
+    if(entry.fade.type == 3){
       setTimeout( () => {
         Game.FadeOverlay.FadeIn(entry.fade.length, 0, 0, 0);
       }, entry.fade.delay * 1000);
     }else if(entry.fade.type == 4){
-      setTimeout( () => {
+      //setTimeout( () => {
         Game.FadeOverlay.FadeOut(entry.fade.length, 0, 0, 0);
-      }, entry.fade.delay * 1000);
+      //}, entry.fade.delay * 1000);
     }
 
     //While the conversation is paused loop until unpaused then run callback
@@ -702,6 +784,12 @@ class MenuDialog extends GameMenu {
       //Alien vo seems to be missing. Maybe they were pefilled by the bioware dialog editor
       //So vo in basic could be dropped in later into the proper folder.
       if(entry.sound != ''){
+        console.log('lip', entry.sound);
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer) => {
+          if(entry.speaker instanceof ModuleCreature){
+            entry.speaker.setLIP(new LIPObject(buffer));
+          }
+        });
         this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           checkList.voiceOverComplete = true;
           if(checkList.isComplete(entry)){
@@ -709,6 +797,12 @@ class MenuDialog extends GameMenu {
           }
         });
       }else if(entry.vo_resref != ''){
+        console.log('lip', entry.vo_resref);
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, (buffer) => {
+          if(entry.speaker instanceof ModuleCreature){
+            entry.speaker.setLIP(new LIPObject(buffer));
+          }
+        });
         this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           checkList.voiceOverComplete = true;
           if(checkList.isComplete(entry)){
@@ -820,15 +914,13 @@ class MenuDialog extends GameMenu {
       }
     }
 
-    this.owner.anim = true;
-    this.owner.model.playAnimation(this.owner.model.getAnimationByName('talknorm'), true, () => {
-      this.owner.anim = null;
-    });
-
-    this.listener.anim = true;
-    this.listener.model.playAnimation(this.listener.model.getAnimationByName('talknorm'), true, () => {
-      this.listener.anim = null;
-    });
+    try{
+      this.owner.dialogPlayAnimation('listen', true);
+    }catch(e){}
+    
+    try{
+      this.listener.dialogPlayAnimation('listen', true);
+    }catch(e){}
 
     this.isListening = false;
     this.updateTextPosition();
@@ -847,6 +939,68 @@ class MenuDialog extends GameMenu {
     this.UpdateCamera();
 
     this.state = 1;
+
+  }
+
+  CheckReplyScripts(reply, onComplete = null){
+
+    let scripts = [];
+    let shouldPass = false;
+
+    if(reply.isActive != ''){
+      scripts.push({
+        resref: reply.isActive,
+        params: reply.isActiveParams
+      });
+    }
+
+    if(reply.isActive2 != ''){
+      scripts.push({
+        resref: reply.isActive2,
+        params: reply.isActive2Params
+      });
+    }
+
+    //If there are no scripts to check then it automatically succeeds
+    if(!scripts.length){
+      shouldPass = true;
+      if(typeof onComplete === 'function')
+        onComplete(shouldPass);
+      
+      //Return so the rest of the code doesn't run
+      return;
+    }
+
+    //Loop through all scripts
+    let loop = new AsyncLoop({
+      array: scripts,
+      onLoop: (scriptObj, asyncLoop) => {
+        ResourceLoader.loadResource(ResourceTypes['ncs'], scriptObj.resref, (buffer) => {
+          let script = new NWScript(buffer);
+          script.name = scriptObj.resref;
+          script.setScriptParam(1, scriptObj.params.Param1);
+          script.setScriptParam(2, scriptObj.params.Param2);
+          script.setScriptParam(3, scriptObj.params.Param3);
+          script.setScriptParam(4, scriptObj.params.Param4);
+          script.setScriptParam(5, scriptObj.params.Param5);
+          script.setScriptStringParam(scriptObj.params.String)
+          script.run(this.owner, 0, (bSuccess) => {
+            if((scriptObj.params.Not == 1 && !bSuccess) || (scriptObj.params.Not == 0 && bSuccess)){
+              shouldPass = true;
+              asyncLoop._Loop();
+            }else{
+              shouldPass = false;
+              if(typeof onComplete === 'function')
+                onComplete(shouldPass);
+            }
+          });
+        });
+      }
+    });
+    loop.Begin(() => {
+      if(typeof onComplete === 'function')
+        onComplete(shouldPass);
+    });
 
   }
 
@@ -980,15 +1134,23 @@ class MenuDialog extends GameMenu {
 
   }
 
+  PauseConversation(){
+    this.paused = true;
+  }
+
+  ResumeConversation(){
+    this.paused = false;
+    if(this.ended){
+      this.EndConversation()
+    }
+  }
+
   EndConversation(aborted = false){
 
-    if(this.onEndConversation != '')
-
-    if(this.owner)
-      this.owner.anim = false;
-    
-    if(this.listener)
-      this.listener.anim = false;
+    if(this.paused){
+      this.ended = true;
+      return;
+    }
     
     this.audioEmitter.Stop();
     this.Hide();
@@ -1044,7 +1206,12 @@ class MenuDialog extends GameMenu {
     for(let actor in this.stunt){
       try{
         this.stunt[actor].model.buildSkeleton();
-        this.stunt[actor].anim = false;
+        if(this.stunt[actor].model.skins){
+          for(let i = 0; i < this.stunt[actor].model.skins.length; i++){
+            this.stunt[actor].model.skins[i].frustumCulled = true;
+          }
+        }
+        this.stunt[actor].clearAllActions();
       }catch(e){
         
       }
@@ -1071,14 +1238,6 @@ class MenuDialog extends GameMenu {
 
   }
 
-  PauseConversation(){
-    this.paused = true;
-  }
-
-  ResumeConversation(){
-    this.paused = false;
-  }
-
   UpdateEntryAnimations(entry){
     for(let i = 0; i < entry.animations.length; i++){
       let participant = entry.animations[i];
@@ -1087,16 +1246,43 @@ class MenuDialog extends GameMenu {
 
       if(this.stunt[participant.participant]){
         //console.log('STUNT', this.stunt[participant.participant], participant.animation-1200, this.GetActorAnimation(participant.animation));
-        this.stunt[participant.participant].anim = true;
-        this.stunt[participant.participant].model.playAnimation(this.GetActorAnimation(participant.animation), false);
+        //this.stunt[participant.participant].anim = true;
+        //this.stunt[participant.participant].model.pose();
+        //this.stunt[participant.participant].model.bonesInitialized = true;
+        //this.stunt[participant.participant].model.playAnimation(this.GetActorAnimation(participant.animation), false);
+        this.stunt[participant.participant].dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
+      }else if(participant.participant == 'player'){
+        let actor = Game.player;
+        if(actor){
+          let anim = this.GetDialogAnimation(participant.animation);
+          if(anim){
+            //actor.anim = true;
+            //actor.model.playAnimation(anim.name, anim.looping  == '1');
+            actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
+          }else{
+            //console.error('Anim', participant.animation-10000)
+          }
+        }
+      }else if(participant.participant == 'owner'){
+        let actor = this.owner;
+        if(actor){
+          let anim = this.GetDialogAnimation(participant.animation);
+          if(anim){
+            //actor.anim = true;
+            //actor.model.playAnimation(anim.name, anim.looping  == '1');
+            actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
+          }else{
+            //console.error('Anim', participant.animation-10000)
+          }
+        }
       }else{
         let actor = Game.GetObjectByTag(participant.participant);
         if(actor && participant.animation >= 10000){
-          let anim = this.GetDialogAnimation(participant.animation-10000);
-          //console.log('DialogAnim', participant.animation-10000, anim)
+          let anim = this.GetDialogAnimation(participant.animation);
           if(anim){
-            actor.anim = true;
-            actor.model.playAnimation(anim.name, anim.looping  == '1');
+            //actor.anim = true;
+            //actor.model.playAnimation(anim.name, anim.looping  == '1');
+            actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
           }else{
             //console.error('Anim', participant.animation-10000)
           }
@@ -1146,43 +1332,62 @@ class MenuDialog extends GameMenu {
   }
 
   GetDialogAnimation(index = 0){
-    switch(index){
-      case 30: //Listen
-        return Global.kotor2DA.animations.rows[18];
-      break;
-      case 35: //Meditate
-        return Global.kotor2DA.animations.rows[24];
-      break;
-      case 38://Talk_Normal
-        return Global.kotor2DA.animations.rows[25];
-      break;
-      case 39://Talk_Pleading
-        return Global.kotor2DA.animations.rows[27];
-      break;
-      case 40://Talk_Forceful
-        return Global.kotor2DA.animations.rows[26];
-      break;
-      case 41://Talk_Laughing
-        return Global.kotor2DA.animations.rows[29];
-      break;
-      case 42://Talk_Sad
-        return Global.kotor2DA.animations.rows[28];
-      break;
-      case 121: //Use_Computer_LP
-        return Global.kotor2DA.animations.rows[44];
-      break;
-      case 127: //Activate
-        return Global.kotor2DA.animations.rows[38];
-      break;
-      default:
-        return undefined;
-      break;
+    if(index >= 1400 && index < 1500){
+      switch(index){
+        case 1409: //Tank Float
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
+        case 1410: //Tank Float Jerk
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
+        case 1411: //Tank Float Fall
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3), looping: "0"};
+        case 1412: //Floor Scanning Loop
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
+        case 1413: //Floor Scanning Get Up
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3), looping: "0"};
+      }
+    }else if(index >= 10000){
+      switch(index){
+        case 30: //Listen
+          return Global.kotor2DA.animations.rows[18];
+        break;
+        case 35: //Meditate
+          return Global.kotor2DA.animations.rows[24];
+        break;
+        case 38://Talk_Normal
+          return Global.kotor2DA.animations.rows[25];
+        break;
+        case 39://Talk_Pleading
+          return Global.kotor2DA.animations.rows[27];
+        break;
+        case 40://Talk_Forceful
+          return Global.kotor2DA.animations.rows[26];
+        break;
+        case 41://Talk_Laughing
+          return Global.kotor2DA.animations.rows[29];
+        break;
+        case 42://Talk_Sad
+          return Global.kotor2DA.animations.rows[28];
+        break;
+        case 121: //Use_Computer_LP
+          return Global.kotor2DA.animations.rows[44];
+        break;
+        case 127: //Activate
+          return Global.kotor2DA.animations.rows[38];
+        break;
+        case 507: //Hood_Off
+          return {name: 'offhood', looping: "0"};
+        break;
+        default:
+          return undefined;
+        break;
+      }
     }
   }
 
   SetPlaceableCamera(nCamera){
     let cam = Game.getCameraById(nCamera);
     if(cam){
+      cam.updateProjectionMatrix();
       Game.currentCamera = cam;
     }
   }
@@ -1267,12 +1472,9 @@ class MenuDialog extends GameMenu {
   Update(delta){
     super.Update(delta);
 
-    if(!this.canLetterbox)
-      return;
+    if(this.isAnimatedCutscene){
 
-    if(this.animatedCamera){
-
-      if(this.animatedCamera instanceof THREE.AuroraModel && this.animatedCamera.currentAnimation){
+      if(this.animatedCamera instanceof THREE.AuroraModel){
         this.animatedCamera.update(delta);
         this.animatedCamera.camerahook.updateMatrixWorld();
         let pos = new THREE.Vector3(
@@ -1297,15 +1499,43 @@ class MenuDialog extends GameMenu {
         //this.stunt[actor].model.update(delta)
       }
 
-    }
+      if(this.canLetterbox){
+        this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+        this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+        this.letterBoxed = true;
+      }
 
-    if(this.bottomBar.position.y < -(window.innerHeight / 2) + (100 / 2)){
-      this.bottomBar.position.y += 5;
-      this.topBar.position.y -= 5;
     }else{
-      this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
-      this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
-      this.letterBoxed = true;
+      if(this.animatedCamera instanceof THREE.AuroraModel){
+        this.animatedCamera.update(delta);
+        this.animatedCamera.camerahook.updateMatrixWorld();
+        let pos = new THREE.Vector3(
+          this.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x,
+          this.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y,
+          this.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z
+        );
+        Game.camera_animated.position.copy(
+          pos
+        );
+        Game.camera_animated.quaternion.copy(
+          this.animatedCamera.camerahook.quaternion
+        );
+        Game.camera_animated.updateProjectionMatrix();
+      }else{
+        this.UpdateCamera()
+      }
+
+      if(this.canLetterbox){
+        if(this.bottomBar.position.y < -(window.innerHeight / 2) + (100 / 2)){
+          this.bottomBar.position.y += 5;
+          this.topBar.position.y -= 5;
+        }else{
+          this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+          this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+          this.letterBoxed = true;
+        }
+      }
+
     }
 
     /*if(this.topBar.position.y > (window.innerHeight / 2) - (100 / 2)){
@@ -1349,11 +1579,12 @@ class MenuDialog extends GameMenu {
   }
 
   LoadDialog(resref = '', onLoad = null){
-
+    this.conversation_name = resref;
     TemplateLoader.Load({
       ResRef: resref,
       ResType: ResourceTypes.dlg,
       onLoad: (gff) => {
+        this.conversation = gff;
         if(typeof onLoad === 'function')
           onLoad(gff);
       },
@@ -1384,9 +1615,13 @@ class MenuDialog extends GameMenu {
   _resetLetterBox(){
     this.topBar.scale.x = this.bottomBar.scale.x = window.innerWidth;
     this.topBar.scale.y = this.bottomBar.scale.y = this.barHeight;
-
-    this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
-    this.bottomBar.position.y = -this.topBar.position.y;
+    if(!this.letterBoxed){
+      this.topBar.position.y = (window.innerHeight / 2) + (100 / 2);
+      this.bottomBar.position.y = -this.topBar.position.y;
+    }else{
+      this.bottomBar.position.y = -(window.innerHeight / 2) + (100 / 2);
+      this.topBar.position.y = (window.innerHeight / 2) - (100 / 2);
+    }
   }
 
   _parseEntryStruct(struct){
@@ -1416,7 +1651,7 @@ class MenuDialog extends GameMenu {
       fade: {
         type: 0,
         length: 0,
-        dealy: 0,
+        delay: 0,
         color: {r:0, g:0, b:0}
       }
     };
@@ -1558,7 +1793,7 @@ class MenuDialog extends GameMenu {
       fade: {
         type: 0,
         length: 0,
-        dealy: 0,
+        delay: 0,
         color: {r:0, g:0, b:0}
       }
     };

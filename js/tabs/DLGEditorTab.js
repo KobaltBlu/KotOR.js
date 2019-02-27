@@ -1,84 +1,14 @@
 class DLGEditorTab extends EditorTab {
-  constructor(args = {}){
-    super({
-      toolbar: {
-        items: [
-          {name: 'File', items: [
-            {name: 'Open File', onClick: () => {
+  constructor(file){
+    super();
 
-            }},
-            {name: 'Save File', onClick: () => {
+    this.file = null;
 
-              if(this.gff != null){
-                if(this.gff.path == null){
-                  let savePath = dialog.showSaveDialog({
-                    title: 'Save DLG',
-                    defaultPath: path.join(app.getAppPath(), this.gff.file + '.' + this.gff.FileType.substr(0, 3).toLowerCase()) ,
-                    filters: [
-                      {name: 'DLG', extensions: ['dlg']}
-                  ]});
-
-                  console.log(savePath);
-
-                  if(savePath != null){
-
-                    let fileInfo = path.parse(savePath);
-
-                    this.gff.path = fileInfo.dir;
-                    this.gff.file = fileName.name;
-                    this.gff.Save();
-
-                  }
-
-                }else{
-                  this.gff.Save();
-                }
-
-              }else{
-                alert('Nothing to save');
-              }
-
-
-            }},
-            {name: 'Save File As', onClick: () => {
-
-              if(this.gff != null){
-                let savePath = dialog.showSaveDialog({
-                  title: 'Save DLG',
-                  defaultPath: path.join(app.getAppPath(), this.gff.file + '.' + this.gff.FileType.substr(0, 3).toLowerCase()) ,
-                  filters: [
-                    {name: 'DLG', extensions: ['dlg']}
-                ]});
-
-                console.log(savePath);
-
-                if(savePath != null){
-
-                  let fileInfo = path.parse(savePath);
-
-                  this.gff.path = fileInfo.dir;
-                  this.gff.file = fileName.name;
-                  this.gff.Save();
-
-                }
-
-              }else{
-                alert('Nothing to save');
-              }
-
-
-            }}
-          ]}
-        ]
-      }
-    });
-
-    this.args = $.extend({
-      gff: null,
-      file: null
-    }, args);
-
-    this.gff = this.args.gff;
+    if(this.file instanceof GFFObject){
+      this.gff = file;
+    }else{
+      this.file = file;
+    }
     this.treeIndex = 0;
 
     this.singleInstance = false;
@@ -92,7 +22,7 @@ class DLGEditorTab extends EditorTab {
       this.$nodeTreeContainer = $(this.ElementId('#node-tree-container'), this.$tabContent);
       this.$nodePropsContainer = $(this.ElementId('#node-properties-container'), this.$tabContent);
 
-      this.$nodeTreeRootNode = $('<ul class="tree css-treeview" />');
+      this.$nodeTreeRootNode = $('<ul class="tree css-treeview" style="margin: 10px;" />');
 
       this.$nodeTreeContainer.append(this.$nodeTreeRootNode);
 
@@ -115,8 +45,8 @@ class DLGEditorTab extends EditorTab {
       if(this.gff != null)
         this.PopulateFields();
 
-      if(this.args.file != null)
-        this.OpenFile(this.args.file);
+      if(this.file != null)
+        this.OpenFile(this.file);
 
 
 
@@ -135,22 +65,12 @@ class DLGEditorTab extends EditorTab {
     return str+'-'+this.id;
   }
 
-  OpenFile(_file){
+  OpenFile(file){
 
-    console.log('Model Loading', _file);
-
-    let info = Utility.filePathInfo(_file);
-    let file = path.parse(info.path);
-
-    console.log(file, info);
-
-    if(info.location == 'local'){
-
-      fs.readFile(info.path, (err, buffer) => {
-        if (err) throw err;
-
+    if(file instanceof EditorFile){
+      file.readFile( (buffer) => {
         try{
-          this.gff = new GFFObject(buffer, (gff) => {
+          new GFFObject(buffer, (gff) => {
             this.gff = gff;
             console.log(this.gff.RootNode);
             this.PopulateFields();
@@ -160,37 +80,8 @@ class DLGEditorTab extends EditorTab {
           console.log(e);
           this.Remove();
         }
-
       });
-
-    }else if(info.location == 'archive'){
-
-      switch(info.archive.type){
-        case 'bif':
-          Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes['dlg']), (buffer) => {
-            try{
-              console.log(buffer);
-              this.gff = new GFFObject(buffer, (gff) => {
-                this.gff = gff;
-                console.log(this.gff.RootNode);
-                this.PopulateFields();
-              });
-            }
-            catch (e) {
-              console.log(e);
-              this.Remove();
-            }
-          }, (e) => {
-            throw 'Resource not found in BIF archive '+info.archive.name;
-            this.Remove();
-          });
-        break;
-      }
-
     }
-
-    this.fileType = info.file.ext;
-    this.location = info.location;
 
   }
 
@@ -204,7 +95,7 @@ class DLGEditorTab extends EditorTab {
 
     console.log('PopulateFields', this.entryNodes, this.replyNodes, this.startingNodes)
 
-    let rootNode = this.CreateSubTree('Root');
+    let rootNode = this.CreateSubTree('Root', true);
     this.$nodeTreeRootNode.append(rootNode.tree);
 
     console.log(rootNode);
@@ -220,7 +111,7 @@ class DLGEditorTab extends EditorTab {
     let entryNode = this.entryNodes[entryNodeIndex];
     let replies = entryNode.GetFieldByLabel('RepliesList').GetChildStructs();
 
-    let text = ipcRenderer.sendSync('TLKGetStringById',entryNode.GetFieldByLabel('Text').GetCExoLocString().RESREF).Value;
+    let text = entryNode.GetFieldByLabel('Text').GetCExoLocString().GetValue();
 
     let treeNode = this.CreateSubTree('['+entryNode.GetFieldByLabel('Speaker').Value +'] - '+ text);
     $parent.append(treeNode.tree);
@@ -238,14 +129,14 @@ class DLGEditorTab extends EditorTab {
     let replyNodeIsChild = node.GetFieldByLabel('IsChild').Value;
     let replyNode = this.replyNodes[replyNodeIndex];
 
-    console.log('ParseDialogReplyNode', replyNodeIndex, replyNodeIsChild, replyNode, node);
+    //console.log('ParseDialogReplyNode', replyNodeIndex, replyNodeIsChild, replyNode, node);
 
     let entries = replyNode.GetFieldByLabel('EntriesList').GetChildStructs();
     let locString = replyNode.GetFieldByLabel('Text').GetCExoLocString();
     let text = '[CONTINUE]';
 
-    if(locString.RESREF != -1){
-      text = ipcRenderer.sendSync('TLKGetStringById',locString.RESREF).Value;
+    if(locString.RESREF > -1){
+      text = Global.kotorTLK.TLKStrings[locString.RESREF].Value;
     }else if(locString.strings.length){
       text = locString.GetString().getString();
     }else if(entries.length){
@@ -259,7 +150,7 @@ class DLGEditorTab extends EditorTab {
 
     treeNode.tree.addClass( replyNodeIsChild ? 'linknode' : 'replynode' );
 
-    console.log(treeNode);
+    //console.log(treeNode);
 
     if(!replyNodeIsChild){
       for(let i = 0; i < entries.length; i++){
@@ -276,14 +167,15 @@ class DLGEditorTab extends EditorTab {
     let entryNode = this.entryNodes[entryNodeIndex];
     let replies = entryNode.GetFieldByLabel('RepliesList').GetChildStructs();
 
-    let text = ipcRenderer.sendSync('TLKGetStringById',entryNode.GetFieldByLabel('Text').GetCExoLocString().RESREF).Value;
+    let textObj = entryNode.GetFieldByLabel('Text').GetCExoLocString();
+    let text = textObj.GetValue();
 
     let treeNode = this.CreateSubTree('['+entryNode.GetFieldByLabel('Speaker').Value +'] - '+ text);
     $parent.append(treeNode.tree);
 
     treeNode.tree.addClass( entryNodeIsChild ? 'linknode' : 'entrynode' );
 
-    console.log(treeNode);
+    //console.log(treeNode);
 
     if(!entryNodeIsChild){
       for(let i = 0; i < replies.length; i++){
@@ -293,8 +185,22 @@ class DLGEditorTab extends EditorTab {
 
   }
 
-  CreateSubTree(name){
+  CreateSubTree(name, checked = false){
     let $sub = $('<li><input class="node-toggle" type="checkbox" checked id="dialog-'+this.id+'-tree-'+(this.treeIndex)+'" /><label for="dialog-'+this.id+'-tree-'+(this.treeIndex++)+'">'+name+'</label><span></span><ul></ul></li>');
+    let $checkbox = $('input[type=checkbox]', $sub);
+    let $label = $('label', $sub);
+    
+    if(checked){
+      $checkbox.prop('checked', !checked);
+    }
+
+    $label.on('click', (e) => {
+      if (!e.ctrlKey){
+        e.preventDefault();
+      }
+    }).on('dblclick', (e) => {
+      $checkbox.prop("checked", !$checkbox.prop("checked"));
+    });
 
     return {
       'tree': $sub,

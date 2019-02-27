@@ -26,33 +26,39 @@ class MenuContainer extends GameMenu {
         this.BTN_GIVEITEMS = this.getControlByName('BTN_GIVEITEMS');
         this.BTN_CANCEL = this.getControlByName('BTN_CANCEL');
   
-        this.BTN_CANCEL.onClick = (e) => {
+        this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.LB_ITEMS.clearItems();
+          if(this.container instanceof ModulePlaceable){
+            this.container.close(Game.player);
+          }
           this.Hide();
-        };
+        });
 
-        this.BTN_OK.onClick = (e) => {
+        this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.LB_ITEMS.clearItems();
-          this.Hide();
           if(this.container instanceof ModulePlaceable){
             this.container.retrieveInventory();
+            this.container.close(Game.player);
+          }else if(this.container instanceof ModuleCreature){
+            this.container.retrieveInventory();
+            //this.container.close(Game.player);
           }
-          
-        };
+          this.Hide(true);
+        });
 
         for(let i = 0; i < 7; i++){
           if(!i){
             let textureName = 'lbl_hex';
             TextureLoader.Load(textureName, (texture) => {
               this.protoTextures[textureName] = texture
-            });
+            }, null);
           }else{
             let textureName = 'lbl_hex_'+(i+1);
             TextureLoader.Load(textureName, (texture) => {
               this.protoTextures[textureName] = texture
-            });
+            }, null);
           }
         }
 
@@ -62,6 +68,16 @@ class MenuContainer extends GameMenu {
       }
     })
 
+  }
+
+  Hide (onClosed = false){
+    super.Hide();
+    if(onClosed && this.container instanceof ModulePlaceable){
+      try{
+        this.container.close(Game.getCurrentPlayer());
+      }catch(e){}
+    }
+    this.container = undefined;
   }
 
   Show( object = null ){
@@ -114,9 +130,9 @@ class MenuContainer extends GameMenu {
         item2.spriteGroup.add(iconSprite);
         this.LB_ITEMS.itemGroup.add(item2);
 
-        _ctrl2.onClick = (e) => {
+        _ctrl2.addEventListener('click', (e) => {
           e.stopPropagation();
-        };
+        });
 
       });
     }

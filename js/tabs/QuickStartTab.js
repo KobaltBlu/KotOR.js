@@ -17,7 +17,7 @@ class QuickStartTab extends EditorTab {
       this.$newProject = $('#btn-new-project', this.$tabContent);
       this.$openProject = $('#btn-open-project', this.$tabContent);
 
-      $.each(Config.options.recent_projects, (i, dir) => {
+      $.each(Config.GetRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
@@ -38,7 +38,7 @@ class QuickStartTab extends EditorTab {
         }catch(e){}
       });
 
-      $.each(Config.options.recent_files, (i, file) => {
+      $.each(Config.GetRecentFiles(), (i, file) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 
@@ -78,6 +78,48 @@ class QuickStartTab extends EditorTab {
     });
 
   }
+
+  Show(){
+    super.Show();
+    try{
+      this.$recentProjectsList.html('');
+      $.each(Config.GetRecentProjects(), (i, dir) => {
+        try{
+          let project = require(path.join(dir, 'project.json'));
+          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
+
+          $('a', $recentProject).on('click', (e) => {
+            e.preventDefault();
+            console.log(dir);
+            Global.Project = new Project(dir);
+            Global.Project.Open(() => {
+              loader.SetMessage("Project Loaded");
+              //loader.Dismiss();
+
+              this.tabManager.RemoveTab(this);
+            });
+          });
+
+          this.$recentProjectsList.append($recentProject);
+        }catch(e){}
+      });
+
+      this.$recentFilesList.html('');
+      $.each(Config.GetRecentFiles(), (i, file) => {
+        try{
+          let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
+
+          $('a', $recentFile).on('click', (e) => {
+            e.preventDefault();
+            FileTypeManager.onOpenResource(file);
+          });
+
+          this.$recentFilesList.append($recentFile);
+        }catch(e){}
+      });
+    }catch(e){}
+  }
+
 }
 
 module.exports = QuickStartTab;

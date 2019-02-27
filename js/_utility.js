@@ -8,6 +8,18 @@
 String.prototype.titleCase = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 }
+
+//Adding a java like string.equalsIgnoreCase method to the String prototype in Javascript
+String.prototype.equalsIgnoreCase = function(str2){
+
+	if(typeof str2 !== 'string')
+		throw 'You can only pass a string to be compared';
+
+  return this.localeCompare(str2, undefined, { sensitivity: 'accent' }) === 0;
+  
+};
+
+
 /*
 // Note that the API is still vendor-prefixed in browsers implementing it
 document.addEventListener("pointerlockchange", function( event ) {

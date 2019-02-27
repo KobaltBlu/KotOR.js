@@ -9,3 +9,37 @@ body {
   overflow: hidden;
   cursor: none;
 }
+
+.console {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  display: none;
+}
+
+.console.on {
+  display: block;
+}
+
+.console::before {
+  content: '>';
+  position: absolute;
+  bottom: 0;
+  font-size: 18pt;
+  height: 41px;
+  /* line-height: 41px; */
+  font-weight: bolder;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  left: 10px;
+  color: gold;
+}
+
+.console > input[type="text"] {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid cornflowerblue;
+  width: calc(100%);
+  font-size: 18pt;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  color: gold;
+}

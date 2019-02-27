@@ -13,12 +13,24 @@ class GUIControl {
     this.control = control;
     this.parent = parent;
     this.scale = scale;
+    this.anchor = 'none';
 
     this.offset = new THREE.Vector2();
 
     this.widget = new THREE.Group();
     this.widget.control = this;
     this.children = []; 
+    this.zOffset = 1;
+
+    this.eventListeners = {
+      'click': [],
+      'mouseIn': [],
+      'mouseOut': [],
+      'mouseDown': [],
+      'mouseMove': [],
+      'mouseUp': [],
+      'hover': []
+    };
 
     this.defaultColor = {
       x: 0.0,
@@ -28,9 +40,12 @@ class GUIControl {
 
     if(GameKey == 'TSL'){
       this.defaultColor = {
-        x: 0.10196078568697,
+        /*x: 0.10196078568697,
         y: 0.69803923368454,
-        z: 0.549019634723663
+        z: 0.549019634723663*/
+        x: 1,
+        y: 1,
+        z: 1
       };
     }
 
@@ -110,7 +125,7 @@ class GUIControl {
         }
   
         if(typeof this.border.color === 'undefined'){
-          this.border.color = this.defaultColor;
+          this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
         }
   
         this.border.dimension = border.GetFieldByLabel('DIMENSION').GetValue() || 0;
@@ -191,7 +206,7 @@ class GUIControl {
   }
 
   isClickable(){
-    return (typeof this.onClick == 'function');
+    return this.eventListeners['click'].length;
   }
 
   onHoverOut(){
@@ -424,6 +439,12 @@ class GUIControl {
         fill.material.opacity += delta;
       }
     }
+
+    let len = this.children.length;
+    for(let i = 0; i < len; i++){
+      this.children[i].update(delta);
+    }
+
   }
 
   resetPulse(){
@@ -479,6 +500,10 @@ class GUIControl {
     }
   }*/
 
+  getFill(){
+    return this.widget.fill.children[0];
+  }
+
   getFillTexture(){
     return this.widget.fill.children[0].material.map;
   }
@@ -486,8 +511,14 @@ class GUIControl {
   setFillTexture(map = undefined){
     this.widget.fill.children[0].material.map = map;
     this.widget.fill.children[0].material.needsUpdate = true;
-    
     this.widget.fill.children[0].material.visible = (map != undefined);
+
+    if(map == undefined){
+      this.widget.fill.children[0].material.opacity = 0.01;
+    }else{
+      this.widget.fill.children[0].material.opacity = 1;
+    }
+
   }
 
   getFillTextureName(){
@@ -520,18 +551,8 @@ class GUIControl {
       this.widget.position.x = this.offset.x;
       this.widget.position.y = this.offset.y;
 
-      let worldPosition = this.widget.getWorldPosition(new THREE.Vector3());
-
-      this.box = new THREE.Box2(
-        new THREE.Vector2(
-          worldPosition.x - this.extent.width/2,
-          worldPosition.y - this.extent.height/2
-        ),
-        new THREE.Vector2(
-          worldPosition.x + this.extent.width/2,
-          worldPosition.y + this.extent.height/2
-        )
-      );
+      
+      this.updateBounds();
 
       return;
 
@@ -546,7 +567,6 @@ class GUIControl {
     let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
     let posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
 
-    this.anchor = 'none';
     this.anchorOffset = {x: posX, y: posY};
 
     let halfX = parentExtent.width/2;
@@ -554,73 +574,68 @@ class GUIControl {
     let halfY = parentExtent.height/2;
     let quatY = 25; //parentExtent.height/4;
 
-    if(this.scale){
+    if(this.scale && this.anchor == 'none'){
       if(this.extent.left == 0 && this.extent.top == 0){
         //Screen centered
       }else{
         if(this.extent.left < (halfX/2) && this.extent.top > halfY){
-          this.anchor = 'bl'
-          this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
-          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+          this.anchor = 'bl';
         }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top > halfY){
-          this.anchor = 'bc'
-          if(this.extent.left < (halfX)){
-            //this.anchorOffset.x = ((window.innerWidth) / 2) - (800-this.extent.left) - (this.extent.width/2);
-            this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
-          }else{
-            //this.anchorOffset.x = ((window.innerWidth) / 2) + (this.extent.left - 400) - (this.extent.width/2);
-            this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
-          }
+          this.anchor = 'bc';
         }else if(this.extent.left > (halfX/2) && this.extent.top > halfY){
-          this.anchor = 'br'
-          this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+          this.anchor = 'br';
         }
 
         if(this.extent.left < (halfX/2) && this.extent.top < halfY){
-          this.anchor = 'tl'
-          this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
-          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchor = 'tl';
         }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top < halfY){
           this.anchor = 'tc'
-          if(this.extent.left < halfX){
-            //this.anchorOffset.x = (halfX-this.extent.left) - (this.extent.width/2);
-            this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
-          }else{
-            //this.anchorOffset.x = -(halfX-this.extent.left) + (this.extent.width/2);
-            this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
-          }
         }else if(this.extent.left > (halfX/2) && this.extent.top < halfY){
-          this.anchor = 'tr'
-          this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchor = 'tr';
         }
       }
+    }
+
+    switch(this.anchor){
+      case 'tl':
+        this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+      break;
+      case 'tc':
+        if(this.extent.left < halfX){
+          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+        }else{
+          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+        }
+      break;
+      case 'tr':
+        this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+      break;
+      case 'bl':
+        this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+      break;
+      case 'bc':
+        if(this.extent.left < (halfX)){
+          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        }else{
+          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
+        }
+      break;
+      case 'br':
+        this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+      break;
+      default:
+        this.anchorOffset = {x: posX, y: posY};
+      break;
     }
 
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
 
-    let worldPosition = this.widget.getWorldPosition(new THREE.Vector3());
-
-    /*worldPosition.add(
-      new THREE.Vector3(
-        this.menu.tGuiPanel.extent.left/2,
-        this.menu.tGuiPanel.extent.top/2,
-        0
-      )
-    );*/
-
-    this.box = new THREE.Box2(
-      new THREE.Vector2(
-        worldPosition.x - this.extent.width/2,
-        worldPosition.y - this.extent.height/2
-      ),
-      new THREE.Vector2(
-        worldPosition.x + this.extent.width/2,
-        worldPosition.y + this.extent.height/2
-      )
-    );
+    this.updateBounds();
 
   }
 
@@ -641,6 +656,28 @@ class GUIControl {
     }
     
     return controls;
+  }
+
+  updateBounds(){
+    let worldPosition = this.widget.getWorldPosition(new THREE.Vector3());
+    this.box = new THREE.Box2(
+      new THREE.Vector2(
+        worldPosition.x * this.menu.scale - ( (this.extent.width/2) * this.menu.scale),
+        worldPosition.y * this.menu.scale - ( (this.extent.height/2) * this.menu.scale)
+      ),
+      new THREE.Vector2(
+        worldPosition.x * this.menu.scale + ( (this.extent.width/2) * this.menu.scale),
+        worldPosition.y * this.menu.scale + ( (this.extent.height/2) * this.menu.scale)
+      )
+    );
+  }
+
+  updateScale(){
+    this.updateBounds();
+    for(let i = 0; i < this.children.length; i++){
+      if(this.children[i] instanceof GUIControl)
+        this.children[i].updateScale();
+    }
   }
 
   recalculate(){
@@ -694,11 +731,23 @@ class GUIControl {
     let extent = this.getControlExtent();
     let inner = this.getInnerSize();
     //console.log('size', extent, inner);
+
+    let width = inner.width - this.border.dimension;
+    let height = inner.height - this.border.dimension;
+
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
+
     return {
       top: extent.top, 
       left: extent.left, 
-      width: inner.width - this.border.dimension,
-      height: inner.height - this.border.dimension
+      width: width,
+      height: height
     };
   }
 
@@ -722,72 +771,74 @@ class GUIControl {
     let extent = this.getControlExtent();
     let inner = this.getInnerSize();
 
+    let top = 0, left = 0, width = 0, height = 0;
+
     switch(side){
       case 'top':
-        return {
-          top: -(inner.height/2), 
-          left: 0, 
-          width: inner.width - (this.getBorderSize()),
-          height: this.getBorderSize()
-        };
+        top = -(inner.height/2); 
+        left = 0; 
+        width = inner.width - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'bottom':
-        return {
-          top: (inner.height/2), 
-          left: 0, 
-          width: inner.width - (this.getBorderSize()),
-          height: this.getBorderSize()
-        };
+        top = (inner.height/2); 
+        left = 0; 
+        width = inner.width - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'left':
-        return {
-          top: 0, 
-          left: -(inner.width/2), 
-          width: inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize()),
-          height: this.getBorderSize()
-        };
+        top = 0
+        left = -(inner.width/2); 
+        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'right':
-        return {
-          top: 0, 
-          left: (inner.width/2), 
-          width: inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize()),
-          height: this.getBorderSize()
-        };
+        top = 0; 
+        left = (inner.width/2); 
+        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'topLeft':
-        return {
-          top: ((inner.height/2)), 
-          left: -((inner.width/2)), 
-          width: this.getBorderSize(),
-          height: this.getBorderSize()
-        };
+        top = ((inner.height/2)); 
+        left = -((inner.width/2)); 
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'topRight':
-        return {
-          top: (inner.height/2), 
-          left: (inner.width/2), 
-          width: this.getBorderSize(),
-          height: this.getBorderSize()
-        };
+        top = (inner.height/2); 
+        left = (inner.width/2); 
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'bottomLeft':
-        return {
-          top: -((inner.height/2)), 
-          left: -((inner.width/2)), 
-          width: this.getBorderSize(),
-          height: this.getBorderSize()
-        };
+        top = -((inner.height/2)); 
+        left = -((inner.width/2)); 
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'bottomRight':
-        return {
-          top: -((inner.height/2)), 
-          left: ((inner.width / 2)), 
-          width: this.getBorderSize(),
-          height: this.getBorderSize()
-        };
+        top = -((inner.height/2)); 
+        left = ((inner.width / 2)); 
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
     }
+
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
+
+    return {
+      top: top, 
+      left: left, 
+      width: width,
+      height: height
+    };
+
   }
 
   getHighlightExtent(side = null){
@@ -865,12 +916,13 @@ class GUIControl {
     let extent = this.getFillExtent();
     
     var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    var material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.DoubleSide} );
     var sprite = new THREE.Mesh( geometry, material );
     
     sprite.name = this.widget.name+' center fill';
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
+    sprite.position.z = this.zOffset;
 
     this.widget.fill.add( sprite );
 
@@ -892,32 +944,27 @@ class GUIControl {
     sprite.renderOrder = this.id;
 
     sprite.isClickable = (e) => {
-      return (typeof this.onClick == 'function');
+      return this.isClickable();
     };
 
     sprite.onClick = (e) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e);
+      this.processEventListener('click', [e]);
     };
 
     sprite.onMouseMove = (e) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e);
+      this.processEventListener('mouseMove', [e]);
     }
 
     sprite.onMouseDown = (e) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e);
+      this.processEventListener('mouseDown', [e]);
     };
 
     sprite.onMouseUp = (e) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e);
+      this.processEventListener('mouseUp', [e]);
     };
-
+    
     sprite.onHover = (e) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e);
+      this.processEventListener('hover', [e]);
     };
 
     sprite.getControl = (e) => {
@@ -937,9 +984,9 @@ class GUIControl {
     if(this.border.edge != ''){
       TextureLoader.enQueue(this.border.edge, material, TextureLoader.Type.TEXTURE);
     }
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
-    sprite.position.set( extent.left, extent.top, 1 ); // top left
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
+    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
 
 
     switch(side){
@@ -960,32 +1007,27 @@ class GUIControl {
     this.widget.border.add(sprite);
 
     sprite.isClickable = (e) => {
-      return (typeof this.onClick == 'function');
+      return this.isClickable();
     };
 
     sprite.onClick = (e) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e);
+      this.processEventListener('click', [e]);
     };
 
     sprite.onMouseMove = (e) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e);
+      this.processEventListener('mouseMove', [e]);
     }
 
     sprite.onMouseDown = (e) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e);
+      this.processEventListener('mouseDown', [e]);
     };
 
     sprite.onMouseUp = (e) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e);
+      this.processEventListener('mouseUp', [e]);
     };
     
     sprite.onHover = (e) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e);
+      this.processEventListener('hover', [e]);
     };
 
     sprite.getControl = () => {
@@ -1002,8 +1044,8 @@ class GUIControl {
     var material = new THREE.MeshBasicMaterial( {color:  this.border.color, side: THREE.DoubleSide} );
     var sprite = new THREE.Mesh( geometry, material );
 
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
 
     if(this.border.corner != ''){
       TextureLoader.enQueue(this.border.corner, material, TextureLoader.Type.TEXTURE);
@@ -1021,7 +1063,7 @@ class GUIControl {
       break;
     }
 
-    sprite.position.set( extent.left, extent.top, 0 ); // top left
+    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
     sprite.name = side+' corner';
     this.widget.border.add(sprite);
 
@@ -1035,13 +1077,13 @@ class GUIControl {
     var material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
     var sprite = new THREE.Mesh( geometry, material );
 
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
 
     if(this.highlight.edge != ''){
       TextureLoader.enQueue(this.highlight.edge, material, TextureLoader.Type.TEXTURE);
     }
-    sprite.position.set( extent.left, extent.top, 1 ); // top left
+    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
 
     switch(side){
       case 'top':
@@ -1061,32 +1103,27 @@ class GUIControl {
     this.widget.highlight.add(sprite);
 
     sprite.isClickable = (e) => {
-      return (typeof this.onClick == 'function');
+      return this.isClickable();
     };
 
     sprite.onClick = (e) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e);
+      this.processEventListener('click', [e]);
     };
 
     sprite.onMouseMove = (e) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e);
+      this.processEventListener('mouseMove', [e]);
     }
 
     sprite.onMouseDown = (e) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e);
+      this.processEventListener('mouseDown', [e]);
     };
 
     sprite.onMouseUp = (e) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e);
+      this.processEventListener('mouseUp', [e]);
     };
     
     sprite.onHover = (e) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e);
+      this.processEventListener('hover', [e]);
     };
 
     sprite.getControl = () => {
@@ -1103,8 +1140,9 @@ class GUIControl {
     var sprite = new THREE.Mesh( geometry, material );
     
     sprite.name = this.widget.name+' highlight fill';
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
+    sprite.position.z = this.zOffset;
 
     this.widget.highlight.add( sprite );
 
@@ -1126,32 +1164,27 @@ class GUIControl {
     sprite.renderOrder = this.id;
 
     sprite.isClickable = (e) => {
-      return (typeof this.onClick == 'function');
+      return this.isClickable();
     };
 
     sprite.onClick = (e) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e);
+      this.processEventListener('click', [e]);
     };
 
     sprite.onMouseMove = (e) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e);
+      this.processEventListener('mouseMove', [e]);
     }
 
     sprite.onMouseDown = (e) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e);
+      this.processEventListener('mouseDown', [e]);
     };
 
     sprite.onMouseUp = (e) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e);
+      this.processEventListener('mouseUp', [e]);
     };
-
+    
     sprite.onHover = (e) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e);
+      this.processEventListener('hover', [e]);
     };
 
     sprite.getControl = (e) => {
@@ -1168,8 +1201,8 @@ class GUIControl {
     var material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
     var sprite = new THREE.Mesh( geometry, material );
 
-    sprite.scale.x = extent.width;
-    sprite.scale.y = extent.height;
+    sprite.scale.x = extent.width || 0.000001;
+    sprite.scale.y = extent.height || 0.000001;
 
     if(this.highlight.corner != ''){
       TextureLoader.enQueue(this.highlight.corner, material, TextureLoader.Type.TEXTURE);
@@ -1187,7 +1220,7 @@ class GUIControl {
       break;
     }
 
-    sprite.position.set( extent.left, extent.top, 0 ); // top left
+    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
     sprite.name = side+' corner';
     this.widget.highlight.add(sprite);
 
@@ -1351,8 +1384,7 @@ class GUIControl {
         map: texture,
         side: THREE.DoubleSide,
         transparent: true,
-        color: new THREE.Color(this.text.color.x, this.text.color.y, this.text.color.z),
-        depthTest: false
+        color: new THREE.Color(this.text.color.x, this.text.color.y, this.text.color.z)
       });
 
       var layout = this.textGeometry.layout
@@ -1368,36 +1400,31 @@ class GUIControl {
       //textAnchor.scale.multiplyScalar(1 / (window.devicePixelRatio || 1))
 
       textAnchor.position.x -= (this.extent.width / 2);
-      textAnchor.position.z = 5;
+      textAnchor.position.z = this.zOffset;
       this.widget.text.add(textAnchor);
 
       text.isClickable = (e) => {
-        return (typeof this.onClick == 'function');
+        return this.isClickable();
       };
 
       text.onClick = (e) => {
-        if(typeof this.onClick == 'function')
-          this.onClick(e);
+        this.processEventListener('click', [e]);
       };
 
       text.onMouseMove = (e) =>{
-        if(typeof this.onMouseMove == 'function')
-          this.onMouseMove(e);
+        this.processEventListener('mouseMove', [e]);
       }
   
       text.onMouseDown = (e) => {
-        if(typeof this.onMouseDown == 'function')
-          this.onMouseDown(e);
+        this.processEventListener('mouseDown', [e]);
       };
   
       text.onMouseUp = (e) => {
-        if(typeof this.onMouseUp == 'function')
-          this.onMouseUp(e);
+        this.processEventListener('mouseUp', [e]);
       };
       
       text.onHover = (e) => {
-        if(typeof this.onMouseIn == 'function')
-          this.onMouseIn(e);
+        this.processEventListener('hover', [e]);
       };
 
       text.getControl = () => {
@@ -1455,8 +1482,8 @@ class GUIControl {
 
   resizeFill(){
     let extent = this.getFillExtent();
-    this.widget.fill.children[0].scale.x = extent.width;
-    this.widget.fill.children[0].scale.y = extent.height;
+    this.widget.fill.children[0].scale.x = extent.width || 0.000001;
+    this.widget.fill.children[0].scale.y = extent.height || 0.000001;
   }
 
   resizeBorder(side = null){
@@ -1466,23 +1493,23 @@ class GUIControl {
     switch(side){
       case 'top':
         this.widget.border.children[0].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.border.children[0].scale.x = extent.width;
-        this.widget.border.children[0].scale.y = extent.height;
+        this.widget.border.children[0].scale.x = extent.width || 0.000001;
+        this.widget.border.children[0].scale.y = extent.height || 0.000001;
       break;
       case 'left':
         this.widget.border.children[1].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.border.children[1].scale.x = extent.width;
-        this.widget.border.children[1].scale.y = extent.height;
+        this.widget.border.children[1].scale.x = extent.width || 0.000001;
+        this.widget.border.children[1].scale.y = extent.height || 0.000001;
       break;
       case 'right':
         this.widget.border.children[2].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.border.children[2].scale.x = extent.width;
-        this.widget.border.children[2].scale.y = extent.height;
+        this.widget.border.children[2].scale.x = extent.width || 0.000001;
+        this.widget.border.children[2].scale.y = extent.height || 0.000001;
       break;
       case 'bottom':
         this.widget.border.children[3].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.border.children[3].scale.x = extent.width;
-        this.widget.border.children[3].scale.y = extent.height;
+        this.widget.border.children[3].scale.x = extent.width || 0.000001;
+        this.widget.border.children[3].scale.y = extent.height || 0.000001;
       break;
     }
 
@@ -1495,23 +1522,23 @@ class GUIControl {
     switch(side){
       case 'topLeft':
         this.widget.border.children[4].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.border.children[4].scale.x = extent.width;
-        this.widget.border.children[4].scale.y = extent.height;
+        this.widget.border.children[4].scale.x = extent.width || 0.000001;
+        this.widget.border.children[4].scale.y = extent.height || 0.000001;
       break;
       case 'topRight':
         this.widget.border.children[5].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.border.children[5].scale.x = extent.width;
-        this.widget.border.children[5].scale.y = extent.height;
+        this.widget.border.children[5].scale.x = extent.width || 0.000001;
+        this.widget.border.children[5].scale.y = extent.height || 0.000001;
       break;
       case 'bottomLeft':
         this.widget.border.children[6].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.border.children[6].scale.x = extent.width;
-        this.widget.border.children[6].scale.y = extent.height;
+        this.widget.border.children[6].scale.x = extent.width || 0.000001;
+        this.widget.border.children[6].scale.y = extent.height || 0.000001;
       break;
       case 'bottomRight':
         this.widget.border.children[7].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.border.children[7].scale.x = extent.width;
-        this.widget.border.children[7].scale.y = extent.height;
+        this.widget.border.children[7].scale.x = extent.width || 0.000001;
+        this.widget.border.children[7].scale.y = extent.height || 0.000001;
       break;
     }
 
@@ -1548,7 +1575,7 @@ class GUIControl {
     this.widget.highlight.add(sprite);
 
     sprite.isClickable = (e) => {
-      return (typeof this.onClick == 'function');
+      return this.isClickable();
     };
 
     sprite.onClick = (e) => {
@@ -1612,8 +1639,47 @@ class GUIControl {
 
   }
 
+  //Add an event listener
+  addEventListener(name = '', callback = undefined){
+    if(typeof callback === 'function'){
+      if(this.eventListeners.hasOwnProperty(name)){
+        this.eventListeners[name].push(callback);
+      }
+    }
+  }
 
+  //Remove an event listener
+  removeEventListener(name = '', callback = undefined){
 
+    if(this.eventListeners.hasOwnProperty(name)){
+      if(typeof callback === 'function'){
+        //Remove this specific callback from the event listener
+        let cbIndex = this.eventListeners[name].indexOf(callback);
+        if(cbIndex > -1){
+          this.eventListeners[name].splice(cbIndex, 1);
+        }
+      }else{
+        //Remove all callbacks for this listener
+        this.eventListeners[name] = [];
+      }
+    }
+
+  }
+
+  //Process an event listener
+  processEventListener(name = '', args = []){
+    let processed = false;
+    if(this.eventListeners.hasOwnProperty(name)){
+      let len = this.eventListeners[name].length;
+      for(let i = 0; i < len; i++){
+        if(typeof this.eventListeners[name][i] === 'function'){
+          processed = true;
+          this.eventListeners[name][i].apply(null, args);
+        }
+      }
+    }
+    return processed;
+  }
 
 
 }

@@ -9,11 +9,20 @@ class ModuleItem extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
-    this.template = gff;
+    
+    if(typeof gff === 'string'){
+      this.equippedRes = gff;
+      this.template = new GFFObject();
+      this.template.RootNode.AddField(new Field(GFFDataTypes.RESREF, 'EquippedRes')).SetValue(gff);
+    }else{
+      this.template = gff;
+    }
 
     this.baseItem = 0;
     this.modelVariation = 0;
     this.textureVariation = 1;
+    this.palleteID = 0;
+    this.loaded = false;
 
     this.InitProperties();
 
@@ -104,12 +113,17 @@ class ModuleItem extends ModuleObject {
     return this.localizedName.GetValue().replace(/\0[\s\S]*$/g,'');
   }
 
+  getPalleteID(){
+    return this.palleteID;
+  }
+
   getTag(){
     return this.tag;
   }
 
   Load( onLoad = null ){
-    if(this.getEquippedRes()){
+
+    if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
       //console.log('ModuleItem', 'Loading Template', this.getEquippedRes())
       TemplateLoader.Load({
@@ -125,10 +139,12 @@ class ModuleItem extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load item template');
+          if(onLoad != null)
+            onLoad(this);
         }
       });
 
-    }else if(this.getInventoryRes()){
+    }else if(!this.loaded && this.getInventoryRes()){
       //Load template and merge fields
       //console.log('ModuleItem', 'Loading Template', this.getInventoryRes())
       TemplateLoader.Load({
@@ -138,11 +154,14 @@ class ModuleItem extends ModuleObject {
           //console.log('ModuleItem', 'Template Loaded')
           this.template.Merge(gff);
           this.InitProperties();
+          this.loaded = true;
           if(onLoad != null)
             onLoad(this);
         },
         onFail: () => {
           console.error('Failed to load item template');
+          if(onLoad != null)
+            onLoad(this);
         }
       });
 
@@ -159,11 +178,16 @@ class ModuleItem extends ModuleObject {
   }
 
   LoadModel(onLoad = null){
+    let itemclass = this.getBaseItem()['itemclass'];
     let DefaultModel = this.getBaseItem()['defaultmodel'];
+    itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
     DefaultModel = DefaultModel.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
 
     if(DefaultModel != 'i_null'){
       DefaultModel = this.nthStringConverter(DefaultModel, this.getModelVariation());
+      if(!parseInt(DefaultModel.substr(-3))){
+        DefaultModel = itemclass+'_'+(('000'+this.getModelVariation()).substr(-3));
+      }
     }
 
     Game.ModelLoader.load({
@@ -239,6 +263,10 @@ class ModuleItem extends ModuleObject {
   }*/
 
   InitProperties(){
+
+    if(this.loaded){
+      return;
+    }
 
     if(this.template.RootNode.HasField('AddCost'))
       this.addCost = this.template.GetFieldByLabel('AddCost').GetValue();
@@ -331,6 +359,9 @@ class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.HasField('ZOrientation'))
       this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+
+    if(this.template.RootNode.HasField('PaletteID'))
+      this.palleteID = this.template.RootNode.GetFieldByLabel('PaletteID').GetValue();
 
   }
 

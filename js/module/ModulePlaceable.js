@@ -12,6 +12,7 @@ class ModulePlaceable extends ModuleObject {
     this.template = gff;
 
     this.openState = false;
+    this._state = ModulePlaceable.STATE.NONE;
 
     this.animationState = 0;
     this.appearance = 0;
@@ -59,6 +60,8 @@ class ModulePlaceable extends ModuleObject {
     this.z = 0;
     this.bearing = 0;
 
+    this.defaultAnimPlayed = false;
+
     this.inventory = [];
 
     try{
@@ -75,7 +78,7 @@ class ModulePlaceable extends ModuleObject {
           interval: 0,
           intervalVariation: 0,
           maxDistance: 50,
-          volume: 100,
+          volume: 127,
           positional: 1
         },
         onLoad: () => {
@@ -109,6 +112,10 @@ class ModulePlaceable extends ModuleObject {
     
     super.update(delta);
 
+    if(this.walkmesh && this.model){
+      this.walkmesh.matrixWorld = this.model.matrix.clone();
+    }
+
     if(this.model instanceof THREE.AuroraModel){
 
       if(this.room instanceof ModuleRoom){
@@ -124,37 +131,56 @@ class ModulePlaceable extends ModuleObject {
 
       this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
 
-      let currentAnimation = this.model.getAnimationName();
-
-      if(this.model.animations.length){
+      /*if(this.model.animations.length){
 
         let animState = this.getAnimationState();
 
-        if(animState == 0 && currentAnimation != 'default'){
-          this.model.playAnimation('default', false);
+        if(this.defaultAnimPlayed){
+
+          if(this._state != animState){
+
+            this._state = animState;
+            switch(animState){
+              case ModulePlaceable.STATE.DEFAULT:
+                if(this.model.getAnimationByName('default')){
+                  this.model.playAnimation('default', true);
+                }
+              break;
+              case ModulePlaceable.STATE.OPEN:
+                if(this.model.getAnimationByName('open')){
+                  this.model.playAnimation('open', true);
+                }
+              break;
+              case ModulePlaceable.STATE.CLOSED:
+                if(this.model.getAnimationByName('close')){
+                  this.model.playAnimation('close', true);
+                }
+              break;
+              case ModulePlaceable.STATE.DEAD:
+                if(this.model.getAnimationByName('dead')){
+                  this.model.playAnimation('dead', false);
+                }
+              break;
+              case ModulePlaceable.STATE.ON:
+                if(this.model.getAnimationByName('on')){
+                  this.model.playAnimation('on', false);
+                }
+              break;
+              case ModulePlaceable.STATE.OFF:
+                if(this.model.getAnimationByName('off')){
+                  this.model.playAnimation('off', false);
+                }
+              break;
+              default:
+                this.model.playAnimation(this.model.animations[0], false);
+              break;
+            }
+
+          }            
+
         }
 
-        if(animState == 1 && currentAnimation != 'open'){
-          this.model.playAnimation('open', false);
-        }
-
-        if(animState == 2 && currentAnimation != 'close'){
-          this.model.playAnimation('close', false);
-        }
-
-        if(animState == 3 && currentAnimation != 'dead'){
-          this.model.playAnimation('dead', false);
-        }
-
-        if(animState == 4 && currentAnimation != 'on'){
-          this.model.playAnimation('on', false);
-        }
-        
-        if(animState == 5 && currentAnimation != 'off'){
-          this.model.playAnimation('off', false);
-        }
-
-      }
+      }*/
       
     }
 
@@ -233,10 +259,11 @@ class ModulePlaceable extends ModuleObject {
   }
 
   getAnimationState(){
-    if(this.template.RootNode.HasField('AnimationState')){
-      return this.template.RootNode.GetFieldByLabel('AnimationState').GetValue();
-    }
-    return 0;
+    return this.animationState;
+  }
+
+  setAnimationState(state){
+    this.animationState = state;
   }
 
   getOnClosed(){
@@ -287,13 +314,7 @@ class ModulePlaceable extends ModuleObject {
   }
 
   GetConversation(){
-    if(this.HasTemplate()){
-      if(typeof this.template.json.fields.Conversation !== 'undefined')
-        return this.template.json.fields.Conversation.value;
-
-    }
-
-    return '';
+    return this.conversation;
   }
 
   getItemList(){
@@ -327,6 +348,15 @@ class ModulePlaceable extends ModuleObject {
     return Global.kotor2DA['placeables'].rows[this.getAppearanceId()];
   }
 
+  getObjectSounds(){
+    let plc = this.getAppearance();
+    let soundIdx = parseInt(plc.soundapptype.replace(/\0[\s\S]*$/g,''));
+    if(!isNaN(soundIdx)){
+      return Global.kotor2DA['placeableobjsnds'].rows[soundIdx];
+    }
+    return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+  }
+
   retrieveInventory(){
     while(this.inventory.length){
       InventoryManager.addItem(this.inventory.pop())
@@ -344,6 +374,14 @@ class ModulePlaceable extends ModuleObject {
 
   use(object = null){
 
+    if(this.model.getAnimationByName('close2open')){
+      this.model.playAnimation('close2open', false);
+    }
+
+    if(this.getObjectSounds()['opened'] != '****'){
+      this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
+    }
+
     if(this.hasInventory){
       Game.MenuContainer.Show(this);
     }else if(this.GetConversation() != ''){
@@ -357,10 +395,39 @@ class ModulePlaceable extends ModuleObject {
 
   }
 
+  attemptUnlock(object = undefined){
+    if(object instanceof ModuleObject){
+      let d20 = 20;//d20 rolls are auto 20's outside of combat
+      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
+      if(skillCheck >= 1){
+        this.locked = false;
+        if(object instanceof ModuleCreature){
+          object.PlaySoundSet(SSFObject.TYPES.UNLOCK_SUCCESS);
+        }
+      }else{
+        if(object instanceof ModuleCreature){
+          object.PlaySoundSet(SSFObject.TYPES.UNLOCK_FAIL);
+        }
+      }
+      this.use(object);
+      return true;
+    }else{
+      return false;
+    }
+  }
+
   close(object = null){
     if(this.scripts.onClosed instanceof NWScript){
       //console.log('Running script', this.scripts.onUsed)
       this.scripts.onClosed.run(this);
+    }
+
+    if(this.model.getAnimationByName('open2close')){
+      this.model.playAnimation('open2close', false);
+    }
+
+    if(this.getObjectSounds()['closed'] != '****'){
+      this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
     }
   }
 
@@ -435,6 +502,53 @@ class ModulePlaceable extends ModuleObject {
 
             this.position = this.model.position;
             this.rotation = this.model.rotation;
+
+            try{
+              /*if(this.model.getAnimationByName('default')){
+                this.model.playAnimation('default', false, () => {
+                  this.defaultAnimPlayed = true;
+                });
+              }else{
+                this.defaultAnimPlayed = true;
+              }*/
+
+              this.defaultAnimPlayed = true;
+              switch(this.getAnimationState()){
+                case ModulePlaceable.STATE.DEFAULT:
+                  if(this.model.getAnimationByName('default')){
+                    this.model.playAnimation('default', true);
+                  }
+                break;
+                case ModulePlaceable.STATE.OPEN:
+                  if(this.model.getAnimationByName('open')){
+                    this.model.playAnimation('open', true);
+                  }
+                break;
+                case ModulePlaceable.STATE.CLOSED:
+                  if(this.model.getAnimationByName('close')){
+                    this.model.playAnimation('close', true);
+                  }
+                break;
+                case ModulePlaceable.STATE.DEAD:
+                  if(this.model.getAnimationByName('dead')){
+                    this.model.playAnimation('dead', false);
+                  }
+                break;
+                case ModulePlaceable.STATE.ON:
+                  if(this.model.getAnimationByName('on')){
+                    this.model.playAnimation('on', false);
+                  }
+                break;
+                case ModulePlaceable.STATE.OFF:
+                  if(this.model.getAnimationByName('off')){
+                    this.model.playAnimation('off', false);
+                  }
+                break;
+                default:
+                  this.model.playAnimation(this.model.animations[0], false);
+                break;
+              }
+            }catch(e){ this.defaultAnimPlayed = true; }
 
             TextureLoader.LoadQueue(() => {
               //console.log(this.model);
@@ -591,11 +705,11 @@ class ModulePlaceable extends ModuleObject {
     if(wokKey != null){
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
-        this.pwk = new AuroraWalkMesh(new BinaryReader(buffer));
-        this.model.add(this.pwk.mesh);
+        this.walkmesh = new AuroraWalkMesh(new BinaryReader(buffer));
+        this.model.add(this.walkmesh.mesh);
 
         if(typeof onLoad === 'function')
-          onLoad(this.pwk);
+          onLoad(this.walkmesh);
 
       });
 
@@ -747,6 +861,16 @@ class ModulePlaceable extends ModuleObject {
 
   }
 
+}
+
+ModulePlaceable.STATE = {
+  NONE:        -1,
+  DEFAULT:      0,
+  OPEN:         1,
+  CLOSED:       2,
+  DEAD:         3,
+  ON:           4,
+  OFF:          5
 }
 
 module.exports = ModulePlaceable;

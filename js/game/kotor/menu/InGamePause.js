@@ -48,12 +48,10 @@ class InGamePause extends GameMenu {
 
   Update(delta){
 
+    super.Update(delta);
+
     this.tGuiPanel.widget.position.x = (window.innerWidth/2) - (Game.InGamePause.width/2) - 20;
     this.tGuiPanel.widget.position.y = (window.innerHeight/2) - (Game.InGamePause.height/2) - 55;
-
-    this.tGuiPanel.update(delta);
-    this.LBL_PAUSEREASON.update(delta);
-    this.LBL_PRESS.update(delta);
 
   }
 

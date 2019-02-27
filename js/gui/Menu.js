@@ -8,12 +8,13 @@
 class GameMenu {
 
   constructor(args = {}){
+
     this.args = $.extend({
       onLoad: null
     }, args);
 
     this.bVisible = false;
-
+    this.scale = 1;
     this.background = null;
     this.backgroundSprite = new THREE.Object3D();
 
@@ -93,14 +94,10 @@ class GameMenu {
   }
 
   LoadTexture( resRef = null, onLoad = null ){
-
-    TextureLoader.tpcLoader.fetch(resRef, (texture) => {
-
+    TextureLoader.Load(resRef, (texture) => {
       if(typeof onLoad === 'function')
         onLoad(texture);
-
     });
-
   }
 
   getControlByName(name){
@@ -127,7 +124,16 @@ class GameMenu {
   }
 
   Update(delta = 0){
-    
+    //Only update if the Menu is visible
+    if(!this.bVisible)
+      return;
+
+    if(this.tGuiPanel && this.tGuiPanel.children){
+      let len = this.tGuiPanel.children.length;
+      for(let i = 0; i < len; i++){
+        this.tGuiPanel.children[i].update(delta);
+      }
+    }
   }
 
   RecalculatePosition(){
@@ -167,6 +173,18 @@ class GameMenu {
       controls = this.tGuiPanel.getActiveControls();
     }
     return controls;
+  }
+
+  Scale(scale = 1.0){
+
+    this.scale = scale;
+    this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
+
+    for(let i = 0; i < this.tGuiPanel.children.length; i++){
+      if(this.tGuiPanel.children[i] instanceof GUIControl)
+        this.tGuiPanel.children[i].updateScale();
+    }
+
   }
 
 

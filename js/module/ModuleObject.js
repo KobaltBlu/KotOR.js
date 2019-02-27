@@ -16,10 +16,16 @@ class ModuleObject {
     this.position = new THREE.Vector3();
     this.rotation = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
+    this.box = new THREE.Box3();
+    this.facing = 0;
+    this.wasFacing = 0;
+    this.facingTweenTime = 0;
     this.force = 0;
     this.invalidateCollision = false;
     this.room = undefined;
+    this.rooms = [];
     this.model = null;
+    this.dialogAnimation = null;
     this.template = undefined;
     this.inventory = [];
     this.scripts = {
@@ -52,6 +58,7 @@ class ModuleObject {
 
     this.hp = 0;
     this.currentHP = 0;
+    this.faction = 0;
 
     this.actionQueue = [];
     this.effects = [];
@@ -62,6 +69,7 @@ class ModuleObject {
     };
 
     this.objectsInside = [];
+    this.lockDialogOrientation = false;
 
     this.context = Game;
     this.heartbeatTimer = null;
@@ -75,10 +83,23 @@ class ModuleObject {
     this._lastForcePowerUsed = -1;
     this._lastForcePowerSuccess = 0;
 
+    this._healTarget = undefined;
+
+    this.perceptionList = [];
+    this.isListening = false;
+    this.listeningPatterns = {};
+
+
+    //Pointers
+    this._inventoryPointer = 0;
+
+    this.v20 = new THREE.Vector2();
+    this.v21 = new THREE.Vector2();
+
   }
 
   _heartbeat(){
-    this.heartbeatTimer = setTimeout( () => {
+    /*this.heartbeatTimer = setTimeout( () => {
       process.nextTick( ()=> {
         this._heartbeat();
       });
@@ -87,7 +108,7 @@ class ModuleObject {
           this.triggerHeartbeat();
         }catch(e){}
       }
-    }, Game.HeartbeatTimer + this._heartbeatTimerOffset);
+    }, Game.HeartbeatTimer + this._heartbeatTimerOffset);*/
   }
 
   setContext(ctx = Game){
@@ -108,6 +129,10 @@ class ModuleObject {
       return this.model = new THREE.Object3D()
   }
 
+  isVisible(){
+    return this.getModel().visible;
+  }
+
   update(delta = 0){
     
     //Process the heartbeat timer
@@ -122,6 +147,15 @@ class ModuleObject {
 
   }
 
+  setFacing(facing = 0, instant = false){
+    let diff = this.rotation.z - facing;
+    this.wasFacing = this.rotation.z;
+    this.facing = Utility.NormalizeRadian(this.rotation.z - diff);
+    this.facingTweenTime = 0;
+    if(instant)
+      this.rotation.z = this.facing;
+  }
+
   onHover(){
     
   }
@@ -132,15 +166,8 @@ class ModuleObject {
 
   triggerUserDefinedEvent(caller = this, iValue = 0, onComplete = null ){
 
-    switch(iValue){
-      case 50://I think this is onDialogue ??? wish I could find a list of the main event numbers :/
-        this.actionQueue.push({
-          object: caller,
-          conversation: caller.GetConversation(),
-          ignoreStartRange: false,
-          goal: ModuleCreature.ACTION.DIALOGOBJECT
-        });
-      break;
+    if(this instanceof ModuleArea || this instanceof Module){
+      return;
     }
 
     if(this.scripts.onUserDefined instanceof NWScript){
@@ -151,9 +178,13 @@ class ModuleObject {
   triggerHeartbeat(){
     if(this.scripts.onHeartbeat instanceof NWScript){
       if(PartyManager.party.indexOf(this) > -1){
-        this.scripts.onHeartbeat.run(this, 2001);
+        process.nextTick(() => {
+          this.scripts.onHeartbeat.run(this, 2001);
+        });
       }else{
-        this.scripts.onHeartbeat.run(this, 1001);
+        process.nextTick(() => {
+          this.scripts.onHeartbeat.run(this, 1001);
+        });
       }
     }
   }
@@ -263,6 +294,7 @@ class ModuleObject {
 
   getCurrentRoom(){
     this.room = undefined;
+    this.rooms = [];
     let _distance = 1000000000;
     for(let i = 0; i < Game.module.rooms.length; i++){
       let room = Game.module.rooms[i];
@@ -270,6 +302,7 @@ class ModuleObject {
       if(model instanceof THREE.AuroraModel){
         let pos = this.model.position.clone();
         if(model.box.containsPoint(pos)){
+          this.rooms.push(i);
           let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
           let distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
@@ -281,8 +314,40 @@ class ModuleObject {
     }
   }
 
+  getCameraHeight(){
+    return 1.5;
+  }
+
   isInConversation(){
-    return (Game.InGameDialog.owner == this || Game.InGameDialog.listener == this);
+    return Game.inDialog && (Game.InGameDialog.owner == this || Game.InGameDialog.listener == this);
+  }
+
+  applyVisualEffect(resref = 'v_light'){
+    if(this.model instanceof THREE.AuroraModel){
+      Game.ModelLoader.load({
+        file: resref,
+        onLoad: (mdl) => {
+          THREE.AuroraModel.FromMDL(mdl, { 
+            onComplete: (effectMDL) => {
+              this.model.effects.push(effectMDL);
+              this.model.add(effectMDL);
+              TextureLoader.LoadQueue();
+              effectMDL.playAnimation(0, false, () => {
+                effectMDL.stopAnimation();
+                this.model.remove(effectMDL);
+                effectMDL.disableEmitters();
+                setTimeout( () => {
+                  let index = this.model.effects.indexOf(effectMDL);
+                  effectMDL.dispose();
+                  this.model.effects.splice(index, 1);
+                }, 5000);
+              })
+            },
+            manageLighting: false
+          });
+        }
+      });
+    }
   }
 
   destroy(){
@@ -309,9 +374,9 @@ class ModuleObject {
             Game.module.area.placeables.splice(pIdx, 1);
 
             try{
-              let wmIdx = Game.walkmeshList.indexOf(this.pwk.mesh);
+              let wmIdx = Game.walkmeshList.indexOf(this.walkmesh.mesh);
               Game.walkmeshList.splice(wmIdx, 1);
-              Game.octree_walkmesh.remove(this.pwk.mesh);
+              Game.octree_walkmesh.remove(this.walkmesh.mesh);
             }catch(e){}
 
           }
@@ -335,9 +400,9 @@ class ModuleObject {
             Game.module.area.doors.splice(pIdx, 1);
 
             try{
-              let wmIdx = Game.walkmeshList.indexOf(this.dwk.mesh);
+              let wmIdx = Game.walkmeshList.indexOf(this.walkmesh.mesh);
               Game.walkmeshList.splice(wmIdx, 1);
-              Game.octree_walkmesh.remove(this.dwk.mesh);
+              Game.octree_walkmesh.remove(this.walkmesh.mesh);
             }catch(e){}
             
           }
@@ -441,6 +506,9 @@ class ModuleObject {
     this.effects.push(effect);
 
     switch(effect.type){
+      case 1: //EFFECT_DEATH
+        this.setHP(0);
+      break;
       case 62: //EFFECT_DISGUISE
         if(this instanceof ModuleCreature){
           this.LoadModel(() => {
@@ -487,13 +555,10 @@ class ModuleObject {
   }
 
   FacePoint(vPoint=new THREE.Vector3){
-    this.rotation.z = Math.atan2(
-      this.position.y - vPoint.y,
-      this.position.x - vPoint.x
-    ) + Math.PI/2;
+    let tangent = vPoint.clone().sub(this.position.clone());
+    let atan = Math.atan2(-tangent.y, -tangent.x);
+    this.setFacing(atan + Math.PI/2, true);
   }
-
-
 
   getXPosition(){
     if(this.template.RootNode.HasField('XPosition')){
@@ -654,21 +719,22 @@ class ModuleObject {
 
 
 
-
+  computeBoundingBox(){
+    if(this.model){
+      this.model.box = this.box.setFromObject(this.model);
+    }
+  }
 
 
 
 
 
   setListening(bListenting = false){
-    this.isListening = bListenting ? true : false;
+    this.isListening = bListenting ? true : false;;
   }
 
-  setListeningPattern(sPattern = '', nNumber = 0){
-    this.listening = {
-      pattern: sPattern,
-      number: nNumber
-    }
+  setListeningPattern(sString = '', iNum = 0){
+    this.listeningPatterns[sString] = iNum;
   }
 
   getIsListening(){
@@ -704,8 +770,140 @@ class ModuleObject {
 
   }
 
+  getFactionID(){
+    return this.faction;
+  }
+
+  isHostile(target = undefined){
+
+    // -> 0-10 means oSource is hostile to oTarget
+    // -> 11-89 means oSource is neutral to oTarget
+    // -> 90-100 means oSource is friendly to oTarget
+
+    if(!(target instanceof ModuleObject))
+      return false;
+
+    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
+    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
+
+    if(targetFaction.label.toLowerCase() == 'player'){
+      return targetFaction[faction.label.toLowerCase()] <= 10;
+    }else{
+      return faction[targetFaction.label.toLowerCase()] <= 10;
+    }
+
+  }
+
+  isNeutral(target = undefined){
+
+    // -> 0-10 means oSource is hostile to oTarget
+    // -> 11-89 means oSource is neutral to oTarget
+    // -> 90-100 means oSource is friendly to oTarget
+
+    if(!(target instanceof ModuleObject))
+      return false;
+
+    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
+    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
+
+    if(targetFaction.label.toLowerCase() == 'player'){
+      return targetFaction[faction.label.toLowerCase()] >= 11;
+    }else{
+      return faction[targetFaction.label.toLowerCase()] <= 89;
+    }
+
+  }
+
+  isFriendly(target = undefined){
+
+    // -> 0-10 means oSource is hostile to oTarget
+    // -> 11-89 means oSource is neutral to oTarget
+    // -> 90-100 means oSource is friendly to oTarget
+
+    if(!(target instanceof ModuleObject))
+      return false;
+
+    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
+    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
+
+    if(targetFaction.label.toLowerCase() == 'player'){
+      return targetFaction[faction.label.toLowerCase()] >= 90;
+    }else{
+      return faction[targetFaction.label.toLowerCase()] >= 90;
+    }
+
+  }
+
+  getReputation(target){
+    // -> 0-10 means oSource is hostile to oTarget
+    // -> 11-89 means oSource is neutral to oTarget
+    // -> 90-100 means oSource is friendly to oTarget
+    if(!(target instanceof ModuleObject))
+      return false;
+
+    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
+    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
+
+    if(targetFaction.label.toLowerCase() == 'player'){
+      return targetFaction[faction.label.toLowerCase()];
+    }else{
+      return faction[targetFaction.label.toLowerCase()];
+    }
+  }
 
 
+  hasLineOfSight(oTarget = null, max_distance = 30){
+    
+    let position_a = this.position.clone();
+    let position_b = oTarget.position.clone();
+    position_a.z += 1;
+    position_b.z += 1;
+    let direction = position_b.clone().sub(position_a).normalize();
+    let distance = position_a.distanceTo(position_b);
+
+    Game.raycaster.ray.origin.copy(position_a);
+    Game.raycaster.ray.direction.copy(direction);
+    Game.raycaster.far = max_distance;
+
+    let aabbFaces = [];
+    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+
+    for(let j = 0, jl = this.rooms.length; j < jl; j++){
+      let room = Game.module.rooms[this.rooms[j]];
+      if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+        aabbFaces.push({
+          object: room, 
+          faces: room.walkmesh.faces
+        });
+      }
+    }
+
+    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+      let door = Game.module.area.doors[j];
+      if(door && door.walkmesh && !door.isOpen()){
+        aabbFaces.push({
+          object: door,
+          faces: door.walkmesh.faces
+        });
+      }
+    }
+
+    for(let i = 0, il = aabbFaces.length; i < il; i++){
+      let castableFaces = aabbFaces[i];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces);
+      if (intersects && intersects.length > 0 ) {
+        for(let j = 0; j < intersects.length; j++){
+          if(intersects[j].distance < distance){
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+
+  }
 
 
 
@@ -851,6 +1049,15 @@ class ModuleObject {
         }
       }
     }
+
+  }
+
+  Save(){
+    //TODO
+
+    let gff = new GFFObject();
+
+    return gff;
 
   }
 

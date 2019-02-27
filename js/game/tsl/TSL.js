@@ -11,16 +11,19 @@ class Game extends Engine {
   static Init(){
 
     Game.ModelLoader = new THREE.MDLLoader();
-
+    
     Game.Globals = {
       'Boolean': {},
       'Number': {},
-      'String': {}
+      'String': {},
+      'Location': {}
     };
     Game.models = [];
     Game.videoEffect = null;
     Game.activeGUIElement = undefined;
     Game.hoveredGUIElement = undefined;
+
+    Game.time = 0;
 
     Game.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -130,6 +133,7 @@ class Game extends Engine {
       doors: new THREE.Group(),
       placeables: new THREE.Group(),
       rooms: new THREE.Group(),
+      grass: new THREE.Group(),
       sounds: new THREE.Group(),
       triggers: new THREE.Group(),
       waypoints: new THREE.Group(),
@@ -137,12 +141,14 @@ class Game extends Engine {
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
       emitters: new THREE.Group(),
-      stunt: new THREE.Group()
+      stunt: new THREE.Group(),
+      weather_effects: new THREE.Group(),
     };
 
-    Game.grassGroup = new THREE.Group();
+    Game.weather_effects = [];
 
     Game.scene.add(Game.group.rooms);
+    Game.scene.add(Game.group.grass);
     Game.scene.add(Game.group.placeables);
     Game.scene.add(Game.group.doors);
     Game.scene.add(Game.group.creatures);
@@ -150,12 +156,15 @@ class Game extends Engine {
     Game.scene.add(Game.group.sounds);
     Game.scene.add(Game.group.triggers);
     Game.scene.add(Game.group.stunt);
+    Game.scene.add(Game.group.weather_effects);
 
     Game.scene.add(Game.group.lights);
-    //Game.scene.add(Game.group.light_helpers);
+    Game.scene.add(Game.group.light_helpers);
     Game.scene.add(Game.group.emitters);
 
     Game.scene.add(Game.group.party);
+
+    Game.group.light_helpers.visible = false;
 
     Game.octree = new THREE.Octree({
       // when undeferred = true, objects are inserted immediately
@@ -213,6 +222,7 @@ class Game extends Engine {
     Game.FadeOverlay = {
       fading: false,
       override: false,
+      holdForScript: false,
       length: 0,
       elapsed: 0,
       state: 0,
@@ -222,10 +232,6 @@ class Game extends Engine {
         FADE_OUT: 2
       },
       FadeOut: function(length = 0, r = 0, g = 0, b = 0){
-
-        if(Game.FadeOverlay.override){
-          length = r = g = b = 0;
-        }
 
         Game.FadeOverlay.material.opacity = 0;
         Game.FadeOverlay.material.visible = true;
@@ -238,8 +244,7 @@ class Game extends Engine {
 
         if(Game.FadeOverlay.state == Game.FadeOverlay.STATES.FADE_OUT){
 
-          if(Game.FadeOverlay.override){
-            Game.FadeOverlay.FadeOut(0, 0, 0, 0);
+          if(Game.FadeOverlay.holdForScript){
             return;
           }
 
@@ -253,7 +258,8 @@ class Game extends Engine {
         }
       },
       Update(delta = 0){
-        if(Game.FadeOverlay.state == Game.FadeOverlay.STATES.NONE || Game.FadeOverlay.override){
+
+        if(Game.FadeOverlay.state == Game.FadeOverlay.STATES.NONE || Game.FadeOverlay.holdForScript ){
           return;
         }
 
@@ -428,7 +434,10 @@ class Game extends Engine {
     }
     
     Game.raycaster.setFromCamera( Game.mouse, Game.camera );
-    let intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );
+    let intersects = [];
+    try{
+      intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );
+    }catch(e){}
 
     if(intersects.length){
       let intersection = intersects[0],
@@ -488,11 +497,38 @@ class Game extends Engine {
 
   static Start(){
 
+    Game.TutorialWindowTracker = [];
+
     Game.audioEngine = new AudioEngine();
     Game.initGUIAudio();
     LightManager.init();
 
     Planetary.Init();
+
+    Game.audioEmitter = new AudioEmitter({
+      engine: Game.audioEngine,
+      props: {
+        XPosition: 0,
+        YPosition: 0,
+        ZPosition: 0
+      },
+      template: {
+        sounds: [],
+        isActive: true,
+        isLooping: false,
+        isRandom: false,
+        isRandomPosition: false,
+        interval: 0,
+        intervalVariation: 0,
+        maxDistance: 100,
+        volume: 127,
+        positional: 0
+      },
+      onLoad: () => {
+      },
+      onError: () => {
+      }
+    });
 
     //AudioEngine.Unmute()
     Game.Mode = Game.MODES.MAINMENU;
@@ -553,10 +589,24 @@ class Game extends Engine {
         let menus = [
           'MainMenu',
           'LoadScreen',
+          'MenuContainer',
+          'MenuSaveLoad',
+          'CharGenClass',
+          'MainOptions',
+          'MenuOptions',
+          'MenuMap',
+          'MenuInventory',
+          'MenuEquipment',
+          'MenuCharacter',
+          'MenuMessages',
+          'MenuJournal',
+          'MenuPartySelection',
+          'MenuTop',
           'InGameOverlay',
           'InGameDialog',
+          'InGameBark',
+          'InGameConfirm',
           'InGameComputer',
-          'MenuContainer',
 
           /*'CharGenClass',
           'CharGenPortCust', //Character Portrait
@@ -668,7 +718,7 @@ class Game extends Engine {
   static LoadModule(name = '', waypoint = null){
     ModuleObject.COUNT = 0;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
-    Game.AlphaTest = 0.5;
+    Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);
     Game.audioEngine.stopBackgroundMusic();
     Game.audioEngine.Reset();
@@ -683,12 +733,20 @@ class Game extends Engine {
     Game.hovered = undefined;
     Game.hoveredObject = undefined;
 
+    Game.staticCameras = [];
+
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
 
     Game.InGameOverlay.Hide();
     Game.Mode = Game.MODES.LOADING;
     Game.collisionList = [];
+
+    //Remove all weather effects
+    while(Game.weather_effects.length){
+      Game.weather_effects[0].dispose();
+      Game.weather_effects.shift();
+    }
 
     //Cleanup texture cache ignoring GUI & LBL textures
     Object.keys(TextureLoader.textures).forEach( (key) => {
@@ -770,90 +828,59 @@ class Game extends Engine {
         Game.InGameOverlay.Hide();
         Game.MainMenu.Hide();
         Game.LoadScreen.Show();
-
+        Game.FadeOverlay.holdForScript = false;
         module.loadScene( (d) => {
-          module.initScripts();
-          //Game.scene_gui.background = null;
-          Game.scene.visible = true;
-          Game.LoadScreen.Hide();
-          Game.FadeOverlay.FadeOut(0, 0, 0, 0);
+          module.initScripts( () => {
+            //Game.scene_gui.background = null;
+            Game.scene.visible = true;
+            Game.LoadScreen.Hide();
+            Game.FadeOverlay.FadeOut(0, 0, 0, 0);
 
-          if(Game.module.area.MiniGame){
-            Game.Mode = Game.MODES.MINIGAME
-          }else{
-            Game.Mode = Game.MODES.INGAME;
-          }
-
-          console.log('loadScene', d);
-
-          Game.InGameDialog.audioEmitter = new AudioEmitter({
-            engine: Game.audioEngine,
-            channel: AudioEngine.CHANNEL.VO,
-            props: {
-              XPosition: 0,
-              YPosition: 0,
-              ZPosition: 0
-            },
-            template: {
-              sounds: [],
-              isActive: true,
-              isLooping: false,
-              isRandom: false,
-              isRandomPosition: false,
-              interval: 0,
-              intervalVariation: 0,
-              maxDistance: 50,
-              volume: 100,
-              positional: 0
-            },
-            onLoad: () => {
-            },
-            onError: () => {
-            }
-          });
-          Game.audioEngine.AddEmitter(Game.InGameDialog.audioEmitter);
-
-          process.nextTick( ()=> {
-            if(Game.module.area.scripts.OnEnter instanceof NWScript){
-              Game.module.area.scripts.OnEnter.enteringObject = Game.player;
-              Game.module.area.scripts.OnEnter.run(Game.module.area, 0, () => {
-                AudioEngine.Unmute();
-                //Game.InGameDialog.audioEmitter = undefined
-                Game.InGameOverlay.RecalculatePosition();
-                Game.InGameOverlay.Show();
-                setTimeout( () => {
-                  console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
-                  if(!Game.holdWorldFadeInForDialog)
-                    Game.FadeOverlay.FadeIn(1, 0, 0, 0);
-                  console.log('onEnter Completed', Game.module);
-
-                  //console.log('Running creature onSpawn scripts');
-                  for(let i = 0; i < Game.module.area.creatures.length; i++){
-                    if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                      if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
-                        try{
-                          //Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                        }catch(e){
-                          console.error(e);
-                        }
-                      }
-                    }
-                  }
-                }, 1000);
-
-              });
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
-              AudioEngine.Unmute();
+            if(Game.module.area.MiniGame){
+              Game.Mode = Game.MODES.MINIGAME
             }else{
+              Game.Mode = Game.MODES.INGAME;
+            }
+
+            console.log('loadScene', d);
+
+            Game.InGameDialog.audioEmitter = new AudioEmitter({
+              engine: Game.audioEngine,
+              channel: AudioEngine.CHANNEL.VO,
+              props: {
+                XPosition: 0,
+                YPosition: 0,
+                ZPosition: 0
+              },
+              template: {
+                sounds: [],
+                isActive: true,
+                isLooping: false,
+                isRandom: false,
+                isRandomPosition: false,
+                interval: 0,
+                intervalVariation: 0,
+                maxDistance: 50,
+                volume: 127,
+                positional: 0
+              },
+              onLoad: () => {
+              },
+              onError: () => {
+              }
+            });
+            Game.audioEngine.AddEmitter(Game.InGameDialog.audioEmitter);
+
+            process.nextTick( ()=> {
+            
+              Game.isLoadingSave = false;
+
               if(Game.module.area.MiniGame){
                 Game.Mode = Game.MODES.MINIGAME
               }else{
                 Game.Mode = Game.MODES.INGAME;
               }
+              
               AudioEngine.Unmute();
               //Game.InGameDialog.audioEmitter = undefined
               Game.InGameOverlay.RecalculatePosition();
@@ -869,7 +896,7 @@ class Game extends Engine {
                   if(Game.module.area.creatures[i] instanceof ModuleCreature){
                     if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
                       try{
-                        //Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
+                        Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
                       }catch(e){
                         console.error(e);
                       }
@@ -877,16 +904,15 @@ class Game extends Engine {
                   }
                 }
               }, 1000);
-            }
-            Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
-          });
+              
+              Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
+            });
 
-          //Disable lighting because it no worky right
-          //LightManager.clearLights();
+          });
 
         })
 
-        console.log(module);
+        //console.log(module);
 
         Game.LoadScreen.setProgress(0);
 
@@ -921,7 +947,7 @@ class Game extends Engine {
     }
     
     let camHeight = new THREE.Vector3(0, 0, (1+cameraHeight)-offsetHeight);
-    let distance = camStyle.distance;
+    let distance = camStyle.distance * Game.CameraDebugZoom;
     
     let camPosition = followee.getModel().position.clone().add(new THREE.Vector3(distance*Math.cos(Game.followerCamera.facing), distance*Math.sin(Game.followerCamera.facing), 1.8));
     
@@ -1047,6 +1073,19 @@ class Game extends Engine {
 
       if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && Game.State != Game.STATES.PAUSED && !Game.MenuActive)){
 
+        Game.updateTime(delta);
+        CombatEngine.Update(delta);
+
+        //PartyMember cleanup
+        for(let i = 0; i < Game.group.party.children.length; i++){
+          let pm = Game.group.party.children[i].moduleObject;
+          if(Game.player != pm){
+            if(PartyManager.party.indexOf(pm) == -1){
+              pm.destroy();
+            }
+          }
+        }
+
         let walkCount = Game.walkmeshList.length;
         let roomCount = Game.group.rooms.children.length;
 
@@ -1073,6 +1112,9 @@ class Game extends Engine {
           }
         }
 
+        Game.module.grassMaterial.uniforms.time.value += delta;
+        Game.module.grassMaterial.uniforms.playerPosition.value = Game.player.position;
+
         Game.UpdateVisibleRooms();
 
         //Check triggers
@@ -1097,11 +1139,13 @@ class Game extends Engine {
         }
 
         for(let i = 0; i < animTexCount; i++){
-          AnimatedTextures[i].Update(100 * delta);
+          AnimatedTextures[i].Update(delta);
         }
 
         if(Game.Mode == Game.MODES.MINIGAME){
-
+          for(let i = 0; i < Game.module.area.MiniGame.Enemies.length; i++){
+            Game.module.area.MiniGame.Enemies[i].update(delta);
+          }
         }
 
         for(let i = 0; i < Game.walkmeshList.length; i++){
@@ -1119,14 +1163,38 @@ class Game extends Engine {
           Game.MenuGalaxyMap.Update(delta);
         }*/
 
+
+        for(let i = 0; i < Game.weather_effects.length; i++){
+          let emitter = Game.weather_effects[i].emitters[0];
+          Game.weather_effects[i].position.copy(
+            Game.getCurrentPlayer().position.clone().add(
+              new THREE.Vector3(0,0,3)
+            )
+          );
+          //emitter.velocity.value = emitter.node.emitterOptions.velocity.value.clone().sub(Game.getCurrentPlayer().AxisFront);
+          //emitter.updateFlags['velocity'] = true;
+          Game.weather_effects[i].update(delta);
+        }             
+
         Game.UpdateFollowerCamera(delta);
 
+      }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){
+        Game.controls.UpdatePlayerControls(delta);
+        Game.UpdateFollowerCamera(delta);
+      }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
+        if(Game.MenuPartySelection.bVisible){
+          Game.MenuPartySelection.Update(delta);
+        } 
       }else if(Game.Mode == Game.MODES.MAINMENU){
-        //if(Game.CharGenClass.bVisible){
-        //  Game.CharGenClass.Update(delta);
-        //}else{
+        if(Game.CharGenClass.bVisible){
+          Game.CharGenClass.Update(delta);
+        /*}else if(Game.CharGenMain.bVisible){
+          Game.CharGenMain.Update(delta);
+        }else if(Game.CharGenPortCust.bVisible){
+          Game.CharGenPortCust.Update(delta);*/
+        }else{
           Game.MainMenu.Update(delta);
-        //}
+        }
       }/*else if(Game.MenuCharacter.bVisible){
         Game.MenuCharacter.Update(delta);
       }else if(Game.MenuGalaxyMap.bVisible){
@@ -1315,12 +1383,21 @@ class Game extends Engine {
             }else if(obj.moduleObject instanceof ModuleCreature){
 
               if(obj.moduleObject.isHostile(Game.getCurrentPlayer())){
-                if(canChangeCursor)
-                  CursorManager.setCursor('attack');
-                else
-                  CursorManager.setCursor('select');
+                if(!obj.moduleObject.isDead()){
+                  if(canChangeCursor)
+                    CursorManager.setCursor('attack');
+                  else
+                    CursorManager.setCursor('select');
 
-                CursorManager.setReticle('reticleH');
+                  CursorManager.setReticle('reticleH');
+                }else{
+                  if(canChangeCursor)
+                    CursorManager.setCursor('use');
+                  else
+                    CursorManager.setCursor('select');
+    
+                  CursorManager.setReticle('reticleF');
+                }
               }else{
                 if(canChangeCursor)
                   CursorManager.setCursor('talk');
@@ -1412,6 +1489,36 @@ class Game extends Engine {
     }catch(e){
 
     }
+  }
+
+  static getNPCResRefById(nId){
+    switch(nId){
+      case 0:
+        return 'p_atton';
+      case 1:
+        return 'p_baodur';
+      case 2:
+        return 'p_mand';
+      case 3:
+        return 'p_g0t0';
+      case 4:
+        return 'p_handmaiden';
+      case 5:
+        return 'p_hk47';
+      case 6:
+        return 'p_kreia';
+      case 7:
+        return 'p_mira';
+      case 8:
+        return 'p_t3m4';
+      case 9:
+        return 'p_visas';
+      case 10:
+        return 'p_hanharr';
+      case 11:
+        return 'p_disciple';
+    }
+    return '';
   }
 
 }

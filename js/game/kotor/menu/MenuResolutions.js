@@ -23,15 +23,15 @@ class MenuResolutions extends GameMenu {
         this.BTN_CANCEL = this.getControlByName('BTN_CANCEL');
         this.BTN_OK = this.getControlByName('BTN_OK');
 
-        this.BTN_CANCEL.onClick = (e) => {
+        this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
-        }
+        });
 
-        this.BTN_OK.onClick = (e) => {
+        this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

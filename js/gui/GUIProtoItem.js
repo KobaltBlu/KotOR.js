@@ -10,6 +10,7 @@ class GUIProtoItem extends GUIControl{
   constructor(menu = null, control = null, parent = null, scale = false){
     
     super(menu, control, parent, scale);
+    this.zOffset = 2;
     this.list = null;
 
   }
@@ -37,7 +38,7 @@ class GUIProtoItem extends GUIControl{
     //let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
 
     let listIndex = this.list.children.indexOf(this);
-    console.log('List Index', listIndex);
+    //console.log('List Index', listIndex);
 
     let posX = -(this.list.extent.left - this.extent.left)/2;
 
@@ -68,7 +69,7 @@ class GUIProtoItem extends GUIControl{
 
     if(this.textGeometry){
       this.textGeometry.computeBoundingBox();
-      let tSize = this.textGeometry.boundingBox.getSize();
+      let tSize = this.textGeometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > cHeight){
         cHeight = tSize.y/2;
       }

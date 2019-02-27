@@ -25,52 +25,26 @@ class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     this.editor.$canvas.keydown( ( event ) => {
-      //console.log(event.which)
 
-      if ( event.which == 48 )
-        this.keys['0'].down = this.keys['0'].pressed = true;
-      if ( event.which == 49 )
-        this.keys['1'].down = this.keys['1'].pressed = true;
-      if ( event.which == 50 )
-        this.keys['2'].down = this.keys['2'].pressed = true;
-      if ( event.which == 51 )
-        this.keys['3'].down = this.keys['3'].pressed = true;
-      if ( event.which == 52 )
-        this.keys['4'].down = this.keys['4'].pressed = true;
-      if ( event.which == 53 )
-        this.keys['5'].down = this.keys['5'].pressed = true;
-      if ( event.which == 54 )
-        this.keys['6'].down = this.keys['6'].pressed = true;
-      if ( event.which == 55 )
-        this.keys['7'].down = this.keys['7'].pressed = true;
-      if ( event.which == 56 )
-        this.keys['8'].down = this.keys['8'].pressed = true;
-      if ( event.which == 57 )
-        this.keys['9'].down = this.keys['9'].pressed = true;
-
-
-      if ( event.which == 87 )
-        this.keys['w'].down = this.keys['w'].pressed = true;
-      if ( event.which == 65 )
-        this.keys['a'].down = this.keys['a'].pressed = true;
-      if ( event.which == 83 )
-        this.keys['s'].down = this.keys['s'].pressed = true;
-      if ( event.which == 68 )
-        this.keys['d'].down = this.keys['d'].pressed = true;
-      if ( event.which == 32 )
-        this.keys['space'].down = this.keys['space'].pressed = true;
-      if ( event.which == 16 )
-        this.keys['shift'].down = this.keys['shift'].pressed = true;
-      if ( event.which == 27 )
-        this.keys['escape'].down = this.keys['escape'].pressed = true;
-      if ( event.which == 70 )
-        this.keys['f'].down = this.keys['f'].pressed = true;
-      if ( event.which == 17 )
-        this.keys['ctrl'].down = this.keys['ctrl'].pressed = true;
-      if ( event.which == 107 )
-        this.keys['num-plus'].down = this.keys['num-plus'].pressed = true;
-      if ( event.which == 109 )
-        this.keys['num-minus'].down = this.keys['num-minus'].pressed = true;
+      if(event.which >= 48 && event.which <= 57){
+        this.keys[event.key].down = this.keys[event.key].pressed = true;
+      }else if(event.which >= 65 && event.which <= 90){
+        this.keys[event.key].down = this.keys[event.key].pressed = true;
+      }else {
+        if ( event.which == 32 )
+          this.keys['space'].down = this.keys['space'].pressed = true;
+        if ( event.which == 16 )
+          this.keys['shift'].down = this.keys['shift'].pressed = true;
+        if ( event.which == 27 )
+          this.keys['escape'].down = this.keys['escape'].pressed = true;
+        if ( event.which == 17 )
+          this.keys['ctrl'].down = this.keys['ctrl'].pressed = true;
+        if ( event.which == 107 )
+          this.keys['num-plus'].down = this.keys['num-plus'].pressed = true;
+        if ( event.which == 109 )
+          this.keys['num-minus'].down = this.keys['num-minus'].pressed = true;
+      }
+      
 
       if(Game.activeGUIElement instanceof GUIControl){
         if(typeof Game.activeGUIElement.onKeyDown === 'function'){
@@ -79,51 +53,25 @@ class IngameControls {
       }
     }).keyup( ( event ) => {
 
-      if ( event.which == 48 )
-        this.keys['0'].down = this.keys['0'].pressed = false;
-      if ( event.which == 49 )
-        this.keys['1'].down = this.keys['1'].pressed = false;
-      if ( event.which == 50 )
-        this.keys['2'].down = this.keys['2'].pressed = false;
-      if ( event.which == 51 )
-        this.keys['3'].down = this.keys['3'].pressed = false;
-      if ( event.which == 52 )
-        this.keys['4'].down = this.keys['4'].pressed = false;
-      if ( event.which == 53 )
-        this.keys['5'].down = this.keys['5'].pressed = false;
-      if ( event.which == 54 )
-        this.keys['6'].down = this.keys['6'].pressed = false;
-      if ( event.which == 55 )
-        this.keys['7'].down = this.keys['7'].pressed = false;
-      if ( event.which == 56 )
-        this.keys['8'].down = this.keys['8'].pressed = false;
-      if ( event.which == 57 )
-        this.keys['9'].down = this.keys['9'].pressed = false;
-
-
-      if ( event.which == 87 )
-        this.keys['w'].down = this.keys['w'].pressed = false;
-      if ( event.which == 65 )
-        this.keys['a'].down = this.keys['a'].pressed = false;
-      if ( event.which == 83 )
-        this.keys['s'].down = this.keys['s'].pressed = false;
-      if ( event.which == 68 )
-        this.keys['d'].down = this.keys['d'].pressed = false;
-      if ( event.which == 32 )
-        this.keys['space'].down = this.keys['space'].pressed = false;
-      if ( event.which == 16 )
-        this.keys['shift'].down = this.keys['shift'].pressed = false;
-      if ( event.which == 27 )
-        this.keys['escape'].down = this.keys['escape'].pressed = false;
-      if ( event.which == 70 )
-        this.keys['f'].down = this.keys['f'].pressed = false;
-      if ( event.which == 17 )
-        this.keys['ctrl'].down = this.keys['ctrl'].pressed = false;
-
-      if ( event.which == 107 )
-        this.keys['num-plus'].down = this.keys['num-plus'].pressed = false;
-      if ( event.which == 109 )
-        this.keys['num-minus'].down = this.keys['num-minus'].pressed = false;
+      if(event.which >= 48 && event.which <= 57){
+        console.log(event.key)
+        this.keys[event.key].down = this.keys[event.key].pressed = false;
+      }else if(event.which >= 65 && event.which <= 90){
+        this.keys[event.key].down = this.keys[event.key].pressed = false;
+      }else {
+        if ( event.which == 32 )
+          this.keys['space'].down = this.keys['space'].pressed = false;
+        if ( event.which == 16 )
+          this.keys['shift'].down = this.keys['shift'].pressed = false;
+        if ( event.which == 27 )
+          this.keys['escape'].down = this.keys['escape'].pressed = false;
+        if ( event.which == 17 )
+          this.keys['ctrl'].down = this.keys['ctrl'].pressed = false;
+        if ( event.which == 107 )
+          this.keys['num-plus'].down = this.keys['num-plus'].pressed = false;
+        if ( event.which == 109 )
+          this.keys['num-minus'].down = this.keys['num-minus'].pressed = false;
+      }
 
       if( (Game.Mode == Game.MODES.INGAME) && !this.keys['w'].down && !this.keys['s'].down && !Game.autoRun){
         let followee = PartyManager.party[0];
@@ -184,19 +132,20 @@ class IngameControls {
       for(let i = 0; i < uiControls.length; i++){
         if(!customEvent.propagate)
           break;
-        //console.log('uiControls', uiControls[i])
+        
         let control = uiControls[i];
         //if(control === Game.mouse.clickItem){
           if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
             clickCaptured = true;
+            console.log('uiControls', control)
             try{
-              if(typeof control.onMouseDown === 'function'){
+              if(control.processEventListener('mouseDown', [customEvent])){
                 Game.mouse.downItem = control;
                 customEvent.propagate = false;
-                control.onMouseDown(customEvent);
+                //control.onMouseDown(customEvent);
               }
 
-              if(typeof control.onClick === 'function'){
+              if(control.eventListeners['click'].length){
                 Game.mouse.clickItem = control;
                 customEvent.propagate = false;
               }
@@ -226,10 +175,11 @@ class IngameControls {
         if((Game.mouse.downItem instanceof GUIControl)){
           //if(typeof Game.mouse.downItem.widget.parent !== 'undefined'){
             if(!(Game.mouse.downItem.widget.parent instanceof THREE.Scene)){
-              if(typeof Game.mouse.downItem.onMouseMove === 'function'){
+              Game.mouse.downItem.processEventListener('mouseMove', [])
+              /*if(typeof Game.mouse.downItem.onMouseMove === 'function'){
                 //console.log('Dragging');
                 Game.mouse.downItem.onMouseMove();
-              }
+              }*/
             }
           //}
         }
@@ -281,7 +231,8 @@ class IngameControls {
           //if(typeof Game.mouse.downItem.widget.parent !== 'undefined'){
             if(!(Game.mouse.downItem.widget.parent instanceof THREE.Scene)){
               try{
-                Game.mouse.downItem.onMouseUp(customEvent);
+                Game.mouse.downItem.processEventListener('mouseUp', [customEvent]);
+                //Game.mouse.downItem.onMouseUp(customEvent);
                 //Game.guiAudioEmitter.PlaySound('gui_click');
                 console.log('MouseUp', Game.mouse.downItem, Game.mouse.downItem.name);
               }catch(e){
@@ -304,7 +255,8 @@ class IngameControls {
                 clickCaptured = true;
                 try{
                   Game.mouse.clickItem = null;
-                  control.onClick(customEvent);
+                  control.processEventListener('click', [customEvent]);
+                  //control.onClick(customEvent);
                   Game.activeGUIElement = control;
                   Game.guiAudioEmitter.PlaySound('gui_click');
                   console.log('MouseClick', control, control.name);
@@ -330,13 +282,14 @@ class IngameControls {
                   let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
                   let distanceThreshold = 10;
 
-                  if(Game.selectedObject == obj.moduleObject || distance <= distanceThreshold){
+                  if(Game.selectedObject == obj.moduleObject && distance <= distanceThreshold){
                     if(typeof obj.moduleObject.onClick === 'function'){
                       obj.moduleObject.onClick(Game.getCurrentPlayer());
                     }else{
                       let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
                       console.log(distance);
                       if(distance > 1.5){
+                        obj.moduleObject.clearAllActions();
                         Game.getCurrentPlayer().actionQueue.push({
                           object: obj.moduleObject, goal: 'ACTION_DIALOGOBJECT'
                         });
@@ -423,11 +376,32 @@ class IngameControls {
 
   InitKeys(){
     this.keys = {
-      'w': {down: false, pressed: false},
       'a': {down: false, pressed: false},
-      's': {down: false, pressed: false},
+      'b': {down: false, pressed: false},
+      'c': {down: false, pressed: false},
       'd': {down: false, pressed: false},
+      'e': {down: false, pressed: false},
       'f': {down: false, pressed: false},
+      'g': {down: false, pressed: false},
+      'h': {down: false, pressed: false},
+      'i': {down: false, pressed: false},
+      'j': {down: false, pressed: false},
+      'k': {down: false, pressed: false},
+      'l': {down: false, pressed: false},
+      'm': {down: false, pressed: false},
+      'n': {down: false, pressed: false},
+      'o': {down: false, pressed: false},
+      'p': {down: false, pressed: false},
+      'q': {down: false, pressed: false},
+      'r': {down: false, pressed: false},
+      's': {down: false, pressed: false},
+      't': {down: false, pressed: false},
+      'u': {down: false, pressed: false},
+      'v': {down: false, pressed: false},
+      'w': {down: false, pressed: false},
+      'x': {down: false, pressed: false},
+      'y': {down: false, pressed: false},
+      'z': {down: false, pressed: false},
       'space': {down: false, pressed: false},
       'shift': {down: false, pressed: false},
       'ctrl':  {down: false, pressed: false},
@@ -474,32 +448,34 @@ class IngameControls {
     if(Game.inDialog){
       if(Game.InGameDialog.state == 1){
         if(this.keys['1'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[0].onClick({stopPropagation: () => {}});
+          console.log('Tried to press 1');
+          try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
         }else if(this.keys['2'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[1].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['3'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[2].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['4'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[3].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['5'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[4].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['6'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[5].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['7'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[6].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['8'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[7].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }else if(this.keys['9'].pressed){
-          Game.InGameDialog.LB_REPLIES.children[8].onClick({stopPropagation: () => {}});
+          try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
         }
+
       }
 
       if(this.keys['escape'].pressed){
-        Game.InGameDialog.EndConversation(true)
+        Game.InGameDialog.EndConversation(true);
       }
 
     }else{
-      if(this.keys['escape'].pressed){
+      if(this.keys['escape'].pressed && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
         if(Game.MenuActive){
           Game.MenuActive = false;
           Game.InGameOverlay.Show();
@@ -509,12 +485,14 @@ class IngameControls {
         }
       }
   
-      if(this.keys['space'].pressed && !Game.MenuActive){
+      if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
         Game.State = ( Game.State == Game.STATES.PAUSED ? Game.STATES.RUNNING : Game.STATES.PAUSED );
       }
-    }
 
-    
+      if(this.keys['z'].pressed){
+        Game.getCurrentPlayer().flourish();
+      }
+    }
 
     //Set all pressed keys to false so they can only be triggered on this frame 
     //May need to move this to the end of the Game Loop
@@ -541,24 +519,24 @@ class IngameControls {
 
         if(followee.canMove()){
 
-          let moveSpeed = 5.4;//parseFloat(followee.getAppearance()['driveanimrun_pc']);
+          let moveSpeed = followee.walk ? followee.getWalkSpeed() : followee.getRunSpeed();
 
-          if(this.keys['w'].down || Game.autoRun){
-            followee.clearAllActions();
+          if((this.keys['w'].down || Game.autoRun) && !followee.isDead()){
+            followee.clearAllActions(true);
             followee.force = moveSpeed;
-            followee.getModel().rotation.z = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2);
-            followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
+            followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2), true);
+            //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
             followee.controlled = true;
             followee.invalidateCollision = true;
 
             followee.AxisFront.x = Math.cos(followee.model.rotation.z + Math.PI/2);// * Math.cos(0);
             followee.AxisFront.y = Math.sin(followee.model.rotation.z + Math.PI/2);// * Math.cos(0);
 
-          }else if(this.keys['s'].down){
-            followee.clearAllActions();
+          }else if(this.keys['s'].down && !followee.isDead()){
+            followee.clearAllActions(true);
             followee.force = moveSpeed;
-            followee.getModel().rotation.z = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2);
-            followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
+            followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2), true);
+            //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
             followee.controlled = true;
             followee.invalidateCollision = true;
 
@@ -570,32 +548,40 @@ class IngameControls {
             followee.force = 0;
           }
 
-          if(this.keys['s'].down || this.keys['w'].down){
+          if(this.keys['s'].down || this.keys['w'].down && !followee.isDead()){
             followee.animState = ModuleCreature.AnimState.RUNNING;
           }
 
-          if(this.keys['num-minus'].down){
+          if(this.keys['num-minus'].down && !followee.isDead()){
             followee.model.position.z -= 5 * delta;
           }
 
-          if(this.keys['num-plus'].down){
+          if(this.keys['num-plus'].down && !followee.isDead()){
             followee.model.position.z += 5 * delta;
           }
 
         }
 
         if(this.keys['a'].down && !Game.MenuActive){
-          Utility.NormalizeRadian(Game.followerCamera.facing += 2.5 * delta);
+          Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
           followee.invalidateCollision = true;
         }
     
         if(this.keys['d'].down && !Game.MenuActive){
-          Utility.NormalizeRadian(Game.followerCamera.facing -= 2.5 * delta);
+          Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
           followee.invalidateCollision = true;
         }
 
       }
 
+    }else if(Game.State == Game.STATES.PAUSED && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
+      if(this.keys['a'].down && !Game.MenuActive){
+        Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+      }
+  
+      if(this.keys['d'].down && !Game.MenuActive){
+        Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+      }
     }
   }
 
@@ -603,14 +589,14 @@ class IngameControls {
     switch(Game.module.area.MiniGame.Type){
       case 1: //SWOOPRACE
         if(Game.mouse.leftClick){
-          Game.module.area.MiniGame.Player.ChangeGear();
+          Game.module.area.MiniGame.Player.FireGun();
         }
         if(this.keys['a'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.position.x -= 50 * delta;
+          Game.module.area.MiniGame.Player.position.x += -Game.module.area.MiniGame.Player.accel_lateral_secs * delta;
         }
     
         if(this.keys['d'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.position.x += 50 * delta;
+          Game.module.area.MiniGame.Player.position.x += Game.module.area.MiniGame.Player.accel_lateral_secs * delta;
         }
 
         if(this.keys['space'].pressed){
@@ -619,19 +605,26 @@ class IngameControls {
 
       break;
       case 2: //TURRET
+
+        if(Game.mouse.leftClick || Mouse.MouseDown){
+          Game.module.area.MiniGame.Player.FireGun();
+        }
+
         if(this.keys['a'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.rotation.z = Utility.NormalizeRadian(Game.module.area.MiniGame.Player.rotation.z += 1 * delta);
+          Game.module.area.MiniGame.Player.Rotate('z', 1 * delta);
         }
     
         if(this.keys['d'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.rotation.z = Utility.NormalizeRadian(Game.module.area.MiniGame.Player.rotation.z -= 1 * delta);
+          Game.module.area.MiniGame.Player.Rotate('z', -1 * delta);
         }
 
-        if(Game.module.area.MiniGame.Player.rotation.z < -Math.PI/2)
-          Game.module.area.MiniGame.Player.rotation.z = -Math.PI/2;
-
-        if(Game.module.area.MiniGame.Player.rotation.z > Math.PI/2)
-          Game.module.area.MiniGame.Player.rotation.z = Math.PI/2;
+        if(this.keys['w'].down && !Game.MenuActive){
+          Game.module.area.MiniGame.Player.Rotate('x', 1 * delta);
+        }
+    
+        if(this.keys['s'].down && !Game.MenuActive){
+          Game.module.area.MiniGame.Player.Rotate('x', -1 * delta);
+        }
 
       break;
     }

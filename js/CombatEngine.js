@@ -11,8 +11,38 @@ class CombatEngine {
 
   }
 
+  static Update(delta = 0){
+
+    if(!CombatEngine.active){
+      CombatEngine.timer = 0;
+      return;
+    }
+
+    CombatEngine.timer += delta;
+
+    if(CombatEngine.timer >= 0 && CombatEngine.timer < (CombatEngine.roundLength/2)){
+      CombatEngine.roundType = CombatEngine.ROUNDTYPES.PLAYER;
+    }
+    
+    if(CombatEngine.timer >= (CombatEngine.roundLength/2) && CombatEngine.timer <= CombatEngine.roundLength){
+      CombatEngine.roundType = CombatEngine.ROUNDTYPES.CREATURE;
+    }
+
+    if(CombatEngine.timer >= CombatEngine.roundLength){
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        Game.module.area.creatures[i].onCombatRoundEnd();
+      }
+
+      for(let i = 0, len = PartyManager.party.length; i < len; i++){
+        PartyManager.party[i].onCombatRoundEnd();
+      }
+      CombatEngine.timer = 0;
+    }
+    
+  }
+
   static GetArmorClass(creature = null){
-    console.log(creature);
+    //console.log(creature);
     if(creature instanceof ModuleCreature){
       var atkToHit = CombatEngine.GetMod(creature.getDEX());
       return 10 + atkToHit;
@@ -32,8 +62,8 @@ class CombatEngine {
           rWeapon.dietoroll
 
           return {
-            num: parseInt(rWeapon.BaseItem.numdice),
-            type: 'd'+rWeapon.BaseItem.dietoroll
+            num: parseInt(rWeapon.getBaseItem().numdice),
+            type: 'd'+rWeapon.getBaseItem().dietoroll
           };
 
         }
@@ -57,7 +87,7 @@ class CombatEngine {
           if(claw3)
             claw = claw3;
 
-          let wProps = claw.gff.GetFieldByLabel('PropertiesList').GetChildStructs();
+          let wProps = claw.template.GetFieldByLabel('PropertiesList').GetChildStructs();
           for(let i =0; i < wProps.length; i++){
             let prop = wProps[i];
             let propName = prop.GetFieldByLabel('PropertyName');
@@ -117,7 +147,7 @@ class CombatEngine {
         break;
       }
     }
-    console.log('CombatEngine', 'Rolled a '+type+' '+num+' times for a total of '+total);
+    //console.log('CombatEngine', 'Rolled a '+type+' '+num+' times for a total of '+total);
     return total + mod;
   }
 
@@ -126,4 +156,16 @@ class CombatEngine {
   }
 
 }
+
+CombatEngine.active = true;
+CombatEngine.timer = 0;
+CombatEngine.roundLength = 3;
+CombatEngine.roundType = 0;
+
+CombatEngine.ROUNDTYPES = {
+  NONE: 0,
+  PLAYER: 1,
+  CREATURE: 2
+};
+
 module.exports = CombatEngine;

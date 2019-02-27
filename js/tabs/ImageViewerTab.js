@@ -3,7 +3,7 @@
 
 class ImageViewerTab extends EditorTab {
   constructor(file){
-    super({
+    super(/*{
       toolbar: {
         items: [
           {name: 'File', items: [
@@ -22,11 +22,11 @@ class ImageViewerTab extends EditorTab {
           ]}
         ]
       }
-    });
+    }*/);
 
     $('a', this.$tab).text('Image Viewer');
 
-    this.$contentWrapper = $('<div style="position: absolute; top: 50px; left: 0; right: 0; bottom: 0; overflow: scroll;" />');
+    this.$contentWrapper = $('<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: scroll;" />');
 
     this.$canvas = $('<canvas class="checkerboard" style="width: 512px; height: 512px;" />');
     this.canvas = this.$canvas[0];
@@ -66,7 +66,35 @@ class ImageViewerTab extends EditorTab {
     this.image = null;
     this.file = null;
 
-    console.log(file);
+    if(file instanceof EditorFile){
+
+      file.readFile( (buffer) => {
+        switch(file.ext){
+          case 'tga':
+            this.file = file.getLocalPath();
+            this.filename = file.resref + '.tga';
+            this.image = new TGAObject({file: buffer, filename: file.resref+'.tga' });
+            this.$tabName.text(file.getFilename());
+          break;
+          case 'tpc':
+            this.file = file.getLocalPath();
+            this.filename = file.resref + '.tpc';
+            this.image = new TPCObject({file: buffer, filename: file.resref+'.tpc' });
+            this.$tabName.text(file.getFilename());
+          break;
+        }
+
+        this.image.getPixelData( (pixelData) => {
+          this.SetPixelData(pixelData);
+        });
+      });
+
+    }
+
+
+    
+
+    /*console.log(file);
 
     let info = Utility.filePathInfo(file);
 
@@ -135,16 +163,13 @@ class ImageViewerTab extends EditorTab {
         break;
       }
 
-    }
-
-    this.fileType = info.file.ext;
-    this.location = info.location;
+    }*/
 
   }
 
-  FlipY(pixelData = null){
+  static FlipY(pixelData = null, width = 1, height = 1){
     let offset = 0;
-    let stride = this.width * 4;
+    let stride = width * 4;
 
     if(pixelData == null)
       pixelData = this.data;
@@ -158,32 +183,42 @@ class ImageViewerTab extends EditorTab {
 
   }
 
-  FlipX(pixelData = null){
-    let offset = 0;
-    let stride = this.width * 4;
+  static FlipX(pixelData = null, width = 1, height = 1){
 
     if(pixelData == null)
       pixelData = this.data;
 
     let unFlipped = Uint8Array.from(pixelData);
 
-    for (var y = 0; y <= this.height; y++) {
-      let xStride = (this.width * 4) * y;
+    for (let i = 0; i < pixelData.length; i++) {
+      pixelData[i] = (unFlipped[i - 2 * (i % width) + width - 1]);
+    }
+
+    /*let offset = 0;
+    let stride = width * 4;
+
+    if(pixelData == null)
+      pixelData = this.data;
+
+    let unFlipped = Uint8Array.from(pixelData);
+
+    for (var y = 0; y <= height; y++) {
+      let xStride = (width * 4) * y;
       let xStrideEnd = xStride * 2;
 
       if(xStrideEnd == 0)
-        xStrideEnd = (this.width * 4);
+        xStrideEnd = (width * 4);
 
-      for(let x = this.width * 4; x >= 0; x -= 4){
+      for(let x = width * 4; x >= 0; x -= 4){
         pixelData.set(unFlipped.slice(xStrideEnd - x, pos + 4), x + xStride);
       }
-    }
+    }*/
 
   }
 
-  PixelDataToRGBA(pixelData){
+  static PixelDataToRGBA(pixelData, width = 1, height = 1){
     let data = new Uint8Array(pixelData.length);
-    let n = 4 * this.width * this.height;
+    let n = 4 * width * height;
     let s = 0, d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
@@ -191,9 +226,23 @@ class ImageViewerTab extends EditorTab {
       data[d++] = pixelData[s++];
       data[d++] = pixelData[s++];
     }
+    return data;
   }
 
-  BGRAtoRGBA(pixelData){
+  static RGBToRGBA(pixelData, width = 1, height = 1){
+    let data = new Uint8Array(4 * width * height);
+    let n = 4 * width * height;
+    let s = 0, d = 0;
+    while (d < n) {
+      data[d++] = pixelData[s++];
+      data[d++] = pixelData[s++];
+      data[d++] = pixelData[s++];
+      data[d++] = 255;
+    }
+    return data;
+  }
+
+  static BGRAtoRGBA(pixelData){
     for (var i = 0; i < pixelData.length; i += 4) {
       pixelData[i    ] = pixelData[i + 2]; // red
       pixelData[i + 1] = pixelData[i + 1]; // green
@@ -202,7 +251,7 @@ class ImageViewerTab extends EditorTab {
     }
   }
 
-  TGAGrayFix(pixelData){
+  static TGAGrayFix(pixelData){
     let fixed = new Uint8Array(pixelData.length * 4);
     for (var i = 0; i < pixelData.length; i++) {
 
@@ -214,9 +263,10 @@ class ImageViewerTab extends EditorTab {
       fixed[offset + 2] = color; // blue
       fixed[offset + 3] = 255; // alpha
     }
+    return fixed;
   }
 
-  TGAColorFix(pixelData){
+  static TGAColorFix(pixelData){
     let fixed = Uint8Array.from(pixelData);
     for (let i = 0; i < pixelData.length; i += 4) {
       fixed[i + 2] = pixelData[i    ]; // red
@@ -227,7 +277,7 @@ class ImageViewerTab extends EditorTab {
     return fixed;
   }
 
-  PreviewAlphaFix(pixelData){
+  static PreviewAlphaFix(pixelData){
     for (var i = 0; i < pixelData.length; i += 4){
       pixelData[i + 3] = 255;
     }
@@ -264,42 +314,40 @@ class ImageViewerTab extends EditorTab {
     if(this.image instanceof TPCObject){
 
       if(this.bitsPerPixel == 24)
-        this.workingData = this.PixelDataToRGBA(this.workingData);
+        this.workingData = ImageViewerTab.PixelDataToRGBA(this.workingData, this.width, this.height);
 
       if(this.bitsPerPixel == 8)
-        this.workingData = this.TGAGrayFix(this.workingData);
+        this.workingData = ImageViewerTab.TGAGrayFix(this.workingData);
 
       //FlipY
-      this.FlipY(this.workingData);
+      ImageViewerTab.FlipY(this.workingData, this.width, this.height);
 
     }
 
-    //HTML Canvas requires 32bpp pixel data so we will need to add an alpha channel
-    //if we are working with 24bpp pixeldata
-    /*if(this.bitsPerPixel == 24)
-      this.workingData = this.PixelDataToRGBA(this.data);*/
-
     if(this.image instanceof TGAObject){
+      
       switch(this.bitsPerPixel){
         case 32:
-          this.workingData = this.TGAColorFix(this.workingData);
+          this.workingData = ImageViewerTab.TGAColorFix(this.workingData);
         break;
         case 24:
-          this.workingData = this.TGAColorFix(this.workingData);
+          //HTML Canvas requires 32bpp pixel data so we will need to add an alpha channel
+          this.workingData = ImageViewerTab.RGBToRGBA(this.workingData, this.width, this.height);
+          this.workingData = ImageViewerTab.TGAColorFix(this.workingData);
         break;
         case 8:
-          this.workingData = this.TGAGrayFix(this.workingData);
+          this.workingData = ImageViewerTab.TGAGrayFix(this.workingData);
         break;
       }
 
-      this.FlipX(this.workingData);
+      ImageViewerTab.FlipY(this.workingData, this.width, this.height);
 
     }
 
     //Set the preview image to opaque
     //this.PreviewAlphaFix(this.workingData);
 
-    data.set(this.workingData);
+    imageData.data.set(this.workingData);
 
     this.ctx.putImageData(imageData, 0, 0);
 
@@ -313,7 +361,87 @@ class ImageViewerTab extends EditorTab {
 
   }
 
-  SaveFileDialog(){
+  export( onComplete = null ){
+
+    if(!this.file){
+      this.exportAs( onComplete );
+      return;
+    }
+
+    let writer = new BinaryWriter();
+
+    writer.WriteByte(0);
+    writer.WriteByte(0);
+    writer.WriteByte(2);
+    writer.WriteByte(0);
+    writer.WriteUInt32(0);
+    writer.WriteUInt32(0);
+    writer.WriteUInt16(this.width);
+    writer.WriteUInt16(this.height);
+    writer.WriteByte(this.bitsPerPixel);
+    writer.WriteByte(0);
+
+    let pixels = this.data;
+
+    //If we are exporting data from a TPCObject we will need to invert the
+    //pixels before we write them. (BGRA -> RGBA)
+    if(this.image instanceof TPCObject){
+      pixels = new Uint8Array(this.data.length);
+      for (var i = 0; i < this.data.length; i += 4) {
+        pixels[i]     = this.data[i + 2];     // red
+        pixels[i + 1] = this.data[i + 1]; // green
+        pixels[i + 2] = this.data[i]; // blue
+        pixels[i + 3] = this.data[i + 3]; // alpha
+      }
+
+      //FLIP Y
+      ImageViewerTab.FlipY(pixels, this.width, this.height);
+    }
+
+    try{
+      writer.WriteBytes(pixels);
+    }catch(e){
+      console.log(e);
+    }
+
+    fs.writeFile(this.file, writer.buffer, (err) => {
+      if (err) {
+        return console.error(err);
+      }
+
+      if(typeof onComplete === 'function')
+        onComplete(err);
+
+      console.log('Image Saved');//, Object.keys(IMAGE_TYPE)[type]);
+    });
+
+  }
+
+  exportAs( onComplete = null ){
+
+    let path = dialog.showSaveDialog({
+      title: 'Export Image',
+      defaultPath: this.filename,
+      filters: [
+        {name: 'TGA', extensions: ['tga']}
+    ]});
+
+    if(typeof path != 'undefined' && path != null){
+      this.file = path;
+      this.export(onComplete);
+    }else{
+      console.warning('TGA export aborted');
+      if(typeof onComplete === 'function')
+        onComplete();
+    }
+
+  }
+
+  Save(){
+    this.export();
+  }
+
+  /*SaveFileDialog(){
     let path = dialog.showSaveDialog({
       title: 'Export Image',
       defaultPath: this.file,
@@ -339,60 +467,19 @@ class ImageViewerTab extends EditorTab {
       if(path.length)
         this.OpenFile(path[0]);
     }
-  }
+  }*/
 
-  Export(path = null, type = IMAGE_TYPE.TGA){
+  /*Export(path = null, type = IMAGE_TYPE.TGA){
     if(path != null){
       if(type == IMAGE_TYPE.TGA){
-        let writer = new BinaryWriter();
-
-        writer.WriteByte(0);
-        writer.WriteByte(0);
-        writer.WriteByte(2);
-        writer.WriteByte(0);
-        writer.WriteUInt32(0);
-        writer.WriteUInt32(0);
-        writer.WriteUInt16(this.width);
-        writer.WriteUInt16(this.height);
-        writer.WriteByte(this.bitsPerPixel);
-        writer.WriteByte(0);
-
-        let pixels = this.data;
-
-        //If we are exporting data from a TPCObject we will need to invert the
-        //pixels before we write them. (BGRA -> RGBA)
-        if(this.image instanceof TPCObject){
-          pixels = new Uint8Array(this.data.length);
-          for (var i = 0; i < this.data.length; i += 4) {
-            pixels[i]     = this.data[i + 2];     // red
-            pixels[i + 1] = this.data[i + 1]; // green
-            pixels[i + 2] = this.data[i]; // blue
-            pixels[i + 3] = this.data[i + 3]; // alpha
-          }
-
-          //FLIP Y
-          this.FlipY(pixels)
-        }
-
-        try{
-          writer.WriteBytes(pixels);
-        }catch(e){
-          console.log(e);
-        }
-
-        fs.writeFile(path, writer.buffer, (err) => {
-          if (err) {
-           return console.error(err);
-          }
-          console.log('Image Saved', Object.keys(IMAGE_TYPE)[type]);
-        });
+        
       }
 
     }else{
       alert('Output path missing: Failed to save image.');
     }
 
-  }
+  }*/
 
   ShowTXI(){
 

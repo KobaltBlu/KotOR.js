@@ -45,66 +45,66 @@ class MenuEquipment extends GameMenu {
         this.LBL_INV_WEAP_R =   this.getControlByName('LBL_INV_WEAP_R');
 
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
-        this.BTN_EXIT.onClick = (e) => {
+        this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.InGameOverlay.Show();
-        }
+        });
 
-        this.BTN_INV_IMPLANT.onClick = (e) => {
+        this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.IMPLANT;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_HEAD.onClick = (e) => {
+        this.BTN_INV_HEAD.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.HEAD;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_HANDS.onClick = (e) => {
+        this.BTN_INV_HANDS.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.ARMS;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_ARM_L.onClick = (e) => {
+        this.BTN_INV_ARM_L.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.LEFTARMBAND;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_BODY.onClick = (e) => {
+        this.BTN_INV_BODY.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.ARMOR;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_ARM_R.onClick = (e) => {
+        this.BTN_INV_ARM_R.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.RIGHTARMBAND;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_WEAP_L.onClick = (e) => {
+        this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.LEFTHAND;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_BELT.onClick = (e) => {
+        this.BTN_INV_BELT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.BELT;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_INV_WEAP_R.onClick = (e) => {
+        this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.RIGHTHAND;
           this.UpdateList();
-        }
+        });
 
-        this.BTN_EQUIP.onClick = (e) => {
+        this.BTN_EQUIP.addEventListener('click', (e) => {
           e.stopPropagation();
           if(this.selectedItem instanceof ModuleItem){
             //console.log('selectedItem', this.selectedItem, this.slot, );
@@ -115,7 +115,7 @@ class MenuEquipment extends GameMenu {
             this.UpdateSelected(null);
             this.UpdateSlotIcons();
           }
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -134,9 +134,11 @@ class MenuEquipment extends GameMenu {
     if(this.slot){
       let inv = InventoryManager.getInventory(this.slot, currentPC);
       for(let i = 0; i < inv.length; i++){
-        this.LB_ITEMS.addItem(inv[i], null, (control, type) => {
+        this.LB_ITEMS.addItem(inv[i], () => {
+          this.UpdateSelected(inv[i]);
+        });/*, null, (control, type) => {
           this.ListItemBuilder(inv[i], control, type);
-        });
+        });*/
       }
 
       TextureLoader.LoadQueue();
@@ -147,25 +149,27 @@ class MenuEquipment extends GameMenu {
     control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
       item.getName()
     );
-    let _ctrl2 = new GUIProtoItem(this, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
-    _ctrl2.extent.width -= 52;
-    _ctrl2.extent.left -= 46;
-    _ctrl2.setList( this.LB_ITEMS );
-    this.LB_ITEMS.children.push(_ctrl2);
+    let ctrl = new GUIProtoItem(this, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
+
+    ctrl.extent.width -= 52;
+    ctrl.extent.left -= 46;
+    ctrl.setList( this.LB_ITEMS );
+    this.LB_ITEMS.children.push(ctrl);
     let idx2 = this.LB_ITEMS.itemGroup.children.length;
-    let item2 = _ctrl2.createControl();
+    let item2 = ctrl.createControl();
 
     let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
     iconMaterial.transparent = true;
     let iconSprite = new THREE.Sprite( iconMaterial );
-    //console.log(item.getIcon());
+     
     TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
     
     item2.spriteGroup = new THREE.Group();
-    item2.spriteGroup.position.x = -(_ctrl2.extent.width/2)-(52/2); //HACK
+    item2.spriteGroup.position.x = -(ctrl.extent.width/2)-(52/2); //HACK
     item2.spriteGroup.position.y += 1;
     iconSprite.scale.x = 48;
     iconSprite.scale.y = 48;
+    iconSprite.position.z = 1;
 
     for(let i = 0; i < 7; i++){
       let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
@@ -182,6 +186,7 @@ class MenuEquipment extends GameMenu {
         hexSprite.visible = false;
       }
       hexSprite.scale.x = hexSprite.scale.y = 64;
+      hexSprite.position.z = 1;
       item2.spriteGroup.add(hexSprite);
     }
 
@@ -189,10 +194,10 @@ class MenuEquipment extends GameMenu {
     item2.spriteGroup.add(iconSprite);
     this.LB_ITEMS.itemGroup.add(item2);
 
-    _ctrl2.onClick = (e) => {
+    ctrl.addEventListener('click', (e) => {
       e.stopPropagation();
       this.UpdateSelected(item);
-    };
+    });
   }
 
   UpdateSelected(item = null){

@@ -178,18 +178,10 @@ class UTIObject {
     else if(modelVariantNode != null)
       variant = modelVariantNode.Value;
 
-    let file = 'erf.swpc_tex_gui://i'+baseClass+'_'+Utility.PadInt(variant, 3)+'.tpc';
-
-    let loader = new FileLoader({
-      file: file,
-      onLoad: (buffer) => {
-
-        let icon = new TPCObject({file: buffer});
-        if(typeof onLoad == 'function')
-          onLoad(icon);
-        
-      }
-    })
+    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', 'i'+baseClass+'_'+Utility.PadInt(variant, 3), (image) => {
+      if(typeof onLoad == 'function')
+        onLoad(image);
+    });
   }
 
 }

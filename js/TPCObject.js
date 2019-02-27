@@ -53,10 +53,9 @@ class TPCObject {
         let txiReader = new BinaryReader(Buffer.from( this.file.buffer, _txiOffset, _txiDataLength ));
         let txiData = '';
         let ch;
-        try {
-          while ((ch = txiReader.ReadChar()).charCodeAt() != 0)
-            txiData = txiData + ch;
-        }catch(e) { console.error(e); }
+        
+        while ((ch = txiReader.ReadChar() || '\0').charCodeAt() != 0)
+          txiData = txiData + ch;
 
         this.txi = txiData;
 
@@ -145,7 +144,7 @@ class TPCObject {
   		let height = dds.height;
       let dataSize = this.header.dataSize;
       let dataLength = 0;
-      let byteArray = new Buffer(0);
+      let byteArray = Buffer.alloc(0);
 
   		for ( let i = 0; i < dds.mipmapCount; i++ ) {
 
@@ -306,6 +305,64 @@ class TPCObject {
 
     return pixelData;
 
+  }
+
+  //Convert the TPC into a THREE.CompressedTexture for use in the engine
+  toCompressedTexture(){
+    let images = [];
+    let texture = new THREE.CompressedTexture();
+    texture.txi = null;
+
+    texture.clone = function () {
+
+      let cloned = new this.constructor().copy( this );
+      cloned.format = this.format;
+      cloned.needsUpdate = true;
+      cloned.bumpMapType = this.bumpMapType;
+      cloned.header = this.header;
+      cloned.txi = this.txi;
+      return cloned;
+    
+    }
+
+    let texDatas = this.getDDS( true );
+
+    //console.log('TPCLoader', this.filename, texDatas);
+
+    texture.name = this.filename;
+    if ( texDatas.isCubemap ) {
+      let faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+      for ( let f = 0; f < faces; f ++ ) {
+        images[ f ] = { mipmaps : [] };
+        for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
+          images[ f ].mipmaps.push( texDatas.mipmaps[ f * texDatas.mipmapCount + i ] );
+          images[ f ].format = THREE.CubeReflectionMapping;//texDatas.format;
+          images[ f ].width = texDatas.width;
+          images[ f ].height = texDatas.height;
+
+          texture.mipmaps = images[ f ].mipmaps;
+        }
+      }
+      texture.image = images;
+      texture.image.width = texDatas.width;
+      texture.image.height = texDatas.height;
+    } else {
+      texture.image.width = texDatas.width;
+      texture.image.height = texDatas.height;
+      texture.mipmaps = texDatas.mipmaps;
+    }
+
+    if ( texDatas.mipmapCount === 1 ) {
+      texture.minFilter = THREE.LinearFilter;
+    }
+
+    texture.format = texDatas.format;
+    texture.needsUpdate = true;
+    texture.bumpMapType = 'NORMAL';
+
+    texture.txi = new TXI( this.getTXIData() );
+    texture.header = this.header;
+    return texture;
   }
 
 }

@@ -172,6 +172,15 @@ ul.topnav li.icon {display: none;}
   background-color: #3578BD;
 }
 
+.dropdown-menu.side {
+    margin-left: 100px;
+    margin-top: -25px;
+}
+
+li.dropdown > a:hover + .dropdown-menu.side, li.dropdown > a + .dropdown-menu.side:hover {
+    display: block;
+}
+
 .navbar-nav {
 
 	background: #265c8c;
@@ -322,9 +331,13 @@ left: calc(50% - 24px);
     -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
     transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
     background: #133652;
-    border: 2px solid #2196F3;
+    background: linear-gradient(#133652 0%, #205784 100%);
+    /* border: 2px solid #2196F3; */
+    border: 2px solid #2a7ab9;
     color: #CCC;
-		border-radius:5px;
+    border-radius:5px;
+    margin-bottom: 5px;
+    box-shadow: 2px 2px 10px #1d1d1d;
 }
 
 select {
@@ -333,9 +346,14 @@ select {
   border: 2px solid #2196F3;
   padding: 5px;
   background: #133652;
-  /* margin: 5px; */
   outline-color: #2196F3;
+  background-image: linear-gradient(#133652 0%, #205784 100%);
+  border: 2px solid #2a7ab9;
+  outline-color: #2a7ab9;
   display: block;
+  margin-bottom: 5px;
+  box-shadow: 2px 2px 10px #1d1d1d;
+  width: 100%;
 }
 
 button[disabled], html input[disabled], textarea[disabled] {
@@ -348,19 +366,29 @@ fieldset {
     border: 2px solid #0C548E;
     padding: 5px;
     border-radius: 5px;
+    margin: 0 10px 10px 10px;
 }
 
 legend {
     color: #ccc;
     border-bottom: none;
+    margin-bottom: 0;
 }
-
 
 ul.tree {
     white-space: nowrap;
     list-style: none;
     padding-left: 10px;
     cursor: pointer;
+    display: inline-block;
+}
+
+.editor-3d-preview {
+    box-shadow: 0 0 50px inset rgba(0,0,0,.5);
+}
+
+div#editor-content {
+    border-left: 1px solid #464646;
 }
 
 .container {
@@ -810,7 +838,7 @@ opacity: initial;
 .navbar.navbar-sidebar-wizard {
     background: #464646;
     color: #CCC;
-		border-radius: 0px;
+	border-radius: 0px;
 }
 
 .navbar.navbar-sidebar-wizard li {
@@ -826,6 +854,30 @@ opacity: initial;
     background: #256DA7;
 }
 
+.navbar.navbar-sidebar-wizard-horizontal {
+    background: #464646;
+    color: #CCC;
+    border-radius: 0px;
+    padding: 0;
+    margin-bottom: 0;
+    min-height: auto;
+}
+
+.navbar.navbar-sidebar-wizard-horizontal li {
+	display: inline-block;
+}
+
+.navbar.navbar-sidebar-wizard-horizontal a {
+    color: #CCC;
+}
+
+.navbar.navbar-sidebar-wizard-horizontal a:hover, .navbar.navbar-sidebar-wizard a:focus {
+    background: #256DA7;
+}
+
+hr {
+    border-top: 1px solid #656565;
+}
 
 /* GFF Tab */
 #gffContainer {
@@ -960,6 +1012,17 @@ input[type=range]:disabled::-webkit-slider-thumb {
 	background:#555;
 }
 
+input[type="range"].volume:before {
+    content: "\e038";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    font-family: 'Glyphicons Halflings';
+    line-height: 24px;
+    font-style: normal;
+    font-weight: 400;
+}
+
 .gray {
 	-webkit-filter: grayscale(100%);
 }
@@ -1012,24 +1075,92 @@ table.twoda.fixed {
 
 
 
+.list-group-item.list-group-header {
+    background-color: #337ab7;
+    color: white;
+    padding: 0;
+}
+
+.list-group-item.list-group-header span {
+    padding: 10px 0 10px 10px;
+    cursor: pointer;
+}
+
+.list-group-item {
+    background-color: #333;
+    border: 1px solid #1f1f1f;
+}
+
+li.list-group-item:hover {
+    background-color: #255d8e;
+    border: 1px solid #337ab7;
+    z-index: 1;
+}
 
 
+.file-browser {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
 
+.file-browser-list {
+    position: absolute;
+    top: 42px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y: scroll;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
 
+.file-browser-header {
+    position: absolute;
+    top: 0;
+    bottom: 42px;
+    left: 0;
+    right: 0;
+    background-color: #337ab7;
+    color: white;
+    padding-left: 0;
+}
 
+.file-browser-header span {
+    display: inline-flex; width: 33.33%;
+    padding: 10px 0 10px 10px;
+    cursor: pointer;
+}
 
+.file-browser-item {
+    position: relative;
+    display: block;
+    margin-bottom: -1px;
+    background-color: #333;
+    border: 1px solid #1f1f1f;
+}
 
+.file-browser-item span {
+    padding: 10px 0 10px 10px;
+    display: inline-flex; width: 33.33%;
+}
 
-
-
-
+.file-browser-item:hover, .file-browser-item:focus {
+    background-color: #255d8e;
+    border: 1px solid #337ab7;
+    z-index: 1;
+    cursor: pointer;
+}
 
 
 
 /* Let's get this party started */
 ::-webkit-scrollbar {
-  width: 8px;
-	height: 8px;
+  width: 12px;
+	height: 12px;
 }
 
 /* Track */
@@ -1285,4 +1416,320 @@ table.twoda.fixed {
 	background: rgba(0,0,0,0.5);
 	padding: 10px;
 	border-top-right-radius: 10px;
+}
+
+.windowpane {
+    display: block;
+    position: absolute;
+    background: #30303D;
+    /*min-width: 150px;*/
+    width: 250px;
+}
+
+.windowpane .windowpane-title {
+    display: block;
+    min-height: 20px;
+    width: 100%;
+    background: #337ab7;
+    cursor: all-scroll;
+    padding: 5px;
+}
+
+.windowpane .windowpane-content {
+    display: block;
+    width: 100%;
+    padding: 5px;
+}
+
+.windowpane-content .title {
+    color: #62b3f9;
+}
+
+.windowpane-content select {
+    width: 100%;
+}
+
+.keyframe-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 75px;
+    background: #30303D;
+    overflow-x: scroll;
+    user-select: none;
+}
+
+.keyframe-track {
+    height: 38px;
+    bottom: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+.keyframe-time-track {
+    position: absolute;
+    top:0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    background: #222;
+    min-width: 100%;
+    cursor: pointer;
+}
+
+.keyframe-track-seeker {
+    position: absolute;
+    left: 100%;
+    height: 50px;
+    width: 1px;
+    background: #5bc0de;
+    bottom: 0;
+}
+
+.seeker-thumb {
+    position: absolute;
+    margin-left: -9.5px;
+    margin-top: -12px;
+    cursor: col-resize;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 20px solid #5bc0de;
+}
+
+.keyframe {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    background: #777;
+    top: calc( (38px / 2) - 5px );
+    transform: rotate(45deg);
+}
+
+.keyframe:hover, .keyframe.selected {
+    border: 1px solid #f0ad4e;
+    box-shadow: 0 0 5px 1px #f0ad4e;
+    background: radial-gradient(#fff 0%, #f0ad4e 100%);
+    z-index: 1;
+    cursor: col-resize;
+}
+
+.keyframe-controls {
+    position: absolute;
+    /*left: calc( 50% - (75px / 2) );*/
+    bottom: 75px;
+    z-index: 1000;
+    height: auto!important;
+    font-size: 28pt;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    background: #1f1f25;
+    border-bottom: 2px solid #111;
+    padding: 10px;
+    line-height: 0;
+    user-select: none;
+}
+
+.keyframe-controls a {
+    margin-left: 15px;
+}
+
+.keyframe-controls a:nth-child(1) {
+    margin-left: initial;
+}
+
+.CExoLocString-holder .btn-edit-holder {
+    font-size: 14pt;
+    padding: 0;
+    vertical-align: middle;
+    padding-top: 4.5pt;
+}
+
+input[type=checkbox].ui {
+    visibility: hidden;
+    width: 1px;
+    height: 1px;
+}
+
+input[type=checkbox].ui + label {
+    padding: 5px 10px;
+    /*background: #777;*/
+    border-radius: 5px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+input[type=checkbox].ui:checked + label {
+    /*background: linear-gradient(#337ab7 0%, #2e6da4 100%);*/
+}
+
+input[type=checkbox].ui + label:before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(ellipse at center, #afafaf 0%,#efefef 100%);
+    border: 2px solid #4c4c4c;
+    box-shadow: 1px 1px 5px #424242;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-left: -5px;
+    margin-right: 5px;
+}
+
+input[type=checkbox].ui:checked + label:before {
+    background: radial-gradient(ellipse at center, #337ab7 0%,#5bc0de 100%);
+    border: 2px solid #2e6da4;
+    box-shadow: 1px 1px 5px #307592;
+}
+
+
+
+/* TSL Color Override */
+/* #337ab7 */
+
+.TSL .menu-accent .inner {
+    background: rgba(26, 178, 140, 255);
+}
+
+.TSL .menu-accent::before, .TSL .menu-accent::after {
+    border-top-color: rgba(26, 178, 140, 255);
+}
+
+.TSL .navbar-brand, .TSL .navbar-nav>li>a {
+    background: #212121;
+    border-right: 2px solid rgb(11, 70, 55);
+  }
+
+.TSL .nav .open > a, .TSL .nav .open > a:focus, .TSL .nav .open > a:hover {
+    background-color: rgb(26, 178, 140);
+    border-color: rgb(26, 178, 140);
+    color: white;
+}
+
+.TSL .dropdown-menu>li>a:focus, .TSL .dropdown-menu>li>a:hover {
+    background-color: rgb(12, 111, 86);
+}
+
+.TSL .ball, .TSL .ball1 {
+    border-bottom-color: rgba(26, 178, 140, 0.9);
+    border-right-color: rgba(26, 178, 140, 0.9);
+}
+
+.TSL .ball{
+    box-shadow: 0 0 35px rgb(26, 178, 140);
+}
+
+.TSL .ball1 {
+    box-shadow: 0 0 15px rgb(26, 178, 140);
+}
+
+
+/* TSL Inputs */
+
+.TSL a {
+    color: rgb(26, 178, 140);
+}
+
+.TSL a:focus, .TSL a:hover {
+    color: rgb(27, 195, 153);
+}
+
+.TSL .form-control, .TSL pre, .TSL input[type=text], .TSL input[type=number], .TSL input[type=cexolocstring], .TSL textarea {
+    color: #CCC;
+    background: rgb(26, 178, 140);
+    background: linear-gradient(rgb(14, 72, 57) 0%, rgb(12, 111, 86) 100%);
+    border: 2px solid rgb(26, 178, 140);
+    box-shadow: 2px 2px 10px #1d1d1d;
+}
+
+.TSL select {
+    background: rgb(14, 72, 57);
+    background-image: linear-gradient(rgb(14, 72, 57) 0%, rgb(12, 111, 86) 100%);
+    border: 2px solid rgb(26, 178, 140);
+    outline-color: rgb(26, 178, 140);
+    box-shadow: 2px 2px 10px #1d1d1d;
+}
+
+.TSL button[disabled], html .TSL input[disabled], .TSL textarea[disabled] {
+    background: rgb(49, 68, 63);
+    border: 2px solid rgb(26, 178, 140);
+}
+
+.TSL fieldset {
+    border: 2px solid rgb(26, 178, 140);
+}
+
+.TSL button, .TSL .btn-default {
+    background: rgb(12, 111, 86);
+    border: 2px solid rgb(26, 178, 140);
+	text-shadow: 0 1px 0 rgb(14, 72, 57);
+}
+
+.TSL .btn-default:focus, .TSL .btn-default:hover {
+    background-color: rgb(12, 143, 110);
+    border-color: rgb(25, 212, 166);
+}
+
+.TSL .btn-default.active, .TSL .btn-default:active {
+    background-color: rgb(12, 143, 110);
+    border-color: rgb(25, 212, 166);
+}
+
+.TSL .btn-default.active.focus, .TSL .btn-default.active:focus, .TSL .btn-default.active:hover, .TSL .btn-default:active.focus, .TSL .btn-default:active:focus, .TSL .btn-default:active:hover, .TSL .open>.dropdown-toggle.btn-default.focus, .TSL .open>.dropdown-toggle.btn-default:focus, .TSL .open>.dropdown-toggle.btn-default:hover {
+    background-color: rgb(12, 143, 110);
+    border-color: rgb(25, 212, 166);
+}
+
+.TSL button.close {
+    -webkit-appearance: none;
+    padding: 0;
+    cursor: pointer;
+    background: 0 0;
+    border: 0;
+}
+
+.TSL .css-treeview label::before {
+    color: rgb(26, 178, 140);
+}
+
+.TSL .tree-container > label {
+    background: rgb(12, 111, 86);
+}
+
+
+/* Controls */
+
+.TSL .windowpane .windowpane-title {
+    background: rgb(12, 111, 86);
+}
+
+.TSL .windowpane-content .title {
+    color: rgb(26, 178, 140);
+}
+
+.TSL .ui-layout-toggler {
+    border: 1px solid rgb(12, 111, 86);
+    background-color: rgb(14, 72, 57);
+}
+
+.TSL .tabs-menu li.current {
+    border-left: 3px solid rgb(12, 111, 86);
+}
+
+.TSL .navbar.navbar-sidebar-wizard-horizontal a:hover, .TSL .navbar.navbar-sidebar-wizard a:focus {
+    background: rgb(26, 178, 140);
+}
+
+.TSL .nav>li>a:focus, .TSL .nav>li>a:hover {
+    background-color: rgb(26, 178, 140);
+}
+
+.TSL .navbar.navbar-sidebar-wizard-horizontal a {
+    color: #CCC;
 }

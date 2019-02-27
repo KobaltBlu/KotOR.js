@@ -40,73 +40,223 @@ class ModulePath {
       for(let i = 0; i < _points.length; i++){
 
         let _pnt = _points[i];
-
         let point = {
+          id: i,
           connections: [],
-          x: _pnt.fields.X.value,
-          y: _pnt.fields.Y.value
+          first_connection: _pnt.fields.First_Conection.value,
+          num_connections: _pnt.fields.Conections.value,
+          vector: new THREE.Vector2(_pnt.fields.X.value, _pnt.fields.Y.value)
         };
+        this.points.push(point);
+      }
 
-        if(_pnt.fields.Connections){
-          let connIdx = _pnt.fields.First_Conection;
-
-          for(let j = 0; j < _pnt.fields.Connections; j++){
+      for(let i = 0; i < this.points.length; i++){
+        let point = this.points[i];
+        if(point.num_connections){
+          let connIdx = point.first_connection;
+          for(let j = 0; j < point.num_connections; j++){
+            //console.log('dest', this.template.json.fields.Path_Conections.structs[connIdx + j].fields.Destination.value)
             point.connections.push(
-              ptthis.templateh.json.fields.Path_Conections.structs[connIdx + j].fields.Destination
+              this.points[
+                this.template.json.fields.Path_Conections.structs[connIdx + j].fields.Destination.value
+              ]
             );
           }
-
         }
 
-        this.points.push(point);
+        let material = new THREE.LineBasicMaterial({
+          color: 0x0000ff
+        });
+
+        let geometry = new THREE.Geometry();
+
+        for(let i = 0; i < this.points.length; i++){
+          let point = this.points[i];
+          
+          geometry.vertices.push(
+            new THREE.Vector3( point.vector.x, point.vector.y, -10 ),
+            new THREE.Vector3( point.vector.x, point.vector.y, 10 )
+          );
+
+        }
+          
+        let line = new THREE.LineSegments( geometry, material );
+        //line.position.set(point.vector.x, point.vector.y, 0);
+        //Game.scene.add( line );
 
       }
+
     }
+  }
+
+  getStartingPoint(origin = new THREE.Vector3, target = new THREE.Vector3){
+    let starting = new THREE.Vector2().copy(origin);
+    let ending = new THREE.Vector2().copy(target);
+    let startingPoint = target;
+    let distance = Infinity;
+    let tdistance = Infinity;
+    
+    //Max distance from target
+    let maxDistance = starting.distanceTo(ending);
+
+    //console.log('getStartingPoint', starting, startingPoint, distance);
+    for(let i = 0; i < this.points.length; i++){
+      let point = this.points[i];
+      let pDistance = starting.distanceTo(point.vector);
+      let tDistance = point.vector.distanceTo(ending);
+
+      //Don't target anything that is further away from the destination than we already are
+      let distanceToTarget = point.vector.distanceTo(ending);
+      if(pDistance < distance && distanceToTarget < maxDistance){
+        //If this point is closer than the current point update the current point
+        //if(pDistance < distance){
+          distance = pDistance;
+          //tdistance = tDistance;
+          startingPoint = point;
+        //}
+      }
+    }
+    //console.log('getStartingPoint end', starting, startingPoint, distance);
+    return startingPoint;
+  }
+
+  getStartingPoints(origin = new THREE.Vector3, target = new THREE.Vector3){
+    let starting = new THREE.Vector2().copy(origin);
+    let ending = new THREE.Vector2().copy(target);
+    let startingPoint = target;
+    let distance = Infinity;
+    let tdistance = Infinity;
+    
+    //Max distance from target
+    let maxDistance = starting.distanceTo(ending);
+
+    //console.log('getStartingPoint', starting, startingPoint, distance);
+    for(let i = 0; i < this.points.length; i++){
+      let point = this.points[i];
+      let pDistance = starting.distanceTo(point.vector);
+      let tDistance = point.vector.distanceTo(ending);
+
+      //Don't target anything that is further away from the destination than we already are
+      let distanceToTarget = point.vector.distanceTo(ending);
+      if(pDistance < distance && distanceToTarget < maxDistance){
+        //If this point is closer than the current point update the current point
+        //if(pDistance < distance){
+          distance = pDistance;
+          //tdistance = tDistance;
+          startingPoint = point;
+        //}
+      }
+    }
+    //console.log('getStartingPoint end', starting, startingPoint, distance);
+    return startingPoint;
+  }
+
+  getNextPoint(cpoint, target = new THREE.Vector3, path){
+    //console.log('getNextPoint', cpoint, target);
+    let starting = cpoint.vector.clone();
+    
+    /*if(cpoint instanceof THREE.Vector2 || cpoint instanceof THREE.Vector3){
+      starting.copy(cpoint);
+    }else{
+      starting.copy(cpoint.vector);
+    }*/
+    
+    let ending = new THREE.Vector2().copy(target);
+    let nextPoint = target;
+    
+    //Max distance from target
+    let maxDistance = Infinity;
+    let distance = maxDistance = starting.distanceTo(ending);
+
+    for(let i = 0; i < cpoint.connections.length; i++){
+      let point = cpoint.connections[i];
+      if(path.closed_list.indexOf(point.id) == -1){
+        //let pDistance = starting.distanceTo(point.vector);
+        //let tDistance = point.vector.distanceTo(ending);
+
+        //Don't target anything that is further away from the destination than we already are
+        let distanceToTarget = point.vector.distanceTo(ending);
+        if(distanceToTarget < maxDistance){
+          //If this point is closer than the current point update the current point
+          distance = distanceToTarget;
+          nextPoint = point;
+        }
+      }
+    }
+    //console.log('getNextPoint end', starting, nextPoint, distance);
+    return {point: nextPoint, distance: distance};
+
   }
 
   traverseToPoint(origin, dest){
 
+    if(!this.points.length){
+      return [dest];
+    }
+
     let points = [];
-    let distanceToDestination = origin.distanceTo(destination);
-    
-    let start = origin;
-    let end = dest;
 
-    //Start point needs to take direction towards the destination
+    let originVec2 = new THREE.Vector2(origin.x, origin.y);
 
-    //Find first point
-    let tmpDist = distanceToDestination;
-    for(let i = 0; i < this.points.length; i++){
-      let point = this.points[i];
-      this._tmpVector.set(point.x, point.y, 0);
+    let paths = [];
+    for(let i = 0, il = this.points.length; i < il; i++){
+      let con_point = this.points[i];
 
-      let _dist = origin.distanceTo(this._tmpVector);
+      let distance = originVec2.distanceTo(con_point.vector);
 
-      if(_dist < tmpDist){
-        tmpDist = _dist;
-        start = this._tmpVector.clone();
+      if(distance > 30)
+        continue;
+
+      let path = {
+        cost: distance,
+        points: [con_point],
+        closed_list: [con_point.id]
+      };
+
+      let loops = 0;
+      let foundEnd = false;
+
+      while(!foundEnd){
+        let last = path.points[path.points.length-1];
+        let next = this.getNextPoint(last, dest, path);
+        /*if(next == last){
+          foundEnd = false;
+        }else */if(next.point instanceof THREE.Vector3){
+          foundEnd = true;
+          path.cost += next.distance;
+          path.points.push(next.point);
+        }else{
+          foundEnd = false;
+          path.cost += next.distance;
+          path.points.push(next.point);
+          path.closed_list.push(next.point.id);
+        }
+        
+        if(loops > 1000){
+          foundEnd = true;
+        }
+        loops++
+  
+      }
+
+      //console.log(path);
+
+      paths.push(path)
+
+    }
+
+    let bestPathCost = Infinity;
+
+    for(let i = 0, il = paths.length; i < il; i++){
+      if(paths[i].cost < bestPathCost){
+        bestPathCost = paths[i].cost;
+        points = paths[i].points;
       }
     }
 
-    //Find last point
-    tmpDist = Infinity;
-    for(let i = 0; i < this.points.length; i++){
-      let point = this.points[i];
-      this._tmpVector.set(point.x, point.y, 0);
+    //console.log(paths, points);
 
-      let _dist = dest.distanceTo(this._tmpVector);
-
-      if(_dist < tmpDist){
-        tmpDist = _dist;
-        end = this._tmpVector.clone();
-      }
-    }
-
-    if(start != dest){
-
-    }else{
-
-    }
+    return points;
 
   }
 

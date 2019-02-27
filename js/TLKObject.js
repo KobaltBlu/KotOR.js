@@ -17,7 +17,7 @@ class TLKObject {
         console.log('TLK: Reading');
         this.reader = new BinaryReader(binary);
         this.reader.Seek(0);
-      //jBinary.load(this.file, {'jBinary.littleEndian': true}, (err, binary) => {
+        
         this.FileType = this.reader.ReadChars(4);
         this.FileVersion = this.reader.ReadChars(4);
         this.LanguageID = this.reader.ReadUInt32();
@@ -26,27 +26,22 @@ class TLKObject {
         this.reader.Seek(20);
         for(let i = 0; i!=this.StringCount; i++) {
 
-            this.TLKStrings[i] = new TLKString(
-              this.reader.ReadUInt32(), //flags
-              this.reader.ReadChars(16), //SoundResRef
-              this.reader.ReadUInt32(), //VolumeVariance
-              this.reader.ReadUInt32(), //PitchVariance
-              this.StringEntriesOffset + this.reader.ReadUInt32(), //StringOffset
-              this.reader.ReadUInt32(), //StringLength
-              this.reader.ReadUInt32(), //SoundLength
-              null
-            );
+          this.TLKStrings[i] = new TLKString(
+            this.reader.ReadUInt32(), //flags
+            this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
+            this.reader.ReadUInt32(), //VolumeVariance
+            this.reader.ReadUInt32(), //PitchVariance
+            this.StringEntriesOffset + this.reader.ReadUInt32(), //StringOffset
+            this.reader.ReadUInt32(), //StringLength
+            this.reader.ReadUInt32(), //SoundLength
+            null
+          );
 
-            let pos = this.reader.Tell();
-            this.reader.Seek(this.TLKStrings[i].StringOffset);
-            //console.log(this.TLKStrings[i].StringOffset);
-            this.TLKStrings[i].Value = this.reader.ReadChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
-            this.reader.Seek(pos);
-
-            if(onProgress != null){
-              //console.log(i, this.StringCount);
-              //onProgress(i, this.StringCount);
-            }
+          let pos = this.reader.Tell();
+          this.reader.Seek(this.TLKStrings[i].StringOffset);
+          //console.log(this.TLKStrings[i].StringOffset);
+          this.TLKStrings[i].Value = this.reader.ReadChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
+          this.reader.Seek(pos);
 
         }
         console.log('done');

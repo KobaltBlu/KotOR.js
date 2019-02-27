@@ -14,6 +14,11 @@ class NWScript {
 
     this.enteringObject = undefined;
     this.exitingObject = undefined;
+    this.listenPatternNumber = -1;
+    this.debugging = false;
+    this.debug = {
+      'action': false
+    }
     this.name = '';
     this.state = [];
 
@@ -47,7 +52,7 @@ class NWScript {
   init (data = null, ctx = null){
 
     
-    if(Game.Flags.LogScripts){
+    if(this.isDebugging()){
       console.log('NWScript: '+this.name, 'NWScript', 'Run');
     }
     //Lists store information of decoded data like variables and functions.
@@ -73,20 +78,28 @@ class NWScript {
 
       //PASS 1: Create a listing of all of the instructions in order as the occur
       
-      if(Game.Flags.LogScripts){
+      if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'NCS Decompile', 'Pass 1: Started');
       }
       while ( reader.position < progSize ){
         this._ParseInstruction(reader);
       };
       
-      if(Game.Flags.LogScripts){
+      if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'NCS Decompile', 'Pass 1: Complete');
       }
       reader.position = 0;
 
     }
 
+  }
+
+  clone(){
+    let script = new NWScript();
+    script.name = this.name;
+    script.Definition = this.Definition;
+    script.instructions = new Map(this.instructions);
+    return script;
   }
 
   run(caller = null, scriptVar = 0, onComplete = null){
@@ -103,8 +116,11 @@ class NWScript {
     this.effectPointers = [];
     this.eventPointers = [];
     this.actionPointers = [];
+    this.talentPointers = [];
     this.stack = new NWScriptStack();
     this.state = [];
+
+    this.lastSpeaker = undefined;
 
     this.persistentObjectIdx = 0;
     
@@ -147,17 +163,17 @@ class NWScript {
   beginLoop(data){
     let completed = false;
 
-    var promiseWhile = function(condition, action) {
-      var resolver = Promise.defer();
+    let promiseWhile = function(condition, action) {
+      let resolver = Promise.defer();
   
-      var loop = function() {
-          if (!condition()) return resolver.resolve();
-          return Promise.cast(action())
-              .then(loop)
-              .catch(resolver.reject);
+      let loop = function() {
+        if (!condition()) return resolver.resolve();
+        return Promise.cast(action())
+          .then(loop)
+          .catch(resolver.reject);
       };
   
-      process.nextTick(loop);
+      loop();
   
       return resolver.promise;
     };
@@ -168,9 +184,7 @@ class NWScript {
     }, () => {
         // Action to run, should return a promise
         return new Promise( (resolve, reject) => {
-          if(Game.Flags.LogScripts){
-            console.log('script.tick', this.name, data);
-          }
+
           if(data._instr)
             this.prevByteCode = data._instr.code;
           
@@ -183,11 +197,6 @@ class NWScript {
               data.onComplete = oldCallback;
               resolve();   
             });
-              /*.then((newData={}) => {
-                
-              }).catch((e) => {
-                console.error('NWScript '+this.name, __nextInstr.instr, e)
-              });*/
           }else{
             if(!data._instr.eof){
               if(data._instr.nextInstr != null){
@@ -199,15 +208,6 @@ class NWScript {
                   data.onComplete = oldCallback;
                   resolve();   
                 });
-                  /*.then((newData={}) => {
-                    this.firstLoop = false;
-                    let oldCallback = data.onComplete;
-                    data = newData;
-                    data.onComplete = oldCallback;
-                    resolve();   
-                  }).catch((e) => {
-                    console.error('NWScript '+this.name, data._instr.nextInstr, e)
-                  });*/
               }
             }else{
               completed = true;
@@ -217,7 +217,7 @@ class NWScript {
         })
     }).then(() => {
       //onScriptEND
-      if(Game.Flags.LogScripts){
+      if(this.isDebugging()){
         console.log('onScriptEND', this)
       }else{
         //console.log('onScriptEND', this.name)
@@ -247,7 +247,7 @@ class NWScript {
 
     let _pos = reader.position - 6;
     
-    if(Game.Flags.LogScripts){
+    if(this.isDebugging()){
       //console.log('NWScript: '+this.name, _pos);
     }
 
@@ -266,20 +266,20 @@ class NWScript {
       this.instructions.get(this._lastOffset).nextInstr = _instr;
     }
 
-    switch(NWScript.ByteCodes[_instr.code]){
-      case 'CPDOWNSP':
+    switch(_instr.code){
+      case NWScript.ByteCodesEnum.CPDOWNSP:
         _instr.offset = reader.ReadUInt32();
         _instr.size = reader.ReadUInt16();
       break;
-      case 'RSADD':
+      case NWScript.ByteCodesEnum.RSADD:
 
       break;
-      case 'CPTOPSP':
+      case NWScript.ByteCodesEnum.CPTOPSP:
         _instr.pointer = reader.ReadUInt32();
         _instr.size = reader.ReadUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         _instr.data = null;
       break;
-      case 'CONST':
+      case NWScript.ByteCodesEnum.CONST:
         switch(_instr.type){
           case 3:
             _instr.integer = parseInt(reader.ReadUInt32());
@@ -296,7 +296,7 @@ class NWScript {
           break;
         }
       break;
-      case 'ACTION':
+      case NWScript.ByteCodesEnum.ACTION:
         _instr.action = reader.ReadUInt16();
         _instr.argCount = reader.ReadByte();
 
@@ -304,37 +304,37 @@ class NWScript {
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'LOGANDII':
+      case NWScript.ByteCodesEnum.LOGANDII:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'LOGORII':
+      case NWScript.ByteCodesEnum.LOGORII:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'INCORII':
+      case NWScript.ByteCodesEnum.INCORII:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
         break;
-      case 'EXCORII':
+      case NWScript.ByteCodesEnum.EXCORII:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'BOOLANDII':
+      case NWScript.ByteCodesEnum.BOOLANDII:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'EQUAL':
+      case NWScript.ByteCodesEnum.EQUAL:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
@@ -345,57 +345,57 @@ class NWScript {
         //  this.instructions[this.instructions.length-3].isArg = true;
 
       break;
-      case 'NEQUAL':
+      case NWScript.ByteCodesEnum.NEQUAL:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'GEQ':
+      case NWScript.ByteCodesEnum.GEQ:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'GT':
+      case NWScript.ByteCodesEnum.GT:
 
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
 
       break;
-      case 'LT':
+      case NWScript.ByteCodesEnum.LT:
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
       break;
-      case 'LEQ':
+      case NWScript.ByteCodesEnum.LEQ:
         //for(let i = 2; i > 0; i--)
           //this.instructions[this.instructions.length-i].isArg = true;
       break;
-      case 'SHLEFTII':
+      case NWScript.ByteCodesEnum.SHLEFTII:
 
       break;
-      case 'SHRIGHTII':
+      case NWScript.ByteCodesEnum.SHRIGHTII:
 
       break;
-      case 'USHRIGHTII':
+      case NWScript.ByteCodesEnum.USHRIGHTII:
 
       break;
-      case 'ADD':
+      case NWScript.ByteCodesEnum.ADD:
 
       break;
-      case 'SUB':
+      case NWScript.ByteCodesEnum.SUB:
 
       break;
-      case 'MUL':
+      case NWScript.ByteCodesEnum.MUL:
 
       break;
-      case 'DIV':
+      case NWScript.ByteCodesEnum.DIV:
 
       break;
-      case 'MOD':
+      case NWScript.ByteCodesEnum.MOD:
 
       break;
-      case 'NEG':
+      case NWScript.ByteCodesEnum.NEG:
 
         /*switch(_instr.type){
           case 3:
@@ -407,74 +407,77 @@ class NWScript {
         }*/
 
       break;
-      case 'COMPI':
+      case NWScript.ByteCodesEnum.COMPI:
 
       break;
-      case 'MOVSP':
+      case NWScript.ByteCodesEnum.MOVSP:
         _instr.offset = reader.ReadUInt32();
       break;
-      case 'STORE_STATEALL':
+      case NWScript.ByteCodesEnum.STORE_STATEALL:
 
       break;
-      case 'JMP':
+      case NWScript.ByteCodesEnum.JMP:
         _instr.offset = reader.ReadUInt32();
       break;
-      case 'JSR':
+      case NWScript.ByteCodesEnum.JSR:
         _instr.offset = reader.ReadUInt32();
       break;
-      case 'JZ':
+      case NWScript.ByteCodesEnum.JZ:
         _instr.offset = reader.ReadInt32();
       break;
-      case 'JNZ':
+      case NWScript.ByteCodesEnum.JNZ:
         _instr.offset = reader.ReadInt32();
       break;
-      case 'RETN':
+      case NWScript.ByteCodesEnum.RETN:
         if(!this.eofFound){
           _instr.eof = true;
           this.eofFound = true;
         }
       break;
-      case 'DESTRUCT':
+      case NWScript.ByteCodesEnum.DESTRUCT:
+        
+        _instr.sizeToDestroy = reader.ReadInt16();
+        _instr.offsetToSaveElement = reader.ReadInt16();
+        _instr.sizeOfElementToSave = reader.ReadInt16();
+      break;
+      case NWScript.ByteCodesEnum.NOTI:
 
       break;
-      case 'NOTI':
-
-      break;
-      case 'DECISP':
+      case NWScript.ByteCodesEnum.DECISP:
         _instr.offset = reader.ReadInt32();
       break;
-      case 'INCISP':
+      case NWScript.ByteCodesEnum.INCISP:
         _instr.offset = reader.ReadInt32();
       break;
-      case 'CPDOWNBP':
+      case NWScript.ByteCodesEnum.CPDOWNBP:
         _instr.offset = reader.ReadUInt32();
         _instr.size = reader.ReadUInt16();
       break;
-      case 'CPTOPBP':
+      case NWScript.ByteCodesEnum.CPTOPBP:
         _instr.pointer = reader.ReadUInt32();
         _instr.size = reader.ReadUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         _instr.data = null;
       break;
-      case 'DECIBP':
+      case NWScript.ByteCodesEnum.DECIBP:
 
       break;
-      case 'INCIBP':
+      case NWScript.ByteCodesEnum.INCIBP:
 
       break;
-      case 'SAVEBP':
+      case NWScript.ByteCodesEnum.SAVEBP:
 
       break;
-      case 'RESTOREBP':
+      case NWScript.ByteCodesEnum.RESTOREBP:
 
       break;
-      case 'STORE_STATE':
+      case NWScript.ByteCodesEnum.STORE_STATE:
         _instr.bpOffset = reader.ReadUInt32();
         _instr.spOffset = reader.ReadUInt32();
       break;
-      case 'NOP':
+      case NWScript.ByteCodesEnum.NOP:
 
       break;
-      case 'T':
+      case NWScript.ByteCodesEnum.T:
         reader.position -= 2; //We need to go back 2bytes because this instruction
         //doesn't have a int16 type arg. We then need to read the 4Byte Int32 size arg
         _instr.size = reader.ReadInt32();
@@ -493,32 +496,32 @@ class NWScript {
     try{
       //return new Promise( (resolve, reject) => {
       
-        if(Game.Flags.LogScripts){
+        if(this.isDebugging()){
           console.log('NWScript: '+this.name,  '_RunInstruction', _instr.index, NWScript.ByteCodes[_instr.code], _instr );
         }
 
         let seek = null;
         let delay = false;
-
         let var1, var2, newValue = 0;
 
-        switch(NWScript.ByteCodes[_instr.code]){
-          case 'CPDOWNSP':
-            if(Game.Flags.LogScripts){
+        switch(_instr.code){
+          case NWScript.ByteCodesEnum.CPDOWNSP:
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.pointer)
               console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(_instr.offset), this.stack.peek());
             }
             this.stack.replace(_instr.offset, this.stack.peek());
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(_instr.offset), this.stack.peek());
             }
           break;
-          case 'RSADD':
+          case NWScript.ByteCodesEnum.RSADD:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'RADD', _instr.address, this.stack.pointer * 4);
             }
+            //this.stack.push(0);
             switch(_instr.type){
               case 3:
                 this.stack.push(
@@ -548,33 +551,32 @@ class NWScript {
                   )
                 );
               break;
+              case 16:
+              case 17:
+              case 18:
+              case 19:
+                this.stack.push(0);
+              break;
+              default:
+                //this.stack.push(0);
+              break;
             }
             
           break;
-          case 'CPTOPSP':
-            if(Game.Flags.LogScripts){
+          case NWScript.ByteCodesEnum.CPTOPSP:
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'CPTOPSP', _instr.pointer, this.stack.stack );
             }
-            let stackEle = this.stack.getAtPointer( _instr.pointer );//this.stack.peek();
-            if(Game.Flags.LogScripts){
-              console.log('NWScript: '+this.name, 'CPTOPSP', stackEle);
-            }
-            let newEleCP = (stackEle);
-        
-            if(Game.Flags.LogScripts){
-              console.log('NWScript: '+this.name, 'CPTOPSP', (newEleCP));
-            }
-            this.stack.push( newEleCP );
-
+            this.stack.push( this.stack.getAtPointer( _instr.pointer ) );
           break;
-          case 'CONST':
+          case NWScript.ByteCodesEnum.CONST:
             switch(_instr.type){
               case 3:
                 let ipIdx = this.integerPointers.push(
                   _instr.integer
                 )-1;
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'ipIdx', ipIdx);
                 }
                 this.stack.push((ipIdx));
@@ -583,7 +585,7 @@ class NWScript {
                 this.floatPointers.push(_instr.float);
                 let fpIdx = this.floatPointers.length-1;
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'fpIdx', fpIdx);
                 }
                 this.stack.push((fpIdx));
@@ -592,7 +594,7 @@ class NWScript {
                 this.stringPointers.push(_instr.string);
                 let spIdx = this.stringPointers.length-1;
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'spIdx', spIdx);
                 }
                 this.stack.push((spIdx));
@@ -601,7 +603,7 @@ class NWScript {
                 this.objectPointers.push(this.caller); //Default the initialization to OBJECT_SELF?
                 let opIdx = this.objectPointers.length-1;
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'opIdx', opIdx);
                 }
                 this.stack.push((opIdx));
@@ -610,20 +612,16 @@ class NWScript {
                 this.locationPointers.push(_instr.string);
                 let lpIdx = this.locationPointers.length-1;
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'lpIdx', lpIdx);
                 }
                 this.stack.push((lpIdx));
               break;
             }
           break;
-          case 'ACTION':
+          case NWScript.ByteCodesEnum.ACTION:
             
             let action = this.Definition.Actions[_instr.action];
-            
-            if(Game.Flags.LogScripts){
-              console.log('NWScript: '+this.name, 'ACTION', action.name, action.args, _instr.argCount);
-            }
 
             let args = [];
             let _returnValue = null;
@@ -632,27 +630,27 @@ class NWScript {
               switch(action.args[i]){
                 case 'object':
                   args.push(
-                    this.objectPointers[(this.stack.pop())]
+                    this.objectPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'string':
                   args.push(
-                    this.stringPointers[(this.stack.pop())]
+                    this.stringPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'int':
                   args.push(
-                    this.integerPointers[(this.stack.pop())]
+                    this.integerPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'float':
                   args.push(
-                    this.floatPointers[(this.stack.pop())]
+                    this.floatPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'effect':
                   args.push(
-                    this.effectPointers[(this.stack.pop())]
+                    this.effectPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'action':
@@ -662,20 +660,25 @@ class NWScript {
                 break;
                 case 'event':
                   args.push(
-                    this.eventPointers[(this.stack.pop())]
+                    this.eventPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'location':
                   args.push(
-                    this.locationPointers[(this.stack.pop())]
+                    this.locationPointers[(this.stack.pop()|0)]
                   )
                 break;
                 case 'vector':
                   args.push({
-                    x: this.floatPointers[(this.stack.pop())],
-                    y: this.floatPointers[(this.stack.pop())],
-                    z: this.floatPointers[(this.stack.pop())]
+                    x: this.floatPointers[(this.stack.pop()|0)],
+                    y: this.floatPointers[(this.stack.pop()|0)],
+                    z: this.floatPointers[(this.stack.pop()|0)]
                   })
+                break;
+                case 'talent':
+                  args.push(
+                    this.talentPointers[(this.stack.pop()|0)]
+                  );
                 break;
                 default:
                   //Pop the function variables off the stack after we are done with them
@@ -686,9 +689,8 @@ class NWScript {
               
             }
 
-            
-            if(Game.Flags.LogScripts){
-              console.log('NWScript: '+this.name, 'ACTION POPING ARGS', action.args.length);
+            if(this.isDebugging('action')){
+              console.log('NWScript: '+this.name, 'ACTION', action.name, args, action.args, _instr.argCount);
             }
 
             switch(_instr.action){
@@ -696,7 +698,7 @@ class NWScript {
                 _returnValue = this.integerPointers.push(Math.round(Math.random()*args[0])) - 1;
               break;
               case 1: //PrintString
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'PrintString', args[0]);
                 }
               break;
@@ -706,8 +708,9 @@ class NWScript {
                 );
               break;
               case 3: //FloatToString
+                //console.log('FloatToString', ('0000000000000000000'+parseInt(args[0])).substr(-args[1]) + ( ( ( args[0] % 1 ) + '00000000000').substr(1, args[2]) ))
                 _returnValue = this.stringPointers.push(
-                  args[0].toFixed(args[2])
+                  ('0000000000000000000'+parseInt(args[0])).substr(-args[1]) + ( args[2] ? ( ( ( args[0] % 1 ) + '00000000000').substr(1, args[2]) ) : '' )
                 ) - 1;
               break;
               case 4: //PrintInteger
@@ -736,18 +739,25 @@ class NWScript {
                 }
               break;
               case 7: //DelayCommand
-                console.log('NWScript: '+this.name, args);
+                //console.log('NWScript: '+this.name, args);
                 
                 setTimeout(() => {
-                  console.log('DelayCommand '+args[1].script.name, args[1])
+                  //console.log('DelayCommand '+args[1].script.name, args);
                   if(args[1].script instanceof NWScript){
+                    
+                    args[1].script.debug = this.debug;
+                    args[1].script.debugging = this.debugging;
+                    args[1].script.lastPerceived = this.lastPerceived;
+                    args[1].script.debug = this.debug;
+                    args[1].script.debugging = this.debugging;
+                    args[1].script.listenPatternNumber = this.listenPatternNumber;
+                    args[1].script.listenPatternSpeaker = this.listenPatternSpeaker;
                     //args[1].script.caller = args[1].caller;
                     args[1].script.beginLoop({
                       _instr: null,
                       seek: args[1].offset,
                       onComplete: () => {
-                        console.log('DelayCommand '+args[1].script.name, 'Complete');
-                        
+                        //console.log('DelayCommand '+args[1].script.name, 'Complete');
                       }
                     });
                   }
@@ -758,11 +768,22 @@ class NWScript {
                 delay = true;
                 ResourceLoader.loadResource(ResourceTypes['ncs'], args[0], (buffer) => {
                   let executeScript = new NWScript(buffer);
+                  executeScript.name = this.name+' -> '+args[0];
+                  executeScript.lastPerceived = this.lastPerceived;
+                  executeScript.debug = this.debug;
+
+                  if(args[0] == 'k_pman_npcstart'){
+                    executeScript.debug['action'] = true;
+                    console.log('k_pman_npcstart', executeScript, args[1]);
+                  }
+
+                  executeScript.debugging = this.debugging;
+                  executeScript.listenPatternNumber = this.listenPatternNumber;
+                  executeScript.listenPatternSpeaker = this.listenPatternSpeaker;
                   executeScript.run(
                     args[1],
                     args[2],
                     (executeScriptReturnedValue) => {
-                      //this._RunNextInstruction(_instr, null, onComplete);
                       resolve({
                         _instr: _instr,
                         seek: seek
@@ -776,11 +797,11 @@ class NWScript {
                   this.caller.clearAllActions();
               break;
               case 10: //SetFacing
-                this.caller.getModel().rotation.z = args[0];          
+                this.caller.setFacing(args[0]);   
               break;
               case 11: //SwitchPlayerCharacter
               
-                console.log('SwitchPlayerCharacter', args);
+                //console.log('SwitchPlayerCharacter', args);
                 delay = true;
                 PartyManager.SwitchPlayerToPartyMember(args[0], () => {
 
@@ -806,25 +827,35 @@ class NWScript {
                 ) ? 1 : 0;
               break;
               case 14: //SetAreaUnescapable
-                Game.module.area.Unescapable = args[0] ? 1 : 0;
+                Game.module.area.Unescapable = args[0] ? true : false;
               break;
               case 15: //GetAreaUnescapable
                 _returnValue = Game.module.area.Unescapable ? 1 : 0;
               break;
               case 16: //GetTimeHour
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.integerPointers.push(
+                  parseInt(Game.getHours())
+                ) - 1;
               break;
               case 17: //GetTimeMinute
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.integerPointers.push(
+                  parseInt(Game.getMinutes())
+                ) - 1;
               break;
               case 18: //GetTimeSecond
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.integerPointers.push(
+                  parseInt(Game.getSeconds())
+                ) - 1;
               break;
               case 19: //GetTimeMillisecond
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.integerPointers.push(
+                  parseInt(Game.getMiliseconds())
+                ) - 1;
               break;
               case 20: //ActionRandomWalk
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleCreature){
+                  //TODO
+                }
               break;
               case 21: //ActionMoveToLocation
                 this.objectPointers[0].moveToLocation(
@@ -856,71 +887,20 @@ class NWScript {
                 _returnValue = this.objectPointers.push(this.exitingObject)-1;
               break;
               case 27: //GetPosition
-
                 if(args[0] instanceof ModuleObject){
-                  //Push Z to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        args[0].position.z
-                      ) - 1
-                    )
-                  );
-
-                  //Push Y to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        args[0].position.y
-                      ) - 1
-                    )
-                  );
-
-                  //Push X to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        args[0].position.x
-                      ) - 1
-                    )
-                  );
+                  this.pushVectorToStack(args[0].position);
                 }else{
-                  //Push Z to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        0.0
-                      ) - 1
-                    )
-                  );
-
-                  //Push Y to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        0.0
-                      ) - 1
-                    )
-                  );
-
-                  //Push X to the stack
-                  this.stack.push(
-                    (
-                      this.floatPointers.push(
-                        0.0
-                      ) - 1
-                    )
-                  );
+                  this.pushVectorToStack({x: 0, y: 0, z: 0});
                 }
-                
-                /*_returnValue = this.locationPointers.push(
-                  args[0].getModel().position.clone()
-                ) - 1;*/
               break;
               case 28: //GetFacing
-                _returnValue = this.floatPointers.push(
-                  args[0].getModel().rotation.z
-                ) - 1;
+                  if(args[0] instanceof ModuleObject){
+                    _returnValue = this.floatPointers.push(
+                      args[0].rotation.z
+                    ) - 1;
+                  }else{
+                    _returnValue = this.floatPointers.push(0.0) - 1;
+                  }
                 //console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 29: //GetItemPossessor
@@ -944,11 +924,11 @@ class NWScript {
                   item.setStackSize(args[2]);
                   if(PartyManager.party.indexOf(args[1]) > -1){
                     InventoryManager.addItem(item, () => {
-                      //this._RunNextInstruction(_instr, null, onComplete);
+                      
                     });
                   }else{
                     args[1].addItem(item, () => {
-                      //this._RunNextInstruction(_instr, null, onComplete);
+                      
                     });
                   }
                 })*/
@@ -956,14 +936,18 @@ class NWScript {
                 _returnValue = 1;
               break;
               case 32: //ActionEquipItem
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleItem && this.caller instanceof ModuleCreature){
+                  //args0 = item, args1 = slot, args2 = wether to do this instantly
+                  //We don't support this in the actionQueue yet so just do it instantly for now
+                  this.caller.equipItem(UTCObject.NWScriptSlot(args[1]), args[0]);
+                }
               break;
               case 33: //ActionUnequipItem
-              console.log('ActionUnequipItem', this.name, args);
+                //console.log('ActionUnequipItem', this.name, args);
                 if(this.caller instanceof ModuleCreature){
                   for(let slot in this.caller.equipment){
-                    if(this.caller.equipment[slot] == args[0]){
-                      this.caller.unequipSlot(UTCObject.SLOT[slot]);
+                    if(this.caller.equipment[UTCObject.NWScriptSlot(slot)] == args[0]){
+                      this.caller.unequipSlot(UTCObject.NWScriptSlot(slot));
                       break;
                     }
                   }
@@ -979,7 +963,10 @@ class NWScript {
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 37: //ActionAttack
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                //console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleCreature){
+                  this.caller.attackCreature(args[0]);
+                }
               break;
               case 38: //GetNearestCreature
                 _returnValue = this.objectPointers.push(Game.GetNearestCreature(
@@ -1003,9 +990,9 @@ class NWScript {
                 //console.log(this, this.caller);
               break;
               case 41: //GetDistanceToObject
-                console.log('GetDistanceToObject', this.caller.GetPosition().distanceTo(
+                /*console.log('GetDistanceToObject', this.caller.GetPosition().distanceTo(
                   args[0].GetPosition()
-                ), args)
+                ), args)*/
                 _returnValue = this.floatPointers.push(
                   this.caller.GetPosition().distanceTo(
                     args[0].GetPosition()
@@ -1013,13 +1000,13 @@ class NWScript {
                 )-1;
               break;
               case 42: //GetIsObjectValid
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'GetIsObjectValid', args[0], args[0] instanceof ModuleObject)
                 }
                 _returnValue = args[0] instanceof ModuleObject ? 1 : 0;
               break;
               case 43: //ActionOpenDoor
-                console.log('ActionOpenDoor', this, args);
+                //console.log('ActionOpenDoor', this, args);
                 if(this.caller instanceof ModuleDoor)
                   this.caller.openDoor(args[0]);
               break;
@@ -1031,7 +1018,9 @@ class NWScript {
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 46: //PlaySound
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(this.caller instanceof ModuleObject){
+                  this.caller.audioEmitter.PlaySound(args[0]);
+                }
               break;
               case 47: //GetSpellTargetObject()
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
@@ -1050,7 +1039,9 @@ class NWScript {
                 ) - 1;
               break;
               case 51: //EffectAssuredHit
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.effectPointers.push(
+                  {type: 74}
+                ) - 1;
               break;
               case 52: //GetLastItemEquipped
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
@@ -1113,6 +1104,7 @@ class NWScript {
                 ].join('')) - 1;
               break;
               case 65: //GetSubString
+                //console.log(args[0], args[1], args[2]);
                 _returnValue = this.stringPointers.push(
                   args[0].substr(
                     args[1],
@@ -1193,31 +1185,55 @@ class NWScript {
                 ) - 1;
               break;
               case 80: //EffectAbilityIncrease
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.effectPointers.push(
+                  {type: 38, ability: args[0], amount: args[1] }
+                ) - 1;
               break;
               case 81: //EffectDamageResistsance
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.effectPointers.push(
+                  {type: 1, damage_type: args[1], damage_amount: args[1], damage_limit: args[2] }
+                ) - 1;
               break;
               case 82: //EffectResurrection
-                _returnValue = this.effectPointers.push({type: 2}) - 1;
+                _returnValue = this.effectPointers.push({type: 14}) - 1;
               break;
               case 83: //GetPlayerRestrictMode
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = 0;
               break;
               case 84: //GetCasterLevel
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 85: //GetFirstEffect
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleCreature){
+                  if(args[0].effects.length){
+                    this._effectPointer = 0;
+                    _returnValue = this.effectPointers.push( args[0].effects[this._effectPointer] ) - 1;
+                  }else{
+                    _returnValue = this.effectPointers.push( undefined ) - 1;
+                  }
+                }
               break;
               case 86: //GetNextEffect
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleCreature){
+                  if(args[0].effects.length){
+                    this._effectPointer++;
+                    _returnValue = this.effectPointers.push( args[0].effects[this._effectPointer] ) - 1;
+                  }else{
+                    _returnValue = this.effectPointers.push( undefined ) - 1;
+                  }
+                }
               break;
               case 87: //RemoveEffect
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(args[0] instanceof ModuleCreature && typeof args[1] == 'object' && typeof args[1].type != 'undefined'){
+                  args[0].RemoveEffect(args[1].type);
+                }
               break;
               case 88: //GetIsEffectValid
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                if(typeof args[0] === 'undefined'){
+                  _returnValue = 0;
+                }else{
+                  _returnValue = 1;
+                }
               break;
               case 89: //GetEffectDurationType
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
@@ -1231,7 +1247,7 @@ class NWScript {
               case 92: //IntToString
                 //console.log('NWScript IntToString', this.name, args);
                 _returnValue = this.stringPointers.push(
-                  args[0]+''
+                  parseInt(args[0])+''
                 ) - 1;
               break;
               case 93: //GetFirstObjectInArea
@@ -1375,8 +1391,8 @@ class NWScript {
               case 123: //TurnsToSeconds
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
-              case 124: //SoundObjectetFixedVariance
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+              case 124: //SoundObjectSetFixedVariance
+                //TODO
               break;
               case 125: //GetGoodEvilValue
                 _returnValue = this.integerPointers.push(
@@ -1400,31 +1416,34 @@ class NWScript {
 
               break;
               case 128: //GetFirstObjectInShape
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                this.objectsInShapeIdx = 0;
+                _returnValue = this.objectPointers.push(
+                  Game.getObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], this.objectsInShapeIdx)
+                ) - 1;
               break;
               case 129: //GetNextObjectInSpace
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                _returnValue = this.objectPointers.push(
+                  Game.getObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], ++this.objectsInShapeIdx)
+                ) - 1;
               break;
               case 130: //EffectEntagle
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 131: //SignalEvent
                 //console.error('Unhandled script action', _instr.address, action.name, action.args);
-                //console.log('SignalEvent', this.name, args[0], args[1])
+                //console.log('SignalEvent', this.name, args[0], args[1]);
                 //This needs to happen once the script has completed
-                try{
-                  switch(args[1].name){
-                    case 'EventUserDefined':
-                      if(args[0] instanceof ModuleObject){
+                switch(args[1].name){
+                  case 'EventUserDefined':
+                    if(args[0] instanceof ModuleObject){
+                      if(args[1].name == 'EventUserDefined'){
                         args[0].triggerUserDefinedEvent(
-                          this.caller,
+                          args[0],
                           args[1].value
                         );
                       }
-                    break;
-                  }
-                }catch(e){
-                  console.error(e);
+                    }
+                  break;
                 }
               break;
               case 132: //EventUserDefined
@@ -1449,7 +1468,35 @@ class NWScript {
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 137: //VectorNormalize
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                let vNorm = new THREE.Vector3(args[0].x, args[0].y, args[0].z).normalize();
+
+                //Push Z to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      vNorm.z
+                    ) - 1
+                  )
+                );
+
+                //Push Y to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      vNorm.y
+                    ) - 1
+                  )
+                );
+
+                //Push X to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      vNorm.x
+                    ) - 1
+                  )
+                );
+
               break;
               case 138: //GetItemStackSize
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
@@ -1458,13 +1505,42 @@ class NWScript {
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 140: //GetIsDead
-                _returnValue = args[0].isDead() ? 1 : 0;
+                  if(args[0] instanceof ModuleCreature){
+                    _returnValue = args[0].isDead() ? 1 : 0;
+                  }else{
+                    _returnValue = 1;
+                  }
               break;
               case 141: //PrintVector
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 142: //Vector
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                //Push Z to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      args[2]
+                    ) - 1
+                  )
+                );
+
+                //Push Y to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      args[1]
+                    ) - 1
+                  )
+                );
+
+                //Push X to the stack
+                this.stack.push(
+                  (
+                    this.floatPointers.push(
+                      args[0]
+                    ) - 1
+                  )
+                );
               break;
               case 143: //SetFacingPoint
                 if(args[0] instanceof ModuleObject){
@@ -1493,11 +1569,15 @@ class NWScript {
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
               case 151: //GetDistanceBetween
-                _returnValue = this.floatPointers.push(
-                  args[0].GetPosition().distanceTo(
-                    args[1].GetPosition()
-                  )
-                )-1;
+                if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
+                  _returnValue = this.floatPointers.push(
+                    args[0].GetPosition().distanceTo(
+                      args[1].GetPosition()
+                    )
+                  )-1;
+                }else{
+                  _returnValue = this.floatPointers.push(-1.00)-1;
+                }
               break;
               case 152: //SetReturnStrref
                 console.log('SetReturnStrref', this)
@@ -1609,10 +1689,6 @@ class NWScript {
                 if(!_returnValue){
                   _returnValue = this.objectPointers.push( undefined ) -1;
                 }
-
-                //console.log('GetItemInSlot', this.objectPointers[_returnValue]);
-
-
                 
               break;
               case 156: //EffectTemporaryForcePoints
@@ -1690,7 +1766,7 @@ class NWScript {
               break;
               case 175: //SetListening
                 args[0].setListening(
-                  args[1]
+                  args[1] ? true : false
                 );
               break;
               case 176: //SetListenPattern
@@ -1756,8 +1832,8 @@ class NWScript {
               case 194: //
                 console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
-              case 195: //
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+              case 195: //GetListenPatternNumber
+                _returnValue = this.integerPointers.push(this.listenPatternNumber) -1;
               break;
               case 196: //ActionJumpToObject
                 if(args[0] instanceof ModuleObject){
@@ -1784,49 +1860,47 @@ class NWScript {
                 ) - 1;
               break;
               case 202: //ActionWait
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'Run ActionWait', args[0] * 1000);
                 }
 
                 if(this.caller instanceof ModuleObject)
                   this.caller.actionQueue.push({ goal: ModuleCreature.ACTION.WAIT, elapsed:0, time: args[0] });
 
-                /*delay = true;
-                setTimeout(() => {
-                  //Resume Script
-                  this._RunNextInstruction(_instr, null, onComplete)
-                }, args[0] * 1000);*/
               break;
               case 204: //ActionStartConversation
-                try{
-                  console.log('NWScript: '+this.name, 'ActionStartConversation', args);
-                  console.log(this.caller.conversation);
+                //try{
+                  //console.log('NWScript: '+this.name, 'ActionStartConversation', args);
+                  //console.log(this.caller.conversation);
                   //If the dialog name is blank default to the callers dialog file
                   if(args[1] == ''){
-                    args[1] = this.caller.conversation;
+                    //args[1] = this.caller.conversation;
                   }
 
-                  if(args[0] instanceof ModuleObject){
-                    args[0].actionQueue.push({
-                      object: this.caller,
+                  if(this.caller instanceof ModuleObject){
+                    this.caller.actionQueue.push({
+                      object: args[0],
                       conversation: args[1],
-                      ignoreStartRange: args[4] ? true : false,
-                      goal: ModuleCreature.ACTION.DIALOGOBJECT
+                      //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
+                      //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
+                      ignoreStartRange: true,//args[4] ? true : false,
+                      goal: ModuleCreature.ACTION.DIALOGOBJECT,
+                      clearable: false
                     });
                   }
 
-                }catch(e){
+                /*}catch(e){
                   console.error('HEY LOOK AT ME! ActionStartConversation', e);
-                }
+                }*/
               break;
               case 205: //ActionPauseConversation
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'ActionPauseConversation');
                 }
                 Game.InGameDialog.PauseConversation();
               break;
               case 206: //ActionResumeConversation
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'ActionResumeConversation');
                 }
                 Game.InGameDialog.ResumeConversation();
@@ -1845,7 +1919,7 @@ class NWScript {
                 if(args[0] instanceof ModuleObject){
                   _returnValue = this.locationPointers.push({
                     position: args[0].GetPosition(),
-                    area: Game.module, //Once the ModuleArea class is implemented this will point to that
+                    area: Game.module.area,
                     facing: args[0].GetRotation()
                   }) - 1;
                   //console.log('NWScript: '+this.name, 'GetLocation', _returnValue);
@@ -1853,7 +1927,7 @@ class NWScript {
                   //console.error('NWScript: '+this.name, 'GetLocation', args);
                   _returnValue = this.locationPointers.push({
                     position: new THREE.Vector3(),
-                    area: Game.module, //Once the ModuleArea class is implemented this will point to that
+                    area: Game.module.area,
                     facing: 180
                   }) - 1;
                 }
@@ -1865,11 +1939,24 @@ class NWScript {
                   );
                 }
               break;
+              case 215: //Location
+                _returnValue = this.locationPointers.push({
+                  position: args[0],
+                  facing: args[1],
+                  area: Game.module.area
+                }) - 1;
+              break;
               case 217: //GetIsPC
                 _returnValue = (args[0] == Game.player) ? 1 : 0;
               break;
+              case 218: //FeetToMeters
+                _returnValue = this.floatPointers.push(args[0] * 0.3048) - 1;
+              break;
+              case 219: //YardsToMeters
+                _returnValue = this.floatPointers.push(args[0] * 0.9144) - 1;
+              break;
               case 220: //ApplyEffectToObject
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
                 }
                 switch(args[1].type){
@@ -1886,6 +1973,23 @@ class NWScript {
                 }
 
                 args[2].AddEffect(args[1]);
+              break;
+              case 221: //SpeakString
+                for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+                  Game.module.area.creatures[i].heardStrings.push({
+                    speaker: this.caller,
+                    string: args[0], 
+                    index: args[1]}
+                  );
+                }
+
+                for(let i = 0, len = PartyManager.party.length; i < len; i++){
+                  PartyManager.party[i].heardStrings.push({
+                    speaker: this.caller,
+                    string: args[0], 
+                    index: args[1]}
+                  );
+                }
               break;
               case 223: //GetPositionFromLocation
                 if(args[0]){
@@ -1949,7 +2053,18 @@ class NWScript {
                 ) - 1;
               break;
               case 235: //GetIsEnemy
-                _returnValue = 0;
+                if(args[0] instanceof ModuleCreature){
+                  _returnValue = args[1].isHostile(args[0]) ? 1 : 0;
+                }else{
+                  _returnValue = 0;
+                }
+              break;
+              case 236: //GetIsFriend
+                if(args[0] instanceof ModuleCreature){
+                  _returnValue = args[1].isFriendly(args[0]) ? 1 : 0;
+                }else{
+                  _returnValue = 0;
+                }
               break;
               case 238: //GetPcSpeaker 
                 _returnValue = this.objectPointers.push(Game.player) - 1;
@@ -1963,7 +2078,7 @@ class NWScript {
               break;
               case 241: //DestroyObject
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'DestroyObject', args);
                 }
                 if(args[0] instanceof ModuleObject)
@@ -1975,7 +2090,7 @@ class NWScript {
                 )-1;
               break;
               case 243: //CreateObject
-                //if(Game.Flags.LogScripts){
+                //if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'CreateObject', args, _instr);
                 //}
                 delay = true;
@@ -1992,10 +2107,9 @@ class NWScript {
                           creature.LoadScripts( () => {
                             creature.LoadModel( (model) => {
                               creature.model.moduleObject = creature;
-                              model.translateX(args[2].position.x);
-                              model.translateY(args[2].position.y);
-                              model.translateZ(args[2].position.z);
-                              model.rotation.z = THREE.Math.degToRad(args[2].facing);
+                              creature.position.copy(args[2].position);
+                              creature.setFacing(THREE.Math.degToRad(args[2].facing), true);
+                              
                               //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(crt.getXOrientation(), crt.getYOrientation()));
                               model.hasCollision = true;
                               model.name = creature.getTag();
@@ -2018,7 +2132,13 @@ class NWScript {
 
                       },
                       onFail: () => {
-                        console.error('Failed to load character template');
+                        _returnValue = this.objectPointers.push(undefined) - 1;
+                        this.stack.push((_returnValue));
+                        resolve({
+                          _instr: _instr,
+                          seek: seek
+                        });
+                        console.error('Failed to load character template', args);
                       }
                     });
 
@@ -2045,28 +2165,102 @@ class NWScript {
                   _returnValue = this.stringPointers.push('') - 1 ;
                 }
               break;
-              case 262: //GetFirstInPersistentObject
-                this.persistentObjectIdx = 0;
+              case 254: //GetLastSpeaker
                 _returnValue = this.objectPointers.push(
-                  args[0].objectsInside[this.persistentObjectIdx++]
+                  this.listenPatternSpeaker
                 ) - 1;
               break;
-              case 263: //GetNextInPersistentObject
+              case 255: //BeginConversation
+                console.log('BeginConversation', this.caller, this.listenPatternSpeaker, args)
+                if((args[1]) instanceof ModuleObject){
+                  if(args[0] != ''){
+                    Game.InGameDialog.StartConversation(args[0], args[1], this.listenPatternSpeaker);
+                    _returnValue = 1;
+                  }else if((args[1])._conversation){
+                    Game.InGameDialog.StartConversation(this.caller._conversation, args[1], this.listenPatternSpeaker);
+                    (args[1])._conversation = '';
+                    _returnValue = 1;
+                  }else if((args[1]).conversation){
+                    Game.InGameDialog.StartConversation(this.caller.conversation, args[1], this.listenPatternSpeaker);
+                    _returnValue = 1;
+                  }else if(this.listenPatternSpeaker.conversation){
+                    Game.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.listenPatternSpeaker, args[1]);
+                    _returnValue = 1;
+                  }else{
+                    _returnValue = 0;
+                  }
+                }else{
+                  _returnValue = 0;
+                }
+              break;
+              case 256: //GetLastPerceived
                 _returnValue = this.objectPointers.push(
-                  args[0].objectsInside[this.persistentObjectIdx++]
+                  this.lastPerceived
                 ) - 1;
+              break;
+              case 257: //GetLastPerceptionHeard
+                if(this.lastPerceived instanceof ModuleObject){
+                  _returnValue = 0;
+                }else{
+                  _returnValue = 0;
+                }
+              break;
+              case 258: //GetLastPerceptionInaudible
+                if(this.lastPerceived instanceof ModuleObject){
+                  _returnValue = 0;
+                }else{
+                  _returnValue = 0;
+                }
+              break;
+              case 259: //GetLastPerceptionSeen
+                if(this.caller instanceof ModuleCreature)
+                  _returnValue = this.caller.perceptionList.indexOf(this.lastPerceived) > -1 ? 1 : 0;
+                else
+                  _returnValue = 0;
+              break;
+              case 261: //GetLastPerceptionVanished
+                if(this.lastPerceived instanceof ModuleObject){
+                  _returnValue = 0;
+                }else{
+                  _returnValue = 0;
+                }
+              break;
+              case 262: //GetFirstInPersistentObject
+                if(args[0] instanceof ModuleTrigger){
+                  args[0].objectsInsideIdx = 0;
+                  _returnValue = this.objectPointers.push(
+                    args[0].objectsInside[args[0].objectsInsideIdx++]
+                  ) - 1;
+                }else{
+                  _returnValue = this.objectPointers.push(undefined) - 1;
+                }
+              break;
+              case 263: //GetNextInPersistentObject
+                if(args[0] instanceof ModuleTrigger){
+                  _returnValue = this.objectPointers.push(
+                    args[0].objectsInside[args[0].objectsInsideIdx++]
+                  ) - 1;
+                }else{
+                  _returnValue = this.objectPointers.push(undefined) - 1;
+                }
               break;
               case 272: //ObjectToString
                 if(args[0] instanceof ModuleObject){
                   _returnValue = this.stringPointers.push(
-                    args[0].id.toString(16)
+                    args[0].getName()
                   ) - 1;
                 }else{
-                  _returnValue = this.stringPointers.push('') - 1 ;
+                  _returnValue = this.stringPointers.push('OBJECT_INVALID') - 1 ;
                 }
               break;
               case 286: //GetHasSkill
                 _returnValue = 0;
+              break;
+              case 289: //GetObjectSeen
+                if(args[1] instanceof ModuleCreature)
+                  _returnValue = args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
+                else
+                  _returnValue = 0;
               break;
               case 294: //ActionDoCommand
                 args[0].script.stack.push((0));
@@ -2081,6 +2275,36 @@ class NWScript {
                   name: 'EventUserDefined',
                   value: 0
                 }) - 1;
+              break;
+              case 300: //PlayAnimation
+                if(this.caller instanceof ModuleObject){
+                  this.caller.actionQueue.unshift({ goal: ModuleCreature.ACTION.ANIMATE, animation: args[0], speed: args[1], time: args[2] });
+                }
+              break;
+              case 301: //TalentSpell
+                _returnValue = this.talentPointers.push({
+                  type: 0,
+                  id: args[0]
+                }) - 1;
+              break;
+              case 302: //TalentFeat
+                _returnValue = this.talentPointers.push({
+                  type: 0,
+                  id: args[0]
+                }) - 1;
+              break;
+              case 303: //TalentSkill
+                _returnValue = this.talentPointers.push({
+                  type: 0,
+                  id: args[0]
+                }) - 1;
+              break;
+              case 306: //GetCreatureHasTalent
+                if(args[1] instanceof ModuleCreature){
+                  _returnValue = 0;
+                }else{
+                  _returnValue = 0;
+                }
               break;
               case 313: //JumpToLocation
                 this.caller.JumpToLocation(args[0]);
@@ -2100,9 +2324,22 @@ class NWScript {
                 ) - 1;
               break;
               case 319: //GetDistanceBetween2D
-                _returnValue = this.floatPointers.push(
-                  new THREE.Vector2( args[0].position.x, args[0].position.y).distanceTo(args[1].position)
-                ) - 1;
+                  if(args[1] instanceof ModuleObject){
+                    _returnValue = this.floatPointers.push(
+                      new THREE.Vector2( args[0].position.x, args[0].position.y).distanceTo(args[1].position)
+                    ) - 1;
+                  }else{
+                    _returnValue = this.floatPointers.push(
+                      0.0
+                    ) - 1;
+                  }
+              break;
+              case 320: //GetIsInCombat
+                if(args[0] instanceof ModuleCreature){
+                  _returnValue = args[0].combatState ? 1 : 0;
+                }else{
+                  _returnValue = 0;
+                }
               break;
               case 324: //SetLocked
                 args[0].setLocked(
@@ -2112,10 +2349,69 @@ class NWScript {
               case 325: //int GetLocked(object oTarget);
                 _returnValue = args[0].isLocked() ? 1 : 0;
               break;
+              case 331: //GetAbilityModifier
+                  if(args[1] instanceof ModuleCreature){
+                    _returnValue = this.integerPointers.push(0) - 1;
+                  }else{
+                    _returnValue = this.integerPointers.push(0) - 1;
+                  }
+              break;
               case 335: //GetDistanceToObject2D
-                _returnValue = this.floatPointers.push(
-                  new THREE.Vector2( this.caller.position.x, this.caller.position.y).distanceTo(args[0].position)
-                ) - 1;
+                if(args[0] instanceof ModuleObject){
+                  _returnValue = this.floatPointers.push(
+                    new THREE.Vector2( this.caller.position.x, this.caller.position.y).distanceTo(args[0].position)
+                  ) - 1;
+                }else{
+                  _returnValue = this.floatPointers.push(
+                    0.0
+                  ) - 1;
+                }
+              break;
+              case 339: //GetFirstItemInInventory
+                if(args[0] instanceof ModuleObject){
+                  if(args[0] == Game.player){
+                    if(InventoryManager.inventory.length){
+                      _returnValue = this.objectPointers.push(InventoryManager.inventory[0]) - 1;
+                      args[0]._inventoryPointer = 0;
+                    }else{
+                      args[0]._inventoryPointer = 0;
+                      _returnValue = this.objectPointers.push(undefined) - 1;
+                    }
+                  }else{
+                    if(args[0].inventory.length){
+                      _returnValue = this.objectPointers.push(args[0].inventory[0]) - 1;
+                      args[0]._inventoryPointer = 0;
+                    }else{
+                      args[0]._inventoryPointer = 0;
+                      _returnValue = this.objectPointers.push(undefined) - 1;
+                    }
+                  }
+                }else{
+                  _returnValue = this.objectPointers.push(undefined) - 1;
+                }
+              break;
+              case 340: //GetNextItemInInventory
+                if(args[0] instanceof ModuleObject){
+                  if(args[0] == Game.player){
+                    if(args[0]._inventoryPointer < InventoryManager.inventory.length){
+                      _returnValue = this.objectPointers.push(InventoryManager.inventory[args[0]._inventoryPointer]) - 1;
+                      args[0]._inventoryPointer++;
+                    }else{
+                      args[0]._inventoryPointer = 0;
+                      _returnValue = this.objectPointers.push(undefined) - 1;
+                    }
+                  }else{
+                    if(args[0]._inventoryPointer < args[0].inventory.length){
+                      _returnValue = this.objectPointers.push(args[0].inventory[args[0]._inventoryPointer]) - 1;
+                      args[0]._inventoryPointer++;
+                    }else{
+                      args[0]._inventoryPointer = 0;
+                      _returnValue = this.objectPointers.push(undefined) - 1;
+                    }
+                  }
+                }else{
+                  _returnValue = this.objectPointers.push(undefined) - 1;
+                }
               break;
               case 341: //GetClassByPosition
 
@@ -2134,15 +2430,37 @@ class NWScript {
                   )
                 )-1;
               break;
+              case 346: //GetLastDamager
+                if(this.caller instanceof ModuleCreature){
+                  _returnValue = this.objectPointers.push(this.caller.lastDamager) - 1;
+                }else{
+                  _returnValue = this.objectPointers.push(undefined) - 1;
+                }
+              break;
               case 358: //GetGender
                 _returnValue = this.integerPointers.push(
                   args[0].getGender()
                 )-1;
               break;
+              case 359: //GetIsTalentValid
+                _returnValue = 0;
+              break;
               case 361: //GetAttemptedAttackTarget
                 _returnValue = this.objectPointers.push(
-                  undefined
+                  this.caller.lastAttackTarget
                 ) - 1;
+              break;
+              case 362: //GetTypeFromTalent
+                if(args[0])
+                  _returnValue = this.integerPointers.push(args[0].type) - 1;
+                else
+                  _returnValue = this.integerPointers.push(-1) -1;
+              break;
+              case 362: //GeIdFromTalent
+                if(args[0])
+                  _returnValue = this.integerPointers.push(args[0].id) - 1;
+                else
+                  _returnValue = this.integerPointers.push(-1) -1;
               break;
               case 369: //GetJournalEntry
                 _returnValue = 0;
@@ -2154,7 +2472,7 @@ class NWScript {
               break;
               case 375: //GetAttemptedSpellTarget
                 _returnValue = this.objectPointers.push(
-                  this.caller.lastObjectOpened
+                  this.caller.lastSpellTarget
                 )-1;
               break;
               case 376: //GetLastOpenedBy
@@ -2165,12 +2483,25 @@ class NWScript {
               case 377: //GetHasSpell
                 _returnValue = 0;
               break;
+              case 382: //ActionForceMoveToLocation
+                //console.log('ActionForceMoveToObject', this.objectPointers[0], args);
+                this.objectPointers[0].moveToLocation(
+                  args[0],
+                  args[1],
+                  args[2]
+                );
+              break;
               case 383://ActionForceMoveToObject
                 this.objectPointers[0].moveToObject(
                   args[0],
                   args[1],
                   args[2]
                 );
+              break;
+              case 385: //JumpToObject
+                if(args[0] instanceof ModuleObject){
+                  this.caller.jumpToObject(args[0]);
+                }
               break;
               case 393: //GiveXPToCreature
                 args[0].addXP(args[1]);
@@ -2195,19 +2526,30 @@ class NWScript {
                   args[0].getBaseItemId()
                 ) - 1;
               break;
+              case 399: //ActionEquipMostDamagingMelee
+
+              break;
               case 409: //GetIsEncounterCreature
                 _returnValue = this.integerPointers.push(0)-1;
               break;
               case 412: //ChangeToStandardFaction
                 if(args[0] instanceof ModuleObject){
-                  args[0].factionID = args[1];
+                  args[0].faction = args[1];
                 }
               break;
               case 413: //SoundObjectPlay
                 if(args[0] instanceof ModuleSound)
                   args[0].emitter.PlayNextSound();
-                else
-                  console.error('SoundObjectPlay', 'Object invalid', args);
+              break;
+              case 415: //SoundObjectSetVolume
+                if(args[0] instanceof ModuleSound){
+                  console.log('SoundObjectSetVolume', args[1]);
+                }
+              break;
+              case 421: //SetLightsaberPowered
+                if(args[0] instanceof ModuleCreature){
+                  args[0].weaponPowered(true);
+                }
               break;
               case 443: //GetIsOpen
                 if(args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable){
@@ -2216,7 +2558,7 @@ class NWScript {
                   _returnValue = 0;
                 }
               break;
-              case 445: //IsInConversation
+              case 445: //GetIsInConversation
                 if(args[0] instanceof ModuleObject){
                   _returnValue = this.integerPointers.push(
                     args[0].isInConversation()
@@ -2236,6 +2578,13 @@ class NWScript {
                   {type: 62, appearance: args[0] }
                 ) - 1;
               break;
+              case 475: //GetNumStackedItems
+                if(args[0] instanceof ModuleObject){
+                  _returnValue = this.integerPointers.push(args[0].getStackSize());
+                }else{
+                  _returnValue = 0;
+                }
+              break;
               case 489: //GetAttemptedMovementTarget
                 _returnValue = this.objectPointers.push(
                   undefined
@@ -2248,16 +2597,17 @@ class NWScript {
               break;
               case 503: //CutsceneAttack
                 if(args[0] instanceof ModuleCreature){
-                  args[0].actionQueue.push({ 
+                  this.caller.attackCreature(args[0], 0, true, args[3], Global.kotor2DA.animations.rows[args[1]].name);
+                  /*args[0].actionQueue.push({ 
                     goal: ModuleCreature.ACTION.ANIMATE,
                     animation: Global.kotor2DA.animations.rows[args[1]].name,
                     speed: 1,
                     time: 0
-                  });
+                  });*/
                 }
               break;
               case 505: //SetLockOrientationInDialog
-                if(args[0] instanceof ModuleCreature){
+                if(args[0] instanceof ModuleObject){
                   args[0].lockDialogOrientation = args[1] ? true : false;
                 }
               break;
@@ -2266,7 +2616,7 @@ class NWScript {
                 Game.videoEffect = args[0];
               break;
               case 509: //StartNewModule
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'LOAD MODULE ', args[0], args[1]);
                 }
                 Game.LoadModule(args[0], args[1]);
@@ -2275,8 +2625,19 @@ class NWScript {
                 console.log('NWScript: '+this.name, 'DisableVideoEffect ', args);
                 Game.videoEffect = null;
               break;
+              case 514: //GetUserActionsPending
+                //This will kinda work for now but I think it is supposed to check if any actions in the queue were set by the player
+                if(this.caller instanceof ModuleObject && this.caller == Game.player){
+                  _returnValue = 0;//this.caller.actionQueue.length ? 1 : 0;
+                }else{
+                  _returnValue = 0;
+                }
+              break;
               case 517: //ShowTutorialWindow
                 Game.InGameConfirm.ShowTutorialMessage(args[0]);
+              break;
+              case 520: //SWMG_SetLateralAccelerationPerSecond
+                Game.module.area.MiniGame.Player.accel_lateral_secs = args[0];
               break;
               case 522: //GetCurrentAction
 
@@ -2296,8 +2657,25 @@ class NWScript {
                 //console.log('GetFirstPC', Game.player)
                 _returnValue = this.objectPointers.push(Game.player) - 1;
               break;
+              case 556: //GetLastHostileActor
+                _returnValue = this.objectPointers.push(args[0].lastAttackTarget || args[0].lastDamager || undefined) - 1;
+              break;
+              case 561: //GetModuleName
+                _returnValue = this.stringPointers.push(Game.module.Mod_Name.GetValue())-1;
+              break;
+              case 563: //SWMG_SetSpeedBlurEffect
+                  //TODO
+              break;
               case 565: //GetRunScriptVar
                 _returnValue = this.integerPointers.push(this.scriptVar)-1;
+              break;
+              case 574: //AddPartyMember
+                if(args[1] instanceof ModuleCreature){
+                  PartyManager.AddCreatureToParty(args[0], args[1]);
+                  _returnValue = 1;
+                }else{
+                  _returnValue = 0;
+                }
               break;
               case 575: //RemovePartyMember
                 PartyManager.RemoveNPCById(args[0]);
@@ -2345,7 +2723,7 @@ class NWScript {
                 )) - 1;
               break;
               case 581 : //SetGlobalNumber
-                //console.log('NWScript: '+this.name, 'SetGlobalNumber ', args); 
+                //console.log('NWScript: '+this.name, 'SetGlobalNumber ', args[0], args[1]); 
                 Game.setGlobalNumber(
                   args[0],
                   args[1]
@@ -2354,30 +2732,134 @@ class NWScript {
               case 582: //void AurPostString(string sString, int nX, int nY, float fLife)
                 console.log('AurPostString', args[0]);
               break;
+              case 586: //SWMG_PlayAnimation
+                if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
+                  args[0].PlayAnimation(args[1], args[2], args[3], args[4]);
+                }
+              break;
+              case 598: //SWMG_OnDeath
+                //Default SWMG_OnDeath stuff not sure what the devs had here...
+                //
+              break;
+              case 607: //SWMG_RemoveAnimation
+                if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
+                  args[0].RemoveAnimation(args[1]);
+                }
+              break;
+              case 611: //SWMG_GetPlayer
+                _returnValue = this.objectPointers.push(
+                  Game.module.area.MiniGame.Player
+                ) - 1;
+              break;
+              case 612: //SWMG_GetEnemyCount
+                _returnValue = this.integerPointers.push(
+                  Game.module.area.MiniGame.Enemies.length
+                ) - 1;
+              break;
+              case 613: //SWMG_GetEnemy
+              _returnValue = this.objectPointers.push(
+                Game.module.area.MiniGame.Enemies[
+                  args[0]
+                ]
+              ) - 1;
+              break;
+              case 623: //SWMG_GetPosition
+                if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
+                  this.pushVectorToStack(args[0].position);
+                }else{
+                  this.pushVectorToStack({x: 0, y: 0, z: 0});
+                }
+              break;
+              case 641: //SWMG_GetPlayerOffset
+                this.pushVectorToStack(Game.module.area.MiniGame.Player.model.position);
+              break;
+              case 643: //SWMG_GetPlayerSpeed
+                _returnValue = this.floatPointers.push(
+                  Game.module.area.MiniGame.Player.speed
+                ) - 1;
+              break;
+              case 644: //SWMG_GetPlayerMinSpeed
+                _returnValue = this.floatPointers.push(
+                  Game.module.area.MiniGame.Player.speed_min
+                ) - 1;
+              break;
+              case 645: //SWMG_GetPlayerAccelerationPerSecond
+                _returnValue = this.floatPointers.push(
+                  Game.module.area.MiniGame.Player.accel_secs
+                ) - 1;
+              break;
+              case 646: //SWMG_GetPlayerTunnelPos
+                this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.pos);
+              break;
+              case 647: //SWMG_SetPlayerOffset
+                Game.module.area.MiniGame.Player.model.position.copy(args[0]);
+              break;
+              case 649: //SWMG_SetPlayerSpeed
+                Game.module.area.MiniGame.Player.speed = args[0];
+              break;
+              case 650: //SWMG_SetPlayerMinSpeed
+                Game.module.area.MiniGame.Player.speed_min = args[0];
+              break;
+              case 651: //SWMG_SetPlayerAccelerationPerSecond
+                Game.module.area.MiniGame.Player.accel_secs = args[0];
+              break;
+              case 652: //SWMG_SetPlayerTunnelPos
+                Game.module.area.MiniGame.Player.tunnel.pos = args[0];
+              break;
+              case 653: //SWMG_GetPlayerTunnelNeg
+                this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.neg);
+              break;
+              case 654: //SWMG_SetPlayerTunnelNeg
+                Game.module.area.MiniGame.Player.tunnel.neg = args[0];
+              break;
+              case 667: //SWMG_GetPlayerMaxSpeed
+                _returnValue = this.floatPointers.push(
+                  Game.module.area.MiniGame.Player.speed_max
+                ) - 1;
+              break;
+              case 668: //SWMG_SetPlayerMaxSpeed
+                Game.module.area.MiniGame.Player.speed_max = args[0];
+              break;
               case 679: //GetLocalBoolean
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('GetLocalBoolean', args[1])
                 }
-                _returnValue = args[0].getLocalBoolean( args[1] ) ? 1 : 0;
+                if(args[0] instanceof ModuleObject)
+                  _returnValue = args[0].getLocalBoolean( args[1] ) ? 1 : 0;
+                else
+                  _returnValue = 0;
               break;
               case 680: //SetLocalBoolean
+                //console.log('SetLocalBoolean', args);
                 args[0].setLocalBoolean(
                   args[1],
                   args[2]
                 )
               break;
               case 681: //GetLocalNumber
-                _returnValue = this.integerPointers.push(
-                  args[0].getLocalNumber(
-                    args[1]
-                  )
-                ) -1;
+                if(args[0] instanceof ModuleObject){
+                  _returnValue = this.integerPointers.push(
+                    args[0].getLocalNumber(
+                      args[1]
+                    )
+                  ) -1;
+                }else{
+                  _returnValue = this.integerPointers.push(-1) -1;
+                }
               break;
               case 682: //SetLocalNumber
                 args[0].setLocalNumber(
                   args[1],
                   args[2]
                 )
+              break;
+              case 692: //GetGlobalLocation
+                _returnValue = this.locationPointers.push(
+                  Game.Globals['Location'][args[0]]
+                ) - 1;
+              break;
+              case 693: //SetGlobalLocation
+                Game.Globals['Location'][args[0]] = args[1];
               break;
               case 695: //RemoveAvailableNPC
                 PartyManager.RemoveAvailableNPC(args[0]);
@@ -2395,7 +2877,6 @@ class NWScript {
                   args[0],
                   args[1],
                   () => {
-                    //this._RunNextInstruction(_instr, null, onComplete);
 
                     _returnValue = this.integerPointers.push(1) - 1;
                     this.stack.push((_returnValue));
@@ -2409,11 +2890,13 @@ class NWScript {
               break;
               case 698: //SpawnAvailableNPC
 
+                delay = true;
+
                 let partyMember = new ModuleCreature();
                 partyMember.setTemplateResRef(
                   Game.getNPCResRefById(args[0])
                 );
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'partyMember', partyMember);
                 }
                 
@@ -2421,20 +2904,27 @@ class NWScript {
                 partyMember.Load( () => {
                   partyMember.LoadEquipment( () => {
                     partyMember.LoadModel( (model) => {
-                      console.log('NWScript: '+this.name, 'loaded', model.name);
                       partyMember.position.copy(args[1].position);
                       model.box = new THREE.Box3().setFromObject(model);
+                      partyMember.setFacing(THREE.Math.degToRad(args[1].facing), true);
                       partyMember.model.moduleObject = partyMember;
-                      model.rotation.z = args[1].facing;
                       model.hasCollision = true;
-                      Game.group.party.add( model );
+                      Game.group.creatures.add( model );
+
+                      _returnValue = this.objectPointers.push(
+                        partyMember
+                      ) - 1;
+
+                      this.stack.push((_returnValue));
+
+                      resolve({
+                        _instr: _instr,
+                        seek: seek
+                      });
+
                     });
                   });
                 });
-
-                _returnValue = this.objectPointers.push(
-                  partyMember
-                ) - 1;
 
               break;
               case 699: //IsNPCPartyMember
@@ -2445,12 +2935,30 @@ class NWScript {
               case 701: //GetIsConversationActive
                 _returnValue = Game.inDialog ? 1 : 0;
               break;
+              case 704: //GetPartyAIStyle
+                _returnValue = this.integerPointers.push(0) - 1;
+              break;
+              case 705: //GetNPCAIStyle
+                _returnValue = this.integerPointers.push(args[0].aiStyle) - 1;
+              break;
+              case 707: //SetNPCAIStyle
+                args[0].aiStyle = args[1];
+              break;
+              case 708: //SetNPCSelectability
+                PartyManager.SetSelectable(args[0], args[1]);
+              break;
+              case 709: //GetNPCSelectability
+                _returnValue = PartyManager.IsSelectable(args[0]) ? 1 : 0;
+              break;
               case 712: //ShowPartySelectionGUI
+                //Setting ignoreUnescapable = TRUE allows the exithawk script to manage the party ingoring the unescapable flag
+                //set in the area properties. This is my current understanding of how I think it should work...
                 Game.MenuPartySelection.Show(
                   args[0],
                   args[1],
                   args[2]
                 );
+                Game.MenuPartySelection.ignoreUnescapable = true;
               break;
               case 713: //GetStandardFaction
                 _returnValue = this.integerPointers.push(
@@ -2472,11 +2980,11 @@ class NWScript {
                 }
               break;
               case 719: //SetGlobalFadeIn
+                //console.log('SetGlobalFadeIn', Game.FadeOverlay.holdForScript);
                 setTimeout( () => {
+                  Game.FadeOverlay.holdForScript = false;
+                  //console.log('SetGlobalFadeIn', Game.FadeOverlay.holdForScript);
                   Game.FadeOverlay.FadeIn(args[1], args[2], args[3], args[4]);
-                  if(GameKey == 'TSL'){
-                    Game.FadeOverlay.override = false;
-                  }
                 }, args[0] * 1000);
 
               break;
@@ -2485,19 +2993,31 @@ class NWScript {
                   Game.FadeOverlay.FadeOut(args[1], args[2], args[3], args[4]);
                 }, args[0] * 1000);
               break;
+              case 721: //GetLastHostileTarget
+                if(args[0] instanceof ModuleCreature){
+                  _returnValue = this.objectPointers.push( args[0].lastAttackTarget ) - 1;
+                }else{
+                  _returnValue = this.objectPointers.push( this.caller.lastAttackTarget ) - 1;
+                }
+              break;
+              case 722: //GetLastAttackAction
+                //console.log('GetLastAttackAction', args[0].lastAttackAction);
+                _returnValue = this.integerPointers.push( args[0].lastAttackAction )
+              break;
               case 730: //ActionFollowLeader
                 if(this.caller instanceof ModuleCreature) {
                   this.caller.actionQueue.push({ object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER });
                 }
               break;
+              case 732: //GetIsDebilitated
+                _returnValue = 0;
+              break;
               case 733: //PlayMovie
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
                 console.log('PlayMovie', args[0]);
                 /*delay = true;
                 AudioEngine.Mute()
                 VideoPlayer.Load(args[0], () => {
                   AudioEngine.Unmute();
-                  this._RunNextInstruction(_instr, null, onComplete);
                 })**/
 
               break;
@@ -2535,6 +3055,16 @@ class NWScript {
                 ) - 1;
                 //console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
+              case 745: //SoundObjectFadeAndStop
+                if(args[0] instanceof ModuleSound){
+                  //TODO
+                }
+              break;
+              case 749: //ResetDialogState
+                if(this.caller instanceof ModuleObject){
+                  this.caller._conversation = undefined;
+                }
+              break;
               case 759: //NoClicksFor
                 //TODO
               break;
@@ -2542,9 +3072,9 @@ class NWScript {
                 Game.holdWorldFadeInForDialog = true;
               break;
               case 761: //ShipBuild
-                _returnValue = 1; //Hardcode this value so the game doesn't enter debug mode
+                _returnValue = 0; //Hardcode this value so the game doesn't enter debug mode
               break;
-              case 768: //GetScriptParameter(K2)
+              case 768: //IsMoviePlaying(K1) - GetScriptParameter(K2)
                 if(GameKey == 'TSL'){
                   _returnValue = this.integerPointers.push(
                     parseInt(this.params[args[0] - 1])
@@ -2554,8 +3084,32 @@ class NWScript {
                 }
               break;
               case 769: //SetFadeUntilScript
-                //Game.FadeOverlay.override = true;
-                Game.holdWorldFadeInForDialog = true;
+                Game.FadeOverlay.holdForScript = true;
+                //console.log('SetFadeUntilScript', Game.FadeOverlay.holdForScript);
+              break;
+              case 782: //SWMG_GetSwoopUpgrade
+                _returnValue = this.integerPointers.push( 0 ) - 1;
+              break;
+              case 799: //IncrementGlobalNumber
+                if(typeof Game.Globals.Number[args[0].toLowerCase()] !== 'undefined')
+                  Game.Globals.Number[args[0].toLowerCase()] += parseInt(args[1]);
+              break;
+              case 800: //DecrementGlobalNumber
+                if(typeof Game.Globals.Number[args[0].toLowerCase()] !== 'undefined')
+                  Game.Globals.Number[args[0].toLowerCase()] -= parseInt(args[1]);
+              break;
+              case 811: //IsMeditating
+                _returnValue = 0;
+              break;
+              case 813: //SetHealTarget
+                if(args[0] instanceof ModuleObject){
+                  args[0]._healTarget = args[1];
+                }
+              break;
+              case 814: //GetHealTarget
+                _returnValue = this.objectPointers.push(
+                  args[0]._healTarget
+                )
               break;
               case 831: //GetScriptStringParameter (K2)
                 _returnValue = this.stringPointers.push(
@@ -2578,6 +3132,15 @@ class NWScript {
                   PartyManager.party[0]
                 ) - 1;
               break;
+              case 846: //RemoveNPCFromPartyToBase
+                PartyManager.RemoveNPCById(args[0], true);
+                _returnValue = 1;
+              break;
+              case 847: //CreatureFlourishWeapon
+                if(args[0] instanceof ModuleCreature){
+                  args[0].flourish();
+                }
+              break;
               case 851: //GetIsXbox 
                 _returnValue = 0;
               break;
@@ -2590,7 +3153,7 @@ class NWScript {
                 _returnValue = args[0] == Game.player ? 1 : 0;
               break;
               default:
-                console.error('Unhandled script action', _instr.address, action.name, action.args);
+                //console.error('Unhandled script action', _instr.address, action.name, action.args);
               break;
 
             }
@@ -2604,43 +3167,43 @@ class NWScript {
                 return;
               }*/
             }else if(!delay && action.type != 'void' && action.type != 'vector'){
-              console.log(action, args, this);
+              //console.log(action, args, this);
               this.stack.push((0));
-              console.error('Action '+action.name+' didn\'t return a value');
+              //console.error('Action '+action.name+' didn\'t return a value');
             }
 
             break;
           break;
-          case 'LOGANDII':
+          case NWScript.ByteCodesEnum.LOGANDII:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'LOGANDII', var2, var1);
             }
 
             if(this.integerPointers[var1] && this.integerPointers[var2]){
-              if(Game.Flags.LogScripts){
+              if(this.isDebugging()){
                 console.log('NWScript: '+this.name, 'LOGANDII TRUE', this.integerPointers[var1], this.integerPointers[var2])
               }
               this.stack.push(NWScript.TRUE)//TRUE
             }else{
-              if(Game.Flags.LogScripts){
+              if(this.isDebugging()){
                 console.log('NWScript: '+this.name, 'LOGANDII FALSE', this.integerPointers[var1], this.integerPointers[var2])
               }
               this.stack.push(NWScript.FALSE)//FALSE
             }
 
           break;
-          case 'LOGORII':
+          case NWScript.ByteCodesEnum.LOGORII:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'LOGORII', var2, var1);
             }
 
@@ -2650,13 +3213,13 @@ class NWScript {
               this.stack.push(NWScript.FALSE)//FALSE
 
           break;
-          case 'INCORII':
+          case NWScript.ByteCodesEnum.INCORII:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'INCORII', var2, var1);
             }
 
@@ -2666,13 +3229,13 @@ class NWScript {
               this.stack.push(NWScript.FALSE)//FALSE
 
           break;
-          case 'EXCORII':
+          case NWScript.ByteCodesEnum.EXCORII:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'EXCORII', var2, var1);
             }
 
@@ -2682,13 +3245,13 @@ class NWScript {
               this.stack.push(NWScript.FALSE)//FALSE
 
           break;
-          case 'BOOLANDII':
+          case NWScript.ByteCodesEnum.BOOLANDII:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'BOOLANDII', var2, var1);
             }
 
@@ -2698,12 +3261,12 @@ class NWScript {
               this.stack.push(NWScript.FALSE)//FALSE
 
           break;
-          case 'EQUAL':
+          case NWScript.ByteCodesEnum.EQUAL:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'EQUAL', var2, var1, this.stack.peek());
             }
 
@@ -2722,11 +3285,11 @@ class NWScript {
               break;
               case 'OO':
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'EQUALOO', var1, var2);
                 }
                             
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, this.objectPointers);
                 }
                 if(this.objectPointers[var1] == this.objectPointers[var2])
@@ -2735,20 +3298,27 @@ class NWScript {
                   this.stack.push(NWScript.FALSE)//FALSE
               break;
               case 'SS':
-                if(this.stringPointers[var1] == this.stringPointers[var2])
+                if(this.stringPointers[var1].toLowerCase() == this.stringPointers[var2].toLowerCase())
                   this.stack.push(NWScript.TRUE)//TRUE
                 else
                   this.stack.push(NWScript.FALSE)//FALSE
               break;
+              case 'LOCLOC':
+                if(this.locationCompare(this.locationPointers[var1], this.locationPointers[var2])){
+                  this.stack.push(NWScript.TRUE)//TRUE
+                }else{
+                  this.stack.push(NWScript.FALSE)//TRUE
+                }
+              break;
             }
 
           break;
-          case 'NEQUAL':
+          case NWScript.ByteCodesEnum.NEQUAL:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'NEQUAL', var2, var1);
             }
 
@@ -2768,7 +3338,7 @@ class NWScript {
               break;
               case 'OO':
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'EQUALOO', var1, var2);
                 }
                 if(this.objectPointers[var1] != this.objectPointers[var2])
@@ -2782,11 +3352,18 @@ class NWScript {
                 else
                   this.stack.push(NWScript.FALSE)//FALSE
               break;
+              case 'LOCLOC':
+                if(!this.locationCompare(this.locationPointers[var1], this.locationPointers[var2])){
+                  this.stack.push(NWScript.TRUE)//TRUE
+                }else{
+                  this.stack.push(NWScript.FALSE)//TRUE
+                }
+              break;
             }
           break;
-          case 'GEQ':
-            var1 = (this.stack.pop());
+          case NWScript.ByteCodesEnum.GEQ:
             var2 = (this.stack.pop());
+            var1 = (this.stack.pop());
 
             switch(NWScript.Types[_instr.type]){
               case 'II':
@@ -2803,14 +3380,14 @@ class NWScript {
               break;
             }
           break;
-          case 'GT':
+          case NWScript.ByteCodesEnum.GT:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             switch(NWScript.Types[_instr.type]){
               case 'II':
                 
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, this.integerPointers[var1], this.integerPointers[var2]);
                 }
                 if(this.integerPointers[var1] > this.integerPointers[var2])
@@ -2826,7 +3403,7 @@ class NWScript {
               break;
             }
           break;
-          case 'LT':
+          case NWScript.ByteCodesEnum.LT:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
@@ -2845,7 +3422,7 @@ class NWScript {
               break;
             }
           break;
-          case 'LEQ':
+          case NWScript.ByteCodesEnum.LEQ:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
@@ -2864,16 +3441,16 @@ class NWScript {
               break;
             }
           break;
-          case 'SHLEFTII':
+          case NWScript.ByteCodesEnum.SHLEFTII:
             
           break;
-          case 'SHRIGHTII':
+          case NWScript.ByteCodesEnum.SHRIGHTII:
 
           break;
-          case 'USHRIGHTII':
+          case NWScript.ByteCodesEnum.USHRIGHTII:
 
           break;
-          case 'ADD':
+          case NWScript.ByteCodesEnum.ADD:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
@@ -2886,12 +3463,12 @@ class NWScript {
                 this.stack.push((this.integerPointers.length-1));
               break;
               case 'IF':
-                newValue = this.floatPointers[var1]+this.integerPointers[var2];
+                newValue = this.integerPointers[var1]+this.floatPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'FI':
-                newValue = this.integerPointers[var1]+this.floatPointers[var2];
+                newValue = this.floatPointers[var1]+this.integerPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
@@ -2907,11 +3484,15 @@ class NWScript {
                 );
               break;
               case 'vv':
-                this.stack.push((var2+var1));
+                this.pushVectorToStack({
+                  x: var1.x + var2.x,
+                  y: var1.y + var2.y,
+                  z: var1.z + var2.z
+                });
               break;
             }
           break;
-          case 'SUB':
+          case NWScript.ByteCodesEnum.SUB:
 
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
@@ -2925,12 +3506,12 @@ class NWScript {
                 this.stack.push((this.integerPointers.length-1));
               break;
               case 'IF':
-                newValue = this.floatPointers[var1]-this.integerPointers[var2];
+                newValue = this.integerPointers[var1]-this.floatPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'FI':
-                newValue = this.integerPointers[var1]-this.floatPointers[var2];
+                newValue = this.floatPointers[var1]-this.integerPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
@@ -2940,18 +3521,22 @@ class NWScript {
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'vv':
-                this.stack.push((var2-var1));
+                this.pushVectorToStack({
+                  x: var1.x - var2.x,
+                  y: var1.y - var2.y,
+                  z: var1.z - var2.z
+                });
               break;
             }
 
           break;
-          case 'MUL':
+          case NWScript.ByteCodesEnum.MUL:
             
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
             newValue = 0;
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('MUL', var2, var1);
             }
             switch(NWScript.Types[_instr.type]){
@@ -2961,12 +3546,12 @@ class NWScript {
                 this.stack.push((this.integerPointers.length-1));
               break;
               case 'IF':
-                newValue = this.floatPointers[var1]*this.integerPointers[var2];
+                newValue = this.integerPointers[var1]*this.floatPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'FI':
-                newValue = this.integerPointers[var1]*this.floatPointers[var2];
+                newValue = this.floatPointers[var1]*this.integerPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
@@ -2984,7 +3569,7 @@ class NWScript {
             }
 
           break;
-          case 'DIV':
+          case NWScript.ByteCodesEnum.DIV:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
@@ -2992,17 +3577,17 @@ class NWScript {
 
             switch(NWScript.Types[_instr.type]){
               case 'II':
-                newValue = this.integerPointers[var1]/this.integerPointers[var2];
+                newValue = this.integerPointers[var1] / this.integerPointers[var2];
                 this.integerPointers.push(newValue);
                 this.stack.push((this.integerPointers.length-1));
               break;
               case 'IF':
-                newValue = this.floatPointers[var1]/this.integerPointers[var2];
+                newValue = this.integerPointers[var1]/this.floatPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'FI':
-                newValue = this.integerPointers[var1]/this.floatPointers[var2];
+                newValue = this.floatPointers[var1]/this.integerPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
@@ -3016,7 +3601,7 @@ class NWScript {
               break;
             }
           break;
-          case 'MOD':
+          case NWScript.ByteCodesEnum.MOD:
             var2 = (this.stack.pop());
             var1 = (this.stack.pop());
 
@@ -3029,12 +3614,12 @@ class NWScript {
                 this.stack.push((this.integerPointers.length-1));
               break;
               case 'IF':
-                newValue = this.floatPointers[var1]%this.integerPointers[var2];
+                newValue = this.integerPointers[var1]%this.floatPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
               case 'FI':
-                newValue = this.integerPointers[var1]%this.floatPointers[var2];
+                newValue = this.floatPointers[var1]%this.integerPointers[var2];
                 this.floatPointers.push(newValue);
                 this.stack.push((this.floatPointers.length-1));
               break;
@@ -3048,56 +3633,53 @@ class NWScript {
               break;
             }
           break;
-          case 'NEG':
+          case NWScript.ByteCodesEnum.NEG:
             var1 = (this.stack.pop());
 
             newValue = 0;
 
             switch(NWScript.Types[_instr.type]){
               case 'I':
-                newValue = this.integerPointers[var1] * -1;
+                newValue = -this.integerPointers[var1];
                 this.stack.push((this.integerPointers.push(newValue)-1));
               break;
               case 'F':
-                newValue = this.floatPointers[var1] * -1;
+                newValue = -this.floatPointers[var1];
                 this.stack.push((this.floatPointers.push(newValue)-1));
               break;
             }
           break;
-          case 'COMPI':
+          case NWScript.ByteCodesEnum.COMPI:
             throw 'Unsupported code: COMPI';
           break;
-          case 'MOVSP':
+          case NWScript.ByteCodesEnum.MOVSP:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'MOVSP', this.stack.pointer)
               console.log('NWScript: '+this.name, 'MOVSP', this.stack.getAtPointer(_instr.offset), this.stack.getPointer());
             }
 
             //this.stack.setPointer(_instr.offset);
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('MOVSP', this.stack.pointer, this.stack.length, _instr.offset, Math.abs(_instr.offset)/4);
             }
             for(let i = 0; i < (Math.abs(_instr.offset)/4); i++){
-              //console.log('MOVSP POPING!')
               this.stack.stack.splice((this.stack.pointer -= 4) / 4, 1)[0];
-              //this.stack.pop();
             }
-            //this.stack.pop();
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'MOVSP', this.stack.getAtPointer(_instr.offset), this.stack.getPointer());
             }
           break;
-          case 'STORE_STATEALL':
+          case NWScript.ByteCodesEnum.STORE_STATEALL:
             //OBSOLETE NOT SURE IF USED IN KOTOR
           break;
-          case 'JMP':
+          case NWScript.ByteCodesEnum.JMP:
             seek = _instr.address + _instr.offset;
           break;
-          case 'JSR':
+          case NWScript.ByteCodesEnum.JSR:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'JSR');
             }
             let pos = _instr.address;
@@ -3105,118 +3687,133 @@ class NWScript {
             this.subRoutines.push(_instr.nextInstr.address); //Where to return to after the subRoutine is done
 
           break;
-          case 'JZ':
+          case NWScript.ByteCodesEnum.JZ:
             let popped = this.integerPointers[(this.stack.pop())];
             if(popped == 0){
               seek = _instr.address + _instr.offset;
             }
           break;
-          case 'JNZ': //I believe this is used in SWITCH statements
+          case NWScript.ByteCodesEnum.JNZ: //I believe this is used in SWITCH statements
             let jnzTOS = this.integerPointers[(this.stack.pop())];
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('JNZ', jnzTOS, _instr.address + _instr.offset);
             }
             if(jnzTOS != 0){
               seek = _instr.address + _instr.offset;
             }
           break;
-          case 'RETN':
+          case NWScript.ByteCodesEnum.RETN:
             //console.log('RETN', this.subRoutines, this.subRoutines[0]);
-            try{
+            //try{
               if(this.subRoutines.length){
                 let _subRout = this.subRoutines.pop();
                 if(_subRout == -1){
-                  if(Game.Flags.LogScripts){
+                  if(this.isDebugging()){
                     console.error('RETN');
                   }
                   seek = null;
                   _instr.eof = true;
                 }else{
-                  if(Game.Flags.LogScripts){
+                  if(this.isDebugging()){
                     console.log('NWScript: '+this.name, 'RETN', _subRout, this.subRoutines.length);
                   }
                   seek = _subRout; //Resume the code just after our pervious jump
                   if(!seek){
-                    if(Game.Flags.LogScripts){
+                    if(this.isDebugging()){
                       console.log('NWScript: seek '+this.name, seek, 'RETN');
                     }
                   }
                 }
               }else{
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, 'RETN', 'END')
                 }
                 let _subRout = this.subRoutines.pop();
                 //seek = _subRout;
                 _instr.eof = true;
-                if(Game.Flags.LogScripts){
+                if(this.isDebugging()){
                   console.log('NWScript: '+this.name, _instr)
                 }
               }
-            }catch(e){
-              if(Game.Flags.LogScripts){
+            /*}catch(e){
+              if(this.isDebugging()){
                 console.error('RETN', e);
               }
-            }
+            }*/
           break;
-          case 'DESTRUCT':
+          case NWScript.ByteCodesEnum.DESTRUCT:
+            // sizeOfElementToSave
+            // sizeToDestroy
+            // offsetToSaveElement
+
+            let destroyed = [];
+            for(let i = 0; i < (Math.abs(_instr.sizeToDestroy)/4); i++){
+              destroyed.push(this.stack.stack.splice((this.stack.pointer -= 4) / 4, 1)[0]);
+            }
+
+            let saved = destroyed[_instr.offsetToSaveElement/_instr.sizeOfElementToSave];
+
+            this.stack.push(
+              saved
+            );
+
+            //console.log('DESTRUCT', destroyed, saved);
 
           break;
-          case 'NOTI':
+          case NWScript.ByteCodesEnum.NOTI:
             var1 = (this.stack.pop());
           if(this.integerPointers[var1] == 0)
             this.stack.push(NWScript.TRUE)//TRUE
           else
             this.stack.push(NWScript.FALSE)//FALSE
           break;
-          case 'DECISP':
+          case NWScript.ByteCodesEnum.DECISP:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'DECISP', this.stack.getAtPointer( _instr.offset));
             }
             var1 = (this.stack.getAtPointer( _instr.offset));
             this.integerPointers[var1] -= 1;
           break;
-          case 'INCISP':
-            
-            if(Game.Flags.LogScripts){
+          case NWScript.ByteCodesEnum.INCISP:
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'INCISP', this.stack.getAtPointer( _instr.offset));
             }
             var1 = (this.stack.getAtPointer( _instr.offset));
             this.integerPointers[var1] += 1;
           break;
-          case 'CPDOWNBP':
+          case NWScript.ByteCodesEnum.CPDOWNBP:
             this.stack.replaceBP(_instr.offset, this.stack.peek());
           break;
-          case 'CPTOPBP':
+          case NWScript.ByteCodesEnum.CPTOPBP:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'CPTOPBP', _instr);
             }
             let stackBaseEle = this.stack.getAtBasePointer( _instr.pointer );
             this.stack.push( (stackBaseEle) );
           break;
-          case 'DECIBP':
+          case NWScript.ByteCodesEnum.DECIBP:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'DECIBP', this.stack.getAtBasePointer( _instr.offset));
             }
             var1 = (this.stack.getAtBasePointer( _instr.offset));
             this.integerPointers[var1] -= 1;
           break;
-          case 'INCIBP':
+          case NWScript.ByteCodesEnum.INCIBP:
             
-            if(Game.Flags.LogScripts){
+            if(this.isDebugging()){
               console.log('NWScript: '+this.name, 'INCIBP', this.stack.getAtBasePointer( _instr.offset));
             }
             var1 = (this.stack.getAtBasePointer( _instr.offset));
             this.integerPointers[var1] += 1;
           break;
-          case 'SAVEBP':
+          case NWScript.ByteCodesEnum.SAVEBP:
             this.stack.saveBP();
             this.currentBlock = 'global';
 
-            this.globalCache = {
+            /*this.globalCache = {
               _instr: _instr.nextInstr,
               caller: this.caller,
               enteringObject: this.enteringObject,
@@ -3234,13 +3831,13 @@ class NWScript {
                 pointer: this.stack.pointer,
                 stack: this.stack.stack.slice()
               }
-            };
+            };*/
 
           break;
-          case 'RESTOREBP':
+          case NWScript.ByteCodesEnum.RESTOREBP:
             this.stack.restoreBP();
           break;
-          case 'STORE_STATE':
+          case NWScript.ByteCodesEnum.STORE_STATE:
 
             let state = {
               offset: _instr.nextInstr.nextInstr.address,
@@ -3265,6 +3862,7 @@ class NWScript {
             state.script.effectPointers = this.effectPointers.slice();
             state.script.eventPointers = this.eventPointers.slice();
             state.script.actionPointers = this.actionPointers.slice();
+            state.script.talentPointers = this.talentPointers.slice();
             state.script.stack = new NWScriptStack();
 
             state.script.stack.stack = this.stack.stack.slice();
@@ -3272,19 +3870,21 @@ class NWScript {
             state.script.stack.pointer = this.stack.pointer;
             state.script.caller = this.caller;
             state.script.enteringObject = this.enteringObject;
+            state.script.listenPatternNumber = this.listenPatternNumber;
+            state.script.listenPatternSpeaker = this.listenPatternSpeaker;
             this.state.push(state);
             state.script.state = this.state.slice();
             
           break;
-          case 'NOP':
+          case NWScript.ByteCodesEnum.NOP:
 
           break;
-          case 'T':
+          case NWScript.ByteCodesEnum.T:
 
           break;
         }
         
-        if(Game.Flags.LogScripts){
+        if(this.isDebugging()){
           console.log('NWScript: '+this.name, 'STACK_LEN', this.stack.stack.length);
         }
 
@@ -3293,39 +3893,17 @@ class NWScript {
             _instr: _instr,
             seek: seek
           });
-          
         }
         //console.error('HEY LOOK AT ME! Action failed', e);
       //});
 
     }catch(e){
-      console.error(e);
-      //return new Promise( (resolve, reject) => {
-        resolve({
-          _instr: _instr,
-          seek: null
-        });
-      //});
+      resolve({
+        _instr: _instr,
+        seek: null
+      });
     }
 
-  }
-
-  _RunNextInstruction(_instr, seek = null ){
-
-    if(_instr)
-      this.prevByteCode = _instr.code;
-    
-    if( seek != null ) {
-      let __nextInstr = this._getInstructionAtOffset( seek );
-      return this._RunInstruction(__nextInstr);
-    }
-
-    if(!_instr.eof){
-      if(_instr.nextInstr != null){
-        return this._RunInstruction(this.instructions[_instr.nextInstr.index]);
-      }
-    }
-        
   }
 
   _VerifyNCS (reader){
@@ -3334,6 +3912,39 @@ class NWScript {
       return true;
 
     return false;
+  }
+
+  locationCompare(loc1, loc2){
+    return loc1.position.x == loc2.position.x && loc1.position.y == loc2.position.y && loc1.position.z == loc2.position.z && loc1.facing == loc2.facing;
+  }
+
+  pushVectorToStack(vector){
+    //Push Z to the stack
+    this.stack.push(
+      (
+        this.floatPointers.push(
+          vector.z
+        ) - 1
+      )
+    );
+
+    //Push Y to the stack
+    this.stack.push(
+      (
+        this.floatPointers.push(
+          vector.y
+        ) - 1
+      )
+    );
+
+    //Push X to the stack
+    this.stack.push(
+      (
+        this.floatPointers.push(
+          vector.x
+        ) - 1
+      )
+    );
   }
 
   setScriptParam(idx = 1, value = 0){
@@ -3360,7 +3971,66 @@ class NWScript {
     this.paramString = value;
   }
 
+  isDebugging(type = ''){
+    if(type == 'action'){
+      return Game.Flags.LogScripts || this.debugging || this.debug['action'];
+    }else{
+      return Game.Flags.LogScripts || this.debugging;
+    }
+  }
+
 }
+
+NWScript.ByteCodesEnum = {
+  'CPDOWNSP':       1,
+  'RSADD':          2, //Reserve Space On Stack
+  'CPTOPSP':        3,
+  'CONST':          4, //Constant Type is declared by the next byte x03, x04, x05, x06
+  'ACTION':         5,
+  'LOGANDII':       6,
+  'LOGORII':        7,
+  'INCORII':        8,
+  'EXCORII':        9,
+  'BOOLANDII':      10,
+  'EQUAL':          11, //Constant Type is declared by the next byte x03, x04, x05, x06
+  'NEQUAL':         12, //Constant Type is declared by the next byte x03, x04, x05, x06
+  'GEQ':            13, //Constant Type is declared by the next byte x03, x04
+  'GT':             14, //Constant Type is declared by the next byte x03, x04
+  'LT':             15, //Constant Type is declared by the next byte x03, x04
+  'LEQ':            16, //Constant Type is declared by the next byte x03, x04
+  'SHLEFTII':       17,
+  'SHRIGHTII':      18,
+  'USHRIGHTII':     19,
+  'ADD':            20,
+  'SUB':            21,
+  'MUL':            22,
+  'DIV':            23,
+  'MOD':            24,
+  'NEG':            25,
+  'COMPI':          26,
+  'MOVSP':          27,
+  'STORE_STATEALL': 28,
+  'JMP':            29,
+  'JSR':            30,
+  'JZ':             31,
+  'RETN':           32,
+  'DESTRUCT':       33,
+  'NOTI':           34,
+  'DECISP':         35,
+  'INCISP':         36,
+  'JNZ':            37,
+  'CPDOWNBP':       38,
+  'CPTOPBP':        39,
+  'DECIBP':         40,
+  'INCIBP':         41,
+  'SAVEBP':         42,
+  'RESTOREBP':      43,
+  'STORE_STATE':    44,
+  'NOP':            45,
+  'T':              46,
+};
+
+Object.freeze(NWScript.ByteCodesEnum);
 
 NWScript.ByteCodes = {
   1 : 'CPDOWNSP',

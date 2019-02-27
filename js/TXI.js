@@ -16,6 +16,7 @@ class TXI {
     this.isCompressed = true;
 
     this.bumpMapScaling = 1;
+    this.isbumpmap = false;
     this.bumpMapTexture = null;
     this.envMapTexture = null;
 
@@ -66,9 +67,12 @@ class TXI {
         args[1] = args[1].trim();
 
       switch(args[0]){
-        case 'isbumpmap':
+        /*case 'isbumpmap':
           if(this.textureType != TXI.TEXTYPE.NORMALMAP)
             this.textureType = TXI.TEXTYPE.BUMPMAP;
+        break;*/
+        case 'isbumpmap':
+          this.isbumpmap = parseInt(args[1]) ? true : false;
         break;
         case 'islightmap':
           this.textureType = TXI.TEXTYPE.LIGHTMAP;

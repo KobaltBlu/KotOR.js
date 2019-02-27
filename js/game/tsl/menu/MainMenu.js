@@ -28,46 +28,40 @@ class MainMenu extends GameMenu {
         this.btn_loadgame = Game.MainMenu.getControlByName('BTN_LOADGAME');
         this.btn_movies = Game.MainMenu.getControlByName('BTN_MOVIES');
         this.btn_options = Game.MainMenu.getControlByName('BTN_OPTIONS');
-        //this.btn_exit = Game.MainMenu.getControlByName('BTN_EXIT');
+        this.btn_exit = Game.MainMenu.getControlByName('BTN_EXIT');
 
-        /*this.btn_newgame.hideBorder();
-        this.btn_loadgame.hideBorder();
-        this.btn_movies.hideBorder();
-        this.btn_options.hideBorder();*/
-        //this.btn_exit.hideBorder();
-
-        this.btn_newgame.onClick = (e) => {
+        this.btn_newgame.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
-          /*Game.LoadScreen.setLoadBackground('load_chargen' ,() => {
+          Game.LoadScreen.setLoadBackground('load_chargen' ,() => {
             Game.LoadScreen.Show();
             Game.CharGenClass.Init( () => {
               Game.LoadScreen.Hide();
               Game.CharGenClass.Show();
             });
-          });*/
-        };
+          });
+        });
 
-        this.btn_loadgame.onClick = (e) => {
+        this.btn_loadgame.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Game.MenuSaveLoad.Show();
+        });
+
+        this.btn_movies.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-          //Game.MenuSaveLoad.Show()
-        };
+        });
 
-        this.btn_movies.onClick = (e) => {
+        this.btn_options.addEventListener('click', (e) => {
           e.stopPropagation();
-          //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        };
+          this.Hide();
+          Game.MainOptions.Show();
+        });
 
-        this.btn_options.onClick = (e) => {
+        this.btn_exit.addEventListener('click', (e) => {
           e.stopPropagation();
-          //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        };
-
-        /*this.btn_exit.onClick = (e) => {
-          e.stopPropagation();
-          //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        };*/
+          window.close();
+        });
 
         let bgMusic = 'mus_sion';            
       
@@ -75,7 +69,7 @@ class MainMenu extends GameMenu {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('mainmenu01', ResourceTypes['mdx']), (mdxBuffer) => {
             try{
     
-              let model = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
+              let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
 
               this.tGuiPanel.widget.fill.visible = false;
 
@@ -89,8 +83,6 @@ class MainMenu extends GameMenu {
                 onComplete: (model) => {
                   console.log('Model Loaded', model);
                   this._3dViewModel = model;
-
-                  this._3dViewModel.rebuildEmitters();
 
                   this.camerahook = this._3dViewModel.getObjectByName('camerahook');
                   
@@ -157,6 +149,16 @@ class MainMenu extends GameMenu {
       this._3dView.render(delta);
       this.lbl_3dview.fill.children[0].material.needsUpdate = true;
     }catch(e){}
+  }
+
+  Show(){
+    super.Show();
+
+    Game.MainOptions.Hide();
+    //Game.MainMovies.Hide();
+
+    Game.AlphaTest = 0.5;
+
   }
 
 }

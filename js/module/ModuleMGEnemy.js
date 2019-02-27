@@ -24,6 +24,10 @@ class ModuleMGEnemy extends ModuleObject {
     this.jumpVelcolity = 0;
     this.boostVelocity = 0;
 
+    this.box = new THREE.Box3();
+
+    this.alive = true;
+
     //this.model.children[2].rotation.y = .1
 
   }
@@ -47,14 +51,42 @@ class ModuleMGEnemy extends ModuleObject {
   update(delta){
 
     for(let i = 0; i < this.model.children.length; i++){
-      if(this.model.children[i] instanceof THREE.AuroraModel && this.model.children[i].bonesInitialized && this.model.children[i].visible){
+      let child_model = this.model.children[i];
+      if(child_model instanceof THREE.AuroraModel && child_model.bonesInitialized && child_model.visible){
 
-        if(!this.model.children[i].currentAnimation || this.model.children[i].currentAnimation.name != 'Ready'){
-          this.model.children[i].playAnimation('Ready', false);
+        if(this.hit_points > 0){
+          if(!child_model.currentAnimation || (child_model.currentAnimation.name != 'Ready_01' && child_model.currentAnimation.name != 'damage')){
+            child_model.playAnimation('Ready_01', false);
+          }
+        }else if(this.alive){
+          child_model.playAnimation('die', false);
+        }else{
+          if(!child_model.currentAnimation){
+            child_model.visible = false;
+          }
         }
 
-        this.model.children[i].update(delta);
+        child_model.update(delta);
       }
+    }
+
+    if(this.hit_points <= 0 && this.alive){
+      this.alive = false;
+      console.log('MGEnemy death', this);
+      if(this.scripts.onDeath instanceof NWScript){
+        this.scripts.onDeath.run(this);
+      }
+    }
+
+    this.box.setFromObject(this.model.children[0]);
+
+    if(this.track instanceof THREE.AuroraModel){
+      if(!this.track.currentAnimation && this.alive){
+        this.track.playAnimation(0, true);
+      }else if(!this.alive && this.track.currentAnimation){
+        this.track.stopAnimation();
+      }
+      this.track.update(delta);
     }
 
     switch(Game.module.area.MiniGame.Type){
@@ -66,7 +98,18 @@ class ModuleMGEnemy extends ModuleObject {
       break;
     }
 
-  }  
+  }
+
+  damage(damage = 0){
+    if(this.alive){
+      this.hit_points -= damage;
+      for(let i = 0; i < this.model.children.length; i++){
+        if(this.model.children[i] instanceof THREE.AuroraModel && this.model.children[i].bonesInitialized && this.model.children[i].visible){
+          this.model.children[i].playAnimation('damage', false);
+        }
+      }
+    }
+  }
 
   updateCollision(delta = 0){
 
@@ -227,46 +270,49 @@ class ModuleMGEnemy extends ModuleObject {
       onTrackLoop: undefined
     };
 
-    //console.log(this);
+    let scriptsNode = this.template.GetFieldByLabel('Scripts').GetChildStructs()[0];
+    if(scriptsNode){
 
-    if(this.template.RootNode.HasField('OnAccelerate'))
-      this.scripts.onAccelerate = this.template.GetFieldByLabel('OnAccelerate').GetValue();
-    
-    if(this.template.RootNode.HasField('OnAnimEvent'))
-      this.scripts.onAnimEvent = this.template.GetFieldByLabel('OnAnimEvent').GetValue();
+      if(scriptsNode.HasField('OnAccelerate'))
+        this.scripts.onAccelerate = scriptsNode.GetFieldByLabel('OnAccelerate').GetValue();
+      
+      if(scriptsNode.HasField('OnAnimEvent'))
+        this.scripts.onAnimEvent = scriptsNode.GetFieldByLabel('OnAnimEvent').GetValue();
 
-    if(this.template.RootNode.HasField('OnBrake'))
-      this.scripts.onBrake = this.template.GetFieldByLabel('OnBrake').GetValue();
+      if(scriptsNode.HasField('OnBrake'))
+        this.scripts.onBrake = scriptsNode.GetFieldByLabel('OnBrake').GetValue();
 
-    if(this.template.RootNode.HasField('OnCreate'))
-      this.scripts.onCreate = this.template.GetFieldByLabel('OnCreate').GetValue();
+      if(scriptsNode.HasField('OnCreate'))
+        this.scripts.onCreate = scriptsNode.GetFieldByLabel('OnCreate').GetValue();
 
-    if(this.template.RootNode.HasField('OnDamage'))
-      this.scripts.onDamage = this.template.GetFieldByLabel('OnDamage').GetValue();
+      if(scriptsNode.HasField('OnDamage'))
+        this.scripts.onDamage = scriptsNode.GetFieldByLabel('OnDamage').GetValue();
 
-    if(this.template.RootNode.HasField('OnDeath'))
-      this.scripts.onDeath = this.template.GetFieldByLabel('OnDeath').GetValue();
+      if(scriptsNode.HasField('OnDeath'))
+        this.scripts.onDeath = scriptsNode.GetFieldByLabel('OnDeath').GetValue();
 
-    if(this.template.RootNode.HasField('OnFire'))
-      this.scripts.onFire = this.template.GetFieldByLabel('OnFire').GetValue();
+      if(scriptsNode.HasField('OnFire'))
+        this.scripts.onFire = scriptsNode.GetFieldByLabel('OnFire').GetValue();
 
-    if(this.template.RootNode.HasField('OnHeartbeat'))
-      this.scripts.onHeartbeat = this.template.GetFieldByLabel('OnHeartbeat').GetValue();
-    
-    if(this.template.RootNode.HasField('OnHitBullet'))
-      this.scripts.onHitBullet = this.template.GetFieldByLabel('OnHitBullet').GetValue();
+      if(scriptsNode.HasField('OnHeartbeat'))
+        this.scripts.onHeartbeat = scriptsNode.GetFieldByLabel('OnHeartbeat').GetValue();
+      
+      if(scriptsNode.HasField('OnHitBullet'))
+        this.scripts.onHitBullet = scriptsNode.GetFieldByLabel('OnHitBullet').GetValue();
 
-    if(this.template.RootNode.HasField('OnHitFollower'))
-      this.scripts.onHitFollower = this.template.GetFieldByLabel('OnHitFollower').GetValue();
+      if(scriptsNode.HasField('OnHitFollower'))
+        this.scripts.onHitFollower = scriptsNode.GetFieldByLabel('OnHitFollower').GetValue();
 
-    if(this.template.RootNode.HasField('OnHitObstacle'))
-      this.scripts.onHitObstacle = this.template.GetFieldByLabel('OnHitObstacle').GetValue();
+      if(scriptsNode.HasField('OnHitObstacle'))
+        this.scripts.onHitObstacle = scriptsNode.GetFieldByLabel('OnHitObstacle').GetValue();
 
-    if(this.template.RootNode.HasField('OnHitWorld'))
-      this.scripts.onHitWorld = this.template.GetFieldByLabel('OnHitWorld').GetValue();
+      if(scriptsNode.HasField('OnHitWorld'))
+        this.scripts.onHitWorld = scriptsNode.GetFieldByLabel('OnHitWorld').GetValue();
 
-    if(this.template.RootNode.HasField('OnTrackLoop'))
-      this.scripts.onTrackLoop = this.template.GetFieldByLabel('OnTrackLoop').GetValue();
+      if(scriptsNode.HasField('OnTrackLoop'))
+        this.scripts.onTrackLoop = scriptsNode.GetFieldByLabel('OnTrackLoop').GetValue();
+
+    }
 
     let keys = Object.keys(this.scripts);
     let len = keys.length;

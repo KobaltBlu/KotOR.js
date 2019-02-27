@@ -37,65 +37,65 @@ class CharGenClass extends GameMenu {
 
           this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-          this.BTN_BACK.onClick = (e) => {
+          this.BTN_BACK.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             Game.MainMenu.Show();
-          };
+          });
 
-          this.BTN_SEL1.onClick = (e) => {
+          this.BTN_SEL1.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 0;
             Game.player = this._3D_MODEL1.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
-          this.BTN_SEL2.onClick = (e) => {
+          this.BTN_SEL2.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 1;
             Game.player = this._3D_MODEL2.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
-          this.BTN_SEL3.onClick = (e) => {
+          this.BTN_SEL3.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 2;
             Game.player = this._3D_MODEL3.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
-          this.BTN_SEL4.onClick = (e) => {
+          this.BTN_SEL4.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 3;
             Game.player = this._3D_MODEL4.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
-          this.BTN_SEL5.onClick = (e) => {
+          this.BTN_SEL5.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 4;
             Game.player = this._3D_MODEL5.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
-          this.BTN_SEL6.onClick = (e) => {
+          this.BTN_SEL6.addEventListener('click', (e) => {
             e.stopPropagation();
             this.Hide();
             CharGenClass.SelectedClass = 5;
             Game.player = this._3D_MODEL6.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
             Game.CharGenMain.Show();
-          };
+          });
 
           this.tGuiPanel.widget.fill.children[0].position.z = -0.5;
 
@@ -163,7 +163,6 @@ class CharGenClass extends GameMenu {
           control._3dViewModel = model;
           control._3dView.addModel(control._3dViewModel);
 
-          control._3dViewModel.rebuildEmitters();
           control.camerahook = control._3dViewModel.getObjectByName('camerahook');
           
           control._3dView.camera.position.set(
@@ -262,6 +261,8 @@ class CharGenClass extends GameMenu {
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Appearance_Type') ).SetValue(appearanceIdx);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(portraitId);
+      template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'FirstName') ).SetValue('New Player');
+      template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'LastName') ).SetValue('');
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(25);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(20);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'ForcePoints') ).SetValue(15);
@@ -286,18 +287,18 @@ class CharGenClass extends GameMenu {
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'GoodEvil') ).SetValue(50);
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'NaturalAC') ).SetValue(0);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Con') ).SetValue(10);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Dex') ).SetValue(14);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Str') ).SetValue(10);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Wis') ).SetValue(10);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Cha') ).SetValue(10);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Int') ).SetValue(10);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Con') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Dex') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Str') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Wis') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Cha') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Int') ).SetValue(8);
   
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'fortbonus') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'refbonus') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'willbonus') ).SetValue(0);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'PerceptionRange') ).SetValue(12);
+      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'PerceptionRange') ).SetValue(13);
   
       let skillList = template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'SkillList') );
   
@@ -323,7 +324,22 @@ class CharGenClass extends GameMenu {
       equipment.AddChildStruct( armorStruct );
   
       // SoundSetFile
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(nth < 3 ? 85 : 83);
+      if(appearanceIdx >= 91 && appearanceIdx <= 105){ //FEMALE_A
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(83);
+      }else if(appearanceIdx >= 106 && appearanceIdx <= 120){ //FEMALE_B
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(82);
+      }else if(appearanceIdx >= 121 && appearanceIdx <= 135){ //FEMALE_C
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(83);
+      }else if(appearanceIdx >= 136 && appearanceIdx <= 150){ //MALE_A
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(85);
+      }else if(appearanceIdx >= 151 && appearanceIdx <= 165){ //MALE_B
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(84);
+      }else if(appearanceIdx >= 166 && appearanceIdx <= 180){ //MALE_C
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(85);
+      }else{
+        template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(nth < 3 ? 85 : 83);
+      }
+
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Race') ).SetValue(6);
   
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'XPosition') ).SetValue(0);
@@ -338,6 +354,11 @@ class CharGenClass extends GameMenu {
 
 
     Update(delta = 0){
+      
+      super.Update(delta);
+      if(!this.bVisible)
+        return;
+
       try{
         for(let i = 0; i < 6; i++){
           let modelControl = this['_3D_MODEL'+(i+1)];
@@ -450,6 +471,7 @@ class CharGenClass extends GameMenu {
   CharGenClass.HoveredClass = 0;
   CharGenClass.Classes = {
     0: {
+      id: 2,
       strings: {
         name: 135,
         gender: 358,
@@ -458,6 +480,7 @@ class CharGenClass extends GameMenu {
       appearances: [136, 139, 142, 145, 148, 151, 154, 157, 160, 163, 166, 169, 172, 175, 178]
     },
     1: {
+      id: 1,
       strings: {
         name: 133,
         gender: 358,
@@ -466,6 +489,7 @@ class CharGenClass extends GameMenu {
       appearances: [137, 140, 143, 146, 149, 152, 155, 158, 161, 164, 167, 170, 173, 175, 179]
     },
     2: {
+      id: 0,
       strings: {
         name: 134,
         gender: 358,
@@ -474,6 +498,7 @@ class CharGenClass extends GameMenu {
       appearances: [138, 141, 144, 147, 150, 153, 156, 159, 162, 165, 168, 171, 174, 177, 180]
     },
     3: {
+      id: 0,
       strings: {
         name: 134,
         gender: 359,
@@ -482,6 +507,7 @@ class CharGenClass extends GameMenu {
       appearances: [93, 96, 99, 102, 105, 108, 111, 114, 117, 120, 123, 126, 129, 132, 135]
     },
     4: {
+      id: 1,
       strings: {
         name: 133,
         gender: 359,
@@ -490,6 +516,7 @@ class CharGenClass extends GameMenu {
       appearances: [92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131, 134]
     },
     5: {
+      id: 2,
       strings: {
         name: 135,
         gender: 359,

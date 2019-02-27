@@ -29,14 +29,14 @@ class GUIControl {
 
 
       this.allowClick = true;
-      this.onClick = null;
+      /*this.onClick = null;
       this.onMouseMove = null;
       this.onMouseDown = null;
       this.onMouseUp = null;
       this.onMouseIn = null;
       this.onMouseOut = null;
       this.onDrag = null;
-      this.onDragEnd = null;
+      this.onDragEnd = null;*/
 
       this.onKeyUp = null;
       this.onKeyDown = null;
@@ -1412,6 +1412,11 @@ class GUIControl {
 
         textAnchor.position.x -= (this.extent.width / 2);
         textAnchor.position.z = 5;
+
+        if(this.hasBorder){
+          textAnchor.position.x += 9*4;
+        }
+        
         this.widget.text.add(textAnchor);
 
         text.isClickable = (e) => {

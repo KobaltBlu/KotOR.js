@@ -22,26 +22,54 @@ class MenuCharacter extends GameMenu {
         this.BTN_CHANGE1 = this.getControlByName('BTN_CHANGE1');
         this.BTN_CHANGE2 = this.getControlByName('BTN_CHANGE2');
 
+        this.LBL_CLASS1 = this.getControlByName('LBL_CLASS1');
+        this.LBL_CLASS2 = this.getControlByName('LBL_CLASS2');
+
+        this.LBL_LEVEL1 = this.getControlByName('LBL_LEVEL1');
+        this.LBL_LEVEL2 = this.getControlByName('LBL_LEVEL2');
+
+        this.LBL_VITALITY_STAT = this.getControlByName('LBL_VITALITY_STAT');
+        this.LBL_FORCE_STAT = this.getControlByName('LBL_FORCE_STAT');
+        this.LBL_DEFENSE_STAT = this.getControlByName('LBL_DEFENSE_STAT');
+
+        this.LBL_STR = this.getControlByName('LBL_STR');
+        this.LBL_DEX = this.getControlByName('LBL_DEX');
+        this.LBL_CON = this.getControlByName('LBL_CON');
+        this.LBL_INT = this.getControlByName('LBL_INT');
+        this.LBL_WIS = this.getControlByName('LBL_WIS');
+        this.LBL_CHA = this.getControlByName('LBL_CHA');
+
+        this.LBL_STR_MOD = this.getControlByName('LBL_STR_MOD');
+        this.LBL_DEX_MOD = this.getControlByName('LBL_DEX_MOD');
+        this.LBL_CON_MOD = this.getControlByName('LBL_CON_MOD');
+        this.LBL_INT_MOD = this.getControlByName('LBL_INT_MOD');
+        this.LBL_WIS_MOD = this.getControlByName('LBL_WIS_MOD');
+        this.LBL_CHA_MOD = this.getControlByName('LBL_CHA_MOD');
+
+        this.LBL_FORTITUDE_STAT = this.getControlByName('LBL_FORTITUDE_STAT');
+        this.LBL_REFLEX = this.getControlByName('LBL_REFLEX');
+        this.LBL_WILL = this.getControlByName('LBL_WILL');
+
+        this.LBL_EXPERIENCE_STAT = this.getControlByName('LBL_EXPERIENCE_STAT');
+        this.LBL_NEEDED_XP = this.getControlByName('LBL_NEEDED_XP');
+
         this.BTN_EXIT = this.getControlByName('BTN_EXIT');
-        this.BTN_EXIT.onClick = (e) => {
+        this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.InGameOverlay.Show();
-        }
+        });
 
-        Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charmain_light', ResourceTypes['mdl']), (mdlBuffer) => {
-          Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charmain_light', ResourceTypes['mdx']), (mdxBuffer) => {
+        Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdl']), (mdlBuffer) => {
+          Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdx']), (mdxBuffer) => {
             try{
     
-              let model = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
+              let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
 
               this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
 
-              this._3dView = new LBL_3DView();
+              this._3dView = new LBL_3DView(this.lbl_3dview.extent.width, this.lbl_3dview.extent.height);
+              this._3dView.setControl(this.lbl_3dview);
               this._3dView.visible = true;
-              this._3dView.camera.aspect = this.lbl_3dview.extent.width / this.lbl_3dview.extent.height;
-              this._3dView.camera.updateProjectionMatrix();
-              this.lbl_3dview.widget.fill.children[0].material.map = this._3dView.texture.texture;
-              this.lbl_3dview.widget.fill.children[0].material.transparent = false;
 
               this.getControlByName('LBL_GOOD1').hide();
               this.getControlByName('LBL_GOOD2').hide();
@@ -67,8 +95,6 @@ class MenuCharacter extends GameMenu {
                   this._3dViewModel = model;
                   this._3dView.addModel(this._3dViewModel);
 
-                  this._3dViewModel.rebuildEmitters();
-
                   this.camerahook = this._3dViewModel.getObjectByName('camerahook');
                   
                   this._3dView.camera.position.set(
@@ -86,25 +112,12 @@ class MenuCharacter extends GameMenu {
         
                   TextureLoader.LoadQueue(() => {
   
-                    //AudioLoader.LoadMusic(bgMusic, (data) => {
-                      //console.log('Loaded Background Music', bgMusic);
-                      
-                      //Game.audioEngine.SetBackgroundMusic(data);
-                      if(typeof this.onLoad === 'function')
-                        this.onLoad();
+                    if(typeof this.onLoad === 'function')
+                      this.onLoad();
+
+                    this._3dViewModel.playAnimation(0, true);
   
-                      //setTimeout( () => {
-                      //  this._3dViewModel.buildSkeleton();
-                        this._3dViewModel.playAnimation(0, true);
-                      //}, 1000)
-                
-                    /*}, () => {
-                      console.error('Background Music not found', bgMusic);
-                      if(typeof this.onLoad === 'function')
-                        this.onLoad();
-                    });*/
-  
-                  }, (texName) => { });
+                  });
 
                 },
                 manageLighting: false,
@@ -130,7 +143,9 @@ class MenuCharacter extends GameMenu {
 
   }
 
-  Update(delta){
+  Update(delta = 0){
+    super.Update(delta);
+
     if(!this.bVisible)
       return;
 
@@ -143,13 +158,40 @@ class MenuCharacter extends GameMenu {
     }catch(e){}
   }
 
+  updateCharacterStats(character){
+    
+    this.LBL_VITALITY_STAT.setText(character.currentHitPoints+'/'+character.maxHitPoints);
+
+    this.LBL_STR.setText(character.str);
+    this.LBL_DEX.setText(character.dex);
+    this.LBL_CON.setText(character.con);
+    this.LBL_INT.setText(character.int);
+    this.LBL_WIS.setText(character.wis);
+    this.LBL_CHA.setText(character.cha);
+
+    this.LBL_STR_MOD.setText((character.str - 10)/2);
+    this.LBL_DEX_MOD.setText((character.dex - 10)/2);
+    this.LBL_CON_MOD.setText((character.con - 10)/2);
+    this.LBL_INT_MOD.setText((character.int - 10)/2);
+    this.LBL_WIS_MOD.setText((character.wis - 10)/2);
+    this.LBL_CHA_MOD.setText((character.cha - 10)/2);
+
+    this.LBL_EXPERIENCE_STAT.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+    this.LBL_NEEDED_XP.setText(
+      Global.kotor2DA.exptable.rows[
+        character.getTotalClassLevel()
+      ].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    );
+
+  }
+
   Show(){
     super.Show();
 
     this.RecalculatePosition()
 
     if(this.char){
-      this._3dViewModel.children[0].children[1].remove(this.char);
+      this._3dViewModel.children[0].children[0].remove(this.char);
     }
 
     this._3dView.camera.position.z = 1;
@@ -157,6 +199,48 @@ class MenuCharacter extends GameMenu {
     let objectCreature = new ModuleCreature();
     let clone = PartyManager.party[0];
     objectCreature.appearance = clone.appearance;
+
+    if(clone.goodEvil >= 95){
+      this._3dViewModel.playAnimation('good');
+    }else if(clone.goodEvil >= 90){
+      this._3dViewModel.playAnimation('align18');
+    }else if(clone.goodEvil >= 85){
+      this._3dViewModel.playAnimation('align17');
+    }else if(clone.goodEvil >= 80){
+      this._3dViewModel.playAnimation('align16');
+    }else if(clone.goodEvil >= 75){
+      this._3dViewModel.playAnimation('align15');
+    }else if(clone.goodEvil >= 70){
+      this._3dViewModel.playAnimation('align14');
+    }else if(clone.goodEvil >= 65){
+      this._3dViewModel.playAnimation('align13');
+    }else if(clone.goodEvil >= 60){
+      this._3dViewModel.playAnimation('align12');
+    }else if(clone.goodEvil >= 55){
+      this._3dViewModel.playAnimation('align11');
+    }else if(clone.goodEvil >= 50){
+      this._3dViewModel.playAnimation('align10');
+    }else if(clone.goodEvil >= 45){
+      this._3dViewModel.playAnimation('align9');
+    }else if(clone.goodEvil >= 40){
+      this._3dViewModel.playAnimation('align8');
+    }else if(clone.goodEvil >= 35){
+      this._3dViewModel.playAnimation('align7');
+    }else if(clone.goodEvil >= 30){
+      this._3dViewModel.playAnimation('align6');
+    }else if(clone.goodEvil >= 25){
+      this._3dViewModel.playAnimation('align5');
+    }else if(clone.goodEvil >= 20){
+      this._3dViewModel.playAnimation('align4');
+    }else if(clone.goodEvil >= 15){
+      this._3dViewModel.playAnimation('align3');
+    }else if(clone.goodEvil >= 10){
+      this._3dViewModel.playAnimation('align2');
+    }else if(clone.goodEvil >= 5){
+      this._3dViewModel.playAnimation('align1');
+    }else if(clone.goodEvil >= 0){
+      this._3dViewModel.playAnimation('evil');
+    }
     
     objectCreature.LoadModel( (model) => {
       model.position.set(0, 0, 0)
@@ -164,15 +248,57 @@ class MenuCharacter extends GameMenu {
       model.rotation.z = Math.PI;
       model.box = new THREE.Box3().setFromObject(model);
       this.char = model;
-      this._3dViewModel.children[0].children[1].add(this.char);
+      this._3dViewModel.children[0].children[0].add(this.char);
       TextureLoader.LoadQueue(() => {
-        setTimeout( () => {
-          //this.char.buildSkeleton();
+        
+        if(clone.goodEvil >= 95){
           this.char.playAnimation('good', true);
-        }, 100);
+        }else if(clone.goodEvil >= 90){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 85){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 80){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 75){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 70){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 65){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 60){
+          this.char.playAnimation('good', true);
+        }else if(clone.goodEvil >= 55){
+          this.char.playAnimation('neutral', true);
+        }else if(clone.goodEvil >= 50){
+          this.char.playAnimation('neutral', true);
+        }else if(clone.goodEvil >= 45){
+          this.char.playAnimation('neutral', true);
+        }else if(clone.goodEvil >= 40){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 35){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 30){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 25){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 20){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 15){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 10){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 5){
+          this.char.playAnimation('evil', true);
+        }else if(clone.goodEvil >= 0){
+          this.char.playAnimation('evil', true);
+        }
+        
       }, (texName) => { });
     
     });
+
+    this.updateCharacterStats(PartyManager.party[0]);
+
     
     Game.MenuActive = true;
 
@@ -195,16 +321,7 @@ class MenuCharacter extends GameMenu {
       let portraitId = partyMember.getPortraitId();
       let portrait = Global.kotor2DA['portraits'].rows[portraitId];
 
-      if(!i){
-        
-        /*if(this.lbl_portrait.getFillTextureName() != portrait.baseresref){
-          this.lbl_portrait.setFillTextureName(portrait.baseresref)
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture) => {
-            this.lbl_portrait.setFillTexture(texture);
-          });
-        }*/
-
-      }else{
+      if(i){
         this['BTN_CHANGE'+(i)].show();
         if(this['BTN_CHANGE'+(i)].getFillTextureName() != portrait.baseresref){
           this['BTN_CHANGE'+(i)].setFillTextureName(portrait.baseresref)

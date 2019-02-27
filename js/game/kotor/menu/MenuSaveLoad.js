@@ -29,15 +29,15 @@ class MenuSaveLoad extends GameMenu {
         this.BTN_DELETE = this.getControlByName('BTN_DELETE');
         this.BTN_SAVELOAD = this.getControlByName('BTN_SAVELOAD');
         this.BTN_SAVELOAD.setText('Load');
-        this.BTN_SAVELOAD.onClick = (e) => {
+        this.BTN_SAVELOAD.addEventListener('click', (e) => {
           e.stopPropagation();
           if(this.selected instanceof SaveGame){
             this.Hide();
             this.selected.Load()
           }
-        }
+        });
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
-        this.BTN_EXIT.onClick = (e) => {
+        this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           if(Game.Mode == Game.MODES.MAINMENU){
@@ -45,7 +45,7 @@ class MenuSaveLoad extends GameMenu {
           }else{
             Game.MenuOptions.Show();
           }
-        }
+        });
 
         this.tGuiPanel.widget.fill.children[0].position.z = -1;
 
@@ -83,7 +83,7 @@ class MenuSaveLoad extends GameMenu {
         this.UpdateSelected();
       }
 
-      console.log('CREATE');
+      //console.log('CREATE');
       let save = saves[i]
       this.LB_GAMES.addItem(save, null, (control, type) => {
         //console.log('CREATE2', this);
@@ -94,13 +94,13 @@ class MenuSaveLoad extends GameMenu {
         let idx = this.LB_GAMES.itemGroup.children.length;
         let item = _ctrl.createControl();
         this.LB_GAMES.itemGroup.add(item);
-        console.log('CREATE3');
-        _ctrl.onClick = (e) => {
+        //console.log('CREATE3');
+        _ctrl.addEventListener('click', (e) => {
           e.stopPropagation();
           this.selected = save;
           this.UpdateSelected();
           //Pick Save Item
-        };
+        });;
       });
     }
 

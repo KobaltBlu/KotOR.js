@@ -1,6 +1,7 @@
 class EditorTabManager {
 
   constructor(){
+    this.currentTab = undefined;
     this.tabs = [];
     this.$tabs = $('<ul class="tabs-menu" />').sortable();
 
@@ -25,11 +26,12 @@ class EditorTabManager {
 
   AddTab(tab){
     //Check to see if the tab has the singleInstance flag set to TRUE
-    if(tab.singleInstance)
+    if(tab.singleInstance){
       if(this.TabTypeExists(tab)){
-        //this.GetTabByType(tab).Show();
+        this.GetTabByType(tab.constructor.name).Show();
         return; //Return because the TabManager can only have one of these
       }
+    }
 
     //Check to see if a tab is already editing this resource
     let alreadyOpen = this.IsResourceIdOpenInTab(tab.GetResourceID());

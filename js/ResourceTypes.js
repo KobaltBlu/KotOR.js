@@ -7,6 +7,7 @@
 
 module.exports = {
     "NA" : 0x000F,
+    "res" : 0,
     "bmp" : 1,
     "tga" : 3,
     "wav" : 4,
@@ -16,6 +17,7 @@ module.exports = {
     "mdl" : 2002,
     "nss" : 2009,
     "ncs" : 2010,
+    "mod" : 2011,
     "are" : 2012,
     "set" : 2013,
     "ifo" : 2014,
@@ -66,7 +68,7 @@ module.exports = {
     "sig" : 3010,
     "xbx" : 3011,
 
-    "res" : 2037,
+    "mp3" : 25014,
 
     "erf" : 9997,
     "bif" : 9998,

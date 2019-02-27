@@ -24,21 +24,21 @@ class MenuContainer extends GameMenu {
         this.BTN_GIVEITEMS = this.getControlByName('BTN_GIVEITEMS');
         this.BTN_CANCEL = this.getControlByName('BTN_CANCEL');
   
-        this.BTN_CANCEL.onClick = (e) => {
+        this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.LB_ITEMS.clearItems();
           this.Hide();
-        };
+        });
 
-        this.BTN_OK.onClick = (e) => {
+        this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.LB_ITEMS.clearItems();
-          this.Hide(true);
+          
           if(this.container instanceof ModulePlaceable){
             this.container.retrieveInventory();
           }
-          
-        };
+          this.Hide(true);
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -107,9 +107,9 @@ class MenuContainer extends GameMenu {
         item2.spriteGroup.add(iconSprite);
         this.LB_ITEMS.itemGroup.add(item2);
 
-        _ctrl2.onClick = (e) => {
+        _ctrl2.addEventListener('click', (e) => {
           e.stopPropagation();
-        };
+        });
 
       });
     }

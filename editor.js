@@ -22,6 +22,8 @@ const Int64 = require('node-int64');
 const recursive = require('recursive-readdir');
 const StringDecoder = require('string_decoder').StringDecoder;
 
+const isRunningInAsar = require('electron-is-running-in-asar');
+
 const Games = {
   KOTOR: 1,
   TSL: 2
@@ -36,6 +38,14 @@ const IMAGE_TYPE = {
 
 let _Game = Games.KOTOR;
 let GameKey = 'KOTOR';
+
+//Self executing anonymous function
+(() => {
+  let _gameKey = localStorage.getItem('gameKey');
+  if(_gameKey){
+    GameKey = _gameKey.toUpperCase();
+  }
+})();
 
 /* Library Includes */
 const Utility = require(path.join(app.getAppPath(), 'js/Utility.js'));
@@ -69,6 +79,7 @@ const {TreeView} = require(path.join(app.getAppPath(), 'js/editor/TreeView.js'))
 const {TreeViewNode} = require(path.join(app.getAppPath(), 'js/editor/TreeView.js'));
 const EditorControls = require(path.join(app.getAppPath(), 'js/editor/EditorControls.js'));
 const ModelViewerControls = require(path.join(app.getAppPath(), 'js/editor/ModelViewerControls.js'));
+const EditorFile = require(path.join(app.getAppPath(), 'js/editor/EditorFile.js'));
 
 const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
 const FileTypeManager = require(path.join(app.getAppPath(), 'js/FileTypeManager.js'));
@@ -77,7 +88,7 @@ const VerticalTabs = require(path.join(app.getAppPath(), 'js/editor/VerticalTabs
 
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
 const GameInitializer = require(path.join(app.getAppPath(), 'js/GameInitializer.js'));
-const OffscreenRenderer = require(path.join(app.getAppPath(), 'js/OffscreenRenderer.js'));
+const UI3DRenderer = require(path.join(app.getAppPath(), 'js/UI3DRenderer.js'));
 const AppearanceLoader = require(path.join(app.getAppPath(), 'js/AppearanceLoader.js'));
 
 
@@ -114,6 +125,8 @@ const BIFObject = require(path.join(app.getAppPath(), 'js/BIFObject.js'));
 const ERFObject = require(path.join(app.getAppPath(), 'js/ERFObject.js'));
 const RIMObject = require(path.join(app.getAppPath(), 'js/RIMObject.js'));
 const LYTObject = require(path.join(app.getAppPath(), 'js/LYTObject.js'));
+const SSFObject = require(path.join(app.getAppPath(), 'js/SSFObject.js'));
+const LTRObject = require(path.join(app.getAppPath(), 'js/LTRObject.js'));
 const UTCObject = require(path.join(app.getAppPath(), 'js/UTCObject.js'));
 const UTDObject = require(path.join(app.getAppPath(), 'js/UTDObject.js'));
 const UTIObject = require(path.join(app.getAppPath(), 'js/UTIObject.js'));
@@ -126,6 +139,7 @@ const VISObject = require(path.join(app.getAppPath(), 'js/VISObject.js'));
 const TPCObject = require(path.join(app.getAppPath(), 'js/TPCObject.js'));
 const TGAObject = require(path.join(app.getAppPath(), 'js/TGAObject.js'));
 const TwoDAObject = require(path.join(app.getAppPath(), 'js/TwoDAObject.js'));
+const LIPObject = require(path.join(app.getAppPath(), 'js/LIPObject.js'));
 
 
 
@@ -154,6 +168,9 @@ const QuickStartTab = require(path.join(app.getAppPath(), 'js/tabs/QuickStartTab
 const TwoDAEditorTab = require(path.join(app.getAppPath(), 'js/tabs/TwoDAEditorTab.js'));
 const ImageViewerTab = require(path.join(app.getAppPath(), 'js/tabs/ImageViewerTab.js'));
 const ModelViewerTab = require(path.join(app.getAppPath(), 'js/tabs/ModelViewerTab.js'));
+const LIPEditorTab = require(path.join(app.getAppPath(), 'js/tabs/LIPEditorTab.js'));
+const MODEditorTab = require(path.join(app.getAppPath(), 'js/tabs/MODEditorTab.js'));
+const TextEditorTab = require(path.join(app.getAppPath(), 'js/tabs/TextEditorTab.js'));
 
 /* Module */
 const ModuleObject = require(path.join(app.getAppPath(), 'js/module/ModuleObject.js'));
@@ -195,9 +212,6 @@ const AudioEmitter = require(path.join(app.getAppPath(), 'js/audio/AudioEmitter.
 const TextureLoader = require(path.join(app.getAppPath(), 'js/TextureLoader.js'));
 const TemplateLoader = require(path.join(app.getAppPath(), 'js/TemplateLoader.js'));
 
-let inlineAudioPlayer =  new InlineAudioPlayer();
-//let offscreenRenderer = new OffscreenRenderer();
-
 
 const ModelCache = { models:{} };
 
@@ -217,13 +231,13 @@ let ControllerType = {
   ColorEnd             : 380,
   ColorStart           : 392,
   CombineTime          : 96,
-  Drag                 : 124,
+  Drag                 : 100,
   FPS                  : 104,
   FrameEnd             : 108,
   FrameStart           : 112,
   Grav                 : 116,
   LifeExp              : 120,
-  Mass                 : 116,
+  Mass                 : 124,
   Threshold            : 164,
   P2P_Bezier2          : 128,
   P2P_Bezier3          : 132,
@@ -238,7 +252,7 @@ let ControllerType = {
   Velocity             : 168,
   XSize                : 172,
   YSize                : 176,
-  BlurLength           : 204,
+  BlurLength           : 180,
   LightningDelay       : 184,
   LightningRadius      : 188,
   LightningScale       : 192,
@@ -274,9 +288,11 @@ Game.group = {
   stunt: new THREE.Group()
 };
 
+let inlineAudioPlayer =  new InlineAudioPlayer();
+
 LightManager.init();
 
-let Config = new ConfigManager('./settings.json');
+let Config = new ConfigManager('settings.json');
 let Global = remote.getCurrentWebContents().MyGlobal;
 let Clipboard = null;
 
@@ -367,13 +383,52 @@ if (typeof window.TopMenu == 'undefined') {
             tabManager.AddTab(new QuickStartTab());
           }},
           {type: 'separator'},
-          {name: 'New File'},
+          {name: 'Change Game', onClick: function(){
+            
+            let game_choice = dialog.showMessageBox({
+              type: 'info',
+              title: 'Switch Game?',
+              message: 'Choose which game you would like to switch to.',
+              buttons: ['KotOR', 'TSL', 'Cancel']
+            });
+
+            switch(game_choice){
+              case 0: //KotOR
+                if(GameKey != 'KOTOR'){
+                  GameKey = 'KOTOR';
+                  initialize();
+                }
+              break;
+              case 1: //TSL
+                if(GameKey != 'TSL'){
+                  GameKey = 'TSL';
+                  initialize();
+                }
+              break;
+            }
+
+          }},
+          {type: 'separator'},
+          {name: 'New >', items: [
+            {name: 'Lip Sync File', onClick: function(){
+              tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
+            }},
+            {name: 'Creature Template', onClick: function(){
+              tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
+            }},
+            {name: 'Door Template', onClick: function(){
+              tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
+            }},
+            {name: 'Placeable Template', onClick: function(){
+              tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_placeable', reskey: ResourceTypes.utp })));
+            }}
+          ]},
           {name: 'Open File', onClick: function(){
             dialog.showOpenDialog(
               {
                 title: 'Open File',
                 filters: [
-                  {name: 'All Formats', extensions: ['*']},
+                  {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
                   {name: 'TPC Image', extensions: ['tpc']},
                   {name: 'TGA Image', extensions: ['tga']},
                   {name: 'GFF', extensions: ['gff']},
@@ -383,11 +438,17 @@ if (typeof window.TopMenu == 'undefined') {
                   {name: 'Merchant Template', extensions: ['utm']},
                   {name: 'Sound Template', extensions: ['uts']},
                   {name: 'Trigger Template', extensions: ['utt']},
-                  {name: 'Waypoint Template', extensions: ['utw']}
+                  {name: 'Waypoint Template', extensions: ['utw']},
+                  {name: 'LIP Animation', extensions: ['lip']},
+                  {name: 'Audio File', extensions: ['wav', 'mp3']},
+                  {name: 'MOD File', extensions: ['mod']},
+                  {name: 'ERF File', extensions: ['erf']},
+                  {name: 'RIM File', extensions: ['rim']},
+                  {name: 'All Formats', extensions: ['*']},
               ]}, 
               (paths) => {
                 if(paths.length){
-                  let filename = paths[0].split(path.separator).pop();
+                  let filename = paths[0].split(path.sep).pop();
                   let fileParts = filename.split('.');
 
                   FileTypeManager.onOpenFile({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
@@ -395,7 +456,28 @@ if (typeof window.TopMenu == 'undefined') {
               }
             );
           }},
-          {name: 'Save File'},
+          {name: 'Save File', onClick: function(){
+
+            if(tabManager.currentTab instanceof EditorTab){
+              try{
+                tabManager.currentTab.Save();
+              }catch(e){
+                console.error(e);
+              }
+            }
+
+          }},
+          {name: 'Save File As', onClick: function(){
+
+            if(tabManager.currentTab instanceof EditorTab){
+              try{
+                tabManager.currentTab.SaveAs();
+              }catch(e){
+                console.error(e);
+              }
+            }
+
+          }},
           {name: 'Save All Files'},
           {name: 'Close File'},
           {type: 'separator'},
@@ -403,14 +485,14 @@ if (typeof window.TopMenu == 'undefined') {
           {type: 'separator'},
           {name: 'Exit', onClick: function(){
             window.canUnload = true;
-            ipcRenderer.send('CloseMain', true);
+            window.close();
           }}
         ]},
         {name: 'View', items: [
           {name: 'Left Pane Toggle', onClick: () => {
             $('#container').layout().toggle('west');
           }},
-          {name: 'Right Pane Toggle', onClick: () => {
+          /*{name: 'Right Pane Toggle', onClick: () => {
             $('#container').layout().toggle('east');
           }},
           {name: 'Audio Player Toggle', onClick: () => {
@@ -419,30 +501,14 @@ if (typeof window.TopMenu == 'undefined') {
             }else{
               inlineAudioPlayer.Show();
             }
-          }},{name: 'Audio Engine Toggle Mute', onClick: () => {
+          }},*/
+          {name: 'Audio Toggle Mute', onClick: () => {
             AudioEngine.ToggleMute();
-          }},
-          {name: 'Module Editor Toggle', onClick: () => {
-            if(typeof window.project !== 'undefined'){
-              let moduleEditorTab = tabManager.GetTabByType('ModuleEditorTab');
-              if(moduleEditorTab){
-                tabManager.RemoveTab(moduleEditorTab);
-              }else{
-                moduleEditorTab= new ModuleEditorTab();
-                tabManager.AddTab(moduleEditorTab);
-                moduleEditorTab.Init();
-              }
-            }
-          }},
-          {name: 'Test: Image Viewer', onClick: () => {
-            let imageViewerTab= new ImageViewerTab();
-            tabManager.AddTab(imageViewerTab);
-            imageViewerTab.Init();
           }}
         ]},
-        {name: 'Settings', onClick: function(){
+        /*{name: 'Settings', onClick: function(){
           let configWizard = new ConfigWizard();
-        }}
+        }}*/
       ]
     };
 }
@@ -533,6 +599,11 @@ function BuildMenuItem(item, $parent){
   if(typeof item.items !== 'undefined'){
     if(item.items.length){
       $parent = $('<ul class="dropdown-menu"/>');
+
+      if(!topLevel){
+        $parent.addClass('side');
+      }
+
       $item.append($parent);
       $item.addClass('dropdown');
       $('a', $item).addClass('dropdown-toggle').attr('data-toggle','dropdown').attr('role','button').attr('aria-haspopup','true').attr('aria-expanded','false');
@@ -555,19 +626,27 @@ const closeToggle = document.getElementById("close-toggle");
 
 //Custom Window Event Handlers
 devtoolsToggle.onclick = () => {
-  ipcRenderer.send('devtools-toggle', this);
+  //ipcRenderer.send('devtools-toggle', this);
+  let configWizard = new ConfigWizard();
 };
 
-minimizeToggle.onclick = () => {
-  ipcRenderer.send('minimize-toggle', true);
+minimizeToggle.onclick = (e) => {
+  e.preventDefault();
+  remote.BrowserWindow.getFocusedWindow().minimize();
 };
 
-maximizeToggle.onclick = () => {
-  ipcRenderer.send('maximize-toggle', true);
+maximizeToggle.onclick = (e) => {
+  e.preventDefault();
+  if(remote.BrowserWindow.getFocusedWindow().isMaximized()){
+    remote.BrowserWindow.getFocusedWindow().unmaximize();
+  }else{
+    remote.BrowserWindow.getFocusedWindow().maximize();
+  }
 };
 
-closeToggle.onclick = () => {
-  ipcRenderer.send('close-toggle', true);
+closeToggle.onclick = (e) => {
+  e.preventDefault();
+  window.close();
 };
 
 
@@ -608,3 +687,74 @@ function removeClass(el, className) {
     el.className=el.className.replace(reg, ' ')
   }
 }
+
+
+
+
+
+
+;(function($) {
+  // multiple plugins can go here
+  (function(pluginName) {
+    var defaults = {
+      title: 'New Window'
+    };
+    $.fn[pluginName] = function(options) {
+      options = $.extend(true, {}, defaults, options);
+
+      console.log('windowPane');
+            
+      return this.each(function() {
+        var elem = this,
+          $elem = $(elem);
+
+        console.log('windowPane', $elem);
+
+        $elem.removeClass('windowpane').addClass('windowpane');
+
+        elem.$title = $('<div class="windowpane-title" />');
+        elem.$content = $('<div class="windowpane-content" />');
+
+        elem.$title.append('<b>'+options.title+'</b>');
+
+        elem.dragging = false;
+        elem.offset = {x:0, y:0};
+
+        elem.$title.on('mousedown', function(e) {
+          elem.dragging = true;
+          let offset = $elem.offset();
+          elem.offset.x = e.pageX - offset.left;
+          elem.offset.y = e.pageY - offset.top;
+        });
+
+        elem.$title.on('mouseup', function(e) {
+          elem.dragging = false;
+        });
+
+        $elem.on('mousemove', function(e) {
+          if(elem.dragging){
+            let offset = $elem.parent().offset();
+            $elem.css({
+              left: e.pageX - elem.offset.x - offset.left,
+              top: e.pageY - elem.offset.y - offset.top,
+              bottom: 'initial',
+              right: 'initial',
+            });
+          }
+        });
+
+        $elem.append(elem.$title);
+        $elem.append(elem.$content);
+        
+      });
+    };
+    $.fn[pluginName].defaults = defaults;
+  })('windowPane');
+})(jQuery);
+
+function bytesToSize(bytes) {
+  var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  if (bytes == 0) return '0 Byte';
+  var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+  return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+};

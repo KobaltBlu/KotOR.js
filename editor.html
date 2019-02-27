@@ -19,7 +19,7 @@
   <script type="text/javascript" src="js/engine/stats.min.js"></script>
   <script type="text/javascript" src="js/engine/controls/MapControls.js"></script>
   <script type="text/javascript" src="js/engine/TransformControls.js"></script>
-  <script type="text/javascript" src="js/engine/SPE.min.js"></script>
+  <script type="text/javascript" src="js/engine/SPE.js"></script>
   <script type="text/javascript" src="js/libs/dexie.min.js"></script>
   <script type="text/javascript" src="js/libs/perfect-scrollbar.jquery.min.js"></script>
   <script type="text/javascript" src="js/libs/bootstrap-colorpicker.min.js"></script>
@@ -91,24 +91,6 @@
   'use strict';
   const tabManager = new EditorTabManager();
 
-  /* DATABASE */
-  console.log(_Game);
-  let db = new Dexie('K'+_Game);
-
-  let deleteDB = false;
-  if(deleteDB){
-    db.delete();
-    db = new Dexie('K'+_Game);
-  }
-
-  // Define a schema
-  db.version(1).stores({
-   tlkStrings: '++id, flags, SoundResRef, VolumeVariance, PitchVariance, Value'
-  });
-
-  // Open the database
-  db.open();
-
   $('#container').layout({
     applyDefaultStyles: false,
     'onopen': (pane) => {
@@ -158,227 +140,285 @@
   if(!Config.options.Panes.right.open)
     $('#container').layout().close('east');
 
-    function gamePathVerify () {
-      let verified = { KOTOR: false, TSL: false };
+  function gamePathVerify () {
+    let verified = { KOTOR: false, TSL: false };
 
-      if(Config.options.Games.KOTOR.Location != null){
-        try {
-          fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
-          verified.KOTOR = true;
-        } catch (e) { }
-      }
-
-      if(Config.options.Games.TSL.Location != null){
-        try {
-          fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
-          verified.TSL = true;
-        } catch (e) { }
-      }
-
-      return verified;
-
+    if(Config.options.Games.KOTOR.Location != null){
+      try {
+        fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
+        verified.KOTOR = true;
+      } catch (e) { }
     }
 
-    let verifiedPaths = gamePathVerify();
+    if(Config.options.Games.TSL.Location != null){
+      try {
+        fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
+        verified.TSL = true;
+      } catch (e) { }
+    }
 
-    if(Config.options.first_run || (!verifiedPaths.KOTOR && !verifiedPaths.TSL) ){
-      loader.Dismiss();
-      let gameFinderWizard = new GameFinderWizard({
-        onUpdate: () => {
-          initialize();
-        },
-        onCancel: () => {
-          window.canUnload = true;
-          ipcRenderer.send('CloseMain', true);
-        }
-      });
+    return verified;
+
+  }
+
+  let verifiedPaths = gamePathVerify();
+
+  if(Config.options.first_run || (!verifiedPaths.KOTOR && !verifiedPaths.TSL) ){
+    loader.Dismiss();
+    let gameFinderWizard = new GameFinderWizard({
+      onUpdate: () => {
+        initialize();
+      },
+      onCancel: () => {
+        window.canUnload = true;
+        ipcRenderer.send('CloseMain', true);
+      }
+    });
+  }else{
+    initialize();
+  }
+
+  let treeIndex = 0;
+
+  function buildNodeList(nodeList = [], canOrphan = false){
+
+    let str = '';
+    if(nodeList instanceof Array){
+      for(let i = 0; i < nodeList.length; i++){
+        str += buildNodeList(nodeList[i], canOrphan);
+      }
     }else{
-      initialize();
-    }
 
-    let treeIndex = 0;
-
-    function buildNodeList(nodeList = [], canOrphan = false){
-
-      let str = '';
-      if(nodeList instanceof Array){
-        for(let i = 0; i < nodeList.length; i++){
-          str += buildNodeList(nodeList[i], canOrphan);
-        }
-      }else{
-
-        let node = nodeList;
-        if(node.type == 'group'){
-          if(node.nodeList.length == 1 && canOrphan){
-            for(let i = 0; i < node.nodeList.length; i++){
-              str += buildNodeList(node.nodeList[i], true);
-            }
-          }else{
-            str += '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+node.name+'</label><span></span><ul>';
-            for(let i = 0; i < node.nodeList.length; i++){
-              str += buildNodeList(node.nodeList[i], true);
-            }
-            str += '</ul></li>';
+      let node = nodeList;
+      if(node.type == 'group'){
+        if(node.nodeList.length == 1 && canOrphan){
+          for(let i = 0; i < node.nodeList.length; i++){
+            str += buildNodeList(node.nodeList[i], false);
           }
         }else{
-          str += '<li class="link" data-archive="'+node.data.archive+'" data-type="'+node.data.type+'" data-resref="'+node.data.resref+'" data-resid="'+node.data.resid+'">'+node.name+'</li>';
+          str += '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+node.name+'</label><span></span><ul>';
+          for(let i = 0; i < node.nodeList.length; i++){
+            str += buildNodeList(node.nodeList[i], true);
+          }
+          str += '</ul></li>';
         }
-
+      }else{
+        str += '<li class="link" data-path="'+node.data.path+'">'+node.name+'</li>';
       }
-
-      return str;
 
     }
 
-    function initialize(){
+    return str;
 
-      verifyGame({
-        game: GameKey,
-        onVerify: () => {
-          loader.Show();
-          GameInitializer.Init({
-            game: Games[GameKey],
-            onLoad: () => {
-              let treeIndex = 0;
-              let $ul = $('ul.tree.css-treeview.js');
-              let nodeList = [];
-              let bifs = [];
-              for(let bif in Global.kotorBIF){
-                if(Global.kotorBIF.hasOwnProperty(bif))
-                  bifs.push(Global.kotorBIF[bif]);
-              }
-              let str = '';
-              let bifLoader = new AsyncLoop({
-                array: bifs,
-                onLoop: (bif, asyncLoop) => {
-                  let name = bif.file.split('\\').pop().split('.')[0];
-                  //let bifEle = '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+name+'</label><span></span><ul>';
-                  let subTypes = {};
+  }
 
-                  let node = {
-                    name: name,
-                    type: 'group',
-                    nodeList: []
-                  };
+  function initialize(){
 
-                  nodeList.push(node)
+    verifyGame({
+      game: GameKey,
+      onVerify: () => {
+        localStorage.setItem('gameKey', GameKey);
+        $('body').removeClass('KOTOR').removeClass('TSL').addClass(GameKey);
+        loader.Show();
+        GameInitializer.Init({
+          game: Games[GameKey],
+          onLoad: () => {
+            let treeIndex = 0;
+            let $ul = $('ul.tree.css-treeview.js');
+            let nodeList = [];
+            let bifs = [];
+            for(let bif in Global.kotorBIF){
+              if(Global.kotorBIF.hasOwnProperty(bif))
+                bifs.push(Global.kotorBIF[bif]);
+            }
+            let str = '';
+            let bifLoader = new AsyncLoop({
+              array: bifs,
+              onLoop: (bif, asyncLoop) => {
+                let name = bif.file.split('\\').pop().split('.')[0];
+                //let bifEle = '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+name+'</label><span></span><ul>';
+                let subTypes = {};
 
-                  for(let i = 0; i < bif.resources.length; i++){
-                    let resource = bif.resources[i];
-                    let resref = Global.kotorKEY.GetFileLabel(resource.ID);
-                    
-                    if(subTypes[resource.ResType] == undefined){
-                      subTypes[resource.ResType] = {
-                        name: ResourceTypes.getKeyByValue(resource.ResType),
-                        type: 'group',
-                        nodeList: []
-                      }
-                      node.nodeList.push(subTypes[resource.ResType]);
-                    }
+                let node = {
+                  name: name,
+                  type: 'group',
+                  nodeList: []
+                };
 
-                    subTypes[resource.ResType].nodeList.push({
-                      name: resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
-                      type: 'resource',
-                      data: {
-                        archive: name,
-                        type: 'bif',
-                        resref: resref,
-                        resid: resource.ResType
-                      },
+                nodeList.push(node)
+
+                for(let i = 0; i < bif.resources.length; i++){
+                  let resource = bif.resources[i];
+                  let resref = Global.kotorKEY.GetFileLabel(resource.ID);
+                  
+                  if(subTypes[resource.ResType] == undefined){
+                    subTypes[resource.ResType] = {
+                      name: ResourceTypes.getKeyByValue(resource.ResType),
+                      type: 'group',
                       nodeList: []
-                    });
-
-                    //bifEle += '<li class="link" data-archive="'+name+'" data-type="bif" data-resref="'+resref+'" data-resid="'+resource.ResType+'">'+resref+'</li>';
+                    }
+                    node.nodeList.push(subTypes[resource.ResType]);
                   }
 
-                  //bifEle += '</ul></li>';
-                  
-                  //str += bifEle;
-                  asyncLoop._Loop();
+                  subTypes[resource.ResType].nodeList.push({
+                    name: resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
+                    type: 'resource',
+                    data: {
+                      path: bif.file+'?'+resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
+                      /*archive: name,
+                      type: 'bif',
+                      resref: resref,
+                      resid: resource.ResType*/
+                    },
+                    nodeList: []
+                  });
+
+                  //bifEle += '<li class="link" data-archive="'+name+'" data-type="bif" data-resref="'+resref+'" data-resid="'+resource.ResType+'">'+resref+'</li>';
                 }
-              });
-              bifLoader.Begin(() => {
-                //console.log(str);
-                $ul.html(buildNodeList(nodeList));
+
+                //bifEle += '</ul></li>';
                 
+                //str += bifEle;
+                asyncLoop._Loop();
+              }
+            });
+            bifLoader.Begin(() => {
+              //console.log(str);
+
+              //Load StreamWaves
+              recursive(path.join(Config.options.Games[GameKey].Location, 'streamwaves'), (err, files) => {
+
+                let folder = {name: 'streamwaves', type: 'group', nodeList: []};
+                folder.nodeList._indexes = {};
+                let substr_len = (path.join(Config.options.Games[GameKey].Location, 'streamwaves')+path.sep).length;
+
+                for(let i = 0; i < files.length; i++){
+                  let file = files[i].substr(substr_len);
+                  let parts = file.split(path.sep);
+                  
+                  let newfile = parts.pop();
+                  let targetFolder = folder;
+                  
+                  for(let i = 0; i < parts.length; i++){
+                    if(typeof targetFolder.nodeList._indexes[parts[i]] === 'undefined'){
+                      //Push the new folder and get the index
+                      let index = targetFolder.nodeList.push({name: parts[i].trim(), type: 'group', nodeList: []}) - 1;
+                      targetFolder.nodeList._indexes[parts[i]] = index;
+                      targetFolder = targetFolder.nodeList[index];
+                      targetFolder.nodeList._indexes = {};
+                    }else{
+                      let index = targetFolder.nodeList._indexes[parts[i]];
+                      targetFolder = targetFolder.nodeList[index];
+                    }
+                  }
+
+                  targetFolder.nodeList.push({name: newfile.trim(), type: 'resource', data: {path: files[i]}, nodeList: [] });
+
+                  /*targetFolder.nodeList.sort( (a, b) => {
+                    return a.type == 'group' ? 0 : 1;
+                  });*/
+                  
+                }
+
+                folder.nodeList.sort( (a, b) => {
+                  let compareType = a.type == 'group' && b.type != 'group' ? -1 : 1;
+                  let compareName = a.name.localeCompare(b.name);
+
+                  return compareType || compareName;
+                });
+
+                nodeList.push(folder);
+
+                $ul.html(buildNodeList(nodeList));
+              
                 $('li.link', $ul).on('click', (e) => {
                   e.preventDefault();
 
                   let resref = e.target.dataset.resref;
-                  let resid = parseInt(e.target.dataset.resid);
+                  let reskey = parseInt(e.target.dataset.resid);
 
                   let type = e.target.dataset.type;
                   let archive = e.target.dataset.archive;
 
-                  let file_path = type+'.'+archive+'://'+resref+'.'+ResourceTypes.getKeyByValue(resid);
-                  FileTypeManager.onOpenResource(file_path);
-                  console.log('open', resref, resid, file_path);
-                  /*switch(resid){
-                    case ResourceTypes['mdl']:
-                    case ResourceTypes['mdx']:
-                      let modelTab = tabManager.AddTab(
-                        new ModelViewerTab(
-                          file_path
-                        )
-                      );
-                    break;
-                  }*/
+                  console.log(e.target.dataset);
 
-                })
+                  FileTypeManager.onOpenResource(
+                    new EditorFile({
+                      path: e.target.dataset.path
+                    })
+                  );
+
+
+                /* Global.kotorBIF[archive].GetResourceData(Global.kotorBIF[archive].GetResourceByLabel(resref, reskey), (buffer) => {
+                    FileTypeManager.onOpenResource(
+                      new EditorFile({
+                        resref: resref,
+                        reskey: reskey,
+                        buffer: buffer,
+                        archive_path: Global.kotorBIF[archive].file,
+                        location: EditorFile.LOCATION_TYPE.ARCHIVE
+                      })
+                    );
+                  }, (e) => {
+                    if(typeof onError === 'function')
+                      throw 'Resource not found in BIF archive '+pathInfo.archive.name;
+                  });*/
+
+                  //let file_path = type+'.'+archive+'://'+resref+'.'+ResourceTypes.getKeyByValue(resid);
+                  
+
+                });
 
                 loader.Hide();
                 tabManager.AddTab(new QuickStartTab());
                 tabManager.AttachTo($('#renderer-container #tabs-container'));
 
-                console.log(nodeList);
-                window.temp1 = nodeList;
+                //console.log(nodeList);
+                //window.temp1 = nodeList;
+
               });
-              
-            }
-          });
-        },
-        onError: () => {
-          console.log('Failed to verify the path for', GameKey);
-          loader.Dismiss();
-          let gameFinderWizard = new GameFinderWizard({
-            onUpdate: () => {
-              initialize();
-            },
-            onCancel: () => {
-              window.canUnload = true;
-              ipcRenderer.send('CloseMain', true);
-            }
-          });
-        }
-      });
 
-    }
-
-    function verifyGame(args = {}){
-
-      args = $.extend({
-        game: _Game,
-        onVerify: null,
-        onError: null
-      }, args);
-
-      let verifiedPaths = gamePathVerify();
-
-      if(verifiedPaths[args.game]){
-        if(args.onVerify != null)
-          args.onVerify();
-      }else{
-        if(args.onError != null)
-          args.onError();
+            });
+            
+          }
+        });
+      },
+      onError: () => {
+        console.log('Failed to verify the path for', GameKey);
+        loader.Dismiss();
+        let gameFinderWizard = new GameFinderWizard({
+          onUpdate: () => {
+            initialize();
+          },
+          onCancel: () => {
+            window.canUnload = true;
+            ipcRenderer.send('CloseMain', true);
+          }
+        });
       }
+    });
 
+  }
+
+  function verifyGame(args = {}){
+
+    args = $.extend({
+      game: _Game,
+      onVerify: null,
+      onError: null
+    }, args);
+
+    let verifiedPaths = gamePathVerify();
+
+    if(verifiedPaths[args.game]){
+      if(args.onVerify != null)
+        args.onVerify();
+    }else{
+      if(args.onError != null)
+        args.onError();
     }
 
-
-
-
-
-  //inlineAudioPlayer.OpenAudio(new AudioFile('D:\\Games\\LucasArts\\Star Wars Knights of the Old Republic\\streammusic\\mus_area_acad.wav'));
+  }
 
   window.canUnload = false;
 

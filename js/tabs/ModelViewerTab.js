@@ -1,7 +1,7 @@
 class ModelViewerTab extends EditorTab {
   constructor(file, isLocal = false){
     super();
-    this.animLoop = true;
+    this.animLoop = false;
     console.log('Model Viewer');
     $('a', this.$tab).text('Model Viewer');
 
@@ -16,7 +16,14 @@ class ModelViewerTab extends EditorTab {
     this.stats = new Stats();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera( 75, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 15000 );
+
+    this.selectable = new THREE.Group();
+    this.unselectable = new THREE.Group();
+
+    this.scene.add(this.selectable);
+    this.scene.add(this.unselectable);
+
+    this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 15000 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
@@ -42,7 +49,7 @@ class ModelViewerTab extends EditorTab {
 
     this.$canvas.addClass('noselect').attr('tabindex', 1);
 
-    this.$animations = $('<div style="position: absolute; top: 25px; right: 25px; z-index:1000; height: auto!important;" />');
+    this.$controls = $('<div style="position: absolute; top: 25px; right: 25px; z-index:1000; height: auto!important;" />');
 
     //0x60534A
     this.globalLight = new THREE.AmbientLight(0xFFFFFF); //0x60534A
@@ -51,20 +58,36 @@ class ModelViewerTab extends EditorTab {
     this.globalLight.position.z = 0
     this.globalLight.intensity  = 1
 
-    this.scene.add(this.globalLight);
+    this.unselectable.add(this.globalLight);
 
-    //this.BuildGround();
+    //Raycaster
+    this.raycaster = new THREE.Raycaster();
 
-    /*this.grid = new THREE.GridHelper( 30, 60, 0xbbbbbb, 0x888888 );
-	  this.scene.add( this.grid );*/
+    //this.axes = new THREE.TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
+    //this.axes.selected = null;
+    //this.unselectable.add(this.axes);
+
+    //Selection Box Helper
+    this.selectionBox = new THREE.BoundingBoxHelper(new THREE.Object3D(), 0xffffff);
+    this.selectionBox.update();
+    this.selectionBox.visible = false;
+    this.unselectable.add( this.selectionBox );
 
     this.controls = new ModelViewerControls(this.currentCamera, this.canvas, this);
     this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
 
     this.$tabContent.append($(this.stats.dom));
     this.$tabContent.append(this.$canvas);
+    this.$tabContent.append(this.$controls);
 
-    this.$tabContent.append(this.$animations);
+    this.$ui_selected = $('<div style="position: absolute; top: 0; right: 0; bottom: 0;" />');
+
+    this.$ui_selected.windowPane({
+      title: 'Model Viewer Tools'
+    });
+
+    this.$tabContent.append(this.$ui_selected);
+
 
     this.data = new Uint8Array(0);
     this.file = file;
@@ -95,18 +118,74 @@ class ModelViewerTab extends EditorTab {
 
   UpdateUI(){
 
-    this.$animations.html('');
+    this.$ui_selected[0].$content.html(`
+      <div class="tab-host">
+        <div class="tabs">
+          <ul class="tabs-menu">
+            <li class="btn btn-tab" rel="#camera">Camera</li>
+            <li class="btn btn-tab" rel="#animations">Animation</li>
+            <li class="btn btn-tab" rel="#selected_object">Object</li>
+          </ul>
+        </div>
+        <div class="tab-container">
+          <div class="tab-content" id="camera">
+            <b>Camera Speed</b><br>
+            <input id="camera_speed" type="range" min="1" max="25" value="${this.controls.CameraMoveSpeed}" />
+          </div>
+          <div class="tab-content" id="animations">
+            <b>Animation List</b><br>
+            <select id="animation_list">
+              <option value="-1">None</option>
+            </select>
+            <b>Loop? </b><input type="checkbox" id="anim_loop"/>
+          </div>
+          <div class="tab-content" id="selected_object">
+            <b>Name</b><br>
+            <input id="selected_name" type="text" class="input" disabled />
+            <b>Texture</b><br>
+            <input id="selected_texture" type="text" class="input" disabled />
+            <button id="selected_change_texture">Change Texture</button>
+          </div>
+        </div>
+      </div>
+    `);
 
-    this.$animSelect = $('<select />');
-    this.$animLoop = $('<input type="checkbox" checked />');
-    this.$animSelect.append('<option value="-1">None</option>');
+    //Setup the tabs
+    this.$ui_selected.$tabHost = $('.tab-host', this.$ui_selected[0].$content);
+
+    $('.tabs-menu', this.$ui_selected.$tabHost).css({
+      whiteSpace: 'initial',
+      width: '100%',
+      height: 'initial'
+    });
+
+    $('.tabs-menu > .btn-tab', this.$ui_selected.$tabHost).on('click', (e) => {
+      e.preventDefault();
+      $('.tabs-menu > .btn-tab', this.$ui_selected.$tabHost).removeClass('current');
+      $(e.target).addClass('current');
+      $('.tab-container .tab-content', this.$ui_selected.$tabHost).hide()
+      $('.tab-container .tab-content'+e.target.attributes.rel.value, this.$ui_selected.$tabHost).show();
+    });
+
+    $('.tabs > .btn-tab[rel="#animations"]', this.$ui_selected.$tabHost).trigger('click');
+
+    //Camera Properties
+    this.$ui_selected.$inputCameraSpeed = $('input#camera_speed', this.$ui_selected[0].$content);
+    this.$ui_selected.$inputCameraSpeed.on('change', () => {
+      this.controls.CameraMoveSpeed = parseInt(this.$ui_selected.$inputCameraSpeed.val());
+    });
+
+    //Animation Properties
+
+    this.$ui_selected.$animSelect = $('select#animation_list', this.$ui_selected[0].$content);
+    this.$ui_selected.$animLoop = $('input#anim_loop', this.$ui_selected[0].$content);
 
     for(let i = 0; i < this.model.animations.length; i++){
-      this.$animSelect.append('<option value="'+i+'">'+this.model.animations[i].name.replace(/\0[\s\S]*$/g,'')+'</option>')
+      this.$ui_selected.$animSelect.append('<option value="'+i+'">'+this.model.animations[i].name.replace(/\0[\s\S]*$/g,'')+'</option>')
     }
 
-    this.$animSelect.on('change', () => {
-      let val = parseInt(this.$animSelect.val());
+    this.$ui_selected.$animSelect.on('change', () => {
+      let val = parseInt(this.$ui_selected.$animSelect.val());
 
       this.model.stopAnimation();
 
@@ -115,124 +194,111 @@ class ModelViewerTab extends EditorTab {
 
     });
 
-    this.$animLoop.on('change', () => {
-      this.animLoop = this.$animLoop.is(':checked');
-      this.$animSelect.trigger('change');
+    this.$ui_selected.$animLoop.on('change', () => {
+      this.animLoop = this.$ui_selected.$animLoop.is(':checked');
+      this.$ui_selected.$animSelect.trigger('change');
     });
 
-    this.$animations.append(this.$animSelect).append(this.$animLoop);
+    //Selected Object Properties
+    this.$ui_selected.$selected_object = $('div#selected_object', this.$ui_selected[0].$content);
+    this.$ui_selected.$input_name = $('input#selected_name', this.$ui_selected[0].$content);
+    this.$ui_selected.$input_texture = $('input#selected_texture', this.$ui_selected[0].$content);
+    this.$ui_selected.$btn_change_texture = $('button#selected_change_texture', this.$ui_selected[0].$content);
 
-  }
+    this.$ui_selected.$btn_change_texture.on('click', (e) => {
 
-  OpenFile(_file){
+      let originalTextureName = this.selected._node.TextureMap1;
 
-    console.log('Model Loading', _file);
+      let file = dialog.showOpenDialog({
+        title: 'Replace Texture',
+        filters: [
+          {name: 'TPC Image', extensions: ['tpc']},
+          {name: 'TGA Image', extensions: ['tga']}
+      ]});
+  
+      if(typeof file != 'undefined' && file != null){
+        if(file.length){
+          file = file[0];
+          let file_info = path.parse(file);
+          TextureLoader.tpcLoader.fetch_local(file, (texture) => {
+            this.selected._node.TextureMap1 = file_info.name;
+            this.selected.material.uniforms.map.value = texture;
+            this.selected.material.uniformsNeedsUpdate = true;
 
-    let info = Utility.filePathInfo(_file);
+            let replaceAll = dialog.showMessageBox(
+              remote.getCurrentWindow(), {
+                type: 'question',
+                buttons: ['Yes', 'No'],
+                title: 'Replace All',
+                message: 'Would you like to replace all occurrences of the texture?'
+              });
 
-    console.log(info);
-
-    if(info.location == 'local'){
-
-      let file = path.parse(info.path);
-
-      let mdlPath = path.join(file.dir, file.name+'.mdl');
-      let mdxPath = path.join(file.dir, file.name+'.mdx');
-
-      this.file = mdlPath;
-
-      fs.readFile(mdlPath, (err, mdlBuffer) => {
-        if (err) throw err;
-
-        try{
-          fs.readFile(mdxPath, (err, mdxBuffer) => {
-            if (err){
-              mdxBuffer = new Buffer(0);
-            }
-
-            try{
-              let auroraModel = new AuroraModel(new BinaryReader(mdlBuffer), new BinaryReader(mdxBuffer));
-
-              THREE.AuroraModel.FromMDL(auroraModel, { 
-                onComplete: (model) => {
-                  this.model = model;
-                  //this.model.buildSkeleton();
-                  this.scene.add(model);
-                  model.currentAnimation = model.animations[3];
-                  TextureLoader.LoadQueue(() => {
-                    console.log('Textures Loaded');
-                    this.TabSizeUpdate();
-                    this.UpdateUI();
-                    this.Render();
-                  }, (texName) => {
-                    // loader.SetMessage('Loading Textures: '+texName);
-                  });
+            if(replaceAll == 0){
+              this.model.traverse( (obj) => {
+                if(obj instanceof THREE.Mesh){
+                  if(obj._node.TextureMap1.equalsIgnoreCase(originalTextureName)){
+                    obj._node.TextureMap1 = file_info.name;
+                    obj.material.uniforms.map.value = texture;
+                    obj.material.uniformsNeedsUpdate = true;
+                  }
                 }
               });
             }
-            catch (e) {
-              console.log(e);
-              this.Remove();
-            }
 
           });
+        }
+        
+      }
+    });
 
+  }
+
+  OpenFile(file){
+
+    console.log('Model Loading', file);
+
+    if(file instanceof EditorFile){
+
+      file.readFile( (mdlBuffer, mdxBuffer) => {
+        try{
+          let auroraModel = new AuroraModel(new BinaryReader(mdlBuffer), new BinaryReader(mdxBuffer));
+
+          try{
+            this.$tabName.text(file.getFilename());
+          }catch(e){}
+
+          THREE.AuroraModel.FromMDL(auroraModel, {
+            manageLighting: false,
+            onComplete: (model) => {
+              this.model = model;
+              //this.model.buildSkeleton();
+              this.selectable.add(model);
+
+              TextureLoader.LoadQueue(() => {
+                console.log('Textures Loaded');
+                this.TabSizeUpdate();
+                this.UpdateUI();
+                this.Render();
+                setTimeout( () => {
+                  let center = model.box.getCenter();
+                  //Center the object to 0
+                  model.position.set(-center.x, -center.y, -center.z);
+                  //Stand the object on the floor by adding half it's height back to it's position
+                  //model.position.z += model.box.getSize().z/2;
+                }, 10);
+              }, (texName) => {
+                // loader.SetMessage('Loading Textures: '+texName);
+              });
+            }
+          });
         }
         catch (e) {
           console.log(e);
           this.Remove();
         }
-
       });
 
-    }else if(info.location == 'archive'){
-
-      switch(info.archive.type){
-        case 'bif':
-          Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes['mdl']), (mdlBuffer) => {
-            Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes['mdx']), (mdxBuffer) => {
-              try{
-
-                let auroraModel = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
-
-                console.log('Model Loaded', auroraModel);
-                THREE.AuroraModel.FromMDL(auroraModel, { 
-                  onComplete: (model) => {
-                    this.model = model;
-                    //this.model.buildSkeleton();
-                    this.scene.add(model);
-                    model.currentAnimation = model.animations[3];
-                    TextureLoader.LoadQueue(() => {
-                      console.log('Textures Loaded');
-                      this.TabSizeUpdate();
-                      this.UpdateUI();
-                      this.Render();
-                    }, (texName) => {
-                      // loader.SetMessage('Loading Textures: '+texName);
-                    });
-                  }
-                });
-
-              }
-              catch (e) {
-                console.log(e);
-                this.Remove();
-              }
-            }, (e) => {
-              throw 'Resource not found in BIF archive '+info.archive.name;
-              this.Remove();
-            });
-          }, (e) => {
-            throw 'Resource not found in BIF archive '+info.archive.name;
-            this.Remove();
-          });
-        break;
-      }
-
-    }
-
-    this.fileType = info.file.ext;
-    this.location = info.location;
+    }    
 
   }
 
@@ -268,23 +334,65 @@ class ModelViewerTab extends EditorTab {
     if(!this.visible)
       return;
 
+    this.selectionBox.update();
+
     var delta = this.clock.getDelta();
     this.controls.Update(delta);
-    for(let i = 0; i < this.scene.children.length; i++){
-      let obj = this.scene.children[i];
+    for(let i = 0; i < this.selectable.children.length; i++){
+      let obj = this.selectable.children[i];
       if(obj instanceof THREE.AuroraModel){
         obj.update(delta);
       }
     }
 
     for(let i = 0; i < AnimatedTextures.length; i++){
-      AnimatedTextures[i].Update(1000 * delta);
+      AnimatedTextures[i].Update(delta);
     }
     //this.scene.children[1].rotation.z += 0.01;
     this.renderer.clear();
     this.renderer.render( this.scene, this.currentCamera );
     this.stats.update();
 
+  }
+
+  select ( object ) {
+    //console.log('ModuleEditorTab', 'select', object);
+    if(this.selected === object) return;
+
+    if(object == null || object == undefined) return;
+
+    //this.axes.detach();
+    //this.axes.attach( object );
+    //this.axes.visible = true;
+
+    this.selected = object;
+
+
+    console.log('Signal', 'objectSelected', this.selected);
+    this.selectionBox.object = this.selected;
+    this.selectionBox.visible = true;
+    this.selectionBox.update();
+
+    console.log(this.selectionBox);
+
+    if(this.selected instanceof THREE.Mesh){
+      this.$ui_selected.$selected_object.show();
+      this.$ui_selected.$input_name.val(this.selected._node.name);
+      this.$ui_selected.$input_texture.val(this.selected._node.TextureMap1);
+    }else{
+      this.$ui_selected.$selected_object.hide();
+    }
+
+    let centerX = this.selectionBox.geometry.boundingSphere.center.x;
+    let centerY = this.selectionBox.geometry.boundingSphere.center.y;
+    let centerZ = this.selectionBox.geometry.boundingSphere.center.z;
+
+    //console.log(this.editor.axes, centerX, centerY, centerZ);
+
+    //this.editor.axes.position.set(centerX, centerY, centerZ);
+    //this.editor.axes.visible = true;
+
+    //this.signals.objectSelected.dispatch( object );
   }
 
   BuildGround(){
@@ -313,7 +421,7 @@ class ModelViewerTab extends EditorTab {
 
     // Mesh
     //let cb = new THREE.Mesh( cbgeometry, new THREE.MeshFaceMaterial( cbmaterials ) );
-    this.scene.add( wireframe );
+    this.unselectable.add( wireframe );
 
   }
 

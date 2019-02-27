@@ -24,7 +24,13 @@ class CExoLocStringWizard extends Wizard {
       this.$resref.val(this.args['CExoLocString'].RESREF);
 
       this.$resref.on('input', (e) => {
-        this.$string.val( ipcRenderer.sendSync( 'TLKGetStringById', parseInt( this.$resref.val() ) ).Value );
+        let val = parseInt(this.$resref.val());
+        if(val > -1){
+          this.$string.val( Global.kotorTLK.TLKStrings[ val ].Value );
+        }else{
+          this.$string.val('')
+        }
+        
       }).on('keyup', (e) => {
         if(this.$resref.val() == '-'){
           this.$resref.val(-1);
@@ -33,7 +39,12 @@ class CExoLocStringWizard extends Wizard {
         this.$resref.val(this.$resref.val().replace(/^-?[0-9]\d*(\.\d+)?$/,''));
       });
 
-      this.$string.val( ipcRenderer.sendSync( 'TLKGetStringById', parseInt( this.$resref.val() ) ).Value );
+      let val = parseInt(this.$resref.val());
+      if(val > -1){
+        this.$string.val( Global.kotorTLK.TLKStrings[ val ].Value );
+      }else{
+        this.$string.val('')
+      }
 
       this.$btnAddString.on('click', (e) => {
         e.preventDefault();
@@ -52,7 +63,7 @@ class CExoLocStringWizard extends Wizard {
       });
 
       $.each(this.args['CExoLocString'].GetStrings(), (i, substring) => {
-        let $subString = this.BuildSubStringElement( { subString: subString } );
+        let $subString = this.BuildSubStringElement( { subString: substring } );
         this.$listStrings.append( $subString );
       });
 

@@ -20,12 +20,13 @@ class CharGenPortCust extends GameMenu {
 
         this.LBL_HEAD = this.getControlByName('LBL_HEAD');
         this.BTN_BACK = this.getControlByName('BTN_BACK');
+        this.BTN_ACCEPT = this.getControlByName('BTN_ACCEPT');
         this.LBL_PORTRAIT = this.getControlByName('LBL_PORTRAIT');
 
         this.BTN_ARRL = this.getControlByName('BTN_ARRL');
         this.BTN_ARRR = this.getControlByName('BTN_ARRR');
 
-        this.BTN_ARRL.onClick = (e) => {
+        this.BTN_ARRL.addEventListener('click', (e) => {
           e.stopPropagation();
         
           let idx = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.indexOf(Game.player.appearance);
@@ -51,15 +52,13 @@ class CharGenPortCust extends GameMenu {
           }
 
           Game.player.LoadModel( (model) => {
-            //Game.player.head.buildSkeleton();
-            //model.buildSkeleton();
             this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
             this.UpdatePortrait();
           });
 
-        }
+        });
 
-        this.BTN_ARRR.onClick = (e) => {
+        this.BTN_ARRR.addEventListener('click', (e) => {
           e.stopPropagation();
 
           let idx = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.indexOf(Game.player.appearance);
@@ -85,21 +84,37 @@ class CharGenPortCust extends GameMenu {
           }
 
           Game.player.LoadModel( (model) => {
-            //Game.player.head.buildSkeleton();
-            //model.buildSkeleton();
             this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
             this.UpdatePortrait();
           });
 
-        }
+        });
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(!this.exiting){
+            this.exiting = true;
+            //Restore previous appearance
+            Game.player.appearance = this.appearance;
+            Game.player.portraidId = this.portraidId;
+            Game.player.LoadModel( (model) => {
+              this.exiting = false;
+              this.Hide();
+              Game.CharGenMain.Show();
+            });
+          }
+        });
+
+        this.BTN_ACCEPT.addEventListener('click', (e) => {
           e.stopPropagation();
           
+          //Save appearance choice
+          Game.player.template.GetFieldByLabel('Appearance_Type').SetValue(Game.player.appearance);
+          Game.player.template.GetFieldByLabel('PortraitId').SetValue(Game.player.portraidId);
+
           this.Hide();
           Game.CharGenMain.Show();
-
-        }
+        });
 
         this.tGuiPanel.widget.fill.position.z = -0.5
 
@@ -129,11 +144,10 @@ class CharGenPortCust extends GameMenu {
     let control = this.LBL_HEAD;          
     THREE.AuroraModel.FromMDL(this.cghead_light, { 
       onComplete: (model) => {
-        //console.log('Model Loaded', model);
+        
         control._3dViewModel = model;
         control._3dView.addModel(control._3dViewModel);
 
-        control._3dViewModel.rebuildEmitters();
         control.camerahook = control._3dViewModel.getObjectByName('camerahookm');
         
         control._3dView.camera.position.set(
@@ -150,9 +164,8 @@ class CharGenPortCust extends GameMenu {
         );
 
         control._3dView.camera.position.z = 1;
-
-        //control._3dViewModel.buildSkeleton();
         control._3dViewModel.playAnimation(0, true);
+
       },
       manageLighting: false,
       context: control._3dView
@@ -161,27 +174,16 @@ class CharGenPortCust extends GameMenu {
   }
 
   Update(delta = 0){
+
+    super.Update(delta);
+    if(!this.bVisible)
+      return;
+
     try{
-      
       let modelControl = this.LBL_HEAD;
-      /*if(modelControl.char){
-        //console.log('UPDATE');
-        let currentAnimation = modelControl.char.getAnimationName();
-        let randomPauseIdx = Math.round(Math.random()*1) + 1;
-        if(currentAnimation != 'pause1' && currentAnimation != 'pause2'){
-          modelControl.char.playAnimation('pause'+randomPauseIdx, false);
-        }
-        modelControl.char.update(delta);
-      }
-      let currentAnimation = Game.player.model.getAnimationName();
-      let randomPauseIdx = Math.round(Math.random()*1) + 1;
-      if(currentAnimation != 'pause1' && currentAnimation != 'pause2'){
-        Game.player.model.playAnimation('pause'+randomPauseIdx, false);
-      }*/
       Game.player.update(delta);
       modelControl._3dView.render(delta);
       modelControl.widget.fill.children[0].material.needsUpdate = true;
-      
     }catch(e){
       console.error(e);
     }
@@ -204,6 +206,9 @@ class CharGenPortCust extends GameMenu {
 
   Show(){
     super.Show();
+
+    this.appearance = Game.player.appearance;
+    this.portraidId = Game.player.portraidId;
 
     try{
       Game.player.model.parent.remove(Game.player.model);

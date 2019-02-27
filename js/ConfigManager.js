@@ -14,7 +14,7 @@ class ConfigManager{
       //_settings = require(path.join(path.dirname(process.execPath), json_path));
       console.log('ConfigManager', json_path);
       try{
-        _settings = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), json_path)));
+        _settings = JSON.parse(fs.readFileSync(json_path));
         //_settings = require(path.join(app.getAppPath(), json_path));
       }catch(e){ console.error('ConfigManager', e); }
       console.log('ConfigManager', json_path, _settings);
@@ -25,10 +25,14 @@ class ConfigManager{
       first_run: true,
       Games: {
         KOTOR: {
-          Location: null
+          Location: null,
+          recent_files: [],
+          recent_projects: []
         },
         TSL: {
-          Location: null
+          Location: null,
+          recent_files: [],
+          recent_projects: []
         }
       },
       Theme: {
@@ -100,7 +104,7 @@ class ConfigManager{
         top: {open: false},
         bottom: {open: false}
       },
-      Projects_Directory: path.join(path.resolve(__dirname), 'projects'),
+      Projects_Directory: path.join(this.GetAppDirectory(), 'projects'),
       recent_projects: [],
       recent_files: []
     }, _settings);
@@ -109,6 +113,26 @@ class ConfigManager{
       this.Save(null, true);
     }
 
+  }
+
+  GetRecentFiles(){
+    switch(GameKey){
+      case 'KOTOR':
+        return this.options.Games.KOTOR.recent_files;
+      case 'TSL':
+        return this.options.Games.TSL.recent_files;
+    }
+    return [];
+  }
+
+  GetRecentProjects(){
+    switch(GameKey){
+      case 'KOTOR':
+        return this.options.Games.KOTOR.recent_projects;
+      case 'TSL':
+        return this.options.Games.TSL.recent_projects;
+    }
+    return [];
   }
 
   Save(onSave = null, silent = false){
@@ -133,6 +157,14 @@ class ConfigManager{
 
     }catch(e){ console.error('ConfigManager.Save', e); }
 
+  }
+
+  GetAppDirectory(){
+    if(isRunningInAsar()){
+      return path.dirname(app.getPath('exe'));
+    }else{
+      return app.getAppPath();
+    }
   }
 
 }

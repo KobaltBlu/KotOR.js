@@ -21,10 +21,10 @@ class MainMovies extends GameMenu {
 
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MainMenu.Show();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

@@ -2,7 +2,7 @@ class AuroraModelNode {
 
   constructor(){
     this.childNodes = [];
-    this.controllers = [];
+    this.controllers = new Map();
     this.position = {x: 0, y: 0, z: 0};
     this.quaternion = {x: 0, y: 0, z: 0, w: 1};
     this.roomStatic = true;

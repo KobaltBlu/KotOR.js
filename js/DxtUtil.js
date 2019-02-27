@@ -15,7 +15,7 @@ class DxtUtil {
     static DecompressDxt5(imageReader, width, height) {
         
         let imageData = new ArrayBuffer(imageReader.length);
-        let Reader = new BinaryReader(new Buffer(imageReader));
+        let Reader = new BinaryReader(Buffer.from(imageReader));
 
         let blockCountX = (width + 3) / 4;
         let blockCountY = (height + 3) / 4;

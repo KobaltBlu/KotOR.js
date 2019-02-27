@@ -70,54 +70,28 @@ class TwoDAEditorTab extends EditorTab {
   }
 
   OpenFile(file){
-    let info = Utility.filePathInfo(file);
 
-    console.log(file, info);
-
-    if(info.location == 'local'){
-
-      this.file = info.file.name;
-
-      fs.readFile(info.path, (err, buffer) => {
-        if (err) throw err;
+    if(file instanceof EditorFile){
+      file.readFile( (buffer) => {
         try{
-          switch(info.file.ext){
-            case '2da':
+
+          switch(file.reskey){
+            case ResourceTypes['2da']:
               this.twoDAObject = new TwoDAObject(buffer);
               this.init();
             break;
             default:
-              throw 'File is not a 2da';
+              this.tabLoader.Dismiss();
             break;
           }
-
-          this.image.getPixelData( (pixelData) => {
-            this.SetPixelData(pixelData);
-          });
         }
         catch (e) {
           console.log(e);
+          this.Remove();
         }
-
       });
-
-    }else if(info.location == 'archive'){
-
-      switch(info.archive.type){
-        case 'bif':
-          Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
-            this.twoDAObject = new TwoDAObject(buffer);
-            this.init();
-          }, (e) => {
-            throw 'Resource not found in BIF archive '+pathInfo.archive.name;
-          });
-        break;
-      }
-
     }
-
-    this.fileType = info.file.ext;
-    this.location = info.location;
+    
   }
 
   SmartifyCells(){

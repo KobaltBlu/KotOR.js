@@ -98,7 +98,7 @@ class GUIListBox extends GUIControl {
             _ctrl.onClick = (e) => {
               e.stopPropagation();
               if(typeof onClick === 'function')
-                onClick();
+                onClick(e);
             };
 
             this.updateList();

@@ -13,51 +13,63 @@ class PartyManager {
     PartyManager.NPCS = {
       0: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       1: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       2: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       3: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       4: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       5: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       6: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       7: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       8: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       9: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       10: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       },
       11: {
         available: 0,
-        canSelect: 0
+        canSelect: 0,
+        spawned: false
       }
     }
 
@@ -67,7 +79,7 @@ class PartyManager {
 
   
 
-  static RemoveNPCById(nID = 0){
+  static RemoveNPCById(nID = 0, leaveInWorld = false){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
       let mem = PartyManager.CurrentMembers[i];
       if(mem.memberID == nID){
@@ -76,8 +88,17 @@ class PartyManager {
         for(let j = 0; j < PartyManager.party.length; j++){
           if(PartyManager.party[j].partyID == nID){
             let creature = PartyManager.party[j];
-            creature.destroy();
             PartyManager.party.splice(j, 1);
+
+            if(!leaveInWorld){
+              creature.destroy();
+            }else{
+              console.log('RemoveNPCById leaveInWorld', creature);
+              Game.group.party.remove(creature.model);
+              Game.group.creatures.add(creature.model);
+              Game.module.area.creatures.push(creature);
+            }
+
             break;
           }
         }
@@ -100,6 +121,10 @@ class PartyManager {
 
     return null;
 
+  }
+
+  static SetSelectable(nID = 0, state = false){
+    PartyManager.NPCS[nID].canSelect = state ? true : false;
   }
 
   static IsSelectable(nID = 0){
@@ -158,6 +183,21 @@ class PartyManager {
 
   }
 
+  static AddCreatureToParty(slot = 1, creature = null){
+    if(creature instanceof ModuleCreature){
+      PartyManager.NPCS[slot].available = true;
+      //PartyManager.NPCS[nID].canSelect = true;
+      PartyManager.NPCS[slot].template = creature.template;
+      //Add the creature to the party array
+      PartyManager.party.push(creature);
+      //Check to see if the creature needs to be removed from the creatures array
+      let cIdx = Game.module.area.creatures.indexOf(creature);
+      if(cIdx > -1){
+        Game.module.area.creatures.splice(cIdx, 1);
+      }
+    }
+  }
+
   static SwitchPlayerToPartyMember(nIdx = 0, onLoad = null){
     let template = undefined;
 
@@ -207,7 +247,8 @@ class PartyManager {
   }
 
   static LoadPartyMember(nIdx = 0, onLoad = null){
-    let template = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID].template;
+    let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
+    let template = npc.template;
     let partyMember = new ModuleCreature(template);
 
     let currentSlot = PartyManager.party[nIdx+1];
@@ -218,6 +259,11 @@ class PartyManager {
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.Load( () => {
             PartyManager.party[nIdx+1] = partyMember;
+
+            if(PartyManager.CurrentMembers[nIdx].isLeader){
+              PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
+            }
+
             partyMember.LoadScripts( () => {
               partyMember.LoadModel( (model) => {
                 let spawn = PartyManager.GetFollowPosition(partyMember);
@@ -263,20 +309,55 @@ class PartyManager {
     }
   }
 
-  static GetFollowPosition(creature = null){
-    let _targetOffset = -1.5;
-    if(PartyManager.party.indexOf(creature) == 2){
-      _targetOffset = 1.5;
-    }
+  static LoadPartyMemberCreature(idx = 0, onLoad = null){
+    let npc = PartyManager.NPCS[idx];
+    if(npc){
+      if(npc.template){
+        let partyMember = new ModuleCreature(npc.template);
+        partyMember.Load( () => {
+          partyMember.LoadModel( (model) => {
+            model.box = new THREE.Box3().setFromObject(model);
+            model.moduleObject = partyMember;
 
-    let targetPos = PartyManager.party[0].position.clone().sub(
-      new THREE.Vector3(
-        _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
-        _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
-        0
+            if(typeof onLoad === 'function')
+              onLoad(partyMember);
+
+          });
+        });
+      }else{
+        if(typeof onLoad === 'function')
+          onLoad(null);
+      }
+    }else{
+      if(typeof onLoad === 'function')
+        onLoad(null);
+    }
+    
+  }
+
+  static GetFollowPosition(creature = null){
+    if(Game.isLoadingSave){
+      return new THREE.Vector3(
+        creature.getXPosition(), 
+        creature.getYPosition(), 
+        creature.getZPosition()
       )
-    );
-    return targetPos;
+    }else{
+      let _targetOffset = -1.5;
+      if(PartyManager.party.indexOf(creature) == 2){
+        _targetOffset = 1.5;
+      }
+  
+      let targetPos = PartyManager.party[0].position.clone().sub(
+        new THREE.Vector3(
+          _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
+          _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
+          0
+        )
+      );
+      return targetPos;
+    }
+    
   }
 
 }

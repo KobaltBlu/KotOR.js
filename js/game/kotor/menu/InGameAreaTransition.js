@@ -30,14 +30,11 @@ class InGameAreaTransition extends GameMenu {
 
   Update(delta){
 
-    if(!Game.InGameOverlay.bVisible){
-      this.Hide();
-      return;
-    }
+    super.Update(delta);
 
     for(let i = 0; i < Game.module.area.triggers.length; i++){
       let trig = Game.module.area.triggers[i];
-      if(trig.getLinkedToModule()){
+      if(trig.getLinkedToModule() && trig.getTransitionDestin().length){
         let vec3 = new THREE.Vector3(trig.getXPosition(), trig.getYPosition(), trig.getZPosition());
         let distance = Game.player.model.position.distanceTo(vec3);
         if(distance < 5){
@@ -51,7 +48,7 @@ class InGameAreaTransition extends GameMenu {
 
     for(let i = 0; i < Game.module.area.doors.length; i++){
       let door = Game.module.area.doors[i];
-      if(door.getLinkedToModule()){
+      if(door.getLinkedToModule() && door.getTransitionDestin().length){
         let vec3 = new THREE.Vector3(door.getX(), door.getY(), door.getZ());
         let distance = Game.player.model.position.distanceTo(vec3);
         if(distance < 2){

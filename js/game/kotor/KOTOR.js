@@ -11,11 +11,12 @@ class Game extends Engine {
   static Init(){
 
     Game.ModelLoader = new THREE.MDLLoader();
-
+    
     Game.Globals = {
       'Boolean': {},
       'Number': {},
-      'String': {}
+      'String': {},
+      'Location': {}
     };
     Game.models = [];
 
@@ -24,8 +25,15 @@ class Game extends Engine {
     Game.activeGUIElement = undefined;
     Game.hoveredGUIElement = undefined;
 
+    Game.time = 0;
+
+    Game.canvas = document.createElement( 'canvas' );
+    Game.context = Game.canvas.getContext( 'webgl' )
+
     Game.renderer = new THREE.WebGLRenderer({
       antialias: true,
+      canvas: Game.canvas,
+      context: Game.context
     });
 
     Game.renderer.autoClear = false;
@@ -106,7 +114,7 @@ class Game extends Engine {
     Game.viewportFrustum = new THREE.Frustum();
     Game.viewportProjectionMatrix = new THREE.Matrix4();
 
-    Game.canvas = Game.renderer.domElement;
+    //Game.canvas = Game.renderer.domElement;
     Game.$canvas = $(Game.canvas);
 
     Game.$canvas.addClass('noselect').attr('tabindex', 1);
@@ -131,6 +139,7 @@ class Game extends Engine {
       doors: new THREE.Group(),
       placeables: new THREE.Group(),
       rooms: new THREE.Group(),
+      grass: new THREE.Group(),
       sounds: new THREE.Group(),
       triggers: new THREE.Group(),
       waypoints: new THREE.Group(),
@@ -138,12 +147,14 @@ class Game extends Engine {
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
       emitters: new THREE.Group(),
-      stunt: new THREE.Group()
+      stunt: new THREE.Group(),
+      weather_effects: new THREE.Group(),
     };
 
-    Game.grassGroup = new THREE.Group();
+    Game.weather_effects = [];
 
     Game.scene.add(Game.group.rooms);
+    Game.scene.add(Game.group.grass);
     Game.scene.add(Game.group.placeables);
     Game.scene.add(Game.group.doors);
     Game.scene.add(Game.group.creatures);
@@ -151,12 +162,15 @@ class Game extends Engine {
     //Game.scene.add(Game.group.sounds);
     Game.scene.add(Game.group.triggers);
     Game.scene.add(Game.group.stunt);
+    Game.scene.add(Game.group.weather_effects);
 
     Game.scene.add(Game.group.lights);
-    //Game.scene.add(Game.group.light_helpers);
-    //Game.scene.add(Game.group.emitters);
+    Game.scene.add(Game.group.light_helpers);
+    Game.scene.add(Game.group.emitters);
 
     Game.scene.add(Game.group.party);
+
+    Game.group.light_helpers.visible = false;
 
     Game.octree = new THREE.Octree({
       // when undeferred = true, objects are inserted immediately
@@ -219,27 +233,30 @@ class Game extends Engine {
       state: 0,
       STATES: {
         NONE: 0,
-        FADE_IN: 1,
-        FADE_OUT: 2
+        FADING_IN: 1,
+        FADING_OUT: 2,
+        FADED_IN: 3,
+        FADED_OUT: 4
       },
       FadeOut: function(length = 0, r = 0, g = 0, b = 0){
-        Game.FadeOverlay.material.opacity = 0;
+        //Game.FadeOverlay.material.opacity = 0;
         Game.FadeOverlay.material.visible = true;
         Game.FadeOverlay.material.color.setRGB(r,g,b);
-        Game.FadeOverlay.length = length;
+        Game.FadeOverlay.length = length*2;
         Game.FadeOverlay.elapsed = 0;
-        Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADE_OUT;
+        Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADING_OUT;
       },
       FadeIn: function(length = 0, r = 0, g = 0, b = 0){
-        Game.FadeOverlay.material.opacity = 1;
+        //Game.FadeOverlay.material.opacity = 1;
         Game.FadeOverlay.material.visible = true;
         Game.FadeOverlay.material.color.setRGB(r,g,b);
-        Game.FadeOverlay.length = length;
+        Game.FadeOverlay.length = length*2;
         Game.FadeOverlay.elapsed = 0;
-        Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADE_IN;
+        Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADING_IN;
       },
       Update(delta = 0){
-        if(Game.FadeOverlay.state == Game.FadeOverlay.STATES.NONE){
+
+        if(Game.FadeOverlay.state == Game.FadeOverlay.STATES.NONE || Game.FadeOverlay.state == Game.FadeOverlay.STATES.FADED_IN || Game.FadeOverlay.state == Game.FadeOverlay.STATES.FADED_OUT){
           return;
         }
 
@@ -250,26 +267,30 @@ class Game extends Engine {
         }
 
         switch(Game.FadeOverlay.state){
-          case Game.FadeOverlay.STATES.FADE_IN:
+          case Game.FadeOverlay.STATES.FADING_IN:
             if(Game.FadeOverlay.elapsed >= Game.FadeOverlay.length){
               Game.FadeOverlay.material.visible = false;
             }else{
-              Game.FadeOverlay.material.opacity = 1 - Game.FadeOverlay.elapsed / Game.FadeOverlay.length;
+              Game.FadeOverlay.material.opacity += ( 0 - Game.FadeOverlay.material.opacity ) * (Game.FadeOverlay.elapsed / Game.FadeOverlay.length);
               if(isNaN(Game.FadeOverlay.material.opacity)){
                 Game.FadeOverlay.material.opacity = 0;
               }
             }
+
+            if(Game.FadeOverlay.elapsed >= Game.FadeOverlay.length){
+              Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADED_IN;
+            }
           break;
-          case Game.FadeOverlay.STATES.FADE_OUT:
-            Game.FadeOverlay.material.opacity = Game.FadeOverlay.elapsed / Game.FadeOverlay.length;
+          case Game.FadeOverlay.STATES.FADING_OUT:
+            Game.FadeOverlay.material.opacity += ( 1 - Game.FadeOverlay.material.opacity ) * (Game.FadeOverlay.elapsed / Game.FadeOverlay.length);
             if(isNaN(Game.FadeOverlay.material.opacity)){
               Game.FadeOverlay.material.opacity = 1;
             }
-          break;
-        }
 
-        if(Game.FadeOverlay.elapsed >= Game.FadeOverlay.length){
-          Game.FadeOverlay.state = Game.FadeOverlay.STATES.NONE
+            if(Game.FadeOverlay.elapsed >= Game.FadeOverlay.length){
+              Game.FadeOverlay.state = Game.FadeOverlay.STATES.FADED_OUT;
+            }
+          break;
         }
 
       }
@@ -286,7 +307,7 @@ class Game extends Engine {
 
     Game.composer = new THREE.EffectComposer(Game.renderer);
     Game.renderPass = new THREE.RenderPass(Game.scene, Game.currentCamera);
-    //Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
+    Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
     Game.saturationPass = new THREE.ShaderPass(saturationShader);
     Game.colorPass = new THREE.ShaderPass(THREE.ColorCorrectionShader);
     Game.copyPass = new THREE.ShaderPass(THREE.CopyShader);
@@ -421,6 +442,7 @@ class Game extends Engine {
       obj.traverseAncestors( (obj) => {
         if(obj instanceof THREE.AuroraModel){
           if(obj != Game.getCurrentPlayer().getModel()){
+            //console.log(intersection)
             if(typeof onSuccess === 'function')
               onSuccess(obj, intersection.object);
 
@@ -431,7 +453,7 @@ class Game extends Engine {
               obj = intersection.object;
               obj.traverseAncestors( (obj) => {
                 if(obj instanceof THREE.AuroraModel){
-
+                  //console.log(intersection)
                   if(typeof onSuccess === 'function')
                     onSuccess(obj, intersection.object);
 
@@ -457,11 +479,38 @@ class Game extends Engine {
 
   static Start(){
 
+    Game.TutorialWindowTracker = [];
+
     Game.audioEngine = new AudioEngine();
     Game.initGUIAudio();
     LightManager.init();
 
     Planetary.Init();
+
+    Game.audioEmitter = new AudioEmitter({
+      engine: Game.audioEngine,
+      props: {
+        XPosition: 0,
+        YPosition: 0,
+        ZPosition: 0
+      },
+      template: {
+        sounds: [],
+        isActive: true,
+        isLooping: false,
+        isRandom: false,
+        isRandomPosition: false,
+        interval: 0,
+        intervalVariation: 0,
+        maxDistance: 100,
+        volume: 127,
+        positional: 0
+      },
+      onLoad: () => {
+      },
+      onError: () => {
+      }
+    });
 
     //AudioEngine.Unmute()
     Game.Mode = Game.MODES.MAINMENU;
@@ -545,6 +594,7 @@ class Game extends Engine {
           'MenuPartySelection',
           'MenuTop',
           'InGameDialog',
+          'InGameBark',
           'InGameConfirm',
           'MenuContainer',
           'MenuGalaxyMap',
@@ -594,7 +644,7 @@ class Game extends Engine {
 
       for(let i = 0; i < PartyManager.party.length; i++){
           process.nextTick( ()=> {
-        PartyManager.party[i].triggerHeartbeat();
+            PartyManager.party[i].triggerHeartbeat();
           });
       }
 
@@ -633,7 +683,7 @@ class Game extends Engine {
   static LoadModule(name = '', waypoint = null){
     ModuleObject.COUNT = 0;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
-    Game.AlphaTest = 0.5;
+    Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);
     Game.holdWorldFadeInForDialog = false;
     try{
@@ -649,12 +699,20 @@ class Game extends Engine {
     Game.selected = undefined;
     Game.hovered = undefined;
 
+    Game.staticCameras = [];
+
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
 
     //Game.InGameOverlay.Hide();
     Game.Mode = Game.MODES.LOADING;
     Game.collisionList = [];
+    
+    //Remove all weather effects
+    while(Game.weather_effects.length){
+      Game.weather_effects[0].dispose();
+      Game.weather_effects.shift();
+    }
 
     //Cleanup texture cache ignoring GUI & LBL textures
     Object.keys(TextureLoader.textures).forEach( (key) => {
@@ -717,6 +775,12 @@ class Game extends Engine {
         Game.group.sounds.remove(Game.group.sounds.children[0]);
       }
 
+      //Clear grass geometries
+      while (Game.group.grass.children.length){
+        Game.group.grass.children[0].geometry.dispose();
+        Game.group.grass.remove(Game.group.grass.children[0]);
+      }
+
       //Clear party geometries
       /*while (PartyManager.party.length){
         PartyManager.party[0].destroy();
@@ -740,70 +804,67 @@ class Game extends Engine {
         Game.LoadScreen.Show();
 
         module.loadScene( (d) => {
-          module.initScripts();
-          //Game.scene_gui.background = null;
-          Game.scene.visible = true;
-          Game.LoadScreen.Hide();
           Game.FadeOverlay.FadeOut(0, 0, 0, 0);
-          
-          console.log('loadScene', d);
-          AudioEngine.Unmute();
-          process.nextTick( ()=> {
-            if(Game.module.area.scripts.OnEnter instanceof NWScript){
-              Game.module.area.scripts.OnEnter.enteringObject = Game.player;
-              Game.module.area.scripts.OnEnter.run(Game.module.area, 0, () => {
-                
-                Game.InGameDialog.audioEmitter = undefined
-                Game.InGameOverlay.RecalculatePosition();
-                Game.InGameOverlay.Show();
-                //setTimeout( () => {
-                  console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
-                  if(!Game.holdWorldFadeInForDialog)
-                    Game.FadeOverlay.FadeIn(1, 0, 0, 0);
-                  //console.log('onEnter Completed', Game.module);
-                  
-                  //console.log('Running creature onSpawn scripts');
+          module.initScripts( () => {
+            //Game.scene_gui.background = null;
+            Game.scene.visible = true;
+            Game.LoadScreen.Hide();
+            
+            console.log('loadScene', d);
+            AudioEngine.Unmute();
+            if(Game.module.area.MiniGame){
+              Game.Mode = Game.MODES.MINIGAME
+            }else{
+              Game.Mode = Game.MODES.INGAME;
+            }
+            process.nextTick( ()=> {
+
+              Game.isLoadingSave = false;
+
+              if(Game.module.area.MiniGame){
+                Game.Mode = Game.MODES.MINIGAME
+              }else{
+                Game.Mode = Game.MODES.INGAME;
+              }
+              
+              Game.InGameDialog.audioEmitter = undefined
+              Game.InGameOverlay.RecalculatePosition();
+              Game.InGameOverlay.Show();
+              setTimeout( () => {
+                console.log('inDialog', Game.inDialog);
+                console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
+                if(!Game.holdWorldFadeInForDialog)
+                  Game.FadeOverlay.FadeIn(1, 0, 0, 0);
+
                   for(let i = 0; i < Game.module.area.creatures.length; i++){
                     if(Game.module.area.creatures[i] instanceof ModuleCreature){
                       if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
                         try{
-                          //Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
+                          Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
                         }catch(e){
                           console.error(e);
                         }
                       }
                     }
                   }
-                //}, 1000);
-              });
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
-            }else{
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
-              for(let i = 0; i < Game.module.area.creatures.length; i++){
-                if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                  if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
-                    try{
-                      //Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                    }catch(e){
-                      console.error(e);
+
+                  for(let i = 0; i < PartyManager.party.length; i++){
+                    if(PartyManager.party[i] instanceof ModuleCreature){
+                      if(PartyManager.party[i].scripts.onSpawn instanceof NWScript){
+                        try{
+                          PartyManager.party[i].scripts.onSpawn.run(PartyManager.party[i]);
+                        }catch(e){
+                          console.error(e);
+                        }
+                      }
                     }
                   }
-                }
-              }
-            }
-            Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
-          });
+              }, 1000);                
+              
+              Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
+            });
 
-          //Disable lighting because it no worky right
-          //LightManager.clearLights();
+          });
 
         })
 
@@ -844,7 +905,7 @@ class Game extends Engine {
     }
     
     let camHeight = new THREE.Vector3(0, 0, (1+cameraHeight)-offsetHeight);
-    let distance = camStyle.distance;
+    let distance = camStyle.distance * Game.CameraDebugZoom;
     
     let camPosition = followee.getModel().position.clone().add(new THREE.Vector3(distance*Math.cos(Game.followerCamera.facing), distance*Math.sin(Game.followerCamera.facing), 1.8));
     
@@ -913,7 +974,9 @@ class Game extends Engine {
 
     }else{
       Game.followerCamera.position.copy(followee.getModel().position.clone().add(new THREE.Vector3(distance*Math.cos(Game.followerCamera.facing), distance*Math.sin(Game.followerCamera.facing), 1.8)));
-      Game.followerCamera.lookAt(followee.getModel().position.clone().add(camHeight));
+      let lookAt = followee.getModel().position.clone();
+      lookAt.z += camHeight.z;
+      Game.followerCamera.lookAt(lookAt);
     }
 
     Game.followerCamera.updateProjectionMatrix();
@@ -958,7 +1021,7 @@ class Game extends Engine {
     if(!Game.visible)
       return;
 
-    this.UpdateVideoEffect();
+    Game.UpdateVideoEffect();
 
     var delta = Game.clock.getDelta();
 
@@ -979,6 +1042,19 @@ class Game extends Engine {
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
       if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && Game.State != Game.STATES.PAUSED && !Game.MenuActive)){
+
+        Game.updateTime(delta);
+        CombatEngine.Update(delta);
+
+        //PartyMember cleanup
+        for(let i = 0; i < Game.group.party.children.length; i++){
+          let pm = Game.group.party.children[i].moduleObject;
+          if(Game.player != pm){
+            if(PartyManager.party.indexOf(pm) == -1){
+              pm.destroy();
+            }
+          }
+        }
 
         let walkCount = Game.walkmeshList.length;
         let roomCount = Game.group.rooms.children.length;
@@ -1006,6 +1082,9 @@ class Game extends Engine {
           }
         }
 
+        Game.module.grassMaterial.uniforms.time.value += delta;
+        Game.module.grassMaterial.uniforms.playerPosition.value = Game.player.position;
+
         Game.UpdateVisibleRooms();
 
         //Check triggers
@@ -1030,7 +1109,13 @@ class Game extends Engine {
         }
 
         for(let i = 0; i < animTexCount; i++){
-          AnimatedTextures[i].Update(100 * delta);
+          AnimatedTextures[i].Update(delta);
+        }
+
+        if(Game.Mode == Game.MODES.MINIGAME){
+          for(let i = 0; i < Game.module.area.MiniGame.Enemies.length; i++){
+            Game.module.area.MiniGame.Enemies[i].update(delta);
+          }
         }
 
         for(let i = 0; i < Game.walkmeshList.length; i++){
@@ -1048,8 +1133,20 @@ class Game extends Engine {
           Game.MenuGalaxyMap.Update(delta);
         }
 
+        for(let i = 0; i < Game.weather_effects.length; i++){
+          Game.weather_effects[i].position.copy(
+            Game.getCurrentPlayer().position.clone().add(
+              new THREE.Vector3(0,0,3)
+            )
+          );
+          Game.weather_effects[i].update(delta);
+        } 
+
         Game.UpdateFollowerCamera(delta);
 
+      }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){
+        Game.controls.UpdatePlayerControls(delta);
+        Game.UpdateFollowerCamera(delta);
       }else if(Game.Mode == Game.MODES.MAINMENU){
         if(Game.CharGenClass.bVisible){
           Game.CharGenClass.Update(delta);
@@ -1066,7 +1163,7 @@ class Game extends Engine {
         Game.MenuGalaxyMap.Update(delta);
       }
 
-      //Game.limiter.then = Game.limiter.now - (Game.limiter.elapsed % Game.limiter.fpsInterval);
+      Game.limiter.then = Game.limiter.now - (Game.limiter.elapsed % Game.limiter.fpsInterval);
 
     }
 
@@ -1102,6 +1199,7 @@ class Game extends Engine {
 
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
       Game.renderPass.camera = Game.currentCamera;
+      Game.renderPassAA.camera = Game.currentCamera;
       Game.composer.render();
     }
 
@@ -1223,7 +1321,7 @@ class Game extends Engine {
       let hoveredObject = false;
       Game.onMouseHitInteractive( (obj) => {
         if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){
-          if(obj != Game.getCurrentPlayer().getModel()){
+          if(obj.moduleObject != Game.getCurrentPlayer()){
 
             let distance = Game.getCurrentPlayer().getModel().position.distanceTo(obj.position);
             let distanceThreshold = 10;
@@ -1250,12 +1348,21 @@ class Game extends Engine {
             }else if(obj.moduleObject instanceof ModuleCreature){
 
               if(obj.moduleObject.isHostile(Game.getCurrentPlayer())){
-                if(canChangeCursor)
-                  CursorManager.setCursor('attack');
-                else
-                  CursorManager.setCursor('select');
+                if(!obj.moduleObject.isDead()){
+                  if(canChangeCursor)
+                    CursorManager.setCursor('attack');
+                  else
+                    CursorManager.setCursor('select');
 
-                CursorManager.setReticle('reticleH');
+                  CursorManager.setReticle('reticleH');
+                }else{
+                  if(canChangeCursor)
+                    CursorManager.setCursor('use');
+                  else
+                    CursorManager.setCursor('select');
+    
+                  CursorManager.setReticle('reticleF');
+                }
               }else{
                 if(canChangeCursor)
                   CursorManager.setCursor('talk');

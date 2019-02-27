@@ -119,13 +119,13 @@ class GUIScrollBar extends GUIControl{
       }
     }
 
-    this.onMouseMove = () => {
+    this.addEventListener( 'mouseMove', () => {
       if(this.inner_box.containsPoint(Game.mouseUI)){
         this.mouseInside();
       }
-    }
+    });
 
-    this.onClick = () =>{
+    this.addEventListener( 'click', () =>{
       /*console.log('click')
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
@@ -140,16 +140,16 @@ class GUIScrollBar extends GUIControl{
       }else if(this.downArrow.containsPoint(Game.mouseUI)){
         this.list.scrollDown();
       }*/
-    }
+    });
 
-    this.onMouseDown = (e) => {
+    this.addEventListener( 'mouseDown', (e) => {
       e.stopPropagation();
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
       console.log('hi', this.mouseOffset);
-    };
+    });
 
-    this.onMouseUp = () => {
+    this.addEventListener( 'mouseUp', () => {
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
@@ -165,7 +165,7 @@ class GUIScrollBar extends GUIControl{
         console.log('down');
         this.list.scrollDown();
       }
-    };
+    });
 
   }
 

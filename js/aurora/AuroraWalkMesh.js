@@ -18,8 +18,8 @@
       this.walkableFaces = [];
       this.grassFaces = [];
       this.rootNode = null;
-
       this.header = this.ReadHeader();
+      this.mesh = new THREE.Object3D;
   
       //READ Verticies
       this.wokReader.Seek(this.header.offsetToVertices);
@@ -80,7 +80,7 @@
           this.walkableFaces.push(face);
         }
         
-        if(face.walkIndex == 3){
+        if(face.walkIndex == 3 || face.walkIndex == 19){ //17 == WATER?
           this.grassFaces.push(face);
         }
 
@@ -96,36 +96,59 @@
 
       }
 
-      let geometry = new THREE.Geometry();
-      //geometry.boundingBox = this.boundingBox;
+      this.matrixWorld = new THREE.Matrix4();
+
+      this.geometry = new THREE.Geometry();
+      //this.geometry.boundingBox = this.boundingBox;
       
-      geometry.vertices = this.vertices;
-      geometry.faces = this.faces;
+      this.geometry.vertices = this.vertices;
+      this.geometry.faces = this.faces;
 
-      geometry.computeFaceNormals();
-      geometry.computeVertexNormals();    // requires correct face normals
-      geometry.computeBoundingSphere();
-
-      let material = new THREE.MeshBasicMaterial({
+      this.material = new THREE.MeshBasicMaterial({
         vertexColors: THREE.FaceColors,
         side:THREE.FrontSide
       });
 
-      geometry.verticesNeedUpdate = true;
-      geometry.normalsNeedUpdate = true;
-      geometry.uvsNeedUpdate = true;
+      this.geometry.verticesNeedUpdate = true;
+      this.geometry.normalsNeedUpdate = true;
+      this.geometry.uvsNeedUpdate = true;
 
-      this.mesh = new THREE.Mesh( geometry , material );
+      this.mesh = new THREE.Mesh( this.geometry , this.material );
       this.mesh.wok = this;
   
       this.wokReader = null;
+
+      this.aabbGroup = new THREE.Object3D;
+      this.mesh.add(this.aabbGroup);
+
+      
+      for(let i = 0; i < this.aabbNodes.length; i++){
+        let node = this.aabbNodes[i];
+        node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
+        this.aabbGroup.add( node.boxHelper );
+
+        node.face = this.faces[node.leafFaceIndex];
+        node.leftNode = this.aabbNodes[node.leftNodeArrayIndex];
+        node.rightNode = this.aabbNodes[node.rightNodeArrayIndex];
+
+        if(node.face == undefined){
+          node.type = 'node';
+        }else{
+          node.type = 'leaf';
+        }
+
+      }
+
+      this.aabbRoot = this.aabbNodes[0];
   
     }
 
     ReadAABB(){
       return {
-        boxMin: new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle()),
-        boxMax: new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle()),
+        box: new THREE.Box3(
+          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() - 1),
+          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() + 1)
+        ),
         leafFaceIndex: this.wokReader.ReadInt32(),
         unknownFixedAt4: this.wokReader.ReadInt32(),
         mostSignificantPlane: this.wokReader.ReadInt32(),
@@ -162,11 +185,195 @@
   
     }
 
-    pathFind(origin = new THREE.Vector3, destination = new THREE.Vector3){
+    /*getAABBCollisionFaces(box = new THREE.Box3, node = null, collisions = []){
 
-      let openList = [];
-      let closedList = [];
+      if(node == null){
+        node = this.aabbRoot;
+      }
 
+      if(!node){
+        return [];
+      }
+      
+      if(node.box.containsBox(box)){
+        if(node.leftNode != undefined){
+          this.getAABBCollisionFaces(box, node.leftNode, collisions)
+        }
+
+        if(node.rightNode != undefined){
+          this.getAABBCollisionFaces(box, node.rightNode, collisions)
+        }
+      }
+        
+      if(node.leafFaceIndex > -1)
+        collisions.push(this.faces[node.leafFaceIndex]);
+
+      return collisions;
+    }*/
+
+    getAABBCollisionFaces(box = new THREE.Box3, node = null, collisions = []){
+
+      if(!this.aabbRoot){
+        return this.faces;
+      }
+
+      if(node == null){
+        node = this.aabbRoot;
+        if(node){
+          if(node.box.intersectsBox(box) || node.box.containsBox(box)){
+            if(node.leftNode != undefined){
+              this.getAABBCollisionFaces(box, node.leftNode, collisions)
+            }
+
+            if(node.rightNode != undefined){
+              this.getAABBCollisionFaces(box, node.rightNode, collisions)
+            }
+          }
+
+          if(node.leafFaceIndex > -1)
+            collisions.push(this.faces[node.leafFaceIndex]);
+        }
+      
+      }else{
+
+        if(node.box.intersectsBox(box) || node.box.containsBox(box)){
+          if(node.leftNode != undefined){
+            this.getAABBCollisionFaces(box, node.leftNode, collisions)
+          }
+
+          if(node.rightNode != undefined){
+            this.getAABBCollisionFaces(box, node.rightNode, collisions)
+          }
+        }
+
+        if(node.leafFaceIndex > -1)
+          collisions.push(this.faces[node.leafFaceIndex]);
+
+      }
+
+      return collisions;
+      
+    }
+
+    raycast(raycaster, faces = []) {
+      let intersects = [];
+      let inverseMatrix = new THREE.Matrix4();
+      let ray = new THREE.Ray();
+      let sphere = new THREE.Sphere();
+  
+      let uvA = new THREE.Vector2();
+      let uvB = new THREE.Vector2();
+      let uvC = new THREE.Vector2();
+  
+      let intersectionPoint = new THREE.Vector3();
+      let intersectionPointWorld = new THREE.Vector3();
+  
+      function checkIntersection( object, material, raycaster, ray, pA, pB, pC, point ) {
+  
+        let intersect;
+  
+        if ( material.side === THREE.BackSide ) {
+  
+          intersect = ray.intersectTriangle( pC, pB, pA, true, point );
+  
+        } else {
+  
+          intersect = ray.intersectTriangle( pA, pB, pC, material.side !== THREE.DoubleSide, point );
+  
+        }
+  
+        if ( intersect === null ) return null;
+  
+        intersectionPointWorld.copy( point );
+        intersectionPointWorld.applyMatrix4( object.matrixWorld );
+  
+        let distance = raycaster.ray.origin.distanceTo( intersectionPointWorld );
+  
+        if ( distance < raycaster.near || distance > raycaster.far ) return null;
+  
+        return {
+          distance: distance,
+          point: intersectionPointWorld.clone(),
+          object: object
+        };
+  
+      }
+  
+      let geometry = this.geometry;
+      let material = this.material;
+      let matrixWorld = this.mesh.matrixWorld;
+
+      if ( material === undefined ) return;
+
+      // Checking boundingSphere distance to ray
+
+      if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
+
+      sphere.copy( geometry.boundingSphere );
+      sphere.applyMatrix4( matrixWorld );
+
+      //if ( raycaster.ray.intersectsSphere( sphere ) === false ) return;
+
+      //
+
+      inverseMatrix.getInverse( matrixWorld );
+      ray.copy( raycaster.ray ).applyMatrix4( inverseMatrix );
+
+      // Check boundingBox before continuing
+
+      if ( geometry.boundingBox !== null ) {
+
+        if ( ray.intersectsBox( geometry.boundingBox ) === false ) return;
+
+      }
+
+      let intersection;
+
+      let fvA, fvB, fvC;
+      let isMultiMaterial = Array.isArray( material );
+
+      let vertices = geometry.vertices;
+      let uvs;
+
+      let faceVertexUvs = geometry.faceVertexUvs[ 0 ];
+      if ( faceVertexUvs.length > 0 ) uvs = faceVertexUvs;
+
+      for ( let f = 0, fl = faces.length; f < fl; f ++ ) {
+
+        let face = faces[ f ];
+        let faceMaterial = isMultiMaterial ? material[ face.materialIndex ] : material;
+
+        if ( faceMaterial === undefined ) continue;
+
+        fvA = vertices[ face.a ];
+        fvB = vertices[ face.b ];
+        fvC = vertices[ face.c ];
+
+        intersection = checkIntersection( this, faceMaterial, raycaster, ray, fvA, fvB, fvC, intersectionPoint );
+
+        if ( intersection ) {
+
+          if ( uvs && uvs[ f ] ) {
+
+            let uvs_f = uvs[ f ];
+            uvA.copy( uvs_f[ 0 ] );
+            uvB.copy( uvs_f[ 1 ] );
+            uvC.copy( uvs_f[ 2 ] );
+
+            intersection.uv = THREE.Triangle.getUV( intersectionPoint, fvA, fvB, fvC, uvA, uvB, uvC, new THREE.Vector2() );
+
+          }
+
+          intersection.face = face;
+          intersection.faceIndex = f;
+          intersects.push( intersection );
+
+        }
+
+      }
+
+      return intersects;
+  
     }
   
   }

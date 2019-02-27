@@ -8,9 +8,9 @@
  class AuroraModelAnimationNode {
 
   constructor(){
-    this.position = {x: 0, y: 0, z: 0};
-    this.quaternion = {x: 0, y: 0, z: 0, w: 0};
-    this.controllers = [];
+    this.position = new THREE.Vector3();
+    this.quaternion = new THREE.Quaternion();
+    this.controllers = new Map();
     this.children = [];
     this.name = '';;
   }

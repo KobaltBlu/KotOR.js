@@ -26,11 +26,7 @@ function createGameWindow(game = 1) {
     width: 1200, 
     height: 600, 
     frame: true,
-    title: 'KotOR',
-    webPreferences: {
-      // The `plugins` have to be enabled.
-      plugins: true
-    }
+    title: 'KotOR'
   });
 
   winGame.state = {
@@ -51,7 +47,7 @@ function createGameWindow(game = 1) {
   // Emitted when the window is closed.
   winGame.on('closed', (event) => {
     event.preventDefault();
-    winLauncher.show();
+    createLauncherWindow();
     winGame = null;
   });
 
@@ -61,38 +57,46 @@ function createGameWindow(game = 1) {
 
 function createEditorWindow() {
   // Create the browser window.
-  winEditor = new BrowserWindow({
-    width: 1200, 
-    height: 600, 
-    frame: false,
-    title: 'KotOR Forge',
-    webPreferences: {
-      // The `plugins` have to be enabled.
-      plugins: true
-    }
-  });
-  winEditor.webContents.MyGlobal = Global;
-  // and load the index.html of the app.
-  winEditor.loadURL(`file://${__dirname}/editor.html`);
-  winEditor.openDevTools();
-  winEditor.on('ready', () => {
-    winEditor.webcontents.openDevTools();
-  })
-
-  // Emitted when the window is closed.
-  winEditor.on('closed', () => {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    winEditor = null;
-    winLauncher.show();
-  });
-
   winLauncher.hide();
+  if(!(winEditor instanceof BrowserWindow)){
+    winEditor = new BrowserWindow({
+      width: 1200, 
+      height: 600, 
+      frame: false,
+      title: 'KotOR Forge'
+    });
+    winEditor.webContents.MyGlobal = Global;
+    // and load the index.html of the app.
+    winEditor.loadURL(`file://${__dirname}/editor.html`);
+    winEditor.openDevTools();
+    winEditor.on('ready', () => {
+      winEditor.webcontents.openDevTools();
+    });
+
+    // Emitted when the window is closed.
+    winEditor.on('closed', () => {
+      // Dereference the window object, usually you would store windows
+      // in an array if your app supports multi windows, this is the time
+      // when you should delete the corresponding element.
+      createLauncherWindow();
+      winEditor = null;
+    });
+    winEditor.show();
+    winEditor.focus();
+  }else{
+    winLauncher.show();
+  }
 
 }
 
 function createLauncherWindow() {
+
+  if(winLauncher instanceof BrowserWindow){
+    winLauncher.show();
+    winLauncher.focus();
+    return;
+  }
+
   // Create the browser window.
   winLauncher = new BrowserWindow({
     width: 1200, 
@@ -101,11 +105,7 @@ function createLauncherWindow() {
     minWidth: 1000,
     frame: false,
     title: 'KotOR Launcher',
-    transparent: true,
-    webPreferences: {
-      // The `plugins` have to be enabled.
-      plugins: true
-    }
+    transparent: true
   });
   winLauncher.webContents.MyGlobal = Global;
   // and load the index.html of the app.
@@ -157,7 +157,7 @@ ipcMain.on('run_forge', () => {
 
 app.on('ready', () => {
 
-  tray = new Tray('icon.png');
+  tray = new Tray('./icon.png');
   const contextMenu = Menu.buildFromTemplate([{
     label: 'Exit', 
     type: 'normal', 

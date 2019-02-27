@@ -48,15 +48,15 @@ class MenuGalaxyMap extends GameMenu {
         this.BTN_ACCEPT = this.getControlByName('BTN_ACCEPT');
         this.BTN_BACK = this.getControlByName('BTN_BACK');
   
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuActive = false;
           Game.InGameOverlay.Show();
           this.Hide();
           Planetary.SetCurrentPlanet(Game.getGlobalNumber('K_CURRENT_PLANET'));
-        };
+        });
 
-        this.BTN_ACCEPT.onClick = (e) => {
+        this.BTN_ACCEPT.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuActive = false;
           Game.InGameOverlay.Show();
@@ -66,7 +66,7 @@ class MenuGalaxyMap extends GameMenu {
             this.script.run(Game.player);
           }
 
-        };
+        });
 
         this.script = null;
 
@@ -83,7 +83,7 @@ class MenuGalaxyMap extends GameMenu {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('galaxy', ResourceTypes['mdx']), (mdxBuffer) => {
             try{
     
-              let model = new AuroraModel( new BinaryReader(new Buffer(mdlBuffer)), new BinaryReader(new Buffer(mdxBuffer)) );
+              let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
 
               this.tGuiPanel.widget.fill.visible = false;
 
@@ -98,7 +98,6 @@ class MenuGalaxyMap extends GameMenu {
                   //console.log('Model Loaded', model);
                   this._3dViewModel = model;
 
-                  this._3dViewModel.rebuildEmitters();
                   this.camerahook = this._3dViewModel.getObjectByName('camerahook');
                   
                   this._3dView.camera.position.set(
@@ -150,6 +149,7 @@ class MenuGalaxyMap extends GameMenu {
   }
 
   Update(delta = 0){
+    super.Update(delta);
     try{
       this._3dView.render(delta);
       this.THREED_PlanetDisplay.fill.children[0].material.needsUpdate = true;
@@ -198,18 +198,18 @@ class MenuGalaxyMap extends GameMenu {
           control.show();
           control.disableBorder = true;
           control.hideBorder();
-          control.onClick = (e) => {
+          control.addEventListener('click', (e) => {
             e.stopPropagation();
             this.LBL_PLANETNAME.setText(plnt.getName());
             this.LBL_DESC.setText(plnt.getDescription());
             Planetary.SetCurrentPlanet(plnt.getId());
             this.UpdateScale();
-          }
+          });
         }else{
           control.hide();
           control.disableBorder = true;
           control.hideBorder();
-          control.onClick = null;
+          control.removeEventListener('click');
         }
       }
     }

@@ -24,7 +24,7 @@ class RIMObject {
               console.log('RIM Header Read', status.message);
               return;
           }
-          var header = new Buffer(this.HeaderSize);
+          var header = Buffer.alloc(this.HeaderSize);
           fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
             this.Reader = new BinaryReader(header);
   
@@ -42,7 +42,7 @@ class RIMObject {
   
             //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
             this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
-            header = new Buffer(this.rimDataOffset);
+            header = Buffer.alloc(this.rimDataOffset);
             fs.read(fd, header, 0, this.rimDataOffset, 0, (err, num) => {
               this.Reader = new BinaryReader(header);
   
@@ -131,7 +131,7 @@ class RIMObject {
           let _buffers = [];
 
           if(this.inMemory){
-            let buffer = new Buffer(resource.ResourceSize);
+            let buffer = Buffer.alloc(resource.ResourceSize);
             this.file.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
 
             if(typeof onComplete == 'function')
@@ -183,7 +183,7 @@ class RIMObject {
         let _buffers = [];
 
         if(this.inMemory){
-          let buffer = new Buffer(resource.ResourceSize);
+          let buffer = Buffer.alloc(resource.ResourceSize);
           this.file.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
           if(typeof onComplete == 'function')
             onComplete(buffer);
@@ -230,7 +230,7 @@ class RIMObject {
                   console.log('RIM Read', status.message);
                   return;
                 }
-                var buffer = new Buffer(resource.DataSize);
+                var buffer = Buffer.alloc(resource.DataSize);
                 fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
                   console.log('RIM Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
                   fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {

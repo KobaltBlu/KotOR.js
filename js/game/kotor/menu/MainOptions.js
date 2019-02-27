@@ -24,34 +24,34 @@ class MainOptions extends GameMenu {
 
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
-        this.BTN_BACK.onClick = (e) => {
+        this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MainMenu.Show();
-        }
+        });
 
-        this.BTN_GAMEPLAY.onClick = (e) => {
+        this.BTN_GAMEPLAY.addEventListener('click', (e) => {
           e.stopPropagation();
-        }
+        });
 
-        this.BTN_AUTOPAUSE.onClick = (e) => {
+        this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
           e.stopPropagation();
-        }
+        });
 
-        this.BTN_GRAPHICS.onClick = (e) => {
+        this.BTN_GRAPHICS.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MenuGraphics.Show();
-        }
+        });
 
-        this.BTN_SOUND.onClick = (e) => {
+        this.BTN_SOUND.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Hide();
           Game.MenuSound.Show();
-        }
+        });
 
-        this.BTN_FEEDBACK.onClick = (e) => {
+        this.BTN_FEEDBACK.addEventListener('click', (e) => {
           e.stopPropagation();
-        }
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

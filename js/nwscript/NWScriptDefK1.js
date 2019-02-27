@@ -4310,7 +4310,7 @@ NWScriptDefK1.Actions = {
     'comment': '716. SetMinOneHP\nSets/Removes the MinOneHP Flag on oObject.\n',
     'name': 'SetMinOneHP',
     'type': 'void',
-    'args': [ 'object' ]
+    'args': [ 'object', 'int' ]
   },
   717: {
     'comment': '717. SWMG_GetPlayerTunnelInfinite\nGets whether each of the dimensions is infinite\n',

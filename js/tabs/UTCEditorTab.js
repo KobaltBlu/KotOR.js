@@ -1,84 +1,14 @@
 class UTCEditorTab extends EditorTab {
-  constructor(args = {}){
-    super({
-      toolbar: {
-        items: [
-          {name: 'File', items: [
-            {name: 'Open File', onClick: () => {
+  constructor(file){
+    super();
 
-            }},
-            {name: 'Save File', onClick: () => {
+    this.file = null;
 
-              if(this.gff != null){
-                if(this.gff.path == null){
-                  let savePath = dialog.showSaveDialog({
-                    title: 'Save UTC',
-                    defaultPath: path.join(app.getAppPath(), this.gff.file + '.' + this.gff.FileType.substr(0, 3).toLowerCase()) ,
-                    filters: [
-                      {name: 'UTC', extensions: ['utc']}
-                  ]});
-
-                  console.log(savePath);
-
-                  if(savePath != null){
-
-                    let fileInfo = path.parse(savePath);
-
-                    this.gff.path = fileInfo.dir;
-                    this.gff.file = fileName.name;
-                    this.gff.Save();
-
-                  }
-
-                }else{
-                  this.gff.Save();
-                }
-
-              }else{
-                alert('Nothing to save');
-              }
-
-
-            }},
-            {name: 'Save File As', onClick: () => {
-
-              if(this.gff != null){
-                let savePath = dialog.showSaveDialog({
-                  title: 'Save UTC',
-                  defaultPath: path.join(app.getAppPath(), this.gff.file + '.' + this.gff.FileType.substr(0, 3).toLowerCase()) ,
-                  filters: [
-                    {name: 'UTC', extensions: ['utc']}
-                ]});
-
-                console.log(savePath);
-
-                if(savePath != null){
-
-                  let fileInfo = path.parse(savePath);
-
-                  this.gff.path = fileInfo.dir;
-                  this.gff.file = fileName.name;
-                  this.gff.Save();
-
-                }
-
-              }else{
-                alert('Nothing to save');
-              }
-
-
-            }}
-          ]}
-        ]
-      }
-    });
-
-    this.args = $.extend({
-      gff: null,
-      file: null
-    }, args);
-
-    this.gff = this.args.gff;
+    if(this.file instanceof GFFObject){
+      this.gff = file;
+    }else{
+      this.file = file;
+    }
 
     this.singleInstance = false;
     this.$tabName.text("Creature Editor");
@@ -100,6 +30,49 @@ class UTCEditorTab extends EditorTab {
       this.$dialog = $(this.ElementId('#utc-dialog'), this.$tabContent);
       this.$dialogInterrupt = $(this.ElementId('#utc-dialog-no-interrupt'), this.$tabContent);
 
+      //Stats
+      this.$str = $(this.ElementId('#utc-str'), this.$tabContent);
+      this.$dex = $(this.ElementId('#utc-dex'), this.$tabContent);
+      this.$con = $(this.ElementId('#utc-con'), this.$tabContent);
+      this.$int = $(this.ElementId('#utc-int'), this.$tabContent);
+      this.$wis = $(this.ElementId('#utc-wis'), this.$tabContent);
+      this.$cha = $(this.ElementId('#utc-cha'), this.$tabContent);
+      this.$fortbonus = $(this.ElementId('#utc-fortbonus'), this.$tabContent);
+      this.$refbonus = $(this.ElementId('#utc-refbonus'), this.$tabContent);
+      this.$willbonus = $(this.ElementId('#utc-willbonus'), this.$tabContent);
+
+      this.$naturalAC = $(this.ElementId('#utc-natural-ac'), this.$tabContent);
+      this.$walkRate = $(this.ElementId('#utc-walk-rate'), this.$tabContent);
+      this.$hitPoints = $(this.ElementId('#utc-hit-points'), this.$tabContent);
+      this.$currentHitPoints = $(this.ElementId('#utc-current-hit-points'), this.$tabContent);
+      this.$maxHitPoints = $(this.ElementId('#utc-max-hit-points'), this.$tabContent);
+
+      //Advanced
+      this.$templateResRef = $(this.ElementId('#utc-template-res-ref'), this.$tabContent);
+      this.$disarmable = $(this.ElementId('#utc-disarmable'), this.$tabContent);
+      this.$plot = $(this.ElementId('#utc-plot'), this.$tabContent);
+      this.$noPermDeath = $(this.ElementId('#utc-no-perm-death'), this.$tabContent);
+      this.$isPC = $(this.ElementId('#utc-is-pc'), this.$tabContent);
+      this.$min1HP = $(this.ElementId('#utc-min-1-hp'), this.$tabContent);
+      this.$subrace = $(this.ElementId('#utc-subrace'), this.$tabContent);
+      this.$challengeRating = $(this.ElementId('#utc-challenge-rating'), this.$tabContent);
+      this.$soundSetFile = $(this.ElementId('#utc-sound-set-file'), this.$tabContent);
+      this.$factionID = $(this.ElementId('#utc-faction-id'), this.$tabContent);
+      this.$perceptionRange = $(this.ElementId('#utc-perception-range'), this.$tabContent);
+
+      //Skills
+      this.$computerUse = $(this.ElementId('#utc-computer-use'), this.$tabContent);
+      this.$demolitions = $(this.ElementId('#utc-demolitions'), this.$tabContent);
+      this.$stealth = $(this.ElementId('#utc-stealth'), this.$tabContent);
+      this.$awareness = $(this.ElementId('#utc-awareness'), this.$tabContent);
+      this.$persuade = $(this.ElementId('#utc-persuade'), this.$tabContent);
+      this.$repair = $(this.ElementId('#utc-repair'), this.$tabContent);
+      this.$security = $(this.ElementId('#utc-security'), this.$tabContent);
+      this.$treatInjury = $(this.ElementId('#utc-treat-injury'), this.$tabContent);
+
+      this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
+      this.$utcTabContent = $(this.ElementId('#utc-tab-content'), this.$tabContent);
+
 
       //Inventory
       this.$iSlots = $(this.ElementId('#utc-inventory-slots'), this.$tabContent);
@@ -113,52 +86,68 @@ class UTCEditorTab extends EditorTab {
       this.$iSlotBelt = $(this.ElementId('#utc-inventory-slot-belt'), this.$tabContent);
       this.$iSlotRHand = $(this.ElementId('#utc-inventory-slot-rhand'), this.$tabContent);
 
+      $('.texture-canvas', this.$tabContent).each( (i, ele) => {
+        let $ele = $(ele);
+        let $canvas = $('<canvas/>');
+        $ele.append($canvas);
+        this.GameImageToCanvas($canvas[0], $ele.attr('texture'), 60, 60);
+      });
+
       this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
 
       this.verticalTabs = new VerticalTabs(this.$verticalTabs);
 
       this.$tabContent.css({overflow: 'hidden'});
 
-      this.$preview = $('<img style="visibility: hidden;"/>');
-      this.$preview.insertBefore( this.$firstName.parent() );
+      this.$previewContainer = $(this.ElementId('#utc-preview'), this.$tabContent);
 
-      this.previewWidth = 150;
+      this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
+      
+
+      /*this.previewWidth = 150;
       this.previewHeight = this.previewWidth * 2;
 
-      this.$preview.width(this.previewWidth).height(this.previewHeight);
+      this.$preview.width(this.previewWidth).height(this.previewHeight);*/
 
-      this.offscreenRenderer = new OffscreenRenderer({
-        width: this.previewWidth,
-        height: this.previewHeight
+      this.ui3DRenderer = new UI3DRenderer({
+        width: this.$preview.width(),
+        height: this.$preview.height()
       });
+
+      this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+
+      this.$previewContainer.append( this.ui3DRenderer.canvas );
 
       console.log(this.$firstName);
 
-      if(this.gff != null)
-        this.PopulateFields();
+      this.onResize();
 
-      if(this.args.file != null)
-        this.OpenFile(this.args.file);
+      if(this.gff instanceof GFFObject){
+        try{
+          this.PopulateFields();
+        }catch(e){ console.error(e); }
+      }
 
+      if(this.file != null)
+        this.OpenFile(this.file);
 
+      this.Update();
 
     });
 
   }
 
-  RenderPreview(){
-    let template = UTCObject.FromGFF(this.gff);
-    template.LoadEquipment( () => {
-      template.LoadModel( (model) => {
+  onResize(){
 
-        let scene = this.offscreenRenderer.ResetScene();
-        scene.add(model);
-
-        this.offscreenRenderer.Render();
-        this.$preview.attr('src', this.offscreenRenderer.GetRenderedImage()).css('visibility', 'visible');
-
-      });
+    this.$utcTabContent.css({
+      position: 'absolute',
+      top: this.$navBar.outerHeight(),
+      left: 0,
+      right: 0,
+      bottom: 0
     });
+
+    this.ui3DRenderer.SetSize(this.$previewContainer.width(), this.$previewContainer.height());
   }
 
   GetResourceID(){
@@ -168,146 +157,357 @@ class UTCEditorTab extends EditorTab {
     return null;
   }
 
-  OpenFile(_file){
+  OpenFile(file){
 
-    console.log('Model Loading', _file);
+    if(file instanceof EditorFile){
+      file.readFile( (buffer) => {
+        if(!file.buffer.length){
 
-    let loader = new THREE.MDLLoader();
-    let info = Utility.filePathInfo(_file);
-    let file = path.parse(info.path);
-
-    console.log(file, info);
-
-    if(info.location == 'local'){
-
-      fs.readFile(info.path, (err, buffer) => {
-        if (err) throw err;
-
-        try{
-          this.gff = new GFFObject(buffer, (gff) => {
-            this.gff = gff;
-            console.log(this.gff.RootNode);
+          this.gff = UTCObject.GenerateTemplate();
+          console.log(this.gff.RootNode);
+          try{
             this.PopulateFields();
-            this.RenderPreview();
-          });
-        }
-        catch (e) {
-          console.log(e);
-          this.Remove();
-        }
+            this.$tabName.text(file.getFilename());
+          }catch(e){console.error(e)}
+          this.Reload();
 
-      });
-
-    }else if(info.location == 'archive'){
-
-      switch(info.archive.type){
-        case 'bif':
-          Global.kotorBIF[info.archive.name].GetResourceData(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes['utc']), (buffer) => {
-            try{
-              console.log(buffer);
-              this.gff = new GFFObject(buffer, (gff) => {
-                this.gff = gff;
-                console.log(this.gff.RootNode);
+        }else{
+          try{
+            new GFFObject(buffer, (gff) => {
+              this.gff = gff;
+              console.log(this.gff.RootNode);
+              try{
                 this.PopulateFields();
-                this.RenderPreview();
-              });
-            }
-            catch (e) {
-              console.log(e);
-              this.Remove();
-            }
-          }, (e) => {
-            throw 'Resource not found in BIF archive '+info.archive.name;
+                this.$tabName.text(file.getFilename());
+              }catch(e){ console.error(e); }
+              this.Reload();
+            });
+          }
+          catch (e) {
+            console.log(e);
             this.Remove();
-          });
-        break;
-      }
-
+          }
+        }
+      });
     }
-
-    this.fileType = info.file.ext;
-    this.location = info.location;
 
   }
 
+  Reload( onLoad = null ){
+    window.cancelAnimationFrame(this.requestId);
+    this.creature = new ModuleCreature(this.gff);
+    this.creature.InitProperties( () => {
+      this.creature.LoadEquipment( () => {
+        this.creature.LoadModel( (model) => {
+          let scene = this.ui3DRenderer.ResetScene();
+          scene.add(model);
+          setTimeout( () => {
+            let center = model.box.getCenter();
+            let size = model.box.getSize();
+            //Center the object to 0
+            model.position.set(-center.x, -center.y, -center.z);
+            this.ui3DRenderer._camera.position.z = 0;
+            this.ui3DRenderer._camera.position.y = size.x + size.y;
+            this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+            //Stand the object on the floor by adding half it's height back to it's position
+            //model.position.z += model.box.getSize().z/2;
+            this.onResize();
+            this.Update();
+          }, 10);
+        });
+      });
+    });
+  }
+
+  Update(){
+    this.requestId = requestAnimationFrame( () => { this.Update() } );
+    if(!this.visible)
+      return;
+
+    this.ui3DRenderer.Render();
+
+  }
+
+  RenderCallback(renderer, delta){
+    //console.log(delta);
+
+    if(this.creature){
+      if(this.creature.model instanceof THREE.AuroraModel && this.creature.model.bonesInitialized && this.creature.model.visible){
+        this.creature.model.update(delta);
+        if(this.creature.lipObject instanceof LIPObject){
+          this.creature.lipObject.update(delta, this.creature.head ? this.creature.head : this.creature.model);
+        }
+
+        this.creature.model.rotation.z += delta;
+      
+        let center = new THREE.Vector3;
+        this.creature.model.box.getCenter(center);
+        let size = new THREE.Vector3;
+        this.creature.model.box.getSize(size);
+        //Center the object to 0
+        this.creature.model.position.set(-center.x, -center.y, -center.z);
+        this.ui3DRenderer._camera.position.z = 0;
+        this.ui3DRenderer._camera.position.y = size.x + size.y + size.z;
+        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+
+      }
+      this.creature.update(delta);
+    }
+
+  }
+
+  GameImageToCanvas(canvas, name, cwidth = null, cheight = null){
+    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', name, (image) => {
+      image.getPixelData( (pixelData) => {
+        
+        let workingData = pixelData;
+    
+        let width = image.header.width;
+        let height = image.header.height;
+
+        let ctx = canvas.getContext('2d');
+    
+        //If the image is a TPC we will need to times the height by the number of faces
+        //to correct the height incase we have a cubemap
+        if(image instanceof TPCObject)
+          height = image.header.height * image.header.faces;
+    
+        let bitsPerPixel = image.header.bitsPerPixel;
+    
+        canvas.width = width;
+        canvas.height = height;
+    
+        let imageData = ctx.getImageData(0, 0, width, height);
+        let data = imageData.data;
+    
+        if(image instanceof TPCObject){
+    
+          if(bitsPerPixel == 24)
+            workingData = ImageViewerTab.PixelDataToRGBA(workingData, width, height);
+    
+          if(bitsPerPixel == 8)
+            workingData = ImageViewerTab.TGAGrayFix(workingData, width, height);
+    
+          //FlipY
+          ImageViewerTab.FlipY(workingData, width, height);
+    
+        }
+    
+        //Set the preview image to opaque
+        //this.PreviewAlphaFix(this.workingData);
+    
+        data.set(workingData);
+    
+        ctx.putImageData(imageData, 0, 0);
+        
+        if(cwidth && cheight){
+
+          $(canvas).css({
+            width: cwidth,
+            height: cheight
+          });
+          
+        }
+
+      });
+    });
+  }
+
   PopulateFields() {
+    
     //First Name
-    this.$firstName.val(ipcRenderer.sendSync('TLKGetStringById', this.gff.GetFieldByLabel("FirstName").GetCExoLocString().RESREF).Value);
-    this.$firstName.data('CExoLocString', this.gff.GetFieldByLabel("FirstName").GetCExoLocString());
-    this.$firstName.prop('disabled', true);
-    this.InitCExoLocStringField(this.$firstName);
+    this.InitCExoLocStringField(this.$firstName, this.gff.GetFieldByLabel("FirstName"));
     //Last Name
-    this.$lastName.val(ipcRenderer.sendSync('TLKGetStringById', this.gff.GetFieldByLabel("LastName").GetCExoLocString().RESREF).Value);
-    this.$lastName.data('CExoLocString', this.gff.GetFieldByLabel("LastName").GetCExoLocString());
-    this.$lastName.prop('disabled', true);
-    this.InitCExoLocStringField(this.$lastName);
+    this.InitCExoLocStringField(this.$lastName, this.gff.GetFieldByLabel("LastName"));
     //Tag
     this.$tag.val(this.gff.GetFieldByLabel("Tag").Value);
+    
     //Appearance
-    for (let key in Global.kotor2DA.appearance.rows) {
-      let appearance = Global.kotor2DA.appearance.rows[key];
-      let label = appearance['label'];
-      this.$appearance.append('<option value="'+key+'">'+label+'</option>');
-    }
-
-    let options = $('option', this.$appearance);
-    let arr = options.map(function(_, o) { return { t: $(o).text(), v: o.value }; }).get();
-    arr.sort(function(o1, o2) { return o1.t > o2.t ? 1 : o1.t < o2.t ? -1 : 0; });
-    options.each(function(i, o) {
-      o.value = arr[i].v;
-      $(o).text(arr[i].t);
+    this.InitDropDownField({
+      $field: this.$appearance,         //jQuery Element
+      fieldName: 'Appearance_Type',     //GFF Field Name
+      fieldType: GFFDataTypes.WORD,     //GFF Field Type
+      objOrArray: Global.kotor2DA.appearance.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+      onChange: () => {                 //onChange callback function for UI updates
+        console.log('Reload')
+        this.Reload();
+      }                    
     });
 
-    this.$appearance.val(this.gff.GetFieldByLabel("Appearance_Type").Value).prop('disabled', false);
-    this.$appearance.change( () => {
-      this.gff.GetFieldByLabel("Appearance_Type").Value = this.$appearance.val();
-    });
     //Gender
-    for (let key in Global.kotor2DA.gender.rows) {
-      let gender = Global.kotor2DA.gender.rows[key];
-      let label = Global.kotorTLK.TLKStrings[gender['name']].Value;
-      this.$gender.append('<option value="'+key+'">'+label+'</option>');
-    }
-    this.$gender.val(this.gff.GetFieldByLabel("Gender").Value).prop('disabled', false);
+    this.InitDropDownField({
+      $field: this.$gender,         //jQuery Element
+      fieldName: 'Gender',     //GFF Field Name
+      fieldType: GFFDataTypes.BYTE,     //GFF Field Type
+      objOrArray: Global.kotor2DA.gender.rows,   //Elements of data
+      propertyName: 'name',            //Property name to target inside objOrArray
+      onLabel: (label) => {
+        return Global.kotorTLK.TLKStrings[label].Value;
+      }
+    });
+
     //Description
-    this.$description.val(ipcRenderer.sendSync('TLKGetStringById', this.gff.GetFieldByLabel("Description").GetCExoLocString().RESREF).Value);
-    this.$description.data('CExoLocString', this.gff.GetFieldByLabel("Description").GetCExoLocString());
-    this.$description.prop('disabled', true);
-    this.InitCExoLocStringField(this.$description);
+    this.InitCExoLocStringField(this.$description, this.gff.GetFieldByLabel("Description"));
+
     //Phenotype
-    for (let key in Global.kotor2DA.phenotype.rows) {
-      let phenotype = Global.kotor2DA.phenotype.rows[key];
-      let label = phenotype['label'];
-      this.$phenotype.append('<option value="'+key+'">'+label+'</option>');
-    }
-    this.$phenotype.val(this.gff.GetFieldByLabel("Phenotype").Value).prop('disabled', false);
+    this.InitDropDownField({
+      $field: this.$phenotype,         //jQuery Element
+      fieldName: 'Phenotype',     //GFF Field Name
+      fieldType: GFFDataTypes.INT,     //GFF Field Type
+      objOrArray: Global.kotor2DA.phenotype.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
     //Race
-    for (let key in Global.kotor2DA.racialtypes.rows) {
-      let racetype = Global.kotor2DA.racialtypes.rows[key];
-      let label = racetype['label'];
-      this.$race.append('<option value="'+key+'">'+label+'</option>');
-    }
-    this.$race.val(this.gff.GetFieldByLabel("Race").Value).prop('disabled', false);
+    this.InitDropDownField({
+      $field: this.$race,         //jQuery Element
+      fieldName: 'Race',     //GFF Field Name
+      fieldType: GFFDataTypes.BYTE,     //GFF Field Type
+      objOrArray: Global.kotor2DA.racialtypes.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
     //BodyBag
-    for (let key in Global.kotor2DA.bodybag.rows) {
-      let bodybag = Global.kotor2DA.bodybag.rows[key];
-      let label = bodybag['label'];
-      this.$bodybag.append('<option value="'+key+'">'+label+'</option>');
-    }
-    this.$bodybag.val(this.gff.GetFieldByLabel("BodyBag").Value).prop('disabled', false);
+    this.InitDropDownField({
+      $field: this.$bodybag,         //jQuery Element
+      fieldName: 'BodyBag',     //GFF Field Name
+      fieldType: GFFDataTypes.BYTE,     //GFF Field Type
+      objOrArray: Global.kotor2DA.bodybag.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
     //Portrait
-    for (let key in Global.kotor2DA.portraits.rows) {
-      let portrait = Global.kotor2DA.portraits.rows[key];
-      let label = portrait['baseresref'];
-      this.$portrait.append('<option value="'+key+'">'+label+'</option>');
-    }
-    this.$portrait.val(this.gff.GetFieldByLabel("PortraitId").Value).prop('disabled', false);
+    this.InitDropDownField({
+      $field: this.$portrait,         //jQuery Element
+      fieldName: 'PortraitId',     //GFF Field Name
+      fieldType: GFFDataTypes.WORD,     //GFF Field Type
+      objOrArray: Global.kotor2DA.portraits.rows,   //Elements of data
+      propertyName: 'baseresref',            //Property name to target inside objOrArray
+    });
 
     //Dialog
     this.$dialog.val(this.gff.GetFieldByLabel("Conversation").Value);
 
     //Dialog Interruptable
     this.$dialogInterrupt.val();
+
+
+    //Stats
+    this.InitNumericField(this.$str, this.gff.GetFieldByLabel("Str"));
+    this.InitNumericField(this.$dex, this.gff.GetFieldByLabel("Dex"));
+    this.InitNumericField(this.$con, this.gff.GetFieldByLabel("Con"));
+    this.InitNumericField(this.$int, this.gff.GetFieldByLabel("Int"));
+    this.InitNumericField(this.$wis, this.gff.GetFieldByLabel("Wis"));
+    this.InitNumericField(this.$cha, this.gff.GetFieldByLabel("Cha"));
+
+    this.InitNumericField(this.$fortbonus, this.gff.GetFieldByLabel("fortbonus"));
+    this.InitNumericField(this.$refbonus, this.gff.GetFieldByLabel("refbonus"));
+    this.InitNumericField(this.$willbonus, this.gff.GetFieldByLabel("willbonus"));
+
+    this.InitNumericField(this.$naturalAC, this.gff.GetFieldByLabel("NaturalAC"));
+    this.InitNumericField(this.$walkRate, this.gff.GetFieldByLabel("WalkRate"));
+
+    //WalkRate
+    this.InitDropDownField({
+      $field: this.$walkRate,         //jQuery Element
+      fieldName: 'WalkRate',     //GFF Field Name
+      fieldType: GFFDataTypes.INT,     //GFF Field Type
+      objOrArray: Global.kotor2DA.creaturespeed.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
+    this.InitNumericField(this.$hitPoints, this.gff.GetFieldByLabel("HitPoints"));
+    this.InitNumericField(this.$currentHitPoints, this.gff.GetFieldByLabel("CurrentHitPoints"));
+    this.InitNumericField(this.$maxHitPoints, this.gff.GetFieldByLabel("MaxHitPoints"));
+
+
+
+    //Advanced
+
+    this.InitResRefField(this.$templateResRef, this.gff.GetFieldByLabel("TemplateResRef"));
+    this.$templateResRef.prop('disabled', true);
+    
+    this.InitCheckBoxField({
+      $field: this.$disarmable,
+      fieldName: 'Disarmable',
+      fieldType: GFFDataTypes.BYTE
+    });
+    
+    this.InitCheckBoxField({
+      $field: this.$plot,
+      fieldName: 'Plot',
+      fieldType: GFFDataTypes.BYTE
+    });
+    
+    this.InitCheckBoxField({
+      $field: this.$noPermDeath,
+      fieldName: 'NoPermDeath',
+      fieldType: GFFDataTypes.BYTE
+    });
+    
+    this.InitCheckBoxField({
+      $field: this.$isPC,
+      fieldName: 'IsPC',
+      fieldType: GFFDataTypes.BYTE
+    });
+    
+    this.InitCheckBoxField({
+      $field: this.$min1HP,
+      fieldName: 'Min1HP',
+      fieldType: GFFDataTypes.BYTE
+    });
+
+    this.InitDropDownField({
+      $field: this.$subrace,         //jQuery Element
+      fieldName: 'SubraceIndex',     //GFF Field Name
+      fieldType: GFFDataTypes.BYTE,     //GFF Field Type
+      objOrArray: Global.kotor2DA.subrace.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
+    this.InitNumericField(this.$challengeRating, this.gff.GetFieldByLabel("ChallengeRating"));
+
+    this.InitDropDownField({
+      $field: this.$soundSetFile,         //jQuery Element
+      fieldName: 'SoundSetFile',     //GFF Field Name
+      fieldType: GFFDataTypes.WORD,     //GFF Field Type
+      objOrArray: Global.kotor2DA.soundset.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
+    this.InitDropDownField({
+      $field: this.$factionID,         //jQuery Element
+      fieldName: 'FactionID',     //GFF Field Name
+      fieldType: GFFDataTypes.WORD,     //GFF Field Type
+      objOrArray: Global.kotor2DA.repute.rows,   //Elements of data
+      propertyName: 'label',            //Property name to target inside objOrArray
+    });
+
+    this.InitDropDownField({
+      $field: this.$perceptionRange,         //jQuery Element
+      fieldName: 'PerceptionRange',     //GFF Field Name
+      fieldType: GFFDataTypes.BYTE,     //GFF Field Type
+      objOrArray: [ //Elements of data
+        { label: "Short" },
+        { label: "Medium" },
+        { label: "Long" },
+        { label: "Default" },
+        { label: "Player" },
+        { label: "Monster" }
+      ],
+      propertyName: 'label',            //Property name to target inside objOrArray
+      selectionOffset: 9
+    });
+
+    this.InitNumericField(this.$computerUse, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[0].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$demolitions, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[1].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$stealth, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[2].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$awareness, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[3].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$persuade, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[4].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$repair, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[5].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$security, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[6].GetFieldByLabel('Rank'));
+    this.InitNumericField(this.$treatInjury, this.gff.GetFieldByLabel('SkillList').GetChildStructs()[7].GetFieldByLabel('Rank'));
 
 
     //Inventory
@@ -318,7 +518,7 @@ class UTCEditorTab extends EditorTab {
 
       for(let i = 0; i < equipment.ChildStructs.length; i++){
         let strt = equipment.ChildStructs[i];
-        let equippedRes = strt.GetFieldByLabel('EquippedRes').Value;
+        let equippedRes = strt.GetFieldByLabel('EquippedRes');
         let $slot = null;
 
         switch(strt.Type){
@@ -351,35 +551,335 @@ class UTCEditorTab extends EditorTab {
           break;
         }
 
+        $slot.data('equippedRes', equippedRes.Value);
+
         if($slot != null){
-          $slot.html('').removeClass('equipped').addClass('equipped');
-          UTIObject.FromTemplate(equippedRes, (uti) => {
-            uti.getIcon((icon) => {
-              icon.getPixelData( ( pixelData ) => {
-                pixelData = icon.FlipY(pixelData);
-                let $canvas = $('<canvas width="64" height="64" />');
-                let canvas = $canvas[0];
-                let ctx = canvas.getContext('2d');
-                let imageData = ctx.getImageData(0, 0, 64, 64);
-                let data = imageData.data;
-
-                data.set(pixelData);
-                ctx.putImageData(imageData, 0, 0);
-                $slot.append($canvas)
-                console.log('PixelData', pixelData);
-              }, (e) => {
-                console.error('UTIObject.getIcon', e);
-              })
-
-            })
-          });
+          this.updateSlotIcon($slot);
         }
+
       }
 
     }
 
-    //this.$iSlotImplant.
+    $('.iSlots > .iSlot', this.$tabContent).off('click').on('click', (e) => {
+      e.preventDefault();
 
+      loader.Show('Loading Items...');
+      let items = [];
+      let $slot = $(e.currentTarget);
+      let equippedRes = $slot.data('equippedRes') || '';
+
+      let ui3DRenderer = new UI3DRenderer({
+        width: 64,
+        height: 64
+      });
+      let requestId;
+
+      //this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+
+      let pallete_index = 0;
+      let pallete = {
+        name: 'Items',
+        children: [],
+        index: pallete_index++
+      };
+
+      let pallete_map = {};
+
+      //Load the items pallete
+      TemplateLoader.Load({
+        ResRef: 'itempal',
+        ResType: ResourceTypes['itp'],
+        onLoad: (pallete_gff) => {
+
+          //Build the item Pallete
+          let main = pallete_gff.RootNode.GetFieldByLabel('MAIN').GetChildStructs();
+          let processNode = (pl_node, parent) => {
+
+            let node = {
+              name: pl_node.GetFieldByLabel('DELETE_ME').GetValue(),
+              type: pl_node.GetFieldByLabel('Type').GetValue(),
+              index: pallete_index++
+            };
+
+            parent.children.push(node);
+
+            if(pl_node.HasField('LIST')){
+              let pl_nodes = pl_node.GetFieldByLabel('LIST').GetChildStructs();
+              node.children = [];
+              for(let i = 0, il = pl_nodes.length; i < il; i++){
+                processNode(pl_nodes[i], node);
+              }
+            }else if(pl_node.HasField('ID')){
+              node.id = pl_node.GetFieldByLabel('ID').GetValue();
+              node.items = [];
+              pallete_map[node.id] = node;
+            }
+
+          };
+
+          for(let i = 0, il = main.length; i < il; i++){
+            processNode(main[i], pallete);
+          }
+
+          //Display the items
+          let loop = new AsyncLoop({
+            array: Global.kotorBIF.templates.GetResourcesByType(ResourceTypes['uti']),
+            onLoop: (uti_res, asyncLoop) => {
+              Global.kotorBIF.templates.GetResourceData(uti_res, (data) => {
+                let item = new ModuleItem(new GFFObject(data));
+                items.push(item);
+                pallete_map[item.getPalleteID()].items.push(item);
+                asyncLoop._Loop();
+              });
+            }
+          });
+          loop.Begin(() => {
+            loader.Dismiss();
+            
+            let pallete_mapper = (pl) => {
+
+              let pallete_html = '';
+
+              if(pl.hasOwnProperty('children')){
+
+                pallete_html += `
+                <li>
+                  <input type="checkbox" id="pl-list-${pl.index}">
+                  <label for="pl-list-${pl.index}">${pl.name}</label>
+                  <span></span>
+                  <ul>
+                    ${pl.children.map( child => pallete_mapper(child) ).join('\n')}
+                  </ul>
+                </li>
+                `;
+
+              }else if(pl.hasOwnProperty('items')){ //Leaf Node
+
+                pallete_html += `
+                <li>
+                  <input type="checkbox" id="pl-list-${pl.index}">
+                  <label for="pl-list-${pl.index}">${pl.name}</label>
+                  <span></span>
+                  <ul>
+                    ${pl.items.map( item => `<li class="pallete-item" index="${items.indexOf(item)}" resref="${item.getTemplateResRef()}">${item.getName()}</li>` ).join('\n')}
+                  </ul>
+                </li>
+                `;
+
+              }
+
+              return pallete_html;
+            }
+    
+            let equip_popup = new Wizard({
+              title: 'Item Wizard', 
+              body: `
+              <div style="white-space: nowrap;">
+                <div style="width: 75%; height: 250px; display: inline-block; overflow-y: auto; position:relative;">
+                  <ul class="tree css-treeview js">
+                    ${pallete.children.map(pallete_mapper).join('\n')}
+                  </ul>
+                </div>
+                <div class="3d-preview editor-3d-preview" style="width: 25%; height: 250px; display: inline-block; position:relative;"></div>
+              </div>
+              <input type="text" class="input" />`,
+              buttons: [
+                {name: 'Save', onClick: () => { equip_popup.Close(); } }
+              ],
+              onClose: () => {
+
+                //Kill the render loop for the item preview
+                window.cancelAnimationFrame(requestId);
+      
+                equippedRes = $('input[type="text"]', equip_popup.$body).val().trim();
+                let equipType = parseInt($slot.attr('type'));
+                $slot.data('equippedRes', equippedRes);
+      
+                let struct = equipment.GetChildStructByType(equipType)
+                if(struct){
+                  if(!equippedRes.length){
+                    equipment.RemoveChildStruct(struct);
+                  }else{
+                    struct.GetFieldByLabel('EquippedRes').SetValue(equippedRes);
+                  }
+                }else if(equippedRes.length){
+                  let newStruct = new Struct(equipType);
+                  newStruct.AddField( new Field(GFFDataTypes.RESREF, 'EquippedRes') ).SetValue(equippedRes);
+                  equipment.AddChildStruct( newStruct );
+                }
+      
+                this.updateSlotIcon($slot);
+                this.Reload();
+      
+              },
+              show: true,
+              destroyOnClose: true
+            });
+
+            //Open all the root nodes by default
+            setTimeout( ()=>{
+              $('.tree.css-treeview.js > li > input[type="checkbox"]').prop("checked", true);
+            }, 100);
+      
+            let $input = $('input[type="text"]', equip_popup.$body);
+            $input.val(equippedRes);
+      
+            $('.pallete-item', equip_popup.$body).each( (i, ele) => {
+              let $ele = $(ele);
+              if($ele.attr('resref').equalsIgnoreCase(equippedRes)){
+                $ele.removeClass('active').addClass('active');
+              }
+      
+              $ele.parent().parent().scrollTop($ele.offset().top);
+            });
+      
+            $('.pallete-item', equip_popup.$body).on('click', (e) => {
+              let $ele = $(e.currentTarget);
+              let resref = $ele.attr('resref');
+              $input.val(resref);
+
+              let item = items[$ele.attr('index')];
+              item.Load( () => {
+                item.LoadModel( (model) => {
+
+                  let scene = ui3DRenderer.ResetScene();
+                  scene.add(model);
+                  setTimeout( () => {
+                    let center = model.box.getCenter();
+                    let size = model.box.getSize();
+                    //Center the object to 0
+                    model.position.set(-center.x, -center.y, -center.z);
+                    ui3DRenderer._camera.position.z = 0;
+                    ui3DRenderer._camera.position.y = size.x + size.y + size.z;
+                    ui3DRenderer._camera.lookAt(new THREE.Vector3);
+
+                    ui3DRenderer.onBeforeRender = (renderer, delta) => {
+                      model.rotation.z += delta;
+                    }
+                  }, 10);
+
+                });
+              });
+      
+              $('.pallete-item.active', equip_popup.$body).removeClass('active');
+              $ele.addClass('active');
+            });
+
+            //Item Preview
+            let $3dPreview = $('.3d-preview', equip_popup.$body);
+            $3dPreview.append( ui3DRenderer.canvas );
+            ui3DRenderer.SetSize($3dPreview .width(), $3dPreview .height());
+
+            let render = () => {
+              if(equip_popup._destroyed)
+                return;
+              
+              console.log('render');
+              requestId = requestAnimationFrame( () => { render() } );
+              ui3DRenderer.Render();
+            }
+            render();
+    
+          });
+        
+        }
+      });
+
+    });
+
+  }
+
+  updateSlotIcon($slot){
+    $slot.html('').removeClass('equipped').addClass('equipped');
+    if($slot.data('equippedRes').length){
+      TemplateLoader.Load({
+        ResRef: $slot.data('equippedRes'),
+        ResType: UTIObject.ResType,
+        onLoad: (gff) => {
+          let uti = new UTIObject(gff)
+          uti.getIcon((icon) => {
+            icon.getPixelData( ( pixelData ) => {
+              pixelData = icon.FlipY(pixelData);
+              let $canvas = $('<canvas width="60" height="60" />');
+              let canvas = $canvas[0];
+              let ctx = canvas.getContext('2d');
+              let imageData = ctx.getImageData(0, 0, 64, 64);
+              let data = imageData.data;
+
+              data.set(pixelData);
+              ctx.putImageData(imageData, 0, 0);
+              $slot.append($canvas);
+            }, (e) => {
+              console.error('UTIObject.getIcon', e);
+            });
+          })
+        }
+      });
+    }else{
+      let $canvas = $('<canvas/>');
+      $slot.append($canvas).removeClass('equipped');
+      this.GameImageToCanvas($canvas[0], $slot.attr('texture'), 60, 60);
+    }
+  }
+
+  Save(){
+    if(this.file instanceof EditorFile){
+
+      let save_path = this.file.getLocalPath();
+
+      if(!save_path && this.file.location == EditorFile.LOCATION_TYPE.LOCAL){
+        save_path = this.file.resref+'.'+this.file.ext;
+      }
+
+      if(!save_path){
+        this.SaveAs();
+        return;
+      }
+      this.gff.path = path.parse(save_path).dir;
+      this.gff.Export(save_path, () => {
+        this.$tabName.text(this.file.getFilename());
+  
+        if(typeof onComplete === 'function')
+          onComplete(err);
+  
+        console.log('File Saved');//, Object.keys(IMAGE_TYPE)[type]);
+      }, (err) => {
+        return console.error(err);
+      })
+
+    }
+  }
+
+  SaveAs(){
+    if(this.file instanceof EditorFile){
+
+      let path_str = dialog.showSaveDialog({
+        title: 'Save File As',
+        defaultPath: this.file.getLocalPath() ? this.file.getLocalPath() : this.file.getFilename(),
+        filters: [
+          {name: this.file.ext.toUpperCase(), extensions: [this.file.ext]}
+      ]});
+  
+      if(typeof path_str != 'undefined' && path_str != null){
+        let path_obj = path.parse(path_str);
+        this.file.path = path_str;
+        this.file.resref = path_obj.name;
+        this.file.ext = path_obj.ext.slice(1);
+        this.file.reskey = ResourceTypes[this.file.ext];
+        this.file.archive_path = null;
+        this.file.location = EditorFile.LOCATION_TYPE.LOCAL;
+        this.Save();
+      }else{
+        console.warning('File export aborted');
+      }
+
+    }
+  }
+
+  onDestroy() {
+    window.cancelAnimationFrame(this.requestId);
+    super.onDestroy();
   }
 
 }

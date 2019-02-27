@@ -51,7 +51,7 @@ class VISObject {
 
           mode = MODES.ROOM;
 
-          console.log(line);
+          //console.log(line);
           let args = line.split(' ');
 
           //room_01 7 /-/ room_name number_of_child_rooms

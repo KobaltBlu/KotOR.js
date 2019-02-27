@@ -15,6 +15,8 @@ class ModuleCreature extends ModuleCreatureController {
     this.isReady = false;
     this.anim = null;
     this.head = null;
+    this.deathAnimationPlayed = false;
+    this.aiStyle = 2;
 
     this.surfaceId = 0;
     this.isCommandable = true;
@@ -31,6 +33,17 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastPlaceableExited = null;
     this.lastAoeEntered = null;
     this.lastAoeExited = null;
+
+    //Last creature attacked by this creature
+    this.lastAttackTarget = undefined;
+    //Last creature attacked by this creature
+    this.lastSpellTarget = undefined;
+    //Last creature who damaged this creature
+    this.lastDamager = undefined;
+    //Last creature who attacked this creature
+    this.lastAttacker = undefined;
+    //Last creature who attacked this creature with a spell
+    this.lastSpellAttacker = undefined;
 
     this.appearance = 0;
     this.bodyBag = 0;
@@ -66,7 +79,7 @@ class ModuleCreature extends ModuleCreatureController {
     };
 
     this.experience = 0;
-    this.factionID = 0;
+    this.faction = 0;
     this.feats = [];
     this.firstName = '';
     this.forcePoints = 0;
@@ -135,12 +148,23 @@ class ModuleCreature extends ModuleCreatureController {
 
     this.animState = ModuleCreature.AnimState.IDLE;
     this.actionQueue = [];
-    this.combatActionTimer = 6; 
+    this.combatActionTimer = 3; 
     this.combatAction = undefined;
     this.combatState = false;
     this.combatQueue = [];
+    this.lastAttackAction = -1;
+
+    this.groundFace = undefined;
+    this.groundTilt = new THREE.Vector3();
+    this.up = new THREE.Vector3(0, 0, 1);
 
     this.lockDialogOrientation = false;
+    this.lipObject = undefined;
+    this.walk = false;
+
+    this.isListening = false;
+    this.listeningPatterns = {};
+    this.heardStrings = [];
 
     try{
 
@@ -156,7 +180,7 @@ class ModuleCreature extends ModuleCreatureController {
           interval: 0,
           intervalVariation: 0,
           maxDistance: 50,
-          volume: 100,
+          volume: 127,
           positional: 1
         },
         onLoad: () => {
@@ -177,7 +201,7 @@ class ModuleCreature extends ModuleCreatureController {
           interval: 0,
           intervalVariation: 0,
           maxDistance: 50,
-          volume: 100,
+          volume: 127,
           positional: 1
         },
         onLoad: () => {
@@ -228,9 +252,14 @@ class ModuleCreature extends ModuleCreatureController {
       return;
     }
 
-    if(this.isHostile(callee)){
+    if(this.isHostile(callee) && !this.isDead()){
       Game.getCurrentPlayer().attackCreature(this, 0);
-    }else{
+    }else if(this.isHostile(callee) && this.isDead()){
+      Game.getCurrentPlayer().actionQueue.push({
+        object: this,
+        goal: ModuleCreature.ACTION.USEOBJECT
+      });
+    }else if(!this.isDead()){
       Game.getCurrentPlayer().actionQueue.push({
         object: this,
         conversation: this.GetConversation(),
@@ -241,89 +270,32 @@ class ModuleCreature extends ModuleCreatureController {
     
   }
 
+  
+
+  use(object = null){
+
+    if(this.hasInventory()){
+      Game.MenuContainer.Show(this);
+    }
+
+  }
+
+  hasInventory(){
+    return this.inventory.length;
+  }
+
+  retrieveInventory(){
+    while(this.inventory.length){
+      InventoryManager.addItem(this.inventory.pop())
+    }
+  }
+
   isUseable(){
     return true;
   }
 
   isDead(){
     return this.getHP() <= 0 && !this.min1HP;
-  }
-
-  isHostile(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleCreature))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] <= 10;
-    }else{
-      return faction[targetFaction.label.toLowerCase()] <= 10;
-    }
-
-  }
-
-  isNeutral(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleCreature))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] >= 11;
-    }else{
-      return faction[targetFaction.label.toLowerCase()] <= 89;
-    }
-
-  }
-
-  isFriendly(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleCreature))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] >= 90;
-    }else{
-      return faction[targetFaction.label.toLowerCase()] >= 90;
-    }
-
-  }
-
-  getReputation(target){
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-    if(!(target instanceof ModuleCreature))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()];
-    }else{
-      return faction[targetFaction.label.toLowerCase()];
-    }
   }
 
   setCommadable(bCommandable = 0){
@@ -388,7 +360,7 @@ class ModuleCreature extends ModuleCreatureController {
       case UTCObject.SLOT.RIGHTHAND:
         try{
           if(this.getAppearance().modeltype != 'S'){
-            if(this.equipment.RIGHTHAND instanceof ModuleItem){
+            if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof THREE.AuroraModel){
               this.model.rhand.add(this.equipment.RIGHTHAND.model);
             }
           }
@@ -399,7 +371,7 @@ class ModuleCreature extends ModuleCreatureController {
       case UTCObject.SLOT.LEFTHAND:
         try{
           if(this.getAppearance().modeltype != 'S' && this.getAppearance().modeltype != 'L'){
-            if(this.equipment.LEFTHAND instanceof ModuleItem){
+            if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof THREE.AuroraModel){
               this.model.lhand.add(this.equipment.LEFTHAND.model);
             }
           }
@@ -465,10 +437,6 @@ class ModuleCreature extends ModuleCreatureController {
     return this.gender;
   }
 
-  getFactionID(){
-    return this.factionID;
-  }
-
   getXP(){
     return this.experience;
   }
@@ -517,6 +485,14 @@ class ModuleCreature extends ModuleCreatureController {
 
   setMinOneHP(iVal){
     this.min1HP = iVal ? true : false;
+  }  
+
+  getCameraHeight(){
+    if(this.model && this.model.camerahook){
+      return this.model.camerahook.position.z;
+    }else{
+      return 1.5;
+    }
   }
 
   getSTR(){
@@ -551,6 +527,14 @@ class ModuleCreature extends ModuleCreatureController {
     return this.portraidId;
   }
 
+  getPortraitResRef(){
+    let portrait = Global.kotor2DA.portraits.rows[this.getPortraitId()];
+    if(portrait){
+      return portrait.baseresref;
+    }
+    return '';
+  }
+
   getWalkRateId(){
     return this.walkRate;
   }
@@ -563,8 +547,16 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.GetEffect(62)){
       return Global.kotor2DA["appearance"].rows[this.GetEffect(62).appearance];
     }else{
-      return Global.kotor2DA["appearance"].rows[this.appearance];
+      return Global.kotor2DA["appearance"].rows[this.appearance] || Global.kotor2DA["appearance"].rows[0];
     }
+  }
+
+  getRunSpeed(){
+    return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].runrate);
+  }
+
+  getWalkSpeed(){
+    return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
   }
 
   getClassList(){
@@ -589,6 +581,24 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
     return 0;
+  }
+
+  getFeats(){
+    return this.feats || [];
+  }
+
+  getFeat(iFeat = 0){
+    let index = this.getFeats().indexOf(iFeat);
+    if(index > -1){
+      return Global.kotor2DA['feat'].rows[iFeat];
+    }
+    return null;
+  }
+
+  addFeat(iFeat = 0){
+    if(!this.getFeat(iFeat)){
+      this.feats.push(iFeat);
+    }
   }
 
   getSkillList(){
@@ -627,6 +637,14 @@ class ModuleCreature extends ModuleCreatureController {
     
   }
 
+  setListening(bVal = false){
+    this.isListening = bVal;
+  }
+
+  setListeningPattern(sString = '', iNum = 0){
+    this.listeningPatterns[sString] = iNum;
+  }
+
   Load( onLoad = null ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
@@ -634,12 +652,12 @@ class ModuleCreature extends ModuleCreatureController {
         ResRef: this.getTemplateResRef(),
         ResType: UTCObject.ResType,
         onLoad: (gff) => {
-
           this.template.Merge(gff);
-          this.InitProperties();
-          this.LoadEquipment( () => {
-            if(onLoad != null)
-              onLoad(this.template);
+          this.InitProperties( () => {
+            //this.LoadEquipment( () => {
+              if(onLoad != null)
+                onLoad(this.template);
+            //});
           });
         },
         onFail: () => {
@@ -647,11 +665,12 @@ class ModuleCreature extends ModuleCreatureController {
         }
       });
     }else{
-      this.InitProperties();
-      this.LoadEquipment( () => {
-        //We already have the template (From SAVEGAME)
-        if(onLoad != null)
-          onLoad(this.template);
+      this.InitProperties( () => {
+        //this.LoadEquipment( () => {
+          //We already have the template (From SAVEGAME)
+          if(onLoad != null)
+            onLoad(this.template);
+        //});
       });
     }
   }
@@ -713,13 +732,10 @@ class ModuleCreature extends ModuleCreatureController {
           TextureLoader.LoadQueue(() => {
             this.isReady = true;
 
-            //if(this.head)
-              //this.head.buildSkeleton();
+            this.invalidateCollision = true;
 
             if(onLoad != null)
               onLoad(this.model);
-          }, (texName) => {
-            //loader.SetMessage('Loading Textures: '+texName);
           });
         });
       });
@@ -829,6 +845,11 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
 
+    //Hack to get bastilla's model working properly
+    if(this.bodyModel == 'p_bastilabb'){
+      this.bodyModel = 'p_bastilabb02';
+    }
+
     if(this.bodyModel == '****'){
       this.model = new THREE.Object3D();
       if(typeof onLoad === 'function')
@@ -844,10 +865,12 @@ class ModuleCreature extends ModuleCreatureController {
             context: this.context,
             onComplete: (model) => {
 
+              let scene = null, position = null, rotation = null;
+
               if(this.model instanceof THREE.AuroraModel && this.model.parent){
-                var scene = this.model.parent;
-                var position = this.model.position;
-                var rotation = this.model.rotation;
+                scene = this.model.parent;
+                position = this.model.position;
+                rotation = this.model.rotation;
 
                 if(this.head && this.head.parent){
                   this.head.parent.remove(this.head);
@@ -865,16 +888,20 @@ class ModuleCreature extends ModuleCreatureController {
               this.model.moduleObject = this;
 
               try{
-                if(this.equipment.LEFTHAND instanceof ModuleItem){
-                  this.model.lhand.add(this.equipment.LEFTHAND.model);
+                if(this.model.lhand instanceof THREE.Object3D){
+                  if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof THREE.AuroraModel){
+                    this.model.lhand.add(this.equipment.LEFTHAND.model);
+                  }
                 }
               }catch(e){
                 console.error('ModuleCreature', e);
               }
 
               try{
-                if(this.equipment.RIGHTHAND instanceof ModuleItem){
-                  this.model.rhand.add(this.equipment.RIGHTHAND.model);
+                if(this.model.rhand instanceof THREE.Object3D){
+                  if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof THREE.AuroraModel){
+                    this.model.rhand.add(this.equipment.RIGHTHAND.model);
+                  }
                 }
               }catch(e){
                 console.error('ModuleCreature', e);
@@ -882,7 +909,9 @@ class ModuleCreature extends ModuleCreatureController {
 
               if(scene){
                 scene.add( this.model );
-                Game.octree.add( this.model );
+                try{
+                  Game.octree.add( this.model );
+                }catch(e){}
                 this.model.position.copy(position);
                 this.model.rotation.set(rotation.x, rotation.y, rotation.z);
               }
@@ -905,17 +934,32 @@ class ModuleCreature extends ModuleCreatureController {
     let appearance = this.getAppearance();
     let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-    if(headId != '****'){
+    if(headId != '****' && appearance.modeltype == 'B'){
       let head = Global.kotor2DA['heads'].rows[headId];
       Game.ModelLoader.load({
         file: head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(),
         onLoad: (mdl) => {
           THREE.AuroraModel.FromMDL(mdl, {
+            context: this.context,
+            castShadow: true,
+            receiveShadow: true,
             onComplete: (head) => {
               try{
                 this.head = head;
+                this.head.moduleObject = this;
                 this.model.headhook.add(head);
-                //head.buildSkeleton();
+
+                try{
+                  if(this.head.gogglehook instanceof THREE.Object3D){
+                    if(this.equipment.HEAD instanceof ModuleItem && this.equipment.HEAD.model instanceof THREE.AuroraModel){
+                      this.head.gogglehook.add(this.equipment.HEAD.model);
+                    }
+                  }
+                }catch(e){
+                  console.error('ModuleCreature', e);
+                }
+                
+                //this.model.nodes = new Map(this.model.nodes, head.nodes);
 
                 if(typeof onLoad === 'function')
                   onLoad();
@@ -924,10 +968,7 @@ class ModuleCreature extends ModuleCreatureController {
                 if(typeof onLoad === 'function')
                   onLoad();
               }
-            },
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true
+            }
           });
         }
       });
@@ -937,12 +978,12 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  getEquip_ItemList(){
+  /*getEquip_ItemList(){
     if(this.template.RootNode.HasField('Equip_ItemList')){
       return this.template.GetFieldByLabel('Equip_ItemList').GetChildStructs()
     }
     return [];
-  }
+  }*/
 
   equipItem(slot = 0x1, item = '', onLoad = null){
 
@@ -968,14 +1009,23 @@ class ModuleCreature extends ModuleCreatureController {
           case UTCObject.SLOT.RIGHTHAND:
             this.equipment.RIGHTHAND = item;
             item.LoadModel( () => {
-              this.model.rhand.add(item.model);
+
+              if(item.model instanceof THREE.AuroraModel)
+                this.model.rhand.add(item.model);
+
               if(typeof onLoad == 'function')
                 onLoad();
             });
           break;
           case UTCObject.SLOT.LEFTHAND:
             this.equipment.LEFTHAND = item;
-            this.model.lhand.add(item.model);
+            item.LoadModel( () => {
+              if(item.model instanceof THREE.AuroraModel)
+                this.model.lhand.add(item.model);
+
+              if(typeof onLoad == 'function')
+                onLoad();
+            });
           break;
           case UTCObject.SLOT.CLAW1:
             this.equipment.CLAW1 = item;
@@ -995,7 +1045,7 @@ class ModuleCreature extends ModuleCreatureController {
         ResType: ResourceTypes.uti,
         onLoad: (gff) => {
           this.LoadEquipmentItem({
-            gff: gff,
+            item: new ModuleItem(gff),
             Slot: slot,
             onLoad: () => {
               if(typeof onLoad == 'function')
@@ -1056,34 +1106,12 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   LoadEquipment( onLoad = null){
-    this.ParseEquipmentSlots( () => {
+    if(typeof onLoad === 'function')
+      onLoad();
+    /*this.ParseEquipmentSlots( () => {
       if(typeof onLoad === 'function')
         onLoad();
-    });
-  }
-
-  ParseEquipmentSlots( onLoad = null, cEquip = 0){
-    let equipment = this.getEquip_ItemList();
-    if(cEquip < equipment.length){
-      let equip = equipment[cEquip];
-      let type = equip.GetType();
-      this.LoadEquipmentItem({
-        gff: GFFObject.FromStruct(equip, equip.GetType()),
-        Slot: type,
-        onLoad: () => {
-          cEquip++;
-          this.ParseEquipmentSlots( onLoad, cEquip );
-        },
-        onError: () => {
-          cEquip++;
-          this.ParseEquipmentSlots( onLoad, cEquip );
-        }
-      });
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad();
-    }
-
+    });*/
   }
 
   UnequipItems(){
@@ -1126,6 +1154,9 @@ class ModuleCreature extends ModuleCreatureController {
       case UTCObject.SLOT.RIGHTHAND:
         return this.equipment.RIGHTHAND;
       break;
+      case UTCObject.SLOT.HIDE:
+        return this.equipment.HIDE;
+      break;
       case UTCObject.SLOT.CLAW1:
         return this.equipment.CLAW1;
       break;
@@ -1142,13 +1173,15 @@ class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  GetEquippedSlot(slot = 0){
+
+  //Deprecated
+  /*GetEquippedSlot(slot = 0){
     let equipment = this.getEquip_ItemList();
     for(let i = 0; i < equipment.length; i++){
       let equip = equipment[i];
       let type = equip.GetType();
       this.LoadEquipmentItem({
-        gff: GFFObject.FromStruct(equip, equip.GetType()),
+        item: new ModuleItem(GFFObject.FromStruct(equip, equip.GetType())),
         Slot: type,
         onLoad: () => {
           cEquip++;
@@ -1160,21 +1193,32 @@ class ModuleCreature extends ModuleCreatureController {
         }
       });
     }
-  }
-
-
+  }*/
 
   LoadEquipmentItem(args = {}){
 
     args = $.extend({
-      gff: new GFFObject(),
+      item: new GFFObject(),
       Slot: 0x01,
       onLoad: null,
       onError: null
     }, args);
     //console.log('LoadEquipmentItem', args);
-    let uti = new ModuleItem(args.gff);
+    let uti = args.item;
+
+    if(uti instanceof GFFObject)
+      uti = new ModuleItem(uti);
+
     switch(args.Slot){
+      case UTCObject.SLOT.IMPLANT:
+        this.equipment.IMPLANT = uti;
+      break;
+      case UTCObject.SLOT.HEAD:
+        this.equipment.HEAD = uti;
+      break;
+      case UTCObject.SLOT.ARMS:
+        this.equipment.ARMS = uti;
+      break;
       case UTCObject.SLOT.ARMOR:
         this.equipment.ARMOR = uti;
       break;
@@ -1183,6 +1227,18 @@ class ModuleCreature extends ModuleCreatureController {
       break;
       case UTCObject.SLOT.LEFTHAND:
         this.equipment.LEFTHAND = uti;
+      break;
+      case UTCObject.SLOT.BELT:
+        this.equipment.BELT = uti;
+      break;
+      case UTCObject.SLOT.RIGHTARMBAND:
+        this.equipment.RIGHTARMBAND = uti;
+      break;
+      case UTCObject.SLOT.LEFTARMBAND:
+        this.equipment.LEFTARMBAND = uti;
+      break;
+      case UTCObject.SLOT.HIDE:
+        this.equipment.HIDE = uti;
       break;
       case UTCObject.SLOT.CLAW1:
         this.equipment.CLAW1 = uti;
@@ -1250,7 +1306,7 @@ class ModuleCreature extends ModuleCreatureController {
       this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
         
     if(this.template.RootNode.HasField('FactionID'))
-      this.factionID = this.template.RootNode.GetFieldByLabel('FactionID').GetValue();
+      this.faction = this.template.RootNode.GetFieldByLabel('FactionID').GetValue();
 
     if(this.template.RootNode.HasField('FeatList')){
       let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
@@ -1262,7 +1318,7 @@ class ModuleCreature extends ModuleCreatureController {
     }
 
     if(this.template.RootNode.HasField('FirstName'))
-      this.firstName = this.template.RootNode.GetFieldByLabel('FirstName').GetCExoLocString().GetValue();
+      this.firstName = this.template.RootNode.GetFieldByLabel('FirstName').GetValue();
     
     if(this.template.RootNode.HasField('ForcePoints'))
       this.forcePoints = this.template.RootNode.GetFieldByLabel('ForcePoints').GetValue();
@@ -1285,8 +1341,12 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('LastName'))
       this.lastName = this.template.GetFieldByLabel('LastName').GetValue();
 
-    if(this.template.RootNode.HasField('MaxHitPoints'))
+    if(this.template.RootNode.HasField('MaxHitPoints')){
       this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
+      if(!this.currentHitPoints){
+        this.currentHitPoints = this.maxHitPoints;
+      }
+    }
 
     if(this.template.RootNode.HasField('Min1HP'))
       this.min1HP = this.template.GetFieldByLabel('Min1HP').GetValue();
@@ -1391,11 +1451,197 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
 
+    if(this.template.RootNode.HasField('Equip_ItemList')){
+      let equipment = this.template.RootNode.GetFieldByLabel('Equip_ItemList').GetChildStructs() || [];
+      for(let i = 0; i < equipment.length; i++){
+        let strt = equipment[i];
+        let equippedRes = new ModuleItem(strt.GetFieldByLabel('EquippedRes').Value);
+        switch(strt.Type){
+          case UTCObject.SLOT.HEAD:
+            this.equipment.HEAD = equippedRes;
+          break;
+          case UTCObject.SLOT.ARMS:
+            this.equipment.ARMS = equippedRes;
+          break;
+          case UTCObject.SLOT.ARMOR:
+            this.equipment.ARMOR = equippedRes;
+          break;
+          case UTCObject.SLOT.LEFTHAND:
+            this.equipment.LEFTHAND = equippedRes;
+          break;
+          case UTCObject.SLOT.RIGHTHAND:
+            this.equipment.RIGHTHAND = equippedRes;
+          break;
+          case UTCObject.SLOT.LEFTARMBAND:
+            this.equipment.LEFTARMBAND = equippedRes;
+          break;
+          case UTCObject.SLOT.RIGHTARMBAND:
+            this.equipment.RIGHTARMBAND = equippedRes;
+          break;
+          case UTCObject.SLOT.IMPLANT:
+          this.equipment.IMPLANT = equippedRes;
+          break;
+          case UTCObject.SLOT.BELT:
+            this.equipment.BELT = equippedRes;
+          break;
+
+          //Simple Creature Slots
+          case UTCObject.SLOT.HIDE:
+            this.equipment.HIDE = equippedRes;
+          break;
+          case UTCObject.SLOT.CLAW1:
+            this.equipment.CLAW1 = equippedRes;
+          break;
+          case UTCObject.SLOT.CLAW2:
+            this.equipment.CLAW2 = equippedRes;
+          break;
+          case UTCObject.SLOT.CLAW3:
+            this.equipment.CLAW3 = equippedRes;
+          break;
+        }
+      }
+    }
+
+    this.ParseEquipmentSlots( () => {
+
+      if(this.template.RootNode.HasField('ItemList')){
+
+        let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+        let loop = new AsyncLoop({
+          array: inventory,
+          onLoop: (item, asyncLoop) => {
+            this.LoadItem(GFFObject.FromStruct(item), () => {
+              asyncLoop._Loop();
+            });
+          }
+        });
+        loop.Begin(() => {
+          this.LoadSoundSet(onLoad);
+        });
+  
+      }else{
+        this.LoadSoundSet(onLoad);
+      }
+
+    });
+
+  }
+
+  ParseEquipmentSlots( onLoad = null ){
+
+    let loop = new AsyncLoop({
+      array: Object.keys(this.equipment),
+      onLoop: (slot_key, asyncLoop) => {
+        let slot = this.equipment[slot_key];
+        if(slot instanceof ModuleObject){
+          slot.Load( () => {
+            slot.LoadModel( () => {
+              if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
+                slot.model.playAnimation('off', true);
+              }
+              asyncLoop._Loop();
+            });
+          });
+        }else{
+          asyncLoop._Loop();
+        }
+      }
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
+
+  }
+
+  LoadSoundSet( onLoad = null ){
+
+    let ss_row = Global.kotor2DA.soundset.rows[this.soundSetFile];
+
+    if(ss_row){
+      ResourceLoader.loadResource(ResourceTypes.ssf, ss_row.resref.toLowerCase(), (data) => {
+        this.ssf = new SSFObject(data);
+        //SSF found
+        if(typeof onLoad === 'function')
+          onLoad();
+      }, (err) => {
+        //SSF not found
+        if(typeof onLoad === 'function')
+          onLoad();
+      });
+    }else{
+      //SSF entry not found
+      if(typeof onLoad === 'function')
+        onLoad();
+    }
+
+  }
+
+  LoadItem( template, onLoad = null){
+
+    let item = new ModuleItem(template);
+    item.InitProperties();
+    item.Load( () => {
+      let hasItem = this.getItem(item.getTag());
+      if(hasItem){
+        hasItem.setStackSize(hasItem.getStackSize() + 1);
+        if(typeof onLoad === 'function')
+          onLoad(hasItem);
+      }else{
+        this.inventory.push(item);
+        if(typeof onLoad === 'function')
+          onLoad(item);
+      }
+    });
+
+  }
+
+  PlaySoundSet(type = -1){
+    if(this.ssf instanceof SSFObject){
+      let resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
+      if(resref != ''){
+        if(this.audioEmitter)
+          this.audioEmitter.PlaySound(resref);
+      }
+    }
   }
 
   followLeader(){
     //The follow leader action will be controlled by the heartbeat script when it is implemented
     this.actionQueue.push({object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER});
+  }
+
+  Save(){
+    //TODO
+
+    let gff = new GFFObject();
+
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    let actionList = gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ActionList'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Age'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AmbientAnimState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Animation'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Appearance_Head'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Appearance_Type'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AreaId'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ArmorClass'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'BodyBag'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Cha'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ChallengeRating'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+
+    return gff;
+
   }
 
 }

@@ -19,8 +19,8 @@ class CreatureAppearanceWizard extends Wizard {
         if(onSelect != null && typeof onSelect === 'function')
           onSelect(this.appearance_id);
 
-        this.offscreenRenderer.Destroy();
-        this.offscreenRenderer = null;
+        this.ui3DRenderer.Destroy();
+        this.ui3DRenderer = null;
 
         this.Close();
 
@@ -35,7 +35,7 @@ class CreatureAppearanceWizard extends Wizard {
 
       let dims = this.GetCellDimensions();
 
-      this.offscreenRenderer = new OffscreenRenderer({
+      this.ui3DRenderer = new UI3DRenderer({
         width: dims.width,
         height: dims.height
       });
@@ -141,13 +141,13 @@ class CreatureAppearanceWizard extends Wizard {
 
     appearanceLoader.GetModel( (model) => {
       //let dims = this.GetCellDimensions();
-      //this.offscreenRenderer.SetSize(dims.width, dims.height);
+      //this.ui3DRenderer.SetSize(dims.width, dims.height);
 
-      let scene = this.offscreenRenderer.ResetScene();
+      let scene = this.ui3DRenderer.ResetScene();
       scene.add(model);
 
-      this.offscreenRenderer.Render();
-      $('img', $element).attr('src', this.offscreenRenderer.GetRenderedImage()).css('visibility', 'visible');
+      this.ui3DRenderer.Render();
+      $('img', $element).attr('src', this.ui3DRenderer.GetRenderedImage()).css('visibility', 'visible');
 
       if(onRender != null && typeof onRender === 'function')
         onRender();

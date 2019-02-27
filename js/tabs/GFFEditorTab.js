@@ -553,7 +553,7 @@ class GFFEditorTab extends EditorTab {
             });
 
             if(field.GetCExoLocString().RESREF != -1){
-              this.$gffPropertiesSubStringInfo.val(ipcRenderer.sendSync('TLKGetStringById', field.GetCExoLocString().RESREF).Value);
+              this.$gffPropertiesSubStringInfo.val(Global.kotorTLK.TLKStrings[field.GetCExoLocString().RESREF].Value);
               this.$gffPropertiesStringRefValue.prop("disabled", false);
               this.$gffPropertiesSubStringInfo.prop("disabled", true);
             }else {

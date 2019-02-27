@@ -50,11 +50,11 @@ class AudioLoader {
             });
           });
         }, () => {
-          console.log('LoadStreamSound', ResRef)
+          //console.log('LoadStreamSound', ResRef)
           this.LoadStreamSound( ResRef, onLoad, onError);
         });
       }else{
-        console.log('LoadStreamSound', ResRef)
+        //console.log('LoadStreamSound', ResRef)
         this.LoadStreamSound( ResRef, onLoad, onError);
       }
 
@@ -70,7 +70,7 @@ class AudioLoader {
 
     fs.readFile(file, (err, buffer) => {
       if (err) {
-        console.log('AudioLoader.LoadStreamSound : read', err);
+        //console.log('AudioLoader.LoadStreamSound : read', err);
         if(onError != null)
           onError(err);
       }else{
