@@ -188,7 +188,7 @@ class EditorFile {
         
             });
           }else{
-            this.buffer = Buffer.alloc();
+            this.buffer = Buffer.alloc(0);
             if(typeof onLoad === 'function'){
               onLoad(this.buffer);
             }

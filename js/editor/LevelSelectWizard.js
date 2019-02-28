@@ -4,7 +4,7 @@ class LevelSelectWizard extends Wizard {
     super();
 
     //Variables
-    this.levels = JSON.parse(fs.readFileSync('maps_kotor.json', 'utf8'));
+    this.levels = GameMaps;
     this.levels[-1] = {module: 'None', name: 'None', nameref: -1};
     this.selected = selected;
     this.onSelect = onSelect;

@@ -213,6 +213,12 @@
 
   }
 
+  let ResourceBrowser = {
+    treeIndex: 0,
+    $ul: $('ul.tree.css-treeview.js'),
+    nodeList: []
+  };
+
   function initialize(){
 
     verifyGame({
@@ -224,20 +230,18 @@
         GameInitializer.Init({
           game: Games[GameKey],
           onLoad: () => {
-            let treeIndex = 0;
-            let $ul = $('ul.tree.css-treeview.js');
-            let nodeList = [];
+            ResourceBrowser.treeIndex = 0;
+            ResourceBrowser.nodeList = [];
             let bifs = [];
             for(let bif in Global.kotorBIF){
               if(Global.kotorBIF.hasOwnProperty(bif))
                 bifs.push(Global.kotorBIF[bif]);
             }
-            let str = '';
+            
             let bifLoader = new AsyncLoop({
               array: bifs,
               onLoop: (bif, asyncLoop) => {
                 let name = bif.file.split('\\').pop().split('.')[0];
-                //let bifEle = '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+name+'</label><span></span><ul>';
                 let subTypes = {};
 
                 let node = {
@@ -246,7 +250,7 @@
                   nodeList: []
                 };
 
-                nodeList.push(node)
+                ResourceBrowser.nodeList.push(node)
 
                 for(let i = 0; i < bif.resources.length; i++){
                   let resource = bif.resources[i];
@@ -273,114 +277,61 @@
                     },
                     nodeList: []
                   });
-
-                  //bifEle += '<li class="link" data-archive="'+name+'" data-type="bif" data-resref="'+resref+'" data-resid="'+resource.ResType+'">'+resref+'</li>';
+                  
                 }
 
-                //bifEle += '</ul></li>';
-                
-                //str += bifEle;
                 asyncLoop._Loop();
               }
             });
             bifLoader.Begin(() => {
-              //console.log(str);
 
-              //Load StreamWaves
-              recursive(path.join(Config.options.Games[GameKey].Location, 'streamwaves'), (err, files) => {
+              loadFolderForFileBrowser('StreamWaves', () => {
 
-                let folder = {name: 'streamwaves', type: 'group', nodeList: []};
-                folder.nodeList._indexes = {};
-                let substr_len = (path.join(Config.options.Games[GameKey].Location, 'streamwaves')+path.sep).length;
+                loadFolderForFileBrowser('StreamSounds', () => {
 
-                for(let i = 0; i < files.length; i++){
-                  let file = files[i].substr(substr_len);
-                  let parts = file.split(path.sep);
-                  
-                  let newfile = parts.pop();
-                  let targetFolder = folder;
-                  
-                  for(let i = 0; i < parts.length; i++){
-                    if(typeof targetFolder.nodeList._indexes[parts[i]] === 'undefined'){
-                      //Push the new folder and get the index
-                      let index = targetFolder.nodeList.push({name: parts[i].trim(), type: 'group', nodeList: []}) - 1;
-                      targetFolder.nodeList._indexes[parts[i]] = index;
-                      targetFolder = targetFolder.nodeList[index];
-                      targetFolder.nodeList._indexes = {};
-                    }else{
-                      let index = targetFolder.nodeList._indexes[parts[i]];
-                      targetFolder = targetFolder.nodeList[index];
-                    }
-                  }
+                  loadFolderForFileBrowser('StreamMusic', () => {
 
-                  targetFolder.nodeList.push({name: newfile.trim(), type: 'resource', data: {path: files[i]}, nodeList: [] });
+                    loadFolderForFileBrowser('StreamVoice', () => {
 
-                  /*targetFolder.nodeList.sort( (a, b) => {
-                    return a.type == 'group' ? 0 : 1;
-                  });*/
-                  
-                }
+                      loadMaps( () => {
 
-                folder.nodeList.sort( (a, b) => {
-                  let compareType = a.type == 'group' && b.type != 'group' ? -1 : 1;
-                  let compareName = a.name.localeCompare(b.name);
+                        ResourceBrowser.$ul.html(buildNodeList(ResourceBrowser.nodeList));
 
-                  return compareType || compareName;
-                });
+                        $('li.link', ResourceBrowser.$ul).on('click', (e) => {
+                          e.preventDefault();
 
-                nodeList.push(folder);
+                          let resref = e.target.dataset.resref;
+                          let reskey = parseInt(e.target.dataset.resid);
 
-                $ul.html(buildNodeList(nodeList));
-              
-                $('li.link', $ul).on('click', (e) => {
-                  e.preventDefault();
+                          let type = e.target.dataset.type;
+                          let archive = e.target.dataset.archive;
 
-                  let resref = e.target.dataset.resref;
-                  let reskey = parseInt(e.target.dataset.resid);
+                          console.log(e.target.dataset);
 
-                  let type = e.target.dataset.type;
-                  let archive = e.target.dataset.archive;
+                          FileTypeManager.onOpenResource(
+                            new EditorFile({
+                              path: e.target.dataset.path
+                            })
+                          );
 
-                  console.log(e.target.dataset);
+                        });
 
-                  FileTypeManager.onOpenResource(
-                    new EditorFile({
-                      path: e.target.dataset.path
-                    })
-                  );
+                        loader.Hide();
+                        tabManager.AddTab(new QuickStartTab());
+                        tabManager.AttachTo($('#renderer-container #tabs-container'));
 
+                      });
 
-                /* Global.kotorBIF[archive].GetResourceData(Global.kotorBIF[archive].GetResourceByLabel(resref, reskey), (buffer) => {
-                    FileTypeManager.onOpenResource(
-                      new EditorFile({
-                        resref: resref,
-                        reskey: reskey,
-                        buffer: buffer,
-                        archive_path: Global.kotorBIF[archive].file,
-                        location: EditorFile.LOCATION_TYPE.ARCHIVE
-                      })
-                    );
-                  }, (e) => {
-                    if(typeof onError === 'function')
-                      throw 'Resource not found in BIF archive '+pathInfo.archive.name;
-                  });*/
+                    });
 
-                  //let file_path = type+'.'+archive+'://'+resref+'.'+ResourceTypes.getKeyByValue(resid);
-                  
+                  });
 
                 });
-
-                loader.Hide();
-                tabManager.AddTab(new QuickStartTab());
-                tabManager.AttachTo($('#renderer-container #tabs-container'));
-
-                //console.log(nodeList);
-                //window.temp1 = nodeList;
 
               });
 
             });
-            
+
           }
         });
       },
@@ -399,6 +350,116 @@
       }
     });
 
+  }
+
+  function loadFolderForFileBrowser(folder_name = '', onComplete = null ){
+    //Load StreamWaves
+    recursive(path.join(Config.options.Games[GameKey].Location, folder_name), (err, files) => {
+
+      if(err){
+        if(typeof onComplete === 'function')
+          onComplete();
+        return;
+      }
+
+      let folder = {name: folder_name, type: 'group', nodeList: []};
+      folder.nodeList._indexes = {};
+      let substr_len = (path.join(Config.options.Games[GameKey].Location, folder_name)+path.sep).length;
+
+      for(let i = 0; i < files.length; i++){
+        let file = files[i].substr(substr_len);
+        let parts = file.split(path.sep);
+        
+        let newfile = parts.pop();
+        let targetFolder = folder;
+        
+        for(let i = 0; i < parts.length; i++){
+          if(typeof targetFolder.nodeList._indexes[parts[i]] === 'undefined'){
+            //Push the new folder and get the index
+            let index = targetFolder.nodeList.push({name: parts[i].trim(), type: 'group', nodeList: []}) - 1;
+            targetFolder.nodeList._indexes[parts[i]] = index;
+            targetFolder = targetFolder.nodeList[index];
+            targetFolder.nodeList._indexes = {};
+          }else{
+            let index = targetFolder.nodeList._indexes[parts[i]];
+            targetFolder = targetFolder.nodeList[index];
+          }
+        }
+
+        targetFolder.nodeList.push({name: newfile.trim(), type: 'resource', data: {path: files[i]}, nodeList: [] });
+
+        /*targetFolder.nodeList.sort( (a, b) => {
+          return a.type == 'group' ? 0 : 1;
+        });*/
+        
+      }
+
+      folder.nodeList.sort( (a, b) => {
+        let compareType = a.type == 'group' && b.type != 'group' ? -1 : 1;
+        let compareName = a.name.localeCompare(b.name);
+
+        return compareType || compareName;
+      });
+
+      ResourceBrowser.nodeList.push(folder);
+
+      if(typeof onComplete === 'function')
+        onComplete();
+
+    });
+
+  }
+
+  function loadMaps( onComplete = null ){
+    loader.SetMessage('Loading Maps...');
+    window.GameMaps = [];
+    fs.readdir(path.join(Config.options.Games[GameKey].Location, 'modules'), (err, files) => {
+
+      if(err){
+        if(typeof onComplete === 'function')
+          onComplete();
+        return;
+      }
+      
+      let module_loop = new AsyncLoop({
+        array: files,
+        onLoop: (file, asyncLoop) => {
+
+          let file_parts = file.split('.');
+          let ext = file_parts.pop();
+          
+          if(ext == 'rim'){
+
+            new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', file), (module_rim) => {
+              
+              module_rim.getRawResource('module', ResourceTypes['ifo'], (ifo) => {
+                let area_name = new GFFObject(ifo).GetFieldByLabel('Mod_Entry_Area').GetValue();
+                module_rim.getRawResource(area_name, ResourceTypes['are'], (are) => {
+                  let map_name = new GFFObject(are).GetFieldByLabel('Name').GetValue();
+
+                  window.GameMaps.push({name: map_name, module: file})
+
+                  asyncLoop._Loop();
+
+                });
+              }, () => {
+                asyncLoop._Loop();
+              });
+
+            });
+
+          }else{
+            asyncLoop._Loop();
+          }
+
+        }
+      });
+      module_loop.Begin(() => {
+        if(typeof onComplete === 'function')
+          onComplete();
+      });
+
+    });
   }
 
   function verifyGame(args = {}){

@@ -123,7 +123,7 @@ class RIMObject {
 
   }
 
-  getRawResource(resref = '', restype = 0x000F, onComplete = null) {
+  getRawResource(resref = '', restype = 0x000F, onComplete = null, onError = null) {
     for(let i = 0; i != this.Resources.length; i++){
       let resource = this.Resources[i];
       if (resource.ResRef == resref && resource.ResType == restype) {
@@ -151,13 +151,17 @@ class RIMObject {
           
         }
         catch (e) {
-          console.log(e);
+          console.error('getRawResource', e);
           if(onComplete != null)
             onComplete(new ArrayBuffer(0));
         }
-        break;
+        return;
       }
     }
+
+    if(typeof onError == 'function')
+      onError();
+
   }
 
   getResourceByKey(key, restype){

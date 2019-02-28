@@ -5,7 +5,7 @@ class NewProjectWizard extends Wizard {
 
     //Variables
     this.project_name = 'New Project';
-    this.parent_directory = typeof Config.options.Projects_Directory !== 'undefined' ? Config.options.Projects_Directory : '';
+    this.parent_directory = (typeof Config.options.Projects_Directory !== 'undefined' && Config.options.Projects_Directory != null) ? Config.options.Projects_Directory : '';
     this.project_location = '';
     this.project_game = Games.KOTOR;
     this.project_type = Project.Types.MODULE;
