@@ -1,8 +1,13 @@
 class GameFinderWizard extends Wizard {
 
-  constructor(){
+  constructor(args={}){
     super();
     console.log('GameFinderWizard', this);
+
+    args = Object.assign({
+      onUpdate: null,
+      onClose: null
+    }, args);
 
     this.kotor_path = Config.options.Games[GameKey].Location;
     this.tsl_path = Config.options.Games.TSL.Location;
@@ -58,17 +63,23 @@ class GameFinderWizard extends Wizard {
 
         Config.Save();
         this.Close();
+
+        if(typeof args.onUpdate === 'function')
+          args.onUpdate();
+
       });
 
       $('body').append(this.$wizard);
       this.$wizard.filter('.modal').modal({
-          backdrop: 'static',
-          keyboard: false
+        backdrop: 'static',
+        keyboard: false
       });
 
     });
 
   }
+
+
 
 }
 

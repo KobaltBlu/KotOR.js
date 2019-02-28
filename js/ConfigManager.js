@@ -99,7 +99,7 @@ class ConfigManager{
         }
       },
       Panes: {
-        left: {open: false},
+        left: {open: true},
         right: {open: true},
         top: {open: false},
         bottom: {open: false}
