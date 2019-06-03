@@ -105,7 +105,10 @@ function createLauncherWindow() {
     minWidth: 1000,
     frame: false,
     title: 'KotOR Launcher',
-    transparent: true
+    transparent: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
   });
   winLauncher.webContents.MyGlobal = Global;
   // and load the index.html of the app.
