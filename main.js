@@ -26,7 +26,10 @@ function createGameWindow(game = 1) {
     width: 1200, 
     height: 600, 
     frame: true,
-    title: 'KotOR'
+    title: 'KotOR',
+    webPreferences: {
+      nodeIntegration: true
+    }
   });
 
   winGame.state = {
@@ -63,7 +66,10 @@ function createEditorWindow() {
       width: 1200, 
       height: 600, 
       frame: false,
-      title: 'KotOR Forge'
+      title: 'KotOR Forge',
+      webPreferences: {
+        nodeIntegration: true
+      }
     });
     winEditor.webContents.MyGlobal = Global;
     // and load the index.html of the app.
