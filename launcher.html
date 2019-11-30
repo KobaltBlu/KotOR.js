@@ -6,81 +6,40 @@
     <link rel="stylesheet" href="css/launcher.css" />
     <script src="js/libs/jquery-1.12.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
   </head>
-  <body>
+  <body style="display: none;">
     <div id="container">
       <div class="launcher-menu">
         <div class="launcher-menu-background"></div>
         <div class="menu-accent"><div class="inner"></div></div>
         <ul class="top-nav">
+          <li class="tab-btn nav-logo"><img src="launcher/images/kotor-js-logo.png"></li>
           <li class="tab-btn"><a href="#games">Games</a></li>
           <li class="tab-btn"><a href="#deadlystream">Deadlystream</a></li>
         </ul>
         <div class="launcher-menu-top-right">
-          <div class="launcher-min"><i class="fas fa-window-minimize"></i></div>
-          <div class="launcher-max"><i class="fas fa-window-maximize"></i></div>
-          <div class="launcher-close"><i class="fas fa-window-close"></i></div>
+          <div class="launcher-min" title="Minimize Window"><i class="fas fa-window-minimize"></i></div>
+          <div class="launcher-max" title="Maximize Window"><i class="far fa-clone"></i></div>
+          <div class="launcher-close" title="Close Window"><i class="fas fa-times"></i></div>
         </div>
       </div>
       <div class="tab-host">
         <div id="games" class="tab selected">
           <div class="launcher-options">
-            <ul>
-              <li class="launcher-option kotor selected">
-                <span class="icon"></span>
-                <a href="#kotor" data-background="css/kotor.jpg" data-icon="launcher/images/icon_kotor.png">KotOR</a>
-              </li>
-              <li class="launcher-option kotor-2">
-                  <span class="icon"></span>
-                <a href="#kotor-2" data-background="https://artfiles.alphacoders.com/886/88666.jpg" data-icon="launcher/images/icon_kotor_ii.png">KotOR II</a>
-              </li>
-              <li class="launcher-option kotor-forge">
-                  <span class="icon"></span>
-                <a href="#kotor-forge" data-background="css/kotor_forge.jpg" data-icon="launcher/images/icon_forge.png">KotOR Forge</a>
-              </li>
-              <!--li class="launcher-option deadlystream">
-                <span class="icon"></span>
-                <a href="https://deadlystream.com/" data-icon="launcher/images/icon_deadlystream.png" class="external">Deadlystream.com</a>
-              </li-->
-            </ul>
+            <!-- tabs for the profiles will load here -->
           </div>
           <div class="launcher-contents">
-            <div id="kotor" class="launcher-content">
-              <div class="logo-wrapper">
-                <img class="logo" src="launcher/images/logo_kotor.png" />
-              </div>
-              <div>
-                <div class="video">
-                  <video src="https://steamcdn-a.akamaihd.net/steam/apps/256671298/movie_max.webm?t=1474662078" onloadstart="this.volume=0" loop autoplay style="height: 250px;"></video>
-                </div>
-                <!--div class="buy">
-                  <iframe src="https://store.steampowered.com/widget/32370/" frameborder="0" width="646" height="190"></iframe>
-                </div-->
-              </div>
-              <a href="#" class="btn-launch">Launch</a>
-            </div>
-            <div id="kotor-2" class="launcher-content">
-              <div class="logo-wrapper">
-                <img class="logo" src="launcher/images/logo_kotor_ii.png" />
-              </div>
-              <div class="horizontal-scroller">
-                <div class="video">
-                  <video src="https://steamcdn-a.akamaihd.net/steam/apps/256681358/movie480.webm?t=1489550578" onloadstart="this.volume=0" loop autoplay style="height: 250px;"></video>
-                </div>
-                <!--div class="buy">
-                  <iframe src="https://store.steampowered.com/widget/208580/" frameborder="0" width="646" height="190"></iframe>
-                </div-->
-              </div>
-              <a href="#" class="btn-launch">Launch</a>
-            </div>
-            <div id="kotor-forge" class="launcher-content">
-              <img class="logo" src="launcher/images/logo_forge.png" />
-              <a href="#" class="btn-launch">Launch</a>
-            </div>
+            <!-- tab content for the profile tabs will load here -->
           </div>
         </div>
         <div id="deadlystream" class="tab">
-          <iframe src="https://deadlystream.com"></iframe>
+          <webview src="https://deadlystream.com"></webview>
         </div>
+      </div>
+    </div>
+    <div id="lightbox" class="lightbox">
+      <div class="lightbox-content-wrapper">
+        <div class="lightbox-close"><i class="fas fa-times-circle"></i></div>
+        <div class="lightbox-content"><div>
       </div>
     </div>
     <script type="text/javascript" src="launcher.js"></script>

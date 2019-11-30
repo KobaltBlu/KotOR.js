@@ -82,6 +82,29 @@ class GUIListBox extends GUIControl {
     this.children = [];
   }
 
+  removeItemByIndex(index = -1){
+    if(index >= 0 && this.children.length > index){
+      let node = this.children.splice(index, 1)[0];
+      node.widget.parent.remove(node.widget);
+
+      //Select a new item if the one removed was selected
+      if(this.selectedItem == node){
+        //new select index
+        index = index--;
+        if(index < 0)
+          index = 0;
+
+        this.select(this.children[index]);
+      }
+
+      this.updateList();
+    }
+  }
+
+  getProtoItemType(){
+    return this.protoItem.GetFieldByLabel('CONTROLTYPE').GetValue();
+  }
+
   addItem(node, onClick = null, customBuilder = null){
     let control = this.protoItem;
     let type = control.GetFieldByLabel('CONTROLTYPE').GetValue();
@@ -98,7 +121,8 @@ class GUIListBox extends GUIControl {
       switch(type){
         case 4:
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(node);
-          ctrl = new GUIProtoItem(this.menu, control, this.widget, this.scale);
+          ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+          ctrl.node = node;
           ctrl.setList( this );
           this.children.push(ctrl);
 
@@ -109,7 +133,7 @@ class GUIListBox extends GUIControl {
           ctrl.addEventListener('click', (e) => {
             e.stopPropagation();
             if(typeof onClick === 'function')
-              onClick();
+              onClick(node, ctrl);
           });
 
           //this.calculatePosition();
@@ -120,11 +144,14 @@ class GUIListBox extends GUIControl {
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
             node.getName()
           );
-          ctrl = new GUIProtoItem(this.menu, control, this.widget, this.scale);
+          ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+          ctrl.node = node;
           ctrl.setList( this );
           this.children.push(ctrl);
-          ctrl.extent.width -= 52;
-          ctrl.extent.left += 52;
+          ctrl.originalWidth = ctrl.extent.width;
+          ctrl.originalLeft = ctrl.extent.left;
+          //ctrl.extent.width -= 52;
+          //ctrl.extent.left += 52;
 
           ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
           ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
@@ -132,71 +159,50 @@ class GUIListBox extends GUIControl {
           index = this.itemGroup.children.length;
           widget = ctrl.createControl();
 
-          let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          iconMaterial.transparent = true;
-          let iconSprite = new THREE.Sprite( iconMaterial );
+          widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+          widget.iconMaterial.transparent = true;
+          widget.iconSprite = new THREE.Sprite( widget.iconMaterial );
           //console.log(node.getIcon());
-          TextureLoader.enQueue(node.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
+          TextureLoader.enQueue(node.getIcon(), widget.iconMaterial, TextureLoader.Type.TEXTURE);
           
           widget.spriteGroup = new THREE.Group();
           widget.spriteGroup.position.x = -(ctrl.extent.width/2)-(52/2); //HACK
-          widget.spriteGroup.position.y -= 4;
-          iconSprite.scale.x = 52;
-          iconSprite.scale.y = 52;
-          iconSprite.position.z = 1;
+          //widget.spriteGroup.position.y -= 4;
+          widget.iconSprite.scale.x = 52;
+          widget.iconSprite.scale.y = 52;
+          widget.iconSprite.position.z = 1;
 
-          for(let i = 0; i < 7; i++){
-            let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-            hexMaterial.transparent = true;
-            let hexSprite = new THREE.Sprite( hexMaterial );
+          widget.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+          widget.hexMaterial.transparent = true;
+          widget.hexSprite = new THREE.Sprite( widget.hexMaterial );
+          widget.hexSprite.scale.x = widget.hexSprite.scale.y = 64;
+          widget.hexSprite.position.z = 1;
+
+          if(GameKey != 'TSL')
+            widget.spriteGroup.add(widget.hexSprite);
             
-            if(!i){
-              hexSprite.name = 'lbl_hex';
-              TextureLoader.enQueue('lbl_hex', hexMaterial, TextureLoader.Type.TEXTURE);
-              hexSprite.visible = true;
-            }else{
-              hexSprite.name = 'lbl_hex_'+(i+1);
-              TextureLoader.enQueue('lbl_hex_'+(i+1), hexMaterial, TextureLoader.Type.TEXTURE);
-              hexSprite.visible = false;
-            }
-
-            hexSprite.scale.x = hexSprite.scale.y = 64;
-            hexSprite.position.z = 1;
-            widget.spriteGroup.add(hexSprite);
-          }
+          widget.spriteGroup.add(widget.iconSprite);
 
           ctrl.onSelect = () => {
             if(ctrl.selected){
               ctrl.showHighlight();
               ctrl.hideBorder();
               if(node.getStackSize() > 1){
-                widget.spriteGroup.children[0].visible = false;
-                widget.spriteGroup.children[1].visible = false;
-                widget.spriteGroup.children[2].visible = false;
-                widget.spriteGroup.children[3].visible = false;
-                widget.spriteGroup.children[4].visible = true;
+                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_5');
+                widget.hexMaterial.needsUpdate = true;
               }else{
-                widget.spriteGroup.children[0].visible = false;
-                widget.spriteGroup.children[1].visible = true;
-                widget.spriteGroup.children[2].visible = false;
-                widget.spriteGroup.children[3].visible = false;
-                widget.spriteGroup.children[4].visible = false;
+                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_2');
+                widget.hexMaterial.needsUpdate = true;
               }
             }else{
               ctrl.hideHighlight();
               ctrl.showBorder();
               if(node.getStackSize() > 1){
-                widget.spriteGroup.children[0].visible = false;
-                widget.spriteGroup.children[1].visible = false;
-                widget.spriteGroup.children[2].visible = false;
-                widget.spriteGroup.children[3].visible = true;
-                widget.spriteGroup.children[4].visible = false;
+                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
+                widget.hexMaterial.needsUpdate = true;
               }else{
-                widget.spriteGroup.children[0].visible = true;
-                widget.spriteGroup.children[1].visible = false;
-                widget.spriteGroup.children[2].visible = false;
-                widget.spriteGroup.children[3].visible = false;
-                widget.spriteGroup.children[4].visible = false;
+                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex');
+                widget.hexMaterial.needsUpdate = true;
               }
             }
           };
@@ -204,18 +210,17 @@ class GUIListBox extends GUIControl {
 
           //StackCount Text
 
-
-
           widget.add(widget.spriteGroup);
-          widget.spriteGroup.add(iconSprite);
           this.itemGroup.add(widget);
+
+          //widget.position.x += 52/2;
 
           ctrl.addEventListener('click', (e) => {
             e.stopPropagation();
             this.select(ctrl);
 
             if(typeof onClick === 'function')
-              onClick();
+              onClick(node, ctrl);
           });
 
           //this.calculatePosition();
@@ -243,6 +248,7 @@ class GUIListBox extends GUIControl {
 
     if(item instanceof GUIControl){
       item.selected = true;
+      this.selectedItem = item;
       if(typeof item.onSelect === 'function'){
         item.onSelect();
       }
@@ -258,21 +264,33 @@ class GUIListBox extends GUIControl {
     let oldMaxScroll = this.maxScroll;
     this.maxScroll = 0;
     let maxContentHeight = this.getContentHeight();
+    let innerOffset = 0;
+
+    if(!this.children.length)
+      return;
+
     for(let i = 0; i < this.children.length; i++){
       let node = this.children[i];
       let height = this.getNodeHeight(node);
-      if((height + this.padding.GetValue())*i >= this.extent.height)
+      innerOffset = node.border.inneroffset;
+      if((height + this.padding)*i >= this.extent.height)
         this.maxScroll++;
     }
 
     let topY = this.extent.height/2;
-    let nodeOffset = (-this.scroll * (this.getNodeHeight()) + this.padding.GetValue());
+    let nodeOffset = parseInt(-this.scroll * (this.getNodeHeight()) + this.padding);
 
     for(let i = 0; i < this.children.length; i++){
       let node = this.children[i];
       let height = this.getNodeHeight(node);
-      node.widget.position.y = topY - nodeOffset - height/2;
-      nodeOffset += this.getNodeHeight(node);
+      if(this.getProtoItemType() == 6){
+        node.widget.position.y = (topY - nodeOffset - this.getNodeHeight()/2);
+        //node.widget.position.x = ( (this.extent.left - node.extent.left)/2) * (this.isScrollBarLeft() ? -1 : 1);
+      }else{
+        node.widget.position.y = topY - nodeOffset - height;
+        //node.widget.position.x = ( (this.extent.left - node.extent.left)/2) * (this.isScrollBarLeft() ? -1 : 1);
+      }
+      nodeOffset += parseInt(height);
     }
     
     if(this.scrollbar){
@@ -285,7 +303,7 @@ class GUIListBox extends GUIControl {
   }
 
   cullOffscreen(){
-    let parentPos = this.widget.getWorldPosition(new THREE.Vector3())
+    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
     this.minY = parentPos.y + this.extent.height/2;
     this.maxY = parentPos.y - this.extent.height/2;
 
@@ -294,7 +312,7 @@ class GUIListBox extends GUIControl {
     let nodes = this.itemGroup.children;
     for(let i = 0; i < nodes.length; i++){
       let control = nodes[i].control;
-      let nodePos = nodes[i].getWorldPosition(new THREE.Vector3());
+      let nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
       let nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
       let nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
       let inside = (nodeTop < this.minY && nodeBottom > this.maxY);
@@ -433,7 +451,13 @@ class GUIListBox extends GUIControl {
   calculateBox(){
     let worldPosition = this.parent.widget.position.clone();
     //console.log('worldPos', worldPosition);
-    this.box = new THREE.Box2(
+
+    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
+    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
+    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
+    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+
+    /*this.box = new THREE.Box2(
       new THREE.Vector2(
         this.widget.position.x - this.extent.width/2 + worldPosition.x,
         this.widget.position.y - this.extent.height/2 + worldPosition.y
@@ -442,7 +466,7 @@ class GUIListBox extends GUIControl {
         this.widget.position.x + this.extent.width/2 + worldPosition.x,
         this.widget.position.y + this.extent.height/2 + worldPosition.y
       )
-    );
+    );*/
 
     for(let i = 0; i < this.children.length; i++){
       this.children[i].calculateBox();
@@ -466,6 +490,24 @@ class GUIListBox extends GUIControl {
     
   }
 
+}
+
+GUIListBox.hexTextures = new Map();
+
+GUIListBox.InitTextures = function(){
+  if(GameKey != 'TSL'){
+    for(let i = 0; i < 7; i++){
+      let name = '';
+      if(!i){
+        name = 'lbl_hex';
+      }else{
+        name = 'lbl_hex_'+(i+1);
+      }
+      TextureLoader.Load(name, (texture) => {
+        GUIListBox.hexTextures.set(texture.name, texture);
+      });
+    }
+  }
 }
 
 module.exports = GUIListBox;

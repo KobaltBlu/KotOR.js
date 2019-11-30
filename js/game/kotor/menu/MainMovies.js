@@ -23,7 +23,7 @@ class MainMovies extends GameMenu {
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MainMenu.Show();
+          this.Close();
         });
 
         if(typeof this.onLoad === 'function')

@@ -22,14 +22,9 @@ class MenuMap extends GameMenu {
         //this.BTN_PRTYSLCT = this.getControlByName('BTN_PRTYSLCT');
         this.BTN_RETURN = this.getControlByName('BTN_RETURN');
 
-        /*this.BTN_PRTYSLCT.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.Hide();
-          Game.MenuPartySelection.Show();
-        });*/
-
         this.BTN_RETURN.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.Close();
         });
 
         if(typeof this.onLoad === 'function')
@@ -51,17 +46,6 @@ class MenuMap extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    //Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
 
   }
 

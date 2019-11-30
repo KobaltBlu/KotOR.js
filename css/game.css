@@ -43,3 +43,64 @@ body {
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
   color: gold;
 }
+
+#loader {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: black;
+}
+
+.loading-container {
+  left: 0;
+  right: 0;
+  position: fixed;
+  bottom: 100px;
+  font-size: 24pt;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+#loader .background {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: black;
+  animation: loader-bg 5s infinite ease-in-out;
+}
+
+#loader .logo-wrapper {
+  position: absolute;
+  flex: 1;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#loader .logo-wrapper img {
+  animation: pulse 5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+
+@keyframes loader-bg {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.4; }
+  100% { opacity: 0.5; }
+}
+
+

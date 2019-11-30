@@ -21,8 +21,8 @@ class RIMObject {
       if(typeof file == 'string'){
         fs.open(this.file, 'r', (err, fd) => {
           if (err) {
-              console.log('RIM Header Read', status.message);
-              return;
+            console.log('RIM Header Read', status.message);
+            return;
           }
           var header = Buffer.alloc(this.HeaderSize);
           fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
@@ -111,9 +111,7 @@ class RIMObject {
         if(onComplete != null)
           onComplete(this);
 
-
       }
-
       
     }catch(e){
       console.log('RIM Open Error', e);

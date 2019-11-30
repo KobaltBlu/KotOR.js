@@ -9,7 +9,7 @@ class ModuleSound extends ModuleObject {
 
   constructor ( gff = null, audioEngine = null ) {
 
-    super();
+    super(gff);
 
     this.template = gff;
     this.audioEngine = audioEngine;
@@ -174,6 +174,9 @@ class ModuleSound extends ModuleObject {
   }
 
   InitProperties(){
+        
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('Active'))
       this.active = this.template.GetFieldByLabel('Active').GetValue()
@@ -212,13 +215,13 @@ class ModuleSound extends ModuleObject {
       this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
       let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
@@ -248,6 +251,31 @@ class ModuleSound extends ModuleObject {
     }
 
   }*/
+  
+  toToolsetInstance(){
+    let instance = new Struct(6);
+
+    instance.AddField(
+      new Field(GFFDataTypes.DWORD, 'GeneratedType', 0)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XPosition', this.position.x)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YPosition', this.position.y)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZPosition', this.position.z)
+    );
+    return instance;
+  }
 
 }
 

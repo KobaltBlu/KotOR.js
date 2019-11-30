@@ -48,21 +48,26 @@ class CharGenQuickOrCustom extends GameMenu {
               Game.player.feats.push(i);
             }
           }
-
-
-          Game.CharGenMain.state = CharGenMain.STATES.QUICK;
-          Game.CharGenQuickPanel.Show();
+          console.log('boo');
+          //Game.CharGenMain.state = CharGenMain.STATES.QUICK;
+          //Game.CharGenQuickPanel.Show();
+          Game.CharGenMain.Close();
+          Game.CharGenMain.childMenu = Game.CharGenQuickPanel;
+          Game.CharGenMain.Open();
         });
 
         this.CUST_CHAR_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
-          Game.CharGenCustomPanel.Show();
+          //Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
+          //Game.CharGenCustomPanel.Show();
+          Game.CharGenMain.Close();
+          Game.CharGenMain.childMenu = Game.CharGenCustomPanel;
+          Game.CharGenMain.Open();
         });
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.CharGenMain.Hide();
+          //Game.CharGenMain.Hide();
 
           try{
             Game.player.model.parent.remove(Game.player.model);
@@ -70,7 +75,7 @@ class CharGenQuickOrCustom extends GameMenu {
 
           Game.CharGenClass['_3D_MODEL'+(CharGenClass.SelectedClass+1)]._3dView.scene.add(Game.player.model);
 
-          Game.CharGenClass.Show();
+          Game.CharGenMain.Close();
         });
 
         //Hide because this submenu is very incomplete.
@@ -86,22 +91,6 @@ class CharGenQuickOrCustom extends GameMenu {
 
       }
     })
-
-  }
-
-  Show(){
-    let panelQuickorCustom = Game.CharGenQuickOrCustom.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelQuickorCustom);
-    Game.scene_gui.add(panelQuickorCustom);
-
-    let panelQuick = Game.CharGenQuickPanel.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelQuick);
-
-    let panelCustom = Game.CharGenCustomPanel.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelCustom);
-  }
-
-  Hide(){
 
   }
 

@@ -136,6 +136,7 @@ class TXI {
               this.procedureType = TXI.PROCEDURETYPE.CYCLE;
             break;
             case 'water':
+              this.isAnimated = false;
               this.procedureType = TXI.PROCEDURETYPE.WATER;
             break;
             case 'random':

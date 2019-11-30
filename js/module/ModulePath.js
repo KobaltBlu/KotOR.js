@@ -50,12 +50,17 @@ class ModulePath {
         this.points.push(point);
       }
 
+      let material = new THREE.LineBasicMaterial({
+        color: 0x0000ff
+      });
+
+      let geometry = new THREE.Geometry();
+
       for(let i = 0; i < this.points.length; i++){
         let point = this.points[i];
         if(point.num_connections){
           let connIdx = point.first_connection;
           for(let j = 0; j < point.num_connections; j++){
-            //console.log('dest', this.template.json.fields.Path_Conections.structs[connIdx + j].fields.Destination.value)
             point.connections.push(
               this.points[
                 this.template.json.fields.Path_Conections.structs[connIdx + j].fields.Destination.value
@@ -64,29 +69,25 @@ class ModulePath {
           }
         }
 
-        let material = new THREE.LineBasicMaterial({
-          color: 0x0000ff
-        });
-
-        let geometry = new THREE.Geometry();
-
         for(let i = 0; i < this.points.length; i++){
           let point = this.points[i];
-          
           geometry.vertices.push(
-            new THREE.Vector3( point.vector.x, point.vector.y, -10 ),
-            new THREE.Vector3( point.vector.x, point.vector.y, 10 )
+            new THREE.Vector3( point.vector.x, point.vector.y, -100 ),
+            new THREE.Vector3( point.vector.x, point.vector.y, 100 )
           );
-
         }
-          
-        let line = new THREE.LineSegments( geometry, material );
-        //line.position.set(point.vector.x, point.vector.y, 0);
-        //Game.scene.add( line );
 
       }
+          
+      this.line = new THREE.LineSegments( geometry, material );
+      Game.scene.add( this.line );
+      this.setPathHelpersVisibility(false);
 
     }
+  }
+
+  setPathHelpersVisibility(state = false){
+    this.line.visible = state;
   }
 
   getStartingPoint(origin = new THREE.Vector3, target = new THREE.Vector3){
@@ -254,9 +255,13 @@ class ModulePath {
       }
     }
 
-    //console.log(paths, points);
+    if(points.length <= 2){
+      return [dest];
+    }else{
+      return points;
+    }
 
-    return points;
+    
 
   }
 

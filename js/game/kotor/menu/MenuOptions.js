@@ -30,33 +30,33 @@ class MenuOptions extends GameMenu {
 
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.InGameOverlay.Show();
+          this.Close();
         });
 
         this.BTN_LOADGAME.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuSaveLoad.mode = 'load';
-          Game.MenuSaveLoad.Show();
+          Game.MenuSaveLoad.Open();
         });
 
         this.BTN_SAVEGAME.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.MenuSaveLoad.mode = 'save';
-          Game.MenuSaveLoad.Show();
+          Game.MenuSaveLoad.Open();
         });
 
         this.BTN_GRAPHICS.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MenuTop.Hide();
-          Game.MenuGraphics.Show();
+          //this.Hide();
+          //Game.MenuTop.Hide();
+          Game.MenuGraphics.Open();
         });
 
         this.BTN_SOUND.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MenuTop.Hide();
-          Game.MenuSound.Show();
+          //this.Hide();
+          //Game.MenuTop.Hide();
+          Game.MenuSound.Open();
         });
 
         if(typeof this.onLoad === 'function')
@@ -72,7 +72,7 @@ class MenuOptions extends GameMenu {
 
     Game.MenuActive = true;
 
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     //Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     Game.MenuEquipment.Hide();
@@ -81,7 +81,7 @@ class MenuOptions extends GameMenu {
     Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
+    Game.MenuTop.Show();*/
 
   }
 

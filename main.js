@@ -20,29 +20,38 @@ let winEditor = null;
 let winLauncher = null;
 let tray = null;
 
-function createGameWindow(game = 1) {
+function createWindowFromProfile( profile = {} ) {
   // Create the browser window.
   winGame = new BrowserWindow({
     width: 1200, 
-    height: 600, 
-    frame: true,
-    title: 'KotOR'
+    height: 600,
+    fullscreen: profile.launch.fullscreen,
+    frame: !profile.launch.frameless,
+    title: profile.name,
+    backgroundColor: profile.launch.backgroundColor,
+    webPreferences: {
+      nodeIntegration: true
+    }
   });
 
-  winGame.state = {
-    GameChoice: game
-  };
+  winGame.state = profile;
 
   winGame.webContents.MyGlobal = Global;
   // and load the index.html of the app.
-  winGame.loadURL(`file://${__dirname}/game.html`);
-  winGame.openDevTools();
+  winGame.loadURL(`file://${__dirname}/${profile.launch.path}`);
+  /*winGame.openDevTools();
   winGame.on('ready', () => {
     winGame.webcontents.openDevTools();
-  })
+  });*/
 
-  // Open the DevTools.
-  //win.webContents.openDevTools();
+  winGame.setMenuBarVisibility(false);
+
+  winGame.on( 'devtools-closed', function ( event ) {
+    winGame.setMenuBarVisibility(false);
+  });
+  winGame.on( 'devtools-opened', function ( event ) {
+    winGame.setMenuBarVisibility(true);
+  });
 
   // Emitted when the window is closed.
   winGame.on('closed', (event) => {
@@ -52,40 +61,6 @@ function createGameWindow(game = 1) {
   });
 
   winLauncher.hide();
-
-}
-
-function createEditorWindow() {
-  // Create the browser window.
-  winLauncher.hide();
-  if(!(winEditor instanceof BrowserWindow)){
-    winEditor = new BrowserWindow({
-      width: 1200, 
-      height: 600, 
-      frame: false,
-      title: 'KotOR Forge'
-    });
-    winEditor.webContents.MyGlobal = Global;
-    // and load the index.html of the app.
-    winEditor.loadURL(`file://${__dirname}/editor.html`);
-    winEditor.openDevTools();
-    winEditor.on('ready', () => {
-      winEditor.webcontents.openDevTools();
-    });
-
-    // Emitted when the window is closed.
-    winEditor.on('closed', () => {
-      // Dereference the window object, usually you would store windows
-      // in an array if your app supports multi windows, this is the time
-      // when you should delete the corresponding element.
-      createLauncherWindow();
-      winEditor = null;
-    });
-    winEditor.show();
-    winEditor.focus();
-  }else{
-    winLauncher.show();
-  }
 
 }
 
@@ -105,15 +80,19 @@ function createLauncherWindow() {
     minWidth: 1000,
     frame: false,
     title: 'KotOR Launcher',
-    transparent: true
+    backgroundColor: "#000000",
+    webPreferences: {
+      webviewTag: true,
+      nodeIntegration: true
+    }
   });
   winLauncher.webContents.MyGlobal = Global;
   // and load the index.html of the app.
   winLauncher.loadURL(`file://${__dirname}/launcher.html`);
   //winLauncher.openDevTools();
-  winLauncher.on('ready', () => {
+  //winLauncher.on('ready', () => {
     //winLauncher.webcontents.openDevTools();
-  })
+  //})
 
   // Emitted when the window is closed.
   winLauncher.on('closed', () => {
@@ -139,17 +118,9 @@ function createLauncherWindow() {
 
 }
 
-ipcMain.on('run_game', () => {
-  createGameWindow(1);
-})
-
-ipcMain.on('run_game_ii', () => {
-  createGameWindow(2);
-})
-
-ipcMain.on('run_forge', () => {
-  createEditorWindow();
-})
+ipcMain.on('launch_profile', (event, profile) => {
+  createWindowFromProfile(profile);
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

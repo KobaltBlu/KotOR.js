@@ -85,7 +85,7 @@ class GFFObject {
         //if file is not a string then its a binary array
         this.Parse(file, onComplete);
 
-        let templateResRef = this.GetFieldByLabel('TemplateResRef');
+        let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
         if(templateResRef instanceof Field){
           this.file = templateResRef.Value;
         }
@@ -99,8 +99,8 @@ class GFFObject {
   static FromStruct(strt = null, type = -1){
     let gff = new GFFObject();
     if(strt instanceof Struct){
-      strt.Type = type;
-      gff.RootNode = strt;
+      gff.RootNode.Type = type;
+      gff.RootNode.Fields = strt.Fields;
       gff.json = gff.ToJSON();
     }
     return gff;
@@ -387,8 +387,7 @@ class GFFObject {
       data.SetRESREF(this.reader.ReadInt32());
       let stringCount = this.reader.ReadInt32()
 
-      for (let i = 0; i < stringCount; i++)
-      {
+      for (let i = 0; i < stringCount; i++) {
           let stringID = this.reader.ReadInt32();
           let stringLength = this.reader.ReadInt32();
           let subString = new CExoLocSubString(stringID, this.reader.ReadChars(stringLength));
@@ -535,7 +534,7 @@ class GFFObject {
     let fileInfo = path.parse(savePath);
 
     //Update the TemplateResRef field if it exists
-    let templateResRef = this.GetFieldByLabel('TemplateResRef');
+    let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
     if(templateResRef instanceof Field){
       fileInfo.name = templateResRef.Value = fileInfo.name.substr(0, 16);
       //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
@@ -1075,7 +1074,7 @@ class CExoLocString
     }
 
     AddSubString(subString, index = -1) {
-      if(!index == -1)
+      if(index == -1)
         index = this.strings.length;
 
       this.strings[index] = subString;
@@ -1109,7 +1108,7 @@ class CExoLocString
 
     GetValue(){
       if(this.strings.length){
-        return this.strings[0];
+        return this.strings[0].str;
       }else{
         if(this.RESREF > -1)
           return Global.kotorTLK.TLKStrings[this.RESREF].Value;

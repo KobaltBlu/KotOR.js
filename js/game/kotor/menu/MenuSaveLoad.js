@@ -32,19 +32,20 @@ class MenuSaveLoad extends GameMenu {
         this.BTN_SAVELOAD.addEventListener('click', (e) => {
           e.stopPropagation();
           if(this.selected instanceof SaveGame){
-            this.Hide();
+            this.Close();
             this.selected.Load()
           }
         });
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          /*this.Hide();
           if(Game.Mode == Game.MODES.MAINMENU){
             Game.MainMenu.Show();
           }else{
             Game.MenuOptions.Show();
-          }
+          }*/
+          this.Close();
         });
 
         this.tGuiPanel.widget.fill.children[0].position.z = -1;
@@ -61,7 +62,7 @@ class MenuSaveLoad extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-    Game.MainMenu.Hide();
+    /*Game.MainMenu.Hide();
     Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
@@ -71,7 +72,7 @@ class MenuSaveLoad extends GameMenu {
     Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Hide();
+    Game.MenuTop.Hide();*/
 
     this.LB_GAMES.clearItems();
     let saves = SaveGame.saves;
@@ -88,7 +89,7 @@ class MenuSaveLoad extends GameMenu {
       this.LB_GAMES.addItem(save, null, (control, type) => {
         //console.log('CREATE2', this);
         control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(save.getFullName());
-        let _ctrl = new GUIProtoItem(this.LB_GAMES.menu, control, this.LB_GAMES.widget, this.LB_GAMES.scale);
+        let _ctrl = new GUIProtoItem(this.LB_GAMES.menu, control, this.LB_GAMES, this.LB_GAMES.scale);
         _ctrl.setList( this.LB_GAMES );
         this.LB_GAMES.children.push(_ctrl);
         let idx = this.LB_GAMES.itemGroup.children.length;

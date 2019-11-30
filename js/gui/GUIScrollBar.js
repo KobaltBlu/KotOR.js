@@ -37,22 +37,28 @@ class GUIScrollBar extends GUIControl{
           this.upArrow.position.z = 5;
 
           this.upArrow.position.y = this.extent.height/2 + 16/2;
+          this.upArrow.worldPosition = new THREE.Vector3();
 
           this.upArrowMaterial.transparent = true;
           this.upArrowMaterial.needsUpdate = true;
 
-          let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+          let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
-          this.upArrow.box = new THREE.Box2(
-            new THREE.Vector2(
-              (parentPos.x - this.extent.width/2),
-              (this.upArrow.position.y - 16/2)
-            ),
-            new THREE.Vector2(
-              (parentPos.x + this.extent.width/2),
-              (this.upArrow.position.y + 16/2)
-            )
-          )
+          this.upArrow.updateBox = () => {
+            this.upArrow.getWorldPosition(this.upArrow.worldPosition);
+            this.upArrow.box = new THREE.Box2(
+              new THREE.Vector2(
+                -this.extent.width/2,
+                -this.extent.width/2
+              ),
+              new THREE.Vector2(
+                this.extent.width/2,
+                this.extent.width/2
+              )
+            );
+            this.upArrow.box.translate(this.upArrow.worldPosition);
+          };
+          this.upArrow.updateBox();
 
           //Down Arrow
           this.downArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
@@ -66,22 +72,36 @@ class GUIScrollBar extends GUIControl{
           this.downArrow.position.z = 5;
           this.downArrow.position.y = -(this.extent.height/2 + 16/2);
           this.downArrow.rotation.z = Math.PI;
+          this.downArrow.worldPosition = new THREE.Vector3();
 
-          parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+          parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
           this.downArrowMaterial.transparent = true;
           this.downArrowMaterial.needsUpdate = true;
 
-          this.downArrow.box = new THREE.Box2(
-            new THREE.Vector2(
-              (parentPos.x - this.extent.width/2),
-              (this.downArrow.position.y - 16/2)
-            ),
-            new THREE.Vector2(
-              (parentPos.x + this.extent.width/2),
-              (this.downArrow.position.y + 16/2)
-            )
-          )
+          this.downArrow.updateBox = () => {
+            this.downArrow.getWorldPosition(this.downArrow.worldPosition);
+            this.downArrow.box = new THREE.Box2(
+              new THREE.Vector2(
+                -this.extent.width/2,
+                -this.extent.width/2
+              ),
+              new THREE.Vector2(
+                this.extent.width/2,
+                this.extent.width/2
+              )
+            );
+            this.downArrow.box.translate(this.downArrow.worldPosition)
+          };
+          this.downArrow.updateBox();
+
+          this.upArrow.onClick = (e) => {
+            this.scrollUp();
+          };
+
+          this.downArrow.onClick = (e) => {
+            this.scrollDown();
+          };
 
         });
       }
@@ -103,7 +123,7 @@ class GUIScrollBar extends GUIControl{
       this.thumb.scale.y = this.extent.height/2;
       this.thumb.position.z = 5;
 
-      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.box = new THREE.Box2(
         new THREE.Vector2(
@@ -116,9 +136,33 @@ class GUIScrollBar extends GUIControl{
         )
       )
 
-      this.thumb.click = (e) => {
-        console.log('scroll thumb')
+      this.thumb.onClick = (e) => {
+        this.processEventListener('click', [e]);
       };
+
+      this.thumb.onMouseMove = (e) =>{
+        this.processEventListener('mouseMove', [e]);
+      }
+
+      this.thumb.onMouseDown = (e) => {
+        this.processEventListener('mouseDown', [e]);
+      };
+
+      this.thumb.onMouseUp = (e) => {
+        this.processEventListener('mouseUp', [e]);
+      };
+      
+      this.thumb.onHover = (e) => {
+        this.processEventListener('hover', [e]);
+      };
+
+      this.thumb.getControl = (e) => {
+        return this;
+      };
+
+      // this.thumb.click = (e) => {
+      //   console.log('scroll thumb')
+      // };
 
       if(this._thumb.HasField('IMAGE')){
         TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumbMaterial, TextureLoader.Type.TEXTURE);
@@ -133,30 +177,32 @@ class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('click', () =>{
-      /*console.log('click')
+      console.log('GUIScrollBar', 'click')
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
 
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      console.log(this.mouseOffset);
-      if(this.inner_box.containsPoint(Game.mouseUI)){
-        this.mouseInside();
-      }else if(this.upArrow.containsPoint(Game.mouseUI)){
+      console.log('GUIScrollBar', this.mouseOffset);
+      if(this.upArrow.box.containsPoint(Game.mouseUI)){
         this.list.scrollUp();
-      }else if(this.downArrow.containsPoint(Game.mouseUI)){
+      }else if(this.downArrow.box.containsPoint(Game.mouseUI)){
         this.list.scrollDown();
-      }*/
+      }else if(this.inner_box.containsPoint(Game.mouseUI)){
+        this.mouseInside();
+      }
     })
 
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
-      console.log('scroll offset', thumb.position.y - mouseY);
+      console.log('GUIScrollBar', 'scroll offset', this.thumb.position.y - mouseY);
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      console.log('hi', this.mouseOffset);
+      console.log('GUIScrollBar', 'hi', this.mouseOffset);
+      this.upArrow.updateBox();
+      this.downArrow.updateBox();
     });
 
     this.addEventListener('mouseUp', () => {
@@ -164,16 +210,16 @@ class GUIScrollBar extends GUIControl{
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
-      console.log('blah');
-      if(this.inner_box.containsPoint(Game.mouseUI)){
-        console.log('scroll');
-        this.mouseInside();
-      }else if(this.upArrow.box.containsPoint(Game.mouseUI)){
-        console.log('up');
+      console.log('GUIScrollBar', 'blah');
+      /*if(this.upArrow.box.containsPoint(Game.mouseUI)){
+        console.log('GUIScrollBar', 'up');
         this.list.scrollUp();
       }else if(this.downArrow.box.containsPoint(Game.mouseUI)){
-        console.log('down');
+        console.log('GUIScrollBar', 'down');
         this.list.scrollDown();
+      }else */if(this.inner_box.containsPoint(Game.mouseUI)){
+        console.log('GUIScrollBar', 'scroll');
+        this.mouseInside();
       }
     });
 
@@ -186,11 +232,11 @@ class GUIScrollBar extends GUIControl{
     //console.log(mouseY);
     //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
 
-      let centerPos = this.widget.getWorldPosition(new THREE.Vector3());
+      let centerPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
       let scrollBarHeight = this.extent.height;
 
-      this.thumb.position.y = -(mouseY + this.thumb.scale.y/2) || 0;
+      this.thumb.position.y = -(mouseY) || 0;
 
       if(this.thumb.position.y < -((scrollBarHeight - this.thumb.scale.y))/2 ){
         this.thumb.position.y = -((scrollBarHeight - this.thumb.scale.y))/2 || 0
@@ -267,77 +313,77 @@ class GUIScrollBar extends GUIControl{
     };
   }
   
-    getBorderExtent(side = null){
-      let extent = this.getControlExtent();
-      let inner = this.getInnerSize2();
-      let innerOffset = this.border.inneroffset;
-      switch(side){
-        case 'top':
-          return {
-            top: -( (inner.height/2) + (this.border.dimension) - innerOffset ), 
-            left: 0, 
-            width: inner.width - (innerOffset ),
-            height: this.border.dimension
-          };
-        break;
-        case 'bottom':
-          return {
-            top: (inner.height/2) + (this.border.dimension) - innerOffset, 
-            left: 0, 
-            width: inner.width - (innerOffset ),
-            height: this.border.dimension
-          };
-        break;
-        case 'left':
-          return {
-            top: 0, 
-            left: -(inner.width/2) - (this.border.dimension) + innerOffset, 
-            width: inner.height - (innerOffset ),
-            height: this.border.dimension
-          };
-        break;
-        case 'right':
-          return {
-            top: 0, 
-            left: (this.border.dimension) + (inner.width/2) - innerOffset, 
-            width: inner.height - (innerOffset ),
-            height: this.border.dimension
-          };
-        break;
-        case 'topLeft':
-          return {
-            top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
-            left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
-            width: this.border.dimension,
-            height: this.border.dimension
-          };
-        break;
-        case 'topRight':
-          return {
-            top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
-            left: ((this.border.dimension) + (inner.width/2)) - innerOffset, 
-            width: this.border.dimension,
-            height: this.border.dimension
-          };
-        break;
-        case 'bottomLeft':
-          return {
-            top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
-            left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
-            width: this.border.dimension,
-            height: this.border.dimension
-          };
-        break;
-        case 'bottomRight':
-          return {
-            top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
-            left: ((this.border.dimension) + (inner.width / 2)) - innerOffset, 
-            width: this.border.dimension,
-            height: this.border.dimension
-          };
-        break;
-      }
+  getBorderExtent(side = null){
+    let extent = this.getControlExtent();
+    let inner = this.getInnerSize2();
+    let innerOffset = this.border.inneroffset;
+    switch(side){
+      case 'top':
+        return {
+          top: -( (inner.height/2) + (this.border.dimension) - innerOffset ), 
+          left: 0, 
+          width: inner.width - (innerOffset ),
+          height: this.border.dimension
+        };
+      break;
+      case 'bottom':
+        return {
+          top: (inner.height/2) + (this.border.dimension) - innerOffset, 
+          left: 0, 
+          width: inner.width - (innerOffset ),
+          height: this.border.dimension
+        };
+      break;
+      case 'left':
+        return {
+          top: 0, 
+          left: -(inner.width/2) - (this.border.dimension) + innerOffset, 
+          width: inner.height - (innerOffset ),
+          height: this.border.dimension
+        };
+      break;
+      case 'right':
+        return {
+          top: 0, 
+          left: (this.border.dimension) + (inner.width/2) - innerOffset, 
+          width: inner.height - (innerOffset ),
+          height: this.border.dimension
+        };
+      break;
+      case 'topLeft':
+        return {
+          top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
+          left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
+          width: this.border.dimension,
+          height: this.border.dimension
+        };
+      break;
+      case 'topRight':
+        return {
+          top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
+          left: ((this.border.dimension) + (inner.width/2)) - innerOffset, 
+          width: this.border.dimension,
+          height: this.border.dimension
+        };
+      break;
+      case 'bottomLeft':
+        return {
+          top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
+          left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
+          width: this.border.dimension,
+          height: this.border.dimension
+        };
+      break;
+      case 'bottomRight':
+        return {
+          top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
+          left: ((this.border.dimension) + (inner.width / 2)) - innerOffset, 
+          width: this.border.dimension,
+          height: this.border.dimension
+        };
+      break;
     }
+  }
 
   calculatePosition(){
     let parentExtent = { width: this.menu.width, height: this.menu.height };
@@ -345,8 +391,10 @@ class GUIScrollBar extends GUIControl{
     if(!(this.parent instanceof THREE.Scene)){
       parentExtent = this.menu.tGuiPanel.extent;
       //console.log(this.parent)
-      parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
-      parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y + this.offset.y;
+      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
+      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y + this.offset.y;
+      parentOffsetX = this.menu.tGuiPanel.worldPosition.x + this.offset.x;
+      parentOffsetY = this.menu.tGuiPanel.worldPosition.y + this.offset.y;
 
     }else{
       parentOffsetX = parentOffsetY = 0;
@@ -357,9 +405,9 @@ class GUIScrollBar extends GUIControl{
 
     if(this.list){
       if(this.list.isScrollBarLeft()){
-        this.anchorOffset = {x: -(this.list.extent.width/2), y: 0};
+        this.anchorOffset = {x: -(this.list.extent.width/2 - this.extent.width/2) + this.border.dimension/2, y: 0};
       }else{
-        this.anchorOffset = {x: (this.list.extent.width/2), y: 0};
+        this.anchorOffset = {x: (this.list.extent.width/2 - this.extent.width/2) + this.border.dimension, y: 0};
       }      
     }else{
       this.anchorOffset = {x: 0, y: 0};
@@ -369,7 +417,7 @@ class GUIScrollBar extends GUIControl{
     this.widget.position.y = this.anchorOffset.y;
 
     let worldPosition = this.parent.position.clone();
-    let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
     //console.log('worldPos', worldPosition);
     this.box = new THREE.Box2(
       new THREE.Vector2(
@@ -405,30 +453,12 @@ class GUIScrollBar extends GUIControl{
       );
     }
 
-    if(this.downArrow){
-      this.downArrow.box = new THREE.Box2(
-        new THREE.Vector2(
-          (parentPos.x - this.extent.width/2),
-          (this.downArrow.position.y - 16/2)
-        ),
-        new THREE.Vector2(
-          (parentPos.x + this.extent.width/2),
-          (this.downArrow.position.y + 16/2)
-        )
-      );
+    if(this.upArrow){
+      this.upArrow.updateBox();
     }
 
-    if(this.upArrow){
-      this.upArrow.box = new THREE.Box2(
-        new THREE.Vector2(
-          (parentPos.x - this.extent.width/2),
-          (this.upArrow.position.y - 16/2)
-        ),
-        new THREE.Vector2(
-          (parentPos.x + this.extent.width/2),
-          (this.upArrow.position.y + 16/2)
-        )
-      );
+    if(this.downArrow){
+      this.downArrow.updateBox();
     }
 
   }

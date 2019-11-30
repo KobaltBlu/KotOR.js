@@ -17,15 +17,15 @@ class AuroraModelNode {
   }
 
   getControllerByType(type = -1){
-
-    for(let i = 0; i < this.controllers.length; i++){
+    return this.controllers.get(type);
+    /*for(let i = 0; i < this.controllers.length; i++){
       let cntrler = this.controllers[i];
       if(cntrler.type == type){
         return cntrler;
       }
     }
 
-    return null;
+    return null;*/
 
   }
 

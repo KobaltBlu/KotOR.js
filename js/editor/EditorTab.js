@@ -3,7 +3,8 @@ class EditorTab {
   constructor(options = {}){
     this.isDestroyed = true;
     options = $.extend({
-      toolbar: undefined
+      toolbar: undefined,
+      closeable: true
     }, options);
 
     this.id = EditorTabManager.GetNewTabID();
@@ -11,10 +12,14 @@ class EditorTab {
     this.visible = false;
     this.tabName = 'Script Editor';
     this.resource = null;
-    this.$tab = $('<li class="btn btn-tab"><a href="#tab-'+this.id+'">'+this.tabName+'</a> <button type="button" class="close" data-dismiss="modal">×</button></li>');
+    this.$tab = $('<li class="btn btn-tab"><a href="#tab-'+this.id+'">'+this.tabName+'</a>&nbsp;</li>');
+    this.$tabClose = $('<button type="button" class="close" data-dismiss="modal">×</button>');
     this.$tabName = $('a', this.$tab);
     this.$tabContent = $('<div id="tab-'+this.id+'" class="tab-pane" style="position:absolute; top:0; bottom: 0; left:0; right: 0;" />');
-    this.$tabClose = $('button.close', this.$tab);
+
+    if(options.closeable){
+      this.$tab.append(this.$tabClose);
+    }
 
     this.tabLoader = new LoadingScreen(this.$tabContent, false);
     this.tabLoader.Hide();

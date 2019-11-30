@@ -120,21 +120,48 @@ class Project {
 
   }
 
-  GetFiles(onSuccess){
-    let self = this;
-    let fs = require('fs');
-    fs.readdir(this.directory+"\\Files", (err, filenames) => {
-      if (err)
-        return;
+  async GetFiles(onSuccess){
 
-      filenames.forEach(function(filename) {
-        let args = filename.split('.');
-        self.files.push({path: self.directory+"\\Files\\"+filename, filename: filename, name: args[0], ext: args[1]});
+    await this.parseProjectFolder();
+
+    projectExplorerTab.initialize();
+      
+    if(onSuccess != null)
+      onSuccess(this.files);
+
+  }
+
+  async parseProjectFolder( folder = undefined, ){
+    return new Promise( async (resolve, reject) => {
+      if(typeof folder === 'undefined')
+        folder = this.directory;
+
+      console.log('parseProjectFolder', folder);
+
+      fs.readdir(folder, {withFileTypes: true}, async (err, directory_objects) => {
+        if (err){
+          resolve();
+        }
+
+        for(let i = 0, len = directory_objects.length; i < len; i++){
+          let directory_object = directory_objects[i];
+          let name = directory_object.name;
+          let args = name.split('.');
+
+          if(directory_object.isDirectory()){
+            //DIRECTORY
+            this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: null, type: 'group'});
+            await this.parseProjectFolder( path.join(folder, name) );
+          }else{
+            //FILE
+            this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: args[1], type: 'resource'});
+          }
+        }
+
+        resolve();
+          
       });
-      if(onSuccess != null)
-        onSuccess(this.files);
     });
-
   }
 
 

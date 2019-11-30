@@ -25,8 +25,10 @@ class GUIProtoItem extends GUIControl{
     if(!(this.parent instanceof THREE.Scene)){
       parentExtent = this.menu.tGuiPanel.extent;
       //console.log(this.parent)
-      parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
+      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
+      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
+      parentOffsetX = this.menu.tGuiPanel.worldPosition.x;
+      parentOffsetY = this.menu.tGuiPanel.worldPosition.y;
 
     }else{
       parentOffsetX = parentOffsetY = 0;
@@ -40,7 +42,8 @@ class GUIProtoItem extends GUIControl{
     let listIndex = this.list.children.indexOf(this);
     //console.log('List Index', listIndex);
 
-    let posX = -(this.list.extent.left - this.extent.left)/2;
+    //let posX = -(this.list.extent.left - this.extent.left)/2;
+    let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.padding;
 
     if(!this.list.isScrollBarLeft()){
       posX = posX * -1;
@@ -79,9 +82,14 @@ class GUIProtoItem extends GUIControl{
   }
 
   calculateBox(){
-    let worldPosition = this.parent.position.clone();
+    let worldPosition = this.parent.widget.position.clone();
     //console.log('worldPos', worldPosition);
-    this.box = new THREE.Box2(
+    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
+    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
+    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
+    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+
+    /*this.box = new THREE.Box2(
       new THREE.Vector2(
         this.widget.position.x - this.extent.width/2 + worldPosition.x,
         this.widget.position.y - this.extent.height/2 + worldPosition.y
@@ -90,7 +98,7 @@ class GUIProtoItem extends GUIControl{
         this.widget.position.x + this.extent.width/2 + worldPosition.x,
         this.widget.position.y + this.extent.height/2 + worldPosition.y
       )
-    );
+    );*/
   }
 
 }

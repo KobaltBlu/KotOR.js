@@ -30,12 +30,13 @@ class GameFinderWizard extends Wizard {
         this.kotor_path = this.$kotor_directory.val();
       });
 
-      this.$kotor_directory_browse.on('click', (e) => {
+      this.$kotor_directory_browse.on('click', async (e) => {
         e.preventDefault();
-        let path = dialog.showOpenDialog({properties: ['openDirectory']});
-        if(typeof path != 'undefined'){
-          console.log(path[0]);
-          this.kotor_path = path[0];
+        let payload = await dialog.showOpenDialog({properties: ['openDirectory']});
+
+        if(!payload.canceled && payload.filePaths.length){
+          console.log(payload.filePaths[0]);
+          this.kotor_path = payload.filePaths[0];
           this.$kotor_directory.val(this.kotor_path);
         }
       });
@@ -44,12 +45,13 @@ class GameFinderWizard extends Wizard {
         this.tsl_path = this.$tsl_directory.val();
       });
 
-      this.$tsl_directory_browse.on('click', (e) => {
+      this.$tsl_directory_browse.on('click', async (e) => {
         e.preventDefault();
-        let path = dialog.showOpenDialog({properties: ['openDirectory']});
-        if(typeof path != 'undefined'){
-          console.log(path[0]);
-          this.tsl_path = path[0];
+        let payload = await dialog.showOpenDialog({properties: ['openDirectory']});
+
+        if(!payload.canceled && payload.filePaths.length){
+          console.log(payload.filePaths[0]);
+          this.tsl_path = payload.filePaths[0];
           this.$tsl_directory.val(this.tsl_path);
         }
       });

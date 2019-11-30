@@ -1,3 +1,22 @@
+class NWScriptStackVariable {
+
+  constructor(args = {}){
+    const {value, type} = args;
+    this.value = value;
+    this.type = type;
+
+    if(this.value == undefined && this.type == NWScript.DATATYPE.STRING){
+      this.value = ''; console.warn('Undefined STR');
+    }
+
+    if(this.value == undefined && this.type == NWScript.DATATYPE.INTEGER){
+      this.value = 0; console.warn('Undefined INT');
+    }
+
+  }
+
+}
+
 class NWScriptStack {
 
 
@@ -9,22 +28,24 @@ class NWScriptStack {
   }
 
   //Data pushed to the stack must be no longer and no shorter than 4 bytes
-  push(data = 0, instr = null){
-    /*if(!(data instanceof Uint8Array))
-      throw 'Data is not of type Uint8Array';
+  push(data = 0, type = null){
+    if(data instanceof NWScriptStackVariable){
+      this.stack.push( data );
+    }else{
+      if(type === null)
+        console.warn('NWScriptStack', data, type);
+        //throw 'Cannot push data to the stack with a type of NULL';
 
-    if(data.length != 4)
-      throw 'Data is not 4Bytes in length. All data pushed to the stack must be 4Bytes in length.';*/
+      if(type === undefined)
+        console.warn('NWScriptStack', data, type);
 
-    //data._instr = instr;
-
-    this.stack.push(data);
+      this.stack.push( new NWScriptStackVariable({ value: data, type: type }) );
+    }
     this.pointer += 4;
-    //debugger;
   }
 
   pop(){
-    //debugger;
+    
     this.pointer -= 4;
     return this.stack.pop();
   }
@@ -94,7 +115,6 @@ class NWScriptStack {
     
     //if(index > -1)
     //  throw 'Index cannot be greater than -1.';
-
     this.stack[(this.basePointer + index)/4] = data;
 
   }
@@ -155,34 +175,186 @@ class NWScriptStack {
 
 }
 
+NWScriptStack.FromActionStruct = function( struct, object_self = undefined ){
 
+  let stack = new NWScriptStack();
 
-NWScriptStack.intToUint8Array = function(integer) {
-  return integer;
-  try{
-    let _temp = Buffer.alloc(4);
-    _temp.writeInt32LE(parseInt(integer));
-    // we want to represent the input as a 4-byte array
-    return new Uint8Array(_temp);
-  }catch(e){
-    return new Uint8Array(Buffer.alloc(4));
-    console.error(e, integer);
+  stack.basePointer = struct.GetFieldByLabel('BasePointer').GetValue() * 4;
+  stack.pointer = struct.GetFieldByLabel('StackPointer').GetValue() * 4;
+  let stackSize = struct.GetFieldByLabel('TotalSize').GetValue();
+
+  if(stackSize){
+    let stackStructs = struct.GetFieldByLabel('Stack').GetChildStructs();
+
+    for(let i = 0, len = stackStructs.length; i < len; i++){
+
+      let stackElement = stackStructs[i];
+      if(stackElement.HasField('Value')){
+        let type = stackElement.GetFieldByLabel('Value').GetType();
+        let value = stackElement.GetFieldByLabel('Value').GetValue();
+        switch(type){
+          case 4: //Object
+            let obj = ModuleObject.GetObjectById(value);
+            
+            //0x7f000000 is 2130706432
+            if(value == 0x7f000000) //I can confirm that this is INVALID_OBJECT_ID or OBJECT_INVALID as stated in the Bioware_Aurora_Store_Format.pdf on the old nwn.bioware.com site
+              obj = undefined;
+
+            stack.stack.push( new NWScriptStackVariable({ value: obj, type: NWScript.DATATYPE.OBJECT }) );
+          break;
+          case 5: //int
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.INTEGER }) );
+          break;
+          case 8: //float
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.FLOAT }) );
+          break;
+          case 10: //String
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.STRING }) );
+          break;
+          default:
+            console.error('Unknown stack element', stackElement);
+          break;
+        }
+      }else if(stackElement.HasField('GameDefinedStrct')){
+        let gameStruct = stackElement.GetFieldByLabel('GameDefinedStrct').GetChildStructs()[0];
+
+        switch(gameStruct.GetType()){
+          case 0: //Effect
+            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.EffectFromStruct(gameStruct), type: NWScript.DATATYPE.EFFECT }))
+          break;
+          case 1: //Event
+
+          break;
+          case 2: //Location
+
+          break;
+          case 3: //Talent
+
+          break;
+        }
+
+      }
+
+    }
   }
+
+  return stack;
+
 };
 
-NWScriptStack.uint8ArrayToInt = function(byteArray) {
-  return byteArray;
-  if(!(byteArray instanceof Uint8Array)){
-    console.error('uint8ArrayToInt', byteArray);
-    //byteArray = new Uint8Array([1, 0, 0, 0]);
+NWScriptStack.EffectFromStruct = function( struct ){
+
+  //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
+  let type = struct.GetFieldByLabel('Type').GetValue();
+  let subtype = struct.GetFieldByLabel('SubType').GetValue();
+  let duration = struct.GetFieldByLabel('Duration').GetValue();
+  let skipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();
+  let isExposed = struct.GetFieldByLabel('IsExposed').GetValue();
+
+  let ints = [];
+  let floats = [];
+  let strings = [];
+  let objects = [];
+
+  if(struct.HasField('IntList')){
+    let list = struct.GetFieldByLabel('IntList').GetChildStructs();
+    for(let i = 0; i < list.length; i++){
+      ints.push(list[i].GetFieldByLabel('Value').GetValue())
+    }
   }
-  //try{
-    let _temp = Buffer.from(byteArray);
-    return _temp.readInt32LE();
-  /*}catch(e){
-    console.error(e, byteArray);
-    return 0;
-  }*/
+
+  if(struct.HasField('FloatList')){
+    let list = struct.GetFieldByLabel('FloatList').GetChildStructs();
+    for(let i = 0; i < list.length; i++){
+      floats.push(list[i].GetFieldByLabel('Value').GetValue())
+    }
+  }
+
+  if(struct.HasField('StringList')){
+    let list = struct.GetFieldByLabel('StringList').GetChildStructs();
+    for(let i = 0; i < list.length; i++){
+      strings.push(list[i].GetFieldByLabel('Value').GetValue())
+    }
+  }
+
+  if(struct.HasField('ObjectList')){
+    let list = struct.GetFieldByLabel('ObjectList').GetChildStructs();
+    for(let i = 0; i < list.length; i++){
+      objects.push(
+        ModuleObject.GetObjectById( list[i].GetFieldByLabel('Value').GetValue() )
+      );
+    }
+  }
+
+  let effect = {
+    type: type,
+    subtype: subtype,
+    duration: duration,
+    isExposed: isExposed,
+    ints: ints,
+    floats: floats,
+    strings: strings,
+    objects: objects
+  };
+
+  switch(type){
+    case 30:
+      effect.visual = ints[0];
+    break;
+  }
+
+
+  return effect;
+
+
+}
+
+NWScriptStack.FromEventQueueStruct = function( struct ){
+
+  let stack = new NWScriptStack();
+
+  stack.basePointer = struct.GetFieldByLabel('BasePointer').GetValue() * 4;
+  stack.pointer = struct.GetFieldByLabel('StackPointer').GetValue() * 4;
+  let stackSize = struct.GetFieldByLabel('TotalSize').GetValue();
+
+  if(stackSize){
+    if(struct.HasField('Stack')){
+      let stackStructs = struct.GetFieldByLabel('Stack').GetChildStructs();
+
+      for(let i = 0, len = stackStructs.length; i < len; i++){
+
+        let stackElement = stackStructs[i];
+        let type = stackElement.GetFieldByLabel('Type').GetValue();
+        let value = stackElement.GetFieldByLabel('Value').GetValue();
+        switch(type){
+          case NWScript.DATATYPE.OBJECT: //Object
+            let obj = ModuleObject.GetObjectById(value);
+
+            if(value == 2130706432) //this is either OBJECT_INVALID or OBJECT_SELF
+              obj = undefined;
+
+            stack.stack.push( new NWScriptStackVariable({ value: obj, type: NWScript.DATATYPE.OBJECT }) );
+          break;
+          case NWScript.DATATYPE.INTEGER: //int
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.INTEGER }) );
+          break;
+          case NWScript.DATATYPE.FLOAT: //float
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.FLOAT }) );
+          break;
+          case NWScript.DATATYPE.STRING: //String
+            stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScript.DATATYPE.STRING }) );
+          break;
+          default:
+            console.error('Unknown stack ele', stackElement);
+          break;
+        }
+
+      }
+    }
+  }
+
+  return stack;
+
 };
 
 module.exports = NWScriptStack;

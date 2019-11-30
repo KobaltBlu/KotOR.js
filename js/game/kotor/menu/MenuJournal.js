@@ -28,20 +28,7 @@ class MenuJournal extends GameMenu {
 
   Show(){
     super.Show();
-    
     Game.MenuActive = true;
-    
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    //Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
-
   }
 
 }

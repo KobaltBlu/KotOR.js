@@ -194,6 +194,8 @@ class SaveGame {
                 }
               }
 
+              PartyManager.Gold = partytable.RootNode.GetFieldByLabel('PT_GOLD').GetValue();
+
               console.log('PT_CONTROLLED_NP', partytable.RootNode.GetFieldByLabel('PT_CONTROLLED_NP').GetValue());
         
               if(partytable.RootNode.HasField('PT_MEMBERS')){
@@ -201,34 +203,25 @@ class SaveGame {
                 let currentPartyInfo = [];
                 PartyManager.CurrentMembers = [];
                 for(let i = 0; i < pms.length; i++){
-                  PartyManager.CurrentMembers.push(
-                    {
-                      isLeader: pms[i].GetFieldByLabel('PT_IS_LEADER').GetValue() ? true : false,
-                      memberID: pms[i].GetFieldByLabel('PT_MEMBER_ID').GetValue()
-                    }
-                  )
+                  PartyManager.CurrentMembers.push({
+                    isLeader: pms[i].GetFieldByLabel('PT_IS_LEADER').GetValue() ? true : false,
+                    memberID: pms[i].GetFieldByLabel('PT_MEMBER_ID').GetValue()
+                  })
                 }
-  
-                let ptLoader = ( id = 0, onLoad = null ) => {
-  
-                  if(id < 9){
-  
+
+                let ptLoader = new AsyncLoop({
+                  array: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                  onLoop: (id, asyncLoop) => {
                     this.SAVEGAME.getRawResource('availnpc'+id, ResourceTypes.utc, (pm) => {
                       PartyManager.NPCS[id].template = null;
                       if(pm.length){
                         PartyManager.NPCS[id].template = new GFFObject(pm);
                       }
-                      id++
-                      ptLoader(id, onLoad);
+                      asyncLoop._Loop();
                     });
-  
-                  }else{
-                    if(typeof onLoad === 'function')
-                      onLoad();
                   }
-  
-                };
-                ptLoader(0, () => {
+                });
+                ptLoader.Begin( () => {
                   console.log('SaveGame loaded');
                   Game.LoadModule(this.getLastModule(), null, () => { console.log('ready to load'); })
                   if(typeof onLoad === 'function')

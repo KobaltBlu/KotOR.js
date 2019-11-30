@@ -99,8 +99,7 @@ class CharGenPortCust extends GameMenu {
             Game.player.portraidId = this.portraidId;
             Game.player.LoadModel( (model) => {
               this.exiting = false;
-              this.Hide();
-              Game.CharGenMain.Show();
+              this.Close();
             });
           }
         });
@@ -112,8 +111,7 @@ class CharGenPortCust extends GameMenu {
           Game.player.template.GetFieldByLabel('Appearance_Type').SetValue(Game.player.appearance);
           Game.player.template.GetFieldByLabel('PortraitId').SetValue(Game.player.portraidId);
 
-          this.Hide();
-          Game.CharGenMain.Show();
+          this.Close();
         });
 
         this.tGuiPanel.widget.fill.position.z = -0.5

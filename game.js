@@ -1,5 +1,10 @@
 'use strict';
 
+const obj_undefined = 2130706432;
+const partySlot0 = 2147483647;
+const partySlot1 = 2147483646;
+const partySlot2 = 2147483645;
+
 var saturationShader = {
   uniforms: {
     "tDiffuse": { type: "t", value: null },
@@ -45,11 +50,52 @@ const MD5 = require('blueimp-md5');
 const Int64 = require('node-int64');
 const recursive = require('recursive-readdir');
 const StringDecoder = require('string_decoder').StringDecoder;
-const createGeometry = require('three-bmfont-text');
 const objectHash = require('object-hash');
 var Promise = require("bluebird");
+const Reverb = require('soundbank-reverb');
+const BitBuffer = require('bit-buffer');
+const beamcoder = require('beamcoder');
 
 const isRunningInAsar = require('electron-is-running-in-asar');
+
+const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
+const loader = new LoadingScreen();
+loader.SetLogo(remote.getCurrentWindow().state.logo);
+loader.SetBackgroundImage(remote.getCurrentWindow().state.background);
+$( function(){
+  loader.Show();
+})
+
+let gamepads = {};
+let currentGamepad = -1;
+let gpMenu = new MenuItem(    {
+  label: 'GamePads',
+  submenu: [
+    new MenuItem(    {
+      label: 'No Gamepad',
+      type: 'radio'
+    })
+  ]
+});
+
+function gamepadHandler(e, connecting) {
+  let gamepad = e.gamepad;
+  // Note:
+  // gamepad === navigator.getGamepads()[gamepad.index]
+  console.log('gamepadHandler', e, connecting);
+  if (connecting) {
+    gamepads[gamepad.index] = gamepad;
+  } else {
+
+    if(currentGamepad == gamepad.index)
+      currentGamepad = undefined;
+    
+    delete gamepads[gamepad.index];
+  }
+}
+
+window.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+window.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
 
 
 const Games = {
@@ -57,7 +103,7 @@ const Games = {
   TSL: 2
 }
 
-switch(remote.getCurrentWindow().state.GameChoice){
+switch(remote.getCurrentWindow().state.launch.args.gameChoice){
   case 2:
     window._Game = Games.TSL;
     window.GameKey = 'TSL';
@@ -82,10 +128,10 @@ const Utility = require(path.join(app.getAppPath(), 'js/Utility.js'));
 const Mouse = require(path.join(app.getAppPath(), 'js/Mouse.js'));
 const BinaryReader = require(path.join(app.getAppPath(), 'js/BinaryReader.js'));
 const BinaryWriter = require(path.join(app.getAppPath(), 'js/BinaryWriter.js'));
+const INIConfig = require(path.join(app.getAppPath(), 'js/INIConfig.js'));
 
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const TemplateEngine = require(path.join(app.getAppPath(), 'js/TemplateEngine.js'));
-const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
 const FileTypeManager = require(path.join(app.getAppPath(), 'js/FileTypeManager.js'));
 const FileLoader = require(path.join(app.getAppPath(), 'js/FileLoader.js'));
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
@@ -113,6 +159,14 @@ const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/Auro
 const AuroraModelAnimationNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationNode.js'));
 const AuroraWalkMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraWalkMesh.js'));
 
+const Shaders = {};
+let _shaders = fs.readdirSync(path.join(app.getAppPath(), 'shaders'));
+for(let i = 0; i < _shaders.length; i++){
+  let _shaderPath = path.parse(_shaders[i]);
+  Shaders[_shaderPath.name] = require(path.join(app.getAppPath(), 'shaders', _shaderPath.base)); 
+}
+
+const BIKObject = require(path.join(app.getAppPath(), 'js/BIKObject.js'));
 
 const BIFObject = require(path.join(app.getAppPath(), 'js/BIFObject.js'));
 const ERFObject = require(path.join(app.getAppPath(), 'js/ERFObject.js'));
@@ -146,7 +200,7 @@ const VISObject = require(path.join(app.getAppPath(), 'js/VISObject.js'));
 
 /* NWScript */
 
-const NWScript = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
+const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
@@ -167,7 +221,7 @@ const ModuleSound = require(path.join(app.getAppPath(), 'js/module/ModuleSound.j
 const ModuleTrigger = require(path.join(app.getAppPath(), 'js/module/ModuleTrigger.js'));
 const ModuleCreature = require(path.join(app.getAppPath(), 'js/module/ModuleCreature.js'));
 const ModuleWaypoint = require(path.join(app.getAppPath(), 'js/module/ModuleWaypoint.js'));
-//const ModuleMerchant = require(path.join(app.getAppPath(), 'js/module/ModuleMerchant.js'));
+const ModuleStore = require(path.join(app.getAppPath(), 'js/module/ModuleStore.js'));
 const ModulePlaceable = require(path.join(app.getAppPath(), 'js/module/ModulePlaceable.js'));
 const ModulePath = require(path.join(app.getAppPath(), 'js/module/ModulePath.js'));
 
@@ -191,11 +245,11 @@ const ADPCMDecoder = require(path.join(app.getAppPath(), 'js/audio/ADPCMDecoder.
 const ADPCMBlock = require(path.join(app.getAppPath(), 'js/audio/ADPCMBlock.js'));
 const AudioEngine = require(path.join(app.getAppPath(), 'js/audio/AudioEngine.js'));
 const AudioEmitter = require(path.join(app.getAppPath(), 'js/audio/AudioEmitter.js'));
+const EAXPresets = require(path.join(app.getAppPath(), 'js/audio/EAXPresets.js'));
 
 
 /* Video */
 const VideoPlayer = require(path.join(app.getAppPath(), 'js/VideoPlayer.js'));
-
 
 const TextureLoader = require(path.join(app.getAppPath(), 'js/TextureLoader.js'));
 const TemplateLoader = require(path.join(app.getAppPath(), 'js/TemplateLoader.js'));
@@ -220,11 +274,10 @@ const GUIProtoItem = require(path.join(app.getAppPath(), 'js/gui/GUIProtoItem.js
 const GUIScrollBar = require(path.join(app.getAppPath(), 'js/gui/GUIScrollBar.js'));
 const GUISlider = require(path.join(app.getAppPath(), 'js/gui/GUISlider.js'));
 const GUICheckBox = require(path.join(app.getAppPath(), 'js/gui/GUICheckBox.js'));
-const GameMenu = require(path.join(app.getAppPath(), 'js/gui/Menu.js'))
-
+const GameMenu = require(path.join(app.getAppPath(), 'js/gui/Menu.js'));
+const MenuManager = require(path.join(app.getAppPath(), 'js/gui/MenuManager.js')); 
 
 /* MISC Managers */
-
 const InventoryManager = require(path.join(app.getAppPath(), 'js/InventoryManager.js')); 
 const CursorManager = require(path.join(app.getAppPath(), 'js/CursorManager.js')); 
 const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
@@ -234,6 +287,7 @@ const Template = new TemplateEngine();
 
 const Engine = require(path.join(app.getAppPath(), 'js/Engine.js')); 
 
+
 let Game;
 if(GameKey == 'TSL'){
 
@@ -242,17 +296,10 @@ if(GameKey == 'TSL'){
     let menuPath = path.parse(menus[i]);
     window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/tsl/menu/', menuPath.base)); 
   }
-
-
-  /* GUI Menus */
-  /*window.MainMenu = require(path.join(app.getAppPath(), 'js/game/tsl/menu/MainMenu.js')); 
-  window.LoadScreen = require(path.join(app.getAppPath(), 'js/game/tsl/menu/LoadScreen.js')); 
-  window.InGameOverlay = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameOverlay.js'));
-  window.InGameDialog = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameDialog.js'));
-  window.InGameComputer = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameComputer.js'));
-  window.MenuContainer = require(path.join(app.getAppPath(), 'js/game/tsl/menu/MenuContainer.js'));
-  window.InGameConfirm = require(path.join(app.getAppPath(), 'js/game/tsl/menu/InGameConfirm.js'));*/
+  
+  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
+
 }else{
 
   let menus = fs.readdirSync(path.join(app.getAppPath(), 'js/game/', 'kotor', 'menu'));
@@ -261,44 +308,18 @@ if(GameKey == 'TSL'){
     window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/kotor/menu/', menuPath.base)); 
   }
 
-  /* GUI Menus */
-  /*window.MainMenu = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainMenu.js')); 
-  window.MainOptions = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainOptions.js')); 
-  window.MainMovies = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MainMovies.js')); 
-  window.MenuSaveLoad = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuSaveLoad.js')); 
-  window.MenuContainer = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuContainer.js')); 
-  window.CharGenMain = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenMain.js')); 
-  window.CharGenClass = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenClass.js')); 
-  window.CharGenPortCust = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenPortCust.js')); 
-  window.CharGenQuickOrCustom = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenQuickOrCustom.js'));
-  window.CharGenQuickPanel = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenQuickPanel.js')); 
-  window.CharGenCustomPanel = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenCustomPanel.js')); 
-  window.CharGenName = require(path.join(app.getAppPath(), 'js/game/kotor/menu/CharGenName.js')); 
-  window.MenuLevelUp = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuLevelUp.js')); 
-
-
-  window.LoadScreen = require(path.join(app.getAppPath(), 'js/game/kotor/menu/LoadScreen.js')); 
-  window.InGameAreaTransition = require(path.join(app.getAppPath(), 'js/game/kotor/menu/InGameAreaTransition.js')); 
-  window.InGameDialog = require(path.join(app.getAppPath(), 'js/game/kotor/menu/InGameDialog.js')); 
-  window.InGameOverlay = require(path.join(app.getAppPath(), 'js/game/kotor/menu/InGameOverlay.js')); 
-  window.InGamePause = require(path.join(app.getAppPath(), 'js/game/kotor/menu/InGamePause.js')); 
-  window.InGameConfirm = require(path.join(app.getAppPath(), 'js/game/kotor/menu/InGameConfirm.js')); 
-  window.MenuCharacter = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuCharacter.js')); 
-  window.MenuEquipment = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuEquipment.js')); 
-  window.MenuGalaxyMap = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuGalaxyMap.js')); 
-  window.MenuInventory = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuInventory.js')); 
-  window.MenuJournal = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuJournal.js')); 
-  window.MenuMap = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuMap.js')); 
-  window.MenuMessages = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuMessages.js')); 
-  window.MenuOptions = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuOptions.js')); 
-  window.MenuPartySelection = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuPartySelection.js')); 
-  window.MenuGraphics = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuGraphics.js'));
-  window.MenuResolutions = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuResolutions.js'));
-  window.MenuSound = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuSound.js'));
-  window.MenuTop = require(path.join(app.getAppPath(), 'js/game/kotor/menu/MenuTop.js'));*/
-
+  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'))
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
+
 }
+
+TextureLoader.Anisotropy = iniConfig.getProperty('Graphics Options.Anisotropy').value;
+TextureLoader.onAnisotropyChanged();
+
+AudioEngine.GAIN_MUSIC = iniConfig.getProperty('Sound Options.Music Volume').value * .01;
+AudioEngine.GAIN_VO = iniConfig.getProperty('Sound Options.Voiceover Volume').value * .01;
+AudioEngine.GAIN_SFX = iniConfig.getProperty('Sound Options.Sound Effects Volume').value * .01;
+AudioEngine.GAIN_MOVIE = iniConfig.getProperty('Sound Options.Movie Volume').value * .01;
 
 const ModelCache = { models:{} };
 
@@ -361,25 +382,6 @@ Global.templates = {
   placeable: []
 };
 
-let generateLM = function (size = 1, channels = 4){
-  let width, height;
-  width = height = size;
-  let pixelCount = width * height * channels;
-  let pixels = [];
-  for(let i = 0; i < pixelCount; i+=channels){
-
-    for(let p = 0; p < channels; p++){
-      pixels[i + p] = 255;
-    }
-
-  }
-  //console.log('lm', pixels);
-  return new Uint8Array(pixels);
-
-};
-
-let GlobalLightmap = generateLM();
-
 for (var key in Global) {
   if (Global.hasOwnProperty(key)) {
     if(typeof Global[key] !== 'undefined' && Global[key] != null){
@@ -404,10 +406,6 @@ for (var key in Global) {
   }
 }
 
-const loader = new LoadingScreen();
-loader.Hide();
-
-
 $.fn.isVisible = function() {
   // Am I visible?
   // Height and Width are not explicitly necessary in visibility detection, the bottom, right, top and left are the
@@ -422,7 +420,6 @@ $.fn.isVisible = function() {
       rect.left <= (window.innerWidth || document.documentElement.clientWidth)
   );
 };
-
 
 function hasClass(el, className) {
   if (el.classList)
@@ -445,7 +442,6 @@ function removeClass(el, className) {
     el.className=el.className.replace(reg, ' ')
   }
 }
-
 
 const    OBJECT_TYPE_CREATURE         = 1;
 const    OBJECT_TYPE_ITEM             = 2;
@@ -636,3 +632,39 @@ const SUBSKILL_EXAMINETRAP   = 102;
 // const ANIMATION_FIREFORGET_DIVE_ROLL          = 123;//DJS-OEI 08/29/2004
 // const ANIMATION_FIREFORGET_SCREAM             = 124;//DJS-OEI 09/09/2004
 
+THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
+
+  //This is a performance tweak from https://discourse.threejs.org/t/updatematrixworld-performance/3217
+  if( !this.visible ){ return false; }
+
+  if ( this.matrixAutoUpdate ) this.updateMatrix();
+
+  if ( this.matrixWorldNeedsUpdate || force ) {
+
+      if ( this.parent === null ) {
+
+          this.matrixWorld.copy( this.matrix );
+
+      } else {
+
+          this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+
+      }
+
+      this.matrixWorldNeedsUpdate = false;
+
+      force = true;
+
+  }
+
+  // update children
+
+  var children = this.children;
+
+  for ( var i = 0, l = children.length; i < l; i ++ ) {
+
+      children[ i ].updateMatrixWorld( force );
+
+  }
+
+}

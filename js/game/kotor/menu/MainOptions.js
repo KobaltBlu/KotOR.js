@@ -26,7 +26,7 @@ class MainOptions extends GameMenu {
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MainMenu.Show();
+          this.Close();
         });
 
         this.BTN_GAMEPLAY.addEventListener('click', (e) => {
@@ -39,14 +39,14 @@ class MainOptions extends GameMenu {
 
         this.BTN_GRAPHICS.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MenuGraphics.Show();
+          //this.Hide();
+          Game.MenuGraphics.Open();
         });
 
         this.BTN_SOUND.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MenuSound.Show();
+          //this.Hide();
+          Game.MenuSound.Open();
         });
 
         this.BTN_FEEDBACK.addEventListener('click', (e) => {

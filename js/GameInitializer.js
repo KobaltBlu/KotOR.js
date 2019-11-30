@@ -124,10 +124,10 @@ class GameInitializer {
       if(args[1] == "bif")
         return args[0];
     });
-    console.log(bifs);
+    //console.log(bifs);
     let i = 0;
     let loadBif = () => {
-      console.log(path.join(Config.options.Games[GameKey].Location, Global.kotorKEY.bifs[i].filename));
+      //console.log(path.join(Config.options.Games[GameKey].Location, Global.kotorKEY.bifs[i].filename));
       Global.kotorBIF[bifs[i]] = new BIFObject(path.join(Config.options.Games[GameKey].Location, Global.kotorKEY.bifs[i].filename), () => {
         i++
         if(i == Global.kotorKEY.BIFCount){

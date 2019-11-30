@@ -24,16 +24,35 @@ class MenuMap extends GameMenu {
 
         this.BTN_PRTYSLCT.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MenuPartySelection.Show();
+          Game.MenuPartySelection.Open();
         });
 
         this.BTN_RETURN.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.Close();
+          if(!Game.module.area.Unescapable){
+            if(this.onTransitScript instanceof NWScript)
+              this.onTransitScript.run();
+          }
         });
 
-        if(typeof this.onLoad === 'function')
-          this.onLoad();
+        this.openScript = 'k_sup_guiopen';
+        this.transitScript = 'k_sup_gohawk';
+
+        ResourceLoader.loadResource(ResourceTypes['ncs'], 'k_sup_guiopen', (buffer) => {
+          this.onOpenScript = new NWScript(buffer);
+          this.onOpenScript.name = 'k_sup_guiopen';
+
+          ResourceLoader.loadResource(ResourceTypes['ncs'], 'k_sup_gohawk', (buffer) => {
+            this.onTransitScript = new NWScript(buffer);
+            this.onTransitScript.name = 'k_sup_gohawk';
+  
+            if(typeof this.onLoad === 'function')
+              this.onLoad();
+  
+          });
+
+        });
 
       }
     })
@@ -52,7 +71,7 @@ class MenuMap extends GameMenu {
     
     Game.MenuActive = true;
 
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     Game.MenuEquipment.Hide();
@@ -61,7 +80,10 @@ class MenuMap extends GameMenu {
     //Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
+    Game.MenuTop.Show();*/
+
+    if(this.onOpenScript instanceof NWScript)
+      this.onOpenScript.run();
 
   }
 

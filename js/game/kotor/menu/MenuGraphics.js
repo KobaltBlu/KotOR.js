@@ -32,12 +32,13 @@ class MenuGraphics extends GameMenu {
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          /*this.Hide();
           if(Game.Mode == Game.MODES.INGAME){
             Game.MenuOptions.Show();
           }else{
             Game.MainOptions.Show();
-          }
+          }*/
+          this.Close();
         });
 
         this.SLI_GAMMA.onValueChanged = (value) => {
@@ -48,8 +49,23 @@ class MenuGraphics extends GameMenu {
         };
 
         this.BTN_RESOLUTION.addEventListener('click', (e) => {
-          Game.MenuResolutions.Show();
+          Game.MenuResolutions.Open();
         });
+
+        this.BTN_RESOLUTION.hide();
+
+        this.CB_GRASS.onValueChanged = (value) => {
+          //Toggle Grass
+          if(Game.module){
+            Game.module.grassMaterial.visible = value;
+          }
+        };
+        this.CB_GRASS.attachINIProperty('Graphics Options.Grass');
+
+        this.CB_SHADOWS.onValueChanged = () => {
+          //Toggle Shadows
+        };
+        this.CB_SHADOWS.attachINIProperty('Graphics Options.Shadows');
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

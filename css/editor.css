@@ -245,38 +245,42 @@ body {
   color: red;
 }
 
+.loading-screen {
+  display: none;
+}
+
 #loader {
-	position: fixed;
-	top:0;
-	left:0;
-	right:0;
-	bottom:0;
+  position: fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
 }
 
 #loader .loading-container {
   position: fixed;
-top: calc(50% + 10px);
-left: calc(50% - 24px);
+  top: calc(50% + 10px);
+  left: calc(50% - 24px);
 }
 
 #loader .loading-container .loading-message {
   text-align: center;
-	position: relative;
+  position: relative;
   display: block;
 }
 
 .ball {
-    background-color: rgba(0,0,0,0);
-    border: 5px solid rgba(0,183,229,0.9);
-    opacity: .9;
-    border-top: 5px solid rgba(0,0,0,0);
-    border-left: 5px solid rgba(0,0,0,0);
-    border-radius: 50px;
-    box-shadow: 0 0 35px #2187e7;
-    width: 50px;
-    height: 50px;
-    margin: 0 auto;
-    -webkit-animation: spin .5s infinite linear;
+  background-color: rgba(0,0,0,0);
+  border: 5px solid rgba(0,183,229,0.9);
+  opacity: .9;
+  border-top: 5px solid rgba(0,0,0,0);
+  border-left: 5px solid rgba(0,0,0,0);
+  border-radius: 50px;
+  box-shadow: 0 0 35px #2187e7;
+  width: 50px;
+  height: 50px;
+  margin: 0 auto;
+  animation: spin .5s infinite linear;
 }
 
 .ball1 {
@@ -292,10 +296,10 @@ left: calc(50% - 24px);
     margin: 0 auto;
     position: relative;
     top: -40px;
-    -webkit-animation: spinoff .5s infinite linear;
+    animation: spinoff .5s infinite linear;
 }
 
-@-webkit-keyframes spin {
+@keyframes spin {
     0% {
         -webkit-transform: rotate(0deg);
     }
@@ -305,7 +309,7 @@ left: calc(50% - 24px);
     };
 }
 
-@-webkit-keyframes spinoff {
+@keyframes spinoff {
     0% {
         -webkit-transform: rotate(0deg);
     }
@@ -533,15 +537,25 @@ div#editor-content {
     content: "\e158";
 }
 
+.css-treeview li.link:hover {
+    background: #232323;
+}
+
+.css-treeview li.link {
+    padding: 2.5px 0;
+    padding-left: 5px;
+    margin-left: -5px;
+}
+
 /* webkit adjacent element selector bugfix */
 @media screen and (-webkit-min-device-pixel-ratio:0)
 {
 	.css-treeview
 	{
-		-webkit-animation: webkit-adjacent-element-selector-bugfix infinite 1s;
+		animation: webkit-adjacent-element-selector-bugfix infinite 1s;
 	}
 
-	@-webkit-keyframes webkit-adjacent-element-selector-bugfix
+	@keyframes webkit-adjacent-element-selector-bugfix
 	{
 		from
 		{
@@ -650,7 +664,7 @@ button, .btn-default {
     list-style: none;
     padding: 0;
     margin: 0;
-    width: calc( 100% - 50px );
+    width: calc( 100% );
     background: #212121;
 		white-space: nowrap;
     overflow: hidden;
@@ -749,9 +763,10 @@ button, .btn-default {
 }
 
 .tab-content {
-		width: 100%;
-		height: 100%;
+    width: 100%;
+    height: 100%;
     display: none;
+    box-shadow: rgb(0, 0, 0) 0px 0px 5px inset;
 }
 
 #tab-1 {
@@ -759,10 +774,20 @@ button, .btn-default {
 }
 
 .tab-pane.QuickStartTab {
-	background-image: url(../images/editor-background.jpg);
+	background-image: url(https://img.wallpapersafari.com/desktop/1600/900/28/25/NHoSzk.jpg);
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top center;
+}
+
+.tab-pane.QuickStartTab:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
 }
 
 .tab-pane.QuickStartTab > .row {
@@ -1034,21 +1059,18 @@ input[type="range"].volume:before {
 }
 
 .gray {
-	-webkit-filter: grayscale(100%);
+	filter: grayscale(100%);
 }
 
 .vertical-align {
 	display: -ms-flexbox;
 	display: -webkit-flex;
 	display: flex;
-
 	-ms-flex-align: center;
 	-webkit-align-items: center;
 	-webkit-box-align: center;
-
 	align-items: center;
-
-	    flex-direction: column;
+    flex-direction: column;
 }
 
 

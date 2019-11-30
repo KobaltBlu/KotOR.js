@@ -71,7 +71,7 @@ class Engine {
         Engine.onHeartbeat();
       }, Engine.HeartbeatTimer);
 
-      for(let i = 0; i < Engine.module.party.length; i++){
+      for(var i = 0; i < Engine.module.party.length; i++){
         if(Engine.module.party[i].scripts.onHeartbeat){
           Engine.module.party[i].scripts.onHeartbeat.run(
             Engine.module.party[i]
@@ -79,7 +79,7 @@ class Engine {
         }
       }
 
-      for(let i = 0; i < Engine.module.area.creatures.length; i++){
+      for(var i = 0; i < Engine.module.area.creatures.length; i++){
         if(Engine.module.area.creatures[i].scripts.onHeartbeat){
           Engine.module.area.creatures[i].scripts.onHeartbeat.run(
             Engine.module.area.creatures[i]
@@ -87,7 +87,7 @@ class Engine {
         }
       }
 
-      for(let i = 0; i < Engine.module.area.placeables.length; i++){
+      for(var i = 0; i < Engine.module.area.placeables.length; i++){
         if(Engine.module.area.placeables[i].scripts.onHeartbeat){
           Engine.module.area.placeables[i].scripts.onHeartbeat.run(
             Engine.module.area.placeables[i]
@@ -95,7 +95,7 @@ class Engine {
         }
       }
 
-      for(let i = 0; i < Engine.module.area.doors.length; i++){
+      for(var i = 0; i < Engine.module.area.doors.length; i++){
         if(Engine.module.area.doors[i].scripts.onHeartbeat){
           Engine.module.area.doors[i].scripts.onHeartbeat.run(
             Engine.module.area.doors[i]
@@ -103,7 +103,7 @@ class Engine {
         }
       }
 
-      for(let i = 0; i < Engine.module.area.triggers.length; i++){
+      for(var i = 0; i < Engine.module.area.triggers.length; i++){
         if(Engine.module.area.triggers[i].scripts.onHeartbeat){
           Engine.module.area.triggers[i].scripts.onHeartbeat.run(
             Engine.module.area.triggers[i]
@@ -111,7 +111,7 @@ class Engine {
         }
       }
 
-      for(let i = 0; i < Engine.module.encounters.length; i++){
+      for(var i = 0; i < Engine.module.encounters.length; i++){
         if(Engine.module.encounters[i].scripts.onHeartbeat){
           Engine.module.encounters[i].scripts.onHeartbeat.run(
             Engine.module.encounters[i]
@@ -244,7 +244,7 @@ class Engine {
                 console.log('onEnter Completed', Engine.module);
 
                 //console.log('Running creature onSpawn scripts');
-                for(let i = 0; i < Engine.module.area.creatures.length; i++){
+                for(var i = 0; i < Engine.module.area.creatures.length; i++){
                   if(Engine.module.area.creatures[i] instanceof ModuleCreature){
                     if(Engine.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
                       try{
@@ -277,7 +277,7 @@ class Engine {
 
   static UpdateFollowerCamera(delta = 0) {
     
-    for(let i = 0; i < Engine.collisionList.length; i++){
+    for(var i = 0; i < Engine.collisionList.length; i++){
       let obj = Engine.collisionList[i];
       if(obj instanceof THREE.Mesh){
         obj.visible = true;
@@ -320,7 +320,7 @@ class Engine {
       }
     }
 
-    for(let i = 0; i < Engine.collisionList.length; i++){
+    for(var i = 0; i < Engine.collisionList.length; i++){
       let obj = Engine.collisionList[i];
       if(obj instanceof THREE.Mesh){
         obj.visible = false;
@@ -348,7 +348,7 @@ class Engine {
     let guiHoverCaptured = false;
 
     let uiControls = Engine.controls.MenuGetActiveUIElements();
-    for(let i = 0; i < uiControls.length; i++){
+    for(var i = 0; i < uiControls.length; i++){
       let control = uiControls[i];
       //if(control === Engine.mouse.clickItem){
       if(!(control.widget.parent instanceof THREE.Scene)){
@@ -456,7 +456,7 @@ class Engine {
 
   static getCameraById(id = 0){
 
-    for(let i = 0; i < Game.staticCameras.length; i++){
+    for(var i = 0; i < Game.staticCameras.length; i++){
       if(Game.staticCameras[i].ingameID == id)
         return Game.staticCameras[i];
     }
@@ -471,7 +471,7 @@ class Engine {
 
   static rollD2(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*2) + 1
     }
     return rolled;
@@ -479,7 +479,7 @@ class Engine {
 
   static rollD3(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*3) + 1
     }
     return rolled;
@@ -487,7 +487,7 @@ class Engine {
 
   static rollD4(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*4) + 1
     }
     return rolled;
@@ -495,7 +495,7 @@ class Engine {
 
   static rollD6(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*6) + 1
     }
     return rolled;
@@ -503,7 +503,7 @@ class Engine {
 
   static rollD8(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*8) + 1
     }
     return rolled;
@@ -511,7 +511,7 @@ class Engine {
 
   static rollD10(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*10) + 1
     }
     return rolled;
@@ -519,7 +519,7 @@ class Engine {
 
   static rollD12(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*12) + 1
     }
     return rolled;
@@ -527,7 +527,7 @@ class Engine {
 
   static rollD20(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*20) + 1
     }
     return rolled;
@@ -535,7 +535,7 @@ class Engine {
 
   static rollD100(nNumDice = 1){
     let rolled = 0;
-    for(let i = 0; i < nNumDice; i++){
+    for(var i = 0; i < nNumDice; i++){
       rolled += Math.round(Math.random()*100) + 1
     }
     return rolled;
@@ -559,31 +559,39 @@ class Engine {
     let len = Game.module.area.placeables.length;
     let results = [];
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_PLACEABLE){
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.placeables[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.placeables[i]);
       }
     }
 
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_CREATURE){
-      len = PartyManager.party.length;
-      for(let i = 0; i < len; i++){
-        if(PartyManager.party[i].getTag().toLowerCase() == sTag)
-          results.push(PartyManager.party[i]);
-      }
-    }
-
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_CREATURE){
       len = Game.module.area.creatures.length;
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.creatures[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.creatures[i]);
       }
     }
 
+    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_CREATURE){
+      len = PartyManager.party.length;
+      for(var i = 0; i < len; i++){
+        if(PartyManager.party[i].getTag().toLowerCase() == sTag)
+          results.push(PartyManager.party[i]);
+      }
+    }
+
+    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_STORE){
+      len = Game.module.area.stores.length;
+      for(var i = 0; i < len; i++){
+        if(Game.module.area.stores[i].getTag().toLowerCase() == sTag)
+          results.push(Game.module.area.stores[i]);
+      }
+    }
+
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_DOOR){
       len = Game.module.area.doors.length;
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.doors[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.doors[i]);
       }
@@ -591,7 +599,7 @@ class Engine {
 
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_TRIGGER){
       len = Game.module.area.triggers.length;
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.triggers[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.triggers[i]);
       }
@@ -599,7 +607,7 @@ class Engine {
 
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_WAYPOINT){
       len = Game.module.area.waypoints.length;
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.waypoints[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.waypoints[i]);
       }
@@ -607,7 +615,7 @@ class Engine {
 
     if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_SOUND){
       len = Game.module.area.sounds.length;
-      for(let i = 0; i < len; i++){
+      for(var i = 0; i < len; i++){
         if(Game.module.area.sounds[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.sounds[i]);
       }
@@ -627,49 +635,49 @@ class Engine {
     sTag = sTag.toLowerCase();
     let results = [];
     let len = Game.module.area.placeables.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.placeables[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.placeables[i])
           results.push(Game.module.area.placeables[i]);
     }
 
     len = PartyManager.party.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(PartyManager.party[i].getTag().toLowerCase() == sTag)
         if(oObject != PartyManager.party[i])
           results.push(PartyManager.party[i]);
     }
 
     len = Game.module.area.creatures.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.creatures[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.creatures[i])
           results.push(Game.module.area.creatures[i]);
     }
 
     len = Game.module.area.doors.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.doors[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.doors[i])
           results.push(Game.module.area.doors[i]);
     }
 
     len = Game.module.area.triggers.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.triggers[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.triggers[i])
           results.push(Game.module.area.triggers[i]);
     }
 
     len = Game.module.area.waypoints.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.waypoints[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.waypoints[i])
           results.push(Game.module.area.waypoints[i]);
     }
 
     len = Game.module.area.sounds.length;
-    for(let i = 0; i < len; i++){
+    for(var i = 0; i < len; i++){
       if(Game.module.area.sounds[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.sounds[i])
           results.push(Game.module.area.sounds[i]);
@@ -761,6 +769,13 @@ class Engine {
   }
 
   static GetFirstObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
+
+    if(!(oArea instanceof ModuleArea)){
+      console.error(oArea);
+      oArea = Game.module.area;
+    }
+      
+
     Game.objSearchIndex = 0;
     switch(nObjectFilter){
       case    OBJECT_TYPE_CREATURE:
@@ -824,6 +839,10 @@ class Engine {
   }
 
   static GetNextObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
+    if(!(oArea instanceof ModuleArea)){
+      console.error(oArea);
+      oArea = Game.module.area;
+    }
     ++Game.objSearchIndex;
     switch(nObjectFilter){
       case    OBJECT_TYPE_CREATURE:
@@ -908,22 +927,22 @@ class Engine {
       case CREATURE_TYPE_REPUTATION:
         switch(nFirstCriteriaValue){
           case REPUTATION_TYPE_FRIEND:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isFriendly(oTarget)){
+            for(var i = 0; i < list.length; i++){
+              if(list[i].isFriendly(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
               }
             }
           break;
           case REPUTATION_TYPE_ENEMY:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isHostile(oTarget)){
+            for(var i = 0; i < list.length; i++){
+              if(list[i].isHostile(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
               }
             }
           break;  
           case REPUTATION_TYPE_NEUTRAL:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isNeutral(oTarget)){
+            for(var i = 0; i < list.length; i++){
+              if(list[i].isNeutral(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
               }
             }
@@ -931,7 +950,7 @@ class Engine {
         }
       break;
       case CREATURE_TYPE_IS_ALIVE:
-        for(let i = 0; i < list.length; i++){
+        for(var i = 0; i < list.length; i++){
           if(!list[i].isDead()){
             results.push(list[i]);
           }
@@ -944,7 +963,7 @@ class Engine {
 
       break;
       case CREATURE_TYPE_PERCEPTION:
-        for(let i = 0; i < list.length; i++){
+        for(var i = 0; i < list.length; i++){
           if(oTarget.perceptionList.indexOf(list[i]) >= 0){
             results.push(list[i]);
           }
@@ -957,7 +976,9 @@ class Engine {
     }
 
     if(results.length){
-      return results[nNth]
+      return (results.sort((a, b) => {
+        return oTarget.position.distanceTo(a.position) - oTarget.position.distanceTo(b.position);
+      }))[nNth-1];
     }
 
     return undefined;
@@ -982,7 +1003,7 @@ class Engine {
     int    OBJECT_TYPE_ALL              = 32767;
     */
 
-    console.log('GetObjectsInShape', objectFilter, shape);
+    //console.log('GetObjectsInShape', objectFilter, shape);
 
     if(objectFilter & 1 == 1){ //CREATURE
       object_pool = object_pool.concat(Game.module.area.creatures);
@@ -1028,7 +1049,7 @@ class Engine {
           
     }
 
-    for(let i = 0, len = object_pool.length; i < len; i++){
+    for(var i = 0, len = object_pool.length; i < len; i++){
       if(object_pool[i] instanceof ModuleObject){
         if(object_pool[i].position.distanceTo(target) < size){
           results.push(object_pool[i]);
@@ -1098,7 +1119,13 @@ class Engine {
   }
 
   static updateTime(delta){
-    Game.time += 1 * delta;
+    Game.time += delta;
+    Game.deltaTime += delta;
+
+    if(Game.deltaTime > 1000)
+      Game.deltaTime = Game.deltaTime % 1;
+
+    Game.updateTimers(delta);
     
     //let minutes = Math.floor(Game.time / 60);
     //let seconds = Game.timer - minutes * 60;
@@ -1112,6 +1139,37 @@ class Engine {
 
     let milTens = Math.floor(milSeconds / 10);
     let milOnes = milSeconds - milTens * 10;*/
+  }
+
+  static initTimers(){
+    Game._timeoutIdx = 0;
+    Game._timers = new Map();
+  }
+
+  static setTimeout( callback = null, delay = 0){
+    let idx = Game._timeoutIdx++;
+    Game._timers.set(idx, {callback: callback, delay: delay});
+    return idx;
+  }
+
+  static clearTimeout(idx){
+    return Game._timers.delete(idx);
+  }
+
+  static updateTimers(delta){
+
+    Game._timers.forEach( (timer, idx) => {
+
+      timer.delay -= 1000 * delta;
+      if(timer.delay <= 0){
+        if(typeof timer.callback === 'function')
+          timer.callback();
+        
+        Game._timers.delete(idx);
+      }
+
+    });
+
   }
 
   static getHours(){
@@ -1191,7 +1249,9 @@ Engine.HeartbeatTimer = 3000;
 Engine.Flags = {
   EnableAreaVIS: false,
   LogScripts: false,
-  EnableOverride: false
+  EnableOverride: false,
+  WalkmeshVisible: false,
+  CombatEnabled: false
 }
 
 Engine.IsPaused = false;

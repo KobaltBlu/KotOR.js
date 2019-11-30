@@ -73,6 +73,7 @@ class PartyManager {
       }
     }
 
+    PartyManager.Gold = 0;
     PartyManager.CurrentMembers = [];
 
   }
@@ -90,7 +91,7 @@ class PartyManager {
             let creature = PartyManager.party[j];
             PartyManager.party.splice(j, 1);
 
-            if(!leaveInWorld){
+            if(leaveInWorld){
               creature.destroy();
             }else{
               console.log('RemoveNPCById leaveInWorld', creature);
@@ -211,8 +212,8 @@ class PartyManager {
 
     try{
 
-      let spawn = Game.player.model.position.clone();
-      let quaternion = Game.player.model.quaternion.clone();
+      let spawn = Game.player.position.clone();
+      let quaternion = Game.player.quaternion.clone();
 
       partyMember.partyID = 0;
       partyMember.Load( () => {
@@ -222,10 +223,11 @@ class PartyManager {
             
             model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
-            model.translateX(spawn.x);
+            partyMember.position.copy(spawn);
+            /*model.translateX(spawn.x);
             model.translateY(spawn.y);
-            model.translateZ(spawn.z);
-            model.quaternion.copy(quaternion);
+            model.translateZ(spawn.z);*/
+            partyMember.quaternion.copy(quaternion);
       
             model.hasCollision = true;
             //model.buildSkeleton();
@@ -256,6 +258,7 @@ class PartyManager {
     if(nIdx <= 1){
       try{
         if(!(currentSlot instanceof ModuleCreature)){
+          partyMember.id = ModuleObject.GetNextPlayerId();
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.Load( () => {
             PartyManager.party[nIdx+1] = partyMember;
@@ -266,14 +269,13 @@ class PartyManager {
 
             partyMember.LoadScripts( () => {
               partyMember.LoadModel( (model) => {
-                let spawn = PartyManager.GetFollowPosition(partyMember);
+                let spawn = PartyManager.GetSpawnLocation(partyMember);
                 model.box = new THREE.Box3().setFromObject(model);
                 model.moduleObject = partyMember;
 
-                partyMember.position.x = spawn.x;
-                partyMember.position.y = spawn.y;
-                partyMember.position.z = spawn.z;
-                partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+                partyMember.position.copy(spawn);
+                partyMember.setFacing(Game.player.GetFacing(), true);
+                //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
           
                 model.hasCollision = true;
                 //model.buildSkeleton();
@@ -289,11 +291,10 @@ class PartyManager {
             });
           });
         }else{
-          let spawn = PartyManager.GetFollowPosition(currentSlot);
-          currentSlot.position.x = spawn.x;
-          currentSlot.position.y = spawn.y;
-          currentSlot.position.z = spawn.z;
-          currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+          let spawn = PartyManager.GetSpawnLocation(currentSlot);
+          currentSlot.position.copy(spawn);
+          currentSlot.setFacing(Game.player.GetFacing(), true);
+          //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
           if(typeof onLoad === 'function')
             onLoad();
         }
@@ -303,7 +304,7 @@ class PartyManager {
           onLoad();
       }
     }else{
-      console.error(e);
+      console.error('LoadPartyMember', 'Wrong index', nIdx, npc, partyMember);
       if(typeof onLoad === 'function')
         onLoad();
     }
@@ -335,35 +336,67 @@ class PartyManager {
     
   }
 
-  static GetFollowPosition(creature = null){
-    if(Game.isLoadingSave){
-      return new THREE.Vector3(
-        creature.getXPosition(), 
-        creature.getYPosition(), 
-        creature.getZPosition()
-      )
-    }else{
-      let _targetOffset = -1.5;
-      if(PartyManager.party.indexOf(creature) == 2){
-        _targetOffset = 1.5;
-      }
-  
-      let targetPos = PartyManager.party[0].position.clone().sub(
-        new THREE.Vector3(
-          _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
-          _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
-          0
+  static GetSpawnLocation(creature = undefined){
+    if(creature instanceof ModuleCreature){
+      if(Game.isLoadingSave){
+        return new THREE.Vector3(
+          creature.getXPosition(), 
+          creature.getYPosition(), 
+          creature.getZPosition()
         )
-      );
-      return targetPos;
+      }else if(Game.module.area.transWP){
+        console.log('TransWP - PM', Game.module.area.transWP);
+        return new THREE.Vector3(
+          Game.module.area.transWP.RootNode.GetFieldByLabel('XPosition').GetValue(),
+          Game.module.area.transWP.RootNode.GetFieldByLabel('YPosition').GetValue(),
+          Game.module.area.transWP.RootNode.GetFieldByLabel('ZPosition').GetValue()
+        );
+      }else{
+        let _targetOffset = 1.5;
+        if(PartyManager.party.indexOf(creature) == 2){
+          _targetOffset = -1.5;
+        }
+
+        let spawnLoc = Game.module.area.getSpawnLocation();
+
+        let targetPos = new THREE.Vector3(spawnLoc.XPosition, spawnLoc.YPosition, spawnLoc.ZPosition).sub(
+          new THREE.Vector3(
+            _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
+            _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
+            0
+          )
+        );
+        return targetPos;
+      }
     }
-    
+
+    return new THREE.Vector3(0, 0, 0);
+
+  }
+
+  static GetFollowPosition(creature = null){
+
+    //I think party following is FORMATION_LINE in the formations.2da
+
+    let _targetOffset = 1.5;
+    if(PartyManager.party.indexOf(creature) == 2){
+      _targetOffset = -1.5;
+    }
+
+    let targetPos = PartyManager.party[0].position.clone().sub(
+      new THREE.Vector3(
+        _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
+        _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
+        0
+      )
+    );
+    return targetPos;
   }
 
 }
 PartyManager.Init();
 
 PartyManager.party = [];
-
+PartyManager.aiStyle = 0;
 
 module.exports = PartyManager;

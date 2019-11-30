@@ -11,6 +11,11 @@ class AudioEngine {
 
     this.audioCtx = new AudioEngine.AudioCtx();
 
+    this.reverbLF = new Reverb(this.audioCtx);
+    this.reverbHF = new Reverb(this.audioCtx);
+    this.reverbLF.filterType = 'highpass';
+    this.reverbHF.filterType = 'lowpass';
+
     this.sfxGain = this.audioCtx.createGain();
     this.sfxGain.gain.value = AudioEngine.GAIN_SFX;
     this.sfxGain.connect(this.audioCtx.destination);
@@ -23,6 +28,10 @@ class AudioEngine {
     this.voGain.gain.value = AudioEngine.GAIN_VO;
     this.voGain.connect(this.audioCtx.destination);
 
+    this.movieGain = this.audioCtx.createGain();
+    this.movieGain.gain.value = AudioEngine.GAIN_MOVIE;
+    this.movieGain.connect(this.audioCtx.destination);
+
     this.emitters = [];
     this.bgm = null;
     this.bgmTimeout = null;
@@ -32,6 +41,63 @@ class AudioEngine {
 
     AudioEngine.engines.push(this);
 
+  }
+
+  SetReverbState(state = false){
+    this.sfxGain.disconnect();
+    //this.musicGain.disconnect();
+    this.voGain.disconnect();
+    this.reverbLF.disconnect();
+    this.reverbHF.disconnect();
+    if(state){
+      this.sfxGain.connect(this.reverbLF);
+      this.sfxGain.connect(this.reverbHF);
+      //this.musicGain.connect(this.reverbLF);
+      //this.musicGain.connect(this.reverbHF);
+      this.voGain.connect(this.reverbLF);
+      this.voGain.connect(this.reverbHF);
+      //Connect the reverb node to the audio output node
+      this.reverbLF.connect(this.audioCtx.destination);
+      this.reverbHF.connect(this.audioCtx.destination);
+    }else{
+      this.sfxGain.connect(this.audioCtx.destination);
+      //this.musicGain.connect(this.audioCtx.destination);
+      this.voGain.connect(this.audioCtx.destination);
+    }
+  }
+
+  SetReverbProfile(index = 0){
+    console.log('SetReverbProfile:', index);
+
+    let software_mode = false;
+
+    if(iniConfig.getProperty('Sound Options.Force Software').value == 1){
+      software_mode = true;
+      console.warn('SetReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
+    }
+
+    if(index >= 0){
+      let data = EAXPresets.PresetFromIndex(index);
+      console.log('SetReverbProfile:', data);
+      this.reverbHF.gain.value = data.gainHF;
+      this.reverbLF.gain.value = data.gainLF;
+
+      this.reverbHF.decay = data.decayTime;
+      this.reverbLF.decay = data.decayTime;
+
+      this.reverbHF.cutoff.value = data.hfReference;
+      this.reverbLF.cutoff.value = data.lfReference;
+
+      this.reverbHF.wet.value = data.reflectionsGain * data.diffusion;
+      this.reverbLF.wet.value = data.reflectionsGain * data.diffusion;
+
+      this.reverbHF.dry.value = 1;
+      this.reverbLF.dry.value = 1;
+      
+      this.SetReverbState(!software_mode);
+    }else{
+      this.SetReverbState(false);
+    }
   }
 
   Update ( position = new THREE.Vector3(0), rotation = new THREE.Vector3(0) ) {
@@ -90,83 +156,52 @@ class AudioEngine {
   }*/
 
   SetBackgroundMusic ( data, vol = 1 ) {
-    let bgmData = data.slice();
-    this.audioCtx.decodeAudioData( bgmData, ( buffer ) => {
-
-      try{
-        if (this.bgm != null) {
-          this.bgm.disconnect();
-          this.bgm.stop(0);
-          this.bgm = null;
-        }
-      }catch(e) {}
-
-      this.bgm = this.audioCtx.createBufferSource();
-
-      this.bgm.buffer = buffer;
-      this.bgm.loop = false;
-      this.bgm.start( 0, 0 );
-      this.bgm.connect( this.musicGain );
-
-      this.bgm.onended = () => {
-        if(AudioEngine.loopBGM && this.dialogBGM == null){
-          this.bgmTimeout = window.setTimeout( () => {
-            this.SetBackgroundMusic(data, vol);
-          }, this.GetBackgroundMusicLoopTime());
-        }
-      };
-
+    this.audioCtx.decodeAudioData( data, ( buffer ) => {
+      this.bgmBuffer = buffer;
+      this.StartBackgroundMusic();
     });
-
   }
-
-  
 
   SetDialogBackgroundMusic ( data, vol = 1 ) {
-    let bgmData = data.slice();
-    this.audioCtx.decodeAudioData( bgmData, ( buffer ) => {
-
-      try{
-        if (this.dialogBGM != null) {
-          this.dialogBGM.disconnect();
-          this.dialogBGM.stop(0);
-          this.dialogBGM = null;
-        }
-      }catch(e) {}
-
-      this.dialogBGM = this.audioCtx.createBufferSource();
-
-      this.dialogBGM.buffer = buffer;
-      this.dialogBGM.loop = false;
-      this.dialogBGM.start( 0, 0 );
-      this.dialogBGM.connect( this.musicGain );
-
-      this.dialogBGM.onended = () => {
-        this.dialogBGM.onended = null;
-        try{
-          if (this.dialogBGM != null) {
-            this.dialogBGM.disconnect();
-            this.dialogBGM.stop(0);
-            this.dialogBGM = null;
-          }
-        }catch(e) {}
-        this.bgmTimeout = window.setTimeout( () => {
-          this.ResumeBackgroundMusic();
-        }, this.GetBackgroundMusicLoopTime());
-      };
-
+    this.audioCtx.decodeAudioData( data, ( buffer ) => {
+      this.dialogMusicBuffer = buffer;
+      this.StartBackgroundMusic(this.dialogMusicBuffer);
     });
-
   }
 
-  ResumeBackgroundMusic(){
-    let bgMusic = Global.kotor2DA['ambientmusic'].rows[Game.module.area.audio.MusicDay].resource;
+  StartBackgroundMusic(buffer = undefined){
 
-    AudioLoader.LoadMusic(bgMusic, (data) => {
-      Game.audioEngine.SetBackgroundMusic(data);
-    }, () => {
-      console.error('Background Music not found', bgMusic);
-    });
+    if(buffer == undefined)
+      buffer = this.bgmBuffer;
+
+    this.StopBackgroundMusic();
+    //Create the new audio buffer and callbacks
+    this.bgm = this.audioCtx.createBufferSource();
+
+    this.bgm.buffer = buffer;
+    this.bgm.loop = false;
+    this.bgm.start( 0, 0 );
+    this.bgm.connect( this.musicGain );
+
+    this.bgm.onended = () => {
+      this.bgm.currentTime = 0;
+      if(AudioEngine.loopBGM){// && this.dialogBGM == null){
+        this.bgmTimeout = window.setTimeout( () => {
+          this.StartBackgroundMusic();
+        }, this.GetBackgroundMusicLoopTime());
+      }
+    };
+  }
+
+  StopBackgroundMusic(){
+    try{
+      if (this.bgm != null) {
+        this.bgm.onended = undefined;
+        this.bgm.disconnect();
+        this.bgm.stop(0);
+        this.bgm = null;
+      }
+    }catch(e){}
   }
 
   GetBackgroundMusicLoopTime(){

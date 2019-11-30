@@ -10,6 +10,8 @@ class InGameConfirm extends GameMenu {
   constructor( args = {} ){
     super(args);
 
+    this.isOverlayGUI = true;
+
     this.LoadMenu({
       name: 'confirm',
       onLoad: () => {
@@ -20,12 +22,12 @@ class InGameConfirm extends GameMenu {
 
         this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide()
+          this.Close();
         });
 
         this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide()
+          this.Close();
         });
 
         this.tGuiPanel.widget.position.z = 10;
@@ -75,7 +77,7 @@ class InGameConfirm extends GameMenu {
 
       this.tGuiPanel.recalculate();
 
-      this.Show();
+      this.Open();
 
       Game.TutorialWindowTracker[id] = 0;
 

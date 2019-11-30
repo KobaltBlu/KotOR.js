@@ -8,7 +8,7 @@
 class ModuleDoor extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
-    super();
+    super(gff);
     this.template = gff;
     this.openState = false;
     this.lastObjectEntered = null;
@@ -179,6 +179,15 @@ class ModuleDoor extends ModuleObject {
   use(object = null){
 
     if(!this.openState){
+      
+      if(this.isLocked()){
+        if(this.keyRequired && this.keyName.length){
+          if(InventoryManager.getItem(this.keyName) instanceof ModuleItem){
+            this.locked = false;
+          }
+        }
+      }
+
       if(this.isLocked()){
         if(this.scripts.onFailToOpen instanceof NWScript){
           this.scripts.onFailToOpen.run(this);
@@ -204,7 +213,7 @@ class ModuleDoor extends ModuleObject {
         this.openDoor(object);
       }
     }else{
-      console.log('already open')
+      console.log('already open');
     }
 
     /*if(this.GetConversation() != ''){
@@ -215,6 +224,7 @@ class ModuleDoor extends ModuleObject {
 
   attemptUnlock(object = undefined){
     if(object instanceof ModuleObject){
+      
       let d20 = 20;//d20 rolls are auto 20's outside of combat
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
@@ -227,6 +237,7 @@ class ModuleDoor extends ModuleObject {
           object.PlaySoundSet(SSFObject.TYPES.UNLOCK_FAIL);
         }
       }
+         
       this.use(object);
       return true;
     }else{
@@ -245,7 +256,7 @@ class ModuleDoor extends ModuleObject {
 
     if(object instanceof ModuleObject){
       this.lastObjectOpened = object;
-      object.lastDoorEntered = this;
+      //object.lastDoorEntered = this;
     }
 
     if(this.scripts.onOpen instanceof NWScript){
@@ -297,6 +308,43 @@ class ModuleDoor extends ModuleObject {
     });
   }
 
+  //Some modules have exit triggers that are placed in the same location that the player spawns into
+  //This is my way of keeping the player from immediately activating the trigger
+  //They will be added to the objectsInside array without triggering the onEnter script
+  //If they leave the trigger and then return it will then fire normally
+  initObjectsInside(){
+    //Check to see if this trigger is linked to another module
+    if(this.linkedToModule && this.type == 1){
+      //Check Party Members
+      let partyLen = PartyManager.party.length;
+      for(let i = 0; i < partyLen; i++){
+        let partymember = PartyManager.party[i];
+        if(this.box.containsPoint(partymember.position)){
+          if(this.objectsInside.indexOf(partymember) == -1){
+            this.objectsInside.push(partymember);
+
+            partymember.lastDoorEntered = this;
+            this.lastObjectEntered = partymember;
+          }
+        }
+      }
+    }else{
+      //Check Creatures
+      let creatureLen = Game.module.area.creatures.length;
+      for(let i = 0; i < creatureLen; i++){
+        let creature = Game.module.area.creatures[i];
+        if(this.box.containsPoint(creature.position)){
+          if(this.objectsInside.indexOf(creature) == -1){
+            this.objectsInside.push(creature);
+
+            creature.lastDoorEntered = this;
+            this.lastObjectEntered = creature;
+          }
+        }
+      }
+    }
+  }
+
   update(delta = 0){
     
     super.update(delta);
@@ -306,6 +354,8 @@ class ModuleDoor extends ModuleObject {
     }
 
     if(this.model instanceof THREE.AuroraModel){
+      this.model.rotation.copy(this.rotation);
+      //this.model.quaternion = this.quaternion;
       this.model.update(delta);
       this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
     }
@@ -352,13 +402,13 @@ class ModuleDoor extends ModuleObject {
       let creature = Game.module.area.creatures[i];
       let pos = creature.getModel().position.clone();
       if(this.box.containsPoint(pos)){
-        if(creature.lastTriggerEntered !== this){
-          creature.lastTriggerEntered = this;
+        if(creature.lastDoorEntered !== this){
+          creature.lastDoorEntered = this;
           this.onEnter(creature);
         }
       }else{
-        if(creature.lastTriggerEntered === this){
-          creature.lastTriggerExited = this;
+        if(creature.lastDoorEntered === this){
+          creature.lastDoorExited = this;
           this.onExit(creature);
         }
       }
@@ -373,14 +423,14 @@ class ModuleDoor extends ModuleObject {
         //if(this.box.containsPoint(pos)){
           let distance = pos.distanceTo(this.getModel().position.clone());
           if(distance < .5){
-            if(partymember.lastTriggerEntered !== this){
-              partymember.lastTriggerEntered = this;
+            if(partymember.lastDoorEntered !== this){
+              partymember.lastDoorEntered = this;
               this.onEnter(partymember);
             }
           }
         /*}*/else{
-          if(partymember.lastTriggerEntered === this){
-            partymember.lastTriggerExited = this;
+          if(partymember.lastDoorEntered === this){
+            partymember.lastDoorExited = this;
             this.onExit(partymember);
           }
         }
@@ -390,12 +440,16 @@ class ModuleDoor extends ModuleObject {
   }
 
   onEnter(object = undefined){
-    if(this.getLinkedToModule()){
-      if(Game.isObjectPC(object)){
+    if(this.getLinkedToModule() && !Game.inDialog && this.isOpen()){
+      if(object == Game.getCurrentPlayer() && object.controlled){
         Game.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase(), () => { 
           //console.log('Module Loaded', tthis.getLinkedToModule().toLowerCase());
         });
+      }else{
+        object.lastDoorEntered = undefined;
       }
+    }else{
+      object.lastDoorEntered = undefined;
     }
   }
 
@@ -445,11 +499,12 @@ class ModuleDoor extends ModuleObject {
       onLoad: (mdl) => {
         THREE.AuroraModel.FromMDL(mdl, {
           onComplete: (door) => {
+
             if(this.model != null){
               var scene = this.model.parent;
-              var position = this.model.position;
-              var rotation = this.model.rotation;
               scene.remove(this.model);
+              Game.octree.remove( this.model );
+              this.model.dispose();
             }
 
             this.model = door;
@@ -459,17 +514,18 @@ class ModuleDoor extends ModuleObject {
             if(typeof scene != 'undefined'){
               scene.add(this.model);
               Game.octree.add( this.model );
-              this.model.translateX(position.x);
-              this.model.translateY(position.y);
-              this.model.translateZ(position.z);
-              this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+              //this.model.translateX(position.x);
+              //this.model.translateY(position.y);
+              //this.model.translateZ(position.z);
+              //this.model.rotation.set(rotation.x, rotation.y, rotation.z);
               for(let i = 0; i < this.model.lights.length; i++){
                 //LightManager.addLight(this.model.lights[i]);
               }
             }
 
-            this.position = this.model.position;
-            this.rotation = this.model.rotation;
+            this.position = this.model.position.copy(this.position);
+            this.model.rotation.copy(this.rotation);
+            this.model.quaternion.copy(this.quaternion);
 
             //For some TSL doors that have a WHITE mesh called trans that shows when the door it opened
             //Not sure if trans has something to do with area transition or the animation called "trans"
@@ -488,6 +544,9 @@ class ModuleDoor extends ModuleObject {
             });
           },
           context: this.context,
+          lighting: false,
+          useTweakColor: this.useTweakColor,
+          tweakColor: this.tweakColor
           //castShadow: true,
           //receiveShadow: true
         });
@@ -559,6 +618,12 @@ class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.HasField('OnUserDefined'))
       this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
+    
+    if(this.template.RootNode.HasField('TweakColor'))
+      this.tweakColor = this.template.GetFieldByLabel('TweakColor').GetValue();
+    
+    if(this.template.RootNode.HasField('UseTweakColor'))
+      this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue();
 
     let keys = Object.keys(this.scripts);
     let len = keys.length;
@@ -597,6 +662,12 @@ class ModuleDoor extends ModuleObject {
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
         this.walkmesh = new AuroraWalkMesh(new BinaryReader(buffer));
+        this.walkmesh.name = ResRef;
+        this.walkmesh.moduleObject = this;
+        if(this.walkmesh.mesh){
+          this.walkmesh.mesh.quaternion.setFromEuler(this.rotation);
+        }
+
         if(typeof onLoad === 'function')
           onLoad(this.walkmesh);
 
@@ -610,6 +681,9 @@ class ModuleDoor extends ModuleObject {
   }
 
   InitProperties(){
+
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('AnimationState'))
       this.animationState = this.template.GetFieldByLabel('AnimationState').GetValue();
@@ -720,16 +794,16 @@ class ModuleDoor extends ModuleObject {
       this.will = this.template.GetFieldByLabel('Will').GetValue();
 
     if(this.template.RootNode.HasField('X'))
-      this.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
+      this.x = this.position.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
 
     if(this.template.RootNode.HasField('Y'))
-      this.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
+      this.y = this.position.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
 
     if(this.template.RootNode.HasField('Z'))
-      this.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
+      this.z = this.position.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
 
     if(this.template.RootNode.HasField('Bearing'))
-      this.bearing = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
+      this.bearing = this.rotation.z = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
       let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
@@ -741,6 +815,66 @@ class ModuleDoor extends ModuleObject {
         }
       }
     }
+
+    if(this.template.RootNode.HasField('LinkedTo'))
+      this.linkedTo = this.template.RootNode.GetFieldByLabel('LinkedTo').GetValue();
+
+    if(this.template.RootNode.HasField('LinkedToFlags'))
+      this.linkedToFlags = this.template.RootNode.GetFieldByLabel('LinkedToFlags').GetValue();
+
+    if(this.template.RootNode.HasField('LinkedToModule'))
+      this.linkedToModule = this.template.RootNode.GetFieldByLabel('LinkedToModule').GetValue();
+
+    if(this.template.RootNode.HasField('TransitionDestin'))
+      this.transitionDestin = this.template.RootNode.GetFieldByLabel('TransitionDestin').GetValue();
+
+  }
+
+  toToolsetInstance(){
+
+    let instance = new Struct(8);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Bearing', this.rotation.z)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOSTRING, 'LinkedTo', this.linkedTo)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.BYTE, 'LinkedToFlags', this.linkedToFlags)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'LinkedToModule', this.linkedToModule)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'Tag', this.tag)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOSTRING, 'TransitionDestin', this.transitionDestin)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'X', this.position.x)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Y', this.position.y)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Z', this.position.z)
+    );
+
+    return instance;
 
   }
 

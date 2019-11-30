@@ -232,6 +232,15 @@ class AuroraModel {
 
     this.mdlReader.position += 8;
 
+    mesh.vertices = [];
+    mesh.normals = [];
+    mesh.tvectors = [[], [], [], []];
+    mesh.texCords = [[], [], [], []];
+    mesh.tangents = [[], [], [], []];
+    mesh.indexArray = [];
+    mesh.uvs = [];
+    mesh.faces = [];
+
     let _faceArrDef = AuroraModel.ReadArrayDefinition(this.mdlReader);
 
     mesh.FaceArrayOffset = _faceArrDef.offset;
@@ -334,20 +343,11 @@ class AuroraModel {
       mesh.TextureCount = 2;
     }
 
-    mesh.vertices = [];
-    mesh.normals = [];
-    mesh.tvectors = [[], [], [], []];
-    mesh.texCords = [[], [], [], []];
-    mesh.tangents = [[], [], [], []];
-    mesh.indexArray = [];
-    mesh.uvs = [];
-    mesh.faces = [];
-
     mesh.vertices.length = mesh.VerticiesCount;
     mesh.normals.length = mesh.VerticiesCount;
 
     for (let t = 0; t < mesh.TextureCount; t++) {
-      mesh.tvectors[t].length = mesh.VerticiesCount;
+      //mesh.tvectors[t].length = mesh.VerticiesCount;
     }
 
     for (let i = 0; i < mesh.VerticiesCount; i++) {
@@ -355,12 +355,16 @@ class AuroraModel {
       let basePosition = (MDXNodeDataOffset + (i * mesh.MDXDataSize));
 
       // Vertex
-      this.mdxReader.position = basePosition + MDXVertexOffset;
-      mesh.vertices[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.VERTEX){
+        this.mdxReader.position = basePosition + MDXVertexOffset;
+        mesh.vertices[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      }
 
       // Normal
-      this.mdxReader.position = basePosition + MDXVertexNormalsOffset;
-      mesh.normals[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.NORMAL){
+        this.mdxReader.position = basePosition + MDXVertexNormalsOffset;
+        mesh.normals[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+      }
       
       // TexCoords1
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV1){
@@ -441,8 +445,12 @@ class AuroraModel {
           mesh.normals[index3]
         ];
         mesh.faces[i] = new THREE.Face3(index1, index2, index3, normal);
-        mesh.texCords[0][i] = ([mesh.tvectors[0][index1], mesh.tvectors[0][index2], mesh.tvectors[0][index3]]);
-        mesh.texCords[1][i] = ([mesh.tvectors[1][index1], mesh.tvectors[1][index2], mesh.tvectors[1][index3]]);
+
+        if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
+          mesh.texCords[0][i] = ([mesh.tvectors[0][index1], mesh.tvectors[0][index2], mesh.tvectors[0][index3]]);
+        
+        if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.UV2)
+          mesh.texCords[1][i] = ([mesh.tvectors[1][index1], mesh.tvectors[1][index2], mesh.tvectors[1][index3]]);
       }
     }
 
@@ -731,8 +739,26 @@ class AuroraModel {
                   //This is a bezier curve this controller contains 3 vector3's packed end to end:
                   //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
                   //pointB and pointC are relative to pointA
-
+                  //console.log('bezier', node.name, controller);
                   let rowOffset = controller.dataValueIndex + (r * 9);
+
+                  frame.a = new THREE.Vector3(
+                    data[rowOffset + 0] || 0.0,
+                    data[rowOffset + 1] || 0.0,
+                    data[rowOffset + 2] || 0.0
+                  );
+
+                  frame.b = new THREE.Vector3(
+                    data[rowOffset + 3] || 0.0,
+                    data[rowOffset + 4] || 0.0,
+                    data[rowOffset + 5] || 0.0
+                  );
+
+                  frame.c = new THREE.Vector3(
+                    data[rowOffset + 6] || 0.0,
+                    data[rowOffset + 7] || 0.0,
+                    data[rowOffset + 8] || 0.0
+                  );
 
                   frame.isBezier = true;
                   frame.bezier = new THREE.QuadraticBezierCurve3(
@@ -750,21 +776,19 @@ class AuroraModel {
                     ),
                     //POINT C
                     new THREE.Vector3(
-                      (data[rowOffset + 0] + data[rowOffset + 6]) || data[rowOffset + 0] || 0.0,
-                      (data[rowOffset + 1] + data[rowOffset + 7]) || data[rowOffset + 1] || 0.0,
-                      (data[rowOffset + 2] + data[rowOffset + 8]) || data[rowOffset + 2] || 0.0
+                      (data[rowOffset + 0] + data[rowOffset + 6]) || 0.0,
+                      (data[rowOffset + 1] + data[rowOffset + 7]) || 0.0,
+                      (data[rowOffset + 2] + data[rowOffset + 8]) || 0.0
                     )
                   );
 
-                  if(frame.bezier.v1.x == 0 && frame.bezier.v1.y == 0){
-                    frame.isBezier = false;
-                  }else if(frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6)){
-                    frame.bezier.v1.copy(frame.bezier.v0);
-                  }else{
-                    var dir = frame.bezier.v2.clone().sub(frame.bezier.v0);
-                    var len = dir.length();
-                    dir = dir.normalize().multiplyScalar(len*0.5);
-                    frame.bezier.v1 = frame.bezier.v0.clone().add(dir);
+                  frame.isLinearBezier = (frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6));
+
+                  if(frame.isLinearBezier){
+                    frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
+                  }else if(frame.bezier.v0.length() - frame.bezier.v1.length() < 0.01){
+                    frame.isLinearBezier = true;
+                    frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
                   }
 
                   vec3.x = data[rowOffset + 0] || 0.0;
@@ -815,6 +839,7 @@ class AuroraModel {
                     data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0,
                     data[controller.dataValueIndex + (r * controller.columnCount) + 3] || 1.0
                   );
+
                 }
 
                 tmpQuat.normalize();
@@ -914,6 +939,7 @@ class AuroraModel {
               case ControllerType.Grav:
               case ControllerType.FPS:
               case ControllerType.Detonate:
+              case ControllerType.CombineTime:
               case ControllerType.Spread:
               case ControllerType.Velocity:
               case ControllerType.RandVel:
@@ -925,14 +951,23 @@ class AuroraModel {
               case ControllerType.SizeStart_Y:
               case ControllerType.SizeMid_Y:
               case ControllerType.SizeEnd_Y:
+              case ControllerType.LightningDelay:
+              case ControllerType.LightningRadius:
+              case ControllerType.LightningScale:
+              case ControllerType.P2P_Bezier2:
+              case ControllerType.P2P_Bezier3:
               case ControllerType.AlphaStart:
               case ControllerType.AlphaMid:
               case ControllerType.AlphaEnd:
+              case ControllerType.PercentStart:
+              case ControllerType.PercentMid:
+              case ControllerType.PercentEnd:
               case ControllerType.Threshold:
               case ControllerType.XSize:
               case ControllerType.YSize:
               case ControllerType.FrameStart:
               case ControllerType.FrameEnd:
+              case ControllerType.BlurLength:
               case 240:
                 for (let r = 0; r < controller.rowCount; r++) {
                   let frame = {};
@@ -945,6 +980,9 @@ class AuroraModel {
           }
 
         }
+
+        if(controller.data.length)
+          controller.data[controller.data.length-1].lastFrame = true;
 
         controllers.set(controller.type, controller);//controllers[controller.type] = controller;
         

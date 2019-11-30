@@ -13,6 +13,10 @@ class IngameControls {
     this.element = element || document;
     this.editor = editor;
 
+    this.camSpeed = 0;
+    this.maxCamSpeed = 2.5;
+    this.camRampSpeed = 10;
+
     this.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
 
     this.InitKeys();
@@ -21,7 +25,6 @@ class IngameControls {
 
     // Ask the browser to release the pointer
     document.exitPointerLock = document.exitPointerLock;
-
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     this.editor.$canvas.keydown( ( event ) => {
@@ -43,6 +46,8 @@ class IngameControls {
           this.keys['num-plus'].down = this.keys['num-plus'].pressed = true;
         if ( event.which == 109 )
           this.keys['num-minus'].down = this.keys['num-minus'].pressed = true;
+        if ( event.which == 9 )
+          this.keys['tab'].down = this.keys['tab'].pressed = true;
       }
       
 
@@ -71,6 +76,8 @@ class IngameControls {
           this.keys['num-plus'].down = this.keys['num-plus'].pressed = false;
         if ( event.which == 109 )
           this.keys['num-minus'].down = this.keys['num-minus'].pressed = false;
+        if ( event.which == 9 )
+        this.keys['tab'].down = this.keys['tab'].pressed = false;
       }
 
       if( (Game.Mode == Game.MODES.INGAME) && !this.keys['w'].down && !this.keys['s'].down && !Game.autoRun){
@@ -128,7 +135,7 @@ class IngameControls {
 
       
 
-      let uiControls =this.MenuGetActiveUIElements();
+      let uiControls = this.MenuGetActiveUIElements();
       for(let i = 0; i < uiControls.length; i++){
         if(!customEvent.propagate)
           break;
@@ -271,7 +278,7 @@ class IngameControls {
         let selectedObject = clickCaptured;
   
         if(!clickCaptured && !Game.inDialog){
-          if(Game.Mode == Game.MODES.INGAME){
+          if(Game.Mode == Game.MODES.INGAME && MenuManager.GetCurrentMenu() == Game.InGameOverlay){
             Game.onMouseHitInteractive( (obj, obj2) => {
               console.log('Mesh', obj2)
               if(obj.moduleObject instanceof ModuleObject){
@@ -357,7 +364,7 @@ class IngameControls {
     });
 
     $('body').bind('mousewheel', function(e){
-      if(e.originalEvent.wheelDelta /120 > 0){
+      if(e.originalEvent.wheelDelta > 0){
         if(Game.hoveredGUIElement instanceof GUIListBox){
           Game.hoveredGUIElement.scrollUp();
         }else if(Game.hoveredGUIElement instanceof GUIScrollBar){
@@ -408,6 +415,7 @@ class IngameControls {
       'escape':  {down: false, pressed: false},
       'num-plus':  {down: false, pressed: false},
       'num-minus':  {down: false, pressed: false},
+      'tab':  {down: false, pressed: false},
       '0': {down: false, pressed: false},
       '1': {down: false, pressed: false},
       '2': {down: false, pressed: false},
@@ -438,6 +446,12 @@ class IngameControls {
     var xoffset = 0;
     var yoffset = 0;
 
+    let gp = undefined;
+    if(currentGamepad instanceof Gamepad){
+      gp = navigator.getGamepads()[currentGamepad.index];
+      //console.log(gp.axes);
+    }
+
     if(Mouse.Dragging){
       xoffset = Mouse.OffsetX || 0;
       yoffset = Mouse.OffsetY || 0;
@@ -445,43 +459,120 @@ class IngameControls {
       Mouse.OffsetX = Mouse.OffsetY = 0;
     }
 
-    if(Game.inDialog){
-      if(Game.InGameDialog.state == 1){
-        if(this.keys['1'].pressed){
-          console.log('Tried to press 1');
-          try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-        }else if(this.keys['2'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['3'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['4'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['5'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['6'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['7'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['8'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }else if(this.keys['9'].pressed){
-          try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-        }
-
+    if(Game.binkVideo.isPlaying){
+      if(this.keys['escape'].pressed){
+        Game.binkVideo.stop();
+      }
+      //Set all pressed keys to false so they can only be triggered on this frame 
+      //May need to move this to the end of the Game Loop
+      for (let key in this.keys) {
+        this.keys[key].pressed = false;
       }
 
-      if(this.keys['escape'].pressed){
-        Game.InGameDialog.EndConversation(true);
+      Game.mouse.leftClick = false;
+
+      Mouse.OldMouseX = Mouse.MouseX;
+      Mouse.OldMouseY = Mouse.MouseY;
+      return;
+    }
+
+    if(Game.inDialog){
+      if(Game.InGameDialog.bVisible){
+
+        if(Game.InGameDialog.state == 1){
+          if(this.keys['1'].pressed){
+            console.log('Tried to press 1');
+            try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['2'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['3'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['4'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['5'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['6'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['7'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['8'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }else if(this.keys['9'].pressed){
+            try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+          }
+        }else{
+          if(this.keys['space'].pressed){
+            if(Game.InGameDialog.isListening){
+              Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+            }
+          }
+        }
+
+        if(this.keys['escape'].pressed){
+          Game.InGameDialog.EndConversation(true);
+        }
+
+      }else if(Game.InGameComputer.bVisible){
+
+        if(Game.InGameComputer.state == 1){
+          if(this.keys['1'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['2'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['3'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['4'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['5'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['6'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['7'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['8'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }else if(this.keys['9'].pressed){
+            try{ Game.InGameComputer.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          }
+        }else{
+
+        }
+
+        if(this.keys['escape'].pressed){
+          Game.InGameComputer.EndConversation(true);
+        }
+
+      }else if(Game.InGameComputerCam.bVisible){
+        if(this.keys['escape'].pressed){
+          Game.InGameComputerCam.Close();
+        }else if(this.keys['space'].pressed){
+          Game.InGameComputerCam.Close();
+        }
       }
 
     }else{
-      if(this.keys['escape'].pressed && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
+
+      if(this.keys['escape'].pressed){
+        if(MenuManager.GetCurrentMenu() != Game.InGameOverlay && MenuManager.GetCurrentMenu() != Game.MainMenu){
+          MenuManager.GetCurrentMenu().Close();
+        }else{
+          Game.MenuOptions.Open();
+        }
+      }
+
+      /*if(this.keys['escape'].pressed && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
         if(Game.MenuActive){
           Game.MenuActive = false;
           Game.InGameOverlay.Show();
         }else{
           Game.MenuActive = true;
           Game.MenuOptions.Show();
+        }
+      }*/
+
+      if(this.keys['tab'].pressed && (Game.Mode == Game.MODES.INGAME)){
+        if(!Game.MenuActive){
+          PartyManager.party.push(PartyManager.party.shift());
         }
       }
   
@@ -507,9 +598,15 @@ class IngameControls {
   }
 
   UpdatePlayerControls(delta){
+    let gp = undefined;
+    if(currentGamepad instanceof Gamepad){
+      gp = navigator.getGamepads()[currentGamepad.index];
+      //console.log(gp.axes);
+    }
+    let turningCamera = false;
     if(Game.State == Game.STATES.RUNNING){
 
-      if(!Game.inDialog){
+      if(!Game.inDialog && MenuManager.GetCurrentMenu() != Game.InGameConfirm && MenuManager.GetCurrentMenu() != Game.MenuContainer){
 
         let followee = PartyManager.party[0];
 
@@ -521,68 +618,107 @@ class IngameControls {
 
           let moveSpeed = followee.walk ? followee.getWalkSpeed() : followee.getRunSpeed();
 
-          if((this.keys['w'].down || Game.autoRun) && !followee.isDead()){
+          if( gp && (gp.axes[1] < -.1 || gp.axes[1] > .1 || gp.axes[0] < -.1 || gp.axes[0] > .1) ){
             followee.clearAllActions(true);
             followee.force = moveSpeed;
-            followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2), true);
-            //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
+            followee.setFacing(Math.atan2((Math.PI/2)*gp.axes[1], (Math.PI/2)*-gp.axes[0]) - Game.followerCamera.facing, true);
             followee.controlled = true;
-            followee.invalidateCollision = true;
+            followee.invalidateCollision = false;
 
-            followee.AxisFront.x = Math.cos(followee.model.rotation.z + Math.PI/2);// * Math.cos(0);
-            followee.AxisFront.y = Math.sin(followee.model.rotation.z + Math.PI/2);// * Math.cos(0);
-
-          }else if(this.keys['s'].down && !followee.isDead()){
-            followee.clearAllActions(true);
-            followee.force = moveSpeed;
-            followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2), true);
-            //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
-            followee.controlled = true;
-            followee.invalidateCollision = true;
-
-            followee.AxisFront.x = Math.cos(followee.model.rotation.z + Math.PI/2);// * Math.cos(0);
-            followee.AxisFront.y = Math.sin(followee.model.rotation.z + Math.PI/2);
-
-          }else{
-            followee.controlled = false;
-            followee.force = 0;
-          }
-
-          if(this.keys['s'].down || this.keys['w'].down && !followee.isDead()){
+            followee.AxisFront.x = (Math.PI/2)*gp.axes[0];
+            followee.AxisFront.y = (Math.PI/2)*gp.axes[1];
             followee.animState = ModuleCreature.AnimState.RUNNING;
+          }else{
+
+            if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
+              followee.clearAllActions(true);
+              followee.force = moveSpeed;
+              followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
+              //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
+              followee.controlled = true;
+              followee.invalidateCollision = true;
+
+              followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+              followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+
+            }else if( this.keys['s'].down && !followee.isDead()){
+              followee.clearAllActions(true);
+              followee.force = moveSpeed;
+              followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
+              //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
+              followee.controlled = true;
+              followee.invalidateCollision = true;
+
+              followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+              followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);
+
+            }else{
+              //followee.controlled = false;
+              followee.force = 0;
+            }
+
+            if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
+              followee.animState = ModuleCreature.AnimState.RUNNING;
+            }
+
           }
 
           if(this.keys['num-minus'].down && !followee.isDead()){
-            followee.model.position.z -= 5 * delta;
+            followee.position.z -= 5 * delta;
           }
 
           if(this.keys['num-plus'].down && !followee.isDead()){
-            followee.model.position.z += 5 * delta;
+            followee.position.z += 5 * delta;
           }
 
         }
 
-        if(this.keys['a'].down && !Game.MenuActive){
-          Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+        if((this.keys['a'].down || (gp && gp.axes[2] < .1) ) && !Game.MenuActive){
+          //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
           followee.invalidateCollision = true;
+          turningCamera = true;
+          this.camDir = 1;
         }
     
-        if(this.keys['d'].down && !Game.MenuActive){
-          Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+        if((this.keys['d'].down || (gp && gp.axes[2] > -.1)) && !Game.MenuActive){
+          //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
           followee.invalidateCollision = true;
+          turningCamera = true;
+          this.camDir = -1;
         }
 
       }
 
     }else if(Game.State == Game.STATES.PAUSED && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
       if(this.keys['a'].down && !Game.MenuActive){
-        Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+        //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+        turningCamera = true;
+        this.camDir = 1;
       }
   
       if(this.keys['d'].down && !Game.MenuActive){
-        Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+        //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+        turningCamera = true;
+        this.camDir = -1;
       }
     }
+
+    if(turningCamera && this.camSpeed < this.maxCamSpeed){
+      this.camSpeed += this.camRampSpeed * delta;
+
+      if(this.camSpeed > this.maxCamSpeed)
+        this.camSpeed = this.maxCamSpeed;
+    }else if(this.camSpeed > 0){
+      this.camSpeed -= this.camRampSpeed * delta;
+
+      if(this.camSpeed < 0)
+        this.camSpeed = 0;
+    }
+
+    if(this.camSpeed > 0){
+      Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + (this.camSpeed * this.camDir) * delta))
+    }
+
   }
 
   UpdateMiniGameControls(delta){

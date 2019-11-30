@@ -50,17 +50,19 @@ class MenuGalaxyMap extends GameMenu {
   
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuActive = false;
-          Game.InGameOverlay.Show();
-          this.Hide();
+          //Game.MenuActive = false;
+          //Game.InGameOverlay.Show();
+          //this.Hide();
+          this.Close();
           Planetary.SetCurrentPlanet(Game.getGlobalNumber('K_CURRENT_PLANET'));
         });
 
         this.BTN_ACCEPT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuActive = false;
-          Game.InGameOverlay.Show();
-          this.Hide();          
+          //Game.MenuActive = false;
+          //Game.InGameOverlay.Show();
+          //this.Hide();
+          this.Close();
 
           if(this.script instanceof NWScript){
             this.script.run(Game.player);
@@ -176,7 +178,7 @@ class MenuGalaxyMap extends GameMenu {
     super.Show();
 
     Game.MenuActive = true;
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     Game.MenuEquipment.Hide();
@@ -185,7 +187,7 @@ class MenuGalaxyMap extends GameMenu {
     Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Hide();
+    Game.MenuTop.Hide();*/
 
     this.selectedPlanet = Game.getGlobalNumber('K_CURRENT_PLANET');
     this.UpdateScale();

@@ -26,7 +26,7 @@ class MenuInventory extends GameMenu {
           this.onLoad();
 
       }
-    })
+    });
 
   }
 
@@ -35,7 +35,7 @@ class MenuInventory extends GameMenu {
     
     Game.MenuActive = true;
 
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     Game.MenuEquipment.Hide();
@@ -44,7 +44,7 @@ class MenuInventory extends GameMenu {
     Game.MenuMap.Hide();
     //Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
+    Game.MenuTop.Show();*/
     this.LB_ITEMS.clearItems();
     let inv = InventoryManager.getNonQuestInventory();
     for(let i = 0; i < inv.length; i++){

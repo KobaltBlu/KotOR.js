@@ -25,12 +25,12 @@ class MenuResolutions extends GameMenu {
 
         this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          this.Close();
         });
 
         this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          this.Close();
         });
 
         if(typeof this.onLoad === 'function')

@@ -93,6 +93,9 @@ class FileTypeManager {
       case 'utp':
         let newUTPTab = tabManager.AddTab(new UTPEditorTab(res));
       break;
+      case 'bik':
+        let newBIKTab = tabManager.AddTab(new MovieViewerTab(res));
+      break;
       case 'wav':
       case 'mp3':
         inlineAudioPlayer.OpenAudio(res);

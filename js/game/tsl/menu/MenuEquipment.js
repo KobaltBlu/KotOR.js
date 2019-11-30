@@ -47,7 +47,7 @@ class MenuEquipment extends GameMenu {
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.InGameOverlay.Show();
+          this.Close();
         });
 
         this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
@@ -147,7 +147,7 @@ class MenuEquipment extends GameMenu {
     control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
       item.getName()
     );
-    let _ctrl2 = new GUIProtoItem(this, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
+    let _ctrl2 = new GUIProtoItem(this, control, this.LB_ITEMS, this.LB_ITEMS.scale);
     _ctrl2.extent.width -= 52;
     _ctrl2.extent.left -= 46;
     _ctrl2.setList( this.LB_ITEMS );
@@ -360,17 +360,6 @@ class MenuEquipment extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    //Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
-
     this.UpdateList();
 
     this['BTN_CHANGE1'].hide();

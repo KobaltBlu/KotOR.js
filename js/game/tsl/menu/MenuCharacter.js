@@ -25,7 +25,7 @@ class MenuCharacter extends GameMenu {
         this.BTN_EXIT = this.getControlByName('BTN_EXIT');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.InGameOverlay.Show();
+          this.Close();
         });
 
         Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charmain_light', ResourceTypes['mdl']), (mdlBuffer) => {
@@ -173,17 +173,6 @@ class MenuCharacter extends GameMenu {
     });
     
     Game.MenuActive = true;
-
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    //Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
 
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();

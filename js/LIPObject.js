@@ -162,8 +162,6 @@ class LIPObject {
         next = this.keyframes[0];
       }
 
-
-
       if(!last){
         last = {
           time: 0,
@@ -304,17 +302,18 @@ class LIPObject {
 
   }
 
-  exportAs( onComplete = null ){
+  async exportAs( onComplete = null ){
 
-    let path = dialog.showSaveDialog({
+    let payload = await dialog.showSaveDialog({
       title: 'Export LIP',
       defaultPath: this.file,
       filters: [
         {name: 'LIP', extensions: ['lip']}
-    ]});
+      ]
+    });
 
-    if(typeof path != 'undefined' && path != null){
-      this.file = path;
+    if(!payload.canceled && typeof payload.filePath != 'undefined'){
+      this.file = payload.filePath;
       this.export(onComplete);
     }else{
       console.warning('LIP export aborted');

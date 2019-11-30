@@ -36,22 +36,28 @@ class MenuSound extends GameMenu {
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          /*this.Hide();
           if(Game.Mode == Game.MODES.INGAME){
             Game.MenuOptions.Show();
           }else{
             Game.MainOptions.Show();
-          }
+          }*/
+          this.Close();
+        });
+
+        this.BTN_ADVANCED.addEventListener('click', (e) => {
+          e.stopPropagation();
+          //this.Hide();
+          Game.MenuSoundAdvanced.Open();
         });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
 
-
-        this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);
-        this.SLI_VO.setValue(AudioEngine.GAIN_VO);
-        this.SLI_FX.setValue(AudioEngine.GAIN_SFX);
-        this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE);
+        //this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);
+        //this.SLI_VO.setValue(AudioEngine.GAIN_VO);
+        //this.SLI_FX.setValue(AudioEngine.GAIN_SFX);
+        //this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE);
 
         this.SLI_MUSIC.onValueChanged = (value) => {
           AudioEngine.GAIN_MUSIC = value;
@@ -68,6 +74,11 @@ class MenuSound extends GameMenu {
         this.SLI_MOVIE.onValueChanged = (value) => {
           AudioEngine.GAIN_MOVIE = value;
         };
+
+        this.SLI_MUSIC.attachINIProperty('Sound Options.Music Volume');
+        this.SLI_VO.attachINIProperty('Sound Options.Voiceover Volume');
+        this.SLI_FX.attachINIProperty('Sound Options.Sound Effects Volume');
+        this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
         this.LBL_MUSIC.addEventListener( 'hover', () => {
           //console.log(this.LBL_MUSIC.getHintText());

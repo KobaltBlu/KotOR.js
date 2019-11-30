@@ -23,6 +23,8 @@ class MenuEquipment extends GameMenu {
         this.BTN_CHANGE2 = this.getControlByName('BTN_CHANGE2');
         this.BTN_EQUIP = this.getControlByName('BTN_EQUIP');
         this.LB_ITEMS = this.getControlByName('LB_ITEMS');
+        this.LB_DESC = this.getControlByName('LB_DESC');
+        this.LBL_CANTEQUIP = this.getControlByName('LBL_CANTEQUIP');
 
         this.BTN_INV_IMPLANT = this.getControlByName('BTN_INV_IMPLANT');
         this.BTN_INV_HEAD = this.getControlByName('BTN_INV_HEAD');
@@ -44,10 +46,14 @@ class MenuEquipment extends GameMenu {
         this.LBL_INV_BELT =     this.getControlByName('LBL_INV_BELT');
         this.LBL_INV_WEAP_R =   this.getControlByName('LBL_INV_WEAP_R');
 
+        
+        this.LB_DESC.hide();
+        this.LBL_CANTEQUIP.hide();
+
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.InGameOverlay.Show();
+          this.Close();
         });
 
         this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
@@ -149,7 +155,7 @@ class MenuEquipment extends GameMenu {
     control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
       item.getName()
     );
-    let ctrl = new GUIProtoItem(this, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
+    let ctrl = new GUIProtoItem(this, control, this.LB_ITEMS, this.LB_ITEMS.scale);
 
     ctrl.extent.width -= 52;
     ctrl.extent.left -= 46;
@@ -365,7 +371,7 @@ class MenuEquipment extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     //Game.MenuEquipment.Hide();
@@ -374,7 +380,7 @@ class MenuEquipment extends GameMenu {
     Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
+    Game.MenuTop.Show();*/
 
     this.UpdateList();
 

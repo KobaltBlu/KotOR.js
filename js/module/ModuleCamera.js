@@ -9,6 +9,7 @@ class ModuleCamera extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
+    this.id = -1;
     this.template = gff;
   }
 
@@ -45,7 +46,43 @@ class ModuleCamera extends ModuleObject {
       this.pitch = this.template.GetFieldByLabel('Pitch').GetValue();
 
     if(this.template.RootNode.HasField('Position'))
-      this.position = this.template.GetFieldByLabel('Position').GetVector();
+      this.position.copy(this.template.GetFieldByLabel('Position').GetVector());
+
+  }
+
+  toToolsetInstance(){
+
+    let instance = new Struct(4);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.INT, 'CameraID', this.cameraID)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'FieldOfView', this.fov)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Height', this.height)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'MicRange', this.micRange)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.ORIENTATION, 'Orientation')
+    ).SetOrientation(this.orientation);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Pitch', this.position.z)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.VECTOR, 'Position')
+    ).SetVector(this.position);
+
+    return instance;
 
   }
 

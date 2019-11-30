@@ -5,7 +5,6 @@
  * The THREE.AuroraModel class takes an AuroraModel object and converts it into a THREE.js object
  */
 
-
 //THREE.js representation of AuroraLight
 THREE.AuroraLight = function () {
   
@@ -13,6 +12,7 @@ THREE.AuroraLight = function () {
   this.type = 'AuroraLight';
 
   this.worldPosition = new THREE.Vector3();
+  this.sphere = new THREE.Sphere();
 
   this.getIntensity = function(){
     if(this._node)
@@ -27,6 +27,12 @@ THREE.AuroraLight = function () {
       return this._node.radius;
     else
       return 0;
+  }
+
+  this.isOnScreen = function( frustum = Game.viewportFrustum ){
+    this.sphere.center.copy(this.worldPosition);
+    this.sphere.radius = this.getRadius();
+    return frustum.intersectsSphere(this.sphere);
   }
 
 };
@@ -47,7 +53,6 @@ THREE.AuroraModel = function () {
     this.danglyMeshes = [];
     this.animations = [];
     this.emitters = [];
-    this.emitters_detonate = []
     this.lights = [];
     this.aabb = {};
     this.materials = [];
@@ -80,6 +85,7 @@ THREE.AuroraModel = function () {
     };
     this.animationQueue = [];
     this.animLoops = [];
+    this.animLoop = undefined;
     this.mgAnims = [];
     this.animationLoop = false;
     this._vec3 = new THREE.Vector3();
@@ -123,39 +129,28 @@ THREE.AuroraModel = function () {
 
       for(let i = 0; i < this.emitters.length; i++){
         if(this.emitters[i].group)
-            this.emitters[i].remove();
+          this.emitters[i].remove();
       }
 
      // console.log('dispose', node)
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        const object = node.children[i];
-        if (object.type === 'Mesh' || object.type === 'SkinnedMesh') {
-          object.geometry.dispose();
+      for (let i = node.children.length; i > 0; i--) {
+        const object = node.children[i-1];
+        node.remove(object);
+        if (object.type === 'Mesh' || object.type === 'SkinnedMesh' || object.type === 'Points') {
           if(Array.isArray(object.material)){
             while(object.material.length){
               let material = object.material.splice(0, 1)[0];
+              this.disposeMaterial(material);
               material.dispose();
             }
           }else{
+            this.disposeMaterial(object.material);
             object.material.dispose();
           }
-
-          /*if(object.material.map)
-            object.material.map.dispose();
-
-          if(object.material.envMap)
-            object.material.envMap.dispose();
-
-          if(object.material.alphaMap)
-            object.material.alphaMap.dispose();
-
-          if(object.material.lightMap)
-            object.material.lightMap.dispose();
-
-          if(object.material.bumpMap)
-            object.material.bumpMap.dispose();*/
-
+          object.geometry.dispose();
+          //object.dispose();
         }else if(object.type === 'AuroraLight'){
+          console.log('Light', node);
           LightManager.removeLight(node);
         }else{
           if(object.hasOwnProperty('mesh')){
@@ -176,7 +171,6 @@ THREE.AuroraModel = function () {
         }
 
         this.dispose(object);
-        node.remove(object);
       }
 
       if(node instanceof THREE.AuroraModel){
@@ -223,12 +217,32 @@ THREE.AuroraModel = function () {
         if(this.parent instanceof THREE.Object3D){
           this.parent.remove(this);
         }
-        
-        Game.octree.remove(this);
-        Game.octree_walkmesh.remove(this);
+        try{
+          Game.octree.remove(this);
+          Game.octree_walkmesh.remove(this);
+        }catch(e){}
         //console.log(node);
       }
 
+    }
+
+    this.disposeMaterial = function(material){
+      if(material instanceof THREE.ShaderMaterial){
+        if(material.uniforms.map && material.uniforms.map.value)
+          material.uniforms.map.value.dispose();
+
+        if(material.uniforms.envMap && material.uniforms.envMap.value)
+          material.uniforms.envMap.value.dispose();
+
+        if(material.uniforms.alphaMap && material.uniforms.alphaMap.value)
+          material.uniforms.alphaMap.value.dispose();
+
+        if(material.uniforms.lightMap && material.uniforms.lightMap.value)
+          material.uniforms.lightMap.value.dispose();
+
+        if(material.uniforms.bumpMap && material.uniforms.bumpMap.value)
+          material.uniforms.bumpMap.value.dispose();
+      }
     }
   
     this.update = function(delta){
@@ -252,6 +266,9 @@ THREE.AuroraModel = function () {
               if(!this.currentAnimation.data.loop){
                 this.stopAnimation();
               }else{
+                if(this.currentAnimation){
+                  this.lastAnimation = this.currentAnimation;
+                }
                 //console.log('loop');
                 this.currentAnimation.data.events = [];
               }
@@ -260,6 +277,21 @@ THREE.AuroraModel = function () {
         }
 
         if(this.bonesInitialized && this.animLoops.length){
+
+          /*if(this.animLoop instanceof AuroraModelAnimation){
+            this.updateAnimation(this.animLoop, delta, () => {
+
+              let index = this.animLoops.indexOf(this.animLoop) + 1;
+              if(index >= this.animLoops.length ){
+                index = 0;
+              }
+              this.stopAnimationLoop();
+              this.animLoop = this.animLoops[index];
+            });
+          }else{
+            this.animLoop = this.animLoops[0];
+          }*/
+
           for(let i = 0; i < this.animLoops.length; i++){
             this.updateAnimation(this.animLoops[i], delta);
           }
@@ -285,8 +317,8 @@ THREE.AuroraModel = function () {
       for(let i = 0; i < this.animatedUV.length; i++){
         let aUV = this.animatedUV[i];
         if(aUV.material.uniforms.map){
-          aUV.material.uniforms.map.value.offset.x += aUV.speed.x;// * delta;
-          aUV.material.uniforms.map.value.offset.y += aUV.speed.y;// * delta;
+          aUV.material.uniforms.map.value.offset.x += aUV.speed.x * delta/2;
+          aUV.material.uniforms.map.value.offset.y += aUV.speed.y * delta/2;
           aUV.material.uniforms.map.value.updateMatrix();
         }
       }
@@ -295,65 +327,27 @@ THREE.AuroraModel = function () {
       for(let i = 0; i < this.materials.length; i++){
         let material = this.materials[i];
         if(material.uniforms){
-          material.uniforms.time.value += delta;
+          material.uniforms.time.value = Game.deltaTime;
+        }
+      }
+
+      if(this.headhook && this.headhook.children){
+        for(let i = 0; i < this.headhook.children.length; i++){
+          let node = this.headhook.children[i];
+          if(node instanceof THREE.AuroraModel){
+            for(let j = 0; j < node.materials.length; j++){
+              let material = node.materials[j];
+              if(material.uniforms){
+                material.uniforms.time.value = Game.deltaTime;
+              }
+            }
+          }
         }
       }
   
       for(let i = 0; i < this.emitters.length; i++){
-        let emitter = this.emitters[i];
-
-        switch(emitter.node._emitter.Update){
-          case 'Explosion':
-            emitter.particlesPerSecond -= 1;
-            if(emitter.particlesPerSecond < 1){
-              emitter.particlesPerSecond = 1;
-            }
-          break;
-          case 'Single':
-
-          break;
-          default:
-            if(emitter.particlesPerSecond <= 0){
-              emitter.particleCount = 1000;
-            }
-          break;
-        }
-
-        if(this.modelHeader.Classification != 1){
-
-         // emitter.position.value.copy(emitter.node.getWorldPosition(new THREE.Vector3));
-          //emitter.position.value.copy(this.position);
-
-          if(emitter.node._emitter.canInheritLocal){
-            //emitter.position.value.add(emitter.positionOffset);
-          }
-
-          //emitter.position.value.sub(emitter.position.spread);
-          //emitter.position.value.sub(emitter.positionOffset);
-
-          //emitter.updateFlags['position'] = true;
-
-        }
-
-        emitter.group.geometry.computeBoundingSphere();
-        if(!emitter.group.geometry.boundingSphere.radius){
-          if(this.modelHeader.Classification == 1){
-            emitter.group.geometry.boundingSphere.radius = this.modelHeader.Radius;
-          }else{
-            emitter.group.geometry.boundingSphere.radius = 1;
-          }
-        }
-
-        //if(this.modelHeader.Classification = 1){
-          emitter.group.tick(delta);
-        //}  
-        
-      }
-
-      
-      /*for(let i = 0; i < this.emitters.length; i++){
         this.emitters[i].tick(delta);
-      }*/
+      }
   
     }
 
@@ -392,6 +386,7 @@ THREE.AuroraModel = function () {
           cFrame: 0,
           elapsed: 0,
           lastTime: 0,
+          length: 0,
           delta: 0,
           lastEvent: -1,
           events: [],
@@ -456,6 +451,23 @@ THREE.AuroraModel = function () {
       }
       this.currentAnimation = undefined;
     }
+
+    this.stopAnimationLoop = function(){
+      //this.pose();
+      if(typeof this.animLoop != 'undefined'){
+        this.animLoop.data = {
+          loop: false,
+          cFrame: 0,
+          elapsed: 0,
+          lastTime: 0,
+          delta: 0,
+          lastEvent: -1,
+          events: [],
+          callback: undefined
+        };
+      }
+      this.animLoop = undefined;
+    }
   
     this.getAnimationByName = function( name = '' ){
   
@@ -487,6 +499,12 @@ THREE.AuroraModel = function () {
       this.currentAnimation = undefined;
       this.pose();
       let scale = new THREE.Vector3(1, 1, 1);
+
+      /*let model = this;
+      if(this.moduleObject && this == this.moduleObject.head){
+        model = this.moduleObject.model;
+      }*/
+
       for(let i = 0; i < this.skins.length; i++){
         let skinNode = this.skins[i];
         if(typeof skinNode.bone_parts !== 'undefined'){
@@ -529,9 +547,6 @@ THREE.AuroraModel = function () {
                 break;
                 case ControllerType.Orientation:
                   node.quaternion.set(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
-                  if(node.emitter){
-                    node.rotation.z = 0;
-                  }
                 break;
               }
             }
@@ -651,19 +666,16 @@ THREE.AuroraModel = function () {
     this.playEvent = function(event, index){
       //console.log(event)
       if(event == 'detonate'){
-        let emitter = this.emitters_detonate[index];
-        if(emitter){
-          if(emitter.node._emitter.Update == 'Explosion'){
-            emitter.age = 0;
-            emitter.reset(true);
-            emitter.alive = true;
-            //emitter._activateParticles( 0, emitter.particleCount, emitter.paramsArray, 0 );
-            emitter.updateFlags.params = true;
-            emitter.enable();
-            emitter.particlesPerSecond = emitter.particleCount*2;
-            setTimeout( () => {
-              emitter.alive = false;
-            }, 700);
+        let idx = 0;
+        for(let i = 0; i < this.emitters.length; i++){
+          let emitter = this.emitters[i];
+          if(emitter instanceof THREE.AuroraEmitter){
+            if(emitter.updateType == 'Explosion'){
+              if(idx == index){
+                emitter.detonate();
+              }
+              idx++;
+            }
           }
         }
       }else{
@@ -687,10 +699,22 @@ THREE.AuroraModel = function () {
         this.updateAnimationNode(anim, anim.nodes[i]);
       }
       //this.updateAnimationNode(anim, anim.rooNode);
-  
+      anim.data.elapsed += delta;
+      anim.data.lastTime = anim.data.elapsed;
+
       if(anim.data.elapsed >= anim.length){
+
+        if(anim.data.elapsed > anim.length){
+          anim.data.elapsed = anim.length;
+          this.updateAnimationEvents(anim);
+          let animNodesLen = anim.nodes.length;
+          for(let i = 0; i < animNodesLen; i++){
+            this.updateAnimationNode(anim, anim.nodes[i]);
+          }
+        }
   
-        anim.data.lastTime = anim.data.elapsed; anim.data.elapsed = 0;
+        anim.data.lastTime = anim.length;
+        anim.data.elapsed = 0;
 
         if(typeof anim.data.callback === 'function')
           anim.data.callback();
@@ -698,11 +722,7 @@ THREE.AuroraModel = function () {
         if(typeof onEnd == 'function')
           onEnd();
 
-      }else{
-        anim.data.elapsed += delta;
       }
-  
-      anim.data.lastTime = anim.data.elapsed;
     };
 
     this.updateAnimationEvents = function(anim){
@@ -785,20 +805,18 @@ THREE.AuroraModel = function () {
               }
 
               modelNode.quaternion.set(data.x, data.y, data.z, data.w);
-              if(modelNode.emitter){
-                modelNode.rotation.z = 0;
-              }
             break;
             case ControllerType.SelfIllumColor:
               if(modelNode.mesh){
                 if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
-                  modelNode.mesh.material.uniforms.diffuse.value.setRGB(
+                  modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
                     data.r, 
                     data.g, 
                     data.b
                   );
+                  modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
                 }else{
-                  modelNode.mesh.material.color.setRGB(
+                  modelNode.mesh.material.emissive.setRGB(
                     data.r, 
                     data.g, 
                     data.b
@@ -847,6 +865,8 @@ THREE.AuroraModel = function () {
         if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
           this.moduleObject.head.updateAnimationNode(anim, node);
       }
+
+      let trans = (anim.transition && this.lastAnimation && this.lastAnimation.name != anim.name);
   
       if(typeof modelNode != 'undefined'){
         if(modelNode.lipping && this.moduleObject && this.moduleObject.lipObject)
@@ -856,7 +876,11 @@ THREE.AuroraModel = function () {
         anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
         anim._quaternion.w = 1;
         
-        node.controllers.forEach( (controller) => {
+
+        //node.controllers.forEach( (controller) => {
+        for(var controller of node.controllers){
+
+          controller = controller[1];
 
           let shouldBlend = false;
 
@@ -864,28 +888,41 @@ THREE.AuroraModel = function () {
             shouldBlend = parseInt(anim.data.animation.looping) || parseInt(anim.data.animation.running) || parseInt(anim.data.animation.walking);
           }
             
-          if( (controller.data.length == 1 || anim.data.elapsed == 0) && !shouldBlend ){
+          if( (controller.data.length == 1 || anim.data.elapsed == 0 || controller.data[0].time >= anim.data.elapsed) && !shouldBlend ){
             let data = controller.data[0];
             switch(controller.type){
               case ControllerType.Position:
                 if(typeof modelNode.controllers.get(ControllerType.Position) != 'undefined'){
-          
-                  anim._position.copy(modelNode.controllers.get(ControllerType.Position).data[0]);
+
+                  if(trans && controller.data.length > 1){
+                    modelNode.trans.position.copy(modelNode.position);
+                    anim._position.copy(modelNode.trans.position);
+                  }else{
+                    anim._position.copy(modelNode.controllers.get(ControllerType.Position).data[0]);
+                  }
         
                   if(anim.name.indexOf('CUT') > -1 && modelNode.name == 'cutscenedummy'){
                     anim._position.sub(this.position);
                   }
         
                 }
-                if(anim.transition){
+                if(trans && controller.data.length > 1){
                   modelNode.position.lerp(anim._position.add(data), anim.data.delta);
                 }else{
                   modelNode.position.copy(anim._position.add(data));
                 }
               break;
               case ControllerType.Orientation:
+
                 if(typeof modelNode.controllers.get(ControllerType.Orientation) != 'undefined'){
-                  anim._quaternion.copy(modelNode.controllers.get(ControllerType.Orientation).data[0]);
+
+                  if(trans && controller.data.length > 1){
+                    modelNode.trans.quaternion.copy(modelNode.quaternion);
+                    anim._quaternion.copy(modelNode.trans.quaternion);
+                  }else{
+                    anim._quaternion.copy(modelNode.controllers.get(ControllerType.Orientation).data[0]);
+                  }
+    
                 }
                 if(data.x == 0 && data.y == 0 && data.z == 0 && data.w == 1){
                   data.x = anim._quaternion.x;
@@ -894,14 +931,10 @@ THREE.AuroraModel = function () {
                   data.w = anim._quaternion.w;
                 }
 
-                if(anim.transition){
-                  modelNode.quaternion.slerp(this._quat.set(data.x, data.y, data.z, data.w), anim.data.delta);
+                if(trans && controller.data.length > 1){
+                  modelNode.quaternion.slerp(this._quat.copy(anim._quaternion), 0);
                 }else{
                   modelNode.quaternion.copy(data);
-                }
-
-                if(modelNode.emitter){
-                  modelNode.rotation.z = 0;
                 }
                 
               break;
@@ -917,38 +950,44 @@ THREE.AuroraModel = function () {
             if(modelNode.emitter){
               switch(controller.type){
                 case ControllerType.LifeExp:
-                  modelNode.emitter.maxAge.value = Math.ceil(data.value);
-                  modelNode.emitter.updateFlags['params'] = true;
+                  modelNode.emitter.lifeExp = Math.ceil(data.value);
                 break;
                 case ControllerType.BirthRate:
-                  modelNode.emitter.particlesPerSecond = Math.ceil(data.value);
-                  modelNode.emitter.particleCount = Math.ceil(data.value * modelNode.emitter.maxAge.value);
+                  modelNode.emitter.birthRate = Math.ceil(data.value);
                 break;
                 case ControllerType.ColorStart:
-                  modelNode.emitter.color.value[0].copy(data);
-                  modelNode.emitter.updateFlags['color'] = true;
+                  modelNode.emitter.colorStart.copy(data);
+                  modelNode.emitter.material.uniforms.colorStart.value.copy(data);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
                 break;
                 case ControllerType.ColorMid:
-                  modelNode.emitter.color.value[1].copy(data);
-                  modelNode.emitter.updateFlags['color'] = true;
+                  modelNode.emitter.colorMid.copy(data);
+                  modelNode.emitter.material.uniforms.colorMid.value.copy(data);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
                 break;
                 case ControllerType.ColorEnd:
-                  modelNode.emitter.color.value[2].copy(data);
-                  modelNode.emitter.color.value[3].copy(data);
-                  modelNode.emitter.updateFlags['color'] = true;
+                  modelNode.emitter.colorEnd.copy(data);
+                  modelNode.emitter.material.uniforms.colorEnd.value.copy(data);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
                 break;
                 case ControllerType.AlphaStart:
-                  modelNode.emitter.opacity.value[0] = data.value;
-                  modelNode.emitter.updateFlags['opacity'] = true;
+                  modelNode.emitter.opacity[0] = data.value;
+                  modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
                 break;
                 case ControllerType.AlphaMid:
-                  modelNode.emitter.opacity.value[1] = data.value;
-                  modelNode.emitter.updateFlags['opacity'] = true;
+                  modelNode.emitter.opacity[1] = data.value;
+                  modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
                 break;
                 case ControllerType.AlphaEnd:
-                  modelNode.emitter.opacity.value[2] = data.value;
-                  modelNode.emitter.opacity.value[3] = data.value;
-                  modelNode.emitter.updateFlags['opacity'] = true;
+                  modelNode.emitter.opacity[2] = data.value;
+                  modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                  modelNode.emitter.material.uniformsNeedUpdate = true;
+                break;
+                case ControllerType.Mass:
+                  modelNode.emitter.mass = data.value;
+                  modelNode.emitter.attributeChanged('mass');
                 break;
               }
             }else{
@@ -956,13 +995,14 @@ THREE.AuroraModel = function () {
                 case ControllerType.SelfIllumColor:
                   if(modelNode.mesh){
                     if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
-                      modelNode.mesh.material.uniforms.diffuse.value.setRGB(
+                      modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
                         data.r, 
                         data.g, 
                         data.b
                       );
+                      modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
                     }else{
-                      modelNode.mesh.material.color.setRGB(
+                      modelNode.mesh.material.emissive.setRGB(
                         data.r, 
                         data.g, 
                         data.b
@@ -972,7 +1012,11 @@ THREE.AuroraModel = function () {
                 break;
                 case ControllerType.Alpha:
                   if(modelNode.mesh){
-                    modelNode.mesh.material.opacity = data.value;
+                    if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
+                      modelNode.mesh.material.uniforms.opacity.value = data.value;
+                    }else{
+                      modelNode.mesh.material.opacity = data.value;
+                    }
                     modelNode.mesh.material.transparent = true;
                   }
                 break;
@@ -1011,16 +1055,25 @@ THREE.AuroraModel = function () {
             if(last){
 
               let next = controller.data[lastFrame + 1];
-              if (lastFrame + 1 >= controller.data.length || last.time >= anim.data.elapsed) {
-                next = last;
-                last = controller.data[0];
+              let fl = 0;
+
+              if (next) { 
+                fl = Math.abs( (anim.data.elapsed - last.time) / (next.time - last.time) ) % 1;
+              }else{
+                fl = 1;
+                next = controller.data[lastFrame];
+                last = controller.data[lastFrame - 1] || controller.data[lastFrame];
               }
-              let fl = Math.abs((anim.data.elapsed - last.time) / (next.time - last.time));
+              
               if(fl == Infinity)
-                fl = anim.data.delta;
+                fl = 1.0;
 
               switch(controller.type){
                 case ControllerType.Position:
+
+                  //if(last.x == next.x && last.y == next.y && last.z == next.z)
+                  //  break;
+
                   if(typeof modelNode.controllers.get(ControllerType.Position) != 'undefined'){
                     anim._position.copy(modelNode.controllers.get(ControllerType.Position).data[0]);
                     if(anim.name.indexOf('CUT') > -1 && modelNode.name == 'cutscenedummy'){
@@ -1029,17 +1082,51 @@ THREE.AuroraModel = function () {
                   }
 
                   if(last.isBezier){
-                    this._vec3.copy(last.bezier.getPoint(fl).add(anim._position));
-                    //modelNode.position.copy(this._vec3);
-                    modelNode.position.lerp(this._vec3, fl);
+                    //Last point
+                    if(last.isLinearBezier){
+                      this._vec3.copy(last.bezier.getPoint(0)).add(anim._position);
+                      modelNode.position.copy(this._vec3);
+                    }else{
+                      this._vec3.copy(last.bezier.getPoint((0.5 * fl) + 0.5).add(anim._position));
+                      modelNode.position.copy(this._vec3);
+                    }
+
+                    //Next point
+                    //if(next.isLinearBezier){
+                      this._vec3.copy(next.bezier.getPoint( next.lastFrame ? 0 : 0.5 )).add(anim._position);
+                      modelNode.position.lerp(this._vec3, fl);
+                    //}else{
+                    //  this._vec3.copy(next.bezier.getPoint(0.5 * fl).add(anim._position));
+                    //  modelNode.position.lerp(this._vec3, fl);
+                    //}
+                  }else if(next.isBezier){
+                    //Last point
+                    this._vec3.copy(last).add(anim._position);
+                    modelNode.position.copy(this._vec3);
+                    //Next point
+                    if(next.isLinearBezier){
+                      this._vec3.copy(next.bezier.getPoint(0)).add(anim._position);
+                      modelNode.position.lerp(this._vec3, fl);
+                    }else{
+                      this._vec3.copy(next.bezier.getPoint(0.5 * fl)).add(anim._position);
+                      modelNode.position.lerp(this._vec3, fl);
+                    }
                   }else{
+                    
+                    //if(trans && lastFrame == 0){
+                    //  modelNode.position.copy(modelNode.trans.position);
+                    //}else{
+                      this._vec3.copy(last).add(anim._position);
+                      modelNode.position.copy(this._vec3);
+                    //}
+
                     this._vec3.copy(next);
                     this._vec3.add(anim._position);
-                    if(anim.data.elapsed > anim.transition){
-                      modelNode.position.copy(last);
-                      modelNode.position.add(anim._position);
-                    }
-                    this._vec3;
+
+                    // if(anim.data.elapsed > anim.transition){
+                    //   modelNode.position.copy(last);
+                    //   modelNode.position.add(anim._position);
+                    // }
                     modelNode.position.lerp(this._vec3, fl);
                   }
 
@@ -1047,8 +1134,8 @@ THREE.AuroraModel = function () {
                 case ControllerType.Orientation:
                   if(modelNode.emitter){
 
-                    if(anim.data.elapsed > anim.transition){
-                      this._quat.copy(last);
+                    if(trans && lastFrame == 0){
+                      modelNode.position.copy(modelNode.trans.position);
                     }
                     this._quat.slerp(next, fl);
 
@@ -1060,81 +1147,95 @@ THREE.AuroraModel = function () {
 
                   }else{
                     this._quat.copy(next);
-                    if(anim.data.elapsed > anim.transition){
+
+                    if(next != last){
+                      if(trans && lastFrame == 0){//(anim.length * anim.transition) > anim.data.elapsed){
+                          //modelNode.quaternion.copy(modelNode.trans.quaternion);
+
+                          modelNode.quaternion.copy(modelNode.trans.quaternion);
+                          modelNode.trans.quaternion.copy(modelNode.quaternion.slerp(this._quat, fl));
+
+                          //modelNode.quaternion.copy(
+                            //modelNode.trans.quaternion.copy(
+                                  /*modelNode.quaternion.slerp(
+                                      modelNode.trans.quaternion, 
+                                      anim.data.elapsed/(anim.length * anim.transition)
+                                  )*/
+                              //)
+                          //);
+                      }else{
+                          modelNode.quaternion.copy(last);
+                          modelNode.quaternion.slerp(this._quat, fl);
+                      }
+                    }else{
                       modelNode.quaternion.copy(last);
                     }
-                    modelNode.quaternion.slerp(this._quat, fl);
+                    //modelNode.quaternion.copy(last);
                   }
                   
                 break;
                 case ControllerType.Scale:
-                  modelNode.scale.lerp(this._vec3.setScalar( ( (next.value) * this.Scale) ) || 0.000000001, fl);
+                  modelNode.scale.lerp( this._vec3.setScalar( ( (next.value) * this.Scale) || 0.000000001 ), fl);
                 break;
               }
 
               if(modelNode.emitter){
                 switch(controller.type){
                   case ControllerType.LifeExp:
-                    if(modelNode.emitter){
-                      modelNode.emitter.maxAge.value = Math.ceil(last.value + fl * (next.value - last.value));
-                      modelNode.emitter.updateFlags['params'] = true;
-                    }
+                    modelNode.emitter.lifeExp = next.value;//Math.ceil(last.value + fl * (next.value - last.value));
                   break;
                   case ControllerType.BirthRate:
-                    if(modelNode.emitter){
-                      modelNode.emitter.particlesPerSecond = Math.ceil((last.value + fl * (next.value - last.value)));
-                      modelNode.emitter.particleCount = modelNode.emitter.particlesPerSecond * modelNode.emitter.maxAge.value;
-                    }
+                    modelNode.emitter.birthRate = next.value;//Math.ceil((last.value + fl * (next.value - last.value)));
                   break;
                   case ControllerType.ColorStart:
-                    modelNode.emitter.color.value[0].setRGB(
+                    modelNode.emitter.colorStart.setRGB(
                       last.r + fl * (next.r - last.r),
                       last.g + fl * (next.g - last.g),
                       last.b + fl * (next.b - last.b)
                     );
-                    modelNode.emitter.updateFlags['color'] = true;
+                    modelNode.emitter.material.uniforms.colorStart.value.copy(modelNode.emitter.colorStart);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                   case ControllerType.ColorMid:
-                    modelNode.emitter.color.value[1].setRGB(
+                    modelNode.emitter.colorMid.setRGB(
                       last.r + fl * (next.r - last.r),
                       last.g + fl * (next.g - last.g),
                       last.b + fl * (next.b - last.b)
                     );
-                    modelNode.emitter.updateFlags['color'] = true;
+                    modelNode.emitter.material.uniforms.colorMid.value.copy(modelNode.emitter.colorMid);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                   case ControllerType.ColorEnd:
-                    modelNode.emitter.color.value[2].setRGB(
+                    modelNode.emitter.colorEnd.setRGB(
                       last.r + fl * (next.r - last.r),
                       last.g + fl * (next.g - last.g),
                       last.b + fl * (next.b - last.b)
                     );
-                    modelNode.emitter.color.value[3].setRGB(
-                      last.r + fl * (next.r - last.r),
-                      last.g + fl * (next.g - last.g),
-                      last.b + fl * (next.b - last.b)
-                    );
-                    modelNode.emitter.updateFlags['color'] = true;
+                    modelNode.emitter.material.uniforms.colorEnd.value.copy(modelNode.emitter.colorEnd);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                   case ControllerType.AlphaStart:
-                    modelNode.emitter.opacity.value[0] = last.value + fl * (next.value - last.value);
-                    modelNode.emitter.updateFlags['opacity'] = true;
+                    modelNode.emitter.opacity[0] = ((next.value - last.value) * fl + last.value);
+                    modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                   case ControllerType.AlphaMid:
-                    modelNode.emitter.opacity.value[1] = last.value + fl * (next.value - last.value);
-                    modelNode.emitter.updateFlags['opacity'] = true;
+                    modelNode.emitter.opacity[1] = ((next.value - last.value) * fl + last.value);
+                    modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                   case ControllerType.AlphaEnd:
-                    modelNode.emitter.opacity.value[2] = last.value + fl * (next.value - last.value);
-                    modelNode.emitter.opacity.value[3] = last.value + fl * (next.value - last.value);
-                    modelNode.emitter.updateFlags['opacity'] = true;
+                    modelNode.emitter.opacity[0] = ((next.value - last.value) * fl + last.value);
+                    modelNode.emitter.material.uniforms.opacity.value.fromArray(modelNode.emitter.opacity);
+                    modelNode.emitter.material.uniformsNeedUpdate = true;
                   break;
                 }
               }else{
                 switch(controller.type){
                   case ControllerType.Alpha:
                     if(modelNode.mesh){
-                      modelNode.mesh.material.opacity = last.value + fl * (next.value - last.value);
-                      modelNode.mesh.material.transparent = true;
+                      modelNode.mesh.material.opacity = ((next.value - last.value) * fl + last.value);
+                      modelNode.mesh.material.transparent = modelNode.mesh.material.opacity < 1.0;
                       modelNode.mesh.material.depthFunc = 4;
                     }
                   break;
@@ -1146,13 +1247,14 @@ THREE.AuroraModel = function () {
                     if(modelNode.mesh){
 
                       if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
-                        modelNode.mesh.material.uniforms.diffuse.value.setRGB(
+                        modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
                           lerpIllumColorR, 
                           lerpIllumColorG, 
                           lerpIllumColorB
                         );
+                        modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
                       }else{
-                        modelNode.mesh.material.color.setRGB(
+                        modelNode.mesh.material.emissive.setRGB(
                           lerpIllumColorR, 
                           lerpIllumColorG, 
                           lerpIllumColorB
@@ -1163,24 +1265,19 @@ THREE.AuroraModel = function () {
                   break;
                   case ControllerType.Color:
                     if ((modelNode._node.NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
-                      let lerpR = last.r + fl * (next.r - last.r);
-                      let lerpG = last.g + fl * (next.g - last.g);
-                      let lerpB = last.b + fl * (next.b - last.b);
-                      modelNode._node.light.color.setRGB(
-                        lerpR, 
-                        lerpG, 
-                        lerpB
-                      );
+                      modelNode._node.light.color.r = ((next.r - last.r) * fl + last.r);
+                      modelNode._node.light.color.g = ((next.g - last.g) * fl + last.g);
+                      modelNode._node.light.color.b = ((next.b - last.b) * fl + last.b);
                     }
                   break;
                   case ControllerType.Multiplier:
                     if ((modelNode._node.NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
-                      modelNode._node.multiplier = last.value + fl * (next.value - last.value);
+                      modelNode._node.multiplier = ((next.value - last.value) * fl + last.value);
                     }
                   break;
                   case ControllerType.Radius:
                     if ((modelNode._node.NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
-                      modelNode._node.radius = last.value + fl * (next.value - last.value);
+                      modelNode._node.radius = ((next.value - last.value) * fl + last.value);
                     }
                   break;
                 }
@@ -1190,7 +1287,7 @@ THREE.AuroraModel = function () {
 
           }
   
-        });
+        };//);
 
         //modelNode.updateMatrixWorld(true);
 
@@ -1199,339 +1296,6 @@ THREE.AuroraModel = function () {
         //}
 
       }
-
-    }
-
-    this.buildEmitter = function(node){
-      //return;
-      let controllerOptions = {
-        size: new THREE.Vector3(),
-        frameEnd: 0
-      };
-  
-      node.controllerOptions = controllerOptions;
-  
-      let emitterOptions = {
-        maxAge: {
-          value: 1
-        },
-        position: {
-          value: new THREE.Vector3(0, 0, 0),
-          spread: new THREE.Vector3(0, 0, 0)
-        },
-        velocity : {
-          value: new THREE.Vector3(0),
-          spread: new THREE.Vector3(0)
-        },
-        drag : {
-          value: new THREE.Vector3(0),
-          spread: new THREE.Vector3(0)
-        },
-        acceleration : {
-          value: new THREE.Vector3(0),
-          spread: new THREE.Vector3(0)
-        },
-        opacity : {
-          value: [1, 1, 1],
-          spread: [0, 0, 0]
-        },
-        angle : {
-          value: [0, 0, 0, 0],
-          spread: [0, 0, 0, 0]
-        },
-        rotation: {
-          static: true,
-          angle: 0
-        },
-        color: {
-          value: [ new THREE.Color('black') ]
-        },
-        type: SPE.distributions.BOX,
-        size: {
-          value: []
-        },
-  
-        particleCount: 1000
-      };
-  
-      let positionOffset = new THREE.Vector3();
-  
-      //Read the emitter controllers
-      node.controllers.forEach( (controller) => {
-      //for(let cIDX in node.controllers){
-        //let controller = node.controllers[cIDX];
-        switch(controller.type){
-          case ControllerType.Position:
-            positionOffset.copy(controller.data[0]);
-          break;
-          case ControllerType.Orientation:
-            //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
-          break;
-          case ControllerType.ColorStart:
-            controllerOptions.colorStart = new THREE.Color(controller.data[0].r, controller.data[0].g, controller.data[0].b);
-          break;
-          case ControllerType.ColorMid:
-            controllerOptions.colorMid = new THREE.Color(controller.data[0].r, controller.data[0].g, controller.data[0].b);
-          break;
-          case ControllerType.ColorEnd:
-            controllerOptions.colorEnd = new THREE.Color(controller.data[0].r, controller.data[0].g, controller.data[0].b);
-          break;
-          case ControllerType.XSize:
-            controllerOptions.xSize = controller.data[0].value;
-            controllerOptions.size.x = controllerOptions.xSize < 1 ? controllerOptions.xSize : (controllerOptions.xSize*.01);
-          break;
-          case ControllerType.YSize:
-            controllerOptions.ySize = controller.data[0].value;
-            controllerOptions.size.z = controllerOptions.ySize < 1 ? controllerOptions.ySize : (controllerOptions.ySize*.01);
-          break;
-          case ControllerType.Spread:
-            controllerOptions.spread = controller.data[0].value;
-          break;
-          case ControllerType.LifeExp:
-            controllerOptions.lifeExp = controller.data[0].value;
-          break;
-          case ControllerType.BirthRate:
-            controllerOptions.birthRate = controller.data[0].value;
-          break;
-          case ControllerType.Drag:
-            controllerOptions.drag = controller.data[0].value;
-          break;
-          case ControllerType.Threshold:
-            controllerOptions.threshold = controller.data[0].value;
-          break;
-          case ControllerType.Grav:
-            controllerOptions.gravity = controller.data[0].value;
-          break;
-          case ControllerType.Mass:
-            controllerOptions.mass = controller.data[0].value;
-          break;
-          case ControllerType.Velocity:
-            controllerOptions.velocity = controller.data[0].value;
-          break;
-          case ControllerType.RandVel:
-            controllerOptions.randVelocity = controller.data[0].value;
-          break;
-          case ControllerType.SizeStart:
-            emitterOptions.size.value[0] = controller.data[0].value * 2.0;
-          break;
-          case ControllerType.SizeMid:
-            emitterOptions.size.value.push(controller.data[0].value * 2.0);
-          break;
-          case ControllerType.SizeEnd:
-            emitterOptions.size.value.push(controller.data[0].value * 2.0);
-          break;
-          case ControllerType.AlphaStart:
-            emitterOptions.opacity.value[0] = controller.data[0].value;
-          break;
-          case ControllerType.AlphaMid:
-            emitterOptions.opacity.value[1] = controller.data[0].value;
-            //emitterOptions.opacity.value[2] = controller.data[0].value;
-          break;
-          case ControllerType.AlphaEnd:
-            emitterOptions.opacity.value[2] = controller.data[0].value;
-          break;
-          case ControllerType.ParticleRot:
-            emitterOptions.angle.value = controller.data[0].value * 100;
-          break;
-          case ControllerType.FrameEnd:
-            controllerOptions.frameEnd = controller.data[0].value;
-          break;
-        }
-      });
-  
-      if(typeof controllerOptions.colorStart != 'undefined'){
-        emitterOptions.color.value[0] = controllerOptions.colorStart;
-      }
-  
-      if(typeof controllerOptions.colorMid != 'undefined'){
-        emitterOptions.color.value[1] = (controllerOptions.colorMid);
-        //emitterOptions.color.value[2] = (controllerOptions.colorMid);
-      }
-  
-      if(typeof controllerOptions.colorEnd != 'undefined'){
-        emitterOptions.color.value[2] = (controllerOptions.colorEnd);
-      }
-
-      let position = new THREE.Vector3();
-
-      let speed_min = 0;
-      let speed_max = 0;
-
-      let xangle = 0;
-      let zangle = 0;
-      let vx = 0;
-      let vy = 0;
-      let vz = 0;
-
-      let d = 0;
-      let d2 = 0;
-
-      if(node._emitter.Render = 'Billboard_to_World_Z'){
-        controllerOptions.size.y = controllerOptions.size.x;
-        controllerOptions.size.x = controllerOptions.size.z;
-        controllerOptions.size.z = 0;
-      }
-  
-      switch(node._emitter.Update){
-        case 'Fountain':
-          //emitterOptions.particleCount = Math.ceil(controllerOptions.birthRate * controllerOptions.lifeExp);
-
-          //if(Math.ceil(controllerOptions.birthRate * controllerOptions.lifeExp) > 500){
-          //  emitterOptions.particleCount = Math.ceil(controllerOptions.birthRate * controllerOptions.lifeExp);
-          //}
-
-          //if(emitterOptions.particleCount < 1)
-          //  emitterOptions.particleCount = 1;
-
-          //emitterOptions.maxParticleCount = emitterOptions.particleCount;
-          emitterOptions.maxAge.value = controllerOptions.lifeExp;
-
-          emitterOptions.position.spread.copy(controllerOptions.size);
-
-          if(controllerOptions.drag)
-            emitterOptions.drag.value = controllerOptions.drag;
-
-          //if(controllerOptions.velocity){
-            speed_min = controllerOptions.velocity;
-            speed_max = controllerOptions.randVelocity;
-
-            xangle = controllerOptions.spread;
-            zangle = controllerOptions.spread;
-            vx = Math.sin(xangle);
-            vy = Math.sin(zangle);
-            vz = Math.cos(xangle) + Math.cos(zangle);
-
-            d = speed_min / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-            d2 = speed_max / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-
-            
-            if(controllerOptions.velocity){
-              emitterOptions.velocity.value.set((d * vx), (d * vy), (d * vz));
-              emitterOptions.velocity.spread.set((d2 * vx), (d2 * vy), (d2 * vz));
-            }
-
-            //emitterOptions.velocity.value.applyQuaternion(node.quaternion);
-            //emitterOptions.velocity.spread.applyQuaternion(node.quaternion);
-          //}
-
-          emitterOptions.acceleration.value = new THREE.Vector3(0, -controllerOptions.mass*2, 0);
-  
-        break;
-        case 'Explosion':
-
-          emitterOptions.particleCount = controllerOptions.birthRate || 1000;
-          
-          emitterOptions.maxAge.value = controllerOptions.lifeExp;
-
-          emitterOptions.position.spread.copy(controllerOptions.size);
-
-          if(controllerOptions.drag)
-            emitterOptions.drag.value = controllerOptions.drag;
-          else
-            emitterOptions.drag.value = 5;
-
-          if(controllerOptions.velocity){
-            speed_min = controllerOptions.velocity;
-            speed_max = controllerOptions.randVelocity;
-
-            xangle = controllerOptions.spread;
-            zangle = controllerOptions.spread;
-            vx = Math.sin(xangle);
-            vy = Math.sin(zangle);
-            vz = Math.cos(xangle) + Math.cos(zangle);
-
-            d = speed_min / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-            d2 = speed_max / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-
-            emitterOptions.velocity.value.set((d * vx), (d * vy), (d * vz));
-            emitterOptions.velocity.spread.set(controllerOptions.spread, controllerOptions.spread, 0);
-
-            emitterOptions.velocity.value.applyQuaternion(node.quaternion);
-            emitterOptions.velocity.spread.applyQuaternion(node.quaternion);
-          }
-
-          emitterOptions.acceleration.value = new THREE.Vector3(0, 0, -.5);
-
-          //emitterOptions.maxAge.value = controllerOptions.frameEnd || 1;
-
-          //console.log(node, controllerOptions);
-  
-        break;
-        case 'Single':
-          emitterOptions.particleCount = 1;
-          emitterOptions.maxParticleCount = 1;
-          emitterOptions.maxAge.value = Infinity;
-
-          emitterOptions.position.value.copy(position);
-          emitterOptions.position.spread.copy(controllerOptions.size);
-
-          if(controllerOptions.velocity){
-            speed_min = controllerOptions.velocity;
-            speed_max = controllerOptions.randVelocity;
-
-            xangle = controllerOptions.spread;
-            zangle = controllerOptions.spread;
-            vx = Math.sin(xangle);
-            vy = Math.sin(zangle);
-            vz = Math.cos(xangle) + Math.cos(zangle);
-
-            d = speed_min / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-            d2 = speed_max / (Math.abs(vx) + Math.abs(vy) + Math.abs(vz));
-
-            emitterOptions.velocity.value.set((d * vx), (d * vy), (d * vz));
-            emitterOptions.velocity.spread.set((d2 * vx), (d2 * vy), (d2 * vz));
-
-            //emitterOptions.velocity.value.applyQuaternion(node.quaternion);
-            //emitterOptions.velocity.spread.applyQuaternion(node.quaternion);
-          }
-
-          if(controllerOptions.drag)
-            emitterOptions.drag.value = controllerOptions.drag;
-
-          emitterOptions.acceleration.value = new THREE.Vector3(0, -controllerOptions.mass, 0);
-  
-        break;
-      }
-
-      node.emitterOptions = emitterOptions;
-      //console.log(node, node.emitterOptions)
-      node.emitter = new SPE.Emitter(emitterOptions);
-      node.emitter.node = node;
-      node.emitter.header = node._emitter;
-      node.emitter.positionOffset = positionOffset;
-      node.particleGroup.addEmitter( node.emitter );
-      node.particleGroup.mesh.visible = true;
-      node.particleGroup.material.transparent = true;
-
-      //These emitters need to be turned on when a 'Detonate' event is fired during an animation
-      if(node._emitter.Update == 'Explosion'){
-        node.emitter.alive = false;
-        node.emitter.particlesPerSecond = 0;
-      }else if(node._emitter.Update == 'Single'){
-        node.emitter.particlesPerSecond = 2;
-      }else{
-        node.emitter.particlesPerSecond = controllerOptions.birthRate;
-      }
-
-      switch(node._emitter.Blend){
-        case 'Normal':
-          node.particleGroup.material.blending = THREE.NormalBlending;
-        break;
-        case 'Lighten':
-          node.particleGroup.material.blending = THREE.AdditiveBlending;
-        break;
-      }
-      this.options.context._emitters[node.name] = node;
-
-      /*if(this.modelHeader.Classification == 1){
-        this.options.context.group.emitters.remove(node.particleGroup.mesh);
-        this.options.context.group.emitters.add(node.particleGroup.mesh);
-      }else{
-        this.options.context.group.emitters.remove(node.particleGroup.mesh);
-        this.options.context.group.emitters.add(node.particleGroup.mesh);
-      }*/
-
-      
 
     }
 
@@ -1555,7 +1319,7 @@ THREE.AuroraModel = function () {
   
   };
   
-  // grabbing all the prototype methods from Object4D
+  // grabbing all the prototype methods from Object3D
   //THREE.AuroraModel.prototype = Object.create( THREE.Object3D.prototype );
 
   THREE.AuroraModel.prototype = Object.assign( Object.create( THREE.Object3D.prototype ), {
@@ -1787,6 +1551,11 @@ THREE.AuroraModel = function () {
     node.controllerCache = {};
     node.position.set(_node.position.x, _node.position.y, _node.position.z);
     node.quaternion.set(_node.quaternion.x, _node.quaternion.y, _node.quaternion.z, _node.quaternion.w);
+
+    node.trans = {
+      position: new THREE.Vector3,
+      quaternion: new THREE.Quaternion
+    };
   
     node.name = _node.name.toLowerCase();
 
@@ -1794,7 +1563,8 @@ THREE.AuroraModel = function () {
       options.isChildrenDynamic = true;
     }
 
-    auroraModel.nodes.set(node.name, node);
+    if(!auroraModel.nodes.has(node.name))
+      auroraModel.nodes.set(node.name, node);
 
     if(options.parent != auroraModel){
       options.parent.add(node);
@@ -1835,240 +1605,290 @@ THREE.AuroraModel = function () {
       try{
         //Create geometry only if the mesh is visible or it is a walkmesh
         //if(_node.FlagRender || node.isWalkmesh || auroraModel.name == 'plc_invis'){
-        if(_node.faces.length){
+        if(_node.faces.length ){
 
-          let geometry = new THREE.Geometry();
-    
-          geometry.boundingBox = _node.boundingBox;
-    
-          geometry.vertices = _node.vertices || [];
-          geometry.faces = _node.faces || [];
-          geometry.faceUvs = [[],[]];
-          geometry.faceVertexUvs = [[],[]];
-          
-          if(_node.tvectors)
-            geometry.faceUvs[0] = _node.tvectors[0];
-          
-          if(_node.texCords)
-            geometry.faceVertexUvs[0] = _node.texCords[0];
+          if( (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
 
-          
-          if(_node.tvectors)
-            geometry.faceUvs[1] = _node.tvectors[0];
+            let geometry = new THREE.Geometry();
+      
+            geometry.boundingBox = new THREE.Box3(_node.boundingBox.min, _node.boundingBox.max);//_node.boundingBox;
+      
+            geometry.vertices = _node.vertices || [];
+            geometry.faces = _node.faces || [];
+            geometry.faceUvs = [[],[]];
+            geometry.faceVertexUvs = [[],[]];
+            
+            if(_node.tvectors)
+              geometry.faceUvs[0] = _node.tvectors[0];
+            
+            if(_node.texCords)
+              geometry.faceVertexUvs[0] = _node.texCords[0];
 
-          if(_node.texCords)
-            geometry.faceVertexUvs[1] = _node.texCords[0];
-          
-          if(geometry.faces.length){
-            //geometry.computeFaceNormals();
-            //geometry.computeVertexNormals();    // requires correct face normals
-            //geometry.computeBoundingSphere();
-            if(auroraModel.modelHeader.Smoothing)
-              geometry.mergeVertices();
-          }
-    
-          let tMap1 = _node.TextureMap1+'';
-          let tMap2 = _node.TextureMap2+'';
-    
-          if(options.textureVar != '' && options.textureVar.indexOf('****') == -1){
-            tMap1 = options.textureVar;
-          }
+            
+            if(_node.tvectors){
+              geometry.faceUvs[1] = _node.tvectors[0];
+              if(!geometry.faceUvs[0].length)
+                geometry.faceUvs[0] = _node.tvectors[0];
+            }
 
-          _node.tMap1 = tMap1;
-    
-          let material = null;
-          let map1 = null;
-          let map2 = null;
+            if(_node.texCords)
+              geometry.faceVertexUvs[1] = _node.texCords[0];
+            
+            if(geometry.faces.length){
+              //geometry.computeFaceNormals();
+              //geometry.computeVertexNormals();    // requires correct face normals
+              //geometry.computeBoundingSphere();
+              if(auroraModel.modelHeader.Smoothing)
+                geometry.mergeVertices();
+            }
+      
+            let tMap1 = _node.TextureMap1+'';
+            let tMap2 = _node.TextureMap2+'';
+            let fallbackTexture = null;
+      
+            if(options.textureVar != '' && options.textureVar.indexOf('****') == -1){
+              fallbackTexture = tMap1;
+              tMap1 = options.textureVar;
+            }
 
-          if(tMap1 || tMap2){
-            //_node.Diffuse.r = _node.Diffuse.g = _node.Diffuse.b = 0.8;
-          }
+            _node.tMap1 = tMap1;
+      
+            let material = null;
+            let map1 = null;
+            let map2 = null;
 
-          material = new THREE.ShaderMaterial({
-            fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
-            vertexShader: THREE.ShaderLib.aurora.vertexShader,
-            uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
-            side:THREE.FrontSide,
-            lights: true,
-            fog: auroraModel.affectedByFog,
-          });
-          material.uniforms.shininess.value = 0.0000001;
-          material.extensions.derivatives = true;
-          material.extensions.fragDepth = true;
-          material.uniforms.diffuse.value = new THREE.Color( _node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
-          material.uniforms.time.value = Game.time;
-          material.defines = material.defines || {};
-          material.defines.AURORA = "";
+            if(tMap1 || tMap2){
+              //_node.Diffuse.r = _node.Diffuse.g = _node.Diffuse.b = 0.8;
+            }
 
-          if(!_node.FlagRender && !node.isWalkmesh){
-            material.visible = false;
-          }
-
-          auroraModel.materials.push(material);
-          
-          if(_node.HasLightmap && tMap2.length){
-            //material.lightMap = map2;
-            //material.uniforms.lightMap.value = map2;
-            map2 = TextureLoader.enQueue(tMap2, material, TextureLoader.Type.LIGHTMAP);
-            geometry.faceUvs[1] = _node.tvectors[1];
-            geometry.faceVertexUvs[1] = _node.texCords[1];
-          }
-
-          if(!(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1) && 
-            !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2) && 
-            !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3) && 
-            !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4) &&
-            !_node.FlagShadow && !options.castShadow){
-              //console.log('IGNORE_LIGHTING', material);
-              material.defines.IGNORE_LIGHTING = "";
-          }
-
-          //Set dangly uniforms
-          if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
-            material.uniforms.danglyDisplacement.value = _node.danglyDisplacement;
-            material.uniforms.danglyTightness.value = _node.danglyTightness;
-            material.uniforms.danglyPeriod.value = _node.danglyPeriod;
-            material.defines.DANGLY = '';
-          }
-
-          //Set animated uv uniforms
-          if(_node.nAnimateUV){
-            material.uniforms.animatedUV.value.set(_node.fUVDirectionX, _node.fUVDirectionY, _node.fUVJitter, _node.fUVJitterSpeed);
-            material.defines.ANIMATED_UV = '';
-
-            auroraModel.animatedUV.push({
-              material: material,
-              speed: new THREE.Vector2(_node.fUVDirectionX, _node.fUVDirectionY),
-              jitter: {
-                jitter: _node.fUVJitter,
-                speed: _node.fUVJitterSpeed
-              }
+            material = new THREE.ShaderMaterial({
+              fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
+              vertexShader: THREE.ShaderLib.aurora.vertexShader,
+              uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
+              side:THREE.FrontSide,
+              lights: true,
+              fog: auroraModel.affectedByFog,
             });
-          }
+            material.uniforms.shininess.value = 0.0000001;
+            material.extensions.derivatives = true;
+            material.extensions.fragDepth = true;
+            if(options.useTweakColor){
+              material.uniforms.diffuse.value = new THREE.Color( _node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
+              material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
+            }else{
+              material.uniforms.tweakColor.value.setRGB(1, 1, 1);
+              material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//_node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
+            }
+            material.uniforms.time.value = Game.time;
+            material.defines = material.defines || {};
+            material.defines.AURORA = "";
 
+            if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV1 || 
+               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2 || 
+               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV3 || 
+               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV4
+              ){
+              material.defines.USE_UV = "";
+            }
 
-          if(_node.Transparent){
-            material.transparent = true;
-          }
+            if(node.controllers.has(ControllerType.SelfIllumColor)){
+              let selfIllumColor = node.controllers.get(ControllerType.SelfIllumColor);
+              if(selfIllumColor.data[0].r || selfIllumColor.data[0].g || selfIllumColor.data[0].b){
+                material.defines.SELFILLUMCOLOR = "";
+                material.uniforms.selfIllumColor.value.copy(selfIllumColor.data[0]);
+              }
+            }
 
-          _node.controllers.forEach( (controller) => {
-          //for(let cIDX in _node.controllers){
-            //let controller = _node.controllers[cIDX];
-            switch(controller.type){
-              case ControllerType.Alpha:
-                material.opacity = controller.data[0].value;
-                if(material.opacity < 1){
-                  material.transparent = true;
-                  //modelNode.mesh.material.depthFunc = 4;
-                }else{
-                  material.transparent = false;
-                  // modelNode.mesh.material.depthFunc = THREE.LessEqualDepth;
+            if(!_node.FlagRender && !node.isWalkmesh){
+              material.visible = false;
+            }
+
+            auroraModel.materials.push(material);
+            
+            if(_node.HasLightmap && tMap2.length){
+              //material.lightMap = map2;
+              //material.uniforms.lightMap.value = map2;
+              map2 = TextureLoader.enQueue(tMap2, material, TextureLoader.Type.LIGHTMAP);
+              geometry.faceUvs[1] = _node.tvectors[1];
+              geometry.faceVertexUvs[1] = _node.texCords[1];
+              if(!geometry.faceUvs[0].length)
+                geometry.faceUvs[0] = _node.tvectors[1];
+            }
+
+            if((!(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1) && 
+              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2) && 
+              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3) && 
+              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4) &&
+              !_node.FlagShadow && !options.castShadow && !options.lighting) || _node.BackgroundGeometry){
+                //console.log('IGNORE_LIGHTING', material);
+                material.defines.IGNORE_LIGHTING = "";
+            }
+
+            if(options.isHologram){
+              material.defines.HOLOGRAM = "";
+              material.transparent = true;
+              if(_node.HideInHolograms){
+                material.visible = false;
+              }
+            }
+
+            //Set dangly uniforms
+            if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
+              material.uniforms.danglyDisplacement.value = _node.danglyDisplacement;
+              material.uniforms.danglyTightness.value = _node.danglyTightness;
+              material.uniforms.danglyPeriod.value = _node.danglyPeriod;
+              material.defines.DANGLY = '';
+            }
+
+            //Set animated uv uniforms
+            if(_node.nAnimateUV){
+              material.uniforms.animatedUV.value.set(_node.fUVDirectionX, _node.fUVDirectionY, _node.fUVJitter, _node.fUVJitterSpeed);
+              material.defines.ANIMATED_UV = '';
+
+              auroraModel.animatedUV.push({
+                material: material,
+                speed: new THREE.Vector2(_node.fUVDirectionX, _node.fUVDirectionY),
+                jitter: {
+                  jitter: _node.fUVJitter,
+                  speed: _node.fUVJitterSpeed
                 }
-              break;
+              });
             }
-          });
-    
-          if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
-            map1 = TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, (texture, tex) => {
-              if(material.type != tex.material.type){
-                material = tex.material;
-                console.log('Material mismatch', tex.material);
+
+
+            if(_node.Transparent){
+              material.transparent = true;
+            }
+
+            _node.controllers.forEach( (controller) => {
+            //for(let cIDX in _node.controllers){
+              //let controller = _node.controllers[cIDX];
+              switch(controller.type){
+                case ControllerType.Alpha:
+
+                  if(material instanceof THREE.ShaderMaterial){
+                    material.uniforms.opacity.value = controller.data[0].value;
+                  }else{
+                    material.opacity = controller.data[0].value;
+                  }
+
+                  if(controller.data[0].value < 1){
+                    material.transparent = true;
+                  }else{
+                    material.transparent = false;
+                  }
+                break;
               }
             });
-          }
-
-          material.needsUpdate = true;
-    
-          geometry.verticesNeedUpdate = true;
-          geometry.normalsNeedUpdate = true;
-          geometry.uvsNeedUpdate = true;
-          //geometry.computeBoundingBox();
-    
-          let mesh = undefined;
-          if ((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin) {
-            geometry.skinIndices.length = _node.weights.length;
-            geometry.skinWeights.length = _node.weights.length;
-            for(let i = 0; i < _node.weights.length; i++){
-              geometry.skinIndices[i] = new THREE.Vector4().fromArray(_node.boneIdx[i]);
-              geometry.skinWeights[i] = new THREE.Vector4().fromArray(_node.weights[i]);
+      
+            if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
+              map1 = TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, (texture, tex) => {
+                if(material.type != tex.material.type){
+                  material = tex.material;
+                  console.log('Material mismatch', tex.material);
+                }
+              }, fallbackTexture);
             }
 
-            if(!node.isWalkmesh && geometry.faces.length){
+            material.needsUpdate = true;
+      
+            geometry.verticesNeedUpdate = true;
+            geometry.normalsNeedUpdate = true;
+            geometry.uvsNeedUpdate = true;
+            //geometry.computeBoundingBox();
+      
+            let mesh = undefined;
+            if ((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin) {
+              geometry.skinIndices.length = _node.weights.length;
+              geometry.skinWeights.length = _node.weights.length;
+              for(let i = 0; i < _node.weights.length; i++){
+                geometry.skinIndices[i] = new THREE.Vector4().fromArray(_node.boneIdx[i]);
+                geometry.skinWeights[i] = new THREE.Vector4().fromArray(_node.weights[i]);
+              }
+
+              if(!node.isWalkmesh && geometry.faces.length){
+                let buffer = new THREE.BufferGeometry();
+                buffer.fromGeometry(geometry);
+                geometry.dispose();
+                geometry = buffer;
+
+              }
+
+              let bones = [];
+              bones.length = _node.bone_parts.length;
+              for(let i = 0; i < _node.bone_parts.length; i++){
+                bones[i] = auroraModel.names[_node.bone_parts[i]];
+              }
+              material.skinning = true;
+              mesh = new THREE.SkinnedMesh( geometry , material );
+              mesh.bone_parts = bones;
+              mesh.bone_quat = _node.bone_quats;
+              mesh.bone_vec3 = _node.bone_vertex;
+              auroraModel.skins.push(mesh);
+            }else if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
               let buffer = new THREE.BufferGeometry();
               buffer.fromGeometry(geometry);
               geometry.dispose();
               geometry = buffer;
+
+              let newConstraints = [];
+
+              for(let i = 0; i < _node.faces.length; i++){
+                newConstraints.push(_node.danglyVec4[_node.faces[i].a]);
+                newConstraints.push(_node.danglyVec4[_node.faces[i].b]);
+                newConstraints.push(_node.danglyVec4[_node.faces[i].c]);
+              }
+
+              var constraints = new Float32Array( newConstraints.length * 4 );
+              geometry.addAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( newConstraints ) );
+
+              mesh = new THREE.Mesh( geometry , material );
+              _node.roomStatic = false;
+
+              //console.log('dangly', mesh);
+
+            }else{
+              if(!node.isWalkmesh && geometry.faces.length && !_node.roomStatic){
+                let buffer = new THREE.BufferGeometry();
+                buffer.fromGeometry(geometry);
+                geometry.dispose();
+                geometry = buffer;
+              }
+              mesh = new THREE.Mesh( geometry , material );
+            }
+            node.mesh = mesh;
+
+            if(node.isWalkmesh){
+              auroraModel.walkmesh = mesh;
+              mesh.visible = false;
             }
 
-            let bones = [];
-            bones.length = _node.bone_parts.length;
-            for(let i = 0; i < _node.bone_parts.length; i++){
-              bones[i] = auroraModel.names[_node.bone_parts[i]];
-            }
-            material.skinning = true;
-            mesh = new THREE.SkinnedMesh( geometry , material );
-            mesh.bone_parts = bones;
-            mesh.bone_quat = _node.bone_quats;
-            mesh.bone_vec3 = _node.bone_vertex;
-            auroraModel.skins.push(mesh);
-          }else if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
-            let buffer = new THREE.BufferGeometry();
-            buffer.fromGeometry(geometry);
-            geometry.dispose();
-            geometry = buffer;
+            if(!node.isWalkmesh && options.mergeStatic && _node.roomStatic && mesh.geometry.faces.length){
 
-            let newConstraints = [];
+              mesh.position.copy(node.getWorldPosition(new THREE.Vector3));
+              mesh.quaternion.copy(node.getWorldQuaternion(new THREE.Quaternion));
+              mesh.updateMatrix(); // as needed
+              //mesh.updateMatrixWorld(); // as needed
 
-            for(let i = 0; i < _node.faces.length; i++){
-              newConstraints.push(_node.danglyVec4[_node.faces[i].a]);
-              newConstraints.push(_node.danglyVec4[_node.faces[i].b]);
-              newConstraints.push(_node.danglyVec4[_node.faces[i].c]);
+              auroraModel.mergedMaterials.push(material);
+              THREE.AuroraModel.MergeGeometry(auroraModel.mergedGeometry, mesh.geometry, mesh.matrix, auroraModel.mergedMaterials.length-1)
+              //auroraModel.mergedGeometry.merge(mesh.geometry, mesh.matrix);
+              mesh.geometry.dispose();
+              mesh.geometry = undefined;
+              mesh = undefined;
+              //options.parent.remove(node);
+            }else{
+              //mesh.visible = !node.isWalkmesh;
+              mesh._node = _node;
+              mesh.matrixAutoUpdate = false;
+              mesh.castShadow = options.castShadow;
+              mesh.receiveShadow = options.receiveShadow;
+              node.add( mesh );
             }
 
-            var constraints = new Float32Array( newConstraints.length * 4 );
-		        geometry.addAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( newConstraints ) );
+            if(options.isChildrenDynamic)
+              mesh.renderOrder = 5000;
 
-            mesh = new THREE.Mesh( geometry , material );
-            _node.roomStatic = false;
-
-            //console.log('dangly', mesh);
-
-          }else{
-            if(!node.isWalkmesh && geometry.faces.length && !_node.roomStatic){
-              let buffer = new THREE.BufferGeometry();
-              buffer.fromGeometry(geometry);
-              geometry.dispose();
-              geometry = buffer;
-            }
-            mesh = new THREE.Mesh( geometry , material );
-          }
-          node.mesh = mesh;
-
-          if(node.isWalkmesh){
-            auroraModel.walkmesh = mesh;
-            mesh.visible = false;
-          }
-
-          //mesh.visible = !node.isWalkmesh;
-          mesh._node = _node;
-          mesh.matrixAutoUpdate = false;
-          mesh.castShadow = options.castShadow;
-          mesh.receiveShadow = options.receiveShadow;
-
-          if(!node.isWalkmesh && options.mergeStatic && _node.roomStatic && mesh.geometry.faces.length){
-            mesh.position.copy(node.getWorldPosition(new THREE.Vector3));
-            mesh.quaternion.copy(node.getWorldQuaternion(new THREE.Quaternion));
-            mesh.updateMatrix(); // as needed
-            //mesh.updateMatrixWorld(); // as needed
-
-            auroraModel.mergedMaterials.push(material);
-
-            THREE.AuroraModel.MergeGeometry(auroraModel.mergedGeometry, mesh.geometry, mesh.matrix, auroraModel.mergedMaterials.length-1)
-            //auroraModel.mergedGeometry.merge(mesh.geometry, mesh.matrix);
-            mesh.geometry.dispose();
-            //options.parent.remove(node);
-          }else{
-            node.add( mesh );
           }
 
         }
@@ -2133,6 +1953,7 @@ THREE.AuroraModel = function () {
         options.parent.add(lightNode);
       }else{
         lightNode = new THREE.AuroraLight();
+        lightNode.isAnimated = !_node.roomStatic;
         //if(!_node.AmbientFlag){
           lightNode.position = _node.position;
         //}
@@ -2176,33 +1997,11 @@ THREE.AuroraModel = function () {
     }
   
     if ((_node.NodeType & AuroraModel.NODETYPE.Emitter) == AuroraModel.NODETYPE.Emitter) {
-      
-      let particleGroup = new SPE.Group({
-        texture: {
-          frames: new THREE.Vector2(_node.emitter.GridX, _node.emitter.GridY),
-          frameCount: _node.emitter.GridX * _node.emitter.GridY
-        },
-        blending: THREE.NormalBlending,
-        alphaTest: 0,
-        transparent: true,
-        depthWrite: true,
-        depthTest: true,
-        fog: false
-      });
-      TextureLoader.enQueueParticle(_node.emitter.Texture, particleGroup);
-
-      node.add(particleGroup.mesh);
-
-      node.particleGroup = particleGroup;
-      node._emitter = _node.emitter;
-
-      auroraModel.buildEmitter(node);
-      auroraModel.emitters.push(node.emitter);
-
-      if(_node.emitter.Update == 'Explosion'){
-        auroraModel.emitters_detonate.push(node.emitter);
-      }
-  
+      let emitter = new THREE.AuroraEmitter(_node);
+      emitter.name = _node.name + '_em'
+      node.emitter = emitter;
+      node.add(emitter);
+      auroraModel.emitters.push(emitter);
     }
   
     //node.visible = !node.isWalkmesh;
@@ -2397,303 +2196,6 @@ THREE.AuroraModel = function () {
 
   }
 
-  //https://stackoverflow.com/a/47424292/4958457
-
-  //Fix the phong material to ignore light shading if a lightmap is present so that we can have shadows on level geometry
-  THREE.ShaderLib[ 'phong' ].fragmentShader = THREE.ShaderLib[ 'phong' ].fragmentShader.replace(
-
-    `vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;`,
-
-    `
-    #ifndef AURORA
-      vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-    #else
-      #ifdef USE_LIGHTMAP
-        reflectedLight.indirectDiffuse = vec3(0.0, 0.0, 0.0);
-        reflectedLight.indirectDiffuse += PI * texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
-        reflectedLight.indirectDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb );
-        vec3 outgoingLight = (reflectedLight.indirectDiffuse); // shadow intensity hardwired to 0.5 here
-      #else
-        //reflectedLight.indirectDiffuse = vec3(diffuseColor.rgb);
-        vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-      #endif
-    #endif
-    
-    #ifdef IGNORE_LIGHTING
-      outgoingLight = vec3(diffuseColor.rgb);
-    #endif`
-
-  );
-
-  //Fixing the envmap shader to to mix acording to the Alpha Channel of the base texture
-  THREE.ShaderChunk['envmap_fragment'] = `
-  #ifdef USE_ENVMAP
-    #if defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( PHONG )
-      vec3 cameraToVertex = normalize( vWorldPosition - cameraPosition );
-      vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-      #ifdef ENVMAP_MODE_REFLECTION
-        vec3 reflectVec = reflect( cameraToVertex, worldNormal );
-      #else
-        vec3 reflectVec = refract( cameraToVertex, worldNormal, refractionRatio );
-      #endif
-    #else
-      vec3 reflectVec = vReflect;
-    #endif
-    #ifdef ENVMAP_TYPE_CUBE
-      vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
-    #elif defined( ENVMAP_TYPE_EQUIREC )
-      vec2 sampleUV;
-      reflectVec = normalize( reflectVec );
-      sampleUV.y = asin( clamp( reflectVec.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
-      sampleUV.x = atan( reflectVec.z, reflectVec.x ) * RECIPROCAL_PI2 + 0.5;
-      vec4 envColor = texture2D( envMap, sampleUV );
-    #elif defined( ENVMAP_TYPE_SPHERE )
-      reflectVec = normalize( reflectVec );
-      vec3 reflectView = normalize( ( viewMatrix * vec4( reflectVec, 0.0 ) ).xyz + vec3( 0.0, 0.0, 1.0 ) );
-      vec4 envColor = texture2D( envMap, reflectView.xy * 0.5 + 0.5 );
-    #else
-      vec4 envColor = vec4( 0.0 );
-    #endif
-    envColor = envMapTexelToLinear( envColor );
-    #ifdef ENVMAP_BLENDING_MULTIPLY
-      outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
-    #elif defined( ENVMAP_BLENDING_MIX )
-      outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) );
-    #elif defined( ENVMAP_BLENDING_ADD )
-      outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
-    #endif
-  #endif
-  `;
-
-  THREE.ShaderLib.aurora = {
-    fragmentShader: `
-    #define PHONG
-    uniform vec3 diffuse;
-    uniform vec3 emissive;
-    uniform vec3 specular;
-    uniform float shininess;
-    uniform float opacity;
-    #ifdef WATER
-      varying vec2 vUvWater;
-      uniform float waterAlpha;
-    #endif
-    #include <common>
-    #include <packing>
-    #include <dithering_pars_fragment>
-    #include <color_pars_fragment>
-    #include <uv_pars_fragment>
-    #include <uv2_pars_fragment>
-    #include <map_pars_fragment>
-    #include <alphamap_pars_fragment>
-    #include <aomap_pars_fragment>
-    #include <lightmap_pars_fragment>
-    #include <emissivemap_pars_fragment>
-    #include <envmap_pars_fragment>
-    #include <gradientmap_pars_fragment>
-    #include <fog_pars_fragment>
-    #include <bsdfs>
-    #include <lights_pars_begin>
-    #include <lights_phong_pars_fragment>
-    #include <shadowmap_pars_fragment>
-    #ifdef WATER
-      #ifdef USE_BUMPMAP
-        uniform sampler2D bumpMap;
-        uniform float bumpScale;
-        vec2 dHdxy_fwd() {
-          vec2 dSTdx = dFdx( vUvWater );
-          vec2 dSTdy = dFdy( vUvWater );
-          float Hll = bumpScale * texture2D( bumpMap, vUvWater ).x;
-          float dBx = bumpScale * texture2D( bumpMap, vUvWater + dSTdx ).x - Hll;
-          float dBy = bumpScale * texture2D( bumpMap, vUvWater + dSTdy ).x - Hll;
-          return vec2( dBx, dBy );
-        }
-        vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy ) {
-          vec3 vSigmaX = vec3( dFdx( surf_pos.x ), dFdx( surf_pos.y ), dFdx( surf_pos.z ) );
-          vec3 vSigmaY = vec3( dFdy( surf_pos.x ), dFdy( surf_pos.y ), dFdy( surf_pos.z ) );
-          vec3 vN = surf_norm;
-          vec3 R1 = cross( vSigmaY, vN );
-          vec3 R2 = cross( vN, vSigmaX );
-          float fDet = dot( vSigmaX, R1 );
-          fDet *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );
-          vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );
-          return normalize( abs( fDet ) * surf_norm - vGrad );
-        }
-      #endif
-    #else
-      #include <bumpmap_pars_fragment>
-    #endif
-    #include <normalmap_pars_fragment>
-    #include <specularmap_pars_fragment>
-    #include <logdepthbuf_pars_fragment>
-    #include <clipping_planes_pars_fragment>
-    void main() {
-      #include <clipping_planes_fragment>
-      vec4 diffuseColor = vec4( diffuse, opacity );
-      ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
-      vec3 totalEmissiveRadiance = emissive;
-      #include <logdepthbuf_fragment>
-      #include <map_fragment>
-      #include <color_fragment>
-      #include <alphamap_fragment>
-      #include <alphatest_fragment>
-      #include <specularmap_fragment>
-      #include <normal_fragment_begin>
-      #include <normal_fragment_maps>
-      #include <emissivemap_fragment>
-      // accumulation
-      #include <lights_phong_fragment>
-      #include <lights_fragment_begin>
-      #include <lights_fragment_maps>
-      #include <lights_fragment_end>
-      // modulation
-      #include <aomap_fragment>
-      #ifndef AURORA
-        vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-      #else
-        #ifdef USE_LIGHTMAP
-          reflectedLight.indirectDiffuse = vec3(0.0, 0.0, 0.0);
-          reflectedLight.indirectDiffuse += PI * texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
-          reflectedLight.indirectDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb );
-          vec3 outgoingLight = (reflectedLight.indirectDiffuse); // shadow intensity hardwired to 0.5 here
-        #else
-          //reflectedLight.indirectDiffuse = vec3(diffuseColor.rgb);
-          vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-        #endif
-      #endif
-      
-      #ifdef IGNORE_LIGHTING
-        outgoingLight = vec3(diffuseColor.rgb);
-      #endif
-      #ifdef USE_ENVMAP
-        #if defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( PHONG )
-          vec3 cameraToVertex = normalize( vWorldPosition - cameraPosition );
-          vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-          #ifdef ENVMAP_MODE_REFLECTION
-            vec3 reflectVec = reflect( cameraToVertex, worldNormal );
-          #else
-            vec3 reflectVec = refract( cameraToVertex, worldNormal, refractionRatio );
-          #endif
-        #else
-          vec3 reflectVec = vReflect;
-        #endif
-        #ifdef ENVMAP_TYPE_CUBE
-          vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
-        #elif defined( ENVMAP_TYPE_EQUIREC )
-          vec2 sampleUV;
-          reflectVec = normalize( reflectVec );
-          sampleUV.y = asin( clamp( reflectVec.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
-          sampleUV.x = atan( reflectVec.z, reflectVec.x ) * RECIPROCAL_PI2 + 0.5;
-          vec4 envColor = texture2D( envMap, sampleUV );
-        #elif defined( ENVMAP_TYPE_SPHERE )
-          reflectVec = normalize( reflectVec );
-          vec3 reflectView = normalize( ( viewMatrix * vec4( reflectVec, 0.0 ) ).xyz + vec3( 0.0, 0.0, 1.0 ) );
-          vec4 envColor = texture2D( envMap, reflectView.xy * 0.5 + 0.5 );
-        #else
-          vec4 envColor = vec4( 0.0 );
-        #endif
-        envColor = envMapTexelToLinear( envColor );
-        #ifdef ENVMAP_BLENDING_MULTIPLY
-          outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
-        #elif defined( ENVMAP_BLENDING_MIX )
-          outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) );
-        #elif defined( ENVMAP_BLENDING_ADD )
-          outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
-        #endif
-      #endif
-      gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-      #include <tonemapping_fragment>
-      #include <encodings_fragment>
-      #include <fog_fragment>
-      #if defined( PREMULTIPLIED_ALPHA ) || defined( WATER )
-        gl_FragColor.rgb *= waterAlpha;
-        gl_FragColor.a = waterAlpha;
-      #endif
-      #include <dithering_fragment>
-    }
-    `,
-    vertexShader: `
-    #define PHONG
-    varying vec3 vViewPosition;
-    #ifndef FLAT_SHADED
-      varying vec3 vNormal;
-    #endif
-    #include <common>
-    #ifdef AURORA
-      uniform float time;
-    #endif
-
-    #ifdef WATER
-      uniform mat3 waterTransform;
-      varying vec2 vUvWater;
-    #endif
-
-    #ifdef DANGLY
-      attribute vec4 constraint;
-      uniform float danglyDisplacement;
-      uniform float danglyTightness;
-      uniform float danglyPeriod;
-    #endif
-    #include <uv_pars_vertex>
-    #include <uv2_pars_vertex>
-    #include <displacementmap_pars_vertex>
-    #include <envmap_pars_vertex>
-    #include <color_pars_vertex>
-    #include <fog_pars_vertex>
-    #include <morphtarget_pars_vertex>
-    #include <skinning_pars_vertex>
-    #include <shadowmap_pars_vertex>
-    #include <logdepthbuf_pars_vertex>
-    #include <clipping_planes_pars_vertex>
-    void main() {
-      #ifdef WATER
-        #if defined( USE_MAP ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
-          vUv = ( uvTransform * vec3( uv, 1 ) ).xy;
-        #endif
-        vUvWater = ( waterTransform * vec3( uv, 1 ) ).xy;
-      #else
-        #include <uv_vertex>
-      #endif
-      #include <uv2_vertex>
-      #include <color_vertex>
-      #include <beginnormal_vertex>
-      #include <morphnormal_vertex>
-      #include <skinbase_vertex>
-      #include <skinnormal_vertex>
-      #include <defaultnormal_vertex>
-    #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
-      vNormal = normalize( transformedNormal );
-    #endif
-      #include <begin_vertex>
-      #include <morphtarget_vertex>
-      #include <skinning_vertex>
-      #ifdef USE_DISPLACEMENTMAP
-        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUvWater ).x * displacementScale + displacementBias );
-      #endif
-      #ifdef DANGLY
-        float wind = (1.0 * danglyPeriod) * ( cos(time) );
-        transformed += vec3(cos(wind) * constraint.x, sin(wind) * constraint.y, cos(wind) * constraint.z * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
-      #endif
-      #include <project_vertex>
-      #include <logdepthbuf_vertex>
-      #include <clipping_planes_vertex>
-      vViewPosition = - mvPosition.xyz;
-      #include <worldpos_vertex>
-      #include <envmap_vertex>
-      #include <shadowmap_vertex>
-      #include <fog_vertex>
-    }
-    `,
-    uniforms: THREE.UniformsUtils.merge([
-      THREE.ShaderLib.phong.uniforms,
-      { diffuse: { value: new THREE.Color() } },
-      { time: { value: 0.0 } },
-      { animatedUV: { value: new THREE.Vector4() } },
-      { waterAlpha: { value: 1 } },
-      { waterTransform: { value: new THREE.Matrix3() } },
-      { danglyDisplacement: { value: 0 } },
-      { danglyTightness: { value: 0 } },
-      { danglyPeriod: { value: 0 } }
-    ])
-  };
+  
   
 

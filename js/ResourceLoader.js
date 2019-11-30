@@ -8,36 +8,46 @@
 class ResourceLoader {
 
   static loadResource(resId = -1, resRef = null, onLoad = null, onError = null){
-
+    
     if(resRef){
 
-      this._searchLocal(resId, resRef, (data) => {
-        if(typeof onLoad === 'function')
-          onLoad(data);
-      }, (e) => {
-        if(Game.module instanceof Module){
-          this._searchModuleArchives(resId, resRef, (data) => {
-            if(typeof onLoad === 'function')
-              onLoad(data);
-          }, (e) => {
+      let cache = ResourceLoader.getCache(resId, resRef);
+      if(!cache){
+        this._searchLocal(resId, resRef, (data) => {
+          ResourceLoader.setCache(resId, resRef, data);
+          if(typeof onLoad === 'function')
+            onLoad(data);
+        }, (e) => {
+          if(Game.module instanceof Module){
+            this._searchModuleArchives(resId, resRef, (data) => {
+              ResourceLoader.setCache(resId, resRef, data);
+              if(typeof onLoad === 'function')
+                onLoad(data);
+            }, (e) => {
+              this._searchKeyTable(resId, resRef, (data) => {
+                ResourceLoader.setCache(resId, resRef, data);
+                if(typeof onLoad === 'function')
+                  onLoad(data);
+              }, (e) => {
+                if(typeof onError === 'function')
+                  onError(e);
+              });
+            });
+          }else{
             this._searchKeyTable(resId, resRef, (data) => {
+              ResourceLoader.setCache(resId, resRef, data);
               if(typeof onLoad === 'function')
                 onLoad(data);
             }, (e) => {
               if(typeof onError === 'function')
                 onError(e);
             });
-          });
-        }else{
-          this._searchKeyTable(resId, resRef, (data) => {
-            if(typeof onLoad === 'function')
-              onLoad(data);
-          }, (e) => {
-            if(typeof onError === 'function')
-              onError(e);
-          });
-        }
-      });
+          }
+        });
+      }else{
+        if(typeof onLoad === 'function')
+          onLoad(cache);
+      }
 
     }else{
       console.error('ResRef not set');
@@ -49,10 +59,10 @@ class ResourceLoader {
 
   static _searchLocal(resId = -1, resRef = '', onLoad = null, onError = null){
     if(typeof Global.Project != 'undefined'){
-      let projectFilePath = path.join(Global.Project.directory, 'files', resRef + '.' + ResourceTypes.getKeyByValue(resId));
+      let projectFilePath = path.join(Global.Project.directory, resRef + '.' + ResourceTypes.getKeyByValue(resId));
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists) => {
-        console.log('File Exists', exists, projectFilePath);
+        //console.log('File Exists', exists, projectFilePath);
         if(exists){
           fs.readFile(projectFilePath, (err, data) => {
             if(err){
@@ -171,6 +181,31 @@ class ResourceLoader {
     return null;
   }
 
+  static clearCache(){
+    ResourceLoader.cache = {};
+  }
+
+  static setCache(resId, resRef, opts = {}){
+
+    resRef = resRef.toLowerCase();
+
+    if(typeof ResourceLoader.cache[resId] === 'undefined')
+      ResourceLoader.cache[resId] = {};
+
+      ResourceLoader.cache[resId][resRef] = opts;
+
+  }
+
+  static getCache(resId, resRef){
+
+    if(typeof ResourceLoader.cache[resId] !== 'undefined'){
+      if(typeof ResourceLoader.cache[resId][resRef] !== 'undefined'){
+        return ResourceLoader.cache[resId][resRef];
+      }
+    }
+    return null;
+  }
+
   //Check the module dlg arf archive (TSL ONLY)//if(GameKey == 'TSL'){
   static _searchDLG(resId = -1, resRef = null, onLoad = null, onError = null){
 
@@ -274,7 +309,7 @@ class ResourceLoader {
       if(rim instanceof RIMObject){
         let res = rim.getResourceByKey(resRef, resId);
         if(res){
-          console.log('found');
+          //console.log('found');
           found = true;
           rim.GetResourceData(res, (data) => {
             if(typeof onLoad === 'function')
@@ -305,5 +340,6 @@ class ResourceLoader {
 }
 
 ResourceLoader.Resources = {};
+ResourceLoader.cache = {};
 
 module.exports = ResourceLoader;

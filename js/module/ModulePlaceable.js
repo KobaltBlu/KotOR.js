@@ -8,7 +8,7 @@
 class ModulePlaceable extends ModuleObject {
 
   constructor ( gff = new GFFObject()) {
-    super();
+    super(gff);
     this.template = gff;
 
     this.openState = false;
@@ -117,6 +117,9 @@ class ModulePlaceable extends ModuleObject {
     }
 
     if(this.model instanceof THREE.AuroraModel){
+
+      this.model.rotation.copy(this.rotation);
+      //this.model.quaternion = this.quaternion;
 
       if(this.room instanceof ModuleRoom){
         if(this.room.model instanceof THREE.AuroraModel){
@@ -258,6 +261,22 @@ class ModulePlaceable extends ModuleObject {
     return 0;
   }
 
+  isLocked(){
+    return this.locked;
+  }
+
+  setLocked(iValue){
+    this.locked = iValue ? true : false;
+  }
+
+  requiresKey(){
+    return this.keyRequired ? true : false;
+  }
+
+  keyName(){
+    return this.keyName;
+  }
+
   getAnimationState(){
     return this.animationState;
   }
@@ -383,7 +402,7 @@ class ModulePlaceable extends ModuleObject {
     }
 
     if(this.hasInventory){
-      Game.MenuContainer.Show(this);
+      Game.MenuContainer.Open(this);
     }else if(this.GetConversation() != ''){
       Game.InGameDialog.StartConversation(this.GetConversation(), object);
     }
@@ -475,11 +494,13 @@ class ModulePlaceable extends ModuleObject {
       onLoad: (mdl) => {
         THREE.AuroraModel.FromMDL(mdl, {
           onComplete: (plc) => {
+
+            let scene;
             if(this.model != null){
-              var scene = this.model.parent;
-              var position = this.model.position;
-              var rotation = this.model.rotation;
+              scene = this.model.parent;
               scene.remove(this.model);
+              Game.octree.remove( this.model );
+              this.model.dispose();
             }
 
             this.model = plc;
@@ -489,19 +510,11 @@ class ModulePlaceable extends ModuleObject {
             if(typeof scene != 'undefined'){
               scene.add(this.model);
               Game.octree.add( this.model );
-              this.model.translateX(position.x);
-              this.model.translateY(position.y);
-              this.model.translateZ(position.z);
-
-              this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-              for(let i = 0; i < this.model.lights.length; i++){
-                //LightManager.addLight(this.model.lights[i]);
-              }
-              //this.model.turnLightsOn();
             }
 
-            this.position = this.model.position;
-            this.rotation = this.model.rotation;
+            this.position = this.model.position.copy(this.position);
+            this.model.rotation.copy(this.rotation);
+            this.model.quaternion.copy(this.quaternion);
 
             try{
               /*if(this.model.getAnimationByName('default')){
@@ -560,7 +573,9 @@ class ModulePlaceable extends ModuleObject {
           },
           context: this.context,
           castShadow: true,
-          receiveShadow: true
+          receiveShadow: true,
+          useTweakColor: this.useTweakColor,
+          tweakColor: this.tweakColor
         });
       }
     });
@@ -631,6 +646,12 @@ class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.HasField('OnUserDefined'))
       this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
+    
+    if(this.template.RootNode.HasField('TweakColor'))
+      this.tweakColor = this.template.GetFieldByLabel('TweakColor').GetValue();
+    
+    if(this.template.RootNode.HasField('UseTweakColor'))
+      this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue();
 
     let keys = Object.keys(this.scripts);
     let len = keys.length;
@@ -706,6 +727,8 @@ class ModulePlaceable extends ModuleObject {
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
         this.walkmesh = new AuroraWalkMesh(new BinaryReader(buffer));
+        this.walkmesh.name = ResRef;
+        this.walkmesh.moduleObject = this;
         this.model.add(this.walkmesh.mesh);
 
         if(typeof onLoad === 'function')
@@ -721,6 +744,10 @@ class ModulePlaceable extends ModuleObject {
   }
 
   InitProperties(){
+
+    
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('LocName'))
       this.name = this.template.GetFieldByLabel('LocName').GetCExoLocString().GetValue()
@@ -788,6 +815,9 @@ class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.HasField('PaletteID'))
       this.paletteID = this.template.GetFieldByLabel('PaletteID').GetValue();
 
+    if(this.template.RootNode.HasField('Plot'))
+      this.plot = this.template.GetFieldByLabel('Plot').GetValue();
+
     if(this.template.RootNode.HasField('PartyInteract'))
       this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
 
@@ -837,16 +867,16 @@ class ModulePlaceable extends ModuleObject {
       this.will = this.template.GetFieldByLabel('Will').GetValue();
 
     if(this.template.RootNode.HasField('X'))
-      this.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
+      this.x = this.position.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
 
     if(this.template.RootNode.HasField('Y'))
-      this.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
+      this.y = this.position.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
 
     if(this.template.RootNode.HasField('Z'))
-      this.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
+      this.z = this.position.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
 
     if(this.template.RootNode.HasField('Bearing'))
-      this.bearing = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
+      this.bearing = this.rotation.z = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
       let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
@@ -858,6 +888,34 @@ class ModulePlaceable extends ModuleObject {
         }
       }
     }
+
+  }
+
+  toToolsetInstance(){
+
+    let instance = new Struct(9);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Bearing', this.rotation.z)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'X', this.position.x)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Y', this.position.y)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'Z', this.position.z)
+    );
+
+    return instance;
 
   }
 

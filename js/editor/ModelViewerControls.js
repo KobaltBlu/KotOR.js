@@ -7,7 +7,7 @@ class ModelViewerControls {
     this.editor = editor;
 
     this.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
-    this.CameraMoveSpeed = 3.0;
+    this.CameraMoveSpeed = EditorControls.CameraMoveSpeed;
 
     this.pitch = 0;
     this.yaw = -90;
@@ -163,7 +163,7 @@ class ModelViewerControls {
 
   Update(delta){
     //console.log('Camera.Update')
-    var speed = this.CameraMoveSpeed * delta;
+    var speed = EditorControls.CameraMoveSpeed * delta;
     var speed2 = 0.5 * delta;
 
     var xoffset = 0;

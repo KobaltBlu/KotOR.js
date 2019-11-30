@@ -119,35 +119,25 @@ class CharGenMain extends GameMenu {
 
   Hide(){
     super.Hide();
-    let panelQuickorCustom = Game.CharGenQuickOrCustom.tGuiPanel.getControl();
+    /*let panelQuickorCustom = Game.CharGenQuickOrCustom.tGuiPanel.getControl();
     Game.scene_gui.remove(panelQuickorCustom);
 
     let panelQuick = Game.CharGenQuickPanel.tGuiPanel.getControl();
     Game.scene_gui.remove(panelQuick);
 
     let panelCustom = Game.CharGenCustomPanel.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelCustom);
+    Game.scene_gui.remove(panelCustom);*/
   }
 
   Show(){
     super.Show();
+
+    Game.MenuActive = true;
     
     try{
       Game.player.model.parent.remove(Game.player.model);
     }catch(e){}
     this.MODEL_LBL._3dView.scene.add(Game.player.model);
-
-    switch(this.state){
-      case CharGenMain.STATES.NONE:
-        Game.CharGenQuickOrCustom.Show();
-      break;
-      case CharGenMain.STATES.CUSTOM:
-        Game.CharGenCustomPanel.Show();
-      break;
-      case CharGenMain.STATES.QUICK:
-        Game.CharGenQuickPanel.Show();
-      break;
-    }
 
     let portraitId = Game.player.getPortraitId();
     let portrait = Global.kotor2DA['portraits'].rows[portraitId];

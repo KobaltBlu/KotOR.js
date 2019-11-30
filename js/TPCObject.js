@@ -150,7 +150,7 @@ class TPCObject {
 
   			if ( !this.header.compressed ) {
   				dataLength = width * height * this.header.minDataSize;
-  				byteArray = Buffer.from( this.file.buffer, dataOffset, dataLength );
+          byteArray = Buffer.from( this.file.buffer, dataOffset, dataLength );
   			} else {
   				dataLength = dataSize;
   				byteArray = Buffer.from( this.file.buffer, dataOffset, dataLength );

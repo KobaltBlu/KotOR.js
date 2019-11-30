@@ -7,15 +7,25 @@
 
 class ModuleObject {
 
-  constructor () {
+  constructor (gff = new GFFObject) {
 
-    this.id = ModuleObject.COUNT++;
+    ModuleObject.List.push(this);
+
+    if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
+      this.id = gff.GetFieldByLabel('ObjectId').GetValue();
+    }else{
+      this.id = ModuleObject.COUNT++;
+    }
 
     //this.moduleObject = null;
     this.AxisFront = new THREE.Vector3();
     this.position = new THREE.Vector3();
-    this.rotation = new THREE.Vector3();
+    this.rotation = new THREE.Euler();
     this.quaternion = new THREE.Quaternion();
+
+    this.rotation._onChange( () => { this.onRotationChange } );
+	  this.quaternion._onChange( () => { this.onQuaternionChange } );
+
     this.box = new THREE.Box3();
     this.facing = 0;
     this.wasFacing = 0;
@@ -27,6 +37,7 @@ class ModuleObject {
     this.model = null;
     this.dialogAnimation = null;
     this.template = undefined;
+    this.plot = 0;
     this.inventory = [];
     this.scripts = {
       onAttacked: undefined,
@@ -55,6 +66,10 @@ class ModuleObject {
     this.yOrientation = 0;
     this.zOrientation = 0;
     this.bearing = 0;
+    this.collisionTimer = 0;
+
+    this.tweakColor = 0;
+    this.useTweakColor = 0;
 
     this.hp = 0;
     this.currentHP = 0;
@@ -88,6 +103,7 @@ class ModuleObject {
     this.perceptionList = [];
     this.isListening = false;
     this.listeningPatterns = {};
+    this.initiative = 0;
 
 
     //Pointers
@@ -97,6 +113,26 @@ class ModuleObject {
     this.v21 = new THREE.Vector2();
 
   }
+
+  onRotationChange() {
+    if(this.quaternion){
+      this.quaternion.setFromEuler( this.rotation, false );
+      if(this.model instanceof THREE.Object3D)
+        this.model.quaternion.setFromEuler( this.rotation, false );
+    }else{
+      console.error('Missing quaternion', this);
+    }
+	}
+
+	onQuaternionChange() {
+    if(this.rotation){
+      this.rotation.setFromQuaternion( this.quaternion, undefined, false );
+      if(this.model instanceof THREE.Object3D)
+        this.model.rotation.setFromQuaternion( this.quaternion, undefined, false );
+    }else{
+      console.error('Missing rotation', this);
+    }
+	}
 
   _heartbeat(){
     /*this.heartbeatTimer = setTimeout( () => {
@@ -149,11 +185,15 @@ class ModuleObject {
 
   setFacing(facing = 0, instant = false){
     let diff = this.rotation.z - facing;
-    this.wasFacing = this.rotation.z;
-    this.facing = Utility.NormalizeRadian(this.rotation.z - diff);
+    this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
+    this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
     this.facingTweenTime = 0;
-    if(instant)
-      this.rotation.z = this.facing;
+    this.facingAnim = true;
+
+    if(instant){
+      this.rotation.z = this.wasFacing = Utility.NormalizeRadian(this.facing);
+      this.facingAnim = false;
+    }
   }
 
   onHover(){
@@ -176,15 +216,15 @@ class ModuleObject {
   }
 
   triggerHeartbeat(){
-    if(this.scripts.onHeartbeat instanceof NWScript){
+    if(this.scripts.onHeartbeat instanceof NWScript){// && this._locals.Booleans[28]){
       if(PartyManager.party.indexOf(this) > -1){
-        process.nextTick(() => {
+        //process.nextTick(() => {
           this.scripts.onHeartbeat.run(this, 2001);
-        });
+        //});
       }else{
-        process.nextTick(() => {
+        //process.nextTick(() => {
           this.scripts.onHeartbeat.run(this, 1001);
-        });
+        //});
       }
     }
   }
@@ -288,19 +328,40 @@ class ModuleObject {
       goal: ModuleCreature.ACTION.SCRIPT,
       script: script,
       action, action,
-      instruction, instruction
+      instruction, instruction,
+      clearable: false
     });
+  }
+
+  isDead(){
+    return this.getHP() <= 0;
+  }
+
+  damage(amount = 0, oAttacker = undefined){
+    this.subtractHP(amount);
+    this.lastDamager = oAttacker;
+    this.lastAttacker = oAttacker;
+    this.onDamage();
+  }
+
+  onDamage(){
+    if(this.isDead())
+      return true;
+
+    if(this.scripts.onDamaged instanceof NWScript){
+      this.scripts.onDamaged.run(this);
+    }
   }
 
   getCurrentRoom(){
     this.room = undefined;
     this.rooms = [];
     let _distance = 1000000000;
-    for(let i = 0; i < Game.module.rooms.length; i++){
-      let room = Game.module.rooms[i];
+    for(let i = 0; i < Game.module.area.rooms.length; i++){
+      let room = Game.module.area.rooms[i];
       let model = room.model;
       if(model instanceof THREE.AuroraModel){
-        let pos = this.model.position.clone();
+        let pos = this.position.clone();
         if(model.box.containsPoint(pos)){
           this.rooms.push(i);
           let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
@@ -354,10 +415,26 @@ class ModuleObject {
     try{
       console.log('ModuleObject.destory', this)
 
-      if(this.getModel() instanceof THREE.AuroraModel){
-        if(this.getModel().parent instanceof THREE.Object3D){
-          this.getModel().parent.remove(this.getModel());
+      if(this.model instanceof THREE.AuroraModel){
+        if(this.model.parent instanceof THREE.Object3D){
+          this.model.parent.remove(this.model);
         }
+        this.model.dispose();
+        this.model = undefined;
+      }
+
+      if(this.mesh instanceof THREE.Mesh){
+
+        if(this.mesh.parent instanceof THREE.Object3D){
+          this.mesh.parent.remove(this.mesh);
+        }
+
+        this.mesh.material.dispose();
+        this.mesh.geometry.dispose();
+
+        this.mesh.material = undefined;
+        this.mesh.geometry = undefined;
+        this.mesh = undefined;
       }
 
       if(Game.module){
@@ -381,10 +458,13 @@ class ModuleObject {
 
           }
         }else if(this instanceof ModuleRoom){
-          let pIdx = Game.module.rooms.indexOf(this);
+          let pIdx = Game.module.area.rooms.indexOf(this);
           console.log('ModuleObject.destory', 'placeable', pIdx)
           if(pIdx > -1){
-            Game.module.rooms.splice(pIdx, 1);
+            let room = Game.module.area.rooms.splice(pIdx, 1)[0];
+            
+            if(room.walkmesh)
+              room.walkmesh.dispose();
 
             try{
               let wmIdx = Game.walkmeshList.indexOf(this.walkmesh.mesh);
@@ -406,6 +486,12 @@ class ModuleObject {
             }catch(e){}
             
           }
+        }else if(this instanceof ModuleTrigger){
+          let pIdx = Game.module.area.triggers.indexOf(this);
+          console.log('ModuleObject.destory', 'trigger', pIdx)
+          if(pIdx > -1){
+            Game.module.area.triggers.splice(pIdx, 1);            
+          }
         }else{
           console.log('ModuleObject.destory', 'not supported '+this.constructor.name)
         }
@@ -414,6 +500,11 @@ class ModuleObject {
       }
 
       clearTimeout(this.heartbeatTimer);
+
+      //Remove the object from the global list of objects
+      let listIdx = ModuleObject.List.indexOf(this);
+      if(listIdx >= 0)
+        ModuleObject.List.splice(listIdx, 1);
 
     }catch(e){
       console.error('ModuleObject.destory', e);
@@ -441,7 +532,7 @@ class ModuleObject {
     try{
       return this.rotation.clone();
     }catch(e){
-      return new THREE.Vector3();
+      return new THREE.Euler();
     }
   }
 
@@ -507,7 +598,7 @@ class ModuleObject {
 
     switch(effect.type){
       case 1: //EFFECT_DEATH
-        this.setHP(0);
+        this.setHP(-1);
       break;
       case 62: //EFFECT_DISGUISE
         if(this instanceof ModuleCreature){
@@ -518,6 +609,12 @@ class ModuleObject {
 
             console.log('Disguise applied', this, effect);
           });
+        }
+      break;
+      case 75: //VisualEffect
+        let visualEffect = Global.kotor2DA.visualeffects.rows[effect.value];
+        if(visualEffect){
+
         }
       break;
     }
@@ -610,31 +707,19 @@ class ModuleObject {
   }
 
   getLinkedToModule(){
-    if(this.template.RootNode.HasField('LinkedToModule')){
-      return this.template.RootNode.GetFieldByLabel('LinkedToModule').GetValue();
-    }
-    return null;
+    return this.linkedToModule;
   }
 
   getLinkedToFlags(){
-    if(this.template.RootNode.HasField('LinkedToFlags')){
-      return this.template.RootNode.GetFieldByLabel('LinkedToFlags').GetValue();
-    }
-    return null;
+    return this.linkedToFlags;
   }
 
   getLinkedTo(){
-    if(this.template.RootNode.HasField('LinkedTo')){
-      return this.template.RootNode.GetFieldByLabel('LinkedTo').GetValue();
-    }
-    return null;
+    return this.linkedTo;
   }
 
   getTransitionDestin(){
-    if(this.template.RootNode.HasField('TransitionDestin')){
-      return this.template.RootNode.GetFieldByLabel('TransitionDestin').GetCExoLocString().GetValue();
-    }
-    return '';
+    return this.transitionDestin;
   }
 
   getPortraitId(){
@@ -652,7 +737,10 @@ class ModuleObject {
   }
 
   getTag(){
-    if(this.template.RootNode.HasField('Tag')){
+
+    if(this.tag){
+      return this.tag
+    }else if(this.template.RootNode.HasField('Tag')){
       return this.template.RootNode.GetFieldByLabel('Tag').GetValue()
     }
     return '';
@@ -661,6 +749,13 @@ class ModuleObject {
   getTemplateResRef(){
     if(this.template.RootNode.HasField('TemplateResRef')){
       return this.template.RootNode.GetFieldByLabel('TemplateResRef').GetValue()
+    }
+    return null;
+  }
+
+  getResRef(){
+    if(this.template.RootNode.HasField('ResRef')){
+      return this.template.RootNode.GetFieldByLabel('ResRef').GetValue()
     }
     return null;
   }
@@ -783,6 +878,9 @@ class ModuleObject {
     if(!(target instanceof ModuleObject))
       return false;
 
+    if(target.isDead() || this.isDead())
+      return false;
+
     let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
     let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
 
@@ -827,9 +925,9 @@ class ModuleObject {
     let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
 
     if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] >= 90;
+      return targetFaction[faction.label.toLowerCase()] >= 11;
     }else{
-      return faction[targetFaction.label.toLowerCase()] >= 90;
+      return faction[targetFaction.label.toLowerCase()] >= 11;
     }
 
   }
@@ -870,7 +968,7 @@ class ModuleObject {
     let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
 
     for(let j = 0, jl = this.rooms.length; j < jl; j++){
-      let room = Game.module.rooms[this.rooms[j]];
+      let room = Game.module.area.rooms[this.rooms[j]];
       if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
         aabbFaces.push({
           object: room, 
@@ -937,6 +1035,15 @@ class ModuleObject {
   
 
   InitProperties(){
+    
+    if(this.template.RootNode.HasField('Appearance'))
+      this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
+    
+    if(this.template.RootNode.HasField('Description'))
+      this.description = this.template.GetFieldByLabel('Description').GetCExoLocString();
+    
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('AutoRemoveKey'))
       this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();
@@ -990,6 +1097,12 @@ class ModuleObject {
 
     if(this.template.RootNode.HasField('LocalizedName'))
       this.localizedName = this.template.GetFieldByLabel('LocalizedName').GetCExoLocString();
+
+    if(this.template.RootNode.HasField('MapNote'))
+      this.mapNote = this.template.GetFieldByLabel('MapNote').GetCExoLocString();
+
+    if(this.template.RootNode.HasField('MapNoteEnabled'))
+      this.mapNoteEnabled = this.template.GetFieldByLabel('MapNoteEnabled').GetValue();
 
     if(this.template.RootNode.HasField('PortraidId'))
       this.portraidId = this.template.GetFieldByLabel('PortraidId').GetValue();
@@ -1081,8 +1194,64 @@ class ModuleObject {
     return gff;
   }
 
+  toToolsetInstance(){
+
+    let instance = new Struct();
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XPosition', this.position.x)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YPosition', this.position.y)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZPosition', this.position.z)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
+    );
+
+    return instance;
+
+  }
+
+}
+
+ModuleObject.List = [];
+
+ModuleObject.GetObjectById = function(id = -1){
+
+  if(id == ModuleObject.OBJECT_INVALID)
+    return undefined;
+
+  for(let i = 0, len = ModuleObject.List.length; i < len; i++){
+    if(ModuleObject.List[i].id == id)
+      return ModuleObject.List[i];
+  }
 }
 
 ModuleObject.COUNT = 0;
+ModuleObject.PLAYER_ID = 0x7fffffff;
+ModuleObject.OBJECT_INVALID = 0x7f000000;
+
+ModuleObject.ResetPlayerId = function(){
+  ModuleObject.PLAYER_ID = 0x7fffffff;
+};
+
+ModuleObject.GetNextPlayerId = function(){
+  console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
+  return ModuleObject.PLAYER_ID--;
+}
 
 module.exports = ModuleObject;

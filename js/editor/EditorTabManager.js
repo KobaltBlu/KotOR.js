@@ -22,6 +22,16 @@ class EditorTabManager {
       resized: new Signal()
     };
 
+    this.$tabs.bind('mousewheel', (e) => {
+      let amount = e.originalEvent.wheelDelta /120;
+      if(amount > 0) { //LEFT
+        this.ScrollTabsMenuLeft();
+      }
+      else{ //RIGHT
+        this.ScrollTabsMenuRight();
+      }
+    });
+
   }
 
   AddTab(tab){
@@ -111,7 +121,8 @@ class EditorTabManager {
 
   //Attaches the TabManager to the DOM
   AttachTo($dom){
-    $dom.append(this.$tabs).append(this.$tabsScrollControl).append(this.$tabsContainer);
+    //$dom.append(this.$tabs).append(this.$tabsScrollControl).append(this.$tabsContainer);
+    $dom.append(this.$tabs).append(this.$tabsContainer);
 
     this.$tabsScrollControlLeft.off('mouseenter').off('mouseleave').on('mouseenter', () => {
 

@@ -15,11 +15,12 @@
   <script type="text/javascript" src="js/engine/TPCLoader.js"></script>
   <script type="text/javascript" src="js/engine/TGALoader.js"></script>
   <script type="text/javascript" src="js/engine/MDLLoader.js"></script>
+  <script type="text/javascript" src="js/engine/AuroraEmitter.js"></script>
   <script type="text/javascript" src="js/engine/AuroraModel.js"></script>
   <script type="text/javascript" src="js/engine/stats.min.js"></script>
   <script type="text/javascript" src="js/engine/controls/MapControls.js"></script>
+  <script type="text/javascript" src="js/engine/controls/OrbitControls.js"></script>
   <script type="text/javascript" src="js/engine/TransformControls.js"></script>
-  <script type="text/javascript" src="js/engine/SPE.js"></script>
   <script type="text/javascript" src="js/engine/Lensflare.js"></script>
   <script type="text/javascript" src="js/libs/dexie.min.js"></script>
   <script type="text/javascript" src="js/libs/perfect-scrollbar.jquery.min.js"></script>
@@ -48,13 +49,8 @@
     </div>
     <!-- Left Pane -->
     <div class="ui-layout-west" style="overflow: hidden; padding-right:0px;">
-      <div id="game-explorer" class="tree-container" style="height:100%; width:100%; position: relative;">
-        <label>Game Explorer</label>
-        <div class="scroll-container" style="width:100%; overflow: auto;">
-          <ul class="tree css-treeview js">
-
-          </ul>
-        </div>
+      <div id="tabs-explorer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
+        
       </div>
     </div>
   </div>
@@ -64,7 +60,19 @@
   <script>
 
   'use strict';
+  
+  const explorerTabManager = new EditorTabManager();
   const tabManager = new EditorTabManager();
+
+  const projectExplorerTab = new ProjectExplorerTab();
+  const resourceExplorerTab = new ResourceExplorerTab();
+
+  explorerTabManager.AttachTo($('#tabs-explorer'));
+
+  explorerTabManager.AddTab(resourceExplorerTab);
+  explorerTabManager.AddTab(projectExplorerTab);
+
+  resourceExplorerTab.Show();
 
   $('#container').layout({
     applyDefaultStyles: false,
@@ -153,46 +161,6 @@
     initialize();
   }
 
-  let treeIndex = 0;
-
-  function buildNodeList(nodeList = [], canOrphan = false){
-
-    let str = '';
-    if(nodeList instanceof Array){
-      for(let i = 0; i < nodeList.length; i++){
-        str += buildNodeList(nodeList[i], canOrphan);
-      }
-    }else{
-
-      let node = nodeList;
-      if(node.type == 'group'){
-        if(node.nodeList.length == 1 && canOrphan){
-          for(let i = 0; i < node.nodeList.length; i++){
-            str += buildNodeList(node.nodeList[i], false);
-          }
-        }else{
-          str += '<li><input type="checkbox" checked id="list-'+treeIndex+'"><label for="list-'+(treeIndex++)+'">'+node.name+'</label><span></span><ul>';
-          for(let i = 0; i < node.nodeList.length; i++){
-            str += buildNodeList(node.nodeList[i], true);
-          }
-          str += '</ul></li>';
-        }
-      }else{
-        str += '<li class="link" data-path="'+node.data.path+'">'+node.name+'</li>';
-      }
-
-    }
-
-    return str;
-
-  }
-
-  let ResourceBrowser = {
-    treeIndex: 0,
-    $ul: $('ul.tree.css-treeview.js'),
-    nodeList: []
-  };
-
   function initialize(){
 
     verifyGame({
@@ -204,103 +172,29 @@
         GameInitializer.Init({
           game: Games[GameKey],
           onLoad: () => {
-            ResourceBrowser.treeIndex = 0;
-            ResourceBrowser.nodeList = [];
-            let bifs = [];
-            for(let bif in Global.kotorBIF){
-              if(Global.kotorBIF.hasOwnProperty(bif))
-                bifs.push(Global.kotorBIF[bif]);
-            }
             
-            let bifLoader = new AsyncLoop({
-              array: bifs,
-              onLoop: (bif, asyncLoop) => {
-                let name = bif.file.split('\\').pop().split('.')[0];
-                let subTypes = {};
+            resourceExplorerTab.initialize( () => {
 
-                let node = {
-                  name: name,
-                  type: 'group',
-                  nodeList: []
-                };
+              loadMaps( () => {
 
-                ResourceBrowser.nodeList.push(node)
-
-                for(let i = 0; i < bif.resources.length; i++){
-                  let resource = bif.resources[i];
-                  let resref = Global.kotorKEY.GetFileLabel(resource.ID);
-                  
-                  if(subTypes[resource.ResType] == undefined){
-                    subTypes[resource.ResType] = {
-                      name: ResourceTypes.getKeyByValue(resource.ResType),
-                      type: 'group',
-                      nodeList: []
-                    }
-                    node.nodeList.push(subTypes[resource.ResType]);
-                  }
-
-                  subTypes[resource.ResType].nodeList.push({
-                    name: resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
-                    type: 'resource',
-                    data: {
-                      path: bif.file+'?'+resref+'.'+ResourceTypes.getKeyByValue(resource.ResType),
-                      /*archive: name,
-                      type: 'bif',
-                      resref: resref,
-                      resid: resource.ResType*/
-                    },
-                    nodeList: []
-                  });
-                  
+                if(GameKey == 'TSL'){
+                  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
+                }else{
+                  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'));
                 }
 
-                asyncLoop._Loop();
-              }
-            });
-            bifLoader.Begin(() => {
+                loader.Hide();
+                tabManager.AddTab(new QuickStartTab());
+                tabManager.AttachTo($('#renderer-container #tabs-container'));
 
-              loadFolderForFileBrowser('StreamWaves', () => {
-
-                loadFolderForFileBrowser('StreamSounds', () => {
-
-                  loadFolderForFileBrowser('StreamMusic', () => {
-
-                    loadFolderForFileBrowser('StreamVoice', () => {
-
-                      loadMaps( () => {
-
-                        ResourceBrowser.$ul.html(buildNodeList(ResourceBrowser.nodeList));
-
-                        $('li.link', ResourceBrowser.$ul).on('click', (e) => {
-                          e.preventDefault();
-
-                          let resref = e.target.dataset.resref;
-                          let reskey = parseInt(e.target.dataset.resid);
-
-                          let type = e.target.dataset.type;
-                          let archive = e.target.dataset.archive;
-
-                          console.log(e.target.dataset);
-
-                          FileTypeManager.onOpenResource(
-                            new EditorFile({
-                              path: e.target.dataset.path
-                            })
-                          );
-
-                        });
-
-                        loader.Hide();
-                        tabManager.AddTab(new QuickStartTab());
-                        tabManager.AttachTo($('#renderer-container #tabs-container'));
-
-                      });
-
-                    });
-
-                  });
-
-                });
+                let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+                Game.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+                Game.depthTarget.texture.generateMipmaps = false;
+                Game.depthTarget.stencilBuffer = false;
+                Game.depthTarget.depthBuffer = true;
+                Game.depthTarget.depthTexture = new THREE.DepthTexture();
+                Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+                
 
               });
 
@@ -311,7 +205,7 @@
       },
       onError: () => {
         console.log('Failed to verify the path for', GameKey);
-        loader.Dismiss();
+        loader.Hide();
         let gameFinderWizard = new GameFinderWizard({
           onUpdate: () => {
             initialize();
@@ -322,64 +216,6 @@
           }
         });
       }
-    });
-
-  }
-
-  function loadFolderForFileBrowser(folder_name = '', onComplete = null ){
-    //Load StreamWaves
-    recursive(path.join(Config.options.Games[GameKey].Location, folder_name), (err, files) => {
-
-      if(err){
-        if(typeof onComplete === 'function')
-          onComplete();
-        return;
-      }
-
-      let folder = {name: folder_name, type: 'group', nodeList: []};
-      folder.nodeList._indexes = {};
-      let substr_len = (path.join(Config.options.Games[GameKey].Location, folder_name)+path.sep).length;
-
-      for(let i = 0; i < files.length; i++){
-        let file = files[i].substr(substr_len);
-        let parts = file.split(path.sep);
-        
-        let newfile = parts.pop();
-        let targetFolder = folder;
-        
-        for(let i = 0; i < parts.length; i++){
-          if(typeof targetFolder.nodeList._indexes[parts[i]] === 'undefined'){
-            //Push the new folder and get the index
-            let index = targetFolder.nodeList.push({name: parts[i].trim(), type: 'group', nodeList: []}) - 1;
-            targetFolder.nodeList._indexes[parts[i]] = index;
-            targetFolder = targetFolder.nodeList[index];
-            targetFolder.nodeList._indexes = {};
-          }else{
-            let index = targetFolder.nodeList._indexes[parts[i]];
-            targetFolder = targetFolder.nodeList[index];
-          }
-        }
-
-        targetFolder.nodeList.push({name: newfile.trim(), type: 'resource', data: {path: files[i]}, nodeList: [] });
-
-        /*targetFolder.nodeList.sort( (a, b) => {
-          return a.type == 'group' ? 0 : 1;
-        });*/
-        
-      }
-
-      folder.nodeList.sort( (a, b) => {
-        let compareType = a.type == 'group' && b.type != 'group' ? -1 : 1;
-        let compareName = a.name.localeCompare(b.name);
-
-        return compareType || compareName;
-      });
-
-      ResourceBrowser.nodeList.push(folder);
-
-      if(typeof onComplete === 'function')
-        onComplete();
-
     });
 
   }
@@ -473,6 +309,5 @@
 
 
   </script>
-  <!--script type="text/javascript" src="js/script.js"></script-->
   </body>
 </html>

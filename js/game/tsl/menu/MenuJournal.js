@@ -22,7 +22,8 @@ class MenuJournal extends GameMenu {
 
         this.BTN_MESSAGES.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuMessages.Show();
+          this.Close()
+          Game.MenuMessages.Open();
         });
 
         if(typeof this.onLoad === 'function')
@@ -37,17 +38,6 @@ class MenuJournal extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-    
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    //Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
 
   }
 

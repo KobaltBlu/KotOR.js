@@ -31,7 +31,7 @@ class MenuMessages extends GameMenu {
     
     Game.MenuActive = true;
 
-    Game.InGameOverlay.Hide();
+    /*Game.InGameOverlay.Hide();
     Game.MenuOptions.Hide();
     Game.MenuCharacter.Hide();
     Game.MenuEquipment.Hide();
@@ -40,7 +40,7 @@ class MenuMessages extends GameMenu {
     Game.MenuMap.Hide();
     Game.MenuInventory.Hide();
     Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
+    Game.MenuTop.Show();*/
 
   }
 

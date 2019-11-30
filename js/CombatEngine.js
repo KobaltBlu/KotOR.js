@@ -7,13 +7,105 @@
 
 class CombatEngine {
 
+  static combatants = [];
+
   constructor(args = {}){
 
   }
 
   static Update(delta = 0){
 
-    if(!CombatEngine.active){
+    if(CombatEngine.combatants.length){
+
+      //combatGroups is an array of combatGroups (Arrays) that group object in combat eith eachother
+      let combatGroups = [];
+
+      //Loop through the active combatants and group them
+      for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
+        let combatant = CombatEngine.combatants[i];
+        combatant.combatOrder = i;
+        let group = undefined;
+
+        //Update the combatant's combatAction if needed
+        if(combatant.combatQueue.length && combatant.combatAction == undefined){
+          combatant.combatAction = combatant.combatQueue.shift();
+        }
+
+        //Find the correct combat list to add the combatant to
+        for(let j = 0, len2 = combatGroups.length; j < len2; j++){
+          if(combatGroups[j].indexOf(combatant) >= 0){
+            group = combatGroups[j];
+          }else{
+            //Check to see if the combatant's target in in this group
+            if(combatant.lastAttemptedAttackTarget){
+              if(combatGroups[j].indexOf(combatant.lastAttemptedAttackTarget) >= 0){
+                group = combatGroups[j];
+              }
+            }
+          }
+        }
+
+        //Create a new combat group if one was not found or add the combatant to the found group
+        if(group === undefined){
+          group = [combatant];
+          combatGroups.push(group);
+
+          //Add the combatant's current target to the group
+          if(combatant.lastAttemptedAttackTarget){
+            if(group.indexOf(combatant.lastAttemptedAttackTarget) == -1)
+              group.push(combatant.lastAttemptedAttackTarget);
+          }
+        }else{
+          if(group.indexOf(combatant) == -1){
+            group.push(combatant);
+          }
+        }
+      }
+
+      CombatEngine.combatGroups = combatGroups;
+      
+      //Loop through the active combatant groups
+      for(let i = 0, len = combatGroups.length; i < len; i++){
+        //Sort the combatGroup to make sure the combatants stay in the correct order
+        combatGroups[i].sort(CombatEngine.GroupSort);
+
+        //Get the first combatant of the group
+        let combatant = combatGroups[i][0];
+        if(!combatant.isDead()){
+
+          if(combatant.combatRoundTimer == 0){
+            if(combatant.combatAction){
+              if(combatant.actionInRange(combatant.combatAction)){
+                combatant.combatAction.ready = true;
+              }
+            }
+          }
+
+          if(combatant.combatRoundTimer >= 1.5){
+            //Get the index of the current combatant from the combatants list
+            let index = CombatEngine.combatants.indexOf(combatant);
+            //Remove the combatant from the combatants list
+            CombatEngine.combatants.splice(index, 1);
+            //And push it to the end of the combatants list
+            CombatEngine.combatants.push( combatant );
+            //Reset the combatant's roundTimer
+            combatant.combatRoundTimer = 0;
+            //Call the combatant's onCombatRoundEnd script
+            combatant.onCombatRoundEnd();
+          }else{
+            //Increment the combatant's roundTimer since it hasn't ended yet
+            combatant.combatRoundTimer += delta;
+          }
+
+        }else{
+          //Remove dead combatants from the initiative order
+          CombatEngine.combatants.splice(0, 1);
+        }
+
+      }
+    }
+
+    /*if(!CombatEngine.active || Game.Mode != Game.MODES.INGAME){
       CombatEngine.timer = 0;
       return;
     }
@@ -37,8 +129,47 @@ class CombatEngine {
         PartyManager.party[i].onCombatRoundEnd();
       }
       CombatEngine.timer = 0;
-    }
+    }*/
     
+  }
+
+  static InitiativeSort(a, b){
+    return a.initiative - b.initiative;
+  }
+
+  static GroupSort(a, b){
+    return a.combatOrder - b.combatOrder;
+  }
+
+  static CombatActive(){
+    return CombatEngine.combatants.length;
+  }
+
+  static IsActiveCombatant(combatant = undefined){
+    return CombatEngine.combatants.indexOf(combatant) >= 0;
+  }
+
+  static AddCombatant(combatant = undefined){
+    if(!CombatEngine.IsActiveCombatant(combatant)){
+      combatant.initiative = CombatEngine.DiceRoll(1, 'd20');
+      combatant.combatRoundTimer = 0;
+      let index = 0;
+      for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
+        if(CombatEngine.combatants[i].initiative < combatant.initiative){
+          index = i;
+          return;
+        }
+      }
+      //Add the combatant to the list respectful of it's initiative
+      CombatEngine.combatants.splice(index, 0, combatant);
+    }
+  }
+
+  static RemoveCombatant(combatant = undefined){
+    let index = CombatEngine.combatants.indexOf(combatant);
+    if(index >= 0){
+      CombatEngine.combatants.splice(index, 1);
+    }
   }
 
   static GetArmorClass(creature = null){

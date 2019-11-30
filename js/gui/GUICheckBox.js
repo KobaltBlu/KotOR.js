@@ -93,18 +93,14 @@ class GUICheckBox extends GUIControl{
     }
 
     //unset the border so the background isn't set
-    this.border.fill = '';
+    //this.border.fill = '';
 
     this.addEventListener( 'mouseMove', () => {
       //this.mouseInside();
     });
 
     this.addEventListener( 'click', () =>{
-      /*let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-
-      let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
-      this.mouseOffset.x = scrollLeft;
-      this.mouseInside();*/
+      this.setValue(!this.value);
     });
 
     this.addEventListener( 'mouseDown', (e) => {
@@ -119,18 +115,158 @@ class GUICheckBox extends GUIControl{
 
   }
 
+  onINIPropertyAttached(){
+    if(this.iniProperty)
+      this.setValue(this.iniProperty.value);
+  }
+
   setValue(value = 0){
 
-    this.value = value;
+    this.value = value ? 1 : 0;
     
     if(this.value){
-      this.cbMaterial.map = this.spriteStates.selected;
+      this.getFill().material.map = this.spriteStates.selected;
+      this.getHighlightFill().material.map = this.spriteStates.selected;
     }else{
-      this.cbMaterial.map = this.spriteStates.normal;
+      this.getFill().material.map = this.spriteStates.normal;
+      this.getHighlightFill().material.map = this.spriteStates.normal;
     }
+
+    if(this.iniProperty)
+      this.iniProperty.value = this.value;
     
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
+
+  }
+
+  buildFill(){
+    let extent = this.getFillExtent();
+    
+    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    var material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide} );
+    var sprite = new THREE.Mesh( geometry, material );
+
+    material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
+    
+    sprite.name = this.widget.name+' center fill';
+    sprite.scale.x = extent.height || 0.000001;
+    sprite.scale.y = sprite.scale.x;
+    sprite.position.z = this.zOffset;
+
+    sprite.position.x = -(this.extent.width - sprite.scale.x) / 2;
+
+    this.widget.fill.add( sprite );
+
+    if(this.border.fill != ''){
+      material.transparent = true;
+      TextureLoader.enQueue(this.border.fill, material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(texture == null){
+          material.opacity = 0.01;
+        }
+      });
+    }else{
+      TextureLoader.enQueue('fx_static', material, TextureLoader.Type.TEXTURE, (texture) => {
+        material.opacity = 1;
+        material.alphaTest = 0.5;
+        material.transparent = true;
+      });
+    }
+
+    sprite.renderOrder = this.id;
+
+    sprite.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    sprite.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    sprite.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
+    }
+
+    sprite.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    sprite.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    sprite.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    sprite.getControl = (e) => {
+      return this;
+    };
+
+  }
+
+  buildHighlightFill(){
+    let extent = this.getFillExtent();
+    
+    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    var sprite = new THREE.Mesh( geometry, material );
+
+    material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
+    
+    sprite.name = this.widget.name+' highlight fill';
+    sprite.scale.x = extent.height || 0.000001;
+    sprite.scale.y = sprite.scale.x;
+    sprite.position.z = this.zOffset;
+
+    sprite.position.x = -(this.extent.width - sprite.scale.x) / 2;
+
+    this.widget.highlight.add( sprite );
+
+    if(this.highlight.fill != ''){
+      material.transparent = true;
+      TextureLoader.enQueue(this.highlight.fill, material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(texture == null){
+          material.opacity = 0.01;
+        }
+      });
+    }else{
+      TextureLoader.enQueue('fx_static', material, TextureLoader.Type.TEXTURE, (texture) => {
+        material.opacity = 1;
+        material.alphaTest = 0.5;
+        material.transparent = true;
+      });
+    }
+
+    sprite.renderOrder = this.id;
+
+    sprite.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    sprite.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    sprite.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
+    }
+
+    sprite.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    sprite.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    sprite.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    sprite.getControl = (e) => {
+      return this;
+    };
 
   }
 

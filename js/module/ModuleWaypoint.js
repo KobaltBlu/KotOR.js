@@ -8,11 +8,10 @@
 class ModuleWaypoint extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
-    super();
+    super(gff);
 
     this.template = gff;
-
-
+    this.InitProperties();
 
   }
 
@@ -100,6 +99,74 @@ class ModuleWaypoint extends ModuleObject {
       if(onLoad != null)
         onLoad(this.template);
     }
+  }
+
+  toToolsetInstance(){
+
+    let instance = new Struct(8);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.BYTE, 'Appearance', this.appearance)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOLOCSTRING, 'Description')
+    ).CExoLocString = new CExoLocString();
+    
+    instance.AddField(
+      new Field(GFFDataTypes.BYTE, 'HasMapNote', this.hasMapNote)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOSTRING, 'LinkedTo', this.linkedTo)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.BYTE, 'LinkedToFlags', this.linkedToFlags)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'LinkedToModule', this.linkedToModule)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOLOCSTRING, 'MapNote')
+    ).CExoLocString = this.mapNote;
+    
+    instance.AddField(
+      new Field(GFFDataTypes.BYTE, 'MapNoteEnabled', this.mapNoteEnabled)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'Tag', this.tag)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XOrientation', this.xOrientation)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XPosition', this.position.x)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YOrientation', this.yOrientation)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YPosition', this.position.y)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZPosition', this.position.z)
+    );
+
+    return instance;
+
   }
 
 }

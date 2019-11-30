@@ -6,11 +6,14 @@ class EditorControls {
     this.element = element || document;
     this.editor = editor;
     this.cameraMode = EditorControls.CameraMode.EDITOR;
-    this.CameraMoveSpeed = 1.0;
 
     this.camera.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
     this.camera.pitch = 0.00;
     this.camera.yaw = 0.0;
+
+    this.camSpeed = 0;
+    this.maxCamSpeed = 2.5;
+    this.camRampSpeed = 10;
 
     this.signals = this.editor.signals;
 
@@ -28,14 +31,9 @@ class EditorControls {
 
     this.CurrentTool = this.TOOL.SELECT;
 
-    this.keys = {
-      'w':false,
-      'a':false,
-      's':false,
-      'd':false,
-      'space':false,
-      'shift':false
-    };
+    this.keys = {};
+
+    this.InitKeys();
 
     /*this.workerPointer = new Worker('worker/worker-pointer-raycaster.js');
     this.workerPointer.addEventListener('message', function(e) {
@@ -54,35 +52,28 @@ class EditorControls {
     //document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     this.editor.$canvas.keydown( ( event ) => {
-      //console.log(event.which)
-      if ( event.which == 81 )
-        this.keys['q'] = true;
-      if ( event.which == 87 )
-        this.keys['w'] = true;
-      if ( event.which == 69 )
-        this.keys['e'] = true;
-      if ( event.which == 65 )
-        this.keys['a'] = true;
-      if ( event.which == 83 )
-        this.keys['s'] = true;
-      if ( event.which == 68 )
-        this.keys['d'] = true;
-      if ( event.which == 32 )
-        this.keys['space'] = true;
-      if ( event.which == 16 )
-        this.keys['shift'] = true;
-      if ( event.which == 27 )
-        this.keys['escape'] = true;
-      if ( event.which == 70 )
-        this.keys['f'] = true;
-      if ( event.which == 74 )
-        this.keys['j'] = true;
-      if ( event.which == 46 )
-        this.keys['delete'] = true;
+      if(event.which >= 48 && event.which <= 57){
+        this.keys[event.key].down = this.keys[event.key].pressed = true;
+      }else if(event.which >= 65 && event.which <= 90){
+        this.keys[event.key].down = this.keys[event.key].pressed = true;
+      }else {
+        if ( event.which == 32 )
+          this.keys['space'].down = this.keys['space'].pressed = true;
+        if ( event.which == 16 )
+          this.keys['shift'].down = this.keys['shift'].pressed = true;
+        if ( event.which == 27 )
+          this.keys['escape'].down = this.keys['escape'].pressed = true;
+        if ( event.which == 17 )
+          this.keys['ctrl'].down = this.keys['ctrl'].pressed = true;
+        if ( event.which == 107 )
+          this.keys['num-plus'].down = this.keys['num-plus'].pressed = true;
+        if ( event.which == 109 )
+          this.keys['num-minus'].down = this.keys['num-minus'].pressed = true;
+        if ( event.which == 9 )
+          this.keys['tab'].down = this.keys['tab'].pressed = true;
+      }
 
-
-
-      if(this.keys['delete']){
+      /*if(this.keys['delete']){
         if(this.editor.selected != null){
           let index = this.editor.scene.children.indexOf(this.editor.selected.parent);
           if(index !== -1) {
@@ -103,32 +94,36 @@ class EditorControls {
 
           this.AxisUpdate();
         }
-      }
+      }*/
     }).keyup( ( event ) => {
-      if ( event.which == 81 )
-        this.keys['q'] = false;
-      if ( event.which == 87 )
-        this.keys['w'] = false;
-      if ( event.which == 69 )
-        this.keys['e'] = false;
-      if ( event.which == 65 )
-        this.keys['a'] = false;
-      if ( event.which == 83 )
-        this.keys['s'] = false;
-      if ( event.which == 68 )
-        this.keys['d'] = false;
-      if ( event.which == 32 )
-        this.keys['space'] = false;
-      if ( event.which == 16 )
-        this.keys['shift'] = false;
-      if ( event.which == 27 )
-        this.keys['escape'] = false;
-      if ( event.which == 70 )
-        this.keys['f'] = false;
-      if ( event.which == 74 )
-        this.keys['j'] = false;
-      if ( event.which == 46 )
-        this.keys['delete'] = false;
+      if(event.which >= 48 && event.which <= 57){
+        this.keys[event.key].down = this.keys[event.key].pressed = false;
+      }else if(event.which >= 65 && event.which <= 90){
+        this.keys[event.key].down = this.keys[event.key].pressed = false;
+      }else {
+        if ( event.which == 32 )
+          this.keys['space'].down = this.keys['space'].pressed = false;
+        if ( event.which == 16 )
+          this.keys['shift'].down = this.keys['shift'].pressed = false;
+        if ( event.which == 27 )
+          this.keys['escape'].down = this.keys['escape'].pressed = false;
+        if ( event.which == 17 )
+          this.keys['ctrl'].down = this.keys['ctrl'].pressed = false;
+        if ( event.which == 107 )
+          this.keys['num-plus'].down = this.keys['num-plus'].pressed = false;
+        if ( event.which == 109 )
+          this.keys['num-minus'].down = this.keys['num-minus'].pressed = false;
+        if ( event.which == 9 )
+        this.keys['tab'].down = this.keys['tab'].pressed = false;
+      }
+
+      if(!this.keys['w'].down && !this.keys['s'].down){
+        let followee = this.editor.player;
+        if(followee.canMove()){
+          followee.animState = ModuleCreature.AnimState.IDLE;
+        }
+      }
+
     }).mousedown((event) => {
       if(event.target == this.element){
         console.log('Valid Mouse Target');
@@ -142,7 +137,7 @@ class EditorControls {
           //if(this.CurrentTool == this.TOOL.SELECT){
             let axisMoverSelected = false;
             this.editor.axes.selected = null;
-            this.editor.raycaster.setFromCamera( Mouse.Vector, this.camera );
+            this.editor.raycaster.setFromCamera( Mouse.Vector, this.editor.currentCamera );
             let axisMoverIntersects = this.editor.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
             if(axisMoverIntersects.length){
               //console.log(Mouse.MouseDownX, Mouse.MouseDownY);
@@ -207,7 +202,7 @@ class EditorControls {
         this.CurrentTool = this.TOOL.OBJECT_MOVE;
       }
 
-      this.editor.raycaster.setFromCamera( Mouse.Vector, this.camera );
+      this.editor.raycaster.setFromCamera( Mouse.Vector, this.editor.currentCamera );
       let intersections = this.editor.raycaster.intersectObjects( this.editor.group.rooms.children, true );
       let intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
 			if ( intersection !== null) {
@@ -257,12 +252,60 @@ class EditorControls {
       this.editor.selected = object.children[0] || null;
 
       this.editor.axes.position.set(centerX, centerY, centerZ);
-      this.editor.axes.visible = true;
+      this.editor.axes.visible = false;
 
   	} );
 
     this.AxisUpdate();
 
+  }
+
+  InitKeys(){
+    this.keys = {
+      'a': {down: false, pressed: false},
+      'b': {down: false, pressed: false},
+      'c': {down: false, pressed: false},
+      'd': {down: false, pressed: false},
+      'e': {down: false, pressed: false},
+      'f': {down: false, pressed: false},
+      'g': {down: false, pressed: false},
+      'h': {down: false, pressed: false},
+      'i': {down: false, pressed: false},
+      'j': {down: false, pressed: false},
+      'k': {down: false, pressed: false},
+      'l': {down: false, pressed: false},
+      'm': {down: false, pressed: false},
+      'n': {down: false, pressed: false},
+      'o': {down: false, pressed: false},
+      'p': {down: false, pressed: false},
+      'q': {down: false, pressed: false},
+      'r': {down: false, pressed: false},
+      's': {down: false, pressed: false},
+      't': {down: false, pressed: false},
+      'u': {down: false, pressed: false},
+      'v': {down: false, pressed: false},
+      'w': {down: false, pressed: false},
+      'x': {down: false, pressed: false},
+      'y': {down: false, pressed: false},
+      'z': {down: false, pressed: false},
+      'space': {down: false, pressed: false},
+      'shift': {down: false, pressed: false},
+      'ctrl':  {down: false, pressed: false},
+      'escape':  {down: false, pressed: false},
+      'num-plus':  {down: false, pressed: false},
+      'num-minus':  {down: false, pressed: false},
+      'tab':  {down: false, pressed: false},
+      '0': {down: false, pressed: false},
+      '1': {down: false, pressed: false},
+      '2': {down: false, pressed: false},
+      '3': {down: false, pressed: false},
+      '4': {down: false, pressed: false},
+      '5': {down: false, pressed: false},
+      '6': {down: false, pressed: false},
+      '7': {down: false, pressed: false},
+      '8': {down: false, pressed: false},
+      '9': {down: false, pressed: false},
+    };
   }
 
   SetCameraMode(cameraMode){
@@ -271,13 +314,13 @@ class EditorControls {
 
   Update(delta){
 
-    let speed = this.CameraMoveSpeed * delta;
+    let speed = EditorControls.CameraMoveSpeed * delta;
     let speed2 = 0.5 * delta;
 
     let xoffset = 0;
     let yoffset = 0;
 
-    let _cacheZ = this.camera.position.z;
+    let _cacheZ = this.editor.currentCamera.position.z;
 
     if(Mouse.Dragging){
       xoffset = Mouse.OffsetX || 0;
@@ -289,43 +332,13 @@ class EditorControls {
 
     this.editor.cursorGroup.position.set(Mouse.CollisionPosition.x, Mouse.CollisionPosition.y, Mouse.CollisionPosition.z);
 
-    /*if(this.keys['q']){
-      //console.log(this.AxisFront, this.AxisFront.clone().multiplyScalar(speed));
-      this.camera.rotation.y += 1 * delta
-      this.camera.updateProjectionMatrix();
+    if(this.editor.mode == ModuleEditorTab.MODES.PREVIEW){
+      if(this.editor.player instanceof ModuleCreature){
+        this.updatePlayerControls(delta);
+      }
     }
 
-    if(this.keys['e']){
-      //console.log(this.AxisFront, this.AxisFront.clone().multiplyScalar(speed));
-      this.camera.rotation.y -= 1 * delta
-      this.camera.updateProjectionMatrix();
-    }*/
-
-    /*if(this.keys['w']){
-      //console.log(this.AxisFront, this.AxisFront.clone().multiplyScalar(speed));
-      this.camera.position.add(this.camera.AxisFront.clone().multiplyScalar(speed));
-      this.camera.updateProjectionMatrix();
-    }
-
-    if(this.keys['s']){
-      //console.log(this.AxisFront.clone().multiplyScalar(speed));
-      this.camera.position.sub(this.camera.AxisFront.clone().multiplyScalar(speed));
-      this.camera.updateProjectionMatrix();
-    }
-
-    if(this.keys['a']){
-      this.camera.position.sub((new THREE.Vector3().crossVectors(this.camera.AxisFront, this.camera.up)).multiplyScalar(speed));
-      this.camera.updateProjectionMatrix();
-    }
-
-    if(this.keys['d']){
-      this.camera.position.add((new THREE.Vector3().crossVectors(this.camera.AxisFront, this.camera.up)).multiplyScalar(speed));
-      this.camera.updateProjectionMatrix();
-    }
-
-    this.camera.position.z = _cacheZ;*/
-
-    if(this.keys['space']){
+    /*if(this.keys['space'].down){
       this.camera.position.z += speed;
       this.camera.updateProjectionMatrix();
     }
@@ -397,7 +410,7 @@ class EditorControls {
 
       }
 
-    }
+    }*/
 
     if(this.CurrentTool == this.TOOL.OBJECT_MOVE && this.editor.selected != null){
 
@@ -434,7 +447,7 @@ class EditorControls {
     //this.light.position = this.camera.position;
 
     if(this.editor.axes.visible){
-      this.editor.axes.scale.setScalar(this.camera.position.distanceTo(this.editor.axes.position) * 0.25);
+      this.editor.axes.scale.setScalar(this.editor.currentCamera.position.distanceTo(this.editor.axes.position) * 0.25);
     }
 
 
@@ -486,6 +499,87 @@ class EditorControls {
     Mouse.OffsetY = (event.movementY || 0)*-1.0;
   }
 
+  updatePlayerControls(delta){
+    let followee = this.editor.player;
+    let turningCamera = false;
+
+    if(followee.canMove()){
+
+      let moveSpeed = followee.walk ? followee.getWalkSpeed() : followee.getRunSpeed();
+
+      if((this.keys['w'].down) && !followee.isDead()){
+        followee.clearAllActions(true);
+        followee.force = moveSpeed;
+        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.facing + Math.PI/2), true);
+        //followee.facing = Utility.NormalizeRadian(this.editor.followerCamera.facing + Math.PI);
+        followee.controlled = true;
+        followee.invalidateCollision = true;
+
+        followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+        followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+
+      }else if( this.keys['s'].down && !followee.isDead()){
+        followee.clearAllActions(true);
+        followee.force = moveSpeed;
+        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.facing - Math.PI/2), true);
+        //followee.facing = Utility.NormalizeRadian(this.editor.followerCamera.facing - Math.PI);
+        followee.controlled = true;
+        followee.invalidateCollision = true;
+
+        followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+        followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);
+
+      }else{
+        //followee.controlled = false;
+        followee.force = 0;
+      }
+
+      if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
+        followee.animState = ModuleCreature.AnimState.RUNNING;
+      }
+
+      if(this.keys['num-minus'].down && !followee.isDead()){
+        followee.position.z -= 5 * delta;
+      }
+
+      if(this.keys['num-plus'].down && !followee.isDead()){
+        followee.position.z += 5 * delta;
+      }
+
+    }
+
+    if(this.keys['a'].down){
+      //this.editor.followerCamera.facing = (Utility.NormalizeRadian(this.editor.followerCamera.facing + 2.5 * delta));
+      followee.invalidateCollision = true;
+      turningCamera = true;
+      this.camDir = 1;
+    }
+
+    if(this.keys['d'].down){
+      //this.editor.followerCamera.facing = (Utility.NormalizeRadian(this.editor.followerCamera.facing - 2.5 * delta));
+      followee.invalidateCollision = true;
+      turningCamera = true;
+      this.camDir = -1;
+    }
+
+    if(turningCamera && this.camSpeed < this.maxCamSpeed){
+      this.camSpeed += this.camRampSpeed * delta;
+
+      if(this.camSpeed > this.maxCamSpeed)
+        this.camSpeed = this.maxCamSpeed;
+    }else if(this.camSpeed > 0){
+      this.camSpeed -= this.camRampSpeed * delta;
+
+      if(this.camSpeed < 0)
+        this.camSpeed = 0;
+    }
+
+    if(this.camSpeed > 0){
+      this.editor.followerCamera.facing = (Utility.NormalizeRadian(this.editor.followerCamera.facing + (this.camSpeed * this.camDir) * delta))
+    }
+
+  }
+
 }
 
 EditorControls.CameraMode = {
@@ -493,5 +587,7 @@ EditorControls.CameraMode = {
   STATIC: 1,
   ANIMATED: 2
 };
+
+EditorControls.CameraMoveSpeed = localStorage.getItem('camera_speed') || 1;
 
 module.exports = EditorControls;

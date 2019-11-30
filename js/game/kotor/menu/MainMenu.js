@@ -40,10 +40,10 @@ class MainMenu extends GameMenu {
           e.stopPropagation();
           //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
           Game.LoadScreen.setLoadBackground('load_chargen' ,() => {
-            Game.LoadScreen.Show();
+            Game.LoadScreen.Open();
             Game.CharGenClass.Init( () => {
-              Game.LoadScreen.Hide();
-              Game.CharGenClass.Show();
+              Game.LoadScreen.Close();
+              Game.CharGenClass.Open();
             });
           });
         });
@@ -51,20 +51,20 @@ class MainMenu extends GameMenu {
         this.btn_loadgame.addEventListener('click', (e) => {
           e.stopPropagation();
           //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-          Game.MenuSaveLoad.Show()
+          Game.MenuSaveLoad.Open()
         });
 
         this.btn_movies.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MainMovies.Show();
+          //this.Hide();
+          Game.MainMovies.Open();
           //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         });
 
         this.btn_options.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MainOptions.Show();
+          //this.Hide();
+          Game.MainOptions.Open();
         });
 
         this.btn_exit.addEventListener('click', (e) => {
@@ -111,9 +111,9 @@ class MainMenu extends GameMenu {
                   TextureLoader.LoadQueue(() => {
   
                     AudioLoader.LoadMusic(bgMusic, (data) => {
-                      //console.log('Loaded Background Music', bgMusic);
                       
-                      Game.audioEngine.SetBackgroundMusic(data);
+                      this.bgMusicBuffer = data;
+                      
                       if(typeof this.onLoad === 'function')
                         this.onLoad();
   
@@ -165,8 +165,10 @@ class MainMenu extends GameMenu {
   Show(){
     super.Show();
 
-    Game.MainOptions.Hide();
-    Game.MainMovies.Hide();
+    Game.audioEngine.SetBackgroundMusic(this.bgMusicBuffer);
+
+    //Game.MainOptions.Hide();
+    //Game.MainMovies.Hide();
 
     Game.AlphaTest = 0.5;
 

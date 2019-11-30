@@ -8,7 +8,7 @@
 class ModuleTrigger extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
-    super();
+    super(gff);
 
     this.template = gff;
     this.objectsInside = [];
@@ -20,6 +20,7 @@ class ModuleTrigger extends ModuleObject {
     this.vertices = [];
 
     this.triggered = false;
+    this.InitProperties();
 
   }
 
@@ -59,11 +60,15 @@ class ModuleTrigger extends ModuleObject {
     return this.zOrientation;
   }
 
+  isDead(){
+    return false;
+  }
+
   getCurrentRoom(){
     this.room = undefined;
     let _distance = 1000000000;
-    for(let i = 0; i < Game.module.rooms.length; i++){
-      let room = Game.module.rooms[i];
+    for(let i = 0; i < Game.module.area.rooms.length; i++){
+      let room = Game.module.area.rooms[i];
       let model = room.model;
       if(model instanceof THREE.AuroraModel){
         let pos = this.position.clone();
@@ -172,7 +177,6 @@ class ModuleTrigger extends ModuleObject {
     /*
     Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
     */
-
     //this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
 
     this.mesh.moduleObject = this;
@@ -186,7 +190,7 @@ class ModuleTrigger extends ModuleObject {
   //If they leave the trigger and then return it will then fire normally
   initObjectsInside(){
     //Check to see if this trigger is linked to another module
-    if(this.linkedToModule){
+    if(this.linkedToModule && this.type == 1){
       //Check Party Members
       let partyLen = PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
@@ -281,30 +285,29 @@ class ModuleTrigger extends ModuleObject {
       }
     }
     */
-
+    
     //Check Module Creatures
     let creatureLen = Game.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++){
       let creature = Game.module.area.creatures[i];
       let pos = creature.position.clone();
-      if(!this.triggered && this.isHostile(creature)){
-        if(this.box.containsPoint(pos)){
-          if(this.objectsInside.indexOf(creature) == -1){
-            this.objectsInside.push(creature);
-
+      if(this.box.containsPoint(pos)){
+        if(this.objectsInside.indexOf(creature) == -1){
+          this.objectsInside.push(creature);
+          if(!this.triggered && this.isHostile(creature)){
             creature.lastTriggerEntered = this;
             this.lastObjectEntered = creature;
 
             this.onEnter(creature);
             this.triggered = true;
           }
-        }else{
-          if(this.objectsInside.indexOf(creature) >= 0){
-            this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
-
+        }
+      }else{
+        if(this.objectsInside.indexOf(creature) >= 0){
+          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
+          if(!this.triggered && this.isHostile(creature)){
             creature.lastTriggerExited = this;
             this.lastObjectExited = creature;
-
             this.onExit(creature);
           }
         }
@@ -316,21 +319,22 @@ class ModuleTrigger extends ModuleObject {
     for(let i = 0; i < partyLen; i++){
       let partymember = PartyManager.party[i];
       let pos = partymember.position.clone();
-      if(!this.triggered && this.isHostile(partymember)){
-        if(this.box.containsPoint(pos)){
-          if(this.objectsInside.indexOf(partymember) == -1){
-            this.objectsInside.push(partymember);
-
+      
+      if(this.box.containsPoint(pos)){
+        if(this.objectsInside.indexOf(partymember) == -1){
+          this.objectsInside.push(partymember);
+          if(!this.triggered && this.isHostile(partymember)){
             partymember.lastTriggerEntered = this;
             this.lastObjectEntered = partymember;
 
             this.onEnter(partymember);
             this.triggered = true;
           }
-        }else{
-          if(this.objectsInside.indexOf(partymember) >= 0){
-            this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
-
+        }
+      }else{
+        if(this.objectsInside.indexOf(partymember) >= 0){
+          this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
+          if(!this.triggered && this.isHostile(partymember)){
             partymember.lastTriggerExited = this;
             this.lastObjectExited = partymember;
 
@@ -342,26 +346,36 @@ class ModuleTrigger extends ModuleObject {
   }
 
   onEnter(object = undefined){
-    if(this.linkedToModule){
-      if(Game.isObjectPC(object)){
+    console.log('enter 2')
+    if(this.linkedToModule && !Game.inDialog){
+      if(object == Game.getCurrentPlayer()){
         Game.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase(), () => { 
-          //console.log('Module Laoded', this.getLinkedToModule().toLowerCase());
+          //console.log('Module Lded', this.getLinkedToModule().toLowerCase());
         });
       }
     }else{
-      if(this.scripts.onEnter instanceof NWScript){
-        let script = this.scripts.onEnter.clone();
-        script.enteringObject = object;
-        script.run(this);
+      console.log('enter 1')
+      if(this.scripts.onEnter instanceof NWScript && this.scripts.onEnter.running != true){
+        console.log('enter running')
+        this.scripts.onEnter.running = true;
+        //let script = this.scripts.onEnter.clone();
+        this.scripts.onEnter.debug.action = true;
+        this.scripts.onEnter.enteringObject = object;
+        this.scripts.onEnter.run(this, 0, () => {
+          this.scripts.onEnter.running = false;
+        });
         //console.log('trigger', object, this);
       }
     }
   }
 
   onExit(object = undefined){
-    if(this.scripts.onExit instanceof NWScript){
+    if(this.scripts.onExit instanceof NWScript && this.scripts.onEnter.onExit != true){
+      //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
-      //this.scripts.onExit.run(this)
+      /*this.scripts.onExit.run(this, 0, () => {
+        this.scripts.onExit.running = false;
+      });*/
     }
   }
 
@@ -429,6 +443,9 @@ class ModuleTrigger extends ModuleObject {
   }
 
   InitProperties(){
+    
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('AutoRemoveKey'))
       this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();
@@ -536,6 +553,52 @@ class ModuleTrigger extends ModuleObject {
       }
     }
 
+  }
+
+  //this.vertices
+
+  toToolsetInstance(){
+    let instance = new Struct(1);
+
+    let geometryField = new Field(GFFDataTypes.LIST, 'Geometry');
+    for(let i = 0, len = this.vertices.length; i < len; i++){
+      let vertStruct = new Struct(14);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointX') ).SetValue(this.vertices[i].x);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointY') ).SetValue(this.vertices[i].y);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointZ') ).SetValue(this.vertices[i].z);
+      geometryField.AddChildStruct(vertStruct);
+    }
+    instance.AddField(geometryField);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XOrientation', this.xOrientation)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XPosition', this.position.x)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YOrientation', this.yOrientation)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YPosition', this.position.y)
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZOrientation', this.zOrientation)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZPosition', this.position.z)
+    );
+
+    return instance;
   }
 
 }

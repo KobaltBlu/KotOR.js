@@ -8,7 +8,10 @@
 class AnimatedTexture {
 
   constructor(texture, tilesHoriz = 0, tilesVert = 0, fps = 30, isBump = false){
-  	// note: texture passed by reference, will be updated by the update function.
+    // note: texture passed by reference, will be updated by the update function.
+    
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 
   	this.tilesHorizontal = tilesHoriz;
     this.tilesVertical = tilesVert;
@@ -45,26 +48,26 @@ class AnimatedTexture {
 
     if(this.texture != null){
 
-      this.currentDisplayTime += ( ((this.fps/60)*0.5) * (0.016));
+      let deltaMax = (1.0 / this.fps) * this.numberOfTiles;
+      let time = (this.currentDisplayTime % deltaMax) / deltaMax;
       
-      let frameIndex = Math.floor((this.currentDisplayTime * this.numberOfTiles) % this.numberOfTiles);
+      let frameIndex = Math.floor((time * this.numberOfTiles) % this.numberOfTiles);
 
-      let column = ( frameIndex % (this.tilesHorizontal) );
-      let row = ( (frameIndex - column) / (this.tilesHorizontal) );
+      let column = (( frameIndex % this.tilesHorizontal ));
+      let row = ( (frameIndex - column) / this.tilesHorizontal );
 
-      if(this.isBump){
-        this.texture.offset.y = -(column / (this.tilesHorizontal));
-        this.texture.offset.x = -(row / (this.tilesVertical));
-      }else{
-        //Works with fx_explode_02
-        this.texture.offset.x = (column / (this.tilesHorizontal));
-        this.texture.offset.y = 1-(row / (this.tilesVertical));
-      }
+      let columnNorm = column / this.tilesHorizontal;
+      let rowNorm = row / this.tilesVertical;
+
+      this.texture.offset.y = rowNorm;//columnNorm;//(column / (this.tilesHorizontal));
+      this.texture.offset.x = columnNorm;//(row / (this.tilesVertical));
 
       this.texture.updateMatrix();
 
-      if (this.currentDisplayTime >= 1){
-        this.currentDisplayTime = 0;
+      if(frameIndex == this.numberOfTiles - 1){
+        this.currentDisplayTime = 0.0;
+      }else{
+        this.currentDisplayTime += 0.1;//delta; //Setting this to a fixed value fixes jittering water bumpmaps
       }
 
     }

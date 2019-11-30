@@ -45,31 +45,29 @@ class InlineAudioPlayer {
       this.Close();
     });
 
-    this.$btnExport.on('click', (e) => {
+    this.$btnExport.on('click', async (e) => {
       e.preventDefault();
 
-      dialog.showSaveDialog(
-        {
-          title: 'Export Audio File',
-          defaultPath: this.audioFile.filename,
-          filters: [
-            {name: 'Wave File', extensions: ['wav']},
-            {name: 'MP3 File', extensions: ['mp3']}
-        ]}, 
-        (path) => {
-          if(path.length){
-            this.audioFile.Export({
-              file: path,
-              onComplete: () => {
-                NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Audio file saved');
-              },
-              onError: () => {
-                NotificationManager.Notify(NotificationManager.Types.WARNING, 'Audio file failed to save');
-              }
-            });
+      let payload = await dialog.showSaveDialog({
+        title: 'Export Audio File',
+        defaultPath: this.audioFile.filename,
+        filters: [
+          {name: 'Wave File', extensions: ['wav']},
+          {name: 'MP3 File', extensions: ['mp3']}
+        ]
+      });
+
+      if(!payload.canceled && typeof payload.filePath != 'undefined'){
+        this.audioFile.Export({
+          file: payload.filePath,
+          onComplete: () => {
+            NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Audio file saved');
+          },
+          onError: () => {
+            NotificationManager.Notify(NotificationManager.Types.WARNING, 'Audio file failed to save');
           }
-        }
-      );
+        });
+      }
       
     });
 

@@ -110,7 +110,7 @@ class TemplateLoader {
       let projectFilePath = path.join(Global.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists) => {
-        console.log('File Exists', exists, projectFilePath);
+        //console.log('File Exists', exists, projectFilePath);
         if(exists){
           new GFFObject(projectFilePath, (gff, rootNode) => {
             //TemplateLoader.cache[args.ResType][args.ResRef] = gff;
@@ -143,7 +143,7 @@ class TemplateLoader {
 
       let resKey = Game.module.rim_s.GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
       if(resKey != null){
-        console.log('Template Resource found');
+        //console.log('Template Resource found');
         Game.module.rim_s.GetResourceData(resKey, (buffer) => {
           if(args.onLoad != null)
             args.onLoad(buffer);
@@ -154,7 +154,7 @@ class TemplateLoader {
 
       resKey = Global.kotorBIF['templates'].GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
       if(resKey != null){
-        console.log('Template Resource found');
+        //console.log('Template Resource found');
         Global.kotorBIF['templates'].GetResourceData(resKey, (buffer) => {
           if(args.onLoad != null)
             args.onLoad(buffer);

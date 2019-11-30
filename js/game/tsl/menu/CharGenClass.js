@@ -39,62 +39,55 @@ class CharGenClass extends GameMenu {
 
           this.BTN_BACK.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
-            Game.MainMenu.Show();
+            this.Close()
           });
 
           this.BTN_SEL1.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 0;
             Game.player = this._3D_MODEL1.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.BTN_SEL2.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 1;
             Game.player = this._3D_MODEL2.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.BTN_SEL3.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 2;
             Game.player = this._3D_MODEL3.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.BTN_SEL4.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 3;
             Game.player = this._3D_MODEL4.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.BTN_SEL5.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 4;
             Game.player = this._3D_MODEL5.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.BTN_SEL6.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.Hide();
             CharGenClass.SelectedClass = 5;
             Game.player = this._3D_MODEL6.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
-            Game.CharGenMain.Show();
+            Game.CharGenMain.Open();
           });
 
           this.tGuiPanel.widget.fill.children[0].position.z = -0.5;
@@ -414,13 +407,10 @@ class CharGenClass extends GameMenu {
 
     Show(){
       super.Show();
-      Game.MainMenu.Hide()
-
     }
 
     Init( onLoad = null ){
       let bgMusic = 'mus_main';
-      Game.MainMenu.Hide();
       Game.LoadScreen.setProgress(0);
       this.Load3D( () => {
         AudioLoader.LoadMusic(bgMusic, (data) => {

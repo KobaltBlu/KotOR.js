@@ -10,7 +10,9 @@ class LoadingScreen {
   constructor($parent, isGlobal = true){
 
     this.message = 'Loading...';
-    this.$loader = $('<div '+(isGlobal? 'id="loader"' : '')+' class="se-pre-con">'+
+    this.$loader = $('<div '+(isGlobal? 'id="loader"' : '')+' class="loading-screen se-pre-con">'+
+      '<div class="background"></div>'+
+      '<div class="logo-wrapper"><img src="" /></div>'+
       '<div class="loading-container">'+
         '<div class="ball"></div>'+
         '<div class="ball1"></div>'+
@@ -18,6 +20,9 @@ class LoadingScreen {
       '</div>'+
     '</div>');
 
+    this.$background = $('div.background', this.$loader);
+    this.$logo_wrapper = $('div.logo-wrapper', this.$loader);
+    this.$logo = $('img', this.$logo_wrapper);
     this.$loading_container = $('div.loading-container', this.$loader);
     this.$message = $('.loading-message', this.$loading_container);
 
@@ -33,22 +38,34 @@ class LoadingScreen {
     $parent.append(this.$loader);
   }
 
+  SetLogo(src){
+    this.$logo.attr('src', src);
+  }
+
+  SetBackgroundImage(src){
+    this.$background.css({
+      backgroundColor: 'black',
+      backgroundImage: `url(${src})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover'
+    });
+  }
+
   SetMessage(msg){
-    console.log(msg);
     this.$message.html(msg);
-    this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
+    //this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
   }
 
   Show(msg = null){
     if(msg != null)
       this.$message.html(msg);
 
-    this.$loader.stop(true, true).show();
-    this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
+    this.$loader.stop(true, true).fadeIn('slow');
+    //this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
   }
 
   Hide(){
-    this.$loader.hide();
+    this.$loader.fadeOut('slow');
   }
 
   Dismiss(){

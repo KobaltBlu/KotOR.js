@@ -36,6 +36,7 @@ class LightManager {
     for(let i = 0; i < LightManager.MAXLIGHTS; i++){
       
       let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
+      light.animated = 0;
       light.reclaimed = true;
       Game.group.lights.add(light);
       let helper = new THREE.PointLightHelper( light, 1 );
@@ -81,6 +82,11 @@ class LightManager {
       let idx = LightManager.lights.indexOf(light);
       if(idx >= 0){
         LightManager.lights.splice(idx, 1);
+        //If the light is currently attached to an active light, remove the reference so it will be reassigned
+        for(let i = 0; i < LightManager.light_pool.length; i++){
+          if(LightManager.light_pool[i].light == light)
+            LightManager.light_pool[i].light = undefined;
+        }
       }
     }
   }
@@ -198,23 +204,22 @@ class LightManager {
             if(light.isFading){
               lightNode.intensity = 0;
             }else{
-              lightNode.intensity = light.getIntensity();
+              lightNode.intensity = 1;//light.getIntensity();
             }
             
             lightNode.distance = light.getRadius();
           }
-
-          lightNode.decay = 2;
 
           //Set Common Light Properties
           light.getWorldPosition(lightNode.position)
           lightNode.color.r = light.color.r;
           lightNode.color.g = light.color.g;
           lightNode.color.b = light.color.b;
-          lightNode.decay = 2;
+          lightNode.decay = 1;
           
           lightNode.updateMatrix();
           lightNode.light = light;
+          lightNode.animated = light.isAnimated ? 1 : 0;
           lightNode.lightUUID = light.uuid;
           LightManager.lightsShown.push(light.uuid);
 
@@ -224,6 +229,17 @@ class LightManager {
 
       }
       
+    }
+
+    for( let i = 0, il = LightManager.light_pool.length; i < il; i++ ){
+      let lightNode = LightManager.light_pool[i];
+      let light = LightManager.light_pool[i].light;
+      if(light && light.isAnimated){
+        lightNode.decay = 1;
+        lightNode.distance = Math.abs(light.getRadius() );
+        lightNode.intensity = 1;//light.getIntensity();// * ((lightNode.color.r + lightNode.color.g + lightNode.color.b) / 3);
+        //console.log(lightNode.distance);
+      }
     }
 
   }
@@ -295,7 +311,7 @@ class LightManager {
         lightNode.color.r = lightNode.light.color.r;
         lightNode.color.g = lightNode.light.color.g;
         lightNode.color.b = lightNode.light.color.b;
-        lightNode.maxIntensity = lightNode.light.getIntensity();
+        lightNode.maxIntensity = 1;//lightNode.light.getIntensity();
         
       }else{
         //This light is not a fading light so it can be instantly turned off and reclaimed
@@ -313,7 +329,7 @@ class LightManager {
   //Sort lights by distance and priority
   static sortLights (a, b){
 
-    return a._distance - b._distance || a.priority - b.priority;
+    return b.isAnimated - a.isAnimated || a._distance - b._distance || b.priority - a.priority;
 
     //return a.priority < b.priority || a._distance - b._distance;
     //if(a.affectDynamic && LightManager.frustum.containsPoint(a.getWorldPosition(new THREE.Vector3()))){
@@ -333,11 +349,11 @@ class LightManager {
   //Check to see if the model that owns the light has already met it's limit of three active lights
   static canShowLight(light){
 
-    if(!light)
+    if(!light || !light.isOnScreen(Game.viewportFrustum) || !light.auroraModel.visible)
       return false;
 
-    if(light.isDynamic == 1)
-      return false;
+    //if(light.isDynamic == 1)
+    //  return false;
 
     if(typeof LightManager.modelLightCounter[light.parentUUID] === 'undefined'){
       LightManager.modelLightCounter[light.parentUUID] = 1;

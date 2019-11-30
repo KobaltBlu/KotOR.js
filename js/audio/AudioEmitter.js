@@ -11,6 +11,8 @@ class AudioEmitter {
     this.isDestroyed = false;
     //this.options = options;
 
+    this.pos = {x: 0, y: 0, z: 0};
+
     this.options = Object.assign({
       engine: AudioEngine,
       channel: AudioEngine.CHANNEL.SFX,
@@ -65,7 +67,7 @@ class AudioEmitter {
     switch(options.Type){
       case AudioEmitter.Type.POSITIONAL:
         this.mainNode = this.engine.audioCtx.createPanner();
-        this.SetPosition( this.options.props.getXPosition(), this.options.props.getYPosition(), this.options.props.getZPosition() );
+        this.SetPosition( this.options.props.position.x, this.options.props.position.y, this.options.props.position.z );
         //this.mainNode.setOrientation( this.options.props.rotation.x, this.options.props.rotation.y, this.options.props.rotation.z, 0, 0, 1);
         this.mainNode.maxDistance = this.maxDistance;
 
@@ -137,6 +139,15 @@ class AudioEmitter {
   }
 
   PlaySound(name ='', onLoad = null, onEnd = null){
+
+    if(this.currentSound != null){
+      try{
+        this.currentSound.disconnect();
+        this.currentSound.stop(0);
+        this.currentSound = null;
+      }catch(e) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
+    }
+    
     if(typeof this.buffers[name] == 'undefined'){
       AudioLoader.LoadSound(name, (data) => {
         //console.log('AudioEmitter', 'Sound Loaded', name, data);
@@ -153,8 +164,8 @@ class AudioEmitter {
             this.currentSound.onended = () => {
               //console.log('end', this, this.currentSound);
               try{
-                if(typeof this.currentSound.buffer.onEnd === 'function')
-                  this.currentSound.buffer.onEnd();
+                if(onEnd === 'function')
+                  onEnd();
               }catch(e){
 
               }
@@ -194,6 +205,14 @@ class AudioEmitter {
 
   PlayStreamWave(name ='', onLoad = null, onEnd = null){
 
+    if(this.currentSound != null){
+      try{
+        this.currentSound.disconnect();
+        this.currentSound.stop(0);
+        this.currentSound = null;
+      }catch(e) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
+    }
+
     if(typeof this.buffers[name] == 'undefined'){
       AudioLoader.LoadStreamWave(name, (data) => {
         //console.log('AudioEmitter', 'Sound Loaded', name, data);
@@ -211,8 +230,8 @@ class AudioEmitter {
 
             this.currentSound.onended = () => {
               try{
-                if(typeof this.currentSound.buffer.onEnd === 'function')
-                  this.currentSound.buffer.onEnd();
+                if(typeof onEnd === 'function')
+                  onEnd();
               }catch(e){
 
               }
@@ -242,14 +261,23 @@ class AudioEmitter {
       this.currentSound.connect(this.mainNode);
 
       this.currentSound.onended = () => {
-        if(typeof this.currentSound.buffer.onEnd === 'function')
-          this.currentSound.buffer.onEnd();
+        if(typeof nEnd === 'function')
+          onEnd();
       };
     }
   }
 
   SetPosition(x = 0, y = 0, z = 0){
-    this.mainNode.setPosition( x, y, z )
+
+    // We need to cache the values below because setPosition stores the floats in a higher precision than THREE.Vector3
+    // which could keep them from matching when compared
+    if(this.pos.x != x || this.pos.y != y || this.pos.z != z){
+      this.pos.x = x;
+      this.pos.y = y;
+      this.pos.z = z;
+      this.mainNode.setPosition( x, y, z );
+    }
+    
   }
 
   SetOrientation(x = 0, y = 0, z = 0){

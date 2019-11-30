@@ -233,42 +233,42 @@ class InGameOverlay extends GameMenu {
 
         this.BTN_MSG.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuPartySelection.Show();
+          Game.MenuPartySelection.Open();
         });
 
         this.BTN_JOU.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuJournal.Show();
+          Game.MenuJournal.Open();
         });
 
         this.BTN_MAP.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuMap.Show();
+          Game.MenuMap.Open();
         });
 
         this.BTN_OPT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuOptions.Show();
+          Game.MenuOptions.Open();
         });
 
         this.BTN_CHAR.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuCharacter.Show();
+          Game.MenuCharacter.Open();
         });
 
         this.BTN_ABI.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuCharacter.Show();
+          Game.MenuCharacter.Open();
         });
 
         this.BTN_INV.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuInventory.Show();
+          Game.MenuInventory.Open();
         });
 
         this.BTN_EQU.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuEquipment.Show();
+          Game.MenuEquipment.Open();
         });
 
         this.TB_PAUSE.addEventListener('click', (e) => {
@@ -291,7 +291,7 @@ class InGameOverlay extends GameMenu {
         });
 
         this.BTN_CHAR1.addEventListener('click', (e) => {
-          Game.MenuEquipment.Show()
+          Game.MenuEquipment.Open()
         });
 
         this.BTN_CHAR2.addEventListener('click', (e) => {
@@ -750,21 +750,21 @@ class InGameOverlay extends GameMenu {
       }
 
       if(Game.selectedObject instanceof ModuleCreature){
-        if(Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'bluefill'){
-          this.PB_HEALTH.setFillTextureName('redfill');
-          TextureLoader.Load('redfill', (map) => {
+        if(Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar'){
+          this.PB_HEALTH.setFillTextureName('enemy_bar');
+          TextureLoader.Load('enemy_bar', (map) => {
             this.PB_HEALTH.setFillTexture(map)
           });
-        }else if(!Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'redfill'){
-          this.PB_HEALTH.setFillTextureName('bluefill');
-          TextureLoader.Load('bluefill', (map) => {
+        }else if(!Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar'){
+          this.PB_HEALTH.setFillTextureName('friend_bar');
+          TextureLoader.Load('friend_bar', (map) => {
             this.PB_HEALTH.setFillTexture(map)
           });
         }
       }else{
-        if(this.PB_HEALTH.getFillTextureName() != 'bluefill'){
-          this.PB_HEALTH.setFillTextureName('bluefill');
-          TextureLoader.Load('bluefill', (map) => {
+        if(this.PB_HEALTH.getFillTextureName() != 'friend_bar'){
+          this.PB_HEALTH.setFillTextureName('friend_bar');
+          TextureLoader.Load('friend_bar', (map) => {
             this.PB_HEALTH.setFillTexture(map)
           });
         }
@@ -990,6 +990,9 @@ class InGameOverlay extends GameMenu {
       this.TogglePartyMember(id, true);
 
       let pmBG = this['LBL_BACK'+(id+1)];
+      pmBG.setFillColor(1, 1, 1);
+      Game.InGameOverlay['PB_VIT'+(id+1)].setFillColor(1, 0, 0);
+      Game.InGameOverlay['PB_FORCE'+(id+1)].setFillColor(0, 0.5, 1);
 
       if(pmBG.getFillTextureName() != portrait.baseresref){
         pmBG.setFillTextureName(portrait.baseresref)
@@ -1071,18 +1074,10 @@ class InGameOverlay extends GameMenu {
 
     Game.MenuActive = false;
 
-    //Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Hide();
+  }
 
+  Resize(){
+    this.RecalculatePosition();
   }
 
 

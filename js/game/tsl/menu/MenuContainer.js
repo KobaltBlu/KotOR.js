@@ -10,6 +10,8 @@ class MenuContainer extends GameMenu {
   constructor( args = {} ){
     super(args);
 
+    this.isOverlayGUI = true;
+
     this.args = $.extend({
       loadscreen: '',
     }, this.args);
@@ -27,7 +29,7 @@ class MenuContainer extends GameMenu {
         this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.LB_ITEMS.clearItems();
-          this.Hide();
+          this.Close();
         });
 
         this.BTN_OK.addEventListener('click', (e) => {
@@ -37,7 +39,7 @@ class MenuContainer extends GameMenu {
           if(this.container instanceof ModulePlaceable){
             this.container.retrieveInventory();
           }
-          this.Hide(true);
+          this.Close(true);
         });
 
         if(typeof this.onLoad === 'function')
@@ -48,8 +50,8 @@ class MenuContainer extends GameMenu {
 
   }
 
-  Hide (onClosed = false){
-    super.Hide();
+  Close(onClosed = false){
+    super.Close();
     if(onClosed && this.container instanceof ModulePlaceable){
       try{
         this.container.close(Game.getCurrentPlayer());
@@ -58,63 +60,68 @@ class MenuContainer extends GameMenu {
     this.container = undefined;
   }
 
-  Show( object = null ){
-
-    super.Show();
+  Open( object = undefined ){
     this.container = object;
-    let inventory = this.container.getInventory();
-    for(let i = 0; i < inventory.length; i++){
+    super.Open();
+  }
 
-      let item = inventory[i];
-      this.LB_ITEMS.addItem(item, null, (control, type) => {
-        control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
-          item.getName()
-        );
-        let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
-        _ctrl2.extent.width -= 52;
-        _ctrl2.extent.left += 52;
-        _ctrl2.setList( this.LB_ITEMS );
-        this.LB_ITEMS.children.push(_ctrl2);
-        let idx2 = this.LB_ITEMS.itemGroup.children.length;
-        let item2 = _ctrl2.createControl();
+  Show(){
+    super.Show();
+    if(this.container instanceof ModuleCreature || this.container instanceof ModulePlaceable){
+      let inventory = this.container.getInventory();
+      for(let i = 0; i < inventory.length; i++){
 
-        let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-        iconMaterial.transparent = true;
-        let iconSprite = new THREE.Sprite( iconMaterial );
-        //console.log(item.getIcon());
-        TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
-        
-        item2.spriteGroup = new THREE.Group();
-        item2.spriteGroup.position.x = -97; //HACK
-        item2.spriteGroup.position.z = 5;
-        iconSprite.scale.x = 40;
-        iconSprite.scale.y = 40;
-        iconSprite.position.x = -10;
+        let item = inventory[i];
+        this.LB_ITEMS.addItem(item, null, (control, type) => {
+          control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
+            item.getName()
+          );
+          let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS, this.LB_ITEMS.scale);
+          _ctrl2.extent.width -= 52;
+          _ctrl2.extent.left += 52;
+          _ctrl2.setList( this.LB_ITEMS );
+          this.LB_ITEMS.children.push(_ctrl2);
+          let idx2 = this.LB_ITEMS.itemGroup.children.length;
+          let item2 = _ctrl2.createControl();
 
-        for(let i = 0; i < 1; i++){
-          let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          hexMaterial.transparent = true;
-          let hexSprite = new THREE.Sprite( hexMaterial );
-          hexSprite.name = 'uibit_eqp_itm1';
-          TextureLoader.enQueue('uibit_eqp_itm1', hexMaterial, TextureLoader.Type.TEXTURE);
-          hexSprite.visible = true;
-          hexSprite.scale.x = hexSprite.scale.y = 40;
-          hexSprite.position.x = -10;
-          item2.spriteGroup.add(hexSprite);
-        }
+          let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+          iconMaterial.transparent = true;
+          let iconSprite = new THREE.Sprite( iconMaterial );
+          //console.log(item.getIcon());
+          TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
+          
+          item2.spriteGroup = new THREE.Group();
+          item2.spriteGroup.position.x = -97; //HACK
+          item2.spriteGroup.position.z = 5;
+          iconSprite.scale.x = 40;
+          iconSprite.scale.y = 40;
+          iconSprite.position.x = -10;
 
-        item2.add(item2.spriteGroup);
-        item2.spriteGroup.add(iconSprite);
-        this.LB_ITEMS.itemGroup.add(item2);
+          for(let i = 0; i < 1; i++){
+            let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+            hexMaterial.transparent = true;
+            let hexSprite = new THREE.Sprite( hexMaterial );
+            hexSprite.name = 'uibit_eqp_itm1';
+            TextureLoader.enQueue('uibit_eqp_itm1', hexMaterial, TextureLoader.Type.TEXTURE);
+            hexSprite.visible = true;
+            hexSprite.scale.x = hexSprite.scale.y = 40;
+            hexSprite.position.x = -10;
+            item2.spriteGroup.add(hexSprite);
+          }
 
-        _ctrl2.addEventListener('click', (e) => {
-          e.stopPropagation();
+          item2.add(item2.spriteGroup);
+          item2.spriteGroup.add(iconSprite);
+          this.LB_ITEMS.itemGroup.add(item2);
+
+          _ctrl2.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+
         });
+      }
 
-      });
+      TextureLoader.LoadQueue();
     }
-
-    TextureLoader.LoadQueue();
 
   }
 

@@ -59,7 +59,7 @@ class BIFObject {
               if (error) {
                 console.error("close error:  " + error.message);
               } else {
-                console.log("File was closed!");
+                //console.log("File was closed!");
               }
             });
 
@@ -121,11 +121,23 @@ class BIFObject {
   GetResourceData(res = null, onComplete = null, onError = null){
     if(res != null){
 
-      let _buffers = [];
-
       if(res.FileSize){
 
-        fs.createReadStream(this.file, {autoClose: true, start: res.Offset, end: res.Offset + (res.FileSize - 1)}).on('data', function (chunk) {
+        fs.open(this.file, 'r', (e, fd) => {
+          var buffer = Buffer.alloc(res.FileSize);
+          fs.read(fd, buffer, 0, buffer.length, res.Offset, function(err, br, buf) {
+            //console.log(err, buf);
+            fs.close(fd, function(e) {
+              if(typeof onComplete === 'function')
+                onComplete(buf);
+            });
+          });
+        });
+
+        /*let _buffers = [];
+
+        fs.createReadStream(this.file, {autoClose: false, start: res.Offset, end: res.Offset + res.FileSize-1})
+        .on('data', function (chunk) {
           _buffers.push(chunk);
         })
         .on('end', function () {  // done
@@ -137,7 +149,7 @@ class BIFObject {
           if(typeof onComplete == 'function')
             onComplete(buffer);
 
-        });
+        });*/
 
       }else{
         if(typeof onComplete == 'function')

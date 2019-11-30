@@ -60,18 +60,13 @@ class CharGenName extends GameMenu {
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
-          
-          this.Hide();
-          Game.CharGenMain.Show();
-
+          this.Close();
         });
 
         this.END_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.player.firstName = this.NAME_BOX_EDIT.text.text;
-          this.Hide();
-          Game.CharGenMain.Show();
-
+          this.Close();
         });
 
         if(typeof this.onLoad === 'function')

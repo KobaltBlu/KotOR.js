@@ -5,6 +5,8 @@
  * The ModuleCreatureController class.
  */
 
+const interpolateAngle = require('interpolate-angle');
+
 class ModuleCreatureController extends ModuleObject {
 
   constructor(){
@@ -19,7 +21,7 @@ class ModuleCreatureController extends ModuleObject {
     super.update(delta);
 
     if(this.audioEmitter){
-      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
+      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z + 1.0);
     }
 
     this.AxisFront.set(0, 0, 0);
@@ -45,14 +47,16 @@ class ModuleCreatureController extends ModuleObject {
         this.RemoveEffect(42);
       }
 
-
       if(!this.isReady){
-        this.getModel().visible = false;
+        this.getModel().visible = true;
         return;
       }else{
         this.getModel().visible = true;
+        this.getModel().rotation.copy(this.rotation);
+        //this.getModel().quaternion = this.quaternion;
       }
 
+      //Get the first action in the queue
       this.action = this.actionQueue[0];
       
       if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized && this.model.visible){
@@ -91,39 +95,59 @@ class ModuleCreatureController extends ModuleObject {
             switch(this.action.goal){
               case ModuleCreature.ACTION.ANIMATE:
 
-                if(this.model){
+                if(this.overlayAnimation)
+                  break;
 
-                  let _animShouldChange = false;
+                if(this.action.time == -1 || this.action.time > 0){
 
-                  if(this.model.currentAnimation instanceof AuroraModelAnimation){
-                    if(this.model.currentAnimation.name.toLowerCase() != this.getAnimationNameById(this.action.animation).toLowerCase()){
-                      _animShouldChange = true;
+                  //Reduce the action animation timer
+                  if(this.action.time > 0){
+                    this.action.time -= delta;
+                    if(this.action.time < 0){
+                      this.action.time = 0;
                     }
-                  }else{
-                    _animShouldChange = true;
                   }
 
-                  if(_animShouldChange){
-                    let _newAnim = this.model.getAnimationByName(this.getAnimationNameById(this.action.animation));
-                    if(_newAnim instanceof AuroraModelAnimation){
-                      if(this.action.time == -1){
-                        this.model.playAnimation(_newAnim, true, () => {
-                          //this.actionQueue.shift()
-                        });
-                      }else{
-                        this.model.playAnimation(_newAnim, false, () => {
-                          //Kill the action after the animation ends
-                          this.actionQueue.shift()
-                        })
+                  if(this.model){
+
+                    let _animShouldChange = false;
+                    let _anim = this.getAnimationNameById(this.action.animation).toLowerCase();
+
+                    if(this.model.currentAnimation instanceof AuroraModelAnimation){
+                      if(this.model.currentAnimation.name.toLowerCase() != _anim){
+                        _animShouldChange = true;
                       }
                     }else{
-                      //Kill the action if the animation isn't found
-                      this.actionQueue.shift()
+                      _animShouldChange = true;
                     }
+
+                    if(_animShouldChange){
+                      let _newAnim = this.model.getAnimationByName(_anim);
+                      if(_newAnim instanceof AuroraModelAnimation){
+                        if(this.action.time == -1){
+                          this.model.playAnimation(_newAnim, true, () => {
+                            //this.actionQueue.shift()
+                          });
+                        }else{
+                          this.model.playAnimation(_newAnim, false, () => {
+                            //Kill the action after the animation ends
+                            //this.actionQueue.shift()
+                          })
+                        }
+                      }else{
+                        //console.log('Animation Missing', this.action.animation)
+                        //Kill the action if the animation isn't found
+                        this.actionQueue.shift()
+                      }
+                    }
+
+                  }else{
+                    //Kill the action if there is no model to animate?
+                    this.actionQueue.shift()
                   }
 
                 }else{
-                  //Kill the action if there is no model to animate?
+                  //Kill the action because the timer has run out
                   this.actionQueue.shift()
                 }
 
@@ -135,15 +159,20 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               case ModuleCreature.ACTION.SCRIPT: //run a block of code from an NWScript file
+                if(this == Game.player){
+                  console.log(ModuleCreature.ACTION.SCRIPT, this.action);
+                }
                 //console.log('Action Script', this.action);
+                //console.log(ModuleCreature.ACTION.SCRIPT, this.action);
                 if(this.action.script instanceof NWScript){
                   //this.action.action.script.caller = this;
-                  this.action.action.script.beginLoop({
+                  //this.action.action.script.debug.action = true;
+                  this.action.script.beginLoop({
                     _instr: null, 
                     index: -1, 
                     seek: this.action.action.offset,
                     onComplete: () => {
-                      //console.log('ACTION.SCRIPT', 'Complete');
+                      //console.log('ACTION.SCRIPT', 'Complete', this.action);
                     }
                   });
                 }
@@ -155,6 +184,7 @@ class ModuleCreatureController extends ModuleObject {
 
                 if(Game.inDialog){
                   this.actionQueue.shift();
+                  this.animState = ModuleCreature.AnimState.IDLE;
                   break;
                 }
 
@@ -164,7 +194,9 @@ class ModuleCreatureController extends ModuleObject {
                 distance = Utility.Distance2D(this.position, PartyManager.party[0].position.clone());
                 if(distance > 3){
                   this.action.path_realtime = true;
-                  this.actionPathfinder(1.5, true, delta);
+                  try{
+                    this.actionPathfinder(1.5, true, delta);
+                  }catch(e){}
                   /*this.invalidateCollision = true;
                   
                   let tangent2 = targetPos.clone().sub(this.position);
@@ -184,7 +216,9 @@ class ModuleCreatureController extends ModuleObject {
               case ModuleCreature.ACTION.USEOBJECT:
                 distance = Utility.Distance2D(this.position, this.action.object.position);
                 if(distance > 1.5){
-                  this.actionPathfinder(1.5, undefined, delta);
+                  try{
+                    this.actionPathfinder(1.5, undefined, delta);
+                  }catch(e){}
                 }else{
                   this.animState = ModuleCreature.AnimState.IDLE;
                   this.force = 0;
@@ -195,7 +229,7 @@ class ModuleCreatureController extends ModuleObject {
                       this.position.y - this.action.object.position.y,
                       this.position.x - this.action.object.position.x
                     ) + Math.PI/2,
-                    true
+                    false
                   );
 
                   if(this.action.object != Game.player){
@@ -210,7 +244,9 @@ class ModuleCreatureController extends ModuleObject {
                 distance = Utility.Distance2D(this.position, this.action.object.position);
                 
                 if(distance > 2 && !this.action.object.box.intersectsBox(this.box)){
-                  this.actionPathfinder(2, undefined, delta);
+                  try{
+                    this.actionPathfinder(2, undefined, delta);
+                  }catch(e){}
                 }else{
                   this.animState = ModuleCreature.AnimState.IDLE;
                   this.force = 0;
@@ -221,7 +257,7 @@ class ModuleCreatureController extends ModuleObject {
                       this.position.y - this.action.object.position.y,
                       this.position.x - this.action.object.position.x
                     ) + Math.PI/2,
-                    true
+                    false
                   );
 
                   if(this.action.object == Game.player){
@@ -242,7 +278,9 @@ class ModuleCreatureController extends ModuleObject {
 
                 distance = Utility.Distance2D(this.position, this.action.object.position);
                 if(distance > 1.5){
-                  this.actionPathfinder(1.5, undefined, delta);
+                  try{
+                    this.actionPathfinder(1.5, undefined, delta);
+                  }catch(e){}
                 }else{
                   this.animState = ModuleCreature.AnimState.IDLE;
                   this.force = 0;
@@ -252,7 +290,7 @@ class ModuleCreatureController extends ModuleObject {
                       this.position.y - this.action.object.position.y,
                       this.position.x - this.action.object.position.x
                     ) + Math.PI/2, 
-                    true
+                    false
                   );
 
                   if(this.action.animComplete){
@@ -272,22 +310,30 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               case ModuleCreature.ACTION.DIALOGOBJECT:
+                console.log('DIALOGOBJECT', this.action);
                 if(!Game.inDialog){
                   distance = Utility.Distance2D(this.position, this.action.object.position);
                   if(distance > 4.5 && !this.action.ignoreStartRange){
-                    this.actionPathfinder(4.5, undefined, delta);
+                    try{
+                      this.actionPathfinder(4.5, undefined, delta);
+                    }catch(e){}
                   }else{
                     this.animState = ModuleCreature.AnimState.IDLE;
                     this.force = 0;
 
                     this.action.object._conversation = this.action.conversation;
+                    this._conversation = this.action.conversation;
                     
                     if(this.action.object.scripts.onDialog instanceof NWScript){
                       //Keep a copy of the current action because it will be gone by the time the script completes
                       //let dlgAction = this.action;
                       //dlgAction.self = this;
                       //console.log('dlgAction', this.action);
-                      this.action.object.onDialog(this, -1);/*, () => {
+                      this.heardStrings = [];
+                      if(this.onDialog(this.action.object, -1)){
+                        this.actionQueue.shift();
+                      }
+                      /*, () => {
                         //This should only run if a dialog isn't started inside the onDialog script
                         //Game.InGameDialog.StartConversation(dlgAction.conversation, dlgAction.object, dlgAction.self);
                       });*/
@@ -298,10 +344,13 @@ class ModuleCreatureController extends ModuleObject {
                       });*/
                     }else{
                       Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
+                      this.actionQueue.shift();
                     }
-                    this.actionQueue.shift();
                     
                   }
+                }else{
+                  console.log('Already in dialog', this.action);
+                  this.actionQueue.shift();
                 }
               break;
               case ModuleCreature.ACTION.MOVETOPOINT:
@@ -310,13 +359,15 @@ class ModuleCreatureController extends ModuleObject {
                     this.action.object.position.clone()
                   );
                   
-                  this.setFacing(this.action.object.rotation.z, true);
+                  this.setFacing(this.action.object.rotation.z, false);
                   this.getCurrentRoom();
                   this.actionQueue.shift()
                 }else{
                   distance = Utility.Distance2D(this.position, this.action.object.position);
-                  if(distance > 1.5){
-                    this.actionPathfinder(1.5, this.action.run, delta);
+                  if(distance > (this.action.distance || 0.1)){
+                    try{
+                      this.actionPathfinder((this.action.distance || 0.1), this.action.run, delta);
+                    }catch(e){}
                   }else{
                     this.animState = ModuleCreature.AnimState.IDLE;
                     this.force = 0;
@@ -326,22 +377,31 @@ class ModuleCreatureController extends ModuleObject {
               break;
               case ModuleCreature.ACTION.ATTACKOBJECT:
                 if(!this.action.combatAction.isCutsceneAttack){
-                  distance = Utility.Distance2D(this.position, this.action.object.position);
-
-                  if(distance > ( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ) ){
-                    this.actionPathfinder(2, undefined, delta);
+                  if(this.action.object.isDead()){
+                    this.actionQueue.shift();
                   }else{
-                    this.animState = ModuleCreature.AnimState.IDLE;
-                    this.force = 0;
+                    distance = Utility.Distance2D(this.position, this.action.object.position);
 
-                    //this.actionQueue.shift();
+                    if(distance > ( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ) ){
+                      try{
+                        this.actionPathfinder(2, undefined, delta);
+                      }catch(e){}
+                    }else{
+                      this.animState = ModuleCreature.AnimState.IDLE;
+                      this.force = 0;
+
+                      //this.actionQueue.shift();
+                    }
                   }
                 }
               break;
               default:
+                console.log('Unknown', this.action);
                 distance = Utility.Distance2D(this.position, this.action.object.position);
                 if(distance > 1.5){
-                  this.actionPathfinder(1.5, undefined, delta);
+                  try{
+                    this.actionPathfinder(1.5, undefined, delta);
+                  }catch(e){}
                 }else{
                   this.animState = ModuleCreature.AnimState.IDLE;
                   this.force = 0;
@@ -367,7 +427,7 @@ class ModuleCreatureController extends ModuleObject {
           if(this.model){
 
             if(!this.force){
-  
+                
               let _animShouldChange = false;
     
               if(this.model.currentAnimation instanceof AuroraModelAnimation){
@@ -393,6 +453,7 @@ class ModuleCreatureController extends ModuleObject {
                   }
                 }else{
                   //Kill the dialogAnimation if the animation isn't found
+                  //console.log('dialogAnimation missing!', this.dialogAnimation.animation, this);
                   this.dialogAnimation = null;
                 }
               }
@@ -427,12 +488,21 @@ class ModuleCreatureController extends ModuleObject {
       
       let forceDelta = this.force * delta;//(delta > 1 ? 1 : delta);
       let gravityDelta = -1 * delta;
+
+      //if(this.facingAnim && this.rotation.z != this.facing)
+      //  forceDelta *= 0.5;
         
       this.AxisFront.multiply(new THREE.Vector3(forceDelta, forceDelta, gravityDelta));
       
 
       //if(this.model instanceof THREE.AuroraModel)
       //  this.model.box.setFromObject(this.model);
+
+      if(this.blocking != this.lastBlocking){
+        this.lastBlocking = this.blocking;
+        console.log('blocking script', this.blocking);
+        this.onBlocked();
+      }
 
       if(this.invalidateCollision)
         this.updateCollision(delta);
@@ -442,14 +512,22 @@ class ModuleCreatureController extends ModuleObject {
 
       this.position.add(this.AxisFront);
 
-      /*if(this.facing != this.rotation.z){
-        this.facingTweenTime+=5*delta;
-        if(this.facingTweenTime>1){
+      //If a non controlled party member is stuck, warp them to their follow position
+      if(this.partyID != undefined && this != Game.getCurrentPlayer() && this.collisionTimer >= 1){
+        this.position.copy(PartyManager.GetFollowPosition(this));
+        this.collisionTimer = 0;
+      }
+
+      if(this.facingAnim){//this.facing != this.rotation.z){
+        this.facingTweenTime += 10*delta;
+        if(this.facingTweenTime >= 1){
           this.rotation.z = this.facing;
+          this.facingAnim = false;
         }else{
-          this.rotation.z = THREE.Math.lerp(this.wasFacing, this.facing, this.facingTweenTime);
+          this.rotation.z = interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
+          //this.rotation.z = THREE.Math.lerp(this.wasFacing, this.facing, this.facingTweenTime);
         }
-      }*/
+      }
 
 
       //Update equipment
@@ -472,17 +550,29 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   updateListeningPatterns(){
-    if(this.isListening){
-      for(let i = 0; i < this.heardStrings.length; i++){
-        let str = this.heardStrings[i];
-        if(typeof this.listeningPatterns[str.string] != 'undefined'){
-          //console.log('updateListeningPatterns', str);
-          this.onDialog(str.speaker, str.index);
-          break;
+    if(this.heardStrings.length){
+
+      if(this.scripts.onDialog instanceof NWScript && this.scripts.onDialog.running)
+        return;
+
+      let str = this.heardStrings.shift();
+      if(this.isListening && str){
+        let pattern = this.listeningPatterns[str.string];
+
+        if(this == Game.player){
+          //console.log('heardString', str, pattern);
+        }
+
+        if(typeof pattern != 'undefined'){
+          if(this == Game.player){
+            //console.log('updateListeningPatterns', pattern, str);
+          }
+          if(!this.onDialog(str.speaker, pattern)){
+            this.heardStrings.unshift(str);
+          }
         }
       }
     }
-    this.heardStrings = [];
   }
 
   updatePerceptionList(delta = 0){
@@ -497,56 +587,81 @@ class ModuleCreatureController extends ModuleObject {
 
     this.perceptionTimer = 0;
 
-    //Check modules creatures
-    let creatureLen = Game.module.area.creatures.length;
-    for(let i = 0; i < creatureLen; i++ ){
-      let creature = Game.module.area.creatures[i];
-      if(this != creature && !creature.isDead() && creature.isVisible()){
-        let index = this.perceptionList.indexOf(creature);
-        let distance = this.position.distanceTo(creature.position);
-        if(index == -1){
-          if(distance < parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
-            this.perceptionList.push(creature);
-            if(PartyManager.party.indexOf(this) == -1){
-              if(this.scripts.onNotice instanceof NWScript){
+    //if(!Engine.Flags.CombatEnabled)
+    //  return;
+
+    if(this.scripts.onNotice instanceof NWScript && !this.scripts.onNotice.running){
+      //Check modules creatures
+      let creatureLen = Game.module.area.creatures.length;
+      for(let i = 0; i < creatureLen; i++ ){
+        let creature = Game.module.area.creatures[i];
+        if(this != creature && !creature.isDead() && creature.isVisible()){
+          let index = this.perceptionList.indexOf(creature);
+          let distance = this.position.distanceTo(creature.position);
+          if(index == -1){
+            if(distance < parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
+              
+              //if(this.scripts.onNotice instanceof NWScript && this.scripts.onNotice.running != true){
+                this.scripts.onNotice.running = true;
+                this.perceptionList.push(creature);
                 this.scripts.onNotice.lastPerceived = creature;
-                this.scripts.onNotice.run(this);
-              }
-            }else if(this == PartyManager.party[0]){
-              if(this.isHostile(creature)){
-                this.combatState = true;
-                //Game.State = Game.STATES.PAUSED;
-              }
+                this.scripts.onNotice.run(this, 0, () => {
+                  this.scripts.onNotice.running = false;
+                });
+              //}
+              return;
+              /*if(PartyManager.party.indexOf(this) == -1){
+                
+              }else if(this == PartyManager.party[0]){
+                if(this.isHostile(creature)){
+                  //this.combatState = true;
+                  //Game.State = Game.STATES.PAUSED;
+                }
+              }*/
+            }
+          }else{
+            if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
+              this.perceptionList.splice(index, 1);
             }
           }
         }else{
-          if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
+          let index = this.perceptionList.indexOf(creature);
+          if(index != -1){
             this.perceptionList.splice(index, 1);
           }
         }
       }
-    }
 
-    //Check party creatures
-    let partyLen = PartyManager.party.length;
-    for(let i = 0; i < partyLen; i++ ){
-      let creature = PartyManager.party[i];
-      if(this != creature && !creature.isDead()){
-        let index = this.perceptionList.indexOf(creature);
-        let distance = this.position.distanceTo(creature.position);
-        if(index == -1){
-          if(distance < 9){
-            this.perceptionList.push(creature);
-            if(PartyManager.party.indexOf(this) == -1){
-              this.combatState = true;
-              if(this.scripts.onNotice instanceof NWScript){
-                this.scripts.onNotice.lastPerceived = creature;
-                this.scripts.onNotice.run(this);
+      //Check party creatures
+      let partyLen = PartyManager.party.length;
+      for(let i = 0; i < partyLen; i++ ){
+        let creature = PartyManager.party[i];
+        if(this != creature && !creature.isDead()){
+          let index = this.perceptionList.indexOf(creature);
+          let distance = this.position.distanceTo(creature.position);
+          if(index == -1){
+            if(distance < 9 && this.hasLineOfSight(creature)){
+              if(PartyManager.party.indexOf(this) == -1){
+                //this.combatState = true;
+                //if(this.scripts.onNotice instanceof NWScript && this.scripts.onNotice.running != true){
+                  this.perceptionList.push(creature);
+                  this.scripts.onNotice.running = true;
+                  this.scripts.onNotice.lastPerceived = creature;
+                  this.scripts.onNotice.run(this, 0, () => {
+                    this.scripts.onNotice.running = false;
+                  });
+                //}
+                return;
               }
+            }
+          }else{
+            if(distance > 9 && this.hasLineOfSight(creature)){
+              this.perceptionList.splice(index, 1);
             }
           }
         }else{
-          if(distance > 9){
+          let index = this.perceptionList.indexOf(creature);
+          if(index != -1){
             this.perceptionList.splice(index, 1);
           }
         }
@@ -576,7 +691,7 @@ class ModuleCreatureController extends ModuleObject {
     if(pointDistance > distance){
       let tangent = point.clone().sub(this.position.clone());
       let atan = Math.atan2(-tangent.y, -tangent.x);
-      this.setFacing(atan + Math.PI/2, true);
+      this.setFacing(atan + Math.PI/2, false);
       this.AxisFront.x = Math.cos(atan);
       this.AxisFront.y = Math.sin(atan);
 
@@ -652,7 +767,7 @@ class ModuleCreatureController extends ModuleObject {
       if(this.action.path_realtime){
         this.action.path = undefined;
         this.action.path_timer = 20;
-        console.log('Path invalidated');
+        //console.log('Path invalidated');
       }
     }else{
       this.action.path_timer -= 10*delta;
@@ -661,16 +776,41 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   updateCombat(delta = 0){
+
+    if(this.lastAttackTarget instanceof ModuleObject && this.lastAttackTarget.isDead()){
+      this.lastAttackTarget = undefined;
+      this.clearTarget();
+    }
+
+    if(this.lastAttacker instanceof ModuleObject && this.lastAttacker.isDead())
+      this.lastAttacker = undefined;
+
+    if(this.lastAttemptedAttackTarget instanceof ModuleObject && this.lastAttemptedAttackTarget.isDead())
+      this.lastAttemptedAttackTarget = undefined;
+
+    if(this.lastDamager instanceof ModuleObject && this.lastDamager.isDead())
+      this.lastDamager = undefined;
+
+    if(this.isDead()){
+      this.clearTarget();
+      //CombatEngine.RemoveCombatant(this);
+    }
+
     if(this.combatState){
 
       if(this.action && this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
         if(this.action.object.getHP() <= 0){
           this.clearTarget();
+          this.actionQueue.shift();
           return;
         }
       }else{
         return;
       }
+
+      CombatEngine.AddCombatant(this);
+
+      return;
 
       if(this.combatQueue.length){
         if(this.combatAction == undefined && this.combatQueue.length){
@@ -678,7 +818,6 @@ class ModuleCreatureController extends ModuleObject {
           this.combatAction.ready = false;
           //this.combatActionTimer = 0;
         }
-
       }else{
         //this.combatActionTimer = 3;
       }
@@ -697,7 +836,16 @@ class ModuleCreatureController extends ModuleObject {
 
         if(this.combatAction.isCutsceneAttack){
           this.combatAction.ready = true;
-        }else if(PartyManager.party.indexOf(this) >= 0 && CombatEngine.roundType == CombatEngine.ROUNDTYPES.PLAYER && !this.combatAction.ready){
+        }/*else if(this.combatRoundTimer >= 1.5){
+          if(this.actionInRange(this.combatAction)){
+            this.combatAction.ready = true;
+          }else{
+            //console.log('Player target not in range!');
+          }
+        }else{
+          this.combatRoundTimer += delta;
+        }*/
+        /*else if(PartyManager.party.indexOf(this) >= 0 && CombatEngine.roundType == CombatEngine.ROUNDTYPES.PLAYER && !this.combatAction.ready){
           if(this.actionInRange(this.combatAction)){
             this.combatAction.ready = true;
           }else{
@@ -709,7 +857,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         }else{
           //this.combatActionTimer += delta;
-        }
+        }*/
       }
 
     }
@@ -719,16 +867,19 @@ class ModuleCreatureController extends ModuleObject {
     this.combatQueue = [];
     this.combatAction = undefined;
     this.lastAttackTarget = undefined;
-    this.lastDamager = undefined;
+    //this.lastDamager = undefined;
     //this.combatActionTimer = 0;
+    CombatEngine.RemoveCombatant(this);
     this.combatState = false;
   }
 
   actionInRange(action = undefined){
     if(action){
       let distance = this.position.distanceTo(action.target.position);
+      console.log('actionInRange', distance, action.target.position);
       return distance < ( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 );
     }
+    return false;
   }
 
   updateAnimationState(){
@@ -736,13 +887,27 @@ class ModuleCreatureController extends ModuleObject {
     if(!(this.model instanceof THREE.AuroraModel))
       return;
 
+    let currentAnimation = this.model.getAnimationName();
+
+    if(this.overlayAnimation){
+
+      if(currentAnimation != this.overlayAnimation){
+        this.model.playAnimation(this.overlayAnimation, false, () => {
+          console.log('Overlay animation completed');
+          this.overlayAnimation = undefined;
+        });
+      }
+
+      return;
+    }
+
     if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
       return;
 
     if(Game.inDialog && this.dialogAnimation && !this.force)
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    
     let modeltype = this.getAppearance().modeltype;
     
     let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
@@ -1064,6 +1229,9 @@ class ModuleCreatureController extends ModuleObject {
           //Roll damage
           this.combatAction.attackDice = CombatEngine.GetCreatureAttackDice(this);
           this.combatAction.damage = CombatEngine.DiceRoll(this.combatAction.attackDice.num, this.combatAction.attackDice.type, CombatEngine.GetMod(this.getSTR()));
+          
+          this.combatAction.target.lastAttacker = this;
+          this.combatAction.target.onAttacked();
         }
 
         let attackAnimation = this.model.getAnimationByName(this.combatAction.animation);
@@ -1073,7 +1241,7 @@ class ModuleCreatureController extends ModuleObject {
             this.position.y - this.combatAction.target.position.y,
             this.position.x - this.combatAction.target.position.x
           ) + Math.PI/2,
-          true
+          false
         );
 
         let attack_sound = THREE.Math.randInt(0, 2);
@@ -1092,7 +1260,8 @@ class ModuleCreatureController extends ModuleObject {
         if(this.combatAction.isCutsceneAttack){
 
           this.getModel().playAnimation(this.combatAction.animation, false);
-          this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
+          //this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
+          this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
 
           let painsound = THREE.Math.randInt(0, 1);
           switch(painsound){
@@ -1110,12 +1279,13 @@ class ModuleCreatureController extends ModuleObject {
           setTimeout( () => {
             this.actionQueue.shift();
           }, attackAnimation.length * 500);
+
         }else{
           //Roll to hit
           if(this.combatAction.hits){
             
             this.getModel().playAnimation(this.combatAction.animation, false);
-            //this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
+            //this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
 
             let painsound = THREE.Math.randInt(0, 1);
             switch(painsound){
@@ -1132,10 +1302,10 @@ class ModuleCreatureController extends ModuleObject {
             }, attackAnimation.length * 500)*/
             
           }else{
-            
             this.combatAction.target.lastAttacker = this;
             this.getModel().playAnimation(this.combatAction.animation, false);
-            //this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
+            this.combatAction.target.overlayAnimation = this.combatAction.target.getDodgeAnimation();
+            //this.combatAction.target.getModel().playAnimation(this.combatAction.target.getDodgeAnimation(), false);
           }
         }
       }
@@ -1147,12 +1317,15 @@ class ModuleCreatureController extends ModuleObject {
     this.subtractHP(amount);
     this.lastDamager = oAttacker;
     this.lastAttacker = oAttacker;
-    this.onDamage();
+    this.onDamaged();
   }
 
   onCombatRoundEnd(){
     
     this.combatAction = undefined;
+
+    if(this.lastAttemptedAttackTarget instanceof ModuleObject && this.lastAttemptedAttackTarget.isDead())
+      this.lastAttemptedAttackTarget = undefined;
 
     if(this.isDead() || !this.combatState)
       return true;
@@ -1163,15 +1336,6 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  onDamage(){
-    if(this.isDead())
-      return true;
-
-    if(this.scripts.onDamaged instanceof NWScript){
-      this.scripts.onDamaged.run(this);
-    }
-  }
-
   onDeath(){
     if(this.scripts.onDeath instanceof NWScript){
       this.scripts.onDeath.run(this);
@@ -1179,11 +1343,70 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   onDialog(oSpeaker = undefined, listenPatternNumber = -1, callback = null){
-    if(this.scripts.onDialog instanceof NWScript){
+    if(this.scripts.onDialog instanceof NWScript){// && !this.scripts.onDialog.running){
+      //this.scripts.onDialog.running = true;
       this.scripts.onDialog.listenPatternNumber = listenPatternNumber;
       this.scripts.onDialog.listenPatternSpeaker = oSpeaker;
-      this.scripts.onDialog.debug['action'] = false;
+      //this.scripts.onDialog.debug['action'] = false;
       this.scripts.onDialog.run(this, 0, () => {
+        this.scripts.onDialog.running = false;
+        if(typeof callback === 'function')
+          callback();
+      });
+      return true;
+    }else if(typeof callback === 'function'){
+      callback();
+      return false;
+    }
+  }
+
+  onAttacked(callback = null){
+    if(this.scripts.onAttacked instanceof NWScript && !this.scripts.onAttacked.running){
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+      //console.log('onAttacked');
+      this.scripts.onAttacked.running = true;
+      this.scripts.onAttacked.debug['action'] = false;
+      this.scripts.onAttacked.run(this, script_num, () => {
+        this.scripts.onAttacked.running = false;
+        if(typeof callback === 'function')
+          callback();
+      });
+    }else if(typeof callback === 'function'){
+      callback();
+    }
+  }
+
+  onDamaged(callback = null){
+    if(this.isDead())
+      return true;
+
+    CombatEngine.AddCombatant(this);
+    
+    if(this.scripts.onDamaged instanceof NWScript){// && !this.scripts.onDamaged.running){
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+      console.log('onDamaged');
+      //this.scripts.onDamaged.running = true;
+      this.scripts.onDamaged.debug['action'] = false;
+      this.scripts.onDamaged.run(this, script_num, () => {
+        this.scripts.onDamaged.running = false;
+        if(typeof callback === 'function')
+          callback();
+      });
+    }else if(typeof callback === 'function'){
+      callback();
+    }
+  }
+
+  onBlocked(callback = null){
+
+    if(this == Game.getCurrentPlayer())
+      return;
+
+    if(this.scripts.onBlocked instanceof NWScript && !this.scripts.onBlocked.running){
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
+      this.scripts.onBlocked.running = true;
+      this.scripts.onBlocked.run(this, script_num, () => {
+        this.scripts.onBlocked.running = false;
         if(typeof callback === 'function')
           callback();
       });
@@ -1210,7 +1433,7 @@ class ModuleCreatureController extends ModuleObject {
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: bRun,
-        distance: distance,
+        distance: Math.max(1.5, distance),
         instant: false
       });
     }
@@ -1220,11 +1443,39 @@ class ModuleCreatureController extends ModuleObject {
   moveToLocation(target = undefined, bRun = true){
 
     if(typeof target === 'object'){
+
+      let distance = 0.1;
+      let creatures = Game.module.area.creatures;
+
+      //Check if creatures are to close to location
+      for(let i = 0; i < creatures.length; i++){
+        let creature = creatures[i];
+        if(this == creature)
+          continue;
+
+        let d = target.position.distanceTo(creature.position);
+        if(d < 1.0){
+          distance = 2.0;
+        }
+      }
+
+      //Check if party are to close to location
+      for(let i = 0; i < PartyManager.party.length; i++){
+        let creature = PartyManager.party[i];
+        if(this == creature)
+          continue;
+
+        let d = target.position.distanceTo(creature.position);
+        if(d < 1.0){
+          distance = 2.0;
+        }
+      }
+
       this.actionQueue.push({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: bRun,
-        distance: 1.0,
+        distance: distance,
         instant: false
       });
     }
@@ -1267,7 +1518,11 @@ class ModuleCreatureController extends ModuleObject {
     if(target == this)
       target = Game.player;
 
+    if(target.isDead())
+      return;
+
     this.combatState = true;
+    CombatEngine.AddCombatant(this);
 
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
@@ -1329,6 +1584,7 @@ class ModuleCreatureController extends ModuleObject {
 
     this.lastAttackAction = ModuleCreature.ACTION.ATTACKOBJECT;
     this.lastAttackTarget = target;
+    this.lastAttemptedAttackTarget = target;
     
     let animation = attackKey+weaponWield+'a'+attackType;
     if(isCutsceneAttack){
@@ -1350,10 +1606,10 @@ class ModuleCreatureController extends ModuleObject {
       damage: attackDamage
     };
 
-    if(!isCutsceneAttack){
+    //if(!isCutsceneAttack){
       this.combatQueue.push(combatAction);
       this.actionQueue = [];
-    }
+    //}
     
     this.actionQueue.push(
       {object: target, goal: ModuleCreature.ACTION.ATTACKOBJECT, combatAction: combatAction}
@@ -1366,8 +1622,11 @@ class ModuleCreatureController extends ModuleObject {
     if(target == undefined)
       return;
 
-    if(!this.combatState)
-      this.combatState = true;
+    //if(!this.combatState)
+    //  this.combatState = true;
+
+    this.combatState = true;
+    CombatEngine.AddCombatant(this);
 
     let weaponWield = this.getCombatAnimationWeaponType();
 
@@ -1380,6 +1639,16 @@ class ModuleCreatureController extends ModuleObject {
       animation: animation,
       ready: false
     });
+
+  }
+
+  playOverlayAnimation(NWScriptAnimId = -1){
+
+    switch(NWScriptAnimId){
+      case 123:
+        this.overlayAnimation = 'diveroll';
+      break;
+    }
 
   }
 
@@ -1440,16 +1709,60 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     this.combatAction = undefined;
-    this.clearTarget();
+    //this.clearTarget();
+  }
 
+  cancelCombat(){
+    this.clearTarget();
   }
 
   getDamageAnimation(){
+    let modeltype = this.getAppearance().modeltype;
+    let attackKey = this.getCombatAnimationAttackType();
+    let weaponWield = this.getCombatAnimationWeaponType();
+
+    switch(modeltype){
+      case 'S':
+      case 'L':
+        return 'cdamages';
+      default:
+        return 'g'+weaponWield+'d1';
+    }
+  }
+
+  getDodgeAnimation(){
+    let modeltype = this.getAppearance().modeltype;
+    let attackKey = this.getCombatAnimationAttackType();
+    let weaponWield = this.getCombatAnimationWeaponType();
+
+    switch(modeltype){
+      case 'S':
+      case 'L':
+        return 'cdodgeg';
+      default:
+        return 'g'+weaponWield+'g1';
+    }
+  }
+
+  getParryAnimation(){
+    let modeltype = this.getAppearance().modeltype;
+    let attackKey = this.getCombatAnimationAttackType();
+    let weaponWield = this.getCombatAnimationWeaponType();
+
+    switch(modeltype){
+      case 'S':
+      case 'L':
+        return 'cdodgeg';
+      default:
+        return 'g'+weaponWield+'p1';
+    }
+  }
+
+  getDeflectAnimation(){
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     //console.log('getDamageAnimation', 'g'+weaponWield+'d1');
-    return 'g'+weaponWield+'d1';
-
+    return 'g'+weaponWield+'n1';
   }
 
   getCombatAnimationAttackType(){
@@ -1558,10 +1871,10 @@ class ModuleCreatureController extends ModuleObject {
             return 9;
         }
       }
-
+      return parseInt(rWeapon.getBaseItem().weaponwield);
     }
 
-    return parseInt(rWeapon.getBaseItem().weaponwield);
+    return 0;
 
   }
 
@@ -1602,10 +1915,19 @@ class ModuleCreatureController extends ModuleObject {
     if(!this.model)
       return;
 
-    this.getCurrentRoom();
+    let _axisFront = this.AxisFront.clone();
 
-    if(this.model && this.model.box)
-      this.model.box.setFromObject(this.model)
+    this.getCurrentRoom();
+    
+    let box = new THREE.Box3()
+    
+    if(this.model && this.model.box){
+      this.model.box.setFromObject(this.model);
+      box = this.model.box.clone();
+      box.translate(_axisFront);
+    }
+
+    
 
     //I'm trying to clamp the delta incase of lag spikes that are sometimes warping the creature beyond a colliding object
     if(delta > 1){
@@ -1626,11 +1948,11 @@ class ModuleCreatureController extends ModuleObject {
     let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
 
     for(let j = 0, jl = this.rooms.length; j < jl; j++){
-      let room = Game.module.rooms[this.rooms[j]];
+      let room = Game.module.area.rooms[this.rooms[j]];
       if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
         aabbFaces.push({
           object: room, 
-          faces: room.walkmesh.getAABBCollisionFaces(this.model.box)
+          faces: room.walkmesh.getAABBCollisionFaces(box)
         });
       }
     }
@@ -1638,10 +1960,10 @@ class ModuleCreatureController extends ModuleObject {
     for(let j = 0, jl = Game.module.area.placeables.length; j < jl; j++){
       let plc = Game.module.area.placeables[j];
       if(plc && plc.walkmesh){
-        if(plc.box.intersectsBox(this.model.box) || plc.box.containsBox(this.model.box)){
+        if(plc.box.intersectsBox(box) || plc.box.containsBox(box)){
           aabbFaces.push({
             object: plc, 
-            faces: plc.walkmesh.getAABBCollisionFaces(this.model.box)
+            faces: plc.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
@@ -1650,10 +1972,10 @@ class ModuleCreatureController extends ModuleObject {
     for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
       let door = Game.module.area.doors[j];
       if(door && door.walkmesh && !door.isOpen()){
-        if(door.box.intersectsBox(this.model.box) || door.box.containsBox(this.model.box)){
+        if(door.box.intersectsBox(box) || door.box.containsBox(box)){
           aabbFaces.push({
             object: door,
-            faces: door.walkmesh.getAABBCollisionFaces(this.model.box)
+            faces: door.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
@@ -1723,14 +2045,15 @@ class ModuleCreatureController extends ModuleObject {
     //END: PLAYER CREATURE COLLISION
 
     //START: PLAYER WORLD COLLISION
-    
 
     let worldCollide = false;
+    let collider = undefined;
+    let world_collisions = [];
     for(let i = 0; i < 360; i += 30) {
       //if(worldCollide)
       //  break;
       let dx = Math.cos(i), dy = Math.sin(i);
-      Game.raycaster.ray.direction.set(dx, dy,-0.5);
+      Game.raycaster.ray.direction.set(dx, dy, 0);
       for(let k = 0, kl = aabbFaces.length; k < kl; k++){
         playerFeetRay.copy(this.position).add(this.AxisFront);
         playerFeetRay.z += 0.25;
@@ -1745,7 +2068,34 @@ class ModuleCreatureController extends ModuleObject {
               //break;
             if(intersects[j].distance < this.getAppearance().hitdist){
               if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
+
+                if(intersects[j].object.moduleObject instanceof ModuleDoor){
+                  this.blocking = intersects[j].object.moduleObject;
+                }
+
+                if(!collider || collider.distance < intersects[j].distance)
+                  collider = intersects[j];
+
+                world_collisions.push(collider);
+
+                this.AxisFront.add(
+                  intersects[j].face.normal.clone().multiplyScalar(
+                    - _axisFront.clone().dot(
+                      intersects[j].face.normal
+                    )
+                  )
+                );
+
+                //break;
+                continue;
+
                 let oldPos = this.position.clone();
+
+                this.AxisFront.copy(_axisFront).negate();
+                playerFeetRay.copy(this.position).add(this.AxisFront);
+                playerFeetRay.z += 0.25;
+                worldCollide = true;
+                continue;
 
                 //let newDir = this.position.clone().sub(oldPos);
                 //this.position.add(newDir.negate());
@@ -1754,10 +2104,8 @@ class ModuleCreatureController extends ModuleObject {
                 //console.log(intersects[j].face.normal);
  
                 if(normal.z == 1){
-
                   let pDistance = (1 - intersects[j].distance) * 0.1;
                   this.AxisFront.set(pDistance * Math.cos(i), pDistance * Math.sin(i), 0).negate()
-                  
                 }else if(normal.length() == 0 ){
                   this.AxisFront.set(0, 0, 0);
                 }else{
@@ -1774,7 +2122,7 @@ class ModuleCreatureController extends ModuleObject {
 
                 playerFeetRay.copy(this.position);
                 playerFeetRay.z += 0.25;
-                //worldCollide = true;
+                worldCollide = true;
               }else{
                 //console.log(intersects[j].face.walkIndex);
               }
@@ -1786,27 +2134,76 @@ class ModuleCreatureController extends ModuleObject {
       //intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
     }
 
+    //If there is more than one collision this frame set the velocity to (0, 0, 0)
+    if(world_collisions.length >= 2){
+      this.AxisFront.set(0, 0, 0);
+    }
+
+    // if(collider != undefined){
+    //   this.AxisFront.add(
+    //     collider.face.normal.clone().multiplyScalar(
+    //       - _axisFront.clone().dot(
+    //         collider.face.normal
+    //       )
+    //     )
+    //   );
+    // }
+
     //END: PLAYER WORLD COLLISION
 
+    // line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
+    // Determine the intersection point of two line segments
+    // Return FALSE if the lines don't intersect
+    function intersectLine(x1, y1, x2, y2, x3, y3, x4, y4) {
 
+      // Check if none of the lines are of length 0
+      if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
+        return false
+      }
+
+      let denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+
+      // Lines are parallel
+      if (denominator === 0) {
+        return false
+      }
+
+      let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
+      let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
+
+      // is the intersection along the segments
+      if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+        return false
+      }
+
+      // Return a object with the x and y coordinates of the intersection
+      let x = x1 + ua * (x2 - x1)
+      let y = y1 + ua * (y2 - y1)
+
+      return new THREE.Vector3(x, y, 0.0);
+    }
+    
     falling = true;
 
     scratchVec3 = new THREE.Vector3(0, 0, 2);
 
-    playerFeetRay = this.position.clone().add( ( scratchVec3 ) );
+    playerFeetRay = this.position.clone().add(_axisFront).add(scratchVec3);
     Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     Game.raycaster.ray.direction.set(0, 0,-1);
+
+    let negateAxis = false;
+    let testFaces = 0;
     
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
       let castableFaces = aabbFaces[j];
       
       //if(object && object.walkmesh && object.walkmesh.aabbNodes.length){
-        //object.walkmesh.getAABBCollisionFaces(this.model.box, null, castableFaces);
+        //object.walkmesh.getAABBCollisionFaces(box, null, castableFaces);
         intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces);
         //if(this == PartyManager.party[0])
           //console.log(intersects, aabbFaces);
         //return;//var intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
-        if (intersects && intersects.length > 0 ) {
+        //if (intersects && intersects.length > 0 ) {
           for(let i = 0; i < intersects.length; i++){
             if(intersects[i].distance) {
               this.surfaceId = intersects[i].face.walkIndex;
@@ -1821,16 +2218,176 @@ class ModuleCreatureController extends ModuleObject {
                   this.rotation.y = this.groundTilt.y;
                 }
               }else{
-                this.AxisFront.negate();
-                //this.position.sub( this.AxisFront ).clone();
+                let intersect = intersects[i];
+
+                let posMin = this.position.clone();//.sub( _axisFront.clone() );
+                let posMax = this.position.clone().add( _axisFront.clone() );
+
+                //The three lines that make up the triangle
+                let line_a = [intersect.object.vertices[intersect.face.a], intersect.object.vertices[intersect.face.b]];
+                let line_b = [intersect.object.vertices[intersect.face.b], intersect.object.vertices[intersect.face.c]];
+                let line_c = [intersect.object.vertices[intersect.face.c], intersect.object.vertices[intersect.face.a]];
+
+                let collision_line = [posMin.clone(), posMax.clone()];
+
+                let point_a = intersectLine(line_a[0].x, line_a[0].y, line_a[1].x, line_a[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
+                let point_b = intersectLine(line_b[0].x, line_b[0].y, line_b[1].x, line_b[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
+                let point_c = intersectLine(line_c[0].x, line_c[0].y, line_c[1].x, line_c[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
+                
+                let closest_point = false;
+                let distance = Infinity;
+
+                for(let p = 0; p < 3; p++){
+                  let _dist = Infinity;
+                  switch(p){
+                    case 0:
+                      if(point_a){
+                        _dist = point_a.distanceTo(this.position);
+                        if(_dist < distance){
+                          closest_point = point_a;
+                          distance = _dist;
+                        }
+                      }
+                    break;
+                    case 1:
+                      if(point_b){
+                        _dist = point_b.distanceTo(this.position);
+                        if(_dist < distance){
+                          closest_point = point_b;
+                          distance = _dist;
+                        }
+                      }
+                    break;
+                    case 2:
+                      if(point_c){
+                        _dist = point_c.distanceTo(this.position);
+                        if(_dist < distance){
+                          closest_point = point_c;
+                          distance = _dist;
+                        }
+                      }
+                    break;
+                  }
+                }
+
+                if(this == Game.player){
+                  console.log('POINTS',closest_point, point_a, point_b, point_c);
+                }
+                
+                if(closest_point){
+                  console.log('closest_point', closest_point);
+                  let i_dist = closest_point.distanceTo(posMax);
+                  let planeOrigin = closest_point.clone();
+                  let planeNormal = posMax.clone().sub(closest_point);
+                  planeNormal.normalize();
+
+                  // calculate reflection, because collided
+                  let wallAngle = Math.atan2(closest_point.y, closest_point.x);
+                  let wallNormalX = Math.sin(wallAngle);
+                  let wallNormalY = -Math.cos(wallAngle);
+
+                  console.log('reflect', _axisFront.x, wallNormalX, _axisFront.y, wallNormalY);
+
+                  let newDestinationPoint = posMax.clone().sub(planeNormal.clone().subScalar(distance));
+                  //this.AxisFront.copy( newDestinationPoint.clone().sub(this.position) );
+                  //this.AxisFront.z = 0;
+                  //this.AxisFront.multiplyScalar(0.001);
+                  this.AxisFront.add(
+                    planeNormal.clone().multiplyScalar(
+                      - _axisFront.clone().dot(
+                        planeNormal
+                      )
+                    )
+                  );
+                  this.AxisFront.z = 0;
+
+                  //this.AxisFront.copy(closest_point.clone().sub(this.position));
+                  //if(this == Game.player){
+                    //console.log(this.AxisFront.cross(_axisFront), this.AxisFront, _axisFront)
+                  //}
+                }else{
+                  console.log('no intersect');
+                  this.AxisFront.set(posMax.x - intersect.point.x, posMax.y - intersect.point.y, 0);
+                  //this.AxisFront.negate()
+                  if(this == Game.player){
+                    console.log(this.AxisFront.cross(_axisFront), this.AxisFront, _axisFront)
+                  }
+                }
+
+                // let bounce_pos = _axisFront.clone();
+                // bounce_pos.applyAxisAngle(new THREE.Vector3( 0, 1, 0 ).normalize(), Math.PI/2);
+                // bounce_pos = intersect.face.normal.clone().multiplyScalar(
+                //     - bounce_pos.clone().dot(
+                //         intersect.face.normal
+                //     )
+                // )
+                // bounce_pos.applyAxisAngle(new THREE.Vector3( 0, 1, 0 ).normalize(), -Math.PI/2);
+                // this.AxisFront.copy(bounce_pos);
+                // this.AxisFront.z = 0;
+
+                // this.AxisFront.multiplyScalar(0.1);
+
+                // worldCollide = true;
+
+                // break;
+
+                // if(this.rotation.z > -Math.PI/2 && this.rotation.z < Math.PI/2){
+                //     bounce_pos.set(this.position.x + _axisFront.x, posMax.y + _axisFront.y-1, 0);
+                //     this.AxisFront.copy(bounce_pos).sub(this.position);
+                // }else{ //if(this.rotation.z > Math.PI/2 && this.rotation.z < Math.PI/2){
+                //     bounce_pos.set(this.position.x + _axisFront.x, posMax.y + _axisFront.y-1, 0);
+                //     this.AxisFront.copy(bounce_pos).sub(this.position);
+                //     this.AxisFront.negate()
+                // }
+
+                // this.AxisFront.set(0, 0, 0);
+                // console.log(intersect.face);
+                //this.AxisFront.multiplyScalar(0.5);
+                //this.AxisFront.negate()
+                this.AxisFront.z = 0;
+
+                worldCollide = true;
+
+                break;
+
+                /*let flippedNormal = intersects[i].face.normal.clone();
+
+                flippedNormal.x = -intersects[i].face.normal.z;
+                flippedNormal.y = -intersects[i].face.normal.y;
+                flippedNormal.z = -intersects[i].face.normal.x;
+
+                this.AxisFront.add(
+                  flippedNormal.clone().multiplyScalar(
+                    - _axisFront.clone().dot(
+                      flippedNormal
+                    )
+                  )
+                );*/
+
+                //this.AxisFront.set(0, 0, 0);
+                //this.AxisFront.copy(_axisFront);
+                //this.AxisFront.negate();
+                //negateAxis = true;
               }
             }
           }
-        }
+        //}
 
       //}
 
     }
+
+    if(worldCollide){
+      this.collisionTimer += delta;
+    }
+
+    //Hack
+    if(!testFaces){
+      falling = false;
+    }
+
+    //if(negateAxis)
+    //  this.AxisFront.negate();
 
     if(falling){
       //console.log('Falling');
@@ -1993,7 +2550,8 @@ class ModuleCreatureController extends ModuleObject {
       if(weaponType){
         this.clearAllActions();
         this.actionPlayAnimation('g'+weaponType+'w1');
-        this.actionPlayAnimation('g'+weaponType+'r1', true);
+        //this.actionPlayAnimation('g'+weaponType+'r1');
+        this.combatState = true;
         this.weaponPowered(true);
       }
 
@@ -2128,7 +2686,8 @@ class ModuleCreatureController extends ModuleObject {
           return 'listen';
         case 3:  //MEDITATE
           return 'meditate';
-        //case 4:  //WORSHIP
+        case 4:  //WORSHIP
+          return 'meditate';//['kneel', 'meditate'];
         case 5:  //TALK_NORMAL
           return 'tlknorm';
         case 6:  //TALK_PLEADING

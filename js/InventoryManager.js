@@ -66,6 +66,10 @@ class InventoryManager {
     }
   }
 
+  static getSellableInventory(slot = 0, creature = null){
+    return InventoryManager.getNonQuestInventory(slot, creature);
+  }
+
   static isItemUsableBy( item, creature = null){
     if(creature == null)
       return true;
@@ -84,7 +88,7 @@ class InventoryManager {
     return (parseInt(baseItem.equipableslots) & slot || parseInt(baseItem.equipableslots) === slot)
   }
 
-  static addItem(template = new GFFObject(), onLoad = null){
+  static addItem(template = new GFFObject(), onLoad = null, limitOne = false){
 
     let item = undefined;
     if(template instanceof GFFObject){
@@ -98,10 +102,20 @@ class InventoryManager {
         console.log('LOADED')
         let hasItem = InventoryManager.getItem(item.getTag());
         if(hasItem){
-          hasItem.setStackSize(hasItem.getStackSize() + 1);
+
+          if(!limitOne){
+            hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+          }else{
+            hasItem.setStackSize(hasItem.getStackSize() + 1);
+          }
+
           if(typeof onLoad === 'function')
             onLoad(hasItem);
         }else{
+
+          if(limitOne)
+            item.setStackSize(1);
+
           InventoryManager.inventory.push(item);
           if(typeof onLoad === 'function')
             onLoad(item);

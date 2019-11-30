@@ -18,6 +18,12 @@ class CharGenSkills extends GameMenu {
 
         //this.lbl_hint = this.getControlByName('LBL_HINT');
 
+        this.BTN_BACK = this.getControlByName('BTN_BACK');
+        this.BTN_BACK.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.Close();
+        });
+
         if(typeof this.onLoad === 'function')
           this.onLoad();
 

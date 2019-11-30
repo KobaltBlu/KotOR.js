@@ -8,6 +8,18 @@
  class AuroraWalkMesh {
   
     constructor( wokReader = null, onLoad = null, onError = null ){
+
+      this.tilecolors = [];
+      this.surfaceMaterials = [];
+
+      for(let i = 0; i < Global.kotor2DA.tilecolor.RowCount; i++){
+        let tileColor = Global.kotor2DA.tilecolor.rows[i];
+        this.tilecolors.push(new THREE.Color(parseFloat(tileColor.red), parseFloat(tileColor.green), parseFloat(tileColor.blue)));
+      }
+
+      for(let i = 0; i < Global.kotor2DA.surfacemat.RowCount; i++){
+        this.surfaceMaterials[i] = Global.kotor2DA.surfacemat.rows[i];
+      }
   
       this.wokReader = wokReader;
   
@@ -30,8 +42,14 @@
       //READ Faces
       this.wokReader.Seek(this.header.offsetToFaces);
       this.faces = [];
-      for (let i = 0; i < this.header.facesCount; i++)
+      for (let i = 0; i < this.header.facesCount; i++){
         this.faces[i] = new THREE.Face3(this.wokReader.ReadInt32(), this.wokReader.ReadInt32(), this.wokReader.ReadInt32());
+        this.faces[i].adjacentWalkableFaces = {
+          a: undefined,
+          b: undefined,
+          c: undefined
+        }
+      }
 
       //READ Walk Types
       this.wokReader.Seek(this.header.offsetToWalkTypes);
@@ -49,7 +67,7 @@
       this.wokReader.Seek(this.header.offsetToFacePlanesCoefficien);
       this.facePlaneCoefficients = [];
       for (let i = 0; i < this.header.facesCount; i++)
-        this.facePlaneCoefficients[i] = this.wokReader.ReadSingle();
+        this.faces[i].coeff = this.facePlaneCoefficients[i] = this.wokReader.ReadSingle();
 
       this.wokReader.Seek(this.header.offsetToAABBs);
       this.aabbNodes = [];
@@ -59,15 +77,16 @@
 
       this.wokReader.Seek(this.header.offsetToWalkableFacesEdgesAdjacencyMatrix);
       this.walkableFacesEdgesAdjacencyMatrix = [];
-      for (let i = 0; i < (this.header.walkableFacesEdgesAdjacencyMatrixCount * 3); i++)
-        this.walkableFacesEdgesAdjacencyMatrix[i] = this.wokReader.ReadInt32();
-
-      this.tilecolors = [];
-
-      for(let i = 0; i < Global.kotor2DA.tilecolor.RowCount; i++){
-        let tileColor = Global.kotor2DA.tilecolor.rows[i];
-        //console.log('tileColor', tileColor);
-        this.tilecolors.push(new THREE.Color(parseFloat(tileColor.red), parseFloat(tileColor.green), parseFloat(tileColor.blue)));
+      for (let i = 0; i < this.header.walkableFacesEdgesAdjacencyMatrixCount; i++){
+        //Every array of 3 uint32's references the 3 walkable faces adjacent to it.
+        //If the value is -1 then the adjacent face on that side is not walkable.
+        //If it is greater or equal to zero then it is an index into the this.faces array.
+        //This is most likely used for pathfinding and or collision
+        this.walkableFacesEdgesAdjacencyMatrix.push([
+          this.wokReader.ReadInt32(),
+          this.wokReader.ReadInt32(),
+          this.wokReader.ReadInt32()
+        ]);
       }
 
       //Build Face Colors
@@ -75,18 +94,30 @@
         let face = this.faces[i];
         face.walkIndex = this.walkTypes[i];
         face.color = this.tilecolors[this.walkTypes[i]];
+        face.surfacemat = this.surfaceMaterials[face.walkIndex];
 
-        if(face.walkIndex != 7 && face.walkIndex != 2){
-          this.walkableFaces.push(face);
+        if(face.surfacemat == undefined){
+          console.log('face', face, this.surfaceMaterials);
+        }
+
+        face.blocksLineOfSight = face.surfacemat.lineofsight == 1;
+        face.wallCheck = face.surfacemat.wallcheck == 1;
+
+        //Is this face walkable
+        if(face.surfacemat.walk == 1){
+          let walkIdx = this.walkableFaces.push(face);
+          face.adjacentWalkableFaces.a = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[0]];
+          face.adjacentWalkableFaces.b = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[1]];
+          face.adjacentWalkableFaces.c = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[2]];
         }
         
-        if(face.walkIndex == 3 || face.walkIndex == 19){ //17 == WATER?
+        //Is this face grassy
+        if(face.surfacemat.grass == 1){
           this.grassFaces.push(face);
         }
 
-        //Get centroid
+        //Get centroid of the face
         face.centroid = new THREE.Vector3( 0, 0, 0 );
-
         if ( face instanceof THREE.Face3 ) {
           face.centroid.add( this.vertices[ face.a ] );
           face.centroid.add( this.vertices[ face.b ] );
@@ -114,6 +145,7 @@
       this.geometry.uvsNeedUpdate = true;
 
       this.mesh = new THREE.Mesh( this.geometry , this.material );
+      this.mesh.visible = false;
       this.mesh.wok = this;
   
       this.wokReader = null;
@@ -141,6 +173,21 @@
 
       this.aabbRoot = this.aabbNodes[0];
   
+    }
+
+    dispose(){
+
+      if(this.mesh && this.mesh.parent)
+        this.mesh.parent.remove(this.mesh);
+
+      if(this.geometry){
+        this.geometry.dispose();
+      }
+
+      if(this.material){
+        this.material.dispose();
+      }
+
     }
 
     ReadAABB(){
@@ -211,13 +258,16 @@
       return collisions;
     }*/
 
-    getAABBCollisionFaces(box = new THREE.Box3, node = null, collisions = []){
+    //BSP Tree?
+    //https://www.gamasutra.com/view/feature/131508/bsp_collision_detection_as_used_in_.php?print=1
+
+    getAABBCollisionFaces(box = new THREE.Box3, node = undefined, collisions = []){
 
       if(!this.aabbRoot){
         return this.faces;
       }
 
-      if(node == null){
+      if(node == undefined){
         node = this.aabbRoot;
         if(node){
           if(node.box.intersectsBox(box) || node.box.containsBox(box)){

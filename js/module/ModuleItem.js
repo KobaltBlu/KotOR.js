@@ -18,6 +18,8 @@ class ModuleItem extends ModuleObject {
       this.template = gff;
     }
 
+    this.id = -1;
+
     this.baseItem = 0;
     this.modelVariation = 0;
     this.textureVariation = 1;
@@ -26,6 +28,10 @@ class ModuleItem extends ModuleObject {
 
     this.InitProperties();
 
+  }
+
+  getDescription(){
+    return this.descIdentified;
   }
 
   getBaseItemId(){
@@ -58,6 +64,10 @@ class ModuleItem extends ModuleObject {
 
   isStolen(){
     return this.stolen;
+  }
+
+  isInfinite(){
+    return this.infinite;
   }
 
   getPropertiesList(){
@@ -105,8 +115,8 @@ class ModuleItem extends ModuleObject {
     return this.stackSize;
   }
 
-  setStackSize(iNum){
-    return this.stackSize = iNum;
+  setStackSize(num){
+    return this.stackSize = num;
   }
 
   getLocalizedName(){
@@ -203,8 +213,9 @@ class ModuleItem extends ModuleObject {
             });
           },
           context: this.context,
-          castShadow: false,
-          receiveShadow: false
+          lighting: true,
+          //castShadow: false,
+          //receiveShadow: false
         });
       }
     });
@@ -267,9 +278,12 @@ class ModuleItem extends ModuleObject {
     if(this.loaded){
       return;
     }
+    
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('AddCost'))
-      this.addCost = this.template.GetFieldByLabel('AddCost').GetValue();
+      this.addCost = parseInt(this.template.GetFieldByLabel('AddCost').GetValue());
 
     if(this.template.RootNode.HasField('BaseItem'))
       this.baseItem = this.template.GetFieldByLabel('BaseItem').GetValue();
@@ -278,7 +292,7 @@ class ModuleItem extends ModuleObject {
       this.charges = this.template.GetFieldByLabel('Charges').GetValue();
 
     if(this.template.RootNode.HasField('Cost'))
-      this.cost = this.template.GetFieldByLabel('Cost').GetValue();
+      this.cost = parseInt(this.template.GetFieldByLabel('Cost').GetValue());
 
     if(this.template.RootNode.HasField('DELETING'))
       this.deleting = this.template.GetFieldByLabel('DELETING').GetValue();
@@ -297,6 +311,9 @@ class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.HasField('Identified'))
       this.identified = this.template.GetFieldByLabel('Identified').GetValue();
+
+    if(this.template.RootNode.HasField('Infinite'))
+      this.infinite = this.template.GetFieldByLabel('Infinite').GetValue();
 
     if(this.template.RootNode.HasField('InventoryRes'))
       this.inventoryRes = this.template.GetFieldByLabel('InventoryRes').GetValue();

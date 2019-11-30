@@ -64,7 +64,7 @@ class NewProjectWizard extends Wizard {
           let keyCode = e.charCode ? e.which : e.charCode;
           let str = String.fromCharCode(keyCode);
           if (regex.test(str) || keyCode == 32) {
-              return true;
+            return true;
           }
 
           e.preventDefault();
@@ -76,12 +76,12 @@ class NewProjectWizard extends Wizard {
       }).val(this.parent_directory);
       this.UpdateProjectLocation();
 
-      this.$project_directory_browse.on('click', (e) => {
+      this.$project_directory_browse.on('click', async (e) => {
         e.preventDefault();
-        let openPath = dialog.showOpenDialog({properties: ['openDirectory']});
-        if(typeof openPath != 'undefined'){
-          console.log(openPath[0]);
-          this.parent_directory = openPath[0];
+        let payload = await dialog.showOpenDialog({properties: ['openDirectory']});
+        if(!payload.canceled && payload.filePaths.length){
+          console.log(payload.filePaths[0]);
+          this.parent_directory = payload.filePaths[0];
           this.$project_directory.val(this.parent_directory);
         }
         this.UpdateProjectLocation();
@@ -184,9 +184,8 @@ class NewProjectWizard extends Wizard {
 
                 //Load the project so that the template builder can access the projects variables
                 if(this.module_template != -1){
-                  let levels = JSON.parse(fs.readFileSync('maps_kotor.json', 'utf8'));
-                  let module_name = levels[this.module_template].module.split('.')[0];
-                  console.log('Creating Project and Exporting Files', levels[this.module_template], module_name);
+                  let module_name = GameMaps[this.module_template].module.split('.')[0];
+                  console.log('Creating Project and Exporting Files', GameMaps[this.module_template], module_name);
 
                   Game.module = new Module();
                   Module.GetModuleArchives(module_name, (archives) => {
@@ -238,7 +237,7 @@ class NewProjectWizard extends Wizard {
                       }
                     });
                     archiveLoop.Begin(() => {
-                      //Module.BuildFromProject(levels[this.module_template].module.split('.')[0], () => {  });
+                      //Module.BuildFromProject(GameMaps[this.module_template].module.split('.')[0], () => {  });
                       fs.readFile(path.join(Global.Project.directory, 'module.ifo'), (err, ifo_data) => {
                         new GFFObject(ifo_data, (gff, rootNode) => {
 

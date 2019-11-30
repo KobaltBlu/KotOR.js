@@ -8,7 +8,7 @@
 class ModuleCreature extends ModuleCreatureController {
 
   constructor ( gff = new GFFObject() ) {
-    super();
+    super(gff);
 
     this.template = gff;
 
@@ -34,9 +34,11 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastAoeEntered = null;
     this.lastAoeExited = null;
 
-    //Last creature attacked by this creature
+    //Last target this creature attempted to attack
+    this.lastAttemptedAttackTarget = undefined;
+    //Last target attacked by this creature
     this.lastAttackTarget = undefined;
-    //Last creature attacked by this creature
+    //Last target attacked with a spell by this creature
     this.lastSpellTarget = undefined;
     //Last creature who damaged this creature
     this.lastDamager = undefined;
@@ -60,6 +62,8 @@ class ModuleCreature extends ModuleCreatureController {
     this.description = '';
     this.dec = 0;
     this.disarmable = 0;
+    this.isHologram = false;
+    this.overlayAnimation = undefined;
 
     this.equipment = {
       HEAD: undefined,
@@ -255,11 +259,13 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.isHostile(callee) && !this.isDead()){
       Game.getCurrentPlayer().attackCreature(this, 0);
     }else if(this.isHostile(callee) && this.isDead()){
+      this.clearAllActions();
       Game.getCurrentPlayer().actionQueue.push({
         object: this,
         goal: ModuleCreature.ACTION.USEOBJECT
       });
     }else if(!this.isDead()){
+      this.clearAllActions();
       Game.getCurrentPlayer().actionQueue.push({
         object: this,
         conversation: this.GetConversation(),
@@ -275,7 +281,7 @@ class ModuleCreature extends ModuleCreatureController {
   use(object = null){
 
     if(this.hasInventory()){
-      Game.MenuContainer.Show(this);
+      Game.MenuContainer.Open(this);
     }
 
   }
@@ -420,7 +426,7 @@ class ModuleCreature extends ModuleCreatureController {
 
   GetRotation(){
     if(this.model){
-      return Math.floor(this.model.rotation.z * 180) + 180
+      return Math.floor(this.rotation.z * 180) + 180
     }
     return 0;
   }
@@ -601,6 +607,10 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
+  getHasFeat(id){
+    return this.feats.indexOf(id) >= 0;
+  }
+
   getSkillList(){
     if(this.template.RootNode.HasField('SkillList')){
       return this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
@@ -614,6 +624,61 @@ class ModuleCreature extends ModuleCreatureController {
 
   getSkillLevel(iSkill){
     return this.skills[iSkill];
+  }
+
+  getHasSpell(id){
+
+    for(let i = 0; i < this.classes.length; i++){
+      let cls = this.classes[i];
+      for(let j = 0; j < cls.spells.length; j++){
+        let spell = cls.spells[i];
+        if(spell.id == id)
+          return true;
+      }
+    }
+
+    return false;
+
+  }
+
+  hasTalent(talent = undeifned){
+    if(typeof talent != 'undefined'){
+      switch(talent.type){
+        case 0: //Force / Spell
+          return this.getHasSpell(talent.id);
+        case 1: //Feat
+          return this.getHasFeat(talent.id);
+        case 2: //Skill
+          return this.getHasSkill(talent.id);
+      }
+    }
+    return false;
+  }
+
+  getTalents(){
+
+    let talents = [];
+
+    for(let i = 0; i < this.classes.length; i++){
+      let cls = this.classes[i];
+      for(let j = 0; j < cls.spells.length; j++){
+        talents.push(cls.spells[i])
+      }
+    }
+
+    return talents;
+
+  }
+
+  getRandomTalent(category = 0, category2 = 0){
+
+    let talents = this.getTalents().filter( talent => talent.category == category || talent.category == category2 );
+    return talents[Math.floor(Math.random()*talents.length)];
+
+  }
+
+  useTalentOnObject(talent, oTarget){
+    console.log('useTalentOnObject', this, talent, oTarget);
   }
 
   getPerceptionRange(){
@@ -643,6 +708,10 @@ class ModuleCreature extends ModuleCreatureController {
 
   setListeningPattern(sString = '', iNum = 0){
     this.listeningPatterns[sString] = iNum;
+  }
+
+  getPersonalSpace(){
+    return parseFloat(this.getAppearance()['perspace']);
   }
 
   Load( onLoad = null ){
@@ -862,6 +931,7 @@ class ModuleCreature extends ModuleCreatureController {
             castShadow: true,
             receiveShadow: true,
             textureVar: this.bodyTexture,
+            isHologram: this.isHologram,
             context: this.context,
             onComplete: (model) => {
 
@@ -869,15 +939,36 @@ class ModuleCreature extends ModuleCreatureController {
 
               if(this.model instanceof THREE.AuroraModel && this.model.parent){
                 scene = this.model.parent;
-                position = this.model.position;
-                rotation = this.model.rotation;
+                //position = this.model.position;
+                //rotation = this.model.rotation;
 
                 if(this.head && this.head.parent){
                   this.head.parent.remove(this.head);
+                  this.head.dispose();
                 }
+
+                //Remove weapons from model before dispose
+                try{
+                  if(this.model.lhand instanceof THREE.Object3D){
+                    if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof THREE.AuroraModel){
+                      this.model.lhand.remove(this.equipment.LEFTHAND.model);
+                    }
+                  }
+                }catch(e){}
+                
+                //Remove weapons from model before dispose
+                try{
+                  if(this.model.rhand instanceof THREE.Object3D){
+                    if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof THREE.AuroraModel){
+                      this.model.rhand.remove(this.equipment.RIGHTHAND.model);
+                    }
+                  }
+                }catch(e){}
+
                 try{
                   this.model.dispose();
                 }catch(e){}
+
                 try{
                   if(scene)
                     scene.remove(this.model);
@@ -912,13 +1003,13 @@ class ModuleCreature extends ModuleCreatureController {
                 try{
                   Game.octree.add( this.model );
                 }catch(e){}
-                this.model.position.copy(position);
-                this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+                //this.model.position.copy(position);
+                //this.model.rotation.set(rotation.x, rotation.y, rotation.z);
               }
 
-              this.position = this.model.position;
-              this.rotation = this.model.rotation;
-              this.quaternion = this.model.quaternion;
+              this.position = this.model.position.copy(this.position);
+              this.model.rotation.copy(this.rotation);
+              this.model.quaternion.copy(this.quaternion);
 
               if(typeof onLoad === 'function')
                 onLoad();
@@ -943,8 +1034,15 @@ class ModuleCreature extends ModuleCreatureController {
             context: this.context,
             castShadow: true,
             receiveShadow: true,
+            isHologram: this.isHologram,
             onComplete: (head) => {
               try{
+
+                if(this.head instanceof THREE.AuroraModel && this.head.parent){
+                  this.head.parent.remove(this.head);
+                  this.head.dispose();
+                }
+
                 this.head = head;
                 this.head.moduleObject = this;
                 this.model.headhook.add(head);
@@ -1265,6 +1363,9 @@ class ModuleCreature extends ModuleCreatureController {
 
   InitProperties( onLoad = null ){
 
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+
     if(this.template.RootNode.HasField('Appearance_Type'))
       this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
 
@@ -1280,13 +1381,42 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('ClassList')){
       let classes = this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
       for(let i = 0; i < classes.length; i++){
-        let cls = classes[i];
-        //cls.GetFieldByLabel('KnownList').GetChildStructs()
-        this.classes.push({
-          class_id: cls.GetFieldByLabel('Class').GetValue(),
-          level: cls.GetFieldByLabel('ClassLevel').GetValue(),
-          known: []
-        });
+        let cls_struct = classes[i];
+        let cls = {
+          class_id: cls_struct.GetFieldByLabel('Class').GetValue(),
+          level: cls_struct.GetFieldByLabel('ClassLevel').GetValue(),
+          spells: []
+        };
+        let known_struct = cls_struct.GetFieldByLabel('KnownList0');
+        if(known_struct){
+          let known_spell_structs = known_struct.GetChildStructs();
+          for(let i = 0; i < known_spell_structs.length; i++){
+
+            let known_spell_struct = known_spell_structs[i];
+            let spell = {
+              id: 0,
+              flags: 0,
+              metaMagic: 0
+            };
+
+            if(known_spell_struct.HasField('Spell'))
+              spell.id = known_spell_struct.GetFieldByLabel('Spell').GetValue();
+
+            //Merge the spell properties from the spells.2da row with this spell
+            if(Global.kotor2DA.spells.rows[spell.id])
+              spell = Object.assign(Global.kotor2DA.spells.rows[spell.id], spell);
+        
+            if(known_spell_struct.HasField('SpellFlags'))
+              spell.flags = known_spell_struct.GetFieldByLabel('SpellFlags').GetValue();
+        
+            if(known_spell_struct.HasField('SpellMetaMagic'))
+              spell.metaMagic = known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue();
+
+            cls.spells.push(spell);
+
+          }
+        }
+        this.classes.push(cls);
       }
     }
 
@@ -1297,13 +1427,23 @@ class ModuleCreature extends ModuleCreatureController {
       this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
 
     if(this.template.RootNode.HasField('CurrentHitPoints'))
-      this.currentHitPoints = this.template.GetFieldByLabel('CurrentHitPoints').GetValue();
+      this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('CurrentHitPoints').GetValue()]))[0];
 
     if(this.template.RootNode.HasField('Disarmable'))
       this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
   
     if(this.template.RootNode.HasField('Experience'))
       this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
+
+    if(this.template.RootNode.HasField('ExpressionList')){
+      let expressions = this.template.RootNode.GetFieldByLabel('ExpressionList').GetChildStructs();
+      for(let i = 0; i < expressions.length; i++){
+        this.setListeningPattern(
+          expressions[i].GetFieldByLabel('ExpressionString').GetValue(),
+          expressions[i].GetFieldByLabel('ExpressionId').GetValue()
+        );
+      }
+    }
         
     if(this.template.RootNode.HasField('FactionID'))
       this.faction = this.template.RootNode.GetFieldByLabel('FactionID').GetValue();
@@ -1331,6 +1471,9 @@ class ModuleCreature extends ModuleCreatureController {
       
     if(this.template.RootNode.HasField('HitPoints'))
       this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
+      
+    if(this.template.RootNode.HasField('Hologram'))
+      this.isHologram = this.template.GetFieldByLabel('Hologram').GetValue();
 
     if(this.template.RootNode.HasField('Interruptable'))
       this.interruptable = this.template.GetFieldByLabel('Interruptable').GetValue();
@@ -1343,9 +1486,9 @@ class ModuleCreature extends ModuleCreatureController {
 
     if(this.template.RootNode.HasField('MaxHitPoints')){
       this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
-      if(!this.currentHitPoints){
-        this.currentHitPoints = this.maxHitPoints;
-      }
+      /*if(!this.currentHitPoints){
+        this.currentHitPoints = this.hitPoints = this.maxHitPoints;
+      }*/
     }
 
     if(this.template.RootNode.HasField('Min1HP'))
@@ -1363,8 +1506,11 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('PartyInteract'))
       this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
 
-    if(this.template.RootNode.HasField('PerceptionRange'))
+    if(this.template.RootNode.HasField('PerceptionRange')){
       this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
+    }else{
+      this.perceptionRange = 13;
+    }
 
     if(this.template.RootNode.HasField('Phenotype'))
       this.phenotype = this.template.GetFieldByLabel('Phenotype').GetValue();
@@ -1460,7 +1606,6 @@ class ModuleCreature extends ModuleCreatureController {
         if(strt.HasField('EquippedRes')){
           equipped_item = new ModuleItem(strt.GetFieldByLabel('EquippedRes').GetValue());
         }else{
-          console.log(this, GFFObject.FromStruct(strt));
           equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
         }
         
@@ -1532,6 +1677,65 @@ class ModuleCreature extends ModuleCreatureController {
       }
 
     });
+
+    //ActionList
+    if(this.template.RootNode.HasField('ActionList')){
+      let actions = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
+      for(let i = 0, len = actions.length; i < len; i++){
+        
+          let action = actions[i];
+        try{
+          let actionId = action.GetFieldByLabel('ActionId').GetValue();
+          let paramCount = action.GetFieldByLabel('NumParams').GetValue();
+
+          let paramStructs = [];
+          if(action.HasField('Paramaters'))
+            paramStructs = action.GetFieldByLabel('Paramaters').GetChildStructs();
+
+          if(actionId == 1){ //MoveToPoint ???
+
+            let x = paramStructs[0].GetFieldByLabel('Value').GetValue();
+            let y = paramStructs[1].GetFieldByLabel('Value').GetValue();
+            let z = paramStructs[2].GetFieldByLabel('Value').GetValue();
+
+            let object = ModuleObject.GetObjectById(paramStructs[4].GetFieldByLabel('Value').GetValue());
+            let run = paramStructs[5].GetFieldByLabel('Value').GetValue();
+            let distance = paramStructs[6].GetFieldByLabel('Value').GetValue();
+
+            this.moveToObject(object, run, distance);
+
+          }
+
+          if(actionId == 37){ //ActionDoCommand
+
+            let scriptParamStructs = paramStructs[0].GetFieldByLabel('Value').GetChildStructs()[0];
+            let script = new NWScript();
+            script.name = scriptParamStructs.GetFieldByLabel('Name').GetValue();
+            script.init(
+              scriptParamStructs.GetFieldByLabel('Code').GetVoid(),
+              scriptParamStructs.GetFieldByLabel('CodeSize').GetValue()
+            );
+            script.setCaller(this);
+
+            let stackStruct = scriptParamStructs.GetFieldByLabel('Stack').GetChildStructs()[0]
+            script.stack = NWScriptStack.FromActionStruct(stackStruct);
+            
+            this.actionQueue.push({
+              goal: ModuleCreature.ACTION.SCRIPT,
+              script: script,
+              action: { script: script, offset: scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue() },
+              clearable: false
+            });
+
+            //console.log('ActionDoCommand', script, scriptParamStructs, this);
+
+          }
+        }catch(e){
+          console.error('ActionList', e, action, this);
+        }
+      }
+    }
+
 
   }
 
@@ -1652,9 +1856,42 @@ class ModuleCreature extends ModuleCreatureController {
 
   }
 
+  toToolsetInstance(){
+
+    let instance = new Struct(4);
+    
+    instance.AddField(
+      new Field(GFFDataTypes.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
+    );
+
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'XPosition', this.position.x)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'YPosition', this.position.y)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'ZPosition', this.position.z)
+    );
+
+    return instance;
+
+  }
+
 }
 
 ModuleCreature.AnimState = {
+  GETINGUP: -3,
   DIEING: -2,
   DEAD: -1,
   IDLE: 0,

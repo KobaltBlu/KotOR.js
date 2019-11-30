@@ -34,31 +34,27 @@ class CharGenQuickPanel extends GameMenu {
 
         this.BTN_STEPNAME1.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.CharGenMain.Hide();
-          Game.CharGenPortCust.Show();
+          Game.CharGenPortCust.Open();
         });
 
         this.BTN_STEPNAME2.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.CharGenMain.Hide();
-          Game.CharGenName.Show();
+          Game.CharGenName.Open();
         });
 
         this.BTN_STEPNAME3.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.CharGenMain.Hide();
-          Game.CharGenName.Hide();
           Game.player.equipment.ARMOR = undefined;
           Game.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
           Game.LoadModule('end_m01aa');
         });
 
-
         this.BTN_BACK.addEventListener('click', (e) => {
 
           e.stopPropagation();
-          Game.CharGenQuickOrCustom.Show();
-
+          Game.CharGenMain.Close();
+          Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
+          Game.CharGenMain.Open();
         });
 
         this.BTN_BACK.reattach(this.tGuiPanel);
@@ -81,21 +77,6 @@ class CharGenQuickPanel extends GameMenu {
       }
     })
 
-  }
-
-  Show(){
-
-    let panelQuickorCustom = Game.CharGenQuickOrCustom.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelQuickorCustom);
-    //Game.scene_gui.add(panelQuickorCustom);
-
-    let panelQuick = Game.CharGenQuickPanel.tGuiPanel.getControl();
-    Game.scene_gui.add(panelQuick);
-
-  }
-
-  Hide(){
-    
   }
 
 }

@@ -1,5 +1,24 @@
 {
   "name": "KotOR II",
+  "full_name": "Star Wars Knights of the Old Republic II: The Sith Lords",
+  "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/208580/c491c003d93f0947b8e514ff1933daa7c4d8c171.ico",
   "logo": null,
-  "path": null
+  "background": "https://img.wallpapersafari.com/desktop/1920/1080/64/6/vqMNET.jpg",
+  "category": "game",
+  "directory": null,
+  "isForgeCompatible": true,
+  "steam_id" : 208580,
+  "launch": {
+    "type": "electron",
+    "path": "game.html",
+    "args": { "gameChoice": 2 },
+    "backgroundColor": "#000000",
+    "fullscreen": true
+  },
+  "elements" : [
+    {
+      "type": "video",
+      "url": "https://steamcdn-a.akamaihd.net/steam/apps/256681358/movie_max.webm"
+    }
+  ]
 }

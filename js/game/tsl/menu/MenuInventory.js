@@ -34,17 +34,6 @@ class MenuInventory extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    //Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();
     this.LB_ITEMS.clearItems();
     let inv = InventoryManager.getNonQuestInventory();
     for(let i = 0; i < inv.length; i++){

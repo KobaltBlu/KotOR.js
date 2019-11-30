@@ -10,11 +10,19 @@ class ModuleRoom extends ModuleObject {
   constructor( args = {} ){
     super();
     args = Object.assign({
-      room: undefined,
+      ambientScale: 0,
+      envAudio: 0,
+      roomName: '',
       model: undefined,
       walkmesh: undefined,
       linked_rooms: []
     }, args);
+
+    this.id = -1;
+
+    this.ambientScale = args.ambientScale;
+    this.envAudio = args.envAudio;
+    this.roomName = args.roomName;
 
     this.room = args.room;
     this.model = args.model;
@@ -23,15 +31,41 @@ class ModuleRoom extends ModuleObject {
 
   }
 
-  getVisisbleNeighbors(){
-
-    
-
+  setLinkedRooms(array = []){
+    this.linked_rooms = array;
   }
 
+  setPosition(x = 0, y = 0, z = 0){
+    this.position.set(x, y, z);
+  }
+
+  getVisisbleNeighbors(){  }
+
   update(delta){
-    if(this.model instanceof THREE.AuroraModel)
+    if(this.model instanceof THREE.AuroraModel){
       this.model.update(delta);
+
+      //LightManager.MAXLIGHTS
+      for(let i = 0, len = this.model.materials.length; i < len; i++){
+        let mat = this.model.materials[i];
+        if(mat instanceof THREE.ShaderMaterial){
+
+          /*if(!mat.uniforms.pointLights.value.length)
+            return;
+
+          mat.uniforms.pointLights.value[0].animated = LightManager.light_pool[0].animated;
+          mat.uniforms.pointLights.value[1].animated = LightManager.light_pool[1].animated;
+          mat.uniforms.pointLights.value[2].animated = LightManager.light_pool[2].animated;
+          mat.uniforms.pointLights.value[3].animated = LightManager.light_pool[3].animated;
+          mat.uniforms.pointLights.value[4].animated = LightManager.light_pool[4].animated;
+          mat.uniforms.pointLights.value[5].animated = LightManager.light_pool[5].animated;
+          mat.uniforms.pointLights.value[6].animated = LightManager.light_pool[6].animated;
+          mat.uniforms.pointLights.value[7].animated = LightManager.light_pool[7].animated;*/
+
+        }
+      }
+
+    }
   }
 
   show(recurse = false){
@@ -65,7 +99,7 @@ class ModuleRoom extends ModuleObject {
 
       for(let j = 0; j < rooms.length; j++){
 
-        if(this.linked_rooms[i] == rooms[j].room['RoomName'].toLowerCase()){
+        if(this.linked_rooms[i] == rooms[j].roomName.toLowerCase()){
 
           this.linked_rooms[i] = rooms[j];
 
@@ -91,31 +125,65 @@ class ModuleRoom extends ModuleObject {
 
   load( onComplete = null ){
     
-    if(!Utility.is2daNULL(this.room['RoomName'])){
+    if(!Utility.is2daNULL(this.roomName)){
 
       Game.ModelLoader.load({
 
-        file: this.room['RoomName'],
+        file: this.roomName,
         onLoad: (roomFile) => {
 
           THREE.AuroraModel.FromMDL(roomFile, {
 
             onComplete: (room) => {
 
+              let scene;
+              if(this.model instanceof THREE.AuroraModel && this.model.parent){
+                scene = this.model.parent;
+
+                try{
+                  this.model.dispose();
+                }catch(e){}
+
+                try{
+                  if(scene)
+                    scene.remove(this.model);
+                }catch(e){}
+              }
+
               this.model = room;
-              this.position = this.model.position;
-              this.rotation = this.model.rotation;
+              this.model.moduleObject = this;
+              this.model.position.copy(this.position);
 
-              this.loadWalkmesh(this.room['RoomName'], (wok) => {
-                
-                this.walkmesh = wok;
+              if(this.model.animations.length){
 
-                this.buildGrass();
+                for(let animI = 0; animI < this.model.animations.length; animI++){
+                  if(this.model.animations[animI].name.indexOf('animloop') >= 0){
+                    this.model.animLoops.push(
+                      this.model.animations[animI]
+                    );
+                  }
+                }
+              }
 
+              if(scene)
+                scene.add(this.model);
+
+              if(!(this.walkmesh instanceof AuroraWalkMesh)){
+
+                this.loadWalkmesh(this.roomName, (wok) => {
+                  
+                  this.walkmesh = wok;
+                  this.buildGrass();
+
+                  if(typeof onComplete == 'function')
+                    onComplete(this);
+    
+                });
+
+              }else{
                 if(typeof onComplete == 'function')
                   onComplete(this);
-  
-              });
+              }
 
             },
             context: this.context,
@@ -145,7 +213,8 @@ class ModuleRoom extends ModuleObject {
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
         let wok = new AuroraWalkMesh(new BinaryReader(buffer));
-
+        wok.name = ResRef;
+        wok.moduleObject = this;
         this.model.wok = wok;
 
         if(typeof onLoad === 'function')
@@ -370,6 +439,45 @@ class ModuleRoom extends ModuleObject {
     }else{
       return 3;
     }
+  }
+  
+  containsPoint2d(point){
+
+    if(!this.model)
+      return false;
+
+    return point.x < this.model.box.min.x || point.x > this.model.box.max.x ||
+      point.y < this.model.box.min.y || point.y > this.model.box.max.y ? false : true;
+  }
+  
+  containsPoint3d(point){
+
+    if(!this.model)
+      return false;
+
+    return point.x < this.model.box.min.x || point.x > this.model.box.max.x ||
+      point.y < this.model.box.min.y || point.y > this.model.box.max.y ||
+      point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
+  }
+
+  toToolsetInstance(){
+
+    let instance = new Struct();
+    
+    instance.AddField(
+      new Field(GFFDataTypes.FLOAT, 'AmbientScale', this.ambientScale)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.INT, 'EnvAudio', this.envAudio)
+    );
+    
+    instance.AddField(
+      new Field(GFFDataTypes.CEXOSTRING, 'RoomName', this.roomName)
+    );
+
+    return instance;
+
   }
 
 }

@@ -18,26 +18,28 @@
     <script type="text/javascript" src="js/engine/RenderPass.js"></script>
     <script type="text/javascript" src="js/engine/ShaderPass.js"></script>
     <script type="text/javascript" src="js/engine/BloomPass.js"></script>
+    <script type="text/javascript" src="js/engine/MaskPass.js"></script>
+    <script type="text/javascript" src="js/engine/BokehPass.js"></script>
     <script type="text/javascript" src="js/engine/SSAARenderPass.js"></script>
     <script type="text/javascript" src="js/engine/threeoctree.js"></script>
     <script type="text/javascript" src="js/engine/TPCLoader.js"></script>
     <script type="text/javascript" src="js/engine/TGALoader.js"></script>
     <script type="text/javascript" src="js/engine/MDLLoader.js"></script>
     <script type="text/javascript" src="js/engine/BufferGeometryUtils.js"></script>
+    <script type="text/javascript" src="js/engine/AuroraEmitter.js"></script>
     <script type="text/javascript" src="js/engine/AuroraModel.js"></script>
     <script type="text/javascript" src="js/engine/stats.min.js"></script>
     <script type="text/javascript" src="js/engine/controls/TrackballControls.js"></script>
     <script type="text/javascript" src="js/engine/TransformControls.js"></script>
-    <script type="text/javascript" src="js/engine/SPE.js"></script>
     <script type="text/javascript" src="js/engine/shaders/CopyShader.js"></script>
     <script type="text/javascript" src="js/engine/shaders/FilmShader.js"></script>
+    <script type="text/javascript" src="js/engine/shaders/BokehShader.js"></script>
     <script type="text/javascript" src="js/engine/FilmPass.js"></script>
     <script type="text/javascript" src="js/engine/shaders/ConvolutionShader.js"></script>
     <script type="text/javascript" src="js/engine/shaders/ColorCorrectionShader.js"></script>
     <script type="text/javascript" src="js/engine/Lensflare.js"></script>
     <script type="text/javascript" src="game.js"></script>
     <script>
-
       console.log(_Game);
       let db = new Dexie('K'+_Game);
 
@@ -87,25 +89,33 @@
             GameInitializer.Init({
               game: Games[GameKey],
               onLoad: () => {
-                loader.Hide();
+                GUIListBox.InitTextures();
                 Game.Init();
                 //window.mainmenu = new MainMenu();
               }
             });
           },
-          onError: () => {
+          onError: async () => {
             console.log('Failed to verify the path for', GameKey);
             //loader.Dismiss();
-
             
-            let dir = dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]});
-            console.log(dir);
-            if(typeof dir !== 'undefined'){
-              Config.options.Games[GameKey].Location = dir[0];
-              Config.Save( () => {
-                window.location.reload();
-              }, true);
-            }
+            dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]}).then(result => {
+              console.log(result.canceled);
+              console.log(result.filePaths);
+              if(result.filePaths.length && !result.canceled){
+                Config.options.Games[GameKey].Location = result.filePaths[0];
+                Config.Save( () => {
+                  window.location.reload();
+                }, true);
+              }else{
+                alert('Can\'t continue without locating the game directory');
+                window.close();
+              }
+
+            }).catch(err => {
+              alert(err);
+              window.close();
+            });
             
           }
         });

@@ -23,8 +23,9 @@ class CharGenCustomPanel extends GameMenu {
         this.BTN_BACK.addEventListener('click', (e) => {
 
           e.stopPropagation();
-          Game.CharGenQuickOrCustom.Show();
-
+          Game.CharGenMain.Close();
+          Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
+          Game.CharGenMain.Open();
         });
 
         this.tGuiPanel.offset.x = 138;
@@ -37,20 +38,6 @@ class CharGenCustomPanel extends GameMenu {
       }
     })
 
-  }
-
-  Show(){
-
-    let panelQuickorCustom = Game.CharGenQuickOrCustom.tGuiPanel.getControl();
-    Game.scene_gui.remove(panelQuickorCustom);
-
-    let panelCustom = Game.CharGenCustomPanel.tGuiPanel.getControl();
-    Game.scene_gui.add(panelCustom);
-
-  }
-
-  Hide(){
-    
   }
 
 }

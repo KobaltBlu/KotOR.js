@@ -15,6 +15,7 @@ class MenuContainer extends GameMenu {
     }, this.args);
 
     this.protoTextures = {};
+    this.isOverlayGUI = true;
 
     this.LoadMenu({
       name: 'container',
@@ -32,7 +33,7 @@ class MenuContainer extends GameMenu {
           if(this.container instanceof ModulePlaceable){
             this.container.close(Game.player);
           }
-          this.Hide();
+          this.Close();
         });
 
         this.BTN_OK.addEventListener('click', (e) => {
@@ -45,7 +46,7 @@ class MenuContainer extends GameMenu {
             this.container.retrieveInventory();
             //this.container.close(Game.player);
           }
-          this.Hide(true);
+          this.Close(true);
         });
 
         for(let i = 0; i < 7; i++){
@@ -80,64 +81,70 @@ class MenuContainer extends GameMenu {
     this.container = undefined;
   }
 
-  Show( object = null ){
-
-    super.Show();
+  Open(object = null){
     this.container = object;
-    let inventory = this.container.getInventory();
-    for(let i = 0; i < inventory.length; i++){
+    super.Open();
+  }
 
-      let item = inventory[i];
-      this.LB_ITEMS.addItem(item, null, (control, type) => {
-        control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
-          item.getName()
-        );
-        let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS.widget, this.LB_ITEMS.scale);
-        _ctrl2.extent.width -= 52;
-        _ctrl2.extent.left += 52;
-        _ctrl2.setList( this.LB_ITEMS );
-        this.LB_ITEMS.children.push(_ctrl2);
-        let idx2 = this.LB_ITEMS.itemGroup.children.length;
-        let item2 = _ctrl2.createControl();
+  Show(){
+    super.Show();
+    this.LB_ITEMS.clearItems();
+    if(this.container instanceof ModuleCreature || this.container instanceof ModulePlaceable){
+      let inventory = this.container.getInventory();
+      for(let i = 0; i < inventory.length; i++){
 
-        let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-        iconMaterial.transparent = true;
-        let iconSprite = new THREE.Sprite( iconMaterial );
-        //console.log(item.getIcon());
-        TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
-        
-        item2.spriteGroup = new THREE.Group();
+        let item = inventory[i];
+        this.LB_ITEMS.addItem(item, null, (control, type) => {
+          control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
+            item.getName()
+          );
+          let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS, this.LB_ITEMS.scale);
+          _ctrl2.extent.width -= 52;
+          _ctrl2.extent.left += 52;
+          _ctrl2.setList( this.LB_ITEMS );
+          this.LB_ITEMS.children.push(_ctrl2);
+          let idx2 = this.LB_ITEMS.itemGroup.children.length;
+          let item2 = _ctrl2.createControl();
 
-        let iconScale = 48;
+          let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+          iconMaterial.transparent = true;
+          let iconSprite = new THREE.Sprite( iconMaterial );
+          //console.log(item.getIcon());
+          TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
+          
+          item2.spriteGroup = new THREE.Group();
 
-        item2.spriteGroup.position.x = -(_ctrl2.extent.width/2)-(iconScale/2); //HACK
-        item2.spriteGroup.position.y -= 4;
-        iconSprite.scale.x = iconScale;
-        iconSprite.scale.y = iconScale;
+          let iconScale = 48;
 
-        let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-        hexMaterial.transparent = true;
-        let hexSprite = new THREE.Sprite( hexMaterial );
+          item2.spriteGroup.position.x = -(_ctrl2.extent.width/2)-(iconScale/2); //HACK
+          item2.spriteGroup.position.y -= 4;
+          iconSprite.scale.x = iconScale;
+          iconSprite.scale.y = iconScale;
 
-        hexSprite.name = 'lbl_hex';
-        hexMaterial.map = this.protoTextures[hexSprite.name];
-        hexSprite.visible = true;
-        hexMaterial.needsUpdate = true;
-        hexSprite.scale.x = hexSprite.scale.y = iconScale;
-        item2.spriteGroup.add(hexSprite);
+          let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+          hexMaterial.transparent = true;
+          let hexSprite = new THREE.Sprite( hexMaterial );
 
-        item2.add(item2.spriteGroup);
-        item2.spriteGroup.add(iconSprite);
-        this.LB_ITEMS.itemGroup.add(item2);
+          hexSprite.name = 'lbl_hex';
+          hexMaterial.map = this.protoTextures[hexSprite.name];
+          hexSprite.visible = true;
+          hexMaterial.needsUpdate = true;
+          hexSprite.scale.x = hexSprite.scale.y = iconScale;
+          item2.spriteGroup.add(hexSprite);
 
-        _ctrl2.addEventListener('click', (e) => {
-          e.stopPropagation();
+          item2.add(item2.spriteGroup);
+          item2.spriteGroup.add(iconSprite);
+          this.LB_ITEMS.itemGroup.add(item2);
+
+          _ctrl2.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+
         });
+      }
 
-      });
+      TextureLoader.LoadQueue();
     }
-
-    TextureLoader.LoadQueue();
 
   }
 

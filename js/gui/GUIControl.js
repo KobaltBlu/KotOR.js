@@ -13,14 +13,44 @@ class GUIControl {
     this.control = control;
     this.parent = parent;
     this.scale = scale;
-    this.anchor = 'none';
+    this.iniProperty = undefined;
 
+    this.textGeometry = new THREE.BufferGeometry();
+
+    this.textGeometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setDynamic( false );
+
+    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setDynamic( false );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setDynamic( false );
+    this.textGeometry.setAttribute( 'position', posAttribute );
+    this.textGeometry.setAttribute( 'uv', uvAttribute );
+
+    this.textGeometry.index.needsUpdate = true;
+    this.textGeometry.attributes.position.needsUpdate = true;
+    this.textGeometry.attributes.uv.needsUpdate = true;
+
+    this.textMaterial = undefined;
+    this.textMesh = undefined;
+    this.textAnchor = new THREE.Object3D();
+
+    this.anchor = 'none';
     this.offset = new THREE.Vector2();
 
     this.widget = new THREE.Group();
     this.widget.control = this;
     this.children = []; 
     this.zOffset = 1;
+
+    this.worldPosition = new THREE.Vector3();
+    this.box = new THREE.Box2(
+      new THREE.Vector2(
+        0,
+        0
+      ),
+      new THREE.Vector2(
+        0,
+        0
+      )
+    );
 
     this.eventListeners = {
       'click': [],
@@ -89,7 +119,7 @@ class GUIControl {
       this.objectParent = ( control.HasField('Obj_Parent') ? control.GetFieldByLabel('Obj_Parent').GetValue() : -1 );
       this.objectParentId = ( control.HasField('Obj_ParentID') ? control.GetFieldByLabel('Obj_ParentID').GetValue() : -1 );
   
-      this.padding = ( control.HasField('PADDING') ? control.GetFieldByLabel('PADDING') : 0 );
+      this.padding = ( control.HasField('PADDING') ? control.GetFieldByLabel('PADDING').GetValue() : 0 );
   
       //Extent
       this.hasExtent = control.HasField('EXTENT');
@@ -140,6 +170,63 @@ class GUIControl {
 
 
         this.border.pulsing = border.GetFieldByLabel('PULSING').GetValue() || 0;
+
+        this.border.geometry = new THREE.BufferGeometry();
+
+        this.border.edge_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
+        this.border.corner_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
+        this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
+
+        this.border.mesh.name = 'GUIBorder';
+        this.border.mesh.position.z = this.zOffset;
+        this.widget.border.add(this.border.mesh);
+
+        this.border.mesh.isClickable = (e) => {
+          return this.isClickable();
+        };
+
+        this.border.mesh.onClick = (e) => {
+          this.processEventListener('click', [e]);
+        };
+
+        this.border.mesh.onMouseMove = (e) =>{
+          this.processEventListener('mouseMove', [e]);
+        }
+
+        this.border.mesh.onMouseDown = (e) => {
+          this.processEventListener('mouseDown', [e]);
+        };
+
+        this.border.mesh.onMouseUp = (e) => {
+          this.processEventListener('mouseUp', [e]);
+        };
+        
+        this.border.mesh.onHover = (e) => {
+          this.processEventListener('hover', [e]);
+        };
+
+        this.border.mesh.getControl = () => {
+          return this;
+        }
+
+        if(this.border.edge != ''){
+          TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
+            //texture.offset.x = 0.1;
+            //texture.offset.y = 0.1;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+          });
+        }
+
+        if(this.border.corner != ''){
+          TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
+            //texture.offset.x = 0.1;
+            //texture.offset.y = 0.1;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+          });
+        }
+
       }
   
       //Text
@@ -153,8 +240,8 @@ class GUIControl {
         this.text.alignment = text.GetFieldByLabel('ALIGNMENT').GetValue();
         this.text.pulsing = text.GetFieldByLabel('PULSING').GetValue();
 
-        if(this.text.font == 'fnt_d16x16' || this.text.font == 'dialogfont10x10'){
-          this.text.font = 'dialogfont16x16';
+        if(this.text.font == 'fnt_d16x16'){ //|| this.text.font == 'dialogfont10x10'){
+          this.text.font = 'fnt_d16x16b';
         }
 
         if(text.HasField('COLOR'))
@@ -176,6 +263,10 @@ class GUIControl {
           let colorV = highlight.GetFieldByLabel('COLOR').GetVector();
           this.highlight.color = new THREE.Color(colorV.x, colorV.y, colorV.z);
         }
+  
+        if(typeof this.highlight.color === 'undefined'){
+          this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
+        }
 
         this.highlight.dimension = highlight.GetFieldByLabel('DIMENSION').GetValue() || 0;
         this.highlight.corner = highlight.GetFieldByLabel('CORNER').GetValue() || '';
@@ -188,6 +279,62 @@ class GUIControl {
           this.highlight.inneroffsety = highlight.GetFieldByLabel('INNEROFFSETY').GetValue();
 
         this.highlight.pulsing = highlight.GetFieldByLabel('PULSING').GetValue() || 0;
+
+        this.highlight.geometry = new THREE.BufferGeometry();
+
+        this.highlight.edge_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
+        this.highlight.corner_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
+        this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
+
+        this.highlight.mesh.name = 'GUIHighlight';
+        this.highlight.mesh.position.z = this.zOffset;
+        this.widget.highlight.add(this.highlight.mesh);
+
+        this.highlight.mesh.isClickable = (e) => {
+          return this.isClickable();
+        };
+
+        this.highlight.mesh.onClick = (e) => {
+          this.processEventListener('click', [e]);
+        };
+
+        this.highlight.mesh.onMouseMove = (e) =>{
+          this.processEventListener('mouseMove', [e]);
+        }
+
+        this.highlight.mesh.onMouseDown = (e) => {
+          this.processEventListener('mouseDown', [e]);
+        };
+
+        this.highlight.mesh.onMouseUp = (e) => {
+          this.processEventListener('mouseUp', [e]);
+        };
+        
+        this.highlight.mesh.onHover = (e) => {
+          this.processEventListener('hover', [e]);
+        };
+
+        this.highlight.mesh.getControl = () => {
+          return this;
+        }
+
+        if(this.highlight.edge != ''){
+          TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
+            //texture.offset.x = 0.1;
+            //texture.offset.y = 0.1;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+          });
+        }
+
+        if(this.highlight.corner != ''){
+          TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
+            //texture.offset.x = 0.1;
+            //texture.offset.y = 0.1;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+          });
+        }
 
       }
   
@@ -206,7 +353,11 @@ class GUIControl {
   }
 
   isClickable(){
-    return this.eventListeners['click'].length;
+    return this.eventListeners['click'].length && this.isVisible();
+  }
+
+  isVisible(){
+    return this.widget.visible;
   }
 
   onHoverOut(){
@@ -245,20 +396,22 @@ class GUIControl {
   }
 
   resizeControl(){
+
     try{
-      this.resizeBorder('top');
-      this.resizeBorder('left');
-      this.resizeBorder('right');
-      this.resizeBorder('bottom');
-      this.resizeCorner('topLeft');
-      this.resizeCorner('topRight');
-      this.resizeCorner('bottomLeft');
-      this.resizeCorner('bottomRight');
+      if(this.hasBorder){
+        this.buildBorder();
+      }
+      if(this.hasHighlight){
+        this.buildHighlight();
+      }
     }catch(e){
       //Must not have a border
     }
 
     this.resizeFill();
+    if(this.hasHighlight){
+      this.resizeHighlightFill();
+    }
 
   }
 
@@ -274,14 +427,7 @@ class GUIControl {
 
     if(this.hasBorder){
       if(this.border.edge != '' && this.border.corner != ''){
-        this.buildBorder('top');
-        this.buildBorder('left');
-        this.buildBorder('right');
-        this.buildBorder('bottom');
-        this.buildCorner('topLeft');
-        this.buildCorner('topRight');
-        this.buildCorner('bottomLeft');
-        this.buildCorner('bottomRight');
+        this.buildBorder();
       }
 
       if(this.border.edge == '')
@@ -291,14 +437,7 @@ class GUIControl {
 
     if(this.hasHighlight){
       if(this.highlight.edge != '' && this.highlight.corner != ''){
-        this.buildHighlight('top');
-        this.buildHighlight('left');
-        this.buildHighlight('right');
-        this.buildHighlight('bottom');
-        this.buildHighlightCorner('topLeft');
-        this.buildHighlightCorner('topRight');
-        this.buildHighlightCorner('bottomLeft');
-        this.buildHighlightCorner('bottomRight');
+        this.buildHighlight();
       }
       this.buildHighlightFill();
       this.hideHighlight();
@@ -399,6 +538,7 @@ class GUIControl {
 
   show(){
     //this.widget.border.visible = this.widget.highlight.visible = this.widget.fill.visible = this.widget.text.visible = true;
+    this.updateWorldPosition();
     this.widget.visible = true;
   }
 
@@ -502,6 +642,17 @@ class GUIControl {
 
   getFill(){
     return this.widget.fill.children[0];
+  }
+
+  getHighlightFill(){
+    return this.widget.highlight.children[0];
+  }
+
+  setFillColor(r = 1, g = 1, b = 1){
+    //0.0, 0.658824, 0.980392
+    if(typeof this.getFill() != 'undefined'){
+      this.getFill().material.color.setRGB(r, g, b);
+    }
   }
 
   getFillTexture(){
@@ -660,16 +811,16 @@ class GUIControl {
 
   updateBounds(){
     let worldPosition = this.widget.getWorldPosition(new THREE.Vector3());
-    this.box = new THREE.Box2(
-      new THREE.Vector2(
-        worldPosition.x * this.menu.scale - ( (this.extent.width/2) * this.menu.scale),
-        worldPosition.y * this.menu.scale - ( (this.extent.height/2) * this.menu.scale)
-      ),
-      new THREE.Vector2(
-        worldPosition.x * this.menu.scale + ( (this.extent.width/2) * this.menu.scale),
-        worldPosition.y * this.menu.scale + ( (this.extent.height/2) * this.menu.scale)
-      )
-    );
+
+    this.box.min.x = (worldPosition.x) - ( (this.extent.width/2));
+    this.box.min.y = (worldPosition.y) - ( (this.extent.height/2));
+    this.box.max.x = (worldPosition.x) + ( (this.extent.width/2));
+    this.box.max.y = (worldPosition.y) + ( (this.extent.height/2));
+    
+    if(this.menu.scale != 1.0){
+      this.box.expandByScalar(this.menu.scale/2);
+    }
+
   }
 
   updateScale(){
@@ -973,161 +1124,162 @@ class GUIControl {
 
   }
 
-  buildBorder(side = null){
+  buildBorder(){
 
-    let extent = this.getBorderExtent(side);
+    let edgeGeometries = 4;
+    let cornerGeometries = 4;
+    let geomCount = edgeGeometries + cornerGeometries;
 
-    var geometry = new THREE.PlaneGeometry(1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let planes = [];
+    let extent;
 
-    if(this.border.edge != ''){
-      TextureLoader.enQueue(this.border.edge, material, TextureLoader.Type.TEXTURE);
+    for(let i = 0; i < geomCount; i++){
+      switch(i){
+        case 0: //top-border
+          extent = this.getBorderExtent('top');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 1: //right-border
+          extent = this.getBorderExtent('right');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(-Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 2: //bottom-border
+          extent = this.getBorderExtent('bottom');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 3: //left-border
+          extent = this.getBorderExtent('left');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 4: //top-left-corner
+          extent = this.getBorderExtent('topLeft');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 5: //top-right-corner
+          extent = this.getBorderExtent('topRight');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(-Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 6: //bottom-right-corner
+          extent = this.getBorderExtent('bottomRight');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 7: //bottom-left-corner
+          extent = this.getBorderExtent('bottomLeft');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+      }
     }
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
-    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
 
+    if(this.border.geometry instanceof THREE.BufferGeometry)
+      this.border.geometry.dispose();
 
-    switch(side){
-      case 'top':
-        sprite.rotation.z = Math.PI;
-      break;
-      case 'bottom':
-      break;
-      case 'left':
-        sprite.rotation.z = Math.PI/2;
-      break;
-      case 'right':
-        sprite.rotation.z = -Math.PI/2;
-      break;
-    }
+    this.border.geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.border.geometry.computeBoundingBox();
 
-    sprite.name = side+' edge';
-    this.widget.border.add(sprite);
+    //Edge Group
+    this.border.geometry.addGroup(0, 24, 0);
+    //Corner Group
+    this.border.geometry.addGroup(24, 24, 1);
 
-    sprite.isClickable = (e) => {
-      return this.isClickable();
-    };
+    this.border.mesh.geometry = this.border.geometry;
 
-    sprite.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    sprite.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    sprite.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    sprite.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    sprite.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    sprite.getControl = () => {
-      return this;
+    //Clean up the temporary plane geometries
+    while(planes.length){
+      planes.shift().dispose();
     }
 
   }
 
-  buildCorner(side = null){
-    
-    let extent = this.getBorderExtent(side);
+  buildHighlight(){
 
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color:  this.border.color, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let edgeGeometries = 4;
+    let cornerGeometries = 4;
+    let geomCount = edgeGeometries + cornerGeometries;
 
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
+    let planes = [];
+    let extent;
 
-    if(this.border.corner != ''){
-      TextureLoader.enQueue(this.border.corner, material, TextureLoader.Type.TEXTURE);
+    for(let i = 0; i < geomCount; i++){
+      switch(i){
+        case 0: //top-border
+          extent = this.getHighlightExtent('top');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 1: //right-border
+          extent = this.getHighlightExtent('right');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(-Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 2: //bottom-border
+          extent = this.getHighlightExtent('bottom');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 3: //left-border
+          extent = this.getHighlightExtent('left');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 4: //top-left-corner
+          extent = this.getHighlightExtent('topLeft');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 5: //top-right-corner
+          extent = this.getHighlightExtent('topRight');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(-Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 6: //bottom-right-corner
+          extent = this.getHighlightExtent('bottomRight');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+        case 7: //bottom-left-corner
+          extent = this.getHighlightExtent('bottomLeft');
+          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i].rotateZ(Math.PI/2);
+          planes[i].translate(extent.left, extent.top, 0);
+        break;
+      }
     }
 
-    switch(side){
-      case 'topRight':
-        sprite.rotation.z = - (Math.PI / 2);
-      break;
-      case 'bottomRight':
-        sprite.rotation.z = - Math.PI;
-      break;
-      case 'bottomLeft':
-        sprite.rotation.z = (Math.PI / 2);
-      break;
-    }
+    if(this.highlight.geometry instanceof THREE.BufferGeometry)
+      this.highlight.geometry.dispose();
 
-    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
-    sprite.name = side+' corner';
-    this.widget.border.add(sprite);
+    this.highlight.geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.highlight.geometry.computeBoundingBox();
 
-  }
+    //Edge Group
+    this.highlight.geometry.addGroup(0, 24, 0);
+    //Corner Group
+    this.highlight.geometry.addGroup(24, 24, 1);
 
-  buildHighlight(side = null){
-    
-    let extent = this.getHighlightExtent(side);
+    this.highlight.mesh.geometry = this.highlight.geometry;
 
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
-
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
-
-    if(this.highlight.edge != ''){
-      TextureLoader.enQueue(this.highlight.edge, material, TextureLoader.Type.TEXTURE);
-    }
-    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
-
-    switch(side){
-      case 'top':
-        sprite.rotation.z = Math.PI;
-      break;
-      case 'bottom':
-      break;
-      case 'left':
-        sprite.rotation.z = Math.PI/2;
-      break;
-      case 'right':
-        sprite.rotation.z = -Math.PI/2;
-      break;
-    }
-
-    sprite.name = side+' edge';
-    this.widget.highlight.add(sprite);
-
-    sprite.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    sprite.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    sprite.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    sprite.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    sprite.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    sprite.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    sprite.getControl = () => {
-      return this;
+    //Clean up the temporary plane geometries
+    while(planes.length){
+      planes.shift().dispose();
     }
 
   }
@@ -1145,6 +1297,7 @@ class GUIControl {
     sprite.position.z = this.zOffset;
 
     this.widget.highlight.add( sprite );
+    this.widget.hightlightfill = sprite;
 
     if(this.highlight.fill != ''){
       material.transparent = true;
@@ -1193,244 +1346,281 @@ class GUIControl {
 
   }
 
-  buildHighlightCorner(side = null){
+  buildText(){
+
+    if(this.widget.text.children.length){
+      this.widget.text.remove(this.widget.text.children[0]);
+    }
     
-    let extent = this.getHighlightExtent(side);
+    let texture = this.text.texture;
+    texture.flipY = false;
 
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    if(this.text.text != '' || (this.text.strref != 0 && typeof Global.kotorTLK.TLKStrings[this.text.strref] != 'undefined'))
+      this.updateTextGeometry(this.text.text != '' ? this.text.text : Global.kotorTLK.TLKStrings[this.text.strref].Value);
 
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    this.textMaterial = new THREE.MeshBasicMaterial({
+      map: texture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      color: new THREE.Color(this.text.color.x, this.text.color.y, this.text.color.z)
+    });
 
-    if(this.highlight.corner != ''){
-      TextureLoader.enQueue(this.highlight.corner, material, TextureLoader.Type.TEXTURE);
+    this.textMesh = new THREE.Mesh(this.textGeometry, this.textMaterial);
+    //this.textMesh.rotation.x = Math.PI;
+  
+    
+    this.textAnchor.add(this.textMesh)
+    this.widget.text.add(this.textAnchor);
+
+    this.textMesh.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    this.textMesh.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    this.textMesh.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
     }
 
-    switch(side){
-      case 'topRight':
-        sprite.rotation.z = - (Math.PI / 2);
-      break;
-      case 'bottomRight':
-        sprite.rotation.z = - Math.PI;
-      break;
-      case 'bottomLeft':
-        sprite.rotation.z = (Math.PI / 2);
-      break;
+    this.textMesh.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    this.textMesh.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    this.textMesh.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    this.textMesh.getControl = () => {
+      return this;
     }
 
-    sprite.position.set( extent.left, extent.top, this.zOffset ); // top left
-    sprite.name = side+' corner';
-    this.widget.highlight.add(sprite);
+    this.textGeometry.computeBoundingSphere = function () {
+      if (this.boundingSphere === null) {
+        this.boundingSphere = new THREE.Sphere()
+      }
+    
+      var positions = this.attributes.position.array
+      var itemSize = this.attributes.position.itemSize
+      if (!positions || !itemSize || positions.length < 2) {
+        this.boundingSphere.radius = 0
+        this.boundingSphere.center.set(0, 0, 0)
+        return
+      }
+      computeSphere(positions, this.boundingSphere)
+      if (isNaN(this.boundingSphere.radius)) {
+        console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
+          'Computed radius is NaN. The ' +
+          '"position" attribute is likely to have NaN values.')
+      }
+    }
+    
+    this.textGeometry.computeBoundingBox = function () {
+      if (this.boundingBox === null) {
+        this.boundingBox = new THREE.Box3()
+      }
+    
+      var bbox = this.boundingBox
+      var positions = this.attributes.position.array
+      var itemSize = this.attributes.position.itemSize
+      if (!positions || !itemSize || positions.length < 2) {
+        bbox.makeEmpty()
+        return
+      }
+      computeBox(positions, bbox)
+    }
 
   }
 
-  buildText(){
-    let extent = this.getFillExtent();
-    //console.log(this.text);
-    if(this.text.text != '' || (this.text.strref != 0 && typeof Global.kotorTLK.TLKStrings[this.text.strref] != 'undefined')){
+  updateTextGeometry(text){
+    let scale = 1;
+    let texture = this.text.texture;
 
-      if(this.widget.text.children.length){
-        this.widget.text.remove(this.widget.text.children[0]);
+    let texRatio = texture.image.width / texture.image.height;
+
+    let txi_height = texture.txi.fontheight     * 100;
+    let txi_bsline = texture.txi.baselineheight * 100;
+    let txi_spaceR = texture.txi.spacingr       * 100;
+    let txi_spaceB = texture.txi.spacingb       * 100;
+
+    let textCharCount = text.length;
+    let positions = new Float32Array(textCharCount * 4 * 2);
+    let posI = 0, uvI = 0;
+    let uvs = new Float32Array(textCharCount * 4 * 2);
+
+    let indices = GUIControl.createIndicies({
+      clockwise: true,
+      type: 'uint16',
+      count: textCharCount
+    });
+
+    let x = 0, y = 0;
+    let space_code = 32;
+    let words = text.split(' ');
+    for(let j = 0, len = words.length; j < len; j++){
+
+      let word = words[j];
+      let wordLength = word.length;
+      let wordWidth = 0;
+
+      //Calculate the length of the word to be printed
+      for(let i = 0; i < wordLength; i++){
+        let char = word.charCodeAt(i);
+        let ul = texture.txi.upperleftcoords[char];
+        let lr = texture.txi.lowerrightcoords[char];
+        wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
+      }
+
+      //Wrap to new line if needed
+      if(x + wordWidth > this.extent.width){
+        y -= txi_bsline;
+        x = 0;
       }
       
-      let texture = this.text.texture;
-
-      let _height = texture.txi.fontheight * 100;
-      let _bsline = texture.txi.baselineheight * 100;
-      let _spaceR = texture.txi.spacingr   * 100;
-      let _spaceB = texture.txi.spacingb   * 100;
-
-      let font = {
-        pages: [this.text.font],
-        common: {
-          alphaChnl:0,
-          base: _bsline/2, //Divide by 2 HACK!!!!
-          blueChnl: 0,
-          greenChnl: 0,
-          lineHeight: _height,
-          packed: 0,
-          pages: 1,
-          redChnl: 0,
-          scaleH: texture.image.height,
-          scaleW: texture.image.width
-        },
-        info: {
-          face: this.text.font,
-          size: _height*2,
-          bold: 0,
-          italic: 0,
-          charset: "",
-          unicode: 0,
-          stretchH: 100,
-          smooth: 1,
-          aa: 1,
-          //padding: [3, 3, 3, 3],
-          //spacing: [0, 0]
-        },
-        kernings: [],
-        chars: []
-      };
-
-      if(_bsline + _height <= 20){
-        _height = 19;
+      //If this isn't the last word of the text append a space back to it
+      if(j < len - 1){
+        word += ' ';
+        wordLength++;
       }
 
-      if(this.text.font == 'fnt_d16x16'){
-        //texture.flipY = false;
+      for(let i = 0; i < wordLength; i++){
+        let char = word.charCodeAt(i);
+
+        let ul = texture.txi.upperleftcoords[char];
+        let lr = texture.txi.lowerrightcoords[char];
+
+        let w = ((lr.x - ul.x) * texture.image.width) * scale;
+        let h = ((lr.y - ul.y) * texture.image.height) * scale;
+
+        // BL
+        positions[posI++] = x
+        positions[posI++] = y
+        // TL
+        positions[posI++] = x
+        positions[posI++] = y + h
+        // TR
+        positions[posI++] = x + w
+        positions[posI++] = y + h
+        // BR
+        positions[posI++] = x + w
+        positions[posI++] = y
+
+        // top left position
+        let u0 = ul.x
+        let v1 = ul.y
+        let u1 = lr.x
+        let v0 = lr.y
+
+        // BL
+        uvs[uvI++] = u0
+        uvs[uvI++] = v1
+        // TL
+        uvs[uvI++] = u0
+        uvs[uvI++] = v0
+        // TR
+        uvs[uvI++] = u1
+        uvs[uvI++] = v0
+        // BR
+        uvs[uvI++] = u1
+        uvs[uvI++] = v1
+
+        //Advance the x position by the width of the current char
+        x += w;
       }
 
-      texture.flipY = false;
+    }
 
-      //console.log('font', font);
+    //this code doesn't support word wrapping
+    // for(let i = 0; i < charCount; i++){
 
-      //texture.txi.upperleftcoords.reverse();
-      //texture.txi.lowerrightcoords.reverse();
+    //   let char = text.charCodeAt(i);
 
-      //console.log('font', this.text.font, texture, _height)
+    //   let ul = texture.txi.upperleftcoords[char];
+    //   let lr = texture.txi.lowerrightcoords[char];
 
-      let textureRatio = texture.image.width / texture.image.height;
-      let scale = texture.image.width / 256;
+    //   let yScale = texture.image.height/256;
 
-      for(let ci = 0; ci < texture.txi.numchars; ci++){
+    //   let w = ((lr.x - ul.x) * texture.image.width) * scale;
+    //   let h = ((lr.y - ul.y) * texture.image.height) * scale;
 
-        let ul = texture.txi.upperleftcoords[ci];
-        let lr = texture.txi.lowerrightcoords[ci];
+    //   // BL
+    //   positions[posI++] = x
+    //   positions[posI++] = y
+    //   // TL
+    //   positions[posI++] = x
+    //   positions[posI++] = y + h
+    //   // TR
+    //   positions[posI++] = x + w
+    //   positions[posI++] = y + h
+    //   // BR
+    //   positions[posI++] = x + w
+    //   positions[posI++] = y
 
-        if(ul == undefined)
-          ul = {x: 0, y: 0, z: 0};
+    //   // top left position
+    //   let u0 = ul.x
+    //   let v1 = ul.y
+    //   let u1 = lr.x
+    //   let v0 = lr.y
 
-        if(lr == undefined)
-          lr = {x:0, y:0, z:0};
-        
-        let x = (ul.x * texture.image.width) * scale;
-        let y = texture.image.height - (ul.y * texture.image.width);
-        let width = (Math.abs(lr.x - ul.x) * texture.image.width) * scale;
-        let height = (Math.abs(lr.y - ul.y) * texture.image.height) * scale;
-        /*if(y < 0){
-          y = texture.image.height - (ul.y * texture.image.height)
-          scale = 1;
-        }*/
+    //   // BL
+    //   uvs[uvI++] = u0
+    //   uvs[uvI++] = v1
+    //   // TL
+    //   uvs[uvI++] = u0
+    //   uvs[uvI++] = v0
+    //   // TR
+    //   uvs[uvI++] = u1
+    //   uvs[uvI++] = v0
+    //   // BR
+    //   uvs[uvI++] = u1
+    //   uvs[uvI++] = v1
 
-        if(this.text.font == 'fnt_d16x16'){
-          height = 19;
+    //   //Advance the x position by the width of the current char
+    //   x += w;
 
-          if(x >= 512){
-            x -= 512;
-          }
-
-          /*console.log(
-            String.fromCharCode(ci), 
-            x, 
-            y,  
-            width, 
-            height
-          );*/
-        }
-
-        font.chars.push({
-          id: ci,
-          x: x,//(x * width),
-          y: y, //texture.image.height - (texture.image.height * ul.y),
-          width: width,
-          height: height,
-          xoffset: 0,
-          yoffset: 0,
-          xadvance: width,
-          page: 0,
-          chnl: 0
-        });
-
-        // font.chars.push({
-        //   id: ci,
-        //   x: (Math.abs(ul.x) * texture.image.width),//(x * width),
-        //   y: texture.image.height - (Math.abs(ul.y) * texture.image.height ), //texture.image.height - (texture.image.height * ul.y),
-        //   width: (Math.abs(lr.x - ul.x) * texture.image.width),
-        //   height: (Math.abs(lr.y - ul.y) * texture.image.height),
-        //   xoffset: 0,
-        //   yoffset: 0,
-        //   xadvance: Math.abs(lr.x - ul.x) * texture.image.width,
-        //   page: 0,
-        //   chnl: 0
-        // });
-        
-      }
-
-      // create a geometry of packed bitmap glyphs, 
-
-      this.textGeometry = createGeometry({
-        width: extent.width,
-        align: this.text.alignment == 9 ? 'left' : 'center',
-        font: font
-      });
-
-      let _text = this.text.text != '' ? this.text.text : Global.kotorTLK.TLKStrings[this.text.strref].Value;
-
-      //console.log('font', font);
-      //console.log('font', _text);
+    //   //Wrap to new line
+    //   if(x >= this.extent.width){
+    //     y -= txi_bsline;
+    //     x = 0;
+    //   }
+    // }
     
-      // change text and other options as desired
-      // the options sepcified in constructor will
-      // be used as defaults
-      this.textGeometry.update(_text);
-      
-      // the resulting layout has metrics and bounds
-      //console.log('font', this.textGeometry.layout.height);
-      //console.log('font', this.textGeometry.layout.descender);
-      //console.log('font', texture);
-      // we can use a simple ThreeJS material
-      this.textMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        transparent: true,
-        color: new THREE.Color(this.text.color.x, this.text.color.y, this.text.color.z)
-      });
+    this.textGeometry.index = new THREE.BufferAttribute( indices, 1 ).setDynamic( false );
 
-      var layout = this.textGeometry.layout
-  
-      // now do something with our mesh!
-      var text = new THREE.Mesh(this.textGeometry, this.textMaterial);
-      //text.renderOrder = this.id + 1;
-      text.rotation.x = Math.PI;
-      //text.rotation.z = Math.PI;
-    
-      var textAnchor = new THREE.Object3D()
-      textAnchor.add(text)
-      //textAnchor.scale.multiplyScalar(1 / (window.devicePixelRatio || 1))
+    let posAttribute = new THREE.BufferAttribute( new Float32Array( positions ), 2 ).setDynamic( false );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array( uvs ), 2 ).setDynamic( false );
+    this.textGeometry.setAttribute( 'position', posAttribute );
+    this.textGeometry.setAttribute( 'uv', uvAttribute );
 
-      textAnchor.position.x -= (this.extent.width / 2);
-      textAnchor.position.z = this.zOffset;
-      this.widget.text.add(textAnchor);
+    this.textGeometry.index.needsUpdate = true;
+    this.textGeometry.attributes.position.needsUpdate = true;
+    this.textGeometry.attributes.uv.needsUpdate = true;
+    this.textGeometry.computeBoundingBox();
+    this.alignText();
 
-      text.isClickable = (e) => {
-        return this.isClickable();
-      };
+  }
 
-      text.onClick = (e) => {
-        this.processEventListener('click', [e]);
-      };
-
-      text.onMouseMove = (e) =>{
-        this.processEventListener('mouseMove', [e]);
-      }
-  
-      text.onMouseDown = (e) => {
-        this.processEventListener('mouseDown', [e]);
-      };
-  
-      text.onMouseUp = (e) => {
-        this.processEventListener('mouseUp', [e]);
-      };
-      
-      text.onHover = (e) => {
-        this.processEventListener('hover', [e]);
-      };
-
-      text.getControl = () => {
-        return this;
-      }
-
+  alignText(){
+    let size = new THREE.Vector3();
+    this.textGeometry.boundingBox.getSize(size);
+    this.textAnchor.position.z = this.zOffset;
+    switch(this.text.alignment){
+      case 9:
+        this.textAnchor.position.x = - (this.extent.width/2 - size.x/2) - size.x/2;
+        this.textAnchor.position.y = size.y/2;	     		
+      break;
+      //case 18:
+      default:
+        this.textAnchor.position.x = -size.x/2;
+        this.textAnchor.position.y = size.y/2;
+      break;
     }
   }
 
@@ -1441,20 +1631,18 @@ class GUIControl {
 
   setText(str='', renderOrder = 0){
 
-    this.text.text = str.replace(/\{.*\}/gi, '');
+    let oldText = this.text.text;
+    this.text.text = (str).toString().replace(/\s*\{.*?\}\s*/gi, '');
 
-    //console.log('setText', typeof this._textGeometry)
-
-    if(typeof this.textGeometry === 'object'){
-      this.textGeometry.update(this.text.text);
-      try{
-        this.widget.text.children[0].children[0].renderOrder = renderOrder;
-      }catch(e){}
-    }else{
+    if(typeof this.textGeometry !== 'object')
       this.buildText();
-      try{
-        this.widget.text.children[0].children[0].renderOrder = renderOrder;
-      }catch(e){}
+    
+    if(this.textMesh)
+      this.textMesh.renderOrder = renderOrder;
+
+    if(oldText != this.text.text && typeof this.textGeometry === 'object'){
+      //console.log('updateText', this.text.text);
+      this.updateTextGeometry(this.text.text);
     }
 
   }
@@ -1484,6 +1672,12 @@ class GUIControl {
     let extent = this.getFillExtent();
     this.widget.fill.children[0].scale.x = extent.width || 0.000001;
     this.widget.fill.children[0].scale.y = extent.height || 0.000001;
+  }
+
+  resizeHighlightFill(){
+    let extent = this.getFillExtent();
+    this.widget.hightlightfill.children[0].scale.x = extent.width || 0.000001;
+    this.widget.hightlightfill.children[0].scale.y = extent.height || 0.000001;
   }
 
   resizeBorder(side = null){
@@ -1681,6 +1875,31 @@ class GUIControl {
     return processed;
   }
 
+  onINIPropertyAttached(){
+    //Stub
+  }
+
+  attachINIProperty(key=''){
+    let property = iniConfig.getProperty(key);
+    if(property){
+      this.iniProperty = property;
+      this.onINIPropertyAttached();
+    }
+  }
+
+  updateWorldPosition(){
+
+    let pos = this.widget.position.clone();
+    let parent = this.parent;
+    while(parent instanceof GUIControl){
+      pos.add(parent.widget.position);
+      parent = parent.parent;
+    }
+    this.worldPosition = pos;
+    return pos;
+
+  }
+
 
 }
 
@@ -1700,6 +1919,47 @@ GUIControl.Type = {
 GUIControl.colors = {
   normal: {r: 0, g: 0, b: 0},
   hover: {r: 0.9296875, g: 1, b: 0.9296875}
+}
+
+GUIControl.createIndicies = require('quad-indices');
+
+var itemSize = 2
+var box = { min: [0, 0], max: [0, 0] }
+
+window.bounds = function (positions) {
+  var count = positions.length / itemSize
+  box.min[0] = positions[0]
+  box.min[1] = positions[1]
+  box.max[0] = positions[0]
+  box.max[1] = positions[1]
+
+  for (var i = 0; i < count; i++) {
+    var x = positions[i * itemSize + 0]
+    var y = positions[i * itemSize + 1]
+    box.min[0] = Math.min(x, box.min[0])
+    box.min[1] = Math.min(y, box.min[1])
+    box.max[0] = Math.max(x, box.max[0])
+    box.max[1] = Math.max(y, box.max[1])
+  }
+}
+
+window.computeBox = function (positions, output) {
+  bounds(positions)
+  output.min.set(box.min[0], box.min[1], 0)
+  output.max.set(box.max[0], box.max[1], 0)
+}
+
+window.computeSphere = function (positions, output) {
+  bounds(positions)
+  var minX = box.min[0]
+  var minY = box.min[1]
+  var maxX = box.max[0]
+  var maxY = box.max[1]
+  var width = maxX - minX
+  var height = maxY - minY
+  var length = Math.sqrt(width * width + height * height)
+  output.center.set(minX + width / 2, minY + height / 2, 0)
+  output.radius = length / 2
 }
 
 module.exports = GUIControl;

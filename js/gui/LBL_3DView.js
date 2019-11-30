@@ -16,6 +16,7 @@ class LBL_3DView {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 22.5, this.width/this.height, 0.1, 15000 );
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat } );
     this.clearColor = new THREE.Color(0x000000);
 
     this.globalLight = new THREE.AmbientLight(0x7F7F7F);
@@ -73,6 +74,7 @@ class LBL_3DView {
   setSize(width = 0, height = 0){
     this.width = width;
     this.height = height;
+    this.tDepth.setSize(this.width, this.height);
     this.updateRatio();
   }
 
@@ -98,13 +100,14 @@ class LBL_3DView {
       }
     }
 
-    let oldClearColor = Game.renderer.getClearColor();
-    Game.renderer.setClearColor(this.clearColor, 1);
+    //let oldClearColor = Game.renderer.getClearColor();
+    //Game.renderer.setClearColor(this.clearColor, 1);
     Game.renderer.setRenderTarget(this.texture);
     Game.renderer.clear(this.texture);
-    Game.renderer.render(this.scene, this.camera, this.texture);
+    Game.renderer.render(this.scene, this.camera);
+    this.texture.needsUpdate = true;
     Game.renderer.setRenderTarget(null);
-    Game.renderer.setClearColor(oldClearColor, 1);
+    //Game.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control instanceof GUIControl){
       let material = this.control.getFill().material;

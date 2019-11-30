@@ -30,6 +30,8 @@ class MenuDialog extends GameMenu {
 
     this.audioEmitter = undefined;
 
+    this._conditionTimer;
+
     this.LoadMenu({
       name: 'dialog_p',
       onLoad: () => {
@@ -74,11 +76,15 @@ class MenuDialog extends GameMenu {
 
   StartConversation(dlg, owner, listener = Game.player, options = {}){
 
+    console.log('StartingConversation', dlg);
+
     //I'm seeing instances where dialogs are being started multiple times.
     //It may be a bug in scripting or what. I'm just going to place this here ...
     //for now so that dialogs can't be started when there is currently one in progress
-    if(Game.inDialog)
-      return;
+    if(Game.inDialog){
+      //return;
+      //this.EndConversation();
+    }
 
     options = Object.assign({
       onLoad: null
@@ -86,7 +92,7 @@ class MenuDialog extends GameMenu {
 
     //I think the player is always the one that the conversation owner is talking to.
     this.LBL_MESSAGE.setText(' ');
-    this.Show();
+    this.Open();
     this.LB_REPLIES.clearItems();
     this.nodeIndex = 0;
     this.owner = owner;
@@ -132,7 +138,7 @@ class MenuDialog extends GameMenu {
     
     if(typeof dlg === 'string' && dlg != ''){
       this.LoadDialog(dlg, (gff) => {
-        //console.log(gff.json);
+        console.log('StartingConversation', 'Dialog Loaded', dlg);
 
         if(gff.json.fields.VO_ID)
           this.vo_id = gff.json.fields.VO_ID.value;
@@ -201,9 +207,6 @@ class MenuDialog extends GameMenu {
           this.startingList.push(node);
         }
 
-        if(Game.Mode == Game.MODES.INGAME){
-          Game.InGameOverlay.Hide();
-        }
         this.canLetterbox = false;
 
         for(let i = 0; i < gff.json.fields.StuntList.structs.length; i++){
@@ -214,8 +217,8 @@ class MenuDialog extends GameMenu {
           });
         }
 
-        Game.currentCamera = Game.camera_dialog;
-        this.UpdateCamera();
+        //Game.currentCamera = Game.camera_dialog;
+        //this.UpdateCamera();
 
         this.isListening = true;
         this.updateTextPosition();
@@ -242,13 +245,11 @@ class MenuDialog extends GameMenu {
         }*/
 
         let letterBoxTimeout = () => {
-          Game.currentCamera = Game.camera_dialog;
-          if(Game.Mode == Game.MODES.INGAME){
-            Game.InGameOverlay.Hide();
-          }
+          
           if(this.letterBoxed){
             if(this.ambientTrack != ''){
               AudioLoader.LoadMusic(this.ambientTrack, (data) => {
+                console.log('StartingConversation', 'Background Music Loaded: Showing First Entry', dlg);
                 //console.log('Loaded Background Music', bgMusic);
                 Game.audioEngine.stopBackgroundMusic();
                 Game.audioEngine.SetDialogBackgroundMusic(data);
@@ -257,9 +258,11 @@ class MenuDialog extends GameMenu {
                 this.showEntry(this.startingEntry);
               });
             }else{
+              console.log('StartingConversation', 'Showing First Entry', dlg);
               this.showEntry(this.startingEntry);
             }
           }else{
+            console.log('StartingConversation', 'Still Letterboxing', dlg);
             setTimeout(letterBoxTimeout, 300);
           }
         };
@@ -273,6 +276,14 @@ class MenuDialog extends GameMenu {
             Game.InGameBark.bark(entry);
           }else{
             this.canLetterbox = true;
+            console.log('startingEntry', this.startingEntry);
+            if(this.startingEntry.cameraAngle == 6){
+              //Placeable camera
+              this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID, this.startingEntry.cameraAngle);
+            }else{
+              Game.currentCamera = Game.camera_dialog;
+              this.UpdateCamera();
+            }
             if(this.isAnimatedCutscene){
               Game.holdWorldFadeInForDialog = true;
               this.loadStuntCamera( () => {
@@ -426,6 +437,7 @@ class MenuDialog extends GameMenu {
 
     if(!entries.length){
       this.EndConversation();
+      return;
     }
 
     this.isListening = true;
@@ -558,15 +570,16 @@ class MenuDialog extends GameMenu {
 
   isEndDialog(node){
 
-    return false;
-
+    let returnValue = null;
     if(typeof node.entries !== 'undefined'){
-      return node.text == '' && !node.entries.length;
+      returnValue = node.text == '' && !node.entries.length;
     }else if(typeof node.replies !== 'undefined'){
-      return node.text == '' && !node.replies.length;
+      returnValue = node.text == '' && !node.replies.length;
     }else{
-      return true;
+      returnValue = node.text == '';
     }
+    console.log('isEndDialog', node, returnValue);
+    return returnValue;
 
   }
 
@@ -582,34 +595,42 @@ class MenuDialog extends GameMenu {
 
   }
 
-  PlayerSkipEntry(entry = null){
-    if(entry != null){
-      clearTimeout(entry.timeout);
-      if(this.animatedCamera instanceof THREE.AuroraModel){
-        this.animatedCamera.currentAnimation = undefined;
-      }
+  PlayerSkipEntry(){
+    if(this.currentEntry != null){
+      this.currentEntry.checkList.isSkipped = true;
+      clearTimeout(this.currentEntry.timeout);
+      //console.log('PlayerSkipEntry', entry.checkList);
       this.UpdateCamera();
       this.audioEmitter.Stop();
-      this.showReplies(entry);
+      this.showReplies(this.currentEntry);
     }
   }
 
   showEntry(entry){
-    //console.log('showEntry', entry);
+
+    this.state = 0;
 
     if(!Game.inDialog)
       return;
 
-    this.LBL_MESSAGE.setText(entry.text.split('##')[0]);
+    Game.VideoEffect = entry.videoEffect == -1 ? null : entry.videoEffect;
+
+    this.LBL_MESSAGE.setText(this.StringTokenParser(entry.text.split('##')[0]), entry);
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
     this.updateTextPosition();
     
     this.currentEntry = entry;
+    clearTimeout(entry.timeout);
     entry.timeout = null;
+
     if(entry.speakerTag != ''){
       entry.speaker = Game.GetObjectByTag(entry.speakerTag);
     }else{
+      entry.speaker = this.owner;
+    }
+
+    if(typeof entry.speaker == 'undefined'){
       entry.speaker = this.owner;
     }
 
@@ -625,35 +646,57 @@ class MenuDialog extends GameMenu {
 
     this.UpdateEntryAnimations(entry);
 
+    if(!this.isAnimatedCutscene){
+      if(this.currentEntry.listener instanceof ModuleObject && this.currentEntry.speaker instanceof ModuleObject){
+        if(!this.currentEntry.listener.lockDialogOrientation && !this.currentEntry.listener.notReorienting && this.currentEntry.listener instanceof ModuleCreature){
+          this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
+        }
+
+        if(!this.currentEntry.speaker.lockDialogOrientation && !this.currentEntry.speaker.notReorienting && this.currentEntry.speaker instanceof ModuleCreature){
+          this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
+        }
+      }
+    }
+
     /*this.owner.anim = true;
     this.owner.model.playAnimation(this.owner.model.getAnimationByName('talknorm'), true, () => {
       this.owner.anim = null;
     });*/
 
-    let checkList = {
+    entry.checkList = {
+      isSkipped: false,
       cameraAnimationComplete: true,
       voiceOverComplete: false,
       cameraModel: false,
       alreadyAllowed: false,
       scriptComplete: true,
+      delayComplete: false,
 
       isComplete: function(entry){
-        //console.log('checkList', this);
+        //console.log('checkList', entry);
 
-        if(this.alreadyAllowed){
+        if(this.alreadyAllowed || this.isSkipped){
           return false;
         }
 
-        if(Game.InGameDialog.isAnimatedCutscene || (entry.cameraAngle == 4 && Game.InGameDialog.cameraModel)){
+        if((Game.InGameDialog.isAnimatedCutscene && (entry.cameraAngle == 4 && Game.InGameDialog.cameraModel) ) || (entry.cameraAngle == 4 && Game.InGameDialog.cameraModel)){
           if(this.cameraAnimationComplete){
             this.alreadyAllowed = true;
-            return true;
+            if(Game.InGameDialog.paused){
+              return false
+            }else{
+              return true;
+            }
           }
           return false;
         }else{
-          if(this.voiceOverComplete){
+          if(this.voiceOverComplete && this.delayComplete){
             this.alreadyAllowed = true;
-            return true;
+            if(Game.InGameDialog.paused){
+              return false
+            }else{
+              return true;
+            }
           }
           return false;
         }
@@ -663,6 +706,9 @@ class MenuDialog extends GameMenu {
     };
 
     let nodeDelay = 3000;
+    if(!this.isAnimatedCutscene && entry.delay > -1){
+      nodeDelay = entry.delay * 1000;
+    }
 
     if(entry.camFieldOfView != -1){
       Game.camera_animated.fov = entry.camFieldOfView;
@@ -677,29 +723,19 @@ class MenuDialog extends GameMenu {
 
     this.GetAvailableReplies(entry);
 
-    if(!this.isAnimatedCutscene){
-      if(this.currentEntry.listener instanceof ModuleObject && this.currentEntry.speaker instanceof ModuleObject){
-        if(!this.currentEntry.listener.lockDialogOrientation && !this.currentEntry.listener.notReorienting && this.currentEntry.listener instanceof ModuleCreature){
-          this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
-        }
-
-        if(!this.currentEntry.speaker.lockDialogOrientation && !this.currentEntry.speaker.notReorienting && this.currentEntry.speaker instanceof ModuleCreature){
-          this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
-        }
-      }
-    }
-
-    if(!this.isAnimatedCutscene && entry.delay > -1){
+    if(entry.delay > -1){
       nodeDelay = entry.delay * 1000;
+    }else{
+      entry.checkList.delayComplete = true;
     }
 
     if((entry.cameraAngle == 4 && this.cameraModel)){
       //Animated camera
       if(entry.cameraAnimation > -1){
-        checkList.cameraAnimationComplete = false;
+        entry.checkList.cameraAnimationComplete = false;
         this.SetAnimatedCamera(entry.cameraAnimation, () => {
-          checkList.cameraAnimationComplete = true;
-          if(checkList.isComplete(entry)){
+          entry.checkList.cameraAnimationComplete = true;
+          if(entry.checkList.isComplete(entry)){
             this.showReplies(entry);
           }
         });
@@ -713,7 +749,7 @@ class MenuDialog extends GameMenu {
     }
 
     if(entry.script != ''){
-      checkList.scriptComplete = false;
+      entry.checkList.scriptComplete = false;
       ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
         let script = new NWScript(buffer);
         script.setScriptParam(1, entry.scriptParams.Param1);
@@ -721,7 +757,7 @@ class MenuDialog extends GameMenu {
         script.setScriptParam(3, entry.scriptParams.Param3);
         script.setScriptParam(4, entry.scriptParams.Param4);
         script.setScriptParam(5, entry.scriptParams.Param5);
-        script.setScriptStringParam(entry.scriptParams.String)
+        script.setScriptStringParam(entry.scriptParams.String);
         script.name = entry.script;
         script.run(this.owner, 0, () => {
           if(entry.script2 != ''){
@@ -735,17 +771,17 @@ class MenuDialog extends GameMenu {
               script.setScriptStringParam(entry.script2Params.String)
               script.name = entry.script2;
               script.run(this.owner, 0, () => {
-                checkList.scriptComplete = true;
+                entry.checkList.scriptComplete = true;
               });
             });
           }else{
-            checkList.scriptComplete = true;
+            entry.checkList.scriptComplete = true;
           }
         });
         
       });
     }else if(entry.script2 != ''){
-      checkList.scriptComplete = false;
+      entry.checkList.scriptComplete = false;
       ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
         let script = new NWScript(buffer);
         script.setScriptParam(1, entry.script2Params.Param1);
@@ -756,13 +792,15 @@ class MenuDialog extends GameMenu {
         script.setScriptStringParam(entry.script2Params.String)
         script.name = entry.script2;
         script.run(this.owner, 0, () => {
-          checkList.scriptComplete = true;
+          entry.checkList.scriptComplete = true;
         });
       });
     }
 
     let fadeDuration = ((entry.fade.length * 1000) + (entry.fade.delay * 1000));
-    if(nodeDelay < fadeDuration){
+    /*if(entry.delay > -1){
+      nodeDelay += fadeDuration;
+    }else */if(nodeDelay < fadeDuration){
       nodeDelay = fadeDuration;
     }
 
@@ -776,13 +814,27 @@ class MenuDialog extends GameMenu {
       //}, entry.fade.delay * 1000);
     }
 
-    //While the conversation is paused loop until unpaused then run callback
-    this._pauseLoop( ()=>{
-      //this.audioEmitter.Stop();
+    this.conditionLoop( () => {
+      return entry.checkList.scriptComplete;
+    },
+    () => {
 
-      //I currently believe that entry.sound is a backup for when vo_resref fails...
-      //Alien vo seems to be missing. Maybe they were pefilled by the bioware dialog editor
-      //So vo in basic could be dropped in later into the proper folder.
+      if(entry.isSkipped){
+        clearTimeout(entry.timeout);
+        return;
+      }
+
+      console.log('Scripts done');
+      console.error('entry delay', entry, nodeDelay);
+
+      entry.timeout = setTimeout( () => {
+        entry.checkList.delayComplete = true;
+        if(entry.checkList.isComplete(entry)){
+          //clearTimeout(entry.timeout);
+          this.showReplies(entry);
+        }
+      }, nodeDelay);
+
       if(entry.sound != ''){
         console.log('lip', entry.sound);
         ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer) => {
@@ -791,8 +843,9 @@ class MenuDialog extends GameMenu {
           }
         });
         this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
-          checkList.voiceOverComplete = true;
-          if(checkList.isComplete(entry)){
+          entry.checkList.voiceOverComplete = true;
+          if(entry.checkList.isComplete(entry)){
+            //clearTimeout(entry.timeout);
             this.showReplies(entry);
           }
         });
@@ -804,20 +857,24 @@ class MenuDialog extends GameMenu {
           }
         });
         this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
-          checkList.voiceOverComplete = true;
-          if(checkList.isComplete(entry)){
+          entry.checkList.voiceOverComplete = true;
+          if(entry.checkList.isComplete(entry)){
+            //clearTimeout(entry.timeout);
             this.showReplies(entry);
           }
         });
       }else{
-        console.error('VO ERROR', entry);
-        setTimeout( () => {
-          checkList.voiceOverComplete = true;
-          if(checkList.isComplete(entry)){
+        console.error('VO ERROR', entry, nodeDelay);
+        //clearTimeout(entry.timeout);
+        entry.timeout = setTimeout( () => {
+          entry.checkList.voiceOverComplete = true;
+          if(entry.checkList.isComplete(entry)){
+            //clearTimeout(entry.timeout);
             this.showReplies(entry);
           }
         }, nodeDelay);
       }
+      
     });
 
     this.state = 0;
@@ -837,7 +894,8 @@ class MenuDialog extends GameMenu {
       //this.EndConversation();
     }else{
       if(entry.replies.length == 1 && this.isContinueDialog(entry.replies[0])){
-        let reply = this.replyList[entry.replies[0].index]
+        let reply = this.replyList[entry.replies[0].index];
+        Game.VideoEffect = reply.videoEffect == -1 ? null : reply.videoEffect;
         this.getNextEntry(reply.entries);
       }else{
         
@@ -851,12 +909,18 @@ class MenuDialog extends GameMenu {
     if(!Game.inDialog)
       return;
 
-    //console.log('showReplies', entry);
+    this.currentEntry = null;
+
     if(!entry.replies.length){
       this.EndConversation();
     }else{
       if(entry.replies.length == 1 && this.isContinueDialog(entry.replies[0])){
         let reply = this.replyList[entry.replies[0].index];
+
+        Game.VideoEffect = reply.videoEffect == -1 ? null : reply.videoEffect;
+
+        if(!reply.entries.length)
+          this.EndConversation();
 
         //Try to run script 1
         if(reply.script != ''){
@@ -885,27 +949,48 @@ class MenuDialog extends GameMenu {
                       script.name = reply.script2;
                       script.run(this.owner, 0, (bSuccess) => {
                         
-                      })
-                      this.getNextEntry(reply.entries);
+                      });
+
+                      if(reply.entries.length)
+                        this.getNextEntry(reply.entries);
+
                     }else{
-                      this.getNextEntry(reply.entries);
+                      
+                      if(reply.entries.length)
+                        this.getNextEntry(reply.entries);
+                        
                     }
                   }, () => {
-                    this.getNextEntry(reply.entries);
+                    
+                    if(reply.entries.length)
+                      this.getNextEntry(reply.entries);
+                    
                   });
                 }else{
-                  this.getNextEntry(reply.entries);
+                  
+                  if(reply.entries.length)
+                    this.getNextEntry(reply.entries);
+                  
                 }
 
               });
             }else{
-              this.getNextEntry(reply.entries);
+              
+              if(reply.entries.length)
+                this.getNextEntry(reply.entries);
+              
             }
           }, () => {
-            this.getNextEntry(reply.entries);
+            
+            if(reply.entries.length)
+              this.getNextEntry(reply.entries);
+            
           });
         }else{
-          this.getNextEntry(reply.entries);
+          
+          if(reply.entries.length)
+            this.getNextEntry(reply.entries);
+          
         }
 
 
@@ -925,6 +1010,7 @@ class MenuDialog extends GameMenu {
     this.isListening = false;
     this.updateTextPosition();
     this.LB_REPLIES.show();
+    this.LB_REPLIES.updateList();
 
     //DEBUG log replies
     console.log('DEBUG: Dialog Reply Options');
@@ -1014,7 +1100,7 @@ class MenuDialog extends GameMenu {
         if(reply.isActive == ''){
           let _reply = this.replyList[reply.index];
           //console.log('showEntry.replies', _reply);
-          this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
+          this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+this.StringTokenParser(_reply.text.split('##')[0]), () => {
             this.onReplySelect(_reply);
           });
           replyLoop(++idx);
@@ -1036,7 +1122,7 @@ class MenuDialog extends GameMenu {
                 if(bSuccess){
                   let _reply = this.replyList[reply.index];
                   //console.log('showEntry.replies', _reply);
-                  this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
+                  this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+this.StringTokenParser(_reply.text.split('##')[0]), () => {
                     this.onReplySelect(_reply);
                   });
                 }
@@ -1049,12 +1135,26 @@ class MenuDialog extends GameMenu {
             replyLoop(++idx);
           });
         }
-      }else{ 
+      }else{
+        this.LB_REPLIES.updateList();
         //No further branches
         //this.EndConversation();
       }
     };
     replyLoop();
+  }
+
+  StringTokenParser(text = '', entry = null){
+    if(this.owner instanceof ModuleCreature){
+      text = text.replace(/<FullName>/gm, Game.player.firstName);
+      text = text.replace(/<LastName>/gm, Game.player.lastName);
+    }
+
+    text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
+      return Game.module.getCustomToken(parseInt(p1));
+    });
+
+    return text;
   }
 
   onReplySelect(reply = null){
@@ -1134,31 +1234,70 @@ class MenuDialog extends GameMenu {
 
   }
 
+  //I'm leaving this here for now, but i'm wanting to depricate _pauseLoop
+  //I reworked entry.checkList.onComplete to not continue if the dialog is paused
+  //Then when ResumeConverstation is called if the entry will resume when ready
+  _pauseLoop( onResume = null ){
+
+    if(this.paused){
+      this.pauseLoop = setTimeout( () => {
+        this._pauseLoop(onResume);
+      }, 300);
+    }else{
+      if(typeof onResume === 'function')
+        onResume();
+    }
+
+  }
+
+  conditionLoop( onCondition = null, onComplete = null, timer = 300){
+    clearTimeout(this._conditionTimer);
+    if(typeof onCondition === 'function'){
+
+      if(onCondition()){
+        if(typeof onComplete === 'function')
+          onComplete();
+      }else{
+        this._conditionTimer = setTimeout( () => {
+          this.conditionLoop( onCondition, onComplete, timer);
+        }, timer);
+      }
+
+    }
+
+  }
+
   PauseConversation(){
     this.paused = true;
   }
-
+  
   ResumeConversation(){
     this.paused = false;
     if(this.ended){
-      this.EndConversation()
+      this.EndConversation();
+    }else{
+      if(this.currentEntry && this.currentEntry.checkList.alreadyAllowed){
+        this.showReplies(this.currentEntry);
+      }else{
+        //the entry checklist is still going. Let it do it's thing
+      }
     }
   }
 
   EndConversation(aborted = false){
+    console.log('EndConversation');
 
     if(this.paused){
       this.ended = true;
-      return;
     }
     
     this.audioEmitter.Stop();
-    this.Hide();
+    this.Close();
     Game.currentCamera = Game.camera;
     Game.inDialog = false;
-    if(Game.Mode == Game.MODES.INGAME){
-      Game.InGameOverlay.Show();
-    }
+
+    if(this.currentEntry != null)
+      clearTimeout(this.currentEntry.timeout);
 
     this.state = -1;
 
@@ -1225,19 +1364,6 @@ class MenuDialog extends GameMenu {
 
   }
 
-  _pauseLoop( onResume = null ){
-
-    if(this.paused){
-      this.pauseLoop = setTimeout( () => {
-        this._pauseLoop(onResume);
-      }, 300);
-    }else{
-      if(typeof onResume === 'function')
-        onResume();
-    }
-
-  }
-
   UpdateEntryAnimations(entry){
     for(let i = 0; i < entry.animations.length; i++){
       let participant = entry.animations[i];
@@ -1245,11 +1371,6 @@ class MenuDialog extends GameMenu {
       console.log('UpdateEntryAnimations', participant, this.stunt[participant.participant], this.stunt);
 
       if(this.stunt[participant.participant]){
-        //console.log('STUNT', this.stunt[participant.participant], participant.animation-1200, this.GetActorAnimation(participant.animation));
-        //this.stunt[participant.participant].anim = true;
-        //this.stunt[participant.participant].model.pose();
-        //this.stunt[participant.participant].model.bonesInitialized = true;
-        //this.stunt[participant.participant].model.playAnimation(this.GetActorAnimation(participant.animation), false);
         this.stunt[participant.participant].dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
       }else if(participant.participant == 'player'){
         let actor = Game.player;
@@ -1332,20 +1453,37 @@ class MenuDialog extends GameMenu {
   }
 
   GetDialogAnimation(index = 0){
-    if(index >= 1400 && index < 1500){
+    console.log('GetDialogAnimation', index);
+    if(index >= 1000 && index < 1400){
+      //Indexes above 1000 appear to be fire and forget CUTXXX model animations
+      switch(index){
+        case 1009: //Tank Float
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3), looping: "0"};
+        case 1010: //Tank Float Jerk
+          return {name: "cut"+("000" + (index-1000 + 1)).slice(-3), looping: "0"};
+        case 1011: //Tank Float Fall
+          return {name: "cut"+("000" + (index-1000 + 1)).slice(-3), looping: "0"};
+        case 1012: //Floor Scanning Loop
+          return {name: "cut"+("000" + (index-1000 + 1)).slice(-3), looping: "0"};
+        case 1013: //Floor Scanning Get Up
+          return {name: "cut"+("000" + (index-1000 + 1)).slice(-3), looping: "0"};
+      }
+    }else if(index >= 1400 && index < 1500){
+      //Indexes above 1400 appear to be looping CUTXXXL model animations
       switch(index){
         case 1409: //Tank Float
           return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
         case 1410: //Tank Float Jerk
           return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
         case 1411: //Tank Float Fall
-          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3), looping: "0"};
+          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
         case 1412: //Floor Scanning Loop
           return {name: "cut"+("000" + (index-1400 + 1)).slice(-3)+"L", looping: "1"};
         case 1413: //Floor Scanning Get Up
-          return {name: "cut"+("000" + (index-1400 + 1)).slice(-3), looping: "0"};
+          return {name: "cut"+("000" + (index-1400)).slice(-3)+"L", looping: "1"};
       }
     }else if(index >= 10000){
+      //Indexes above 10000 appear to reference the dialoganimations.2da
       switch(index){
         case 30: //Listen
           return Global.kotor2DA.animations.rows[18];
@@ -1374,8 +1512,74 @@ class MenuDialog extends GameMenu {
         case 127: //Activate
           return Global.kotor2DA.animations.rows[38];
         break;
+        case 403: //Touch_Heart
+          return {name: 'touchheart', looping: "0"};
+        break;
+        case 404: //Roll_Eyes
+          return {name: 'rolleyes', looping: "0"};
+        break;
+        case 405: //Use_Item_On_Other
+          return {name: 'itemequip', looping: "0"};
+        break;
+        case 406: //Stand_Attention
+          return {name: 'standstill', looping: "0"};
+        break;
+        case 407: //Nod_Yes
+          return {name: 'nodyes', looping: "0"};
+        break;
+        case 408: //Nod_No
+          return {name: 'nodno', looping: "0"};
+        break;
+        case 409: //Point
+          return {name: 'point', looping: "0"};
+        break;
+        case 410: //Point_Loop
+          return {name: 'pointloop', looping: "1"};
+        break;
+        case 411: //Point_Down
+          return {name: 'pointdown', looping: "0"};
+        break;
+        case 412: //Scanning
+          return {name: 'scanning', looping: "0"};
+        break;
+        case 413: //Shrug
+          return {name: 'shrug', looping: "0"};
+        break;
+        case 424: //Sit_Chair
+          return {name: 'sit', looping: "0"};
+        break;
+        case 425: //Sit_Chair_Drink
+          return {name: 'animloop2', looping: "1"};
+        break;
+        case 426: //Sit_Chair_Pazak
+          return {name: 'animloop3', looping: "1"};
+        break;
+        case 427: //Sit_Chair_Comp1
+          return {name: 'animloop1', looping: "1"};
+        break;
+        case 428: //Sit_Chair_Comp2
+          return {name: 'animloop1', looping: "1"};
+        break;
+        case 499: //Cut_Hands
+          return {name: 'cuthand', looping: "0"};
+        break;
+        case 500: //L_Hand_Chop
+          return {name: 'lhandchop', looping: "0"};
+        break;
+        case 501: //Collapse
+          return {name: 'Collapse', looping: "0"};
+        break;
+        case 503: //Collapse_Stand
+          return {name: 'Collapsestand', looping: "0"};
+        break;
+        case 504: //Bao_Dur_Power_Punch
+        return {name: 'powerpunch', looping: "0"};
+        break;
         case 507: //Hood_Off
           return {name: 'offhood', looping: "0"};
+        break;
+        case 508: //Hood_On
+          return {name: 'onhood', looping: "0"};
         break;
         default:
           return undefined;
@@ -1413,50 +1617,76 @@ class MenuDialog extends GameMenu {
 
   UpdateCamera(){
 
-    /*if(this.animatedCamera instanceof THREE.AuroraModel){
-      Game.currentCamera = Game.camera_animated;
-      return;
-    }*/
+    let position = new THREE.Vector3();
+    let look_at = new THREE.Vector3();
 
     if(this.isListening){
       //Show the speaker
 
       if(this.currentEntry){
-        let position = this.currentEntry.speaker.GetPosition().sub(
+
+        if(this.currentEntry.speaker.model && this.currentEntry.speaker.model.camerahook){
+          this.currentEntry.speaker.model.camerahook.getWorldPosition(look_at);
+        }else{
+          look_at.copy(this.currentEntry.speaker.position).add({x:0, y:0, z: 1.6});
+        }
+
+        position.copy(look_at).sub(
           new THREE.Vector3(
-            1*Math.cos(this.currentEntry.speaker.GetOrientation().z - Math.PI/1.5), 
-            1*Math.sin(this.currentEntry.speaker.GetOrientation().z - Math.PI/1.5), 
-            -1.75
+            0.75*Math.cos(this.currentEntry.speaker.rotation.z - Math.PI/1.5), 
+            0.75*Math.sin(this.currentEntry.speaker.rotation.z - Math.PI/1.5),
+            0.0
           )
         );
 
-        Game.camera_dialog.position.set(position.x, position.y, position.z);
-        Game.camera_dialog.lookAt(this.currentEntry.speaker.GetPosition().add({x:0, y:0, z: 1.5}));
+        //position.z = look_at.z;
+
+        Game.camera_dialog.position.copy(position);
+        Game.camera_dialog.lookAt(look_at);
       }else{
-        let position = this.listener.GetPosition().sub(
+
+        //Show the listener
+        if(this.listener.model && this.listener.model.camerahook){
+          this.listener.model.camerahook.getWorldPosition(look_at);
+        }else{
+          look_at.copy(this.listener.GetPosition()).add({x:0, y:0, z: 1.6});
+        }
+
+        position.copy(look_at).sub(
           new THREE.Vector3(
-            -1.5*Math.cos(this.listener.GetOrientation().z - Math.PI/4), 
-            -1.5*Math.sin(this.listener.GetOrientation().z - Math.PI/4), 
-            -1.75
+            1*Math.sin(this.listener.rotation.z - Math.PI/4), 
+            1*Math.cos(this.listener.rotation.z - Math.PI/4),
+            0.0
           )
         );
-  
-        Game.camera_dialog.position.set(position.x, position.y, position.z)
-        Game.camera_dialog.lookAt(this.owner.GetPosition().add({x:0, y:0, z: 1.5}));  
+
+        //position.z = look_at.z;
+
+        Game.camera_dialog.position.copy(position);
+        Game.camera_dialog.lookAt(look_at);
+        
       }
 
     }else{
       //Show the listener
-      let position = this.listener.GetPosition().sub(
+      if(this.listener.model && this.listener.model.camerahook){
+        this.listener.model.camerahook.getWorldPosition(look_at);
+      }else{
+        look_at.copy(this.listener.GetPosition()).add({x:0, y:0, z: 1.6});
+      }
+
+      position.copy(look_at).sub(
         new THREE.Vector3(
-          0.5*Math.cos(this.listener.GetOrientation().z - (Math.PI/4)*2), 
-          0.5*Math.sin(this.listener.GetOrientation().z - (Math.PI/4)*2), 
-          -1.75
+          1*Math.sin(this.listener.rotation.z - Math.PI/4), 
+          1*Math.cos(this.listener.rotation.z - Math.PI/4),
+          0.0
         )
       );
-      Game.camera_dialog.position.set(position.x, position.y, position.z);
-      Game.camera_dialog.lookAt(this.listener.GetPosition().add({x:0, y:0, z: 1.6}));
 
+      //position.z = look_at.z;
+      
+      Game.camera_dialog.position.copy(position);
+      Game.camera_dialog.lookAt(look_at);
     }
 
   }
@@ -1585,8 +1815,24 @@ class MenuDialog extends GameMenu {
       ResType: ResourceTypes.dlg,
       onLoad: (gff) => {
         this.conversation = gff;
-        if(typeof onLoad === 'function')
-          onLoad(gff);
+
+        let conversationType = this.conversation.GetFieldByLabel('ConversationType') || 0;
+        if(conversationType){
+          conversationType = conversationType.GetValue();
+        }
+        console.log('dlg loaded', conversationType);
+        switch(conversationType){
+          case 1: //Computer
+            this.Close();
+            Game.InGameComputer.StartConversation(gff, this.owner, this.listener);
+          break;
+          default: //Conversation
+            if(typeof onLoad === 'function')
+              onLoad(gff);
+          break;
+        }
+
+        
       },
       onFail: () => {
         this.EndConversation();
@@ -1632,6 +1878,7 @@ class MenuDialog extends GameMenu {
       cameraID: 0,
       cameraAnimation: -1,
       camFieldOfView: -1,
+      camVidEffect: -1,
       comment: '',
       delay: 0,
       fadeType: 0,
@@ -1676,6 +1923,9 @@ class MenuDialog extends GameMenu {
 
     if(typeof struct.CameraAngle !== 'undefined')
       node.cameraAngle = struct.CameraAngle.value;
+      
+    if(typeof struct.CamVidEffect !== 'undefined')
+      node.camVidEffect = struct.CamVidEffect.value;
 
     if(typeof struct.Script !== 'undefined')
       node.script = struct.Script.value;
@@ -1775,6 +2025,7 @@ class MenuDialog extends GameMenu {
       animations: [],
       cameraAngle: 0,
       cameraID: 0,
+      camVidEffect: -1,
       comment: '',
       delay: 0,
       fadeType: 0,
@@ -1869,6 +2120,9 @@ class MenuDialog extends GameMenu {
 
     if(typeof struct.CameraAngle !== 'undefined')
       node.cameraAngle = struct.CameraAngle.value;
+            
+    if(typeof struct.CamVidEffect !== 'undefined')
+      node.camVidEffect = struct.CamVidEffect.value;
 
     if(typeof struct.Text !== 'undefined')
       node.text = struct.Text.value.GetValue();

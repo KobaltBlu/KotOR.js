@@ -34,28 +34,26 @@ class MainMenu extends GameMenu {
           e.stopPropagation();
           //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
           Game.LoadScreen.setLoadBackground('load_chargen' ,() => {
-            Game.LoadScreen.Show();
+            Game.LoadScreen.Open();
             Game.CharGenClass.Init( () => {
-              Game.LoadScreen.Hide();
-              Game.CharGenClass.Show();
+              Game.LoadScreen.Close();
+              Game.CharGenClass.Open();
             });
           });
         });
 
         this.btn_loadgame.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuSaveLoad.Show();
+          Game.MenuSaveLoad.Open();
         });
 
         this.btn_movies.addEventListener('click', (e) => {
           e.stopPropagation();
-          //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         });
 
         this.btn_options.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
-          Game.MainOptions.Show();
+          Game.MainOptions.Open();
         });
 
         this.btn_exit.addEventListener('click', (e) => {
@@ -145,20 +143,15 @@ class MainMenu extends GameMenu {
   }
 
   Update(delta = 0){
-    try{
+    //try{
       this._3dView.render(delta);
-      this.lbl_3dview.fill.children[0].material.needsUpdate = true;
-    }catch(e){}
+      //this.lbl_3dview.fill.children[0].material.needsUpdate = true;
+    //}catch(e){}
   }
 
   Show(){
     super.Show();
-
-    Game.MainOptions.Hide();
-    //Game.MainMovies.Hide();
-
     Game.AlphaTest = 0.5;
-
   }
 
 }

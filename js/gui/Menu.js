@@ -18,6 +18,8 @@ class GameMenu {
     this.background = null;
     this.backgroundSprite = new THREE.Object3D();
 
+    this.childMenu = undefined; //This is for MenuTop
+
     this.activeWidget = [];//undefined; //Used for hoverstate tracking
 
     //Callbacks
@@ -52,6 +54,14 @@ class GameMenu {
         
         panelControl.position.x = 0;//tGuiPanel.extent.left - ( ($(window).innerWidth() - tGuiPanel.extent.width) / 2 );
         panelControl.position.y = 0;//-tGuiPanel.extent.top + ( ($(window).innerHeight() - tGuiPanel.extent.height) / 2 );
+
+        //This auto assigns references for the controls to the menu object.
+        //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
+        //You can just use this.CONTROL_NAME 
+        for(let i = 0, len = this.tGuiPanel.children.length; i < len; i++){
+          let ctrl = this.tGuiPanel.children[i];
+          this[ctrl.name] = ctrl;
+        }
 
         TextureLoader.LoadQueue(() => {
           if(typeof args.onLoad === 'function')
@@ -111,12 +121,30 @@ class GameMenu {
   Hide(){
     this.bVisible = false;
     Game.scene_gui.remove(this.tGuiPanel.getControl());
+
+    //Handle the child menu if it is set
+    if(this.childMenu instanceof GameMenu)
+      this.childMenu.Hide();
   }
 
   Show(){
     this.Hide();
     this.bVisible = true;
     Game.scene_gui.add(this.tGuiPanel.getControl());
+
+    //Handle the child menu if it is set
+    if(this.childMenu instanceof GameMenu)
+      this.childMenu.Show();
+  }
+
+  Close(){
+    MenuManager.Remove(this);
+    this.Hide();
+  }
+
+  Open(){
+    MenuManager.Add(this);
+    this.Show();
   }
 
   IsVisible(){
@@ -185,6 +213,10 @@ class GameMenu {
         this.tGuiPanel.children[i].updateScale();
     }
 
+  }
+
+  Resize(){
+    //STUB
   }
 
 

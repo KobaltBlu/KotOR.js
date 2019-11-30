@@ -10,6 +10,8 @@ class InGameBark extends GameMenu {
   constructor( args = {} ){
     super(args);
 
+    this.isOverlayGUI = true;
+
     this.args = $.extend({
       loadscreen: '',
     }, this.args);
@@ -23,7 +25,7 @@ class InGameBark extends GameMenu {
 
         this.LBL_BARKTEXT.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Hide();
+          this.Close();
         });
 
         if(typeof this.onLoad === 'function')
@@ -38,6 +40,17 @@ class InGameBark extends GameMenu {
       this.Show();
 
       this.LBL_BARKTEXT.setText(entry.text);
+
+      let size = new THREE.Vector3();
+      this.LBL_BARKTEXT.textGeometry.boundingBox.getSize(size);
+      
+      //this.tGuiPanel.extent.width = Math.ceil(size.x) + 14;
+      this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
+      this.tGuiPanel.resizeControl();
+
+      this.tGuiPanel.widget.position.x = -window.innerWidth/2 + this.tGuiPanel.extent.width/2 + 10;
+      this.tGuiPanel.widget.position.y = window.innerHeight/2 - this.tGuiPanel.extent.height/2 - 134
+
       if(entry.sound != ''){
         console.log('lip', entry.sound);
         ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer) => {
@@ -47,10 +60,10 @@ class InGameBark extends GameMenu {
         });
         Game.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           if(!error){
-            this.Hide();
+            this.Close();
           }else{
             setTimeout( () => {
-              this.Hide();
+              this.Close();
             }, 3000);
           }
         });
@@ -63,17 +76,17 @@ class InGameBark extends GameMenu {
         });
         Game.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           if(!error){
-            this.Hide();
+            this.Close();
           }else{
             setTimeout( () => {
-              this.Hide();
+              this.Close();
             }, 3000);
           }
         });
       }else{
         console.error('VO ERROR', entry);
         setTimeout( () => {
-          this.Hide();
+          this.Close();
         }, 3000);
       }
 

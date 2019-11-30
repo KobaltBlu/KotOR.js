@@ -21,6 +21,9 @@ const Int64 = require('node-int64');
 //const pcm = require('pcm-util');
 const recursive = require('recursive-readdir');
 const StringDecoder = require('string_decoder').StringDecoder;
+const Reverb = require('soundbank-reverb');
+const BitBuffer = require('bit-buffer');
+const beamcoder = require('beamcoder');
 
 const isRunningInAsar = require('electron-is-running-in-asar');
 
@@ -53,6 +56,7 @@ const Mouse = require(path.join(app.getAppPath(), 'js/Mouse.js'));
 
 const BinaryReader = require(path.join(app.getAppPath(), 'js/BinaryReader.js'));
 const BinaryWriter = require(path.join(app.getAppPath(), 'js/BinaryWriter.js'));
+const INIConfig = require(path.join(app.getAppPath(), 'js/INIConfig.js'));
 //const ffmpeg = require("ffmpeg.js");
 
 
@@ -109,6 +113,14 @@ const AuroraModelNodeReference = require(path.join(app.getAppPath(), 'js/aurora/
 const AuroraModelNodeSkin = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSkin.js'));
 const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimation.js'));
 const AuroraModelAnimationNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationNode.js'));
+const AuroraWalkMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraWalkMesh.js'));
+
+const Shaders = {};
+let _shaders = fs.readdirSync(path.join(app.getAppPath(), 'shaders'));
+for(let i = 0; i < _shaders.length; i++){
+  let _shaderPath = path.parse(_shaders[i]);
+  Shaders[_shaderPath.name] = require(path.join(app.getAppPath(), 'shaders', _shaderPath.base)); 
+}
 
 const PixelManager = require(path.join(app.getAppPath(), 'js/PixelManager.js'));
 
@@ -140,12 +152,13 @@ const TPCObject = require(path.join(app.getAppPath(), 'js/TPCObject.js'));
 const TGAObject = require(path.join(app.getAppPath(), 'js/TGAObject.js'));
 const TwoDAObject = require(path.join(app.getAppPath(), 'js/TwoDAObject.js'));
 const LIPObject = require(path.join(app.getAppPath(), 'js/LIPObject.js'));
+const BIKObject = require(path.join(app.getAppPath(), 'js/BIKObject.js'));
 
 
 
 const TXI = require(path.join(app.getAppPath(), 'js/TXI.js'));
 const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.js'));
-const NWScript = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
+const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
@@ -157,20 +170,23 @@ const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptD
 const EditorTabManager = require(path.join(app.getAppPath(), 'js/editor/EditorTabManager.js'));
 const EditorTab = require(path.join(app.getAppPath(), 'js/editor/EditorTab.js'));
 
-const GFFEditorTab = require(path.join(app.getAppPath(), 'js/tabs/GFFEditorTab.js'));
-const DLGEditorTab = require(path.join(app.getAppPath(), 'js/tabs/DLGEditorTab.js'));
-const UTCEditorTab = require(path.join(app.getAppPath(), 'js/tabs/UTCEditorTab.js'));
-const UTPEditorTab = require(path.join(app.getAppPath(), 'js/tabs/UTPEditorTab.js'));
-const UTDEditorTab = require(path.join(app.getAppPath(), 'js/tabs/UTDEditorTab.js'));
-const ScriptEditorTab = require(path.join(app.getAppPath(), 'js/tabs/ScriptEditorTab.js'));
-const ModuleEditorTab = require(path.join(app.getAppPath(), 'js/tabs/ModuleEditorTab.js'));
-const QuickStartTab = require(path.join(app.getAppPath(), 'js/tabs/QuickStartTab.js'));
-const TwoDAEditorTab = require(path.join(app.getAppPath(), 'js/tabs/TwoDAEditorTab.js'));
-const ImageViewerTab = require(path.join(app.getAppPath(), 'js/tabs/ImageViewerTab.js'));
-const ModelViewerTab = require(path.join(app.getAppPath(), 'js/tabs/ModelViewerTab.js'));
-const LIPEditorTab = require(path.join(app.getAppPath(), 'js/tabs/LIPEditorTab.js'));
-const MODEditorTab = require(path.join(app.getAppPath(), 'js/tabs/MODEditorTab.js'));
-const TextEditorTab = require(path.join(app.getAppPath(), 'js/tabs/TextEditorTab.js'));
+const GFFEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/GFFEditorTab.js'));
+const DLGEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/DLGEditorTab.js'));
+const UTCEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/UTCEditorTab.js'));
+const UTPEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/UTPEditorTab.js'));
+const UTDEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/UTDEditorTab.js'));
+const ScriptEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ScriptEditorTab.js'));
+const ModuleEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ModuleEditorTab.js'));
+const QuickStartTab = require(path.join(app.getAppPath(), 'js/editor/tabs/QuickStartTab.js'));
+const TwoDAEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/TwoDAEditorTab.js'));
+const ImageViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ImageViewerTab.js'));
+const ModelViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ModelViewerTab.js'));
+const MovieViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/MovieViewerTab.js'));
+const LIPEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/LIPEditorTab.js'));
+const MODEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/MODEditorTab.js'));
+const TextEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/TextEditorTab.js'));
+const ResourceExplorerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ResourceExplorerTab.js'));
+const ProjectExplorerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ProjectExplorerTab.js'));
 
 /* Module */
 const ModuleObject = require(path.join(app.getAppPath(), 'js/module/ModuleObject.js'));
@@ -185,7 +201,7 @@ const ModuleSound = require(path.join(app.getAppPath(), 'js/module/ModuleSound.j
 const ModuleTrigger = require(path.join(app.getAppPath(), 'js/module/ModuleTrigger.js'));
 const ModuleCreature = require(path.join(app.getAppPath(), 'js/module/ModuleCreature.js'));
 const ModuleWaypoint = require(path.join(app.getAppPath(), 'js/module/ModuleWaypoint.js'));
-//const ModuleMerchant = require(path.join(app.getAppPath(), 'js/module/ModuleMerchant.js'));
+const ModuleStore = require(path.join(app.getAppPath(), 'js/module/ModuleStore.js'));
 const ModulePlaceable = require(path.join(app.getAppPath(), 'js/module/ModulePlaceable.js'));
 const ModulePath = require(path.join(app.getAppPath(), 'js/module/ModulePath.js'));
 
@@ -201,6 +217,7 @@ const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
 //Class Initiators
 const Notification = new NotificationManager();
 const Template = new TemplateEngine();
+
 const InlineAudioPlayer = require(path.join(app.getAppPath(), 'js/editor/InlineAudioPlayer.js'));
 const AudioFile = require(path.join(app.getAppPath(), 'js/audio/AudioFile.js'));
 const AudioLoader = require(path.join(app.getAppPath(), 'js/audio/AudioLoader.js'));
@@ -208,9 +225,11 @@ const ADPCMDecoder = require(path.join(app.getAppPath(), 'js/audio/ADPCMDecoder.
 const ADPCMBlock = require(path.join(app.getAppPath(), 'js/audio/ADPCMBlock.js'));
 const AudioEngine = require(path.join(app.getAppPath(), 'js/audio/AudioEngine.js'));
 const AudioEmitter = require(path.join(app.getAppPath(), 'js/audio/AudioEmitter.js'));
+const EAXPresets = require(path.join(app.getAppPath(), 'js/audio/EAXPresets.js'));
 
 const TextureLoader = require(path.join(app.getAppPath(), 'js/TextureLoader.js'));
 const TemplateLoader = require(path.join(app.getAppPath(), 'js/TemplateLoader.js'));
+const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
 
 
 const ModelCache = { models:{} };
@@ -288,6 +307,14 @@ Game.group = {
   stunt: new THREE.Group()
 };
 
+let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+Game.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+Game.depthTarget.texture.generateMipmaps = false;
+Game.depthTarget.stencilBuffer = false;
+Game.depthTarget.depthBuffer = true;
+Game.depthTarget.depthTexture = new THREE.DepthTexture();
+Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+
 let inlineAudioPlayer =  new InlineAudioPlayer();
 
 LightManager.init();
@@ -305,6 +332,21 @@ let AnimatedTextures = [];
 Global.templates = {
   placeable: []
 };
+
+let editor_clock = new THREE.Clock();
+Game.time = 0;
+Game.deltaTime = 0;
+Game._timers = [];
+
+function updateTime(){
+  requestAnimationFrame( () => { updateTime() } );
+  let delta = editor_clock.getDelta();
+  if(Game){
+    Game.updateTime(delta);
+  }
+
+}
+updateTime();
 
 let generateLM = function (size = 1, channels = 4){
   let width, height;
@@ -356,19 +398,20 @@ if (typeof window.TopMenu == 'undefined') {
       title: 'KotOR Forge',
       items: [
         {name: 'File', items: [
-          {name: 'Open Project', onClick: () => {
-            let toOpen = dialog.showOpenDialog({
+          {name: 'Open Project', onClick: async () => {
+            let payload = await dialog.showOpenDialog({
               properties: ['openFile'],
               filters: [
                 {name: 'KForge Project', extensions: ['json']}
             ]});
-            Global.Project = new Project(path.dirname(toOpen[0]));
-            Global.Project.Open(() => {
-
-              loader.SetMessage("Loading Complete");
-              //Fade out the loading screen because the app is ready
-              loader.Dismiss();
-            });
+            if(!payload.canceled && payload.filePaths.length){
+              Global.Project = new Project( path.dirname(payload.filePaths[0]) );
+              Global.Project.Open(() => {
+                loader.SetMessage("Loading Complete");
+                //Fade out the loading screen because the app is ready
+                loader.Dismiss();
+              });
+            }
           }},
           {name: 'New Project', onClick: () => {
             let newProjectWizard = new NewProjectWizard();
@@ -383,16 +426,18 @@ if (typeof window.TopMenu == 'undefined') {
             tabManager.AddTab(new QuickStartTab());
           }},
           {type: 'separator'},
-          {name: 'Change Game', onClick: function(){
+          {name: 'Change Game', onClick: async function(){
             
-            let game_choice = dialog.showMessageBox({
+            let game_choice = await dialog.showMessageBox({
               type: 'info',
               title: 'Switch Game?',
               message: 'Choose which game you would like to switch to.',
               buttons: ['KotOR', 'TSL', 'Cancel']
             });
 
-            switch(game_choice){
+            console.log(game_choice);
+
+            switch(game_choice.response){
               case 0: //KotOR
                 if(GameKey != 'KOTOR'){
                   GameKey = 'KOTOR';
@@ -428,7 +473,7 @@ if (typeof window.TopMenu == 'undefined') {
               {
                 title: 'Open File',
                 filters: [
-                  {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
+                  {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
                   {name: 'TPC Image', extensions: ['tpc']},
                   {name: 'TGA Image', extensions: ['tga']},
                   {name: 'GFF', extensions: ['gff']},
@@ -441,6 +486,7 @@ if (typeof window.TopMenu == 'undefined') {
                   {name: 'Waypoint Template', extensions: ['utw']},
                   {name: 'LIP Animation', extensions: ['lip']},
                   {name: 'Audio File', extensions: ['wav', 'mp3']},
+                  {name: 'Video File', extensions: ['bik']},
                   {name: 'MOD File', extensions: ['mod']},
                   {name: 'ERF File', extensions: ['erf']},
                   {name: 'RIM File', extensions: ['rim']},

@@ -43,42 +43,50 @@ class MenuTop extends GameMenu {
 
         this.BTN_MSG.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuMessages.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuMessages.Open();
         });
 
         this.BTN_JOU.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuJournal.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuJournal.Open();
         });
 
         this.BTN_MAP.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuMap.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuMap.Open();
         });
 
         this.BTN_OPT.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuOptions.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuOptions.Open();
         });
 
         this.BTN_CHAR.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuCharacter.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuCharacter.Open();
         });
 
         this.BTN_ABI.addEventListener('click', (e) => {
           e.stopPropagation();
-          //Game.MenuCharacter.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuAbilities.Open();
         });
 
         this.BTN_INV.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuInventory.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuInventory.Open();
         });
 
         this.BTN_EQU.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.MenuEquipment.Show();
+          this.CloseAllOtherMenus();
+          Game.MenuEquipment.Open();
         });
 
         this.tGuiPanel.offset.y = 198;
@@ -89,6 +97,23 @@ class MenuTop extends GameMenu {
 
       }
     })
+
+  }
+
+  
+  CloseAllOtherMenus(){
+    let currentMenu = MenuManager.GetCurrentMenu();
+    
+    if(currentMenu == Game.MenuAbilities ||
+      currentMenu == Game.MenuInventory ||
+      currentMenu == Game.MenuJournal ||
+      currentMenu == Game.MenuMap ||
+      currentMenu == Game.MenuMessages ||
+      currentMenu == Game.MenuOptions ||
+      currentMenu == Game.MenuCharacter ||
+      currentMenu == Game.MenuEquipment ){
+        currentMenu.Close();
+    }
 
   }
 

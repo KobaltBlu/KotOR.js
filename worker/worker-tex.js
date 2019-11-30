@@ -58,7 +58,6 @@ onmessage = function (e){
             Decode(byteArray, width, height, pEncode, kDxt5);
             Header.bitsPerPixel = 32;
           }else if(Header.format == PixelFormat.DXT1){
-
             let pEncode = new Uint8Array(buffer.buffer, dataOffset, dataLength);
             byteArray = new Uint8Array(width * height * 4);
             Decode(byteArray, width, height, pEncode, kDxt1);
