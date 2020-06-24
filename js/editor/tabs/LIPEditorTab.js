@@ -29,7 +29,8 @@ class LIPEditorTab extends EditorTab {
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
-      autoClear: false
+      autoClear: false,
+      logarithmicDepthBuffer: true
     });
     this.renderer.autoClear = false;
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );

@@ -207,7 +207,7 @@ class ModulePlaceable extends ModuleObject {
           break;
           case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
             //console.log('Action Script', this.action);
-            if(this.action.script instanceof NWScript){
+            if(this.action.script instanceof NWScriptInstance){
               this.action.action.script.caller = this;
               this.action.action.script.beginLoop({
                 _instr: null, 
@@ -364,7 +364,11 @@ class ModulePlaceable extends ModuleObject {
   }
 
   getAppearance(){
-    return Global.kotor2DA['placeables'].rows[this.getAppearanceId()];
+    if(GameKey == 'TSL'){
+      return Global.kotor2DA['placeables'].getRowByIndex(this.getAppearanceId());
+    }else{
+      return Global.kotor2DA['placeables'].rows[this.getAppearanceId()];
+    }
   }
 
   getObjectSounds(){
@@ -381,7 +385,7 @@ class ModulePlaceable extends ModuleObject {
       InventoryManager.addItem(this.inventory.pop())
     }
 
-    if(this.scripts.onInvDisturbed instanceof NWScript){
+    if(this.scripts.onInvDisturbed instanceof NWScriptInstance){
       this.scripts.onInvDisturbed.run(Game.player);
     }
 
@@ -407,7 +411,7 @@ class ModulePlaceable extends ModuleObject {
       Game.InGameDialog.StartConversation(this.GetConversation(), object);
     }
 
-    if(this.scripts.onUsed instanceof NWScript){
+    if(this.scripts.onUsed instanceof NWScriptInstance){
       //console.log('Running script', this.scripts.onUsed)
       this.scripts.onUsed.run(this);
     }
@@ -436,7 +440,7 @@ class ModulePlaceable extends ModuleObject {
   }
 
   close(object = null){
-    if(this.scripts.onClosed instanceof NWScript){
+    if(this.scripts.onClosed instanceof NWScriptInstance){
       //console.log('Running script', this.scripts.onUsed)
       this.scripts.onClosed.run(this);
     }
@@ -563,6 +567,8 @@ class ModulePlaceable extends ModuleObject {
               }
             }catch(e){ this.defaultAnimPlayed = true; }
 
+            this.model.disableMatrixUpdate();
+
             TextureLoader.LoadQueue(() => {
               //console.log(this.model);
               if(onLoad != null)
@@ -573,7 +579,9 @@ class ModulePlaceable extends ModuleObject {
           },
           context: this.context,
           castShadow: true,
-          receiveShadow: true,
+          //receiveShadow: true,
+          //lighting: false,
+          static: this.static,
           useTweakColor: this.useTweakColor,
           tweakColor: this.tweakColor
         });
@@ -654,32 +662,24 @@ class ModulePlaceable extends ModuleObject {
       this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue();
 
     let keys = Object.keys(this.scripts);
-    let len = keys.length;
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-        if(script != '' && script != undefined){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            if(buffer.length){
-              this.scripts[keys[i]] = new NWScript(buffer);
-              this.scripts[keys[i]].name = script;
-            }
-            loadScript( onLoad, ++i );
-          }, () => {
-            loadScript( onLoad, ++i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          loadScript( onLoad, ++i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 
@@ -776,8 +776,12 @@ class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.HasField('DisarmDC'))
       this.disarmDC = this.template.GetFieldByLabel('DisarmDC').GetValue();
 
-    if(this.template.RootNode.HasField('Faction'))
+    if(this.template.RootNode.HasField('Faction')){
       this.faction = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.faction & 0xFFFFFFFF) == -1){
+        this.faction = 0;
+      }
+    }
 
     if(this.template.RootNode.HasField('Fort'))
       this.fort = this.template.GetFieldByLabel('Fort').GetValue();

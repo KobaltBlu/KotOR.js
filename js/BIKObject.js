@@ -19,6 +19,9 @@ class BIKObject {
     this.uTex = undefined;
     this.vTex = undefined;
 
+    this.min_buffer = 10;
+    this.max_buffer = 20;
+
     this.geometry = new THREE.PlaneBufferGeometry(1, 1, 1, 1);
     this.material = new THREE.RawShaderMaterial({
       vertexShader: `
@@ -276,7 +279,6 @@ class BIKObject {
         let buffer = this.audioCtx.createBuffer(this.audio.channels, frames.frames.length * frameLength, this.audio.playback_rate);
 
         for(let i = 0, len = frames.frames.length; i < len; i++){
-
           for(let channel = 0; channel < this.audio.channels; channel++){
             buffer.copyToChannel(
               this.toFloat32Array(frames.frames[i].data[channel]),
@@ -286,28 +288,34 @@ class BIKObject {
           }
         }
 
-        let sampleNode = this.audioCtx.createBufferSource();
-        sampleNode.buffer = buffer;
-        sampleNode.loop = false;
-        sampleNode.connect( Game.audioEngine.movieGain );
-        sampleNode.onended = function(){
-          sampleNode.buffer = undefined;
-          sampleNode.disconnect();
-        };
+        // let sampleNode = this.audioCtx.createBufferSource();
+        // sampleNode.buffer = buffer;
+        // sampleNode.loop = false;
+        // sampleNode.connect( Game.audioEngine.movieGain );
+        // sampleNode.onended = function(){
+        //   sampleNode.buffer = undefined;
+        //   sampleNode.disconnect();
+        // };
 
-        this.audio_array.push(sampleNode);
-        this.audio_nodes.push(sampleNode);
+        this.audio_array.push(buffer);
+        //this.audio_nodes.push(sampleNode);
 
       }
     }else{
+      console.log('nextPacket', this.nextPacket);
       this.decode_complete = true;
     }
   }
 
   async fetchNextPackets(){
-    await this.decodeNextPacket();
-    if(this.demuxer.streams.length == 2)
-      await this.decodeNextPacket();
+    if(this.frame_array.length < this.min_buffer){
+      let count = this.max_buffer - this.frame_array.length;
+      for(let i = 0; i < count; i++){
+        await this.decodeNextPacket();
+        if(this.demuxer.streams.length == 2)
+          await this.decodeNextPacket();
+      }
+    }
   }
 
   async update(delta = 0){
@@ -329,18 +337,51 @@ class BIKObject {
   processAudioQueue(){
     //Process audio buffer queue
     if(this.audio_array.length){
+
+      let buffered = this.audio_array.shift();;
+
       while(this.audio_array.length){
-        let sampleNode = this.audio_array.shift();
+        let nextBuffer = this.audio_array.shift();
+        buffered = this.appendBuffer(buffered, nextBuffer);
 
-        if(!this.nextAudioTime)
-          this.nextAudioTime = this.audioCtx.currentTime;
+        //let current_time = this.audioCtx.currentTime;
+        //let sampleNode = this.audio_array.shift();
 
-        sampleNode.start( this.nextAudioTime, 0 );
-        this.nextAudioTime += sampleNode.buffer.duration;
-        //console.log(sampleNode.buffer.duration);
+        // if(!this.nextAudioTime)
+        //   this.nextAudioTime = current_time;
 
+        // sampleNode.start( this.nextAudioTime, 0 );
+        // this.nextAudioTime = this.nextAudioTime + sampleNode.buffer.duration;
       }
+
+      let bufferedNode = this.audioCtx.createBufferSource();
+      bufferedNode.buffer = buffered;
+      bufferedNode.loop = false;
+      bufferedNode.connect( Game.audioEngine.movieGain );
+      bufferedNode.onended = function(){
+        bufferedNode.buffer = undefined;
+        bufferedNode.disconnect();
+      };
+
+      let current_time = this.audioCtx.currentTime;
+      if(!this.nextAudioTime)
+        this.nextAudioTime = current_time;
+
+      bufferedNode.start( this.nextAudioTime, 0 );
+      this.nextAudioTime = this.nextAudioTime + bufferedNode.buffer.duration;
     }
+  }
+
+  //https://stackoverflow.com/questions/14143652/web-audio-api-append-concatenate-different-audiobuffers-and-play-them-as-one-son
+  appendBuffer(buffer1, buffer2) {
+    let numberOfChannels = Math.min( buffer1.numberOfChannels, buffer2.numberOfChannels );
+    let tmp = this.audioCtx.createBuffer( numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate );
+    for (let i=0; i<numberOfChannels; i++) {
+      let channel = tmp.getChannelData(i);
+      channel.set( buffer1.getChannelData(i), 0);
+      channel.set( buffer2.getChannelData(i), buffer1.length);
+    }
+    return tmp;
   }
 
   async decode(){
@@ -348,7 +389,7 @@ class BIKObject {
     if(this.frame_array.length || this.audio_array.length){
       //Process next video frame in the queue
       this.updateFrame(this.frame_array.shift());
-      this.fetchNextPackets();
+      await this.fetchNextPackets();
       this.needsRenderUpdate = true;
     }else{
       this.stop();

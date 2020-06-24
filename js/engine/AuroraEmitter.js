@@ -17,14 +17,18 @@ THREE.AuroraEmitter = function ( auroraNode ) {
   this.particleIndex = 0;
 
   this.vec3 = new THREE.Vector3(0.0, 0.0, 0.0);
+  this.sizeXY = new THREE.Vector2(0.0, 0.0);
 
   this.getMaxParticleCount = function(){
     if(this.node.Render == 'Linked'){ //Max attribute array size
-      return ((Math.ceil(this.lifeExp) * Math.ceil(this.birthRate)) * 2) * 3;
+      if(this.updateType == 'Lightning'){
+        return 10 * 2;
+      }else{
+        return ((Math.ceil(this.lifeExp) * Math.ceil(this.birthRate)) * 2) * 3;
+      }
     }else{
-      return (Math.ceil(this.lifeExp) * Math.ceil(this.birthRate)) * 2;
+      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.birthRate)) * 2;
     }
-    
   }
 
   this.getRandomPosition = function(){
@@ -72,6 +76,15 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       delta = 1/30;
     }
 
+    //this.material.uniforms.mass.value.z -= 0.5 * delta;
+    //this.material.uniformsNeedUpdate = true;
+
+    if ( this.parent === null ) {
+			this.matrixWorld.copy( this.matrix );
+		} else {
+			this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+		}
+
     let updatePositions = false;
     let updateVelocity = false;
     let updateProperties = false;
@@ -102,44 +115,50 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       switch(this.node.Render){
         case 'Normal':
         case 'Motion_Blur':
-          this.offsets = new THREE.BufferAttribute( offsets, 3 ).setDynamic( true );
-          this.velocities = new THREE.BufferAttribute( velocities, 4 ).setDynamic( true );
-          this.props = new THREE.BufferAttribute( props, 4 ).setDynamic( true );
-          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setDynamic( true );
+          this.offsets = new THREE.BufferAttribute( offsets, 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.BufferAttribute( velocities, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.BufferAttribute( props, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setUsage( THREE.DynamicDrawUsage );
           
-          this.geometry.addAttribute( 'position', this.offsets );
-          this.geometry.addAttribute( 'velocity', this.velocities );
-          this.geometry.addAttribute( 'props', this.props );
-          this.geometry.addAttribute( 'ids', this.ids );
+          this.geometry.setAttribute( 'position', this.offsets );
+          this.geometry.setAttribute( 'velocity', this.velocities );
+          this.geometry.setAttribute( 'props', this.props );
+          this.geometry.setAttribute( 'ids', this.ids );
         break;
         case 'Linked':
-          this.offsets = new THREE.BufferAttribute( offsets, 3 ).setDynamic( true );
-          this.velocities = new THREE.BufferAttribute( velocities, 4 ).setDynamic( true );
-          this.props = new THREE.BufferAttribute( props, 4 ).setDynamic( true );
-          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setDynamic( true );
+          this.offsets = new THREE.BufferAttribute( offsets, 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.BufferAttribute( velocities, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.BufferAttribute( props, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setUsage( THREE.DynamicDrawUsage );
           
-          this.geometry.addAttribute( 'position', this.offsets );
-          this.geometry.addAttribute( 'offset', this.velocities ); //Offsets use the velocity array in linked mode
-          this.geometry.addAttribute( 'props', this.props );
-          this.geometry.addAttribute( 'ids', this.ids );
+          this.geometry.setAttribute( 'position', this.offsets );
+          this.geometry.setAttribute( 'offset', this.velocities ); //Offsets use the velocity array in linked mode
+          this.geometry.setAttribute( 'props', this.props );
+          this.geometry.setAttribute( 'ids', this.ids );
         break;
         default:
-          this.offsets = new THREE.InstancedBufferAttribute( offsets, 3 ).setDynamic( true );
-          this.velocities = new THREE.InstancedBufferAttribute( velocities, 4 ).setDynamic( true );
-          this.props = new THREE.InstancedBufferAttribute( props, 4 ).setDynamic( true );
-          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setDynamic( true );
+          this.offsets = new THREE.InstancedBufferAttribute( offsets, 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.InstancedBufferAttribute( velocities, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.InstancedBufferAttribute( props, 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.InstancedBufferAttribute( ids, 1 ).setUsage( THREE.DynamicDrawUsage );
 
-          this.geometry.addAttribute( 'offset', this.offsets );
-          this.geometry.addAttribute( 'velocity', this.velocities );
-          this.geometry.addAttribute( 'props', this.props );
-          this.geometry.addAttribute( 'ids', this.ids );
+          this.geometry.setAttribute( 'offset', this.offsets );
+          this.geometry.setAttribute( 'velocity', this.velocities );
+          this.geometry.setAttribute( 'props', this.props );
+          this.geometry.setAttribute( 'ids', this.ids );
         break;
       }
 
       updatePositions = true;
       if(this.node.Render != 'Linked')
         updateVelocity = true;
+
       updateProperties = true;
+    }
+
+    if(this.updateType == 'Lightning'){
+      this.tickLightning(delta);
+      return;
     }
 
     let birthCount = 0;
@@ -203,6 +222,8 @@ THREE.AuroraEmitter = function ( auroraNode ) {
               //mark particle as dead
               this.props.setZ(i*attrPerVertex, 0);
             }else{
+              this.velocities.setW(i, this.velocities.getW(i) + delta * 10);
+              updateVelocity = true;
               age += delta;
             }
           }else{
@@ -225,7 +246,7 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       }else{
 
         let age = this.props.getX(i) || 0;
-        let maxAge = this.props.getY(i) || this.lifeExp;
+        let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : 100);
         let alive = this.props.getZ(i) == 1;
 
         if(i < this.maxParticleCount){
@@ -323,6 +344,171 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
   };
 
+  this.tickLightning = function(delta){
+    if(this._lightningDelay == undefined){
+      this._lightningDelay = 0.00;
+    }
+
+    let lightningZigZag = this.lightningZigZag + 1;
+    let start = new THREE.Vector3(0.0, 0.0, 0.0);
+    this.getWorldPosition(start);
+    let target = new THREE.Vector3(0, 0, 0);
+    this.referenceNode.getWorldPosition(target);
+
+    let scale = 0.5;
+
+    let gridX1 = 2;
+    let indices = [];
+    let vertices = [];
+    let normals = [];
+    let uvs = [];
+    let velocities = [];
+    let props = [];
+    let spread = (this.lightningScale || 0);
+    let age = 0;
+
+    if(this._lightningDelay >= this.lightningDelay){
+      //Reset the parent quaternion if it is rotated
+      if(this.parent.quaternion.x || this.parent.quaternion.y || this.parent.quaternion.z || this.parent.quaternion.w != 1)
+        this.parent.quaternion.set(0, 0, 0, 1);
+
+      this._lightningDelay = 0;
+      for(let iy = 0; iy < lightningZigZag; iy++){
+        var percentage = iy/lightningZigZag;
+        var x = start.x + ( (target.x - start.x) * percentage);
+        var y = start.y + ( (target.z - start.z) * percentage);
+        var z = start.z + ( (target.y - start.y) * percentage);
+
+        if(iy){
+          x = this.randomFloat(x, spread);
+          y = this.randomFloat(y, spread);
+          z = this.randomFloat(z, spread);
+        }else if(iy+1 == lightningZigZag){
+          x = this.randomFloat(x, this.lightningRadius);
+          y = this.randomFloat(y, this.lightningRadius);
+          z = this.randomFloat(z, this.lightningRadius);
+        }
+
+        for ( ix = 0; ix < 2; ix ++ ) {
+
+
+          //var x = (ix * xStep) * scale - half_scale;
+          var xO = scale/2;
+          if(ix == 1){
+            xO = -scale/2;
+          }
+
+          vertices.push( x + xO, - y, z );
+          normals.push( 0, 0, 1 );
+          uvs.push( ix / 1 );
+          uvs.push( 1 - ( iy / lightningZigZag-1 ) );
+
+          velocities.push(0, 0, 0, 0);
+
+          if(!this.geometry.attributes.props){
+            age = 0;
+          }else{
+            age = (this.geometry.attributes.props.getX( 0 ) || 0) + delta;
+          }
+
+          if(age >= 1)
+            age = 0;
+
+          props.push(age + delta, 1, 1, 0);
+
+        }
+
+        // indices
+        for(let iy = 0; iy < lightningZigZag-1; iy++){
+
+          for ( ix = 0; ix < 1; ix ++ ) {
+
+            var a = ix + gridX1 * iy;
+            var b = ix + gridX1 * ( iy + 1 );
+            var c = ( ix + 1 ) + gridX1 * ( iy + 1 );
+            var d = ( ix + 1 ) + gridX1 * iy;
+
+            // faces
+
+            indices.push( a, b, d );
+            indices.push( b, c, d );
+
+          }
+
+        }
+
+        // build geometry
+        this.geometry.setIndex(indices);
+        this.geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+        this.geometry.setAttribute( 'offset', new THREE.Float32BufferAttribute( velocities, 4 ) );
+        this.geometry.setAttribute( 'props', new THREE.Float32BufferAttribute( props, 4 ) );
+        this.geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+        this.geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+
+        //Update the boundingSphere so that the effect isn't culled whiled on camera
+        if(this.geometry.boundingSphere)
+          this.geometry.boundingSphere.radius = start.distanceTo(target);
+
+        this.velocities.needsUpdate = true;
+        this.props.needsUpdate = true;
+      }
+    }else{
+      this._lightningDelay += delta;
+      for(let iy = 0; iy < lightningZigZag; iy++){
+        for ( ix = 0; ix < 2; ix ++ ) {
+          if(!this.geometry.attributes.props){
+            age = 0;
+          }else{
+            age = (this.geometry.attributes.props.getX( 0 ) || 0) + delta;
+          }
+
+          if(age >= 1)
+            age = 0;
+
+          props.push(age + delta, 1, 1, 0);
+        }
+      }
+      this.geometry.setAttribute( 'props', new THREE.Float32BufferAttribute( props, 4 ) );
+    }
+  };
+
+  this.setLinkedVertexPosition = function(i = 0, position = new THREE.Vector3){
+    //Vertex Positions
+    this.offsets.setX(i, position.x || 0);
+    this.offsets.setY(i, position.y || 0);
+    this.offsets.setZ(i, position.z || 0);
+    //Vertex Offsets
+    this.velocities.setX(i, 1);
+    this.velocities.setY(i, 1);
+    this.velocities.setZ(i, 1);
+
+    let index = this.geometry.getIndex();
+    let indices = [];
+    for ( let oldI = 0; oldI < this.offsets.count; oldI++ ) {
+      indices.push( oldI );
+    }
+    this.geometry.setIndex( indices );
+    index = this.geometry.getIndex();
+
+    let newIndices = [];
+    let numberOfTriangles = this.offsets.count - 2;
+    // gl.TRIANGLE_STRIP
+    for ( let newI = 0; newI < numberOfTriangles; newI++ ) {
+      if ( newI % 2 === 0 ) {
+        newIndices.push( index.getX( newI ) );
+        newIndices.push( index.getX( newI + 1 ) );
+        newIndices.push( index.getX( newI + 2 ) );
+      } else {
+        newIndices.push( index.getX( newI + 2 ) );
+        newIndices.push( index.getX( newI + 1 ) );
+        newIndices.push( index.getX( newI ) );
+      }
+    }
+    //console.log(newIndices);
+    this.geometry.setIndex(newIndices);
+    this.geometry.clearGroups();
+  }
+
   this.spawnParticle = function(i = 0){
     //Birth and reset the particle
     let newPosition = this.getRandomPosition();
@@ -344,131 +530,11 @@ THREE.AuroraEmitter = function ( auroraNode ) {
         [1, -1, 0]
       ];
 
-      for(let vi = 0; vi < 3; vi++){
+      //BEGIN TEST FIX
+      this.setLinkedVertexPosition(i, newPosition);
+      //END TEST FIX
+      //this.setLinkedVertexPositionOLD(i, newPosition);
 
-        const offset = [
-          [newPosition.x, newPosition.y, newPosition.z],
-          [newPosition.x, newPosition.y, newPosition.z],
-          [newPosition.x, newPosition.y, newPosition.z],
-          //[newPosition.x, newPosition.y, newPosition.z]
-        ];
-
-        //These will be scaled inside the shader
-        const vertex_offset = [
-          [-1, 1, 0],
-          [1, 1, 0],
-          [-1, -1, 0],
-          [1, -1, 0]
-        ];
-
-        if(i > 0){
-          
-          //Previous positions
-          offset[0][0] = this.offsets.getX(((i-1) * 3) + 0);
-          offset[0][1] = this.offsets.getY(((i-1) * 3) + 0);
-          offset[0][2] = this.offsets.getZ(((i-1) * 3) + 0);
-          
-          offset[1][0] = this.offsets.getX(((i-1) * 3) + 1);
-          offset[1][1] = this.offsets.getY(((i-1) * 3) + 1);
-          offset[1][2] = this.offsets.getZ(((i-1) * 3) + 1);
-          
-          offset[2][0] = this.offsets.getX(((i-1) * 3) + 2);
-          offset[2][1] = this.offsets.getY(((i-1) * 3) + 2);
-          offset[2][2] = this.offsets.getZ(((i-1) * 3) + 2);
-          
-          //Previous Vertex Positions
-          vertex_offset[0][0] = this.velocities.getX(((i-1) * 3) + 0);
-          vertex_offset[0][1] = this.velocities.getY(((i-1) * 3) + 0);
-          vertex_offset[0][2] = this.velocities.getZ(((i-1) * 3) + 0);
-          
-          vertex_offset[1][0] = this.velocities.getX(((i-1) * 3) + 1);
-          vertex_offset[1][1] = this.velocities.getY(((i-1) * 3) + 1);
-          vertex_offset[1][2] = this.velocities.getZ(((i-1) * 3) + 1);
-          
-          vertex_offset[2][0] = this.velocities.getX(((i-1) * 3) + 2);
-          vertex_offset[2][1] = this.velocities.getY(((i-1) * 3) + 2);
-          vertex_offset[2][2] = this.velocities.getZ(((i-1) * 3) + 2);
-
-          if(i % 2){ //ODD
-            switch(vi){
-              case 0:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, offset[2][0]);
-                this.offsets.setY((i * 3) + vi, offset[2][1]);
-                this.offsets.setZ((i * 3) + vi, offset[2][2]);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, vertex_offset[2][0]);
-                this.velocities.setY((i * 3) + vi, vertex_offset[2][1]);
-                this.velocities.setZ((i * 3) + vi, vertex_offset[2][2]);
-              break;
-              case 1:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, offset[1][0]);
-                this.offsets.setY((i * 3) + vi, offset[1][1]);
-                this.offsets.setZ((i * 3) + vi, offset[1][2]);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, vertex_offset[1][0]);
-                this.velocities.setY((i * 3) + vi, vertex_offset[1][1]);
-                this.velocities.setZ((i * 3) + vi, vertex_offset[1][2]);
-              break;
-              default:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, newPosition.x);
-                this.offsets.setY((i * 3) + vi, newPosition.y);
-                this.offsets.setZ((i * 3) + vi, newPosition.z);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, linked_verts[0][0]);
-                this.velocities.setY((i * 3) + vi, linked_verts[0][1]);
-                this.velocities.setZ((i * 3) + vi, linked_verts[0][2]);
-              break;
-            }
-          }else{ //EVEN
-            switch(vi){
-              case 0:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, offset[0][0]);
-                this.offsets.setY((i * 3) + vi, offset[0][1]);
-                this.offsets.setZ((i * 3) + vi, offset[0][2]);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, vertex_offset[0][0]);
-                this.velocities.setY((i * 3) + vi, vertex_offset[0][1]);
-                this.velocities.setZ((i * 3) + vi, vertex_offset[0][2]);
-              break;
-              case 1:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, offset[2][0]);
-                this.offsets.setY((i * 3) + vi, offset[2][1]);
-                this.offsets.setZ((i * 3) + vi, offset[2][2]);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, vertex_offset[2][0]);
-                this.velocities.setY((i * 3) + vi, vertex_offset[2][1]);
-                this.velocities.setZ((i * 3) + vi, vertex_offset[2][2]);
-              break;
-              default:
-                //Vertex Positions
-                this.offsets.setX((i * 3) + vi, newPosition.x);
-                this.offsets.setY((i * 3) + vi, newPosition.y);
-                this.offsets.setZ((i * 3) + vi, newPosition.z);
-                //Vertex Offsets
-                this.velocities.setX((i * 3) + vi, linked_verts[1][0]);
-                this.velocities.setY((i * 3) + vi, linked_verts[1][1]);
-                this.velocities.setZ((i * 3) + vi, linked_verts[1][2]);
-              break;
-            }
-          }
-        }else{
-          //Vertex Positions
-          this.offsets.setX((i * 3) + vi, newPosition.x);
-          this.offsets.setY((i * 3) + vi, newPosition.y);
-          this.offsets.setZ((i * 3) + vi, newPosition.z);
-          //Vertex Offsets
-          this.velocities.setX((i * 3) + vi, linked_verts[vi][0]);
-          this.velocities.setY((i * 3) + vi, linked_verts[vi][1]);
-          this.velocities.setZ((i * 3) + vi, linked_verts[vi][2]);
-
-        }
-        
-      }
     }
 
     if(this.velocity){
@@ -510,7 +576,7 @@ THREE.AuroraEmitter = function ( auroraNode ) {
     }else{
       for(let vi = 0; vi < 3; vi++){
         //set the particles maxAge
-        this.props.setY((i * 3) + vi, this.lifeExp);
+        this.props.setY((i * 3) + vi, (this.lifeExp >= 0 ? this.lifeExp : 100));
         //mark particle as alive
         this.props.setZ((i * 3) + vi, 1);
       }
@@ -528,12 +594,23 @@ THREE.AuroraEmitter = function ( auroraNode ) {
     if(!(this.mesh instanceof THREE.Points))
       return;
 
+    if(this.node.Render == 'Linked')
+      return;
+
+    if(!this.context){
+      if(!Game){
+        return;
+      }else{
+        this.context = Game;
+      }
+    }
+
     let vector = new THREE.Vector3();
 
     // Model View Projection matrix
 
     let matrix = new THREE.Matrix4();
-    matrix.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse );
+    matrix.multiplyMatrices( this.context.currentCamera.projectionMatrix, this.context.currentCamera.matrixWorldInverse );
     matrix.multiply( this.mesh.matrixWorld );
 
     //
@@ -573,6 +650,7 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
   this.detonate = function(){
     this.isDetonated = true;
+    //this.material.uniforms.mass.value.z = 0;
     let spawnableParticleCount = this.offsets.count;
     for(let i = 0; i < spawnableParticleCount; i++){
       this.props.setX(0);
@@ -662,99 +740,119 @@ THREE.AuroraEmitter = function ( auroraNode ) {
     TextureLoader.enQueueParticle(this.node.Texture, this);
 
     this.node.controllers.forEach( (controller) => {
-      switch(controller.type){
-        case ControllerType.Position:
-          //positionOffset.copy(controller.data[0]);
-        break;
-        case ControllerType.Orientation:
-          //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
-        break;
-        case ControllerType.ColorStart:
-          this.colorStart.copy(controller.data[0]);
-        break;
-        case ControllerType.ColorMid:
-          this.colorMid.copy(controller.data[0]);
-        break;
-        case ControllerType.ColorEnd:
-          this.colorEnd.copy(controller.data[0]);
-        break;
-        case ControllerType.XSize:
-          //if(this.node.Render == 'Aligned_to_Particle_Dir'){
-            this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-          //}else{
-          //  this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-          //}
-        break;
-        case ControllerType.YSize:
-          //if(this.node.Render == 'Aligned_to_Particle_Dir'){
-            this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-          //}else{
-          //  this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-          //}
-        break;
-        case ControllerType.Spread:
-          this.spread = controller.data[0].value;
-        break;
-        case ControllerType.LifeExp:
-          this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : 100;
-        break;
-        case ControllerType.BirthRate:
-          this.birthRate = controller.data[0].value;
-        break;
-        case ControllerType.Drag:
-          this.drag = controller.data[0].value;
-        break;
-        case ControllerType.Threshold:
-          this.threshold = controller.data[0].value;
-        break;
-        case ControllerType.Grav:
-          this.gravity = controller.data[0].value;
-        break;
-        case ControllerType.Mass:
-          this.mass = controller.data[0].value;
-        break;
-        case ControllerType.Velocity:
-          this.velocity = controller.data[0].value;
-        break;
-        case ControllerType.RandVel:
-          this.randVelocity = controller.data[0].value;
-        break;
-        case ControllerType.SizeStart:
-          this.sizes[0] = controller.data[0].value ;
-        break;
-        case ControllerType.SizeMid:
-          this.sizes[1] = (controller.data[0].value);
-        break;
-        case ControllerType.SizeEnd:
-          this.sizes[2] = (controller.data[0].value);
-        break;
-        case ControllerType.AlphaStart:
-          this.opacity[0] = controller.data[0].value;
-        break;
-        case ControllerType.AlphaMid:
-          this.opacity[1] = controller.data[0].value;
-        break;
-        case ControllerType.AlphaEnd:
-          this.opacity[2] = controller.data[0].value;
-        break;
-        case ControllerType.ParticleRot:
-          this.angle = controller.data[0].value;
-        break;
-        case ControllerType.FrameEnd:
-          this.frameEnd = controller.data[0].value;
-        break;
-        case ControllerType.Detonate:
-          this._detonate = controller.data[0].value;
-        break;
-        case ControllerType.FPS:
-          this.fps = controller.data[0].value;
-        break;
+      if(controller.data.length){
+        switch(controller.type){
+          case AuroraModel.ControllerType.Position:
+            //positionOffset.copy(controller.data[0]);
+          break;
+          case AuroraModel.ControllerType.Orientation:
+            //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
+          break;
+          case AuroraModel.ControllerType.ColorStart:
+            this.colorStart.copy(controller.data[0]);
+          break;
+          case AuroraModel.ControllerType.ColorMid:
+            this.colorMid.copy(controller.data[0]);
+          break;
+          case AuroraModel.ControllerType.ColorEnd:
+            this.colorEnd.copy(controller.data[0]);
+          break;
+          case AuroraModel.ControllerType.XSize:
+            //if(this.node.Render == 'Aligned_to_Particle_Dir'){
+              this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+            //}else{
+            //  this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+            //}
+          break;
+          case AuroraModel.ControllerType.YSize:
+            //if(this.node.Render == 'Aligned_to_Particle_Dir'){
+              this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+            //}else{
+            //  this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+            //}
+          break;
+          case AuroraModel.ControllerType.Spread:
+            this.spread = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LifeExp:
+            this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : 100;
+          break;
+          case AuroraModel.ControllerType.BirthRate:
+            this.birthRate = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Drag:
+            this.drag = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Threshold:
+            this.threshold = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Grav:
+            this.gravity = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Mass:
+            this.mass = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Velocity:
+            this.velocity = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.RandVel:
+            this.randVelocity = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.SizeStart:
+            this.sizes[0] = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.SizeMid:
+            this.sizes[1] = (controller.data[0].value);
+          break;
+          case AuroraModel.ControllerType.SizeEnd:
+            this.sizes[2] = (controller.data[0].value);
+          break;
+          case AuroraModel.ControllerType.AlphaStart:
+            this.opacity[0] = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.AlphaMid:
+            this.opacity[1] = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.AlphaEnd:
+            this.opacity[2] = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.ParticleRot:
+            this.angle = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.Detonate:
+            this._detonate = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.FPS:
+            this.fps = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.FrameStart:
+            this.material.uniforms.frameRange.value.x = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.FrameEnd:
+            this.material.uniforms.frameRange.value.y = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LightningZigZag:
+            this.lightningZigZag = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LightningDelay:
+            this.lightningDelay = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LightningRadius:
+            this.lightningRadius = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LightningSubDiv:
+            this.lightningSubDiv = controller.data[0].value;
+          break;
+          case AuroraModel.ControllerType.LightningScale:
+            this.lightningScale = controller.data[0].value;
+          break;
+        }
       }
     });
 
     this.maxParticleCount = this.birthRate * this.lifeExp;
-    this.material.uniforms.tDepth.value = Game.depthTarget.depthTexture;
-    this.material.uniforms.maxAge.value = this.lifeExp;
+    //this.material.uniforms.tDepth.value = Game.depthTarget.depthTexture;
+    this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
     this.material.uniforms.colorStart.value.copy(this.colorStart);
     this.material.uniforms.colorMid.value.copy(this.colorMid);
     this.material.uniforms.colorEnd.value.copy(this.colorEnd);
@@ -769,6 +867,10 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       this.birthRate = 0;
     }
 
+    if(this.node.Update == 'Lightning'){
+      this.material.defines.LIGHTNING = '';
+    }
+
     if(this.fps){
       this.material.defines.FPS = '';
       this.material.uniforms.fps.value = this.fps;
@@ -780,9 +882,10 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
     switch(this.node.Blend){
       case 'Normal':
-        this.material.blending = THREE.NormalBlending;
+        this.material.blending = THREE.CustomBlending;
       break;
       case 'Lighten':
+      case 'Punch-Through':
         this.material.blending = THREE.AdditiveBlending;
       break;
     }
@@ -812,41 +915,42 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       case 'Motion_Blur':
         this.material.defines.POINTS = '';
 
-        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setDynamic( true );
-        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setDynamic( true );
-        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setDynamic( true );
-        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setDynamic( true );
-        this.geometry.addAttribute( 'position', this.offsets );
-        this.geometry.addAttribute( 'velocity', this.velocities );
-        this.geometry.addAttribute( 'props', this.props );
-        this.geometry.addAttribute( 'ids', this.ids );
+        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+        this.geometry.setAttribute( 'position', this.offsets );
+        this.geometry.setAttribute( 'velocity', this.velocities );
+        this.geometry.setAttribute( 'props', this.props );
+        this.geometry.setAttribute( 'ids', this.ids );
         
         this.mesh = new THREE.Points( this.geometry, this.material );
       break;
       case 'Linked':
         this.material.defines.LINKED = '';
 
-        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setDynamic( true );
-        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setDynamic( true );
-        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setDynamic( true );
-        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setDynamic( true );
-        this.geometry.addAttribute( 'position', this.offsets );
-        this.geometry.addAttribute( 'offset', this.velocities );
-        this.geometry.addAttribute( 'props', this.props );
-        this.geometry.addAttribute( 'ids', this.ids );
+        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.ids = new THREE.BufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+        this.geometry.setAttribute( 'position', this.offsets );
+        this.geometry.setAttribute( 'offset', this.velocities );
+        this.geometry.setAttribute( 'props', this.props );
+        //this.geometry.setAttribute( 'ids', this.ids );
         
         this.mesh = new THREE.Mesh( this.geometry, this.material );
-        this.mesh.setDrawMode(THREE.TriangleStripDrawMode);
+        //Need to fix!!! THREE JS update broke this
+        //this.mesh.setDrawMode(THREE.TriangleStripDrawMode);
       break;
       default:
-        this.offsets = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setDynamic( true );
-        this.velocities = new THREE.InstancedBufferAttribute( new Float32Array( velocities ), 4 ).setDynamic( true );
-        this.props = new THREE.InstancedBufferAttribute( new Float32Array( props ), 4 ).setDynamic( true );
-        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setDynamic( true );
-        this.geometry.addAttribute( 'offset', this.offsets );
-        this.geometry.addAttribute( 'velocity', this.velocities );
-        this.geometry.addAttribute( 'props', this.props );
-        this.geometry.addAttribute( 'ids', this.ids );
+        this.offsets = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+        this.velocities = new THREE.InstancedBufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.props = new THREE.InstancedBufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+        this.geometry.setAttribute( 'offset', this.offsets );
+        this.geometry.setAttribute( 'velocity', this.velocities );
+        this.geometry.setAttribute( 'props', this.props );
+        this.geometry.setAttribute( 'ids', this.ids );
     
         this.mesh = new THREE.Mesh( this.geometry, this.material );
       break;
@@ -886,6 +990,160 @@ THREE.AuroraEmitter = function ( auroraNode ) {
     this.material.uniformsNeedUpdate = true;
     this.attributeChanged('mass');
   } );
+
+  this.setLinkedVertexPositionOLD = function(i = 0, newPosition = new THREE.Vector3){
+    /*for(let vi = 0; vi < 3; vi++){
+
+      const offset = [
+        [newPosition.x, newPosition.y, newPosition.z],
+        [newPosition.x, newPosition.y, newPosition.z],
+        [newPosition.x, newPosition.y, newPosition.z],
+        //[newPosition.x, newPosition.y, newPosition.z]
+      ];
+
+      //These will be scaled inside the shader
+      const vertex_offset = [
+        [-1, 1, 0],
+        [1, 1, 0],
+        [-1, -1, 0],
+        [1, -1, 0]
+      ];
+
+      if(i > 0){
+        
+        //Previous positions
+        offset[0][0] = this.offsets.getX(((i-1) * 3) + 0);
+        offset[0][1] = this.offsets.getY(((i-1) * 3) + 0);
+        offset[0][2] = this.offsets.getZ(((i-1) * 3) + 0);
+        
+        offset[1][0] = this.offsets.getX(((i-1) * 3) + 1);
+        offset[1][1] = this.offsets.getY(((i-1) * 3) + 1);
+        offset[1][2] = this.offsets.getZ(((i-1) * 3) + 1);
+        
+        offset[2][0] = this.offsets.getX(((i-1) * 3) + 2);
+        offset[2][1] = this.offsets.getY(((i-1) * 3) + 2);
+        offset[2][2] = this.offsets.getZ(((i-1) * 3) + 2);
+        
+        //Previous Vertex Positions
+        vertex_offset[0][0] = this.velocities.getX(((i-1) * 3) + 0);
+        vertex_offset[0][1] = this.velocities.getY(((i-1) * 3) + 0);
+        vertex_offset[0][2] = this.velocities.getZ(((i-1) * 3) + 0);
+        
+        vertex_offset[1][0] = this.velocities.getX(((i-1) * 3) + 1);
+        vertex_offset[1][1] = this.velocities.getY(((i-1) * 3) + 1);
+        vertex_offset[1][2] = this.velocities.getZ(((i-1) * 3) + 1);
+        
+        vertex_offset[2][0] = this.velocities.getX(((i-1) * 3) + 2);
+        vertex_offset[2][1] = this.velocities.getY(((i-1) * 3) + 2);
+        vertex_offset[2][2] = this.velocities.getZ(((i-1) * 3) + 2);
+
+        if(i % 2){ //ODD
+          switch(vi){
+            case 0:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, offset[2][0]);
+              this.offsets.setY((i * 3) + vi, offset[2][1]);
+              this.offsets.setZ((i * 3) + vi, offset[2][2]);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, vertex_offset[2][0]);
+              this.velocities.setY((i * 3) + vi, vertex_offset[2][1]);
+              this.velocities.setZ((i * 3) + vi, vertex_offset[2][2]);
+            break;
+            case 1:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, offset[1][0]);
+              this.offsets.setY((i * 3) + vi, offset[1][1]);
+              this.offsets.setZ((i * 3) + vi, offset[1][2]);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, vertex_offset[1][0]);
+              this.velocities.setY((i * 3) + vi, vertex_offset[1][1]);
+              this.velocities.setZ((i * 3) + vi, vertex_offset[1][2]);
+            break;
+            default:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, newPosition.x);
+              this.offsets.setY((i * 3) + vi, newPosition.y);
+              this.offsets.setZ((i * 3) + vi, newPosition.z);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, linked_verts[0][0]);
+              this.velocities.setY((i * 3) + vi, linked_verts[0][1]);
+              this.velocities.setZ((i * 3) + vi, linked_verts[0][2]);
+            break;
+          }
+        }else{ //EVEN
+          switch(vi){
+            case 0:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, offset[0][0]);
+              this.offsets.setY((i * 3) + vi, offset[0][1]);
+              this.offsets.setZ((i * 3) + vi, offset[0][2]);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, vertex_offset[0][0]);
+              this.velocities.setY((i * 3) + vi, vertex_offset[0][1]);
+              this.velocities.setZ((i * 3) + vi, vertex_offset[0][2]);
+            break;
+            case 1:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, offset[2][0]);
+              this.offsets.setY((i * 3) + vi, offset[2][1]);
+              this.offsets.setZ((i * 3) + vi, offset[2][2]);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, vertex_offset[2][0]);
+              this.velocities.setY((i * 3) + vi, vertex_offset[2][1]);
+              this.velocities.setZ((i * 3) + vi, vertex_offset[2][2]);
+            break;
+            default:
+              //Vertex Positions
+              this.offsets.setX((i * 3) + vi, newPosition.x);
+              this.offsets.setY((i * 3) + vi, newPosition.y);
+              this.offsets.setZ((i * 3) + vi, newPosition.z);
+              //Vertex Offsets
+              this.velocities.setX((i * 3) + vi, linked_verts[1][0]);
+              this.velocities.setY((i * 3) + vi, linked_verts[1][1]);
+              this.velocities.setZ((i * 3) + vi, linked_verts[1][2]);
+            break;
+          }
+        }
+      }else{
+        //Vertex Positions
+        this.offsets.setX((i * 3) + vi, newPosition.x);
+        this.offsets.setY((i * 3) + vi, newPosition.y);
+        this.offsets.setZ((i * 3) + vi, newPosition.z);
+        //Vertex Offsets
+        this.velocities.setX((i * 3) + vi, linked_verts[vi][0]);
+        this.velocities.setY((i * 3) + vi, linked_verts[vi][1]);
+        this.velocities.setZ((i * 3) + vi, linked_verts[vi][2]);
+
+      }
+      
+    }
+
+    let index = this.geometry.getIndex();
+    let indices = [];
+    for ( let oldI = 0; oldI < this.offsets.count; oldI++ ) {
+      indices.push( oldI );
+    }
+    this.geometry.setIndex( indices );
+    index = this.geometry.getIndex();
+
+    let newIndices = [];
+    let numberOfTriangles = this.offsets.count - 2;
+    // gl.TRIANGLE_STRIP
+    for ( let newI = 0; newI < numberOfTriangles; newI++ ) {
+      if ( newI % 2 === 0 ) {
+        newIndices.push( index.getX( newI ) );
+        newIndices.push( index.getX( newI + 1 ) );
+        newIndices.push( index.getX( newI + 2 ) );
+      } else {
+        newIndices.push( index.getX( newI + 2 ) );
+        newIndices.push( index.getX( newI + 1 ) );
+        newIndices.push( index.getX( newI ) );
+      }
+    }
+    //console.log(newIndices);
+    this.geometry.setIndex(newIndices);
+    this.geometry.clearGroups();*/
+  }
 
 };
 

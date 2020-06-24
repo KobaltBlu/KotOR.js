@@ -16,7 +16,7 @@ class ModuleCreature extends ModuleCreatureController {
     this.anim = null;
     this.head = null;
     this.deathAnimationPlayed = false;
-    this.aiStyle = 2;
+    this.aiStyle = 0;
 
     this.surfaceId = 0;
     this.isCommandable = true;
@@ -279,11 +279,9 @@ class ModuleCreature extends ModuleCreatureController {
   
 
   use(object = null){
-
     if(this.hasInventory()){
       Game.MenuContainer.Open(this);
     }
-
   }
 
   hasInventory(){
@@ -305,7 +303,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   setCommadable(bCommandable = 0){
-    this.isCommandable = bCommandable;
+    this.isCommandable = bCommandable ? true : false;
   }
 
   getCommadable(){
@@ -594,9 +592,11 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getFeat(iFeat = 0){
-    let index = this.getFeats().indexOf(iFeat);
-    if(index > -1){
-      return Global.kotor2DA['feat'].rows[iFeat];
+    let feats = this.getFeats();
+    for(let i = 0, len = feats.length; i < len; i++){
+      if(feats[i].id == iFeat){
+        return feats[i];
+      }
     }
     return null;
   }
@@ -612,18 +612,18 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getSkillList(){
-    if(this.template.RootNode.HasField('SkillList')){
-      return this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
-    }
-    return [];
+    // if(this.template.RootNode.HasField('SkillList')){
+    //   return this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
+    // }
+    return this.skills;
   }
 
   getHasSkill(iSkill){
-    return this.skills[iSkill] > 0;
+    return this.skills[iSkill].rank > 0;
   }
 
   getSkillLevel(iSkill){
-    return this.skills[iSkill];
+    return this.skills[iSkill].rank;
   }
 
   getHasSpell(id){
@@ -642,6 +642,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   hasTalent(talent = undeifned){
+    console.log('hasTalent', talent);
     if(typeof talent != 'undefined'){
       switch(talent.type){
         case 0: //Force / Spell
@@ -673,7 +674,9 @@ class ModuleCreature extends ModuleCreatureController {
   getRandomTalent(category = 0, category2 = 0){
 
     let talents = this.getTalents().filter( talent => talent.category == category || talent.category == category2 );
-    return talents[Math.floor(Math.random()*talents.length)];
+    let talent = talents[Math.floor(Math.random()*talents.length)];
+    console.log('getRandomTalent', talent);
+    return talent;
 
   }
 
@@ -703,7 +706,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   setListening(bVal = false){
-    this.isListening = bVal;
+    this.isListening = bVal ? true : false;
   }
 
   setListeningPattern(sString = '', iNum = 0){
@@ -761,33 +764,25 @@ class ModuleCreature extends ModuleCreatureController {
     this.scripts.onSpellAt = this.template.GetFieldByLabel('ScriptSpellAt').GetValue();
     this.scripts.onUserDefined = this.template.GetFieldByLabel('ScriptUserDefine').GetValue();
 
-    let len = 14;
     let keys = Object.keys(this.scripts);
-
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-
-        if(script != '' && !(script instanceof NWScript)){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            this.scripts[keys[i]] = new NWScript(buffer);
-            this.scripts[keys[i]].name = script;
-            loadScript( onLoad, ++i );
-          }, () => {
-            loadScript( onLoad, ++i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          loadScript( onLoad, ++i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 
@@ -1014,6 +1009,8 @@ class ModuleCreature extends ModuleCreatureController {
               if(typeof onLoad === 'function')
                 onLoad();
 
+              this.model.disableMatrixUpdate();
+
             }
           });
         }
@@ -1024,11 +1021,12 @@ class ModuleCreature extends ModuleCreatureController {
   LoadHead( onLoad = null ){
     let appearance = this.getAppearance();
     let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
-
+    this.headModel = undefined;
     if(headId != '****' && appearance.modeltype == 'B'){
       let head = Global.kotor2DA['heads'].rows[headId];
+      this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
       Game.ModelLoader.load({
-        file: head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(),
+        file: this.headModel,
         onLoad: (mdl) => {
           THREE.AuroraModel.FromMDL(mdl, {
             context: this.context,
@@ -1045,6 +1043,7 @@ class ModuleCreature extends ModuleCreatureController {
 
                 this.head = head;
                 this.head.moduleObject = this;
+                this.model.headhook.head = head;
                 this.model.headhook.add(head);
 
                 try{
@@ -1061,6 +1060,8 @@ class ModuleCreature extends ModuleCreatureController {
 
                 if(typeof onLoad === 'function')
                   onLoad();
+
+                this.head.disableMatrixUpdate();
               }catch(e){
                 console.error(e);
                 if(typeof onLoad === 'function')
@@ -1095,7 +1096,7 @@ class ModuleCreature extends ModuleCreatureController {
 
             if(this.equipment.ARMOR.isDisguise()){
               this.RemoveEffect(62); //EFFECT_DISGUISE
-              this.AddEffect({type: 62, appearance: this.equipment.ARMOR.getDisguiseAppearance()})
+              this.AddEffect( new EffectDisguise( this.equipment.ARMOR.getDisguiseAppearance() ) );
             }
 
             this.LoadModel( () => {
@@ -1394,6 +1395,7 @@ class ModuleCreature extends ModuleCreatureController {
 
             let known_spell_struct = known_spell_structs[i];
             let spell = {
+              type: 0,
               id: 0,
               flags: 0,
               metaMagic: 0
@@ -1426,14 +1428,24 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('CurrentForce'))
       this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
 
-    if(this.template.RootNode.HasField('CurrentHitPoints'))
-      this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('CurrentHitPoints').GetValue()]))[0];
+    //if(this.template.RootNode.HasField('CurrentHitPoints'))
+    //  this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('CurrentHitPoints').GetValue()]))[0];
+
+    if(this.template.RootNode.HasField('HitPoints'))
+     this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('HitPoints').GetValue()]))[0];
 
     if(this.template.RootNode.HasField('Disarmable'))
       this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
   
     if(this.template.RootNode.HasField('Experience'))
       this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
+
+    if(this.template.RootNode.HasField('Listening')){
+      this.setListening(this.template.RootNode.GetFieldByLabel('Listening').GetValue());
+    }
+    if(this.template.RootNode.HasField('Commandable')){
+      this.setCommadable(this.template.RootNode.GetFieldByLabel('Commandable').GetValue());
+    }
 
     if(this.template.RootNode.HasField('ExpressionList')){
       let expressions = this.template.RootNode.GetFieldByLabel('ExpressionList').GetChildStructs();
@@ -1445,14 +1457,27 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
         
-    if(this.template.RootNode.HasField('FactionID'))
-      this.faction = this.template.RootNode.GetFieldByLabel('FactionID').GetValue();
+    if(this.template.RootNode.HasField('FactionID')){
+      this.faction = this.template.GetFieldByLabel('FactionID').GetValue();
+      if((this.faction & 0xFFFFFFFF) == -1){
+        this.faction = 0;
+      }
+    }
 
     if(this.template.RootNode.HasField('FeatList')){
       let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
       for(let i = 0; i < feats.length; i++){
+        let feat = {
+          type: 1,
+          id: feats[i].GetFieldByLabel('Feat').GetValue()
+        };
+
+        //Merge the feat properties from the feat.2da row with this feat
+        if(Global.kotor2DA.feat.rows[feat.id])
+          feat = Object.assign(Global.kotor2DA.feat.rows[feat.id], feat);
+
         this.feats.push(
-          feats[i].GetFieldByLabel('Feat').GetValue()
+          feat
         );
       }
     }
@@ -1527,7 +1552,16 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('SkillList')){
       let skills = this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
       for(let i = 0; i < skills.length; i++){
-        this.skills[i] = skills[i].GetFieldByLabel('Rank').GetValue()
+        let skill = {
+          type: 2,
+          rank: skills[i].GetFieldByLabel('Rank').GetValue()
+        };
+
+        //Merge the skill properties from the skills.2da row with this skill
+        if(Global.kotor2DA.skills.rows[i])
+          skill = Object.assign(Global.kotor2DA.skills.rows[i], skill);
+
+        this.skills[i] = skill;
       }
     }
 
@@ -1594,6 +1628,12 @@ class ModuleCreature extends ModuleCreatureController {
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
+      }
+      let localNumbers = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('ByteArray').GetChildStructs();
+      //console.log(localNumbers);
+      for(let i = 0; i < localNumbers.length; i++){
+        let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+        this.setLocalNumber(i, data);
       }
     }
 
@@ -1715,15 +1755,18 @@ class ModuleCreature extends ModuleCreatureController {
               scriptParamStructs.GetFieldByLabel('Code').GetVoid(),
               scriptParamStructs.GetFieldByLabel('CodeSize').GetValue()
             );
-            script.setCaller(this);
+
+            let scriptInstance = script.newInstance();
+            scriptInstance.isStoreState = true;
+            scriptInstance.setCaller(this);
 
             let stackStruct = scriptParamStructs.GetFieldByLabel('Stack').GetChildStructs()[0]
-            script.stack = NWScriptStack.FromActionStruct(stackStruct);
+            scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
             
             this.actionQueue.push({
               goal: ModuleCreature.ACTION.SCRIPT,
-              script: script,
-              action: { script: script, offset: scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue() },
+              script: scriptInstance,
+              action: { script: scriptInstance, offset: scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue() },
               clearable: false
             });
 

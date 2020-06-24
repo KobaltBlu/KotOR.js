@@ -17,10 +17,10 @@ class GUIControl {
 
     this.textGeometry = new THREE.BufferGeometry();
 
-    this.textGeometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setDynamic( false );
+    this.textGeometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
 
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setDynamic( false );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setDynamic( false );
+    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
     this.textGeometry.setAttribute( 'position', posAttribute );
     this.textGeometry.setAttribute( 'uv', uvAttribute );
 
@@ -255,9 +255,9 @@ class GUIControl {
   
       //Highlight
       this.hasHighlight = control.HasField('HILIGHT');
+      this.highlight = {};
       if(this.hasHighlight){
         let highlight = control.GetFieldByLabel('HILIGHT').GetChildStructs()[0];
-        this.highlight = {};
 
         if(highlight.HasField('COLOR')){
           let colorV = highlight.GetFieldByLabel('COLOR').GetVector();
@@ -382,9 +382,11 @@ class GUIControl {
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();
 
-    if(this.highlight.edge != '' || this.highlight.fill != ''){
-      this.showHighlight();
-      this.widget.fill.visible = false;
+    if(this.hasHighlight){
+      if(this.highlight.edge != '' || this.highlight.fill != ''){
+        this.showHighlight();
+        this.widget.fill.visible = false;
+      }
     }
 
     this.hideBorder();
@@ -1592,10 +1594,10 @@ class GUIControl {
     //   }
     // }
     
-    this.textGeometry.index = new THREE.BufferAttribute( indices, 1 ).setDynamic( false );
+    this.textGeometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
 
-    let posAttribute = new THREE.BufferAttribute( new Float32Array( positions ), 2 ).setDynamic( false );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array( uvs ), 2 ).setDynamic( false );
+    let posAttribute = new THREE.BufferAttribute( new Float32Array( positions ), 2 ).setUsage( THREE.StaticDrawUsage );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array( uvs ), 2 ).setUsage( THREE.StaticDrawUsage );
     this.textGeometry.setAttribute( 'position', posAttribute );
     this.textGeometry.setAttribute( 'uv', uvAttribute );
 
@@ -1670,14 +1672,18 @@ class GUIControl {
 
   resizeFill(){
     let extent = this.getFillExtent();
-    this.widget.fill.children[0].scale.x = extent.width || 0.000001;
-    this.widget.fill.children[0].scale.y = extent.height || 0.000001;
+    if(this.widget.fill.children.length){
+      this.widget.fill.children[0].scale.x = extent.width || 0.000001;
+      this.widget.fill.children[0].scale.y = extent.height || 0.000001;
+    }
   }
 
   resizeHighlightFill(){
     let extent = this.getFillExtent();
-    this.widget.hightlightfill.children[0].scale.x = extent.width || 0.000001;
-    this.widget.hightlightfill.children[0].scale.y = extent.height || 0.000001;
+    if(this.widget.hightlightfill.children.length){
+      this.widget.hightlightfill.children[0].scale.x = extent.width || 0.000001;
+      this.widget.hightlightfill.children[0].scale.y = extent.height || 0.000001;
+    }
   }
 
   resizeBorder(side = null){

@@ -264,13 +264,13 @@ class ModuleMGPlayer extends ModuleObject {
 
   FireGun(){
 
-    if(this.scripts.onAccelerate instanceof NWScript){
+    if(this.scripts.onAccelerate instanceof NWScriptInstance){
       this.scripts.onAccelerate.run(this, 0, () => {
 
       });
     }
 
-    if(this.scripts.onFire instanceof NWScript){
+    if(this.scripts.onFire instanceof NWScriptInstance){
       this.scripts.onFire.run(this, 0, () => {
 
       });
@@ -424,7 +424,7 @@ class ModuleMGPlayer extends ModuleObject {
           model.animLoops.splice(animLoopIdx, 1);
         }
 
-        if(model.currentAnimation == anim){
+        if(model.animationManager.currentAnimation == anim){
           model.stopAnimation();
         }
 
@@ -702,32 +702,24 @@ class ModuleMGPlayer extends ModuleObject {
     }
 
     let keys = Object.keys(this.scripts);
-    let len = keys.length;
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-        if(script != '' && script != undefined){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            if(buffer.length){
-              this.scripts[keys[i]] = new NWScript(buffer);
-              this.scripts[keys[i]].name = script;
-            }
-            loadScript( onLoad, ++i );
-          }, () => {
-            loadScript( onLoad, ++i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          loadScript( onLoad, ++i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 

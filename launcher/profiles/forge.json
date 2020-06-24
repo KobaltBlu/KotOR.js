@@ -22,5 +22,17 @@
         {"path_full": "launcher/images/forge_screen_03.jpg", "path_thumbnail": "launcher/images/forge_screen_03.jpg"}
       ]
     }
-  ]
+  ],
+  "settings" : {
+    "fullscreen": {
+      "name": "Fullscreen at launch?",
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "devtools": {
+      "name": "Open Devtools at launch?",
+      "type": "boolean",
+      "defaultValue": false
+    }
+  }
 }

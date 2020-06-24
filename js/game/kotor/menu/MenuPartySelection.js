@@ -196,7 +196,7 @@ class MenuPartySelection extends GameMenu {
             if(!this.canAccept())
               return;
 
-            if(this.onCloseScript instanceof NWScript){
+            if(this.onCloseScript instanceof NWScriptInstance){
               this.Close();
               this.onCloseScript.run(undefined);
             }else{
@@ -309,7 +309,7 @@ class MenuPartySelection extends GameMenu {
       super.Open();
     }
 
-    Show(){
+    async Show(){
       super.Show();
       Game.MenuActive = true;
 
@@ -369,10 +369,11 @@ class MenuPartySelection extends GameMenu {
 
       this.onCloseScript = undefined;
       if(this.scriptName != '' || this.scriptName != null){
-        ResourceLoader.loadResource(ResourceTypes['ncs'], this.scriptName, (buffer) => {
-          this.onCloseScript = new NWScript(buffer);
-          this.onCloseScript.name = this.scriptName;
-        });
+        this.onCloseScript = await NWScript.Load(this.scriptName);
+        // ResourceLoader.loadResource(ResourceTypes['ncs'], this.scriptName, (buffer) => {
+        //   this.onCloseScript = new NWScript(buffer);
+        //   this.onCloseScript.name = this.scriptName;
+        // });
       }
 
     }

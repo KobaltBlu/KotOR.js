@@ -13,31 +13,101 @@ class SaveGame {
     this.directory = path.join(SaveGame.directory, this.folderName);
     this.isLoaded = false;
 
-    this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo) => {
-      
-    });
+    this.AREANAME = '';
+    this.LASTMODULE = '';
+    this.SAVEGAMENAME = '';
+    this.TIMEPLAYED = 0;
+    this.GAMEPLAYHINT = 0;
+    this.STORYHINT = 0;
+
+    this.InitSaveNFO();
     this.thumbnail = null;
   }
 
+  InitSaveNFO(){
+    this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo) => {
+      
+      if(savenfo.RootNode.HasField('AREANAME')){
+        this.AREANAME = savenfo.GetFieldByLabel('AREANAME').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('CHEATUSED')){
+        this.CHEATUSED = savenfo.GetFieldByLabel('CHEATUSED').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('GAMEPLAYHINT')){
+        this.GAMEPLAYHINT = savenfo.GetFieldByLabel('GAMEPLAYHINT').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LASTMODULE')){
+        this.LASTMODULE = savenfo.GetFieldByLabel('LASTMODULE').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE1')){
+        this.LIVE1 = savenfo.GetFieldByLabel('LIVE1').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE2')){
+        this.LIVE2 = savenfo.GetFieldByLabel('LIVE2').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE3')){
+        this.LIVE3 = savenfo.GetFieldByLabel('LIVE3').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE4')){
+        this.LIVE4 = savenfo.GetFieldByLabel('LIVE4').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE5')){
+        this.LIVE5 = savenfo.GetFieldByLabel('LIVE5').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('LIVE6')){
+        this.LIVE6 = savenfo.GetFieldByLabel('LIVE6').GetValue()
+      }
+
+      if(savenfo.RootNode.HasField('LIVECONTENT')){
+        this.LIVECONTENT = savenfo.GetFieldByLabel('LIVECONTENT').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('PORTRAIT0')){
+        this.PORTRAIT0 = savenfo.GetFieldByLabel('PORTRAIT0').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('PORTRAIT1')){
+        this.PORTRAIT1 = savenfo.GetFieldByLabel('PORTRAIT1').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('PORTRAIT2')){
+        this.PORTRAIT2 = savenfo.GetFieldByLabel('PORTRAIT2').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('SAVEGAMENAME')){
+        this.SAVEGAMENAME = savenfo.GetFieldByLabel('SAVEGAMENAME').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('STORYHINT')){
+        this.STORYHINT = savenfo.GetFieldByLabel('STORYHINT').GetValue()
+      }
+      
+      if(savenfo.RootNode.HasField('TIMEPLAYED')){
+        this.TIMEPLAYED = savenfo.GetFieldByLabel('TIMEPLAYED').GetValue()
+      }
+      
+    });
+  }
+
   getAreaName(){
-    if(this.savenfo.RootNode.HasField('AREANAME')){
-      return this.savenfo.GetFieldByLabel('AREANAME').GetValue()
-    }
-    return '';
+    return this.AREANAME;
   }
 
   getLastModule(){
-    if(this.savenfo.RootNode.HasField('LASTMODULE')){
-      return this.savenfo.GetFieldByLabel('LASTMODULE').GetValue()
-    }
-    return null;
+    return this.LASTMODULE;
   }
 
   getSaveName(){
-    if(this.savenfo.RootNode.HasField('SAVEGAMENAME')){
-      return this.savenfo.GetFieldByLabel('SAVEGAMENAME').GetValue()
-    }
-    return '';
+    return this.SAVEGAMENAME;
   }
 
   getFullName(){
@@ -74,13 +144,13 @@ class SaveGame {
 
   GetPortrait(nth = 0, onLoad = null){
 
-    let name = '';
+    let name = undefined;
 
-    if(this.savenfo.RootNode.HasField('PORTRAIT'+nth)){
-      name = this.savenfo.RootNode.GetFieldByLabel(('PORTRAIT')+nth).GetValue();
+    if(typeof this['PORTRAIT'+nth] === 'string'){
+      name = this['PORTRAIT'+nth];
     }
-    if(name != ''){
-      console.log(name)
+    if(typeof name === 'string'){
+      console.log('SaveGame', 'GetPortrait', nth, name);
       TextureLoader.Load(name, (texture) => {
         if(typeof onLoad === 'function'){
           onLoad(texture);
@@ -99,9 +169,42 @@ class SaveGame {
     Game.TutorialWindowTracker = [];
 
     try{
-      Game.time = this.savenfo.GetFieldByLabel('TIMEPLAYED').GetValue();
+      Game.time = this.TIMEPLAYED;
     }catch(e){}
 
+    Game.SaveGame = this;
+    
+    //Init SAVEGAME.sav
+    this.InitSaveGameResourceLoader( ()=> {
+      //Load GlobalVars
+      this.GlobalVARSLoader( () => {  
+        //Load Inventory
+        this.InventoryLoader( () => {
+          //Load PartyTable
+          this.PartyTableLoader( () => {
+            //Load The Last Module
+            this.ModuleLoader( () => {
+              console.log('SaveGame', 'Load Complete!');
+              if(typeof onLoad === 'function')
+                onLoad();
+            });
+          });
+        });
+      });
+    });
+
+  }
+
+  InitSaveGameResourceLoader(onLoad = null){
+    this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'), (sav) => {
+      this.isLoaded = true;
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
+  }
+
+  GlobalVARSLoader(onLoad = null){
+    console.log('SaveGame', 'Loading GlobalVARS...');
     this.globalVars = new GFFObject(path.join(this.directory, 'GLOBALVARS.res'), (globalVars) => {
 
       let catNum = new BinaryReader(globalVars.json.fields.ValNumber.value);
@@ -138,108 +241,58 @@ class SaveGame {
         Game.Globals.String[node.fields.Name.value] = globalVars.json.fields.ValString.structs[i].fields.String.value;
       }
 
-      this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'), (sav) => {
-
-        this.isLoaded = true;
-        Game.SaveGame = this;
-
-        this.SAVEGAME.getRawResource('inventory', 0, (d) => {
-          this.inventory = new GFFObject(d);
-          let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
-
-          let inventoryLoader = (i = 0, onLoad = null) => {
-            if(i < invArr.length){
-              InventoryManager.addItem(GFFObject.FromStruct(invArr[i]), () => {
-                inventoryLoader(++i, onLoad);
-              });
-            }else{
-              if(typeof onLoad === 'function')
-                onLoad();
-            }
-          }
-          inventoryLoader(0, () => {
-            this.partytable = new GFFObject(path.join(this.directory, 'PARTYTABLE.res'), (partytable) => {
-
-              if(partytable.RootNode.HasField('GlxyMap')){
-                let GlxyMap = partytable.GetFieldByLabel('GlxyMap').GetChildStructs()[0];
-                
-                let planetCount = GlxyMap.GetFieldByLabel('GlxyMapNumPnts').GetValue();
-                let planetBits = GlxyMap.GetFieldByLabel('GlxyMapPlntMsk').GetValue(); //Max 32?
-                let currentPlanet = GlxyMap.GetFieldByLabel('GlxyMapSelPnt').GetValue();
-
-                for(let i = 0; i < planetCount; i++){
-                  Planetary.SetPlanetAvailable(i,  (planetBits>>i) % 2 != 0);
-                }
-
-                Planetary.SetCurrentPlanet(currentPlanet);
-              }
-
-              if(partytable.RootNode.HasField('PT_TUT_WND_SHOWN')){
-                let tutWindBytes = partytable.RootNode.GetFieldByLabel('PT_TUT_WND_SHOWN').GetVoid();
-                let maxBits = tutWindBytes.length * 8;
-                for(let i = 0; i < maxBits; i++){
-                  for(let j = 0; j < 8; j++){
-                    let bit = (tutWindBytes[i] >> j) & 1;
-                    Game.TutorialWindowTracker[ (i * 8) + j ] = bit;
-                  }
-                }
-              }
-            
-              if(partytable.RootNode.HasField('PT_AVAIL_NPCS')){
-                let avail = partytable.GetFieldByLabel('PT_AVAIL_NPCS').GetChildStructs();
-                for(let i = 0; i < avail.length; i++){
-                  console.log(PartyManager.NPCS[i]);
-                  PartyManager.NPCS[i].available = avail[i].GetFieldByLabel('PT_NPC_AVAIL').GetValue();
-                  PartyManager.NPCS[i].canSelect = avail[i].GetFieldByLabel('PT_NPC_SELECT').GetValue();
-                }
-              }
-
-              PartyManager.Gold = partytable.RootNode.GetFieldByLabel('PT_GOLD').GetValue();
-
-              console.log('PT_CONTROLLED_NP', partytable.RootNode.GetFieldByLabel('PT_CONTROLLED_NP').GetValue());
-        
-              if(partytable.RootNode.HasField('PT_MEMBERS')){
-                let pms = partytable.GetFieldByLabel('PT_MEMBERS').GetChildStructs();
-                let currentPartyInfo = [];
-                PartyManager.CurrentMembers = [];
-                for(let i = 0; i < pms.length; i++){
-                  PartyManager.CurrentMembers.push({
-                    isLeader: pms[i].GetFieldByLabel('PT_IS_LEADER').GetValue() ? true : false,
-                    memberID: pms[i].GetFieldByLabel('PT_MEMBER_ID').GetValue()
-                  })
-                }
-
-                let ptLoader = new AsyncLoop({
-                  array: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                  onLoop: (id, asyncLoop) => {
-                    this.SAVEGAME.getRawResource('availnpc'+id, ResourceTypes.utc, (pm) => {
-                      PartyManager.NPCS[id].template = null;
-                      if(pm.length){
-                        PartyManager.NPCS[id].template = new GFFObject(pm);
-                      }
-                      asyncLoop._Loop();
-                    });
-                  }
-                });
-                ptLoader.Begin( () => {
-                  console.log('SaveGame loaded');
-                  Game.LoadModule(this.getLastModule(), null, () => { console.log('ready to load'); })
-                  if(typeof onLoad === 'function')
-                    onLoad();
-                });
-  
-              }
-  
-            });
-  
-          });
-          
-        });
-        
-      });
+      if(typeof onLoad === 'function')
+        onLoad();
 
     });
+  }
 
+  PartyTableLoader(onLoad = null){
+    console.log('SaveGame', 'Loading Partytable...');
+    try{
+      new GFFObject(path.join(this.directory, 'PARTYTABLE.res'), (gff) => {
+        this.partytable = new PartyTableManager(gff, () => {
+          if(typeof onLoad === 'function')
+            onLoad();
+        });
+      });
+    }catch(e){
+      console.error(e);
+    }  
+  }
+
+  InventoryLoader(onLoad = null){
+    console.log('SaveGame', 'Loading Inventory...');
+    this.SAVEGAME.getRawResource('inventory', 0, (d) => {
+      this.inventory = new GFFObject(d);
+      let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+
+      this.LoadInventoryItems(invArr, 0, () => {
+        if(typeof onLoad === 'function')
+          onLoad();
+      });
+    });
+  }
+
+  LoadInventoryItems(invArr = null, i = 0, onLoad = null){
+    if(i < invArr.length){
+      InventoryManager.addItem(GFFObject.FromStruct(invArr[i]), () => {
+        this.LoadInventoryItems(invArr, ++i, onLoad);
+      });
+    }else{
+      if(typeof onLoad === 'function')
+        onLoad();
+    }
+  }
+
+  ModuleLoader(onLoad = null){
+    console.log('SaveGame', this.getLastModule(), 'Loading Module...');
+    Game.LoadModule(this.getLastModule(), null, () => {
+      console.log('SaveGame', 'Module loaded!');
+
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
   }
 
   IsModuleSaved(name=''){
@@ -263,7 +316,7 @@ class SaveGame {
         this.SAVEGAME.getRawResource(this.SAVEGAME.KeyList[i].ResRef, this.SAVEGAME.KeyList[i].ResType, (sav) => {
           
           new ERFObject(sav, (rim) => {
-            console.log('HI', rim);
+            console.log('SaveGame', 'GetModuleRum', rim);
             if(typeof onLoad === 'function')
               onLoad(rim);
           });
@@ -332,18 +385,18 @@ class SaveGame {
           this.partytable.Export(path.join(this.directory, 'PARTYTABLE.res'), () => {
 
             //Export GLOBALVARS.res
-            this.partytable = new GFFObject();
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatBoolean'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatLocation'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatNumber'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatString'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValBoolean'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValLocation'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValNumber'));
-            this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'ValString'));
+            this.globalVars = new GFFObject();
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatBoolean'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatLocation'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatNumber'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatString'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValBoolean'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValLocation'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValNumber'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'ValString'));
 
-            this.partytable.FileType = 'GVT ';
-            this.partytable.Export(path.join(this.directory, 'GLOBALVARS.res'), () => {
+            this.globalVars.FileType = 'GVT ';
+            this.globalVars.Export(path.join(this.directory, 'GLOBALVARS.res'), () => {
               
               //Save screenshot
               //let base64 = Game.canvas.toDataURL('image/png');

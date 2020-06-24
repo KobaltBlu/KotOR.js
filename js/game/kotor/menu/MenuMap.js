@@ -14,7 +14,7 @@ class MenuMap extends GameMenu {
 
     this.LoadMenu({
       name: 'map',
-      onLoad: () => {
+      onLoad: async () => {
 
         //this.lbl_hint = this.getControlByName('LBL_HINT');
 
@@ -31,7 +31,7 @@ class MenuMap extends GameMenu {
           e.stopPropagation();
           this.Close();
           if(!Game.module.area.Unescapable){
-            if(this.onTransitScript instanceof NWScript)
+            if(this.onTransitScript instanceof NWScriptInstance)
               this.onTransitScript.run();
           }
         });
@@ -39,20 +39,13 @@ class MenuMap extends GameMenu {
         this.openScript = 'k_sup_guiopen';
         this.transitScript = 'k_sup_gohawk';
 
-        ResourceLoader.loadResource(ResourceTypes['ncs'], 'k_sup_guiopen', (buffer) => {
-          this.onOpenScript = new NWScript(buffer);
-          this.onOpenScript.name = 'k_sup_guiopen';
+        this.onOpenScript = await NWScript.Load('k_sup_guiopen');
+        this.onTransitScript = await NWScript.Load('k_sup_gohawk');
+        NWScript.SetGlobalScript('k_sup_guiopen', true);
+        NWScript.SetGlobalScript('k_sup_gohawk', true);
 
-          ResourceLoader.loadResource(ResourceTypes['ncs'], 'k_sup_gohawk', (buffer) => {
-            this.onTransitScript = new NWScript(buffer);
-            this.onTransitScript.name = 'k_sup_gohawk';
-  
-            if(typeof this.onLoad === 'function')
-              this.onLoad();
-  
-          });
-
-        });
+        if(typeof this.onLoad === 'function')
+          this.onLoad();
 
       }
     })
@@ -82,7 +75,7 @@ class MenuMap extends GameMenu {
     Game.MenuPartySelection.Hide();
     Game.MenuTop.Show();*/
 
-    if(this.onOpenScript instanceof NWScript)
+    if(this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
 
   }

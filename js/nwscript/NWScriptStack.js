@@ -6,11 +6,11 @@ class NWScriptStackVariable {
     this.type = type;
 
     if(this.value == undefined && this.type == NWScript.DATATYPE.STRING){
-      this.value = ''; console.warn('Undefined STR');
+      this.value = ''; console.warn('NWScriptStackVariable', 'Undefined STRING');
     }
 
     if(this.value == undefined && this.type == NWScript.DATATYPE.INTEGER){
-      this.value = 0; console.warn('Undefined INT');
+      this.value = 0; console.warn('NWScriptStackVariable', 'Undefined INTEGER');
     }
 
   }
@@ -24,11 +24,10 @@ class NWScriptStack {
     this.stack = [];
     this.pointer = 0;
     this.basePointer = 0;
-
   }
 
   //Data pushed to the stack must be no longer and no shorter than 4 bytes
-  push(data = 0, type = null){
+  push(data, type = null){
     if(data instanceof NWScriptStackVariable){
       this.stack.push( data );
     }else{
@@ -172,6 +171,11 @@ class NWScriptStack {
     //this.basePointer = this.oldBP;
   }
 
+  dispose(){
+    this.stack = [];
+    this.pointer = 0;
+    this.basePointer = 0;
+  }
 
 }
 

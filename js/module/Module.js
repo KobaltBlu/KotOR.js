@@ -64,7 +64,7 @@ class Module {
         
         if(event.id == Module.EventID.TIMED_EVENT){
           if( ( Game.time * 1000 ) >= event.time ){
-            if(event.script instanceof NWScript){
+            if(event.script instanceof NWScriptInstance){
               event.script.beginLoop({
                 _instr: null, 
                 index: -1, 
@@ -172,26 +172,29 @@ class Module {
       initScripts.push('OnClientEntr');
     }
 
+    let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: initScripts,
-      onLoop: (script, asyncLoop) => {
-        ResourceLoader.loadResource(ResourceTypes['ncs'], this.scripts[script], (buffer) => {
-          console.log('InitScript', script, this.scripts[script]);
-          let name = this.scripts[script];
-          this.scripts[script] = new NWScript(buffer);
-          this.scripts[script].enteringObject = Game.player;
-          this.scripts[script].name = name;
-          this.scripts[script].run(Game.module.area, 0, () => {
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          this.scripts[key].enteringObject = Game.player;
+          this.scripts[key].run(Game.module.area, 0, () => {
             asyncLoop._Loop();
           });
-        });
+        }else{
+          asyncLoop._Loop();
+        }
       }
     });
     loop.Begin(() => {
       //Load any MiniGame scripts if available
       this.miniGameScripts( () => {
         //Load the Module Area's OnEnter Script
-        if(this.area.scripts.OnEnter instanceof NWScript){
+        if(this.area.scripts.OnEnter instanceof NWScriptInstance){
           console.log('onEnter', this.area.scripts.OnEnter)
           this.area.scripts.OnEnter.enteringObject = Game.player;
           this.area.scripts.OnEnter.debug.action = true;
@@ -219,7 +222,7 @@ class Module {
     let loop = new AsyncLoop({
       array: this.area.MiniGame.Enemies,
       onLoop: (enemy, asyncLoop) => {
-        if(enemy.scripts.onCreate instanceof NWScript){
+        if(enemy.scripts.onCreate instanceof NWScriptInstance){
           enemy.scripts.onCreate.run(enemy, 0, () => {
             asyncLoop._Loop();
           });
@@ -268,12 +271,14 @@ class Module {
             eventData.GetFieldByLabel('CodeSize').GetValue()
           );
 
-          script.setCaller(ModuleObject.GetObjectById(event_struct.GetFieldByLabel('ObjectId').GetValue()) );
+          let scriptInstance = script.newInstance();
+          scriptInstance.isStoreState = true;
+          scriptInstance.setCaller(ModuleObject.GetObjectById(event_struct.GetFieldByLabel('ObjectId').GetValue()) );
 
           let stackStruct = eventData.GetFieldByLabel('Stack').GetChildStructs()[0];
-          script.stack = NWScriptStack.FromActionStruct(stackStruct);
+          scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
 
-          event.script = script;
+          event.script = scriptInstance;
           event.offset = eventData.GetFieldByLabel('InstructionPtr').GetValue();
           event.day = event_struct.GetFieldByLabel('Day').GetValue();
           event.time = event_struct.GetFieldByLabel('Time').GetValue();

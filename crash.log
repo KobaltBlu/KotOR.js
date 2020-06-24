@@ -17,3 +17,47 @@ c:\users\james\documents\github\kotor.js\node_modules\beamcoder\src\decode.cc (1
 00007FF73208E830 (electron): (filename not available): node::AsyncResource::CallbackScope::CallbackScope
 00007FFDF8504034 (KERNEL32): (filename not available): BaseThreadInitThunk
 00007FFDFA3E3691 (ntdll): (filename not available): RtlUserThreadStart
+PID 2680 received SIGSEGV for address: 0x91d2a839
+SymInit: Symbol-SearchPath: '.;C:\Users\James\Documents\GitHub\KotOR.js;C:\Users\James\Documents\GitHub\KotOR.js\node_modules\electron\dist;C:\WINDOWS;C:\WINDOWS\system32;SRV*C:\websymbols*http://msdl.microsoft.com/download/symbols;', symOptions: 530, UserName: 'James'
+OS-Version: 10.0.18362 () 0x100-0x1
+c:\users\james\documents\github\kotor.js\node_modules\segfault-handler\src\stackwalker.cpp (941): StackWalker::ShowCallstack
+c:\users\james\documents\github\kotor.js\node_modules\segfault-handler\src\segfault-handler.cpp (242): segfault_handler
+00007FF994238636 (ntdll): (filename not available): RtlIsGenericTableEmpty
+00007FF99422A0D6 (ntdll): (filename not available): RtlRaiseException
+00007FF99422A043 (ntdll): (filename not available): RtlRaiseException
+00007FF991D2A839 (KERNELBASE): (filename not available): RaiseException
+00007FF749FD69EF (electron): (filename not available): v8_inspector::V8StackTraceId::ToString
+00007FF749FD67D9 (electron): (filename not available): v8_inspector::V8StackTraceId::ToString
+00007FF7495BE16F (electron): (filename not available): v8::internal::Version::GetVersion
+00007FF7495BE138 (electron): (filename not available): v8::internal::Version::GetVersion
+00007FF749739A43 (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF749710C79 (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF7497136CE (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF749861546 (electron): (filename not available): v8::Platform::SystemClockTimeMillis
+00007FF7499E9180 (electron): (filename not available): v8::internal::TickSample::print
+00007FF749F1E03D (electron): (filename not available): v8_inspector::V8StackTraceId::ToString
+000030AAD21C22DA ((module-name not available)): (filename not available): (function-name not available)
+06B9672200000000 ((module-name not available)): (filename not available): (function-name not available)
+000003C14CB3ED31 ((module-name not available)): (filename not available): (function-name not available)
+0000000006B96722 ((module-name not available)): (filename not available): (function-name not available)
+PID 7808 received SIGSEGV for address: 0x91d2a839
+SymInit: Symbol-SearchPath: '.;C:\Users\James\Documents\GitHub\KotOR.js;C:\Users\James\Documents\GitHub\KotOR.js\node_modules\electron\dist;C:\WINDOWS;C:\WINDOWS\system32;SRV*C:\websymbols*http://msdl.microsoft.com/download/symbols;', symOptions: 530, UserName: 'James'
+OS-Version: 10.0.18362 () 0x100-0x1
+PID 18288 received SIGSEGV for address: 0x91d2a839
+SymInit: Symbol-SearchPath: '.;C:\Users\James\Documents\GitHub\KotOR.js;C:\Users\James\Documents\GitHub\KotOR.js\node_modules\electron\dist;C:\WINDOWS;C:\WINDOWS\system32;SRV*C:\websymbols*http://msdl.microsoft.com/download/symbols;', symOptions: 530, UserName: 'James'
+OS-Version: 10.0.18362 () 0x100-0x1
+c:\users\james\documents\github\kotor.js\node_modules\segfault-handler\src\stackwalker.cpp (941): StackWalker::ShowCallstack
+c:\users\james\documents\github\kotor.js\node_modules\segfault-handler\src\segfault-handler.cpp (242): segfault_handler
+00007FF994238636 (ntdll): (filename not available): RtlIsGenericTableEmpty
+00007FF99422A0D6 (ntdll): (filename not available): RtlRaiseException
+00007FF99422A043 (ntdll): (filename not available): RtlRaiseException
+00007FF991D2A839 (KERNELBASE): (filename not available): RaiseException
+00007FF749FD69EF (electron): (filename not available): v8_inspector::V8StackTraceId::ToString
+00007FF749FD67D9 (electron): (filename not available): v8_inspector::V8StackTraceId::ToString
+00007FF7495BE16F (electron): (filename not available): v8::internal::Version::GetVersion
+00007FF7495BE138 (electron): (filename not available): v8::internal::Version::GetVersion
+00007FF749739A43 (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF749710C79 (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF7497136CE (electron): (filename not available): v8::Unlocker::~Unlocker
+00007FF749861546 (electron): (filename not available): v8::Platform::SystemClockTimeMillis
+00007FF7499E9180 (electron): (filename not available): v8::internal::TickSample::print

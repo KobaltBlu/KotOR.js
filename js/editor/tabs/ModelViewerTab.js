@@ -7,7 +7,8 @@ class ModelViewerTab extends EditorTab {
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
-      autoClear: false
+      autoClear: false,
+      logarithmicDepthBuffer: true
     });
     this.renderer.autoClear = false;
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
@@ -23,7 +24,7 @@ class ModelViewerTab extends EditorTab {
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
 
-    this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 15000 );
+    this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.01, 15000 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
@@ -62,6 +63,14 @@ class ModelViewerTab extends EditorTab {
 
     //Raycaster
     this.raycaster = new THREE.Raycaster();
+
+    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+		this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+    this.depthTarget.texture.generateMipmaps = false;
+    this.depthTarget.stencilBuffer = false;
+    this.depthTarget.depthBuffer = true;
+    this.depthTarget.depthTexture = new THREE.DepthTexture();
+    this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     //this.axes = new THREE.TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
     //this.axes.selected = null;
@@ -124,7 +133,7 @@ class ModelViewerTab extends EditorTab {
           <ul class="tabs-menu">
             <li class="btn btn-tab" rel="#camera">Camera</li>
             <li class="btn btn-tab" rel="#animations">Animation</li>
-            <li class="btn btn-tab" rel="#selected_object">Object</li>
+            <li class="btn btn-tab" rel="#selected_object">Nodes</li>
           </ul>
         </div>
         <div class="tab-container">
@@ -146,6 +155,8 @@ class ModelViewerTab extends EditorTab {
             <b>Texture</b><br>
             <input id="selected_texture" type="text" class="input" disabled />
             <button id="selected_change_texture">Change Texture</button>
+
+            <ul id="node_tree_ele" class="tree css-treeview js"></ul>
           </div>
         </div>
       </div>
@@ -245,7 +256,7 @@ class ModelViewerTab extends EditorTab {
 
       if(!payload.canceled && payload.filePaths.length){
         if(payload.filePaths.length){
-          file = payload.filePaths[0];
+          let file = payload.filePaths[0];
           let file_info = path.parse(file);
           TextureLoader.tpcLoader.fetch_local(file, (texture) => {
             this.selected._node.TextureMap1 = file_info.name;
@@ -277,6 +288,10 @@ class ModelViewerTab extends EditorTab {
       }
     });
 
+    //Node Tree Tab
+    //this.$nodeTreeTab = $('#node_tree', this.$ui_selected.$tabHost);
+    this.$nodeTreeEle = $('#node_tree_ele', this.$ui_selected.$tabHost);
+
   }
 
   OpenFile(file){
@@ -295,22 +310,28 @@ class ModelViewerTab extends EditorTab {
 
           THREE.AuroraModel.FromMDL(auroraModel, {
             manageLighting: false,
+            context: this, 
             onComplete: (model) => {
               this.model = model;
               //this.model.buildSkeleton();
               this.selectable.add(model);
-
+              model.position.set(0, 0, 0);
               TextureLoader.LoadQueue(() => {
                 console.log('Textures Loaded');
                 this.TabSizeUpdate();
                 this.UpdateUI();
                 this.Render();
+                this.BuildNodeTree();
                 setTimeout( () => {
                   let center = model.box.getCenter();
-                  //Center the object to 0
-                  model.position.set(-center.x, -center.y, -center.z);
-                  //Stand the object on the floor by adding half it's height back to it's position
-                  //model.position.z += model.box.getSize().z/2;
+                  if(!isNaN(center.length())){
+                    //Center the object to 0
+                    model.position.set(-center.x, -center.y, -center.z);
+                    //Stand the object on the floor by adding half it's height back to it's position
+                    //model.position.z += model.box.getSize().z/2;
+                  }else{
+                    model.position.set(0, 0, 0);
+                  }
                 }, 10);
               }, (texName) => {
                 // loader.SetMessage('Loading Textures: '+texName);
@@ -351,8 +372,70 @@ class ModelViewerTab extends EditorTab {
   TabSizeUpdate(){
     this.camera.aspect = this.$tabContent.innerWidth() / this.$tabContent.innerHeight();
     this.camera.updateProjectionMatrix();
-
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
+    this.depthTarget.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
+  }
+
+  BuildNodeTree(){
+
+    let nodeList = [];
+    this.treeIndex = 0;
+
+    for (const [key, value] of this.model.nodes) {
+      nodeList.push({
+        name: key,
+        type: 'resource',
+        data: {
+          node: value,
+        },
+        nodeList: []
+      });
+    }
+
+    this.$nodeTreeEle.html(
+      this.buildNodeList(nodeList)
+    );
+
+    $('li.link', this.$nodeTreeEle).off('click').on('click', (e) => {
+      e.preventDefault();
+      if(this.model.nodes.has(e.target.dataset.node)){
+        this.select(this.model.nodes.get(e.target.dataset.node));
+      }
+      console.log(e.target.dataset.node);
+    });
+
+  }
+
+  buildNodeList(nodeList = [], canOrphan = false){
+
+    let str = '';
+    if(nodeList instanceof Array){
+      for(let i = 0; i < nodeList.length; i++){
+        str += this.buildNodeList(nodeList[i], canOrphan);
+      }
+    }else{
+
+      let node = nodeList;
+      if(node.type == 'group'){
+        if(node.nodeList.length == 1 && canOrphan){
+          for(let i = 0; i < node.nodeList.length; i++){
+            str += this.buildNodeList(node.nodeList[i], false);
+          }
+        }else{
+          str += '<li><input type="checkbox" checked id="list-'+this.treeIndex+'"><label for="list-'+(this.treeIndex++)+'">'+node.name+'</label><span></span><ul>';
+          for(let i = 0; i < node.nodeList.length; i++){
+            str += this.buildNodeList(node.nodeList[i], true);
+          }
+          str += '</ul></li>';
+        }
+      }else{
+        str += '<li class="link" data-node="'+node.name+'">'+node.name+'</li>';
+      }
+
+    }
+
+    return str;
+
   }
 
   Render(){
@@ -405,13 +488,24 @@ class ModelViewerTab extends EditorTab {
       this.$ui_selected.$selected_object.show();
       this.$ui_selected.$input_name.val(this.selected._node.name);
       this.$ui_selected.$input_texture.val(this.selected._node.TextureMap1);
+    }else if(this.selected instanceof THREE.Group){
+      for(let i = 0; i < this.selected.children.length; i++){
+        let child = this.selected.children[i];
+        if(child instanceof THREE.Mesh){
+          this.selected = child;
+          this.$ui_selected.$selected_object.show();
+          this.$ui_selected.$input_name.val(this.selected._node.name);
+          this.$ui_selected.$input_texture.val(this.selected._node.TextureMap1);
+          break;
+        }
+      }
     }else{
       this.$ui_selected.$selected_object.hide();
     }
 
-    let centerX = this.selectionBox.geometry.boundingSphere.center.x;
-    let centerY = this.selectionBox.geometry.boundingSphere.center.y;
-    let centerZ = this.selectionBox.geometry.boundingSphere.center.z;
+    //let centerX = this.selectionBox.geometry.boundingSphere.center.x;
+    //let centerY = this.selectionBox.geometry.boundingSphere.center.y;
+    //let centerZ = this.selectionBox.geometry.boundingSphere.center.z;
 
     //console.log(this.editor.axes, centerX, centerY, centerZ);
 

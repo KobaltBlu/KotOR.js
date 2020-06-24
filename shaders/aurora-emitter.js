@@ -37,6 +37,7 @@ THREE.ShaderLib.auroraEmitter = {
   vertexShader: `
     uniform float time;
     uniform vec4 textureAnimation;
+    uniform vec2 frameRange;
     uniform float maxAge;
     uniform float rotate;
     uniform float drag;
@@ -230,14 +231,25 @@ THREE.ShaderLib.auroraEmitter = {
         gl_Position = projectionMatrix * worldZMatrix * (vec4(newPos, 1.0));// * rotationZ(rotate * positionInTime) );
       #else
         #ifdef LINKED
-          //Override the modelViewMatrix so we can ignore preset rotation's (That way the plane will lay flat on the ground)
-          mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, vec4(0.0, 0.0, 0.0, 1.0));
+          #ifdef LIGHTNING
+            //Override the modelViewMatrix so we can ignore preset rotation's (That way the plane will lay flat on the ground)
+            mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, vec4(0.0, 0.0, 0.0, 1.0));
 
-          //Copy over the positions from the previous modelViewMatrix
-          //worldZMatrix[3][0] = viewMatrix[3][0] + position.x;
-          //worldZMatrix[3][1] = viewMatrix[3][1] + position.y;
-          //worldZMatrix[3][2] = viewMatrix[3][2] + position.z;
-          gl_Position = projectionMatrix * worldZMatrix * vec4(position + (offset * scaleF), 1.0);
+            //Copy over the positions from the previous modelViewMatrix
+            //worldZMatrix[3][0] = viewMatrix[3][0] + position.x;
+            //worldZMatrix[3][1] = viewMatrix[3][1] + position.y;
+            //worldZMatrix[3][2] = viewMatrix[3][2] + position.z;
+            gl_Position = projectionMatrix * worldZMatrix * vec4(position, 1.0);
+          #else
+            //Override the modelViewMatrix so we can ignore preset rotation's (That way the plane will lay flat on the ground)
+            mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, vec4(0.0, 0.0, 0.0, 1.0));
+
+            //Copy over the positions from the previous modelViewMatrix
+            //worldZMatrix[3][0] = viewMatrix[3][0] + position.x;
+            //worldZMatrix[3][1] = viewMatrix[3][1] + position.y;
+            //worldZMatrix[3][2] = viewMatrix[3][2] + position.z;
+            gl_Position = projectionMatrix * worldZMatrix * vec4(position + (offset * scaleF), 1.0);
+          #endif
         #else
           //Render particles as plane geometry so we can control it's rotation
           #ifdef Aligned_to_Particle_Dir
@@ -271,6 +283,7 @@ THREE.ShaderLib.auroraEmitter = {
       map: { value: null },
       tDepth: { value: null },
       textureAnimation: { value: new THREE.Vector4(1, 1, 1, 1) },
+      frameRange: { value: new THREE.Vector2(0, 0) },
       colorStart: { value: new THREE.Color(1, 1, 1) },
       colorMid: { value: new THREE.Color(1, 1, 1) },
       colorEnd: { value: new THREE.Color(1, 1, 1) },

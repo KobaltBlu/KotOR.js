@@ -951,7 +951,7 @@ class ModuleArea extends ModuleObject {
                 
                 Game.walkmeshList.push( room.walkmesh.mesh );
                 Game.octree_walkmesh.add( room.walkmesh.mesh, {useFaces: true} );
-                Game.scene.add( room.walkmesh.mesh );
+                Game.group.room_walkmeshes.add( room.walkmesh.mesh );
     
               }
     
@@ -963,6 +963,7 @@ class ModuleArea extends ModuleObject {
               Game.group.rooms.add(room.model);
     
               room.computeBoundingBox();
+              room.model.updateMatrix();
               
             }
             
@@ -1001,7 +1002,9 @@ class ModuleArea extends ModuleObject {
                   door.walkmesh = dwk;
                   Game.walkmeshList.push( dwk.mesh );
     
-                  Game.scene.add(dwk.mesh);
+                  //Game.scene.add(dwk.mesh);
+                  Game.group.room_walkmeshes.add( dwk.mesh );
+
                   dwk.mesh.position.copy(model.getWorldPosition());
                   //dwk.mesh.quaternion.copy(model.getWorldQuaternion());
     
@@ -1054,8 +1057,10 @@ class ModuleArea extends ModuleObject {
                 plc.computeBoundingBox();
     
                 try{
-                  if(pwk.model instanceof THREE.Object3D)
-                    model.add(pwk.model);
+                  if(pwk.mesh instanceof THREE.Object3D){
+                    Game.group.room_walkmeshes.add( pwk.mesh );
+                    //model.add(pwk.model);
+                  }
                     
                   model.walkmesh = pwk;
                   Game.walkmeshList.push(pwk.mesh);
@@ -1133,30 +1138,32 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.triggers,
         onLoop: (trig, asyncLoop) => {
-          trig.InitProperties();
-          trig.Load( () => {
-
-            let _distance = 1000000000;
-            let _currentRoom = null;
-            let roomCenter = new THREE.Vector3();
-            for(let i = 0; i < Game.group.rooms.children.length; i++){
-              let room = Game.group.rooms.children[i];
-              if(room instanceof THREE.AuroraModel){
-                if(room.box.containsPoint(trig.mesh.position)){
-                  room.box.getCenter(roomCenter);
-                  let distance = trig.mesh.position.distanceTo(roomCenter);
-                  if(distance < _distance){
-                    _distance = distance;
-                    _currentRoom = room;
+          try{
+            trig.InitProperties();
+            trig.Load( () => {
+              let _distance = 1000000000;
+              let _currentRoom = null;
+              let roomCenter = new THREE.Vector3();
+              for(let i = 0; i < Game.group.rooms.children.length; i++){
+                let room = Game.group.rooms.children[i];
+                if(room instanceof THREE.AuroraModel){
+                  if(room.box.containsPoint(trig.mesh.position)){
+                    room.box.getCenter(roomCenter);
+                    let distance = trig.mesh.position.distanceTo(roomCenter);
+                    if(distance < _distance){
+                      _distance = distance;
+                      _currentRoom = room;
+                    }
                   }
                 }
               }
-            }
-            trig.mesh.area = _currentRoom;
-
+              trig.mesh.area = _currentRoom;
+              asyncLoop._Loop();
+            });
+          }catch(e){
+            console.error(e);
             asyncLoop._Loop();
-
-          });
+          }
         }
       });
       loop.Begin(() => {
@@ -1300,7 +1307,7 @@ class ModuleArea extends ModuleObject {
         1, 0, 1, 0, 0, 1,
         1, 0, 1, 0, 0, 1
       ]);
-      grassGeometry.addAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
+      grassGeometry.setAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
 
       //QuadIdx is used to track the current quad index inside the vertex shader
       let quadIdx = new Float32Array([
@@ -1309,7 +1316,7 @@ class ModuleArea extends ModuleObject {
         2, 2, 2, 2, 2, 2,
         3, 3, 3, 3, 3, 3,
       ]);
-      grassGeometry.addAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
+      grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
       
       let geometry = new THREE.InstancedBufferGeometry();
       geometry.index = grassGeometry.index;
@@ -1398,10 +1405,10 @@ class ModuleArea extends ModuleObject {
         grassUVs.push(instance.uvs.uv1, instance.uvs.uv2, instance.uvs.uv3, instance.uvs.uv4);
       }*/
 
-      let offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 4 ).setDynamic( false );
-      let grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 ).setDynamic( false );
-      geometry.addAttribute( 'offset', offsetAttribute );
-      geometry.addAttribute( 'grassUV', grassUVAttribute );
+      let offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 4 ).setUsage( THREE.StaticDrawUsage );
+      let grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 ).setUsage( THREE.StaticDrawUsage );
+      geometry.setAttribute( 'offset', offsetAttribute );
+      geometry.setAttribute( 'grassUV', grassUVAttribute );
       this.grassMesh = new THREE.Mesh( geometry, this.grassMaterial );
       this.grassMesh.frustumCulled = false;
       Game.group.grass.add(this.grassMesh);
@@ -1475,35 +1482,25 @@ class ModuleArea extends ModuleObject {
   }
 
   LoadScripts(onLoad = null){
-    
     let keys = Object.keys(this.scripts);
-    let len = keys.length;
-
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-        console.error('ModuleArea.script', script);
-
-        if(script != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            this.scripts[keys[i]] = new NWScript(buffer);
-            this.scripts[keys[i]].name = script;
-            loadScript( onLoad, ++i );
-          }, (e) => {
-            console.error('ModuleArea.script', e);
-            loadScript( onLoad, ++i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          loadScript( onLoad, ++i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
   }
 
   toolsetExportARE(){

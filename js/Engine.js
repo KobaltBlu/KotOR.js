@@ -229,7 +229,7 @@ class Engine {
           console.log('loadScene', d);
 
           process.nextTick( ()=> {
-            if(Engine.module.area.scripts.OnEnter instanceof NWScript){
+            if(Engine.module.area.scripts.OnEnter instanceof NWScriptInstance){
               Engine.module.area.scripts.OnEnter.enteringObject = Engine.player;
               Engine.module.area.scripts.OnEnter.run(Engine.module.area, 0, () => {
                 AudioEngine.Unmute();
@@ -246,7 +246,7 @@ class Engine {
                 //console.log('Running creature onSpawn scripts');
                 for(var i = 0; i < Engine.module.area.creatures.length; i++){
                   if(Engine.module.area.creatures[i] instanceof ModuleCreature){
-                    if(Engine.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
+                    if(Engine.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
                       try{
                         Engine.module.area.creatures[i].scripts.onSpawn.run(Engine.module.area.creatures[i]);
                       }catch(e){
@@ -1253,6 +1253,11 @@ Engine.Flags = {
   WalkmeshVisible: false,
   CombatEnabled: false
 }
+
+Engine.debug = {
+  controls: false,
+  selectedObject: false
+};
 
 Engine.IsPaused = false;
 Engine.inDialog = false;

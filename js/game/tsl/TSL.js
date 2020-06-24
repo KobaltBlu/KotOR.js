@@ -32,7 +32,8 @@ class Game extends Engine {
     Game.renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas: Game.canvas,
-      context: Game.context
+      context: Game.context,
+      logarithmicDepthBuffer: true
     });
 
     Game.renderer.autoClear = false;
@@ -247,9 +248,11 @@ class Game extends Engine {
       party: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
+      shadow_lights: new THREE.Group(),
       emitters: new THREE.Group(),
       stunt: new THREE.Group(),
       weather_effects: new THREE.Group(),
+      room_walkmeshes: new THREE.Group(),
     };
 
     Game.weather_effects = [];
@@ -267,9 +270,11 @@ class Game extends Engine {
 
     Game.scene.add(Game.group.lights);
     Game.scene.add(Game.group.light_helpers);
+    Game.scene.add(Game.group.shadow_lights);
     Game.scene.add(Game.group.emitters);
 
     Game.scene.add(Game.group.party);
+    Game.scene.add(Game.group.room_walkmeshes);
 
     Game.group.light_helpers.visible = false;
 
@@ -315,7 +320,8 @@ class Game extends Engine {
       Game.group.doors, 
       Game.group.creatures, 
       Game.group.party,
-      Game.group.rooms
+      //Game.group.rooms,
+      Game.group.room_walkmeshes,
     ];
 
     Game.scene_cursor_holder = new THREE.Group();
@@ -543,7 +549,7 @@ class Game extends Engine {
     Game.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
     Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
     Game.viewportProjectionMatrix.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse );
-    Game.viewportFrustum.setFromMatrix( Game.viewportProjectionMatrix );
+    Game.viewportFrustum.setFromProjectionMatrix( Game.viewportProjectionMatrix );
 
     // frustum is now ready to check all the objects you need
     //frustum.intersectsObject( object )
@@ -790,13 +796,26 @@ class Game extends Engine {
 
           Game.binkVideo = new BIKObject();
 
-          Game.MainMenu.Open();
-          $( window ).trigger('resize');
-          this.setTestingGlobals();
-          Game.Update = Game.Update.bind(this);
-          Game.Update();
-          loader.Hide();
-        })
+          //Preload fx textures
+          TextureLoader.enQueue(
+            ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
+            'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
+            'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
+            'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
+            undefined,
+            TextureLoader.Type.TEXTURE
+          );
+
+          TextureLoader.LoadQueue(() => {
+            Game.MainMenu.Open();
+            $( window ).trigger('resize');
+            this.setTestingGlobals();
+            Game.Update = Game.Update.bind(this);
+            Game.Update();
+            loader.Hide();
+          });
+
+        });
 
       });
 
@@ -969,6 +988,9 @@ class Game extends Engine {
 
     }
 
+    //Remove all cached scripts and kill all running instances
+    NWScript.Reload();
+
     //Resets all keys to their default state
     Game.controls.InitKeys();
 
@@ -1033,12 +1055,8 @@ class Game extends Engine {
                 //console.log('Running creature onSpawn scripts');
                 for(let i = 0; i < Game.module.area.creatures.length; i++){
                   if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                    if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
-                      try{
-                        Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                      }catch(e){
-                        console.error(e);
-                      }
+                    if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
+                      Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
                     }
                   }
                 }
@@ -1242,13 +1260,12 @@ class Game extends Engine {
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
       if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && Game.State != Game.STATES.PAUSED && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
-
+        Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
         Game.updateTime(delta);
-        if(Game.Mode != Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay){
+        if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
           Game.module.tick(delta);
           CombatEngine.Update(delta);
         }
-        CombatEngine.Update(delta);
 
         //PartyMember cleanup
         for(let i = 0; i < Game.group.party.children.length; i++){
@@ -1396,7 +1413,7 @@ class Game extends Engine {
 
       Game.FadeOverlay.Update(delta);
       Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
-      Game.viewportFrustum.setFromMatrix(Game.frustumMat4);
+      Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
       LightManager.update(delta);
 
       Game.InGameOverlay.Update(delta);
@@ -1421,9 +1438,7 @@ class Game extends Engine {
 
     Game.updateCursor();
 
-    try{
-      Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
-    }catch(e){ }
+    Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
 
     Game.controls.Update(delta);
 

@@ -204,7 +204,7 @@ class MenuPartySelection extends GameMenu {
             if(!this.canClose())
               return;
 
-            if(this.onCloseScript instanceof NWScript){
+            if(this.onCloseScript instanceof NWScriptInstance){
               this.Close();
               this.onCloseScript.run(undefined, () => {
                 this.onCloseScript = undefined;
@@ -366,7 +366,7 @@ class MenuPartySelection extends GameMenu {
       Game.MenuActive = false;
     }
 
-    Show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1){
+    async Show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1){
       super.Show();
 
       this.forceNPC1 = forceNPC1;
@@ -421,10 +421,11 @@ class MenuPartySelection extends GameMenu {
       });
 
       if(scriptName != '' || scriptName != null){
-        ResourceLoader.loadResource(ResourceTypes['ncs'], scriptName, (buffer) => {
-          this.onCloseScript = new NWScript(buffer);
-          this.onCloseScript.name = scriptName;
-        });
+        this.onCloseScript = await NWScript.Load(scriptName);
+        // ResourceLoader.loadResource(ResourceTypes['ncs'], scriptName, (buffer) => {
+        //   this.onCloseScript = new NWScript(buffer);
+        //   this.onCloseScript.name = scriptName;
+        // });
       }
 
     }

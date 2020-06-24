@@ -19,6 +19,8 @@ class LBL_3DView {
 		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat } );
     this.clearColor = new THREE.Color(0x000000);
 
+    this.currentCamera = this.camera;
+
     this.globalLight = new THREE.AmbientLight(0x7F7F7F);
     this.globalLight.position.x = 0;
     this.globalLight.position.y = 0;
@@ -35,11 +37,13 @@ class LBL_3DView {
       emitters: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
+      shadow_lights: new THREE.Group(),
       creatures: new THREE.Group()
     }
 
     this.scene.add(this.group.emitters);
     this.scene.add(this.group.lights);
+    this.scene.add(this.group.shadow_lights);
     this.scene.add(this.group.creatures);
 
   }

@@ -106,7 +106,7 @@ class MenuCharacter extends GameMenu {
 
                 },
                 manageLighting: false,
-                context: this._3dView
+                //context: this._3dView
               });
     
             }

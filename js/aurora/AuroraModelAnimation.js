@@ -8,6 +8,7 @@
 class AuroraModelAnimation {
 
   constructor(){
+    this.type = 'AuroraModelAnimation';
     this.rootNode = new AuroraModelAnimationNode();
     //this.currentFrame = 0;
     //this.elapsed = 0;
@@ -66,6 +67,17 @@ class AuroraModelAnimation {
     };
 
     return anim;
+  }
+
+  SetDataFromAnimation(animation = undefined){
+    if(animation instanceof AuroraModelAnimation){
+      //Preserve the original callback method
+      let oCallback = this.data.callback;
+      //Create a Deep Copy of the new data and overwrite this animation's data object
+      this.data = JSON.parse(JSON.stringify(animation.data));
+      //Restore the original callback method
+      this.data.callback = oCallback;
+    }
   }
 
   Update(delta, obj, onEnd = null){
@@ -171,10 +183,10 @@ class AuroraModelAnimation {
           if(controller.data.length == 1 || this.elapsed == 0){
             let data = controller.data[0];
             switch(controller.type){
-              case ControllerType.Position:
+              case AuroraModel.ControllerType.Position:
                 modelNode.position.set((data.x + offsetX) * obj.Scale, (data.y + offsetY) * obj.Scale, (data.z + offsetZ) * obj.Scale);
               break;
-              case ControllerType.Orientation:
+              case AuroraModel.ControllerType.Orientation:
                 if(data.x == 0 && data.y == 0 && data.z == 0 && data.w == 1){
                   data.x = offsetQX;
                   data.y = offsetQY;
@@ -184,7 +196,7 @@ class AuroraModelAnimation {
 
                 modelNode.quaternion.set(data.x * obj.Scale, data.y * obj.Scale, data.z * obj.Scale, data.w * obj.Scale);
               break;
-              case ControllerType.Scale:
+              case AuroraModel.ControllerType.Scale:
                 modelNode.scale.set((data.value + offsetScale) * obj.Scale, (data.value + offsetScale) * obj.Scale, (data.value + offsetScale) * obj.Scale);
               break;
             }
@@ -201,10 +213,10 @@ class AuroraModelAnimation {
 
             // if (lastFrame + 1 >= controller.data.length || last.time >= this.elapsed) {
             //   switch(controller.type){
-            //     case ControllerType.Position:
+            //     case AuroraModel.ControllerType.Position:
             //       modelNode.position.set((last.x + offsetX) * obj.Scale, (last.y + offsetY) * obj.Scale, (last.z + offsetZ) * obj.Scale);
             //     break;
-            //     case ControllerType.Orientation:
+            //     case AuroraModel.ControllerType.Orientation:
             //       if(last.x == 0 && last.y == 0 && last.z == 0 && last.w == 1){
             //         last.x = offsetQX;
             //         last.y = offsetQY;
@@ -224,11 +236,11 @@ class AuroraModelAnimation {
             }
 
             switch(controller.type){
-              case ControllerType.Position:
+              case AuroraModel.ControllerType.Position:
                 let fl = (this.elapsed - last.time) / (next.time - last.time);
                 modelNode.position.lerp(new THREE.Vector3(next.x + offsetX, next.y + offsetY, next.z + offsetZ), fl);
               break;
-              case ControllerType.Orientation:
+              case AuroraModel.ControllerType.Orientation:
                 let qfl = (this.elapsed - last.time) / (next.time - last.time);
                 if(next.x == 0 && next.y == 0 && next.z == 0 && next.w == 1){
                   next.x = offsetQX;
@@ -239,7 +251,7 @@ class AuroraModelAnimation {
 
                 modelNode.quaternion.slerp(new THREE.Quaternion(next.x* obj.Scale, next.y* obj.Scale, next.z* obj.Scale, next.w* obj.Scale), qfl);
               break;
-              case ControllerType.Scale:
+              case AuroraModel.ControllerType.Scale:
                 let sfl = (this.elapsed - last.time) / (next.time - last.time);
                 modelNode.position.lerp(new THREE.Vector3(next.value + offsetX, next.value + offsetY, next.value + offsetZ), sfl);
               break;

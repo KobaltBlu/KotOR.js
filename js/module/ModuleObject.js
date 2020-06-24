@@ -181,6 +181,13 @@ class ModuleObject {
       this._heartbeatTimeout -= 1000*delta;
     }
 
+    //Loop through and update the effects
+    if(!this.deferEventUpdate){
+      for(let i = 0, len = this.effects.length; i < len; i++){
+        this.effects[i].update(delta);
+      }
+    }
+
   }
 
   setFacing(facing = 0, instant = false){
@@ -210,13 +217,13 @@ class ModuleObject {
       return;
     }
 
-    if(this.scripts.onUserDefined instanceof NWScript){
+    if(this.scripts.onUserDefined instanceof NWScriptInstance){
       this.scripts.onUserDefined.run(this, parseInt(iValue), onComplete);
     }
   }
 
   triggerHeartbeat(){
-    if(this.scripts.onHeartbeat instanceof NWScript){// && this._locals.Booleans[28]){
+    if(this.scripts.onHeartbeat instanceof NWScriptInstance){// && this._locals.Booleans[28]){
       if(PartyManager.party.indexOf(this) > -1){
         //process.nextTick(() => {
           this.scripts.onHeartbeat.run(this, 2001);
@@ -348,7 +355,7 @@ class ModuleObject {
     if(this.isDead())
       return true;
 
-    if(this.scripts.onDamaged instanceof NWScript){
+    if(this.scripts.onDamaged instanceof NWScriptInstance){
       this.scripts.onDamaged.run(this);
     }
   }
@@ -592,49 +599,39 @@ class ModuleObject {
     return 0;
   }*/
 
-  AddEffect(effect){
-    console.log('Adding effect', effect, this)
+  AddEffect(effect, type = 0, duration = 0){
+    console.log('Adding effect', effect, this);
+    //effect.setDurationType(type);
+    //effect.setDuration(duration);
+    effect.setObject(this);
+    effect.onApply(this);
     this.effects.push(effect);
-
-    switch(effect.type){
-      case 1: //EFFECT_DEATH
-        this.setHP(-1);
-      break;
-      case 62: //EFFECT_DISGUISE
-        if(this instanceof ModuleCreature){
-          this.LoadModel(() => {
-            
-            //if(this.getModel())
-            //  this.getModel().buildSkeleton();
-
-            console.log('Disguise applied', this, effect);
-          });
-        }
-      break;
-      case 75: //VisualEffect
-        let visualEffect = Global.kotor2DA.visualeffects.rows[effect.value];
-        if(visualEffect){
-
-        }
-      break;
-    }
 
   }
 
-  GetEffect(idx = -1){
+  GetEffect(type = -1){
     for(let i = 0; i < this.effects.length; i++){
-      if(this.effects[i].type == idx){
+      if(this.effects[i].type == type){
         return this.effects[i];
       }
     }
     return null;
   }
 
-  RemoveEffect(idx = -1){
-    let effect = this.GetEffect(idx);
-    if(effect){
-      let arrIdx = this.effects.indexOf(effect);
-      this.effects.splice(arrIdx, 1);
+  RemoveEffect(type = -1){
+    if(type instanceof GameEffect){
+      let arrIdx = this.effects.indexOf(type);
+      if(arrIdx >= 0){
+        this.effects.splice(arrIdx, 1)[0].onRemove();
+      }
+    }else{
+      let effect = this.GetEffect(type);
+      if(effect){
+        let arrIdx = this.effects.indexOf(effect);
+        if(arrIdx >= 0){
+          this.effects.splice(arrIdx, 1)[0].onRemove();
+        }
+      }
     }
   }
 
@@ -924,10 +921,15 @@ class ModuleObject {
     let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
     let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
 
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] >= 11;
+    if(typeof targetFaction != 'undefined' && typeof faction != 'undefined'){
+      if(targetFaction.label.toLowerCase() == 'player'){
+        return targetFaction[faction.label.toLowerCase()] >= 11;
+      }else{
+        return faction[targetFaction.label.toLowerCase()] >= 11;
+      }
     }else{
-      return faction[targetFaction.label.toLowerCase()] >= 11;
+      console.log('isFriendly', target, this);
+      return undefined;
     }
 
   }
@@ -941,11 +943,15 @@ class ModuleObject {
 
     let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
     let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()];
+    if(typeof targetFaction != 'undefined' && typeof faction != 'undefined'){
+      if(targetFaction.label.toLowerCase() == 'player'){
+        return targetFaction[faction.label.toLowerCase()];
+      }else{
+        return faction[targetFaction.label.toLowerCase()];
+      }
     }else{
-      return faction[targetFaction.label.toLowerCase()];
+      console.log('getReputation', target, this);
+      return undefined;
     }
   }
 
@@ -958,6 +964,16 @@ class ModuleObject {
     position_b.z += 1;
     let direction = position_b.clone().sub(position_a).normalize();
     let distance = position_a.distanceTo(position_b);
+
+    if(this.perceptionRange){
+      if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange)){
+        return;
+      }
+      max_distance = parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange);
+    }else{
+      if(distance > 50)
+        return;
+    }
 
     Game.raycaster.ray.origin.copy(position_a);
     Game.raycaster.ray.direction.copy(direction);
@@ -1054,8 +1070,12 @@ class ModuleObject {
     if(this.template.RootNode.HasField('Cursor'))
       this.cursor = this.template.GetFieldByLabel('Cursor').GetValue();
 
-    if(this.template.RootNode.HasField('Faction'))
+    if(this.template.RootNode.HasField('Faction')){
       this.faction = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.faction & 0xFFFFFFFF) == -1){
+        this.faction = 0;
+      }
+    }
 
     if(this.template.RootNode.HasField('Geometry')){
       this.geometry = this.template.GetFieldByLabel('Geometry').GetChildStructs();

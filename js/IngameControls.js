@@ -59,7 +59,8 @@ class IngameControls {
     }).keyup( ( event ) => {
 
       if(event.which >= 48 && event.which <= 57){
-        console.log(event.key)
+        if(Game.debug.controls)
+          console.log(event.key)
         this.keys[event.key].down = this.keys[event.key].pressed = false;
       }else if(event.which >= 65 && event.which <= 90){
         this.keys[event.key].down = this.keys[event.key].pressed = false;
@@ -96,7 +97,8 @@ class IngameControls {
     }).mousedown((event) => {
       if(event.target == this.element){
         Game.activeGUIElement = undefined;
-        console.log('Valid Mouse Target');
+        if(Game.debug.controls)
+          console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
         let parentOffset = this.editor.$canvas.offset();
@@ -113,7 +115,8 @@ class IngameControls {
         //console.log('Invalid Mouse Target', this.element);
       }
 
-      console.log('DOWN');
+      if(Game.debug.controls)
+        console.log('DOWN');
 
       Game.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       Game.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
@@ -144,7 +147,8 @@ class IngameControls {
         //if(control === Game.mouse.clickItem){
           if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
             clickCaptured = true;
-            console.log('uiControls', control)
+            if(Game.debug.controls)
+              console.log('uiControls', control)
             try{
               if(control.processEventListener('mouseDown', [customEvent])){
                 Game.mouse.downItem = control;
@@ -158,7 +162,8 @@ class IngameControls {
               }
               
               //Game.guiAudioEmitter.PlaySound('gui_click');
-              console.log('MouseDown', control, Game.mouse.downItem, Game.mouse.clickItem, typeof control.onMouseClick);
+              if(Game.debug.controls)
+                console.log('MouseDown', control, Game.mouse.downItem, Game.mouse.clickItem, typeof control.onMouseClick);
             }catch(e){
 
             }
@@ -215,7 +220,9 @@ class IngameControls {
       document.exitPointerLock();
 
       //event.preventDefault();
-      console.log('UP');
+      if(Game.debug.controls)
+        console.log('UP');
+
       if(Game.mouse.leftDown){
         Game.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
         Game.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
@@ -241,7 +248,8 @@ class IngameControls {
                 Game.mouse.downItem.processEventListener('mouseUp', [customEvent]);
                 //Game.mouse.downItem.onMouseUp(customEvent);
                 //Game.guiAudioEmitter.PlaySound('gui_click');
-                console.log('MouseUp', Game.mouse.downItem, Game.mouse.downItem.name);
+                if(Game.debug.controls)
+                  console.log('MouseUp', Game.mouse.downItem, Game.mouse.downItem.name);
               }catch(e){
 
               }
@@ -266,7 +274,8 @@ class IngameControls {
                   //control.onClick(customEvent);
                   Game.activeGUIElement = control;
                   Game.guiAudioEmitter.PlaySound('gui_click');
-                  console.log('MouseClick', control, control.name);
+                  if(Game.debug.controls)
+                    console.log('MouseClick', control, control.name);
                 }catch(e){
 
                 }
@@ -280,7 +289,8 @@ class IngameControls {
         if(!clickCaptured && !Game.inDialog){
           if(Game.Mode == Game.MODES.INGAME && MenuManager.GetCurrentMenu() == Game.InGameOverlay){
             Game.onMouseHitInteractive( (obj, obj2) => {
-              console.log('Mesh', obj2)
+              if(Game.debug.selectedObject)
+                console.log('Mesh', obj2)
               if(obj.moduleObject instanceof ModuleObject){
                 if(obj.moduleObject.isUseable() && obj.moduleObject != Game.getCurrentPlayer()){
 
@@ -294,7 +304,7 @@ class IngameControls {
                       obj.moduleObject.onClick(Game.getCurrentPlayer());
                     }else{
                       let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
-                      console.log(distance);
+                      //console.log(distance);
                       if(distance > 1.5){
                         obj.moduleObject.clearAllActions();
                         Game.getCurrentPlayer().actionQueue.push({
@@ -342,9 +352,11 @@ class IngameControls {
                   }
                   
                 }
-                console.log('Ingame Object', obj);
+                if(Game.debug.selectedObject)
+                  console.log('Ingame Object', obj);
               }else{
-                console.log('Object', obj);
+                if(Game.debug.selectedObject)
+                  console.log('Object', obj);
               }
             });
             if(!selectedObject){
@@ -481,7 +493,8 @@ class IngameControls {
 
         if(Game.InGameDialog.state == 1){
           if(this.keys['1'].pressed){
-            console.log('Tried to press 1');
+            if(Game.debug.controls)
+              console.log('Tried to press 1');
             try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
           }else if(this.keys['2'].pressed){
             try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}

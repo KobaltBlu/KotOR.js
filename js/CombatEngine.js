@@ -175,8 +175,20 @@ class CombatEngine {
   static GetArmorClass(creature = null){
     //console.log(creature);
     if(creature instanceof ModuleCreature){
-      var atkToHit = CombatEngine.GetMod(creature.getDEX());
-      return 10 + atkToHit;
+      let dexMod = CombatEngine.GetMod(creature.getDEX());
+      let baseAC = 10;
+      let bonus = 0;
+      if(creature.equipment.ARMOR){
+        let baseItem = creature.equipment.ARMOR.getBaseItem();
+        //Base AC bonus applied by the armor if there is one
+        bonus += creature.equipment.ARMOR.getACBonus();
+
+        //Dex Bonus Restriction if there is one
+        if(parseInt(baseItem.dexbonus) < dexMod){
+          dexMod = parseInt(baseItem.dexbonus);
+        }
+      }
+      return baseAC + dexMod + bonus;
     }
     return 10;
   }
@@ -189,14 +201,10 @@ class CombatEngine {
         let rWeapon = creature.equipment.RIGHTHAND;
 
         if(rWeapon){
-
-          rWeapon.dietoroll
-
           return {
             num: parseInt(rWeapon.getBaseItem().numdice),
             type: 'd'+rWeapon.getBaseItem().dietoroll
           };
-
         }
 
       }else{
@@ -219,7 +227,7 @@ class CombatEngine {
             claw = claw3;
 
           let wProps = claw.template.GetFieldByLabel('PropertiesList').GetChildStructs();
-          for(let i =0; i < wProps.length; i++){
+          for(let i = 0; i < wProps.length; i++){
             let prop = wProps[i];
             let propName = prop.GetFieldByLabel('PropertyName');
             if(propName && propName.GetValue() == 51){

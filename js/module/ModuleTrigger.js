@@ -135,13 +135,23 @@ class ModuleTrigger extends ModuleObject {
     }else{
       //We already have the template (From SAVEGAME)
       //console.log('Trigger savegame')
-      this.InitProperties();
-      this.LoadScripts( () => {
-        this.buildGeometry();
-        this.initObjectsInside();
+      try{
+        this.InitProperties();
+        this.LoadScripts( () => {
+          try{
+            this.buildGeometry();
+            this.initObjectsInside();
+            if(onLoad != null)
+              onLoad(this.template);
+          }catch(e){
+            if(onLoad != null)
+              onLoad(this.template);
+          }
+        });
+      }catch(e){
         if(onLoad != null)
           onLoad(this.template);
-      });
+      }
 
     }
   }
@@ -249,9 +259,9 @@ class ModuleTrigger extends ModuleObject {
               this.actionQueue.shift()
             }
           break;
-          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
+          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScriptInstance file
             //console.log('Action Script', this.action);
-            if(this.action.script instanceof NWScript){
+            if(this.action.script instanceof NWScriptInstance){
               this.action.action.script.caller = this;
               this.action.action.script.beginLoop({
                 _instr: null, 
@@ -355,7 +365,7 @@ class ModuleTrigger extends ModuleObject {
       }
     }else{
       console.log('enter 1')
-      if(this.scripts.onEnter instanceof NWScript && this.scripts.onEnter.running != true){
+      if(this.scripts.onEnter instanceof NWScriptInstance && this.scripts.onEnter.running != true){
         console.log('enter running')
         this.scripts.onEnter.running = true;
         //let script = this.scripts.onEnter.clone();
@@ -370,7 +380,7 @@ class ModuleTrigger extends ModuleObject {
   }
 
   onExit(object = undefined){
-    if(this.scripts.onExit instanceof NWScript && this.scripts.onEnter.onExit != true){
+    if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.onExit != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
       /*this.scripts.onExit.run(this, 0, () => {
@@ -413,32 +423,24 @@ class ModuleTrigger extends ModuleObject {
       this.scripts.onUserDefined = this.template.GetFieldByLabel('ScriptUserDefine').GetValue();
 
     let keys = Object.keys(this.scripts);
-    let len = keys.length;
-
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-
-        if(script != '' && script != undefined){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            this.scripts[keys[i]] = new NWScript(buffer);
-            this.scripts[keys[i]].name = script;
-            i++;
-            loadScript( onLoad, i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          i++;
-          loadScript( onLoad, i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 
@@ -456,8 +458,12 @@ class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.HasField('Cursor'))
       this.cursor = this.template.GetFieldByLabel('Cursor').GetValue();
 
-    if(this.template.RootNode.HasField('Faction'))
+    if(this.template.RootNode.HasField('Faction')){
       this.faction = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.faction & 0xFFFFFFFF) == -1){
+        this.faction = 0;
+      }
+    }
 
     if(this.template.RootNode.HasField('Geometry')){
       this.geometry = this.template.GetFieldByLabel('Geometry').GetChildStructs();

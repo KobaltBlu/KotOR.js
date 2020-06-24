@@ -23,37 +23,40 @@ class CharGenQuickOrCustom extends GameMenu {
 
         this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
+          try{
+            let class_data = Global.kotor2DA['classes'].rows[CharGenClass.SelectedClass];
+            let saving_throw_data = Global.kotor2DA[class_data['savingthrowtable'].toLowerCase()].rows[0];
+            let feats_table = Global.kotor2DA['feat'];
 
-          let class_data = Global.kotor2DA['classes'].rows[CharGenClass.SelectedClass];
-          let saving_throw_data = Global.kotor2DA[class_data['savingthrowtable'].toLowerCase()].rows[0];
-          let feats_table = Global.kotor2DA['feats'].rows;
+            Game.player.str = parseInt(class_data.str);
+            Game.player.dex = parseInt(class_data.dex);
+            Game.player.con = parseInt(class_data.con);
+            Game.player.wis = parseInt(class_data.wis);
+            Game.player.int = parseInt(class_data.int);
+            Game.player.cha = parseInt(class_data.cha);
+            Game.player.str = parseInt(class_data.str);
 
-          Game.player.str = parseInt(class_data.str);
-          Game.player.dex = parseInt(class_data.dex);
-          Game.player.con = parseInt(class_data.con);
-          Game.player.wis = parseInt(class_data.wis);
-          Game.player.int = parseInt(class_data.int);
-          Game.player.cha = parseInt(class_data.cha);
-          Game.player.str = parseInt(class_data.str);
+            Game.player.fortbonus = parseInt(saving_throw_data.fortsave);
+            Game.player.willbonus = parseInt(saving_throw_data.willsave);
+            Game.player.refbonus = parseInt(saving_throw_data.refsave);
 
-          Game.player.fortbonus = parseInt(saving_throw_data.fortsave);
-          Game.player.willbonus = parseInt(saving_throw_data.willsave);
-          Game.player.refbonus = parseInt(saving_throw_data.refsave);
+            let featstable_key = class_data['featstable'].toLowerCase();
 
-          let featstable_key = class_data['featstable'].toLowerCase();
-
-          for(let i = 0, len = feats_table.rows.length; i < len; i++){
-            let feat_data = feats_table[i];
-            if(feat_data[featstable_key+'_granted'] == 1){
-              Game.player.feats.push(i);
+            for(let i = 0, len = feats_table.rows.length; i < len; i++){
+              let feat_data = feats_table.rows[i];
+              if(feat_data[featstable_key+'_granted'] == 1){
+                Game.player.feats.push({type: 1, id: i });
+              }
             }
+            console.log('boo');
+            //Game.CharGenMain.state = CharGenMain.STATES.QUICK;
+            //Game.CharGenQuickPanel.Show();
+            Game.CharGenMain.Close();
+            Game.CharGenMain.childMenu = Game.CharGenQuickPanel;
+            Game.CharGenMain.Open();
+          }catch(e){
+            console.log(e);
           }
-          console.log('boo');
-          //Game.CharGenMain.state = CharGenMain.STATES.QUICK;
-          //Game.CharGenQuickPanel.Show();
-          Game.CharGenMain.Close();
-          Game.CharGenMain.childMenu = Game.CharGenQuickPanel;
-          Game.CharGenMain.Open();
         });
 
         this.CUST_CHAR_BTN.addEventListener('click', (e) => {

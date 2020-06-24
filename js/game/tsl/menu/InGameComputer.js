@@ -199,7 +199,7 @@ class InGameComputer extends GameMenu {
 
     let totalEntries = entries.length;
 
-    let entryLoop = (idx = 0) => {
+    let entryLoop = async (idx = 0) => {
       if(idx < totalEntries){
         let entry = entries[idx];
         if(entry.isActive == '' && entry.isActive2 == ''){
@@ -209,8 +209,10 @@ class InGameComputer extends GameMenu {
             this.showEntry(this.entryList[entry.index]);
           }
         }else if(entry.isActive != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
-            let script = new NWScript(buffer);
+          let script = await NWScript.Load(entry.isActive);
+          if(script instanceof NWScriptInstance){
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
+            //let script = new NWScript(buffer);
             script.setScriptParam(1, entry.isActiveParams.Param1);
             script.setScriptParam(2, entry.isActiveParams.Param2);
             script.setScriptParam(3, entry.isActiveParams.Param3);
@@ -221,7 +223,7 @@ class InGameComputer extends GameMenu {
             //console.log('dialog conditional', script);
             script.name = entry.isActive;
             //console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess) => {
+            script.run(this.owner, 0, async (bSuccess) => {
               console.log('dialog cond1', {
                 entry: entry,
                 script: entry.isActive, 
@@ -238,8 +240,10 @@ class InGameComputer extends GameMenu {
                     this.showEntry(this.entryList[entry.index]);
                   }
                 }else{
-                  ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
-                    let script = new NWScript(buffer);
+                  let script = await NWScript.Load(entry.isActive2);
+                  if(script instanceof NWScriptInstance){
+                  //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
+                    //let script = new NWScript(buffer);
                     script.setScriptParam(1, entry.isActive2Params.Param1);
                     script.setScriptParam(2, entry.isActive2Params.Param2);
                     script.setScriptParam(3, entry.isActive2Params.Param3);
@@ -273,16 +277,20 @@ class InGameComputer extends GameMenu {
                         entryLoop(++idx);
                       }
                     })
-                  });
+                  //});
+                  }
                 }
               }else{
                 entryLoop(++idx);
               }
             })
-          });
+          //});
+          }
         }else if(entry.isActive2 != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
-            let script = new NWScript(buffer);
+          let script = await NWScript.Load(entry.isActive2);
+          if(script instanceof NWScriptInstance){
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
+            //let script = new NWScript(buffer);
             script.setScriptParam(1, entry.isActive2Params.Param1);
             script.setScriptParam(2, entry.isActive2Params.Param2);
             script.setScriptParam(3, entry.isActive2Params.Param3);
@@ -312,7 +320,8 @@ class InGameComputer extends GameMenu {
                 entryLoop(++idx);
               }
             })
-          });
+          //});
+          }
         }
       }else{ 
         //No further branches
@@ -357,7 +366,7 @@ class InGameComputer extends GameMenu {
     }
   }
 
-  showEntry(entry){
+  async showEntry(entry){
     //console.log('showEntry', entry);
 
     if(!Game.inDialog)
@@ -428,8 +437,10 @@ class InGameComputer extends GameMenu {
 
     if(entry.script != ''){
       checkList.scriptComplete = false;
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
-        let script = new NWScript(buffer);
+      let script = await NWScript.Load(entry.script);
+      if(script instanceof NWScriptInstance){
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
+        //let script = new NWScript(buffer);
         script.setScriptParam(1, entry.scriptParams.Param1);
         script.setScriptParam(2, entry.scriptParams.Param2);
         script.setScriptParam(3, entry.scriptParams.Param3);
@@ -437,10 +448,12 @@ class InGameComputer extends GameMenu {
         script.setScriptParam(5, entry.scriptParams.Param5);
         script.setScriptStringParam(entry.scriptParams.String)
         script.name = entry.script;
-        script.run(this.owner, 0, () => {
+        script.run(this.owner, 0, async () => {
           if(entry.script2 != ''){
-            ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
-              let script = new NWScript(buffer);
+            let script = await NWScript.Load(entry.script2);
+            if(script instanceof NWScriptInstance){
+            //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
+              //let script = new NWScript(buffer);
               script.setScriptParam(1, entry.script2Params.Param1);
               script.setScriptParam(2, entry.script2Params.Param2);
               script.setScriptParam(3, entry.script2Params.Param3);
@@ -451,17 +464,21 @@ class InGameComputer extends GameMenu {
               script.run(this.owner, 0, () => {
                 checkList.scriptComplete = true;
               });
-            });
+            //});
+            }
           }else{
             checkList.scriptComplete = true;
           }
         });
         
-      });
+      //});
+      }
     }else if(entry.script2 != ''){
       checkList.scriptComplete = false;
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
-        let script = new NWScript(buffer);
+      let script = await NWScript.Load(entry.script2);
+      if(script instanceof NWScriptInstance){
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
+        //let script = new NWScript(buffer);
         script.setScriptParam(1, entry.script2Params.Param1);
         script.setScriptParam(2, entry.script2Params.Param2);
         script.setScriptParam(3, entry.script2Params.Param3);
@@ -472,7 +489,8 @@ class InGameComputer extends GameMenu {
         script.run(this.owner, 0, () => {
           checkList.scriptComplete = true;
         });
-      });
+      //});
+      }
     }
 
     //this.audioEmitter.Stop();
@@ -522,7 +540,7 @@ class InGameComputer extends GameMenu {
     }
   }
 
-  showReplies(entry){
+  async showReplies(entry){
 
     if(!Game.inDialog)
       return;
@@ -536,50 +554,49 @@ class InGameComputer extends GameMenu {
 
         //Try to run script 1
         if(reply.script != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              script.setScriptParam(1, reply.scriptParams.Param1);
-              script.setScriptParam(2, reply.scriptParams.Param2);
-              script.setScriptParam(3, reply.scriptParams.Param3);
-              script.setScriptParam(4, reply.scriptParams.Param4);
-              script.setScriptParam(5, reply.scriptParams.Param5);
-              script.setScriptStringParam(reply.scriptParams.String);
-              script.name = reply.script;
-              script.run(this.owner, 0, (bSuccess) => {
-                //Try to run script 2
-                if(reply.script2 != ''){
-                  ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
-                    if(buffer.length){
-                      let script = new NWScript(buffer);
-                      script.setScriptParam(1, reply.script2Params.Param1);
-                      script.setScriptParam(2, reply.script2Params.Param2);
-                      script.setScriptParam(3, reply.script2Params.Param3);
-                      script.setScriptParam(4, reply.script2Params.Param4);
-                      script.setScriptParam(5, reply.script2Params.Param5);
-                      script.setScriptStringParam(reply.script2Params.String);
-                      script.name = reply.script2;
-                      script.run(this.owner, 0, (bSuccess) => {
-                        
-                      })
-                      this.getNextEntry(reply.entries);
-                    }else{
-                      this.getNextEntry(reply.entries);
-                    }
-                  }, () => {
-                    this.getNextEntry(reply.entries);
+          let script = await NWScript.Load(reply.script);
+          if(script instanceof NWScriptInstance){
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
+            //let script = new NWScript(buffer);
+            script.setScriptParam(1, reply.scriptParams.Param1);
+            script.setScriptParam(2, reply.scriptParams.Param2);
+            script.setScriptParam(3, reply.scriptParams.Param3);
+            script.setScriptParam(4, reply.scriptParams.Param4);
+            script.setScriptParam(5, reply.scriptParams.Param5);
+            script.setScriptStringParam(reply.scriptParams.String);
+            script.name = reply.script;
+            script.run(this.owner, 0, async (bSuccess) => {
+              //Try to run script 2
+              if(reply.script2 != ''){
+                let script = await NWScript.Load(reply.script2);
+                if(script instanceof NWScriptInstance){
+                //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
+                  //if(buffer.length){
+                  //let script = new NWScript(buffer);
+                  script.setScriptParam(1, reply.script2Params.Param1);
+                  script.setScriptParam(2, reply.script2Params.Param2);
+                  script.setScriptParam(3, reply.script2Params.Param3);
+                  script.setScriptParam(4, reply.script2Params.Param4);
+                  script.setScriptParam(5, reply.script2Params.Param5);
+                  script.setScriptStringParam(reply.script2Params.String);
+                  script.name = reply.script2;
+                  script.run(this.owner, 0, (bSuccess) => {
+                    
                   });
+                  this.getNextEntry(reply.entries);
                 }else{
                   this.getNextEntry(reply.entries);
                 }
-
-              });
-            }else{
-              this.getNextEntry(reply.entries);
-            }
-          }, () => {
+              }else{
+                this.getNextEntry(reply.entries);
+              }
+            });
+          }else{
             this.getNextEntry(reply.entries);
-          });
+          }
+          /*}, () => {
+            this.getNextEntry(reply.entries);
+          });*/
         }else{
           this.getNextEntry(reply.entries);
         }
@@ -641,9 +658,9 @@ class InGameComputer extends GameMenu {
     //Loop through all scripts
     let loop = new AsyncLoop({
       array: scripts,
-      onLoop: (scriptObj, asyncLoop) => {
-        ResourceLoader.loadResource(ResourceTypes['ncs'], scriptObj.resref, (buffer) => {
-          let script = new NWScript(buffer);
+      onLoop: async (scriptObj, asyncLoop) => {
+        let script = await NWScript.Load(scriptObj.resref);
+        if(script instanceof NWScriptInstance){
           script.name = scriptObj.resref;
           script.setScriptParam(1, scriptObj.params.Param1);
           script.setScriptParam(2, scriptObj.params.Param2);
@@ -661,7 +678,10 @@ class InGameComputer extends GameMenu {
                 onComplete(shouldPass);
             }
           });
-        });
+        }else{
+          shouldPass = true;
+          asyncLoop._Loop();
+        }
       }
     });
     loop.Begin(() => {
@@ -674,7 +694,7 @@ class InGameComputer extends GameMenu {
   GetAvailableReplies(entry){
     let totalReplies = entry.replies.length;
     //console.log('GetAvailableReplies', entry);
-    let replyLoop = (idx = 0) => {
+    let replyLoop = async (idx = 0) => {
       if(idx < totalReplies){
         //console.log('replyLoop', entry.replies[idx], idx, idx < totalReplies);
         let reply = entry.replies[idx];
@@ -686,35 +706,32 @@ class InGameComputer extends GameMenu {
           });
           replyLoop(++idx);
         }else{
-          ResourceLoader.loadResource(ResourceTypes['ncs'], reply.isActive, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              /*script.setScriptParam(1, reply.scriptParams.Param1);
-              script.setScriptParam(2, reply.scriptParams.Param2);
-              script.setScriptParam(3, reply.scriptParams.Param3);
-              script.setScriptParam(4, reply.scriptParams.Param4);
-              script.setScriptParam(5, reply.scriptParams.Param5);
-              script.setScriptStringParam(reply.scriptParams.String);*/
-              //console.log('dialog', script);
-              script.name = reply.isActive;
-              //console.log(this.owner);
-              script.run(this.listener, 0, (bSuccess) => {
-                //console.log('dialog', script, bSuccess);
-                if(bSuccess){
-                  let _reply = this.replyList[reply.index];
-                  //console.log('showEntry.replies', _reply);
-                  this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
-                    this.onReplySelect(_reply);
-                  });
-                }
-                replyLoop(++idx);
-              })
-            }else{
+          let script = await NWScript.Load(reply.isActive);
+          if(script instanceof NWScriptInstance){
+            //let script = new NWScript(buffer);
+            /*script.setScriptParam(1, reply.scriptParams.Param1);
+            script.setScriptParam(2, reply.scriptParams.Param2);
+            script.setScriptParam(3, reply.scriptParams.Param3);
+            script.setScriptParam(4, reply.scriptParams.Param4);
+            script.setScriptParam(5, reply.scriptParams.Param5);
+            script.setScriptStringParam(reply.scriptParams.String);*/
+            //console.log('dialog', script);
+            script.name = reply.isActive;
+            //console.log(this.owner);
+            script.run(this.listener, 0, (bSuccess) => {
+              //console.log('dialog', script, bSuccess);
+              if(bSuccess){
+                let _reply = this.replyList[reply.index];
+                //console.log('showEntry.replies', _reply);
+                this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+_reply.text.split('##')[0], () => {
+                  this.onReplySelect(_reply);
+                });
+              }
               replyLoop(++idx);
-            }
-          }, () => {
+            });
+          }else{
             replyLoop(++idx);
-          });
+          }
         }
       }else{ 
         //No further branches
@@ -724,79 +741,70 @@ class InGameComputer extends GameMenu {
     replyLoop();
   }
 
-  onReplySelect(reply = null){
+  async onReplySelect(reply = null){
 
     //Try to run script 1
     if(reply.script != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-        if(buffer.length){
-          let script = new NWScript(buffer);
-          script.setScriptParam(1, reply.scriptParams.Param1);
-          script.setScriptParam(2, reply.scriptParams.Param2);
-          script.setScriptParam(3, reply.scriptParams.Param3);
-          script.setScriptParam(4, reply.scriptParams.Param4);
-          script.setScriptParam(5, reply.scriptParams.Param5);
-          script.setScriptStringParam(reply.scriptParams.String);
-          script.name = reply.script;
-          script.run(this.owner, 0, (bSuccess) => {
-            //Try to run script 2
-            if(reply.script2 != ''){
-              ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
-                if(buffer.length){
-                  let script = new NWScript(buffer);
-                  script.setScriptParam(1, reply.script2Params.Param1);
-                  script.setScriptParam(2, reply.script2Params.Param2);
-                  script.setScriptParam(3, reply.script2Params.Param3);
-                  script.setScriptParam(4, reply.script2Params.Param4);
-                  script.setScriptParam(5, reply.script2Params.Param5);
-                  script.setScriptStringParam(reply.script2Params.String);
-                  script.name = reply.script2;
-                  script.run(this.owner, 0, (bSuccess) => {
-                    
-                  })
-                  this.getNextEntry(reply.entries);
-                }else{
-                  this.getNextEntry(reply.entries);
-                }
-              }, () => {
-                this.getNextEntry(reply.entries);
-              });
+      let script = await NWScript.Load(reply.script);
+      if(script instanceof NWScriptInstance){
+        //let script = new NWScript(buffer);
+        script.setScriptParam(1, reply.scriptParams.Param1);
+        script.setScriptParam(2, reply.scriptParams.Param2);
+        script.setScriptParam(3, reply.scriptParams.Param3);
+        script.setScriptParam(4, reply.scriptParams.Param4);
+        script.setScriptParam(5, reply.scriptParams.Param5);
+        script.setScriptStringParam(reply.scriptParams.String);
+        script.name = reply.script;
+        script.run(this.owner, 0, async (bSuccess) => {
+          //Try to run script 2
+          if(reply.script2 != ''){
+            let script = await NWScript.Load(reply.script2);
+            if(script instanceof NWScriptInstance){
+              script.setScriptParam(1, reply.script2Params.Param1);
+              script.setScriptParam(2, reply.script2Params.Param2);
+              script.setScriptParam(3, reply.script2Params.Param3);
+              script.setScriptParam(4, reply.script2Params.Param4);
+              script.setScriptParam(5, reply.script2Params.Param5);
+              script.setScriptStringParam(reply.script2Params.String);
+              script.name = reply.script2;
+              script.run(this.owner, 0, (bSuccess) => {
+                
+              })
+              this.getNextEntry(reply.entries);
             }else{
               this.getNextEntry(reply.entries);
             }
+          }else{
+            this.getNextEntry(reply.entries);
+          }
 
-          });
-        }else{
-          this.getNextEntry(reply.entries);
-        }
-      }, () => {
+        });
+      }else{
         this.getNextEntry(reply.entries);
-      });
+      }
     }else{
       this.getNextEntry(reply.entries);
     }
 
   }
 
-  OnBeforeConversationEnd( onEnd = null ){
+  async OnBeforeConversationEnd( onEnd = null ){
 
     if(this.onEndConversation != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-        if(this.buffer.length){
-          let script = new NWScript(buffer);
-          //console.log('dialog.OnEndScript', script);
-          script.name = entry.isActive;
-          //console.log(this.owner);
-          script.run(this.owner, 0, (bSuccess) => {
-            //console.log('dialog', script, bSuccess);
-            if(typeof onEnd === 'function')
-              onEnd();
-          })
-        }else{
+      let script = await NWScript.Load(this.onEndConversation);
+      if(script instanceof NWScriptInstance){
+        //console.log('dialog.OnEndScript', script);
+        script.name = entry.isActive;
+        //console.log(this.owner);
+        script.run(this.owner, 0, (bSuccess) => {
+          //console.log('dialog', script, bSuccess);
           if(typeof onEnd === 'function')
             onEnd();
-        }
-      });
+        })
+      }else{
+        if(typeof onEnd === 'function')
+          onEnd();
+      }
     }
 
   }
@@ -841,35 +849,31 @@ class InGameComputer extends GameMenu {
 
     this.state = -1;
 
-    process.nextTick( () => {
+    process.nextTick( async () => {
 
       if(!aborted){
         if(this.onEndConversation != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
-              script.name = this.onEndConversation;
-              //console.log(this.owner);
-              script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
-              })
-            }
-          });
+          let script = await NWScript.Load(this.onEndConversation);
+          if(script instanceof NWScriptInstance){
+            //console.log('dialog.OnEndScript', script);
+            script.name = this.onEndConversation;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              //console.log('dialog.OnEndScript', script, bSuccess);
+            })
+          }
         }
       }else{
         if(this.onEndConversationAbort != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversationAbort, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
-              script.name = this.onEndConversationAbort;
-              //console.log(this.owner);
-              script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
-              })
-            }
-          });
+          let script = await NWScript.Load(this.onEndConversationAbort);
+          if(script instanceof NWScriptInstance){
+            //console.log('dialog.OnEndScript', script);
+            script.name = this.onEndConversationAbort;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              //console.log('dialog.OnEndScript', script, bSuccess);
+            })
+          }
         }
       }
     });

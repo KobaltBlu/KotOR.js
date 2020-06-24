@@ -8,6 +8,7 @@
  class AuroraModelAnimationNode {
 
   constructor(){
+    this.type = 'AuroraModelAnimationNode';
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.controllers = new Map();

@@ -185,12 +185,15 @@ class ModuleRoom extends ModuleObject {
                   onComplete(this);
               }
 
+              //Disable matrix update for static objects
+              room.disableMatrixUpdate();
+
             },
             context: this.context,
             castShadow: false,
             receiveShadow: true,
             //Merge Static Geometry *Experimental*
-            mergeStatic: true
+            mergeStatic: !Game.module.area.MiniGame ? true : false
           });
 
         }
@@ -303,7 +306,7 @@ class ModuleRoom extends ModuleObject {
             1, 0, 1, 0, 0, 1,
             1, 0, 1, 0, 0, 1
           ]);
-          grassGeometry.addAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
+          grassGeometry.setAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
 
           let quadIdx = new Float32Array([
             0, 0, 0, 0, 0, 0,
@@ -311,7 +314,7 @@ class ModuleRoom extends ModuleObject {
             2, 2, 2, 2, 2, 2,
             3, 3, 3, 3, 3, 3,
           ]);
-          grassGeometry.addAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
+          grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
           
           let geometry = new THREE.InstancedBufferGeometry();
           geometry.index = grassGeometry.index;
@@ -325,10 +328,10 @@ class ModuleRoom extends ModuleObject {
               case 1:
               case 2:
               case 3:
-                grassGeometry.addAttribute( 'uv'+(i+1), new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
+                grassGeometry.setAttribute( 'uv'+(i+1), new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
               break;
               default:
-                grassGeometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
+                grassGeometry.setAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
               break;
             }
           }
@@ -412,12 +415,12 @@ class ModuleRoom extends ModuleObject {
             }
           }
           
-          this.offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setDynamic( true );
+          this.offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
           this.orientationAttribute = new THREE.InstancedBufferAttribute( new Float32Array( orientations ), 4 );
           this.grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 );
-          geometry.addAttribute( 'offset', this.offsetAttribute );
-          geometry.addAttribute( 'orientation', this.orientationAttribute );
-          geometry.addAttribute( 'grassUV', this.grassUVAttribute );
+          geometry.setAttribute( 'offset', this.offsetAttribute );
+          geometry.setAttribute( 'orientation', this.orientationAttribute );
+          geometry.setAttribute( 'grassUV', this.grassUVAttribute );
           this.grassMesh = new THREE.Mesh( geometry, Game.module.grassMaterial );
           this.grassMesh.frustumCulled = false;
           this.grassMesh.renderOrder = 9999;

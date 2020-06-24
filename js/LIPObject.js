@@ -209,14 +209,14 @@ class LIPObject {
               }
               if(last_frame){
                 switch(controller.type){
-                  case ControllerType.Position:
-                    if(modelNode.controllers.get(ControllerType.Position)){
-                      this.anim._position.copy(modelNode.controllers.get(ControllerType.Position).data[0]);
+                  case AuroraModel.ControllerType.Position:
+                    if(modelNode.controllers.get(AuroraModel.ControllerType.Position)){
+                      this.anim._position.copy(modelNode.controllers.get(AuroraModel.ControllerType.Position).data[0]);
                     }
                     modelNode.position.copy(last_frame).add(this.anim._position);
                     modelNode.position.lerp(this.anim._position.add(next_frame), fl);
                   break;
-                  case ControllerType.Orientation:
+                  case AuroraModel.ControllerType.Orientation:
                     modelNode.quaternion.copy(last_frame);
                     modelNode.quaternion.slerp(this.anim._quaternion.copy(next_frame), fl);
                   break;

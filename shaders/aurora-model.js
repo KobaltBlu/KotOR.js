@@ -80,6 +80,23 @@ THREE.ShaderLib.aurora = {
   uniform float shininess;
   uniform float opacity;
   uniform float time;
+  uniform vec4 animatedUV; // MDL animatedUV properties
+  uniform vec4 waterAnimation; // Water TXI animation
+
+  float randF(vec2 co) {
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+  }
+
+  vec2 UVJitter( vec2 p ) {
+    // convert Vertex position <-1,+1> to texture coordinate <0,1> and some shrinking so the effect dont overlap screen
+    //p.x=( 0.55*p.x)+0.5;
+    //p.y=(-0.55*p.y)+0.5;
+    // wave distortion
+    float x = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.3477) + (randF(vec2(time, tan(time)))) ) * (animatedUV.z * 0.1));
+    float y = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.7812) + (randF(vec2(time, tan(time)))) ) * (animatedUV.w * 0.1));
+    return vec2(p.x + x + ((animatedUV.x * 50.0) * time), p.y + y + ((animatedUV.y * 50.0) * time));
+  }
+
   #ifdef WATER
     varying vec2 vUvWater;
     uniform float waterAlpha;
@@ -256,18 +273,6 @@ THREE.ShaderLib.aurora = {
     reflectedLight.directSpecular += irradiance * BRDF_Specular_BlinnPhong( directLight, geometry, material.specularColor, material.specularShininess ) * material.specularStrength * amount;
   }
 
-  vec4 lightMapTSLFix(const in vec4 lightMapColor){
-
-    vec4 fixedColor = vec4(lightMapColor);
-    if(fixedColor.w < 1.0){
-      fixedColor.x = lightMapColor.x * fixedColor.w;
-      fixedColor.y = lightMapColor.y * fixedColor.w;
-      fixedColor.z = lightMapColor.z * fixedColor.w;
-    }
-    return (fixedColor);
-
-  }
-
   //float rand(vec2 co) {
   //  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
   //}
@@ -282,7 +287,15 @@ THREE.ShaderLib.aurora = {
     ReflectedLight animatedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
     vec3 totalEmissiveRadiance = emissive;
     #include <logdepthbuf_fragment>
-    #include <map_fragment>
+    //#include <map_fragment>
+    #ifdef USE_MAP
+      vec4 texelColor = texture2D( map, vUv );
+      #if defined( ANIMATED_UV )
+        texelColor = texture2D( map, UVJitter(vUv) );
+      #endif
+      texelColor = mapTexelToLinear( texelColor );
+      diffuseColor *= texelColor;
+    #endif
     #include <color_fragment>
     #include <alphamap_fragment>
     #include <alphatest_fragment>
@@ -373,7 +386,11 @@ THREE.ShaderLib.aurora = {
         vec3 outgoingLight = reflectedLight.indirectDiffuse + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
       #else
         //reflectedLight.indirectDiffuse = vec3(diffuseColor.rgb);
-        vec3 outgoingLight = (reflectedLight.directDiffuse * tweakColor) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+        #ifdef SELFILLUMCOLOR
+          vec3 outgoingLight = (reflectedLight.directDiffuse) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+        #else
+          vec3 outgoingLight = (reflectedLight.directDiffuse * tweakColor) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+        #endif
       #endif
     #endif
     
@@ -383,6 +400,7 @@ THREE.ShaderLib.aurora = {
       //outgoingLight = max(diffuseColor.rgb, mix( diffuseColor.rgb, emissive, 0.5 ));
       outgoingLight = (diffuseColor.rgb * tweakColor) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
       #ifdef SELFILLUMCOLOR
+        outgoingLight = (diffuseColor.rgb) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
         outgoingLight *= max(vec3(0.25), selfIllumColor);
       #endif
       //outgoingLight = max( diffuseColor.rgb, diffuseColor.rgb * emissive );// + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance)* 0.5);
@@ -468,6 +486,7 @@ THREE.ShaderLib.aurora = {
   #ifdef WATER
     uniform mat3 waterTransform;
     varying vec2 vUvWater;
+    uniform vec4 waterAnimation;
   #endif
 
   #ifdef DANGLY
@@ -493,7 +512,33 @@ THREE.ShaderLib.aurora = {
       #if defined( USE_UV ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
         vUv = ( uvTransform * vec3( uv, 1 ) ).xy;
       #endif
-      vUvWater = ( waterTransform * vec3( uv, 1 ) ).xy;
+        //vec2 waterUV = vec2(0.0, 0.0);
+
+        //SpriteSheet Calculations
+        float framesX = waterAnimation.x;
+        float framesY = waterAnimation.y;
+        float totalFrames = waterAnimation.z;
+        float fps = waterAnimation.w;
+        
+        float deltaMax = (1.0 / fps) * totalFrames;
+        float fTime = mod(time, deltaMax) / deltaMax;
+        float frameNumber = floor(mod( fTime * totalFrames, totalFrames ));
+
+        float column = floor(mod( frameNumber, framesX ));
+        float row = floor( (frameNumber - column) / framesX );
+
+        float columnNorm = column / framesX;
+        float rowNorm = row / framesY;
+
+        vec2 waterUV = vec2(
+          columnNorm,
+          rowNorm
+        );
+
+        mat3 waterTrans = mat3(0.0);
+
+        //vUvWater = vec2(1.0 / framesX, 1.0 / framesY);
+        vUvWater = waterUV + uv;//( waterTransform * vec3( vUvWater, 1 ) ).xy;
     #else
       #include <uv_vertex>
     #endif
@@ -517,6 +562,12 @@ THREE.ShaderLib.aurora = {
       float wind = (1.0 * danglyPeriod) * ( cos(time) );
       transformed += vec3(cos(wind) * constraint.x, sin(wind) * constraint.y, cos(wind) * constraint.z * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
     #endif
+
+    #ifdef FORCE_SHIELD
+      //Expand the vertex along it's normal direction
+      transformed += objectNormal * 0.01;
+    #endif
+
     #include <project_vertex>
     #include <logdepthbuf_vertex>
     #include <clipping_planes_vertex>
@@ -533,8 +584,9 @@ THREE.ShaderLib.aurora = {
     { selfIllumColor: { value: new THREE.Color() } },
     { tweakColor: { value: new THREE.Color() } },
     { time: { value: 0.0 } },
-    { animatedUV: { value: new THREE.Vector4() } },
+    { animatedUV: { value: new THREE.Vector4(0, 0, 0, 0) } },
     { waterAlpha: { value: 1 } },
+    { waterAnimation : { value: new THREE.Vector4(0, 0, 0, 0) } },
     { waterTransform: { value: new THREE.Matrix3() } },
     { danglyDisplacement: { value: 0 } },
     { danglyTightness: { value: 0 } },

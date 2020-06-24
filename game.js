@@ -1,5 +1,5 @@
 'use strict';
-
+require('v8-compile-cache');
 const obj_undefined = 2130706432;
 const partySlot0 = 2147483647;
 const partySlot1 = 2147483646;
@@ -55,8 +55,11 @@ var Promise = require("bluebird");
 const Reverb = require('soundbank-reverb');
 const BitBuffer = require('bit-buffer');
 const beamcoder = require('beamcoder');
+const dxt = require('dxt');
 
-const isRunningInAsar = require('electron-is-running-in-asar');
+const isRunningInAsar = function(){
+  return false;
+};//require('electron-is-running-in-asar');
 
 const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
 const loader = new LoadingScreen();
@@ -157,6 +160,7 @@ const AuroraModelNodeReference = require(path.join(app.getAppPath(), 'js/aurora/
 const AuroraModelNodeSkin = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSkin.js'));
 const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimation.js'));
 const AuroraModelAnimationNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationNode.js'));
+const AuroraModelAnimationManager = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationManager.js'));
 const AuroraWalkMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraWalkMesh.js'));
 
 const Shaders = {};
@@ -203,10 +207,19 @@ const VISObject = require(path.join(app.getAppPath(), 'js/VISObject.js'));
 const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
+const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstance.js'));
 const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
 const NWScriptDef = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDef.js'));
 const NWScriptDefK1 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK1.js'));
 const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK2.js'));
+const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDecompiler.js'));
+
+/* Effects */
+const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));
+const EffectBeam = require(path.join(app.getAppPath(), 'js/effects/EffectBeam.js'));
+const EffectDeath = require(path.join(app.getAppPath(), 'js/effects/EffectDeath.js'));
+const EffectDisguise = require(path.join(app.getAppPath(), 'js/effects/EffectDisguise.js'));
+const EffectVisualEffect = require(path.join(app.getAppPath(), 'js/effects/EffectVisualEffect.js'));
 
 /* Module */
 const ModuleObject = require(path.join(app.getAppPath(), 'js/module/ModuleObject.js'));
@@ -257,6 +270,7 @@ const ResourceLoader = require(path.join(app.getAppPath(), 'js/ResourceLoader.js
 
 const IngameControls = require(path.join(app.getAppPath(), 'js/IngameControls.js'));
 const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
+const JournalManager = require(path.join(app.getAppPath(), 'js/JournalManager.js'));
 
 let Config = new ConfigManager('settings.json');
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
@@ -279,8 +293,9 @@ const MenuManager = require(path.join(app.getAppPath(), 'js/gui/MenuManager.js')
 
 /* MISC Managers */
 const InventoryManager = require(path.join(app.getAppPath(), 'js/InventoryManager.js')); 
-const CursorManager = require(path.join(app.getAppPath(), 'js/CursorManager.js')); 
+const CursorManager = require(path.join(app.getAppPath(), 'js/CursorManager.js'));
 const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
+const PartyTableManager = require(path.join(app.getAppPath(), 'js/PartyTableManager.js'));
 const Planetary = require(path.join(app.getAppPath(), 'js/Planetary.js')).Planetary; 
 const Planet = require(path.join(app.getAppPath(), 'js/Planetary.js')).Planet; 
 const Template = new TemplateEngine();
@@ -322,59 +337,6 @@ AudioEngine.GAIN_SFX = iniConfig.getProperty('Sound Options.Sound Effects Volume
 AudioEngine.GAIN_MOVIE = iniConfig.getProperty('Sound Options.Movie Volume').value * .01;
 
 const ModelCache = { models:{} };
-
-let ControllerType = {
-  Position             : 8,
-  Orientation          : 20,
-  Scale                : 36,
-  Color                : 76,
-  Radius               : 88,
-  ShadowRadius         : 96,
-  VerticalDisplacement : 100,
-  Multiplier           : 140,
-  AlphaEnd             : 80,
-  AlphaStart           : 84,
-  BirthRate            : 88,
-  Bounce_Co            : 92,
-  ColorEnd             : 380,
-  ColorStart           : 392,
-  CombineTime          : 96,
-  Drag                 : 100,
-  FPS                  : 104,
-  FrameEnd             : 108,
-  FrameStart           : 112,
-  Grav                 : 116,
-  LifeExp              : 120,
-  Mass                 : 124,
-  Threshold            : 164,
-  P2P_Bezier2          : 128,
-  P2P_Bezier3          : 132,
-  ParticleRot          : 136,
-  RandVel              : 140,
-  SizeStart            : 144,
-  SizeEnd              : 148,
-  SizeStart_Y          : 152,
-  SizeEnd_Y            : 156,
-  Spread               : 160,
-  Threshold            : 164,
-  Velocity             : 168,
-  XSize                : 172,
-  YSize                : 176,
-  BlurLength           : 180,
-  LightningDelay       : 184,
-  LightningRadius      : 188,
-  LightningScale       : 192,
-  Detonate             : 228,
-  AlphaMid             : 216,
-  ColorMid             : 284,
-  PercentStart         : 220,
-  PercentMid           : 224,
-  PercentEnd           : 228,
-  SizeMid              : 232,
-  SizeMid_Y            : 236,
-  SelfIllumColor       : 100,
-  Alpha                : 132
-}
 
 let AnimatedTextures = [];
 
@@ -665,6 +627,23 @@ THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
 
       children[ i ].updateMatrixWorld( force );
 
+  }
+
+}
+
+THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
+
+  if(this.name == ignoreName)
+    return;
+
+  callback( this );
+
+  var children = this.children;
+
+  for ( var i = 0, l = children.length; i < l; i ++ ) {
+    if(typeof children[ i ].traverseIgnore === 'function'){
+      children[ i ].traverseIgnore( ignoreName, callback );
+    }
   }
 
 }

@@ -156,8 +156,8 @@
       
       for(let i = 0; i < this.aabbNodes.length; i++){
         let node = this.aabbNodes[i];
-        node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
-        this.aabbGroup.add( node.boxHelper );
+        //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
+        //this.aabbGroup.add( node.boxHelper );
 
         node.face = this.faces[node.leafFaceIndex];
         node.leftNode = this.aabbNodes[node.leftNodeArrayIndex];

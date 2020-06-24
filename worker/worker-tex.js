@@ -51,13 +51,28 @@ onmessage = function (e){
           if(Header.minDataSize == 1)
             Header.bitsPerPixel = 8;
         } else {
-          let dataLength = dataSize;//Math.max( 4, width ) / 4 * Math.max( 4, height ) / 4 * Header.minDataSize;
+          //let dataLength = dataSize;//Math.max( 4, width ) / 4 * Math.max( 4, height ) / 4 * Header.minDataSize;
+          let dataLength = 0;//Math.max(Header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * Header.minDataSize);
+
+          let pixel_bytes = 1;
+          if(Header.format == PixelFormat.DXT1){
+            pixel_bytes = 0.5;
+          }
+
+          if (Header.compressed && (width % 4 || height % 4)) {
+            dataLength = Math.max(Header.minDataSize, parseInt((width + 3) / 4) * parseInt((height + 3) / 4) * Header.minDataSize);
+          } else {
+            dataLength = Math.max(Header.minDataSize, width * height * pixel_bytes);
+          }
+          
           if(Header.format == PixelFormat.DXT5){
+            //dataLength = Math.max(Header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * Header.minDataSize);
             let pEncode = new Uint8Array(buffer.buffer, dataOffset, dataLength);
             byteArray = new Uint8Array(width * height * 4);
             Decode(byteArray, width, height, pEncode, kDxt5);
             Header.bitsPerPixel = 32;
           }else if(Header.format == PixelFormat.DXT1){
+            //dataLength = Math.max(Header.minDataSize, 256 * 256 * 0.5);
             let pEncode = new Uint8Array(buffer.buffer, dataOffset, dataLength);
             byteArray = new Uint8Array(width * height * 4);
             Decode(byteArray, width, height, pEncode, kDxt1);
@@ -65,6 +80,7 @@ onmessage = function (e){
           }else{
             console.error('Image Type Not Found', Header, isRGBAUncompressed)
           }
+          dataSize = dataLength;
         }
 
         if(Header.faces == 6){

@@ -5804,7 +5804,12 @@ NWScriptDefK2.Actions = {
     name: 'IsRunning',
     type: NWScript.DATATYPE.INTEGER,
     args: [ 'object' ],
-    action: undefined
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].animState == ModuleCreature.AnimState.RUNNING;
+      }
+      return 0;
+    }
   },
    825: {
     comment: '825\nFAK - OEI 5/24/04\napplies a velocity to the player object',

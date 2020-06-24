@@ -325,6 +325,7 @@ class ModuleEditorTab extends EditorTab {
       antialias: true,
       autoClear: false,
       depth: false,
+      logarithmicDepthBuffer: true,
     });
     this.renderer.autoClear = false;
     //this.renderer.sortObjects = false;

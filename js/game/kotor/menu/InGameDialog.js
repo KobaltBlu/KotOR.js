@@ -416,7 +416,7 @@ class MenuDialog extends GameMenu {
 
     let totalEntries = entries.length;
 
-    let entryLoop = (idx = 0) => {
+    let entryLoop = async (idx = 0) => {
       if(idx < totalEntries){
         let entry = entries[idx];
         if(entry.isActive == ''){
@@ -426,8 +426,8 @@ class MenuDialog extends GameMenu {
             this.showEntry(this.entryList[entry.index]);
           }
         }else{
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
-            let script = new NWScript(buffer);
+          let script = await NWScript.Load(entry.isActive);
+          if(script instanceof NWScriptInstance){
             //console.log('dialog', script);
             script.name = entry.isActive;
             //console.log(this.owner);
@@ -444,7 +444,7 @@ class MenuDialog extends GameMenu {
                 entryLoop(++idx);
               }
             })
-          });
+          }
         }
       }else{ 
         //No further branches
@@ -491,7 +491,7 @@ class MenuDialog extends GameMenu {
     }
   }
 
-  showEntry(entry){
+  async showEntry(entry){
 
     this.state = 0;
 
@@ -636,13 +636,13 @@ class MenuDialog extends GameMenu {
     }
 
     if(entry.script != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
-        let script = new NWScript(buffer);
+      let script = await NWScript.Load(entry.script);
+      if(script instanceof NWScriptInstance){
         script.name = entry.script;
         script.run(this.owner, 0, () => {
 
         });
-      });
+      }
     }
 
     if(entry.sound != ''){
@@ -691,7 +691,7 @@ class MenuDialog extends GameMenu {
 
   }
 
-  showReplies(entry){
+  async showReplies(entry){
 
     this.state = 1;
 
@@ -709,26 +709,22 @@ class MenuDialog extends GameMenu {
         //console.log('showEntry.replies', _reply);
         this.getNextEntry(reply.entries);
       }else{
-        ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-          if(buffer.length){
-            let script = new NWScript(buffer);
-            //console.log('dialog', script);
-            script.name = entry.script;
-            //console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess) => {
-              //console.log('dialog', script, bSuccess);
-              if(bSuccess){
-                let _reply = this.replyList[reply.index];
-                //console.log('showEntry.replies', _reply);
-              }
-              this.getNextEntry(reply.entries);
-            })
-          }else{
+        let script = await NWScript.Load(reply.script);
+        if(script instanceof NWScriptInstance){
+          //console.log('dialog', script);
+          script.name = entry.script;
+          //console.log(this.owner);
+          script.run(this.owner, 0, (bSuccess) => {
+            //console.log('dialog', script, bSuccess);
+            if(bSuccess){
+              let _reply = this.replyList[reply.index];
+              //console.log('showEntry.replies', _reply);
+            }
             this.getNextEntry(reply.entries);
-          }
-        }, () => {
+          })
+        }else{
           this.getNextEntry(reply.entries);
-        });
+        }
       }
 
       //Return so none of the node specific code runs
@@ -741,26 +737,22 @@ class MenuDialog extends GameMenu {
         //console.log('showEntry.replies', _reply);
         this.EndConversation();
       }else{
-        ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-          if(buffer.length){
-            let script = new NWScript(buffer);
-            //console.log('dialog', script);
-            script.name = entry.script;
-            //console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess) => {
-              //console.log('dialog', script, bSuccess);
-              if(bSuccess){
-                let _reply = this.replyList[reply.index];
-                //console.log('showEntry.replies', _reply);
-              }
-              this.EndConversation();
-            })
-          }else{
+        let script = await NWScript.Load(reply.script);
+        if(script instanceof NWScriptInstance){
+          //console.log('dialog', script);
+          script.name = entry.script;
+          //console.log(this.owner);
+          script.run(this.owner, 0, (bSuccess) => {
+            //console.log('dialog', script, bSuccess);
+            if(bSuccess){
+              let _reply = this.replyList[reply.index];
+              //console.log('showEntry.replies', _reply);
+            }
             this.EndConversation();
-          }
-        }, () => {
+          })
+        }else{
           this.EndConversation();
-        });
+        }
       }
       //Return so none of the node specific code runs
       return;
@@ -800,7 +792,7 @@ class MenuDialog extends GameMenu {
   GetAvailableReplies(entry){
     let totalReplies = entry.replies.length;
     //console.log('GetAvailableReplies', entry);
-    let replyLoop = (idx = 0) => {
+    let replyLoop = async (idx = 0) => {
       if(idx < totalReplies){
         //console.log('replyLoop', entry.replies[idx], idx, idx < totalReplies);
         let reply = entry.replies[idx];
@@ -812,29 +804,25 @@ class MenuDialog extends GameMenu {
           });
           replyLoop(++idx);
         }else{
-          ResourceLoader.loadResource(ResourceTypes['ncs'], reply.isActive, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              //console.log('dialog', script);
-              script.name = entry.isActive;
-              //console.log(this.owner);
-              script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog', script, bSuccess);
-                if(bSuccess){
-                  let _reply = this.replyList[reply.index];
-                  //console.log('showEntry.replies', _reply);
-                  this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+this.StringTokenParser(_reply.text.split('##')[0]), () => {
-                    this.onReplySelect(_reply);
-                  });
-                }
-                replyLoop(++idx);
-              })
-            }else{
+          let script = await NWScript.Load(reply.isActive);
+          if(script instanceof NWScriptInstance){
+            //console.log('dialog', script);
+            script.name = entry.isActive;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              //console.log('dialog', script, bSuccess);
+              if(bSuccess){
+                let _reply = this.replyList[reply.index];
+                //console.log('showEntry.replies', _reply);
+                this.LB_REPLIES.addItem(this.LB_REPLIES.children.length+1+'. '+this.StringTokenParser(_reply.text.split('##')[0]), () => {
+                  this.onReplySelect(_reply);
+                });
+              }
               replyLoop(++idx);
-            }
-          }, () => {
+            })
+          }else{
             replyLoop(++idx);
-          });
+          }
         }
       }else{
         this.LB_REPLIES.updateList();
@@ -858,50 +846,44 @@ class MenuDialog extends GameMenu {
     return text;
   }
 
-  onReplySelect(reply = null){
+  async onReplySelect(reply = null){
 
     if(reply.script != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-        if(buffer.length){
-          let script = new NWScript(buffer);
-          //console.log('dialog.reply', script);
-          script.name = reply.script;
-          //console.log(this.owner);
-          script.run(this.owner, 0, (bSuccess) => {
-            
-          })
-          this.getNextEntry(reply.entries);
-        }else{
-          this.getNextEntry(reply.entries);
-        }
-      }, () => {
+      let script = await NWScript.Load(reply.script);
+      if(script instanceof NWScriptInstance){
+        //console.log('dialog.reply', script);
+        script.name = reply.script;
+        //console.log(this.owner);
+        script.run(this.owner, 0, (bSuccess) => {
+          
+        })
         this.getNextEntry(reply.entries);
-      });
+      }else{
+        this.getNextEntry(reply.entries);
+      }
     }else{
       this.getNextEntry(reply.entries);
     }
 
   }
 
-  OnBeforeConversationEnd( onEnd = null ){
+  async OnBeforeConversationEnd( onEnd = null ){
 
     if(this.onEndConversation != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-        if(this.buffer.length){
-          let script = new NWScript(buffer);
-          //console.log('dialog.OnEndScript', script);
-          script.name = entry.isActive;
-          //console.log(this.owner);
-          script.run(this.owner, 0, (bSuccess) => {
-            //console.log('dialog', script, bSuccess);
-            if(typeof onEnd === 'function')
-              onEnd();
-          })
-        }else{
+      let script = await NWScript.Load(this.onEndConversation);
+      if(script instanceof NWScriptInstance){
+        //console.log('dialog.OnEndScript', script);
+        script.name = entry.isActive;
+        //console.log(this.owner);
+        script.run(this.owner, 0, (bSuccess) => {
+          //console.log('dialog', script, bSuccess);
           if(typeof onEnd === 'function')
             onEnd();
-        }
-      });
+        })
+      }else{
+        if(typeof onEnd === 'function')
+          onEnd();
+      }
     }
 
   }
@@ -927,37 +909,33 @@ class MenuDialog extends GameMenu {
     this.state = -1;
 
     if(this.animatedCamera instanceof THREE.AuroraModel)
-      this.animatedCamera.currentAnimation = undefined;
+      this.animatedCamera.animationManager.currentAnimation = undefined;
 
-    process.nextTick( () => {
+    process.nextTick( async () => {
 
       if(!aborted){
         if(this.onEndConversation != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
-              script.name = this.onEndConversation;
-              //console.log(this.owner);
-              script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
-              })
-            }
-          });
+          let script = await NWScript.Load(this.onEndConversation);
+          if(script instanceof NWScriptInstance){
+            //console.log('dialog.OnEndScript', script);
+            script.name = this.onEndConversation;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              //console.log('dialog.OnEndScript', script, bSuccess);
+            })
+          }
         }
       }else{
         if(this.onEndConversationAbort != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversationAbort, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
-              script.name = this.onEndConversationAbort;
-              //console.log(this.owner);
-              script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
-              })
-            }
-          });
+          let script = await NWScript.Load(this.onEndConversationAbort);
+          if(script instanceof NWScriptInstance){
+            //console.log('dialog.OnEndScript', script);
+            script.name = this.onEndConversationAbort;
+            //console.log(this.owner);
+            script.run(this.owner, 0, (bSuccess) => {
+              //console.log('dialog.OnEndScript', script, bSuccess);
+            })
+          }
         }
       }
     });
@@ -1119,7 +1097,7 @@ class MenuDialog extends GameMenu {
     if(this.animatedCamera instanceof THREE.AuroraModel){
       //Game.currentCamera = Game.camera_animated;
       //this.animatedCamera.pose();
-      //this.animatedCamera.currentAnimation = undefined;
+      //this.animatedCamera.animationManager.currentAnimation = undefined;
       //console.log('animatedCamera', this.GetActorAnimation(nCamera), 'Begin');
       //this.animatedCamera.poseAnimation(GetActorAnimation(nCamera));
       this.animatedCamera.playAnimation(this.GetActorAnimation(nCamera), false, () => {

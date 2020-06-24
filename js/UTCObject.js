@@ -44,32 +44,25 @@ class UTCObject {
     this.scripts.onSpellAt = this.gff.GetFieldByLabel('ScriptSpellAt').GetValue();
     this.scripts.onUserDefined = this.gff.GetFieldByLabel('ScriptUserDefine').GetValue();
 
-    let len = 14;
     let keys = Object.keys(this.scripts);
-
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-
-        if(script != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            this.scripts[keys[i]] = new NWScript(buffer);
-            i++;
-            loadScript( onLoad, i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          i++;
-          loadScript( onLoad, i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 
@@ -261,6 +254,7 @@ class UTCObject {
           THREE.AuroraModel.FromMDL(mdl, {
             onComplete: (head) => {
               try{
+                this.model.headhook.head = head;
                 this.model.headhook.add(head);
                 //head.buildSkeleton();
 

@@ -41,7 +41,8 @@ class Game extends Engine {
     Game.renderer = new THREE.WebGLRenderer({
       antialias: true,
       canvas: Game.canvas,
-      context: Game.context
+      context: Game.context,
+      logarithmicDepthBuffer: true
     });
 
     Game.renderer.autoClear = false;
@@ -249,9 +250,11 @@ class Game extends Engine {
       party: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
+      shadow_lights: new THREE.Group(),
       emitters: new THREE.Group(),
       stunt: new THREE.Group(),
       weather_effects: new THREE.Group(),
+      room_walkmeshes: new THREE.Group(),
     };
 
     Game.weather_effects = [];
@@ -269,9 +272,11 @@ class Game extends Engine {
 
     Game.scene.add(Game.group.lights);
     Game.scene.add(Game.group.light_helpers);
+    Game.scene.add(Game.group.shadow_lights);
     Game.scene.add(Game.group.emitters);
 
     Game.scene.add(Game.group.party);
+    Game.scene.add(Game.group.room_walkmeshes);
 
     Game.group.light_helpers.visible = false;
 
@@ -318,7 +323,8 @@ class Game extends Engine {
       Game.group.doors, 
       Game.group.creatures, 
       Game.group.party,
-      Game.group.rooms
+      //Game.group.rooms
+      Game.group.room_walkmeshes
     ];
 
     Game.scene_cursor_holder = new THREE.Group();
@@ -542,7 +548,7 @@ class Game extends Engine {
     Game.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
     Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
     Game.viewportProjectionMatrix.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse );
-    Game.viewportFrustum.setFromMatrix( Game.viewportProjectionMatrix );
+    Game.viewportFrustum.setFromProjectionMatrix( Game.viewportProjectionMatrix );
 
     // frustum is now ready to check all the objects you need
     //frustum.intersectsObject( object )
@@ -551,54 +557,57 @@ class Game extends Engine {
   static onMouseHitInteractive( onSuccess = null ){
 
     //Before picking hide all placeables onscreen that are not interactable
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
+    let pLen = Game.module.area.placeables.length;
+    for(let i = 0; i < pLen; i++){
       let plc = Game.module.area.placeables[i];
-      if(plc.model instanceof THREE.AuroraModel){
+      if(plc.model.type === 'AuroraModel'){
         plc.wasVisible = plc.model.visible;
         if(!plc.isUseable()){
           plc.model.visible = false;
         }
       }
     }
+
+    for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
+      let obj = Game.octree_walkmesh.objects[i];
+      if(obj.type === 'Mesh'){
+        obj.visible = true;
+      }
+    }
     
     Game.raycaster.setFromCamera( Game.mouse, Game.camera );
     let intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );
 
+    //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
     if(intersects.length){
       let intersection = intersects[0],
           obj = intersection.object;
 
-      obj.traverseAncestors( (obj) => {
-        if(obj instanceof THREE.AuroraModel){
+      if(typeof obj.auroraModel !== 'undefined'){
+        obj = obj.auroraModel;
+        if(obj.type === 'AuroraModel'){
           if(obj != Game.getCurrentPlayer().getModel()){
             if(typeof onSuccess === 'function')
               onSuccess(obj, intersection.object);
-
-            return;
-          }else{
-            if(intersects.length >=2){
-              intersection = intersects[1],
-              obj = intersection.object;
-              obj.traverseAncestors( (obj) => {
-                if(obj instanceof THREE.AuroraModel){
-                  
-                  if(typeof onSuccess === 'function')
-                    onSuccess(obj, intersection.object);
-
-                  return;
-                }
-              });
-            }
           }
-          
         }
-      });
+      }
+    }
+
+    for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
+      let obj = Game.octree_walkmesh.objects[i];
+      if(obj.type === 'Mesh'){
+        obj.visible = false;
+      }
     }
 
     //After picking is done reshow all placeables that we hid
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
+    for(let i = 0; i < pLen; i++){
       let plc = Game.module.area.placeables[i];
-      if(plc.model instanceof THREE.AuroraModel){
+      if(!plc.model)
+        continue;
+
+      if(plc.model.type === 'AuroraModel'){
         plc.model.visible = plc.wasVisible;
       }
     }
@@ -764,11 +773,23 @@ class Game extends Engine {
 
           Game.binkVideo = new BIKObject();
 
-          Game.MainMenu.Open();
-          $( window ).trigger('resize');
-          this.setTestingGlobals();
-          Game.Update();
-          loader.Hide();
+          //Preload fx textures
+          TextureLoader.enQueue(
+            ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
+            'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
+            'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
+            'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
+            undefined,
+            TextureLoader.Type.TEXTURE
+          );
+
+          TextureLoader.LoadQueue(() => {
+            Game.MainMenu.Open();
+            $( window ).trigger('resize');
+            this.setTestingGlobals();
+            Game.Update();
+            loader.Hide();
+          });
         })
 
       });
@@ -837,9 +858,7 @@ class Game extends Engine {
     Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);
     Game.holdWorldFadeInForDialog = false;
-    try{
-      Game.audioEngine.stopBackgroundMusic();
-    }catch(e){}
+    Game.audioEngine.stopBackgroundMusic();
     Game.audioEngine.Reset();
 
     //Game.InGameOverlay.Show();
@@ -880,7 +899,7 @@ class Game extends Engine {
     while (Game.walkmeshList.length){
       let wlkmesh = Game.walkmeshList.shift();
       //wlkmesh.dispose();
-      Game.scene.remove(wlkmesh);
+      Game.group.room_walkmeshes.remove(wlkmesh);
       Game.octree_walkmesh.remove(wlkmesh);
     }
 
@@ -946,6 +965,9 @@ class Game extends Engine {
 
     }
 
+    //Remove all cached scripts and kill all running instances
+    NWScript.Reload();
+
     //Resets all keys to their default state
     Game.controls.InitKeys();
 
@@ -980,12 +1002,6 @@ class Game extends Engine {
 
               let runSpawnScripts = !Game.isLoadingSave;
               Game.isLoadingSave = false;
-
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
               
               Game.InGameComputer.audioEmitter = Game.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
                 engine: Game.audioEngine,
@@ -1016,6 +1032,13 @@ class Game extends Engine {
               Game.InGameOverlay.RecalculatePosition();
               Game.InGameOverlay.Open();
               Game.renderer.compile(Game.scene, Game.currentCamera);
+
+              if(Game.module.area.MiniGame){
+                Game.Mode = Game.MODES.MINIGAME
+              }else{
+                Game.Mode = Game.MODES.INGAME;
+              }
+              
               setTimeout( () => {
                 console.log('inDialog', Game.inDialog);
                 console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
@@ -1026,24 +1049,16 @@ class Game extends Engine {
                   if(runSpawnScripts){
                     for(let i = 0; i < Game.module.area.creatures.length; i++){
                       if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                        if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
-                          try{
-                            Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                          }catch(e){
-                            console.error(e);
-                          }
+                        if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
+                          Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
                         }
                       }
                     }
 
                     for(let i = 0; i < PartyManager.party.length; i++){
                       if(PartyManager.party[i] instanceof ModuleCreature){
-                        if(PartyManager.party[i].scripts.onSpawn instanceof NWScript){
-                          try{
-                            PartyManager.party[i].scripts.onSpawn.run(PartyManager.party[i]);
-                          }catch(e){
-                            console.error(e);
-                          }
+                        if(PartyManager.party[i].scripts.onSpawn instanceof NWScriptInstance){
+                          PartyManager.party[i].scripts.onSpawn.run(PartyManager.party[i]);
                         }
                       }
                     }
@@ -1072,7 +1087,7 @@ class Game extends Engine {
     
     for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
       let obj = Game.octree_walkmesh.objects[i];
-      if(obj instanceof THREE.Mesh){
+      if(obj.type === 'Mesh'){
         obj.visible = true;
       }
     }
@@ -1117,7 +1132,7 @@ class Game extends Engine {
 
     for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
       let obj = Game.octree_walkmesh.objects[i];
-      if(obj instanceof THREE.Mesh){
+      if(obj.type === 'Mesh'){
         obj.visible = false;
       }
     }
@@ -1196,7 +1211,7 @@ class Game extends Engine {
 
   static Update(){
     
-    requestAnimationFrame( Game.Update );
+    
     /*if(!Game.visible){
       requestAnimationFrame( Game.Update );
       return;
@@ -1212,9 +1227,11 @@ class Game extends Engine {
       Game.binkVideo.update(delta);
 
       Game.renderer.render(Game.binkVideo.scene, Game.camera_gui);
-
+      requestAnimationFrame( Game.Update );
       return;
     }
+
+    requestAnimationFrame( Game.Update );
 
     Game.UpdateVideoEffect();
 
@@ -1232,7 +1249,7 @@ class Game extends Engine {
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
       if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && Game.State != Game.STATES.PAUSED && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
-        Game.viewportFrustum.setFromMatrix(Game.currentCamera.projectionMatrix);
+        Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
         Game.updateTime(delta);
         if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
           Game.module.tick(delta);
@@ -1261,7 +1278,7 @@ class Game extends Engine {
 
         for(let i = 0; i < walkCount; i++){
           let obj = Game.walkmeshList[i];
-          if(obj instanceof THREE.Mesh){
+          if(obj.type === 'Mesh'){
             obj.visible = true;
           }
         }
@@ -1319,14 +1336,14 @@ class Game extends Engine {
 
         for(let i = 0; i < Game.walkmeshList.length; i++){
           let obj = Game.walkmeshList[i];
-          if(obj instanceof THREE.Mesh){
+          if(obj.type === 'Mesh'){
             obj.visible = Game.Flags.WalkmeshVisible;
           }
         }
     
         for(let i = 0; i < Game.collisionList.length; i++){
           let obj = Game.collisionList[i];
-          if(obj instanceof THREE.Mesh){
+          if(obj.type === 'Mesh'){
             obj.visible = Game.Flags.WalkmeshVisible;
           }
         }
@@ -1381,7 +1398,7 @@ class Game extends Engine {
 
       Game.FadeOverlay.Update(delta);
       Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
-      Game.viewportFrustum.setFromMatrix(Game.frustumMat4);
+      Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
       LightManager.update(delta);
       Game.InGameOverlay.Update(delta);
       Game.InGameAreaTransition.Update(delta);
@@ -1407,18 +1424,16 @@ class Game extends Engine {
       Game.FadeOverlay.Update(delta);
     }
 
-    Game.updateCursor();
-
-    try{
-      Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
-    }catch(e){ }
+    Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
 
     Game.controls.Update(delta);
 
     Game.camera_shake.beforeRender();
     Game.camera_shake.update(delta);
 
+    Game.updateCursorPosition();
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
+      Game.updateCursor();
       Game.renderPass.camera = Game.currentCamera;
       Game.renderPassAA.camera = Game.currentCamera;
       Game.bokehPass.camera = Game.currentCamera;
@@ -1453,7 +1468,7 @@ class Game extends Engine {
       for(let i = 0; i < Game.module.area.rooms.length; i++){
         let room = Game.module.area.rooms[i];
         let model = room.model;
-        if(model instanceof THREE.AuroraModel){
+        if(model != undefined && model.type === 'AuroraModel'){
           let pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
           if(model.box.containsPoint(pos)){
             rooms.push(room);
@@ -1482,7 +1497,7 @@ class Game extends Engine {
       for(let i = 0; i < Game.module.area.rooms.length; i++){
         let room = Game.module.area.rooms[i];
         let model = room.model;
-        if(model instanceof THREE.AuroraModel){
+        if(model != undefined && model.type === 'AuroraModel'){
           let pos = PartyManager.party[0].position.clone().add(Game.playerFeetOffset);
           if(model.box.containsPoint(pos)){
             rooms.push(room);
@@ -1511,19 +1526,22 @@ class Game extends Engine {
     return p ? p : Game.player;
   }
 
-
-  static updateCursor(){
+  static updateCursorPosition(){
     CursorManager.setCursor('default');
     Game.scene_cursor_holder.position.x = Mouse.Client.x - (window.innerWidth/2) + (32/2);
     Game.scene_cursor_holder.position.y = (Mouse.Client.y*-1) + (window.innerHeight/2) - (32/2);
-    
+  }
+
+
+  static updateCursor(){
     let cursorCaptured = false;
     let guiHoverCaptured = false;
 
     Game.hoveredGUIElement = undefined;
 
     let uiControls = Game.controls.MenuGetActiveUIElements();
-    for(let i = 0; i < uiControls.length; i++){
+    let controlCount = uiControls.length;
+    for(let i = 0; i < controlCount; i++){
       let control = uiControls[i];
       if(!control.isVisible())
         continue;
@@ -1533,21 +1551,19 @@ class Game extends Engine {
         Game.hoveredGUIElement = control;
       }
 
-      if(!(control.widget.parent instanceof THREE.Scene)){
-        try{
-          if(!guiHoverCaptured){
-            let cMenu = control.menu;
-            cMenu.SetWidgetHoverActive(control, true);
-            guiHoverCaptured = false;
-          }
+      if(!(control.widget.parent.type === 'Scene')){
+        if(!guiHoverCaptured){
+          let cMenu = control.menu;
+          cMenu.SetWidgetHoverActive(control, true);
+          guiHoverCaptured = false;
+        }
 
-          if(typeof control.isClickable == 'function'){
-            if(control.isClickable()){
-              CursorManager.setCursor('select');
-              cursorCaptured = true;
-            }
+        if(typeof control.isClickable == 'function'){
+          if(control.isClickable()){
+            CursorManager.setCursor('select');
+            cursorCaptured = true;
           }
-        }catch(e){}
+        }
       }
       //}
     }

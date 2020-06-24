@@ -62,6 +62,12 @@ class AnimatedTexture {
       this.texture.offset.y = rowNorm;//columnNorm;//(column / (this.tilesHorizontal));
       this.texture.offset.x = columnNorm;//(row / (this.tilesVertical));
 
+      // this.texture.offset.y = 0;
+      // this.texture.offset.x = 0;
+
+      // this.texture.repeat.y = 1;
+      // this.texture.repeat.x = 1;
+
       this.texture.updateMatrix();
 
       if(frameIndex == this.numberOfTiles - 1){

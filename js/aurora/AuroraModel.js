@@ -160,13 +160,22 @@ class AuroraModel {
 
     //Non static objects in room meshes are children of the node that is the name of the model plus a
     //like: MODELNAMEa or m02ac_02ba
+
     if(parent){
-      if(node.name == (this.geometryHeader.ModelName+'a').toLowerCase() || !parent.roomStatic){
+      if(node.name == (this.geometryHeader.ModelName.trim()+'a').toLowerCase()){
         node.roomStatic = false;
       }else{
-        node.roomStatic = true;
+        node.roomStatic = parent.roomStatic;
       }
     }
+
+    // if(parent){
+    //   if(node.name == (this.geometryHeader.ModelName+'a').toLowerCase() || !parent.roomStatic){
+    //     node.roomStatic = false;
+    //   }else{
+    //     node.roomStatic = true;
+    //   }
+    // }
 
     this.mdlReader.position += (6 + 4);
 
@@ -699,7 +708,7 @@ class AuroraModel {
 
       controller.type = this.mdlReader.ReadInt32();
       this.mdlReader.Skip(2); //controller.unk_keyflag = this.mdlReader.ReadInt16();
-      controller.rowCount = this.mdlReader.ReadUInt16();
+      controller.frameCount = this.mdlReader.ReadUInt16();
       controller.timeKeyIndex = this.mdlReader.ReadUInt16(); //Index into the float array of the first time key
       controller.dataValueIndex = this.mdlReader.ReadUInt16(); //Index into the float array of the first controller data value
       controller.columnCount = this.mdlReader.ReadByte();//Number of columns excluding the time key column
@@ -712,14 +721,14 @@ class AuroraModel {
         NodeType = node.NodeType = this.nodes[node.name].NodeType;
       }
     
-      if(controller.rowCount != -1){
+      if(controller.frameCount != -1){
 
         if(node instanceof AuroraModelAnimationNode || node instanceof AuroraModelNode){
 
           //Default Controllers
           switch(controller.type){
-            case ControllerType.Position:
-              for (let r = 0; r < controller.rowCount; r++) {
+            case AuroraModel.ControllerType.Position:
+              for (let r = 0; r < controller.frameCount; r++) {
                 let frame = {
                   isBezier: false,
                   time: data[controller.timeKeyIndex + r]
@@ -804,8 +813,8 @@ class AuroraModel {
                 controller.data[r] = (frame);
               }
             break;
-            case ControllerType.Orientation:
-              for (let r = 0; r < controller.rowCount; r++) {
+            case AuroraModel.ControllerType.Orientation:
+              for (let r = 0; r < controller.frameCount; r++) {
                 let frame = {};
                 frame.time = data[controller.timeKeyIndex + r];
 
@@ -852,8 +861,8 @@ class AuroraModel {
                 controller.data[r] = frame;
               }
             break;
-            case ControllerType.Scale:
-              for (let r = 0; r < controller.rowCount; r++) {
+            case AuroraModel.ControllerType.Scale:
+              for (let r = 0; r < controller.frameCount; r++) {
                 let frame = {};
                 frame.time = data[controller.timeKeyIndex + r];
                 frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
@@ -865,16 +874,16 @@ class AuroraModel {
           //Mesh Controllers
           if ((NodeType & AuroraModel.NODETYPE.Mesh) == AuroraModel.NODETYPE.Mesh) {
             switch(controller.type){
-              case ControllerType.Alpha:
-                for (let r = 0; r < controller.rowCount; r++) {
+              case AuroraModel.ControllerType.Alpha:
+                for (let r = 0; r < controller.frameCount; r++) {
                   let frame = {};
                   frame.time = data[controller.timeKeyIndex + r];
                   frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
                   controller.data[r] = frame;
                 }
               break;
-              case ControllerType.SelfIllumColor:
-                for (let r = 0; r < controller.rowCount; r++) {
+              case AuroraModel.ControllerType.SelfIllumColor:
+                for (let r = 0; r < controller.frameCount; r++) {
       
                   let frame = {};
       
@@ -892,8 +901,8 @@ class AuroraModel {
           //Light Controllers
           if ((NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
             switch(controller.type){
-              case ControllerType.Color:
-                for (let r = 0; r < controller.rowCount; r++) {
+              case AuroraModel.ControllerType.Color:
+                for (let r = 0; r < controller.frameCount; r++) {
                   let frame = {};
                   frame.time = data[controller.timeKeyIndex + r];
                   frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
@@ -902,11 +911,11 @@ class AuroraModel {
                   controller.data[r] = frame
                 }
               break;
-              case ControllerType.ShadowRadius:
-              case ControllerType.Radius:
-              case ControllerType.VerticalDisplacement:
-              case ControllerType.Multiplier:
-                for (let r = 0; r < controller.rowCount; r++) {
+              case AuroraModel.ControllerType.ShadowRadius:
+              case AuroraModel.ControllerType.Radius:
+              case AuroraModel.ControllerType.VerticalDisplacement:
+              case AuroraModel.ControllerType.Multiplier:
+                for (let r = 0; r < controller.frameCount; r++) {
                   let frame = {};
                   frame.time = data[controller.timeKeyIndex + r];
                   frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
@@ -919,11 +928,11 @@ class AuroraModel {
           //Emitter Controllers
           if ((NodeType & AuroraModel.NODETYPE.Emitter) == AuroraModel.NODETYPE.Emitter) {
             switch(controller.type){
-              //case ControllerType.P2P_Bezier3:
-              case ControllerType.ColorStart:
-              case ControllerType.ColorMid:
-              case ControllerType.ColorEnd:
-                for (let r = 0; r < controller.rowCount; r++) {
+              //case AuroraModel.ControllerType.P2P_Bezier3:
+              case AuroraModel.ControllerType.ColorStart:
+              case AuroraModel.ControllerType.ColorMid:
+              case AuroraModel.ControllerType.ColorEnd:
+                for (let r = 0; r < controller.frameCount; r++) {
                   let frame = {};
                   frame.time = data[controller.timeKeyIndex + r];
                   frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
@@ -932,44 +941,46 @@ class AuroraModel {
                   controller.data[r] = frame
                 }
               break;
-              case ControllerType.LifeExp:
-              case ControllerType.BirthRate:
-              case ControllerType.Bounce_Co:
-              case ControllerType.Drag:
-              case ControllerType.Grav:
-              case ControllerType.FPS:
-              case ControllerType.Detonate:
-              case ControllerType.CombineTime:
-              case ControllerType.Spread:
-              case ControllerType.Velocity:
-              case ControllerType.RandVel:
-              case ControllerType.Mass:
-              case ControllerType.ParticleRot:
-              case ControllerType.SizeStart:
-              case ControllerType.SizeMid:
-              case ControllerType.SizeEnd:
-              case ControllerType.SizeStart_Y:
-              case ControllerType.SizeMid_Y:
-              case ControllerType.SizeEnd_Y:
-              case ControllerType.LightningDelay:
-              case ControllerType.LightningRadius:
-              case ControllerType.LightningScale:
-              case ControllerType.P2P_Bezier2:
-              case ControllerType.P2P_Bezier3:
-              case ControllerType.AlphaStart:
-              case ControllerType.AlphaMid:
-              case ControllerType.AlphaEnd:
-              case ControllerType.PercentStart:
-              case ControllerType.PercentMid:
-              case ControllerType.PercentEnd:
-              case ControllerType.Threshold:
-              case ControllerType.XSize:
-              case ControllerType.YSize:
-              case ControllerType.FrameStart:
-              case ControllerType.FrameEnd:
-              case ControllerType.BlurLength:
+              case AuroraModel.ControllerType.LifeExp:
+              case AuroraModel.ControllerType.BirthRate:
+              case AuroraModel.ControllerType.Bounce_Co:
+              case AuroraModel.ControllerType.Drag:
+              case AuroraModel.ControllerType.Grav:
+              case AuroraModel.ControllerType.FPS:
+              case AuroraModel.ControllerType.Detonate:
+              case AuroraModel.ControllerType.CombineTime:
+              case AuroraModel.ControllerType.Spread:
+              case AuroraModel.ControllerType.Velocity:
+              case AuroraModel.ControllerType.RandVel:
+              case AuroraModel.ControllerType.Mass:
+              case AuroraModel.ControllerType.ParticleRot:
+              case AuroraModel.ControllerType.SizeStart:
+              case AuroraModel.ControllerType.SizeMid:
+              case AuroraModel.ControllerType.SizeEnd:
+              case AuroraModel.ControllerType.SizeStart_Y:
+              case AuroraModel.ControllerType.SizeMid_Y:
+              case AuroraModel.ControllerType.SizeEnd_Y:
+              case AuroraModel.ControllerType.LightningDelay:
+              case AuroraModel.ControllerType.LightningRadius:
+              case AuroraModel.ControllerType.LightningScale:
+              case AuroraModel.ControllerType.LightningZigZag:
+              case AuroraModel.ControllerType.LightningSubDiv:
+              case AuroraModel.ControllerType.P2P_Bezier2:
+              case AuroraModel.ControllerType.P2P_Bezier3:
+              case AuroraModel.ControllerType.AlphaStart:
+              case AuroraModel.ControllerType.AlphaMid:
+              case AuroraModel.ControllerType.AlphaEnd:
+              case AuroraModel.ControllerType.PercentStart:
+              case AuroraModel.ControllerType.PercentMid:
+              case AuroraModel.ControllerType.PercentEnd:
+              case AuroraModel.ControllerType.Threshold:
+              case AuroraModel.ControllerType.XSize:
+              case AuroraModel.ControllerType.YSize:
+              case AuroraModel.ControllerType.FrameStart:
+              case AuroraModel.ControllerType.FrameEnd:
+              case AuroraModel.ControllerType.BlurLength:
               case 240:
-                for (let r = 0; r < controller.rowCount; r++) {
+                for (let r = 0; r < controller.frameCount; r++) {
                   let frame = {};
                   frame.time = data[controller.timeKeyIndex + r];
                   frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
@@ -1220,6 +1231,61 @@ AuroraModel.MODELFLAG = {
   FlagPlaceable: 0x20,
   FlagOther: 0x00,
 }
+
+AuroraModel.ControllerType = {
+  Position             : 8,
+  Orientation          : 20,
+  Scale                : 36,
+  Color                : 76,
+  Radius               : 88,
+  ShadowRadius         : 96,
+  VerticalDisplacement : 100,
+  Multiplier           : 140,
+  AlphaEnd             : 80,
+  AlphaStart           : 84,
+  BirthRate            : 88,
+  Bounce_Co            : 92,
+  ColorEnd             : 380,
+  ColorStart           : 392,
+  CombineTime          : 96,
+  Drag                 : 100,
+  FPS                  : 104,
+  FrameEnd             : 108,
+  FrameStart           : 112,
+  Grav                 : 116,
+  LifeExp              : 120,
+  Mass                 : 124,
+  Threshold            : 164,
+  P2P_Bezier2          : 128,
+  P2P_Bezier3          : 132,
+  ParticleRot          : 136,
+  RandVel              : 140,
+  SizeStart            : 144,
+  SizeEnd              : 148,
+  SizeStart_Y          : 152,
+  SizeEnd_Y            : 156,
+  Spread               : 160,
+  Threshold            : 164,
+  Velocity             : 168,
+  XSize                : 172,
+  YSize                : 176,
+  BlurLength           : 180,
+  LightningDelay       : 184,
+  LightningRadius      : 188,
+  LightningSubDiv      : 196,
+  LightningScale       : 192,
+  LightningZigZag      : 200,
+  Detonate             : 228,
+  AlphaMid             : 216,
+  ColorMid             : 284,
+  PercentStart         : 220,
+  PercentMid           : 224,
+  PercentEnd           : 228,
+  SizeMid              : 232,
+  SizeMid_Y            : 236,
+  SelfIllumColor       : 100,
+  Alpha                : 132
+};
 
 module.exports = AuroraModel;
   

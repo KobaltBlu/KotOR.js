@@ -55,13 +55,13 @@ class ModuleMGEnemy extends ModuleObject {
       if(child_model instanceof THREE.AuroraModel && child_model.bonesInitialized && child_model.visible){
 
         if(this.hit_points > 0){
-          if(!child_model.currentAnimation || (child_model.currentAnimation.name != 'Ready_01' && child_model.currentAnimation.name != 'damage')){
+          if(!child_model.animationManager.currentAnimation || (child_model.animationManager.currentAnimation.name != 'Ready_01' && child_model.animationManager.currentAnimation.name != 'damage')){
             child_model.playAnimation('Ready_01', false);
           }
         }else if(this.alive){
           child_model.playAnimation('die', false);
         }else{
-          if(!child_model.currentAnimation){
+          if(!child_model.animationManager.currentAnimation){
             child_model.visible = false;
           }
         }
@@ -73,7 +73,7 @@ class ModuleMGEnemy extends ModuleObject {
     if(this.hit_points <= 0 && this.alive){
       this.alive = false;
       console.log('MGEnemy death', this);
-      if(this.scripts.onDeath instanceof NWScript){
+      if(this.scripts.onDeath instanceof NWScriptInstance){
         this.scripts.onDeath.run(this);
       }
     }
@@ -81,9 +81,9 @@ class ModuleMGEnemy extends ModuleObject {
     this.box.setFromObject(this.model.children[0]);
 
     if(this.track instanceof THREE.AuroraModel){
-      if(!this.track.currentAnimation && this.alive){
+      if(!this.track.animationManager.currentAnimation && this.alive){
         this.track.playAnimation(0, true);
-      }else if(!this.alive && this.track.currentAnimation){
+      }else if(!this.alive && this.track.animationManager.currentAnimation){
         this.track.stopAnimation();
       }
       this.track.update(delta);
@@ -109,6 +109,49 @@ class ModuleMGEnemy extends ModuleObject {
         }
       }
     }
+  }
+
+  PlayAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
+    //console.log('anim', name);
+    //I think n3 may be loop
+    //console.log('PlayAnimation', name, n1, n2, n3);
+    for(let i = 0; i < this.model.children.length; i++){
+      let model = this.model.children[i];
+      let anim = model.getAnimationByName(name);
+      if(anim){
+        if(n3){
+          if(model.mgAnims.indexOf(anim) == -1){
+            model.mgAnims.push(anim);
+          }
+        }else{
+          model.poseAnimation(anim);
+        }
+      }
+
+    }
+
+  }
+
+  RemoveAnimation(name = ''){
+
+    for(let i = 0; i < this.model.children.length; i++){
+      let model = this.model.children[i];
+      let anim = model.getAnimationByName(name);
+
+      if(anim){
+        let animLoopIdx = model.animLoops.indexOf(anim);
+        if(animLoopIdx >= 0){
+          model.animLoops.splice(animLoopIdx, 1);
+        }
+
+        if(model.animationManager.currentAnimation == anim){
+          model.stopAnimation();
+        }
+
+      }
+
+    }
+
   }
 
   updateCollision(delta = 0){
@@ -315,32 +358,24 @@ class ModuleMGEnemy extends ModuleObject {
     }
 
     let keys = Object.keys(this.scripts);
-    let len = keys.length;
-    let loadScript = ( onLoad = null, i = 0 ) => {
-      
-      if(i < len){
-        let script = this.scripts[keys[i]];
-        if(script != '' && script != undefined){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], script, (buffer) => {
-            if(buffer.length){
-              this.scripts[keys[i]] = new NWScript(buffer);
-              this.scripts[keys[i]].name = script;
-            }
-            loadScript( onLoad, ++i );
-          }, () => {
-            loadScript( onLoad, ++i );
-          });
+    let loop = new AsyncLoop({
+      array: keys,
+      onLoop: async (key, asyncLoop) => {
+        let _script = this.scripts[key];
+        if(_script != '' && !(_script instanceof NWScriptInstance)){
+          //let script = await NWScript.Load(_script);
+          this.scripts[key] = await NWScript.Load(_script);
+          //this.scripts[key].name = _script;
+          asyncLoop._Loop();
         }else{
-          loadScript( onLoad, ++i );
+          asyncLoop._Loop();
         }
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
       }
-  
-    };
-
-    loadScript(onLoad, 0);
+    });
+    loop.Begin(() => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
 
   }
 

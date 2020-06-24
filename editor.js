@@ -24,8 +24,11 @@ const StringDecoder = require('string_decoder').StringDecoder;
 const Reverb = require('soundbank-reverb');
 const BitBuffer = require('bit-buffer');
 const beamcoder = require('beamcoder');
+const dxt = require('dxt');
 
-const isRunningInAsar = require('electron-is-running-in-asar');
+const isRunningInAsar = function(){
+  return false;
+};//const isRunningInAsar = require('electron-is-running-in-asar');
 
 const Games = {
   KOTOR: 1,
@@ -113,6 +116,7 @@ const AuroraModelNodeReference = require(path.join(app.getAppPath(), 'js/aurora/
 const AuroraModelNodeSkin = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSkin.js'));
 const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimation.js'));
 const AuroraModelAnimationNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationNode.js'));
+const AuroraModelAnimationManager = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationManager.js'));
 const AuroraWalkMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraWalkMesh.js'));
 
 const Shaders = {};
@@ -161,10 +165,12 @@ const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.
 const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
+const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstance.js'));
 const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
 const NWScriptDef = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDef.js'));
 const NWScriptDefK1 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK1.js'));
 const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK2.js'));
+const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDecompiler.js'));
 
 /* EDITOR TABS */
 const EditorTabManager = require(path.join(app.getAppPath(), 'js/editor/EditorTabManager.js'));
@@ -234,59 +240,6 @@ const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
 
 const ModelCache = { models:{} };
 
-let ControllerType = {
-  Position             : 8,
-  Orientation          : 20,
-  Scale                : 36,
-  Color                : 76,
-  Radius               : 88,
-  ShadowRadius         : 96,
-  VerticalDisplacement : 100,
-  Multiplier           : 140,
-  AlphaEnd             : 80,
-  AlphaStart           : 84,
-  BirthRate            : 88,
-  Bounce_Co            : 92,
-  ColorEnd             : 380,
-  ColorStart           : 392,
-  CombineTime          : 96,
-  Drag                 : 100,
-  FPS                  : 104,
-  FrameEnd             : 108,
-  FrameStart           : 112,
-  Grav                 : 116,
-  LifeExp              : 120,
-  Mass                 : 124,
-  Threshold            : 164,
-  P2P_Bezier2          : 128,
-  P2P_Bezier3          : 132,
-  ParticleRot          : 136,
-  RandVel              : 140,
-  SizeStart            : 144,
-  SizeEnd              : 148,
-  SizeStart_Y          : 152,
-  SizeEnd_Y            : 156,
-  Spread               : 160,
-  Threshold            : 164,
-  Velocity             : 168,
-  XSize                : 172,
-  YSize                : 176,
-  BlurLength           : 180,
-  LightningDelay       : 184,
-  LightningRadius      : 188,
-  LightningScale       : 192,
-  Detonate             : 228,
-  AlphaMid             : 216,
-  ColorMid             : 284,
-  PercentStart         : 220,
-  PercentMid           : 224,
-  PercentEnd           : 228,
-  SizeMid              : 232,
-  SizeMid_Y            : 236,
-  SelfIllumColor       : 100,
-  Alpha                : 132
-}
-
 const Engine = require(path.join(app.getAppPath(), 'js/Engine.js')); 
 let Game = require(path.join(app.getAppPath(), 'js/game/kotor/KOTOR.js')); 
 Game.ModelLoader = new THREE.MDLLoader();
@@ -303,6 +256,7 @@ Game.group = {
   party: new THREE.Group(),
   lights: new THREE.Group(),
   light_helpers: new THREE.Group(),
+  shadow_lights: new THREE.Group(),
   emitters: new THREE.Group(),
   stunt: new THREE.Group()
 };
@@ -491,16 +445,20 @@ if (typeof window.TopMenu == 'undefined') {
                   {name: 'ERF File', extensions: ['erf']},
                   {name: 'RIM File', extensions: ['rim']},
                   {name: 'All Formats', extensions: ['*']},
-              ]}, 
-              (paths) => {
-                if(paths.length){
-                  let filename = paths[0].split(path.sep).pop();
+                ]
+              }
+            ).then(result => {
+              if(!result.canceled){
+                if(result.filePaths.length){
+                  let filename = result.filePaths[0].split(path.sep).pop();
                   let fileParts = filename.split('.');
 
-                  FileTypeManager.onOpenFile({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
+                  FileTypeManager.onOpenFile({path: result.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
                 }
               }
-            );
+              console.log(result.canceled);
+              console.log(result.filePaths);
+            });
           }},
           {name: 'Save File', onClick: function(){
 

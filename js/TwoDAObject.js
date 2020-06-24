@@ -61,23 +61,22 @@ class TwoDAObject {
 
     //Get the row index numbers
     let RowIndexes = [];
-    for (let i = 0; i!=this.RowCount; i++)
-    {
-        let rowIndex = "";
-        let c;
+    for (let i = 0; i!=this.RowCount; i++){
+      let rowIndex = "";
+      let c;
 
-        while ((c = br.ReadChar()).charCodeAt() != 9){
-          rowIndex = rowIndex + c;
-        }
+      while ((c = br.ReadChar()).charCodeAt() != 9){
+        rowIndex = rowIndex + c;
+      }
 
-        RowIndexes[i] = rowIndex;
+      RowIndexes[i] = parseInt(rowIndex);
     }
 
     //Get the Row Data Offsets
     this.CellCount = this.ColumnCount * this.RowCount;
     let offsets = [];
     for (let i = 0; i < this.CellCount; i++){
-        offsets[i] = br.ReadUInt16();
+      offsets[i] = br.ReadUInt16();
     }
 
     br.position += 2;
@@ -86,35 +85,50 @@ class TwoDAObject {
     //Get the Row Data
     for (let i = 0; i < this.RowCount; i++){
 
-        let row = {"(Row Label)": i};
+      let row = {"__index": i, "(Row Label)": RowIndexes[i] };
 
-        for (let j = 0; j < this.ColumnCount; j++){
+      for (let j = 0; j < this.ColumnCount; j++){
 
-            let offset = dataOffset + offsets[i * this.ColumnCount + j];
+        let offset = dataOffset + offsets[i * this.ColumnCount + j];
 
-            try{
-                br.position = offset;
-            }
-            catch (e){
-                throw new Exception();
-            }
-
-            let token = "";
-            let c;
-
-            while((c = br.ReadChar()).charCodeAt() != 0)
-                token = token + c;
-
-            if(token == "")
-                token = "****";
-
-            row[this.columns[j+1]] = token;
+        try{
+          br.position = offset;
+        }catch(e){
+          throw new Exception();
         }
 
-        this.rows[i] = row;
+        let token = "";
+        let c;
+
+        while((c = br.ReadChar()).charCodeAt() != 0)
+          token = token + c;
+
+        if(token == "")
+          token = "****";
+
+        row[this.columns[j+1]] = token;
+      }
+
+      this.rows[ i ] = row;
 
     }
 
+  }
+
+  getRowByIndex(index = -1){
+    for (var key of Object.keys(this.rows)) {
+      if(this.rows[key]['__index'] == index){
+        return this.rows[key];
+      }
+    }
+  }
+
+  getByID(index = -1){
+    for (var key of Object.keys(this.rows)) {
+      if(this.rows[key]['(Row Label)'] == index){
+        return this.rows[key];
+      }
+    }
   }
 
   static cellParser(cell){

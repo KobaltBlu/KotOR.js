@@ -18,7 +18,7 @@ class MenuGalaxyMap extends GameMenu {
 
     this.LoadMenu({
       name: 'galaxymap',
-      onLoad: () => {
+      onLoad: async () => {
 
         this.selectedPlanet = 0;
 
@@ -64,22 +64,14 @@ class MenuGalaxyMap extends GameMenu {
           //this.Hide();
           this.Close();
 
-          if(this.script instanceof NWScript){
+          if(this.script instanceof NWScriptInstance){
             this.script.run(Game.player);
           }
 
         });
 
-        this.script = null;
-
-        ResourceLoader.loadResource(ResourceTypes['ncs'], 'k_sup_galaxymap', (buffer) => {
-          if(buffer.length){
-            this.script = new NWScript(buffer);
-            this.script.name = 'k_sup_galaxymap';
-          }
-        }, () => {
-          
-        });
+        this.script = await NWScript.Load('k_sup_galaxymap');
+        NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
         Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('galaxy', ResourceTypes['mdl']), (mdlBuffer) => {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('galaxy', ResourceTypes['mdx']), (mdxBuffer) => {

@@ -78,10 +78,10 @@ class MenuContainer extends GameMenu {
         this.container.close(Game.getCurrentPlayer());
       }catch(e){}
     }
-    this.container = undefined;
+    //this.container = undefined;
   }
 
-  Open(object = null){
+  Open(object = undefined){
     this.container = object;
     super.Open();
   }

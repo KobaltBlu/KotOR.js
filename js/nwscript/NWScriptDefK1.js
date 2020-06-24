@@ -16,7 +16,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Math.round(Math.random()*args[0]);
+      return Math.round(Math.random()* (args[0] - 1) );
     }
   },
   1:{
@@ -80,7 +80,6 @@ NWScriptDefK1.Actions = {
         if(typeof args[1] === 'object'){
           //args[1].script.caller = args[0];
         args[1].script.caller = args[0];
-        args[1].script.objectPointers[0] = args[0];
         args[1].script.debug = this.debug;
           //args[1].script.stack.push((0)); //Don't know why this makes things work :/
   
@@ -114,58 +113,12 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, args);
 
-      /*this.delayCommandQueue.push({
-        method: function(){
-          if(args[1].script instanceof NWScript){
-          
-          args[1].script.debug = this.debug;
-          args[1].script.debugging = this.debugging;
-          args[1].script.lastPerceived = this.lastPerceived;
-          args[1].script.debug = this.debug;
-          args[1].script.debugging = this.debugging;
-          args[1].script.listenPatternNumber = this.listenPatternNumber;
-          args[1].script.listenPatternSpeaker = this.listenPatternSpeaker;
-            //args[1].script.caller = args[1].caller;
-          args[1].script.runScript({
-              _instr: null,
-              seek: args[1].offset,
-              onComplete: () => {
-                //console.log('DelayCommand '+args[1].script.name, 'Complete');
-              }
-            });
-          }
-        },
-        delay: args[0] * 1000
-      });*/
-      
       Game.module.eventQueue.push({
         id: Module.EventID.TIMED_EVENT,
         script: args[1].script,
         offset: args[1].offset,
         time: (Game.time + args[0]) * 1000
-      })
-
-      /*Game.setTimeout(() => {
-        //console.log('DelayCommand '+args[1].script.name, args);
-        if(args[1].script instanceof NWScript){
-          
-        args[1].script.debug = this.debug;
-        args[1].script.debugging = this.debugging;
-        args[1].script.lastPerceived = this.lastPerceived;
-        args[1].script.debug = this.debug;
-        args[1].script.debugging = this.debugging;
-        args[1].script.listenPatternNumber = this.listenPatternNumber;
-        args[1].script.listenPatternSpeaker = this.listenPatternSpeaker;
-          //args[1].script.caller = args[1].caller;
-        args[1].script.runScript({
-            _instr: null,
-            seek: args[1].offset,
-            onComplete: () => {
-              //console.log('DelayCommand '+args[1].script.name, 'Complete');
-            }
-          });
-        }
-      }, args[0] * 1000);*/
+      });
   
     }
   },
@@ -175,31 +128,20 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "object", "int"],
     action: function(args, _instr, action){
-      return new Promise( ( resolve, reject) => {
-        if( this.subscripts.has(args[0]) ){
-          this.executeScript( this.subscripts.get( args[0] ), args, () => {
-            resolve();
-          } );
-        }else{
-          if(args[0]){
-            ResourceLoader.loadResource(ResourceTypes['ncs'], args[0], (buffer) => {
-    
-              let executeScript = new NWScript(buffer);
-              executeScript.name = this.name+' -> '+args[0];
-              this.subscripts.set(args[0], executeScript);
-    
-              this.executeScript( executeScript, args, () => {
-                resolve();
-              });
-    
-            }, () => {
-              console.warn('NWScript.ExecuteScript failed to find', executeScript.name);
+      return new Promise( async ( resolve, reject) => {
+        if( args[0] ){
+          let scriptInstance = await NWScript.Load( args[0] );
+          if(scriptInstance instanceof NWScriptInstance){
+            this.executeScript( scriptInstance, this, args, () => {
               resolve();
             });
           }else{
-            console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
+            console.warn('NWScript.ExecuteScript failed to find', args[0]);
             resolve();
           }
+        }else{
+          console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
+          resolve();
         }
       });
     }
@@ -331,10 +273,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["location", "int"],
     action: function(args, _instr, action){
-      this.objectPointers[0].moveToLocation(
-      args[0],
-      args[1]
-      );
+      if(this.caller instanceof ModuleCreature){
+        this.caller.moveToLocation( args[0], args[1] );
+      }
     }
   },
   22:{
@@ -343,11 +284,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int", "float"],
     action: function(args, _instr, action){
-      this.objectPointers[0].moveToObject(
-      args[0],
-      args[1],
-      args[2]
-      );
+      if(this.caller instanceof ModuleCreature){
+        this.caller.moveToObject( args[0], args[1], args[2] );
+      }
     }
   },
   23:{
@@ -432,7 +371,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject){
         return args[0].hasItem( args[1] );
       }else{
-        return -1;
+        return undefined;
       }
     }
   },
@@ -653,7 +592,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].getHP();
+      if(args[0] instanceof ModuleObject){
+        return args[0].getHP();
+      }else{
+        return 0;
+      }
     }
   },
   50:{
@@ -992,13 +935,9 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       this._effectPointer = 0;
       if(args[0] instanceof ModuleCreature){
-        if(args[0].effects.length){
-          return args[0].effects[this._effectPointer] ;
-        }else{
-          return undefined ;
-        }
+        return args[0].effects[this._effectPointer];
       }else{
-        return undefined ;
+        return undefined;
       }
     }
   },
@@ -1008,15 +947,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["object"],
     action: function(args, _instr, action){
-      this._effectPointer++;
       if(args[0] instanceof ModuleCreature){
-        if(args[0].effects.length){
-          return args[0].effects[this._effectPointer] ;
-        }else{
-          return undefined ;
-        }
+        return args[0].effects[++this._effectPointer];
       }else{
-        return undefined ;
+        return undefined;
       }
     }
   },
@@ -1037,7 +971,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
-      if(typeof args[0] === 'undefined'){
+      if(typeof args[0] === 'undefined' || typeof args[0] !== 'object'){
         return 0;
       }else{
         return 1;
@@ -1111,7 +1045,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD2(args[0]);
+      return Game.rollD2( args[0] || 1 );
     }
   },
   96:{
@@ -1120,7 +1054,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD3(args[0]);
+      return Game.rollD3( args[0] || 1 );
     }
   },
   97:{
@@ -1129,7 +1063,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD4(args[0]);
+      return Game.rollD4( args[0] || 1 );
     }
   },
   98:{
@@ -1138,7 +1072,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD6(args[0]);
+      return Game.rollD6( args[0] || 1 );
     }
   },
   99:{
@@ -1147,7 +1081,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD8(args[0]);
+      return Game.rollD8( args[0] || 1 );
     }
   },
   100:{
@@ -1156,9 +1090,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD10(
-        args[0]
-        );
+      return Game.rollD10( args[0] || 1 );
     }
   },
   101:{
@@ -1167,9 +1099,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD12(
-        args[0]
-        );
+      return Game.rollD12( args[0] || 1 );
     }
   },
   102:{
@@ -1178,9 +1108,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD20(
-        args[0]
-        );
+      return Game.rollD20( args[0] || 1 );
     }
   },
   103:{
@@ -1189,9 +1117,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return Game.rollD100(
-        args[0]
-        );
+      return Game.rollD100( args[0] || 1 );
     }
   },
   104:{
@@ -1398,8 +1324,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return PartyManager.party.length
-      ;
+      return PartyManager.party.length;
     }
   },
   127:{
@@ -1494,8 +1419,8 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      return {type: 1, nSpectacularDeath: args[0] ? true: false }
-      ;
+      let effect = new EffectDeath(args[0], args[1]);
+      return effect.initialize();
     }
   },
   134:{
@@ -1504,8 +1429,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: -1, }
-      ;
+      return {type: -1, };
     }
   },
   135:{
@@ -1641,8 +1565,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 27}
-      ;
+      return {type: 27};
     }
   },
   149:{
@@ -1651,8 +1574,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 73}
-      ;
+      return {type: 73};
     }
   },
   150:{
@@ -1674,8 +1596,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
         return args[0].GetPosition().distanceTo(
           args[1].GetPosition()
-          )
-        ;
+          );
       }else{
         return -1.00;
       }
@@ -1696,8 +1617,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["object", "int"],
     action: function(args, _instr, action){
-      return {type: 77}
-      ;
+      return {type: 77};
     }
   },
   154:{
@@ -1706,8 +1626,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 30}
-      ;
+      return {type: 30};
     }
   },
   155:{
@@ -1787,7 +1706,7 @@ NWScriptDefK1.Actions = {
         }
       }
   
-      return undefined ;
+      return undefined;
       
     }
   },
@@ -1797,8 +1716,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 10} //?? 10 is commented out right after EFFECT_TYPE_TEMPORARY_HITPOINTS
-      ;
+      return {type: 10}; //?? 10 is commented out right after EFFECT_TYPE_TEMPORARY_HITPOINTS
     }
   },
   157:{
@@ -1807,8 +1725,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 24}
-      ;
+      return {type: 24};
     }
   },
   158:{
@@ -1817,8 +1734,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 25}
-      ;
+      return {type: 25};
     }
   },
   159:{
@@ -1827,8 +1743,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 1004}
-      ;
+      return {type: 1004};
     }
   },
   160:{
@@ -1847,8 +1762,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 29}
-      ;
+      return {type: 29};
     }
   },
   162:{
@@ -1879,8 +1793,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "float"],
     action: function(args, _instr, action){
-      return {type: 3, amount: args[0], time: args[1]}
-      ;
+      return {type: 3, amount: args[0], time: args[1]};
     }
   },
   165:{
@@ -1889,8 +1802,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 48, speed: args[0]}
-      ;
+      return {type: 48, speed: args[0]};
     }
   },
   166:{
@@ -1940,7 +1852,8 @@ NWScriptDefK1.Actions = {
     args: ["effect"],
     action: function(args, _instr, action){
       if(typeof args[0] != 'undefined'){
-        return args[0].type;
+        console.log('GetEffectType', args[0]);
+        return args[0].type || -1;
       }else{
         return -1;
       }
@@ -2021,7 +1934,8 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      return {type: 75, value: args[0], miss: args[1], visual: true}
+      let effect = new EffectVisualEffect(args[0], args[1]);
+      return effect.initialize();
     }
   },
   181:{
@@ -2263,8 +2177,8 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "object", "int", "int"],
     action: function(args, _instr, action){
-      return {type: 21, visual: args[0], emitter: args[1], bodyPart: args[2], miss: args[3]}
-      ;
+      let effect = new EffectBeam(args[0], args[1], args[2], args[3]);
+      return effect.initialize();
     }
   },
   208:{
@@ -2274,9 +2188,9 @@ NWScriptDefK1.Actions = {
     args: ["object", "object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature && args[1] instanceof ModuleCreature){
-        return args[0].getReputation(args[1]);
+        return args[0].getReputation(args[1]) || 50;
       }else{
-        return -1;
+        return 50; //Neutral
       }
     }
   },
@@ -2398,20 +2312,19 @@ NWScriptDefK1.Actions = {
       if(this.isDebugging()){
         //console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
       }
-      switch(args[1].type){
-        case 1:
-          if(args[1].nSpectacularDeath){
-          args[2].animState = ModuleCreature.AnimState.DEAD;
-          }else{
-          args[2].animState = ModuleCreature.AnimState.DEAD;
-          }
-        break;
-        case 62:
-          //args[2].appearance = aeEffect.appearance;
-        break;
+
+      if(args[2] instanceof ModuleObject){
+        if(args[1] instanceof GameEffect){
+          args[1].setDurationType(args[0]);
+          args[1].setDuration(args[3]);
+          args[2].AddEffect(args[1], args[0], args[3]);
+        }else{
+          console.log('ApplyEffectToObject'. args);
+          console.error('ApplyEffectToObject', 'Expected a GameEffect');
+        }
+      }else{
+        console.error('ApplyEffectToObject', 'GameEffects must be applied to ModuleObjects');
       }
-  
-    args[2].AddEffect(args[1]);
     }
   },
   221:{
@@ -2435,39 +2348,57 @@ NWScriptDefK1.Actions = {
 
         break;
         case 3: //TALKVOLUME_SILENT_TALK
-          range = 5;
+          range = 20;
         break;
         case 4: //TALKVOLUME_SILENT_SHOUT
-          range = 10;
+          range = 1000;
         break;
       }
 
+      //console.log('SpeakString', args[1], args[0], this.caller);
+
       if(args[1] == 3){
+        //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
           if(Game.module.area.creatures[i] != this.caller){
             let distance = this.caller.position.distanceTo(Game.module.area.creatures[i].position);
             if(distance <= range){
               Game.module.area.creatures[i].heardStrings.push({
                 speaker: this.caller,
-                string: args[0], 
-                volume: args[1]}
-              );
+                string: args[0].toLowerCase(), 
+                volume: args[1]
+              });
             }
           }
         }
       }else if(args[1] == 4){
+        //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = PartyManager.party.length; i < len; i++){
           if(PartyManager.party[i] != this.caller){
             let distance = this.caller.position.distanceTo(PartyManager.party[i].position);
             if(distance <= range){
               PartyManager.party[i].heardStrings.push({
                 speaker: this.caller,
-                string: args[0], 
-                volume: args[1]}
-              );
+                string: args[0].toLowerCase(), 
+                volume: args[1]
+              });
             }
           }
         }
+        for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+          if(Game.module.area.creatures[i] != this.caller){
+            let distance = this.caller.position.distanceTo(Game.module.area.creatures[i].position);
+            if(distance <= range){
+              Game.module.area.creatures[i].heardStrings.push({
+                speaker: this.caller,
+                string: args[0].toLowerCase(), 
+                volume: args[1]
+              });
+            }
+          }
+        }
+      }else{
+        //console.log('SpeakString', args[1], args[0]);
       }
       
     }
@@ -2594,6 +2525,9 @@ NWScriptDefK1.Actions = {
     args: ["object", "object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
+        if( ( PartyManager.party.indexOf(args[0]) >= 0 ? 1 : 0 ) && ( PartyManager.party.indexOf(args[1]) >= 0 ? 1 : 0 ) ){
+          return 1;
+        }
         return args[1].isFriendly(args[0]) ? 1 : 0;
       }else{
         return 0;
@@ -2683,7 +2617,7 @@ NWScriptDefK1.Actions = {
     
                   resolve(creature);
 
-                  // if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScript){
+                  // if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
                   //   try{
                   //     Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
                   //   }catch(e){
@@ -2700,7 +2634,7 @@ NWScriptDefK1.Actions = {
                       model.buildSkeleton();
                       Game.group.creatures.add( model );
                       creature.getCurrentRoom();
-                      if(creature.scripts.onSpawn instanceof NWScript){
+                      if(creature.scripts.onSpawn instanceof NWScriptInstance){
                         creature.scripts.onSpawn.run(creature, 0, () => {
                           creature.isReady = true;
                         });
@@ -2855,8 +2789,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return this.listenPatternSpeaker
-      ;
+      return this.listenPatternSpeaker;
     }
   },
   255:{
@@ -2899,8 +2832,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return this.lastPerceived
-      ;
+      return this.lastPerceived;
     }
   },
   257:{
@@ -2968,9 +2900,8 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('GetFirstInPersistentObject', args[0], args);
       if(args[0] instanceof ModuleTrigger){
-      args[0].objectsInsideIdx = 0;
-        return args[0].objectsInside[args[0].objectsInsideIdx++]
-        ;
+        args[0].objectsInsideIdx = 0;
+        return args[0].objectsInside[args[0].objectsInsideIdx];
       }else{
         return undefined;
       }
@@ -2983,8 +2914,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "int", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleTrigger){
-        return args[0].objectsInside[args[0].objectsInsideIdx++]
-        ;
+        return args[0].objectsInside[++args[0].objectsInsideIdx];
       }else{
         return undefined;
       }
@@ -3047,7 +2977,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject){
         return args[0].getName();
       }else{
-        return 'OBJECT_INVALID' - 1 ;
+        return 'OBJECT_INVALID' - 1;
       }
     }
   },
@@ -3130,7 +3060,10 @@ NWScriptDefK1.Actions = {
     comment: "285: Determine whether oCreature has nFeat, and nFeat is useable.\n- nFeat: FEAT_*\n- oCreature\n",
     name: "GetHasFeat",
     type: 3,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      return 0;
+    }
   },
   286:{
     comment: "286: Determine whether oCreature has nSkill, and nSkill is useable.\n- nSkill: SKILL_*\n- oCreature\n",
@@ -3255,10 +3188,12 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return {
-      type: 0,
-        id: args[0]
-      };
+      return Object.assign(Global.kotor2DA.spells.rows[args[0]], {type: 0, id: args[0]});
+      // return {
+      //   type: 0,
+      //   id: args[0],
+      //   data: Global.kotor2DA.feat.rows[args[0]]
+      // };
     }
   },
   302:{
@@ -3267,10 +3202,12 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return {
-      type: 1,
-        id: args[0]
-      };
+      return Object.assign(Global.kotor2DA.feat.rows[args[0]], {type: 1, id: args[0]});
+      // return {
+      //   type: 1,
+      //   id: args[0],
+      //   data: Global.kotor2DA.feat.rows[args[0]]
+      // };
     }
   },
   303:{
@@ -3279,17 +3216,22 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return {
-      type: 2,
-        id: args[0]
-      };
+      return Object.assign(Global.kotor2DA.skills.rows[args[0]], {type: 2, id: args[0]});
+      // return {
+      //   type: 2,
+      //   id: args[0],
+      //   data: Global.kotor2DA.skills.rows[args[0]]
+      // };
     }
   },
   304:{
     comment: "304: Determine if oObject has effects originating from nSpell.\n- nSpell: SPELL_*\n- oObject\n",
     name: "GetHasSpellEffect",
     type: 3,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      return 0;
+    }
   },
   305:{
     comment: "305: Get the spell (SPELL_*) that applied eSpellEffect.\n* Returns -1 if eSpellEffect was applied outside a spell script.\n",
@@ -3304,7 +3246,7 @@ NWScriptDefK1.Actions = {
     args: ["talent", "object"],
     action: function(args, _instr, action){
       if(args[1] instanceof ModuleCreature){
-        return args[1].hasTalent(args[0]) ? 1 : 0;
+        return 0;//args[1].hasTalent(args[0]) ? 1 : 0;
       }else{
         return 0;
       }
@@ -3317,8 +3259,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "object", "int"],
     action: function(args, _instr, action){
       if(args[1] instanceof ModuleCreature){
-        return 
-        args[1].getRandomTalent(args[0], args[2]);
+        return args[1].getRandomTalent(args[0], args[2]);
       } else {
         return undefined;
       }
@@ -3328,7 +3269,10 @@ NWScriptDefK1.Actions = {
     comment: "308: Get the best talent (i.e. closest to nCRMax without going over) of oCreature,\nwithin nCategory.\n- nCategory: TALENT_CATEGORY_*\n- nCRMax: Challenge Rating of the talent\n- oCreature\n- nInclusion: types of talent to include\n- nExcludeType: TALENT_TYPE_FEAT or TALENT_TYPE_FORCE, type of talent that we wish to ignore\n- nExcludeId: Talent ID of the talent we wish to ignore.\nA value of TALENT_EXCLUDE_ALL_OF_TYPE for this parameter will mean that all talents of\ntype nExcludeType are ignored.\n",
     name: "GetCreatureTalentBest",
     type: 19,
-    args: ["int", "int", "object", "int", "int", "int"]
+    args: ["int", "int", "object", "int", "int", "int"],
+    action: function(args, _instr, action){
+      return undefined;
+    }
   },
   309:{
     comment: "309: Use tChosenTalent on oTarget.\n",
@@ -3396,15 +3340,12 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         if(args[0].combatState){
           //console.log('GetAttackTarget', this.caller, args[0]);
-          return args[0].lastAttackTarget || args[0].lastAttacker
-          ;
+          return args[0].lastAttackTarget || args[0].lastAttacker;
         }else{
-          return undefined
-          ;
+          return undefined;
         }
       }else{
-        return undefined
-        ;
+        return undefined;
       }
       
     }
@@ -3430,8 +3371,7 @@ NWScriptDefK1.Actions = {
         if(args[1] instanceof ModuleObject){
           return new THREE.Vector2( args[0].position.x, args[0].position.y).distanceTo(args[1].position);
         }else{
-          return 0.0
-          ;
+          return 0.0;
         }
     }
   },
@@ -3570,8 +3510,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject){
         return new THREE.Vector2( this.caller.position.x, this.caller.position.y).distanceTo(args[0].position);
       }else{
-        return 0.0
-        ;
+        return 0.0;
       }
     }
   },
@@ -3635,22 +3574,26 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        if(args[0] == Game.player){
-          if(InventoryManager.inventory.length){
-            return InventoryManager.inventory[0];
+        if(PartyManager.party.indexOf(args[0] >= 0)){
+          // if(InventoryManager.inventory.length){
+          //   return InventoryManager.inventory[0];
+          // args[0]._inventoryPointer = 0;
+          // }else{
+          //   args[0]._inventoryPointer = 0;
+          //   return undefined;
+          // }
           args[0]._inventoryPointer = 0;
-          }else{
-          args[0]._inventoryPointer = 0;
-            return undefined;
-          }
+          return InventoryManager.inventory[0];
         }else{
-          if(args[0].inventory.length){
-            return args[0].inventory[0];
+          // if(args[0].inventory.length){
+          //   args[0]._inventoryPointer = 0;
+          //   return args[0].inventory[0];
+          // }else{
+          //   args[0]._inventoryPointer = 0;
+          //   return undefined;
+          // }
           args[0]._inventoryPointer = 0;
-          }else{
-          args[0]._inventoryPointer = 0;
-            return undefined;
-          }
+          return args[0].inventory[0];
         }
       }else{
         return undefined;
@@ -3663,21 +3606,30 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object"],
     action: function(args, _instr, action){
+      // if(args[0] instanceof ModuleObject){
+      //   if(args[0] == Game.player){
+      //     if(args[0]._inventoryPointer < InventoryManager.inventory.length){
+      //       return InventoryManager.inventory[++args[0]._inventoryPointer];
+      //     }else{
+      //     args[0]._inventoryPointer = 0;
+      //       return undefined;
+      //     }
+      //   }else{
+      //     if(args[0]._inventoryPointer < args[0].inventory.length){
+      //       return args[0].inventory[++args[0]._inventoryPointer];
+      //     }else{
+      //     args[0]._inventoryPointer = 0;
+      //       return undefined;
+      //     }
+      //   }
+      // }else{
+      //   return undefined;
+      // }
       if(args[0] instanceof ModuleObject){
-        if(args[0] == Game.player){
-          if(args[0]._inventoryPointer < InventoryManager.inventory.length){
-            return InventoryManager.inventory[++args[0]._inventoryPointer];
-          }else{
-          args[0]._inventoryPointer = 0;
-            return undefined;
-          }
+        if(PartyManager.party.indexOf(args[0] >= 0)){
+          return InventoryManager.inventory[++args[0]._inventoryPointer];
         }else{
-          if(args[0]._inventoryPointer < args[0].inventory.length){
-            return args[0].inventory[++args[0]._inventoryPointer];
-          }else{
-          args[0]._inventoryPointer = 0;
-            return undefined;
-          }
+          return args[0].inventory[++args[0]._inventoryPointer];
         }
       }else{
         return undefined;
@@ -3712,10 +3664,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "object"],
     action: function(args, _instr, action){
       //console.error('Unhandled script action', _instr.address, action.name, action.args);
-      return args[1].getClassLevel(
-        args[0]
-        )
-      ;
+      return args[1].getClassLevel( args[0] );
     }
   },
   344:{
@@ -3833,8 +3782,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].getGender()
-      ;
+      return args[0].getGender();
     }
   },
   359:{
@@ -3843,7 +3791,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["talent"],
     action: function(args, _instr, action){
-      return typeof args[0] != 'undefined' ? 1 : 0;
+      console.log('GetIsTalentValid', args[0]);
+      return true;
+      return typeof args[0] != 'undefined' && typeof args[0] == 'object' && typeof args[0].type != 'undefined' ? 1 : 0;
     }
   },
   360:{
@@ -3867,17 +3817,25 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["talent"],
     action: function(args, _instr, action){
-      if(args[0])
-        return args[0].type;
-      else
-        return -1;
+      if(typeof args[0] == 'object'){
+        console.log('GetTypeFromTalent', args[0])
+        return args[0].type || 0;
+      }else{
+        return 0;
+      }
     }
   },
   363:{
     comment: "363: Get the ID of tTalent.  This could be a SPELL_*, FEAT_* or SKILL_*.\n",
     name: "GetIdFromTalent",
     type: 3,
-    args: ["talent"]
+    args: ["talent"],
+    action: function(args, _instr, action){
+      if(args[0] != undefined){
+        return args[0].id;
+      }
+      return 0;
+    }
   },
   364:{
     comment: "364: Starts a game of pazaak.\n- nOpponentPazaakDeck: Index into PazaakDecks.2da; specifies which deck the opponent will use.\n- sEndScript: Script to be run when game finishes.\n- nMaxWager: Max player wager.  If <= 0, the player's credits won't be modified by the result of the game and the wager screen will not show up.\n- bShowTutorial: Plays in tutorial mode (nMaxWager should be 0).\n",
@@ -3948,8 +3906,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 422, amount: args[0]}
-      ;
+      return {type: 422, amount: args[0]};
     }
   },
   374:{
@@ -3973,8 +3930,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return this.caller.lastObjectOpened
-      ;
+      return this.caller.lastObjectOpened;
     }
   },
   377:{
@@ -3984,8 +3940,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "object"],
     action: function(args, _instr, action){
       if(args[1] instanceof ModuleCreature){
-        return args[1].getHasSpell(args[0]) ? 1 : 0
-        ;
+        return 0;//args[1].getHasSpell(args[0]) ? 1 : 0;
       }else{
         return 0;
       }
@@ -4026,11 +3981,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["location", "int", "float"],
     action: function(args, _instr, action){
-      this.objectPointers[0].moveToLocation(
-      args[0],
-      args[1],
-      args[2]
-      );
+      if(this.caller instanceof ModuleCreature){
+        this.caller.moveToLocation( args[0], args[1], args[2] );
+      }
     }
   },
   383:{
@@ -4039,11 +3992,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int", "float", "float"],
     action: function(args, _instr, action){
-      this.objectPointers[0].moveToObject(
-      args[0],
-      args[1],
-      args[2]
-      );
+      if(this.caller instanceof ModuleCreature){
+        this.caller.moveToObject( args[0], args[1], args[2] );
+      }
     }
   },
   384:{
@@ -4167,10 +4118,16 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+
+      if(args[0] == undefined)
+        args[0] = this.caller;
+
+      //console.log('ActionEquipMostDamagingMelee', args);
+
       if(args[0] instanceof ModuleCreature){
         let inventory = args[0].getInventory();
         let weapon = undefined
-        if(!creature.isSimpleCreature()){
+        if(!args[0].isSimpleCreature()){
 
           for(let i = 0, len = inventory.length; i < len; i++){
             let item = inventory[i];
@@ -4198,6 +4155,7 @@ NWScriptDefK1.Actions = {
             }
           }
 
+          //console.log('ActionEquipMostDamagingMelee', weapon);
           if(weapon){
             args[0].equipItem(args[1] ? UTCObject.SLOT.LEFTHAND : UTCObject.SLOT.RIGHTHAND, weapon);
           }
@@ -4213,10 +4171,15 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object"],
     action: function(args, _instr, action){
+
+      if(args[0] == undefined)
+        args[0] = this.caller;
+
+      console.log('ActionEquipMostDamagingRanged', args);
       if(args[0] instanceof ModuleCreature){
         let inventory = args[0].getInventory();
         let weapon = undefined
-        if(!creature.isSimpleCreature()){
+        if(!args[0].isSimpleCreature()){
 
           for(let i = 0, len = inventory.length; i < len; i++){
             let item = inventory[i];
@@ -4225,6 +4188,7 @@ NWScriptDefK1.Actions = {
               if(!weapon){
                 weapon = item;
               }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
+                console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
                 weapon = item;
               }
             }
@@ -4238,12 +4202,14 @@ NWScriptDefK1.Actions = {
                 if(!weapon){
                   weapon = item;
                 }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
+                  console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
                   weapon = item;
                 }
               }
             }
           }
 
+          console.log('ActionEquipMostDamagingRanged', weapon);
           if(weapon){
             args[0].equipItem(UTCObject.SLOT.RIGHTHAND, weapon);
           }
@@ -4570,7 +4536,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject){
         return args[0].isInConversation();
       }else{
-        return -1;
+        return 0;
       }
     }
   },
@@ -4610,8 +4576,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 24, value: args[0] }
-      ;
+      return {type: 24, value: args[0] };
     }
   },
   452:{
@@ -4702,8 +4667,8 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 62, appearance: args[0] }
-      ;
+      let effect = new EffectDisguise(args[0]);
+      return effect.initialize();
     }
   },
   464:{
@@ -4874,8 +4839,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return undefined
-      ;
+      return undefined;
     }
   },
   490:{
@@ -5057,14 +5021,14 @@ NWScriptDefK1.Actions = {
     args: []
   },
   514:{
-    comment: "514:\nThis will test the combat action queu to see if the user has placed any actions on the queue.\nwill only work during combat.\n",
+    comment: "514:\nThis will test the combat action queue to see if the user has placed any actions on the queue.\nwill only work during combat.\n",
     name: "GetUserActionsPending",
     type: 3,
     args: [],
     action: function(args, _instr, action){
       //This will kinda work for now but I think it is supposed to check if any actions in the queue were set by the player
-      if(this.caller instanceof ModuleObject && this.caller == Game.player){
-        return 0;//this.caller.actionQueue.length ? 1 : 0;
+      if(this.caller instanceof ModuleObject){// && this.caller == Game.player){
+        return this.caller.combatQueue.length ? 1 : 0;//this.caller.actionQueue.length ? 1 : 0;
       }else{
         return 0;
       }
@@ -5129,9 +5093,9 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
   
       if(args[0] == undefined)
-      args[0] = this.objectPointers[0];
+        args[0] = this.caller;
   
-      return args[0].getCurrentAction();
+      return args[0].action || 65535;
     }
   },
   523:{
@@ -5146,8 +5110,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].getAppearance()['(Row Label)']
-      ;
+      return args[0].getAppearance()['(Row Label)'];
     }
   },
   525:{
@@ -5351,7 +5314,8 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].lastAttackTarget || args[0].lastDamager || undefined;
+      //console.log('GetLastHostileActor', args[0]?.getName(), (args[0].lastAttackTarget || args[0].lastDamager || args[0].lastAttacker || undefined) );
+      return args[0].lastAttackTarget || args[0].lastAttacker || args[0].lastDamager || undefined;
     }
   },
   557:{
@@ -5525,9 +5489,8 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'GetGlobalBoolean ', args);
       return Game.getGlobalBoolean(
-        args[0],
-        ) ? 1 : 0 
-      ;
+          args[0],
+        ) ? 1 : 0;
     }
   },
   579:{
@@ -5765,8 +5728,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player
-      ;
+      return Game.module.area.MiniGame.Player;
     }
   },
   612:{
@@ -5775,8 +5737,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Enemies.length
-      ;
+      return Game.module.area.MiniGame.Enemies.length;
     }
   },
   613:{
@@ -5785,10 +5746,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["int"],
     action: function(args, _instr, action){
-    return Game.module.area.MiniGame.Enemies[
-      args[0]
-      ]
-    ;
+    return Game.module.area.MiniGame.Enemies[ args[0] ];
     }
   },
   614:{
@@ -5981,8 +5939,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player.speed
-      ;
+      return Game.module.area.MiniGame.Player.speed;
     }
   },
   644:{
@@ -5991,8 +5948,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player.speed_min
-      ;
+      return Game.module.area.MiniGame.Player.speed_min;
     }
   },
   645:{
@@ -6001,8 +5957,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player.accel_secs
-      ;
+      return Game.module.area.MiniGame.Player.accel_secs;
     }
   },
   646:{
@@ -6161,8 +6116,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player.speed_max
-      ;
+      return Game.module.area.MiniGame.Player.speed_max;
     }
   },
   668:{
@@ -6269,12 +6223,9 @@ NWScriptDefK1.Actions = {
     args: ["object", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        return args[0].getLocalNumber(
-          args[1]
-          )
-        ;
+        return args[0].getLocalNumber( args[1] );
       }else{
-        return -1;
+        return 0;
       }
     }
   },
@@ -6350,8 +6301,7 @@ NWScriptDefK1.Actions = {
     type: 18,
     args: ["string"],
     action: function(args, _instr, action){
-      return Game.Globals['Location'][args[0]]
-      ;
+      return Game.Globals['Location'][args[0]];
     }
   },
   693:{
@@ -6453,8 +6403,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int"],
     action: function(args, _instr, action){
-      return PartyManager.IsNPCInParty(args[0]) ? 1 : 0
-      ;
+      return PartyManager.IsNPCInParty(args[0]) ? 1 : 0;
     }
   },
   700:{
@@ -6499,7 +6448,13 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].aiStyle;
+      if(PartyManager.party.indexOf(args[0]) >= 0){
+        //Hardcode partymembers to return NPCAIStyle = 2
+        //because the game currently freezes if they use the default ai style
+        return 2;
+      }else{
+        return args[0].aiStyle;
+      }
     }
   },
   706:{
@@ -6508,6 +6463,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["int"],
     action: function(args, _instr, action){
+      console.log('SetPartyAIStyle', args, this);
       PartyManager.aiStyle = args[0];
     }
   },
@@ -6517,8 +6473,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+      console.log('SetNPCAIStyle', args, this);
       if(args[0] instanceof ModuleCreature)
-      args[0].aiStyle = args[1];
+        args[0].aiStyle = args[1];
     }
   },
   708:{
@@ -6654,9 +6611,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        return args[0].lastAttackTarget ;
+        return args[0].lastAttackTarget;
       }else{
-        return this.caller.lastAttackTarget ;
+        return this.caller.lastAttackTarget;
       }
     }
   },
@@ -6757,10 +6714,10 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: async function(args, _instr, action){
       return new Promise( async ( resolve, reject) => {
-        await Game.binkVideo.play(args[0]+'.bik', () => {
+        //await Game.binkVideo.play(args[0]+'.bik', () => {
           resolve();
-        });
-        //console.log('PlayMovie', args[0]);
+        //});
+        console.log('PlayMovie', args[0]);
       });
     }
   },
@@ -6777,7 +6734,11 @@ NWScriptDefK1.Actions = {
     args: ["talent"],
     action: function(args, _instr, action){
       if(typeof args[0] != 'undefined'){
-        return args[0].category;
+        let category = parseInt(args[0].category);
+        if(isNaN(category))
+          category = -1;
+
+        return category;
       }else{
         return -1;
       }
@@ -6803,10 +6764,11 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //if(Game.Mode == Game.MODES.INGAME){
         try{
+          console.log('PlayRoomAnimation', args[0], args[1]);
           Game.group.rooms.getObjectByName(
             args[0].toLowerCase()
           ).playAnimation(
-            args[1] - 1
+            'scriptloop'+pad(args[1], 2)
           );
         }catch(e){ console.error(e); }
       //}
@@ -6932,7 +6894,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object"],
     action: function(args, _instr, action){
-      return undefined ;
+      return undefined;
     }
   },
   753:{

@@ -445,7 +445,7 @@ class MenuDialog extends GameMenu {
 
     let totalEntries = entries.length;
 
-    let entryLoop = (idx = 0) => {
+    let entryLoop = async (idx = 0) => {
       if(idx < totalEntries){
         let entry = entries[idx];
         if(entry.isActive == '' && entry.isActive2 == ''){
@@ -455,8 +455,9 @@ class MenuDialog extends GameMenu {
             this.showEntry(this.entryList[entry.index]);
           }
         }else if(entry.isActive != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
-            let script = new NWScript(buffer);
+          let script = await NWScript.Load(entry.isActive);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive, (buffer) => {
+            //let script = new NWScript(buffer);
             script.setScriptParam(1, entry.isActiveParams.Param1);
             script.setScriptParam(2, entry.isActiveParams.Param2);
             script.setScriptParam(3, entry.isActiveParams.Param3);
@@ -467,7 +468,7 @@ class MenuDialog extends GameMenu {
             //console.log('dialog conditional', script);
             script.name = entry.isActive;
             //console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess) => {
+            script.run(this.owner, 0, async (bSuccess) => {
               console.log('dialog cond1', {
                 entry: entry,
                 script: entry.isActive, 
@@ -484,8 +485,9 @@ class MenuDialog extends GameMenu {
                     this.showEntry(this.entryList[entry.index]);
                   }
                 }else{
-                  ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
-                    let script = new NWScript(buffer);
+                  let script = await NWScript.Load(entry.isActive2);
+                  //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
+                    //let script = new NWScript(buffer);
                     script.setScriptParam(1, entry.isActive2Params.Param1);
                     script.setScriptParam(2, entry.isActive2Params.Param2);
                     script.setScriptParam(3, entry.isActive2Params.Param3);
@@ -519,16 +521,17 @@ class MenuDialog extends GameMenu {
                         entryLoop(++idx);
                       }
                     })
-                  });
+                  //});
                 }
               }else{
                 entryLoop(++idx);
               }
             })
-          });
+          //});
         }else if(entry.isActive2 != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
-            let script = new NWScript(buffer);
+          let script = await NWScript.Load(entry.isActive2);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.isActive2, (buffer) => {
+            //let script = new NWScript(buffer);
             script.setScriptParam(1, entry.isActive2Params.Param1);
             script.setScriptParam(2, entry.isActive2Params.Param2);
             script.setScriptParam(3, entry.isActive2Params.Param3);
@@ -558,7 +561,7 @@ class MenuDialog extends GameMenu {
                 entryLoop(++idx);
               }
             })
-          });
+          //});
         }
       }else{ 
         //No further branches
@@ -606,7 +609,7 @@ class MenuDialog extends GameMenu {
     }
   }
 
-  showEntry(entry){
+  async showEntry(entry){
 
     this.state = 0;
 
@@ -750,51 +753,60 @@ class MenuDialog extends GameMenu {
 
     if(entry.script != ''){
       entry.checkList.scriptComplete = false;
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
-        let script = new NWScript(buffer);
-        script.setScriptParam(1, entry.scriptParams.Param1);
-        script.setScriptParam(2, entry.scriptParams.Param2);
-        script.setScriptParam(3, entry.scriptParams.Param3);
-        script.setScriptParam(4, entry.scriptParams.Param4);
-        script.setScriptParam(5, entry.scriptParams.Param5);
-        script.setScriptStringParam(entry.scriptParams.String);
-        script.name = entry.script;
-        script.run(this.owner, 0, () => {
-          if(entry.script2 != ''){
-            ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
-              let script = new NWScript(buffer);
-              script.setScriptParam(1, entry.script2Params.Param1);
-              script.setScriptParam(2, entry.script2Params.Param2);
-              script.setScriptParam(3, entry.script2Params.Param3);
-              script.setScriptParam(4, entry.script2Params.Param4);
-              script.setScriptParam(5, entry.script2Params.Param5);
-              script.setScriptStringParam(entry.script2Params.String)
-              script.name = entry.script2;
-              script.run(this.owner, 0, () => {
-                entry.checkList.scriptComplete = true;
-              });
-            });
-          }else{
-            entry.checkList.scriptComplete = true;
-          }
-        });
+      let script = await NWScript.Load(entry.script);
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script, (buffer) => {
+        //let script = new NWScript(buffer);
+        if(script instanceof NWScriptInstance){
+          script.setScriptParam(1, entry.scriptParams.Param1);
+          script.setScriptParam(2, entry.scriptParams.Param2);
+          script.setScriptParam(3, entry.scriptParams.Param3);
+          script.setScriptParam(4, entry.scriptParams.Param4);
+          script.setScriptParam(5, entry.scriptParams.Param5);
+          script.setScriptStringParam(entry.scriptParams.String);
+          script.name = entry.script;
+          script.run(this.owner, 0, async () => {
+            if(entry.script2 != ''){
+              let script = await NWScript.Load(entry.script2);
+              //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
+                //let script = new NWScript(buffer);
+                if(script instanceof NWScriptInstance){
+                  script.setScriptParam(1, entry.script2Params.Param1);
+                  script.setScriptParam(2, entry.script2Params.Param2);
+                  script.setScriptParam(3, entry.script2Params.Param3);
+                  script.setScriptParam(4, entry.script2Params.Param4);
+                  script.setScriptParam(5, entry.script2Params.Param5);
+                  script.setScriptStringParam(entry.script2Params.String)
+                  script.name = entry.script2;
+                  script.run(this.owner, 0, () => {
+                    entry.checkList.scriptComplete = true;
+                  });
+                }
+              //});
+            }else{
+              entry.checkList.scriptComplete = true;
+            }
+          });
+        }
         
-      });
+      //});
     }else if(entry.script2 != ''){
       entry.checkList.scriptComplete = false;
-      ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
-        let script = new NWScript(buffer);
-        script.setScriptParam(1, entry.script2Params.Param1);
-        script.setScriptParam(2, entry.script2Params.Param2);
-        script.setScriptParam(3, entry.script2Params.Param3);
-        script.setScriptParam(4, entry.script2Params.Param4);
-        script.setScriptParam(5, entry.script2Params.Param5);
-        script.setScriptStringParam(entry.script2Params.String)
-        script.name = entry.script2;
-        script.run(this.owner, 0, () => {
-          entry.checkList.scriptComplete = true;
-        });
-      });
+      let script = await NWScript.Load(entry.script2);
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], entry.script2, (buffer) => {
+        //let script = new NWScript(buffer);
+        if(script instanceof NWScriptInstance){
+          script.setScriptParam(1, entry.script2Params.Param1);
+          script.setScriptParam(2, entry.script2Params.Param2);
+          script.setScriptParam(3, entry.script2Params.Param3);
+          script.setScriptParam(4, entry.script2Params.Param4);
+          script.setScriptParam(5, entry.script2Params.Param5);
+          script.setScriptStringParam(entry.script2Params.String)
+          script.name = entry.script2;
+          script.run(this.owner, 0, () => {
+            entry.checkList.scriptComplete = true;
+          });
+        }
+      //});
     }
 
     let fadeDuration = ((entry.fade.length * 1000) + (entry.fade.delay * 1000));
@@ -904,7 +916,7 @@ class MenuDialog extends GameMenu {
     }
   }
 
-  showReplies(entry){
+  async showReplies(entry){
 
     if(!Game.inDialog)
       return;
@@ -924,9 +936,10 @@ class MenuDialog extends GameMenu {
 
         //Try to run script 1
         if(reply.script != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
+          let script = await NWScript.Load(reply.script);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
+            if(script instanceof NWScriptInstance){
+              //let script = new NWScript(buffer);
               script.setScriptParam(1, reply.scriptParams.Param1);
               script.setScriptParam(2, reply.scriptParams.Param2);
               script.setScriptParam(3, reply.scriptParams.Param3);
@@ -934,12 +947,13 @@ class MenuDialog extends GameMenu {
               script.setScriptParam(5, reply.scriptParams.Param5);
               script.setScriptStringParam(reply.scriptParams.String);
               script.name = reply.script;
-              script.run(this.owner, 0, (bSuccess) => {
+              script.run(this.owner, 0, async (bSuccess) => {
                 //Try to run script 2
                 if(reply.script2 != ''){
-                  ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
-                    if(buffer.length){
-                      let script = new NWScript(buffer);
+                  let script = await NWScript.Load(reply.script2);
+                  //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
+                    if(script instanceof NWScriptInstance){
+                      //let script = new NWScript(buffer);
                       script.setScriptParam(1, reply.script2Params.Param1);
                       script.setScriptParam(2, reply.script2Params.Param2);
                       script.setScriptParam(3, reply.script2Params.Param3);
@@ -947,9 +961,7 @@ class MenuDialog extends GameMenu {
                       script.setScriptParam(5, reply.script2Params.Param5);
                       script.setScriptStringParam(reply.script2Params.String);
                       script.name = reply.script2;
-                      script.run(this.owner, 0, (bSuccess) => {
-                        
-                      });
+                      script.run(this.owner, 0, (bSuccess) => { });
 
                       if(reply.entries.length)
                         this.getNextEntry(reply.entries);
@@ -960,12 +972,12 @@ class MenuDialog extends GameMenu {
                         this.getNextEntry(reply.entries);
                         
                     }
-                  }, () => {
+                  /*}, () => {
                     
                     if(reply.entries.length)
                       this.getNextEntry(reply.entries);
                     
-                  });
+                  });*/
                 }else{
                   
                   if(reply.entries.length)
@@ -980,12 +992,12 @@ class MenuDialog extends GameMenu {
                 this.getNextEntry(reply.entries);
               
             }
-          }, () => {
+          /*}, () => {
             
             if(reply.entries.length)
               this.getNextEntry(reply.entries);
             
-          });
+          });*/
         }else{
           
           if(reply.entries.length)
@@ -1060,9 +1072,11 @@ class MenuDialog extends GameMenu {
     //Loop through all scripts
     let loop = new AsyncLoop({
       array: scripts,
-      onLoop: (scriptObj, asyncLoop) => {
-        ResourceLoader.loadResource(ResourceTypes['ncs'], scriptObj.resref, (buffer) => {
-          let script = new NWScript(buffer);
+      onLoop: async (scriptObj, asyncLoop) => {
+        let script = await NWScript.Load(scriptObj.resref);
+        if(script instanceof NWScriptInstance){
+        //ResourceLoader.loadResource(ResourceTypes['ncs'], scriptObj.resref, (buffer) => {
+          //let script = new NWScript(buffer);
           script.name = scriptObj.resref;
           script.setScriptParam(1, scriptObj.params.Param1);
           script.setScriptParam(2, scriptObj.params.Param2);
@@ -1080,7 +1094,12 @@ class MenuDialog extends GameMenu {
                 onComplete(shouldPass);
             }
           });
-        });
+        //});
+        }else{
+          shouldPass = false;
+          if(typeof onComplete === 'function')
+            onComplete(shouldPass);
+        }
       }
     });
     loop.Begin(() => {
@@ -1093,7 +1112,7 @@ class MenuDialog extends GameMenu {
   GetAvailableReplies(entry){
     let totalReplies = entry.replies.length;
     //console.log('GetAvailableReplies', entry);
-    let replyLoop = (idx = 0) => {
+    let replyLoop = async (idx = 0) => {
       if(idx < totalReplies){
         //console.log('replyLoop', entry.replies[idx], idx, idx < totalReplies);
         let reply = entry.replies[idx];
@@ -1105,9 +1124,10 @@ class MenuDialog extends GameMenu {
           });
           replyLoop(++idx);
         }else{
-          ResourceLoader.loadResource(ResourceTypes['ncs'], reply.isActive, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
+          let script = await NWScript.Load(reply.isActive);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.isActive, (buffer) => {
+            if(script instanceof NWScriptInstance){
+              //let script = new NWScript(buffer);
               /*script.setScriptParam(1, reply.scriptParams.Param1);
               script.setScriptParam(2, reply.scriptParams.Param2);
               script.setScriptParam(3, reply.scriptParams.Param3);
@@ -1131,9 +1151,9 @@ class MenuDialog extends GameMenu {
             }else{
               replyLoop(++idx);
             }
-          }, () => {
+          /*}, () => {
             replyLoop(++idx);
-          });
+          });*/
         }
       }else{
         this.LB_REPLIES.updateList();
@@ -1157,13 +1177,14 @@ class MenuDialog extends GameMenu {
     return text;
   }
 
-  onReplySelect(reply = null){
+  async onReplySelect(reply = null){
 
     //Try to run script 1
     if(reply.script != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
-        if(buffer.length){
-          let script = new NWScript(buffer);
+      let script = await NWScript.Load(reply.script);
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script, (buffer) => {
+        if(script instanceof NWScriptInstance){
+          //let script = new NWScript(buffer);
           script.setScriptParam(1, reply.scriptParams.Param1);
           script.setScriptParam(2, reply.scriptParams.Param2);
           script.setScriptParam(3, reply.scriptParams.Param3);
@@ -1171,12 +1192,13 @@ class MenuDialog extends GameMenu {
           script.setScriptParam(5, reply.scriptParams.Param5);
           script.setScriptStringParam(reply.scriptParams.String);
           script.name = reply.script;
-          script.run(this.owner, 0, (bSuccess) => {
+          script.run(this.owner, 0, async (bSuccess) => {
             //Try to run script 2
             if(reply.script2 != ''){
-              ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
-                if(buffer.length){
-                  let script = new NWScript(buffer);
+              let script = await NWScript.Load(reply.script2);
+              //ResourceLoader.loadResource(ResourceTypes['ncs'], reply.script2, (buffer) => {
+                if(script instanceof NWScriptInstance){
+                  //let script = new NWScript(buffer);
                   script.setScriptParam(1, reply.script2Params.Param1);
                   script.setScriptParam(2, reply.script2Params.Param2);
                   script.setScriptParam(3, reply.script2Params.Param3);
@@ -1191,9 +1213,9 @@ class MenuDialog extends GameMenu {
                 }else{
                   this.getNextEntry(reply.entries);
                 }
-              }, () => {
+              /*}, () => {
                 this.getNextEntry(reply.entries);
-              });
+              });*/
             }else{
               this.getNextEntry(reply.entries);
             }
@@ -1202,21 +1224,22 @@ class MenuDialog extends GameMenu {
         }else{
           this.getNextEntry(reply.entries);
         }
-      }, () => {
+      /*}, () => {
         this.getNextEntry(reply.entries);
-      });
+      });*/
     }else{
       this.getNextEntry(reply.entries);
     }
 
   }
 
-  OnBeforeConversationEnd( onEnd = null ){
+  async OnBeforeConversationEnd( onEnd = null ){
 
     if(this.onEndConversation != ''){
-      ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-        if(this.buffer.length){
-          let script = new NWScript(buffer);
+      let script = await NWScript.Load(this.onEndConversation);
+      //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
+        if(script instanceof NWScriptInstance){
+          //let script = new NWScript(buffer);
           //console.log('dialog.OnEndScript', script);
           script.name = entry.isActive;
           //console.log(this.owner);
@@ -1229,7 +1252,7 @@ class MenuDialog extends GameMenu {
           if(typeof onEnd === 'function')
             onEnd();
         }
-      });
+      //});
     }
 
   }
@@ -1302,15 +1325,16 @@ class MenuDialog extends GameMenu {
     this.state = -1;
 
     if(this.animatedCamera instanceof THREE.AuroraModel)
-      this.animatedCamera.currentAnimation = undefined;
+      this.animatedCamera.animationManager.currentAnimation = undefined;
 
-    process.nextTick( () => {
+    process.nextTick( async () => {
 
       if(!aborted){
         if(this.onEndConversation != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
+          let script = await NWScript.Load(this.onEndConversation);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
+            if(script instanceof NWScriptInstance){
+              //let script = new NWScript(buffer);
               //console.log('dialog.OnEndScript', script);
               script.name = this.onEndConversation;
               //console.log(this.owner);
@@ -1318,13 +1342,14 @@ class MenuDialog extends GameMenu {
                 //console.log('dialog.OnEndScript', script, bSuccess);
               })
             }
-          });
+          //});
         }
       }else{
         if(this.onEndConversationAbort != ''){
-          ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversationAbort, (buffer) => {
-            if(buffer.length){
-              let script = new NWScript(buffer);
+          let script = await NWScript.Load(this.onEndConversationAbort);
+          //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversationAbort, (buffer) => {
+            if(script instanceof NWScriptInstance){
+              //let script = new NWScript(buffer);
               //console.log('dialog.OnEndScript', script);
               script.name = this.onEndConversationAbort;
               //console.log(this.owner);
@@ -1332,7 +1357,7 @@ class MenuDialog extends GameMenu {
                 //console.log('dialog.OnEndScript', script, bSuccess);
               })
             }
-          });
+          //});
         }
       }
     });
@@ -1600,7 +1625,7 @@ class MenuDialog extends GameMenu {
     if(this.animatedCamera instanceof THREE.AuroraModel){
       Game.currentCamera = Game.camera_animated;
       //this.animatedCamera.pose();
-      //this.animatedCamera.currentAnimation = undefined;
+      //this.animatedCamera.animationManager.currentAnimation = undefined;
       //console.log('animatedCamera', this.GetActorAnimation(nCamera), 'Begin');
       //this.animatedCamera.poseAnimation(GetActorAnimation(nCamera));
       this.animatedCamera.playAnimation(this.GetActorAnimation(nCamera), false, () => {

@@ -192,22 +192,18 @@ class TextureLoader {
   }
 
   static enQueue(name, material, type = TextureLoader.Type.TEXTURE, onLoad = null, fallback){
-    name = name.toLowerCase();
-    let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad };
-    TextureLoader.queue.push(obj);
-    //console.log('enQueue', name, obj);
 
-    /* 
-    let _item = TextureLoader.queue.find( (item) => {
-      item.name === name;
-    });
-
-    if(_item){
-      
-    }else{
-      TextureLoader.queue.push({ name: name, materials: [{ material: material, type: type }] });
+    if(typeof name == 'string'){
+      name = name.toLowerCase();
+      let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad };
+      TextureLoader.queue.push(obj);
+    }else if(Array.isArray(name)){
+      for(let i = 0, len = name.length; i < len; i++){
+        let texName = name[i].toLowerCase();
+        let obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad };
+        TextureLoader.queue.push(obj);
+      }
     }
-    */
   }
 
   static enQueueParticle(name, partGroup, onLoad = null){
@@ -364,7 +360,7 @@ class TextureLoader {
                   tex.partGroup.material.depthWrite = false;
                   tex.partGroup.material.needsUpdate = true;
 
-                  AnimatedTextures.push( new AnimatedTexture(texture, 1/tex.partGroup.node.GridX, 1/tex.partGroup.node.GridY, 16) );
+                  //AnimatedTextures.push( new AnimatedTexture(texture, 1/tex.partGroup.node.GridX, 1/tex.partGroup.node.GridY, 16) );
 
                 }else{
                   tex.partGroup.material.uniforms.texture.value = texture;
@@ -516,8 +512,13 @@ class TextureLoader {
               tex.material.uniforms.waterAlpha.value = texture.txi.waterAlpha;
               tex.material.uniforms.waterTransform.value = bumpMap.matrix;
 
-              let waterAnim = new AnimatedTexture(bumpMap, bumpMap.txi.numx, bumpMap.txi.numy, bumpMap.txi.fps, true);
-              AnimatedTextures.push( waterAnim );
+              tex.material.uniforms.waterAnimation.value.x = bumpMap.txi.numx;
+              tex.material.uniforms.waterAnimation.value.y = bumpMap.txi.numy;
+              tex.material.uniforms.waterAnimation.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
+              tex.material.uniforms.waterAnimation.value.w = bumpMap.txi.fps;
+
+              //let waterAnim = new AnimatedTexture(bumpMap, bumpMap.txi.numx, bumpMap.txi.numy, bumpMap.txi.fps, true);
+              //AnimatedTextures.push( waterAnim );
 
             }
 

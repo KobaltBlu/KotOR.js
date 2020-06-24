@@ -133,6 +133,7 @@ class AppearanceLoader {
           let head = Global.kotor2DA['heads'].rows[headId];
           Game.ModelLoader.load(head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(), (head) => {
             try{
+              this.model.headhook.head = head;
               this.model.headhook.add(head);
 
               TextureLoader.LoadQueue(() => {

@@ -25,6 +25,17 @@ class NWScriptInstruction {
     this.isArg = args.isArg;
     this.index = args.index;
 
+    this.code_hex = this.intToHex(this.code, 2);
+    this.type_hex = this.intToHex(this.type, 2);
+    this.address_hex = this.intToHex(this.address, 8);
+
+  }
+
+  intToHex( number = 0, min_length = 1 ){
+    let hex = (number).toString(16);
+    let hex_length = hex.length < min_length ? min_length : hex.length;
+    let hex_pad = (new Array(hex_length)).fill('0').join('');
+    return (hex_pad + hex).substr(-hex_length);
   }
 
 }

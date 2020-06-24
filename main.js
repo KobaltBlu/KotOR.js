@@ -30,7 +30,8 @@ function createWindowFromProfile( profile = {} ) {
     title: profile.name,
     backgroundColor: profile.launch.backgroundColor,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      nodeIntegrationInWorker: true
     }
   });
 
@@ -39,10 +40,10 @@ function createWindowFromProfile( profile = {} ) {
   winGame.webContents.MyGlobal = Global;
   // and load the index.html of the app.
   winGame.loadURL(`file://${__dirname}/${profile.launch.path}`);
-  /*winGame.openDevTools();
+  winGame.openDevTools();
   winGame.on('ready', () => {
     winGame.webcontents.openDevTools();
-  });*/
+  });
 
   winGame.setMenuBarVisibility(false);
 
@@ -128,7 +129,7 @@ ipcMain.on('launch_profile', (event, profile) => {
 
 app.on('ready', () => {
 
-  tray = new Tray('./icon.png');
+  tray = new Tray('icon.png');
   const contextMenu = Menu.buildFromTemplate([{
     label: 'Exit', 
     type: 'normal', 
@@ -146,10 +147,10 @@ app.on('ready', () => {
     winLauncher.isVisible() ? winLauncher.hide() : winLauncher.show()
   });
   winLauncher.on('show', () => {
-    tray.setHighlightMode('always');
+    //tray.setHighlightMode('always');
   });
   winLauncher.on('hide', () => {
-    tray.setHighlightMode('never');
+    //tray.setHighlightMode('never');
   });
 
 });

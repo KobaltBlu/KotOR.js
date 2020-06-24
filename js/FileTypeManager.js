@@ -47,6 +47,8 @@ class FileTypeManager {
       Config.Save(null, true); //Save the configuration silently
     }
 
+    console.log(res, ext);
+
     switch(ext){
       case 'lyt':
       case 'vis':

@@ -9,7 +9,7 @@ class ModuleItem extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
-    
+
     if(typeof gff === 'string'){
       this.equippedRes = gff;
       this.template = new GFFObject();
@@ -25,6 +25,7 @@ class ModuleItem extends ModuleObject {
     this.textureVariation = 1;
     this.palleteID = 0;
     this.loaded = false;
+    this.properties = [];
 
     this.InitProperties();
 
@@ -129,6 +130,19 @@ class ModuleItem extends ModuleObject {
 
   getTag(){
     return this.tag;
+  }
+
+  getACBonus(){
+
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let prop = this.properties[i];
+      //Defense Bonus
+      if(prop.propertyName == 17){
+        return prop.costValue;
+      }
+    }
+
+    return 0;
   }
 
   Load( onLoad = null ){
@@ -340,8 +354,22 @@ class ModuleItem extends ModuleObject {
       this.plot = this.template.GetFieldByLabel('Plot').GetValue();
 
     if(this.template.RootNode.HasField('PropertiesList')){
-      //TODO
-      //this.locName = this.template.GetFieldByLabel('PropertiesList').GetValue();
+      let propertiesList = this.template.GetFieldByLabel('PropertiesList').GetChildStructs();
+      for(let i = 0, len = propertiesList.length; i < len; i++){
+        let property = propertiesList[i];
+        this.properties.push({
+          propertyName: property.GetFieldByLabel('PropertyName')?.GetValue(),
+          subType: property.GetFieldByLabel('Subtype')?.GetValue(),
+          costTable: property.GetFieldByLabel('CostTable')?.GetValue(),
+          costValue: property.GetFieldByLabel('CostValue')?.GetValue(),
+          param1: property.GetFieldByLabel('Param1')?.GetValue(),
+          param1Value: property.GetFieldByLabel('Param1Value')?.GetValue(),
+          chanceAppear: property.GetFieldByLabel('ChanceAppear')?.GetValue(),
+          usesPerDay: property.GetFieldByLabel('UsesPerDay')?.GetValue(),
+          useable: property.GetFieldByLabel('Useable')?.GetValue(),
+          upgradeType: property.GetFieldByLabel('UpgradeType')?.GetValue(),
+        });
+      }
     }
 
     if(this.template.RootNode.HasField('StackSize'))

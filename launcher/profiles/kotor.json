@@ -15,10 +15,23 @@
     "args": { "gameChoice": 1 },
     "fullscreen": true
   },
+  "verify_install_dir": true,
   "elements" : [
     {
       "type": "video",
       "url": "https://steamcdn-a.akamaihd.net/steam/apps/256671298/movie_max.webm"
     }
-  ]
+  ],
+  "settings" : {
+    "fullscreen": {
+      "name": "Fullscreen at launch?",
+      "type": "boolean",
+      "defaultValue": false
+    },
+    "devtools": {
+      "name": "Open Devtools at launch?",
+      "type": "boolean",
+      "defaultValue": false
+    }
+  }
 }

@@ -13,17 +13,10 @@ class NWScript {
     this._lastOffset = -1;
 
     this.subscripts = new Map();
+    this.instances = [];
+    this.global = false;
 
     this.subRoutines = [];
-    this.objectPointers = []; //OBJECT_SELF is objectPointer[0] //OBJECT_INVALID is objectPointer[1]
-    this.stringPointers = [];
-    this.integerPointers = [0, 1]; //0 and 1 are predefined for FALSE & TRUE vaules respectively
-    this.floatPointers = [];
-    this.locationPointers = [];
-    this.effectPointers = [];
-    this.eventPointers = [];
-    this.actionPointers = [];
-    this.talentPointers = [];
     this.stack = new NWScriptStack();
     this.state = [];
 
@@ -36,15 +29,13 @@ class NWScript {
       'build': false,
       'equal': false,
       'nequal': false
-    }
+    };
     this.name = '';
     this.state = [];
 
     this.params = [0, 0, 0, 0, 0];
     this.paramString = '';
     this.verified = false;
-
-    this.delayCommandQueue = [];
 
     if( dataOrFile != null ) {
 
@@ -72,22 +63,22 @@ class NWScript {
 
   }
 
+  verifyNCS (reader){
+    reader.Seek(0);
+    if(this.verified || reader.ReadChars(8) == 'NCS V1.0')
+      return this.verified = true;
+
+    return false;
+  }
+
   init (data = null, progSize = null){
 
     
     if(this.isDebugging()){
       console.log('NWScript: '+this.name, 'NWScript', 'Run');
     }
-    //Lists store information of decoded data like variables and functions.
-    //The index if the offset of the item that it resides in the stack.
-    //If the item is in the stack we only need to retrieve it's name e.g var1, var2, object1, object2,
-    //If it is not in the list we will need to create a new item in the appropriate list
+
     this.prevByteCode = 0;
-    if(GameKey == 'TSL'){
-      this.Definition = NWScriptDefK2;
-    }else{
-      this.Definition = NWScriptDefK1;
-    }
     this.instructions = new Map();
     let reader = new BinaryReader(data);
     reader.endians = BinaryReader.Endians.BIG;
@@ -117,103 +108,6 @@ class NWScript {
     }
     reader.position = 0;
 
-    this.delayCommandQueue = [];
-
-  }
-
-  clone(){
-    let script = new NWScript();
-    script.name = this.name;
-    script.Definition = this.Definition;
-    script.instructions = new Map(this.instructions);
-    return script;
-  }
-
-  setCaller(obj){
-    this.caller = obj;
-    this.objectPointers[0] = obj;
-  }
-
-  run(caller = null, scriptVar = 0, onComplete = null){
-    this.caller = caller;
-    this.scriptVar = scriptVar;
-    this.onComplete = onComplete;
-
-    this.delayCommandQueue = [];
-
-    this.subRoutines = [];
-    this.objectPointers = [this.caller, undefined]; //OBJECT_SELF is objectPointer[0] //OBJECT_INVALID is objectPointer[1]
-    this.stringPointers = [];
-    this.integerPointers = [0, 1]; //0 and 1 are predefined for FALSE & TRUE vaules respectively
-    this.floatPointers = [];
-    this.locationPointers = [];
-    this.effectPointers = [];
-    this.eventPointers = [];
-    this.actionPointers = [];
-    this.talentPointers = [];
-    this.stack = new NWScriptStack();
-    this.state = [];
-
-    this.lastSpeaker = undefined;
-
-    this.persistentObjectIdx = 0;
-    
-    this.firstLoop = true;
-
-    if(this.globalCache != null){
-      //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
-      //Need to test the performance impact to see if it helps
-      this.caller = this.globalCache.caller;
-      this.enteringObject = this.globalCache.enteringObject;
-      this.subRoutines = this.globalCache.subRoutines.slice();
-      this.objectPointers = this.globalCache.objectPointers.slice();
-      this.stringPointers = this.globalCache.stringPointers.slice();
-      this.integerPointers = this.globalCache.integerPointers.slice();
-      this.floatPointers = this.globalCache.floatPointers.slice();
-      this.locationPointers = this.globalCache.locationPointers.slice();
-      this.effectPointers = this.globalCache.effectPointers.slice();
-      this.eventPointers = this.globalCache.eventPointers.slice();
-      this.actionPointers = this.globalCache.actionPointers.slice();
-
-      this.stack.basePointer = this.globalCache.stack.basePointer;
-      this.stack.pointer = this.globalCache.stack.pointer;
-      this.stack.stack = this.globalCache.stack.stack.slice();
-      
-      this.runScript({
-        instr: this.globalCache.instr,
-        seek: null,
-        onComplete: this.onComplete
-      });
-    }else{
-      this.runScript({
-        instr: this.instructions.values().next().value,
-        seek: null,
-        onComplete: this.onComplete
-      });
-    }
-
-  }
-
-  getReturnValue(){
-    //For some reason this is needed for some conditional scripts because the stack pointer is getting set back too far could be a problem with MOVSP?
-    try{
-      if(this.stack.stack[-1] ? true : false){
-        let _ret = (this.stack.stack[-1]);
-        delete this.stack.stack[-1];
-        return _ret.value ? 1 : 0;
-      }else if(this.stack.stack.length){
-        let _ret = (this.stack.pop());
-        return _ret.value ? 1 : 0;
-      }else{
-        return false;
-      }
-    }catch(e){
-      console.error(e, this);
-    }
-  }
-
-  getInstrAtOffset( offset ){
-    return this.instructions.get(offset);
   }
 
   parseIntr( reader ) {
@@ -243,152 +137,12 @@ class NWScript {
     this._lastOffset = instr.address;
   }
 
-  beginLoop(data){
-    this.runScript(data);
-  }
-
-  async runScript(scope = {}){
-
-    scope = Object.assign({
-      running: true,
-      prevByteCode: -1,
-      seek: null,
-      prevInstr: null,
-      instr: null,
-      onComplete: null
-    }, scope);
-
-    while(scope.running){
-
-      if(scope.instr)
-        scope.prevByteCode = scope.instr.code;
-      
-      if( scope.seek != null ) {
-        scope.instr = this.getInstrAtOffset( scope.seek );
-        this.firstLoop = false;
-      }else{
-        if(!scope.instr.eof){
-          if(scope.instr.nextInstr != null){
-            scope.instr = this.firstLoop ? scope.instr : scope.instr.nextInstr;
-            this.firstLoop = false;
-          }
-        }else{ }
-      }
-
-      scope.seek = null;
-      //Run the instruction's run method
-      await NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
-      //await this.runInstr(scope.instr, scope);
-
-    }
-
-    //SCRIPT DONE
-
-    //onScriptEND
-    if(this.isDebugging()){
-      console.log('onScriptEND', this)
-    }else{
-      //console.log('onScriptEND', this.name)
-    }
-
-    if(typeof scope.onComplete === 'function'){
-      scope.onComplete(this.getReturnValue());
-    }
-
-    this.subRoutines = [];
-    this.objectPointers = [];
-    this.stringPointers = [];
-    this.integerPointers = [];
-    this.floatPointers = [];
-    this.locationPointers = [];
-    this.effectPointers = [];
-    this.eventPointers = [];
-    this.actionPointers = [];
-    this.talentPointers = [];
-    this.stack = undefined;
-    this.state = [];
-
-  }
-
-  async runInstr ( instr, scope ) {
-
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name,  'runInstr', instr.index, NWScript.ByteCodes[instr.code], instr );
-    }
-
-    //Run the instruction's run method
-    await NWScript.ByteCodes[instr.code].run.call(this, scope);
-    
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name, 'STACK_LEN', this.stack.stack.length);
-    }
-
-  }
-
-  executeScript(script, args, onComplete){
-    
-    script.lastPerceived = this.lastPerceived;
-    script.debug = this.debug;
-
-    script.debugging = this.debugging;
-    script.listenPatternNumber = this.listenPatternNumber;
-    script.listenPatternSpeaker = this.listenPatternSpeaker;
-    script.run(
-      args[1],
-      args[2],
-      (val) => {
-        
-        if(typeof onComplete == 'function')
-          onComplete(val);
-
-      }
-    )
-
-  }
-
-  verifyNCS (reader){
-    reader.Seek(0);
-    if(this.verified || reader.ReadChars(8) == 'NCS V1.0')
-      return this.verified = true;
-
-    return false;
-  }
-
-  locationCompare(loc1, loc2){
-    return loc1.position.x == loc2.position.x && loc1.position.y == loc2.position.y && loc1.position.z == loc2.position.z && loc1.facing == loc2.facing;
-  }
-
-  pushVectorToStack(vector){
-    //Push Z to the stack
-    this.stack.push(vector.z, NWScript.DATATYPE.FLOAT);
-    //Push Y to the stack
-    this.stack.push(vector.y, NWScript.DATATYPE.FLOAT);
-    //Push X to the stack
-    this.stack.push(vector.x, NWScript.DATATYPE.FLOAT);
-  }
-
-  setScriptParam(idx = 1, value = 0){
-    switch(idx){
-      case 2:
-        this.params[1] = value;
-      break;
-      case 3:
-        this.params[2] = value;
-      break;
-      case 4:
-        this.params[3] = value;
-      break;
-      case 5:
-        this.params[4] = value;
-      break;
-      default:
-        this.params[0] = value;
-      break;
-    }
-  }
-
-  setScriptStringParam(value=''){
-    this.paramString = value;
+  clone(){
+    let script = new NWScript();
+    script.name = this.name;
+    //script.Definition = this.Definition;
+    script.instructions = new Map(this.instructions);
+    return script;
   }
 
   isDebugging(type = ''){
@@ -399,7 +153,109 @@ class NWScript {
     }
   }
 
+  //newInstance
+  //When loading a new script always return a NWScriptInstance which will share large data from the parent NWScript
+  //like the instruction array, but will have it's own NWScriptStack
+  //This whould reduse memory overhead because only one instance of the large data is created per script
+  newInstance(scope = undefined){
+
+    let script = new NWScriptInstance({
+      name: this.name,
+      instructions: this.instructions
+    });
+
+    script.nwscript = this;
+
+    //Add the new instance to the instances array
+    this.instances.push(script);
+
+    if(scope instanceof NWScriptInstance){
+      script.debug = scope.debug;
+      script.debugging = scope.debugging;
+      script.lastPerceived = scope.lastPerceived;
+      script.listenPatternNumber = scope.listenPatternNumber;
+    }
+
+    return script;
+  }
+
+  static SetGlobalScript( scriptName = '', isGlobal = true ){
+    if( NWScript.scripts.has( scriptName ) ){
+      let script = NWScript.scripts.get( scriptName );
+      script.global = isGlobal;
+    }
+  }
+
+  static Load( scriptName = '', returnInstance = true ){
+    return new Promise( ( resolve, reject ) => {
+      if( NWScript.scripts.has( scriptName ) ){
+        let script = NWScript.scripts.get( scriptName );
+
+        //Create a new instance of the script and return it
+        resolve( script.newInstance() );
+      }else{
+        if(scriptName){
+          //Fetch the script from the game resource list
+          ResourceLoader.loadResource(ResourceTypes['ncs'], scriptName, ( buffer ) => {
+            //Pass the buffer to a new script object
+            let script = new NWScript( buffer );
+            script.name = scriptName;
+            //Store a refernece to the script object inside the static "scripts" variable
+            NWScript.scripts.set( scriptName, script );
+
+            //Create a new instance of the script and return it
+            if(returnInstance){
+              resolve( script.newInstance() );
+            }else{
+              resolve( undefined );
+            }
+          }, () => {
+            //console.warn('NWScript.ExecuteScript failed to find', executeScript.name);
+            resolve( undefined );
+          });
+        }else{
+          //console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
+          resolve( undefined );
+        }
+      }
+    });
+  }
+
+  disposeInstance( instance = undefined ){
+    if(instance instanceof NWScriptInstance){
+      let idx = this.instances.indexOf(instance);
+      if(idx >= 0){
+        this.instances.splice(idx, 1);
+        instance.dispose();
+      }
+    }
+  }
+
+  disposeInstances(){
+    let i = this.instances.length;
+    while(i--){
+      let instance = this.instances.splice(i, 1)[0];
+      if(instance instanceof NWScriptInstance){
+        instance.dispose();
+      }
+    }
+  }
+
+  static Reload(){
+    NWScript.scripts.forEach( (script,key,map) => {
+      //Only dispose of non global scripts
+      //global scripts would be like the ones attached to Game Menus
+      if(!script.global){
+        script.disposeInstances();
+        NWScript.scripts.delete(key);
+      }
+    });
+  }
+
 }
+
+//Holds references the the NWScripts that are stored in memory
+NWScript.scripts = new Map();
 
 NWScript.ByteCodesEnum = {
   'CPDOWNSP':       1,
@@ -490,10 +346,16 @@ NWScript.ByteCodes = {
           this.stack.push(undefined, NWScript.DATATYPE.OBJECT);
         break;
         case 16:
+          this.stack.push(undefined, NWScript.DATATYPE.EFFECT);
+        break;
         case 17:
+          this.stack.push(undefined, NWScript.DATATYPE.EVENT);
+        break;
         case 18:
+          this.stack.push(undefined, NWScript.DATATYPE.LOCATION);
+        break;
         case 19:
-          this.stack.push(0, NWScript.DATATYPE.INTEGER);
+          this.stack.push(undefined, NWScript.DATATYPE.TALENT);
         break;
         default:
           console.log(scope.instr);
@@ -509,12 +371,12 @@ NWScript.ByteCodes = {
     name: 'CPTOPSP', 
     run: function( scope = {} ){
       var var1 = this.stack.getAtPointer( scope.instr.pointer );
-      try{
+      //try{
         this.stack.push( var1.value, var1.type );
-      }catch(e){
+      //}catch(e){
         //console.error(e);
         //console.log(var1, scope, this);
-      }
+      //}
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();
@@ -545,6 +407,9 @@ NWScript.ByteCodes = {
         case 12:
           this.stack.push(scope.instr.string, NWScript.DATATYPE.LOCATION);
         break;
+        default:
+          console.warning('CONST', scope.instr.type, scope.instr);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -568,7 +433,13 @@ NWScript.ByteCodes = {
   5 : { 
     name: 'ACTION', 
     run: async function( scope = {} ){
-      let action = this.Definition.Actions[scope.instr.action];
+
+      let action = undefined;//NWScript.Definition.Actions[scope.instr.action];
+      if(GameKey == 'TSL'){
+        action = NWScriptDefK2.Actions[scope.instr.action];
+      }else{
+        action = NWScriptDefK1.Actions[scope.instr.action];
+      }
 
       let args = [];
 
@@ -648,13 +519,19 @@ NWScript.ByteCodes = {
       }
 
       if(action.type != NWScript.DATATYPE.VOID && action.type != NWScript.DATATYPE.VECTOR){
-        if(actionValue == undefined && action.type != NWScript.DATATYPE.OBJECT){
+        /*if(actionValue == undefined && action.type != NWScript.DATATYPE.OBJECT){
           //console.warn('undefined value', action, args, this.name, scope.instr);
         }
-
-        if(actionValue != undefined || action.type == NWScript.DATATYPE.OBJECT){
-          this.stack.push( actionValue, action.type );
+        if(actionValue === null){
+          console.warn('NWScript', this.name, 'Action '+action.name+' returned ', actionValue);
         }
+
+        if(actionValue != undefined || ( action.type == NWScript.DATATYPE.OBJECT || action.type == NWScript.DATATYPE.TALENT || action.type == NWScript.DATATYPE.EFFECT )){
+          this.stack.push( actionValue, action.type );
+        }else{
+          console.warn('NWScript', this.name, 'Action '+action.name+' returned ', action.type, actionValue);         
+        }*/
+        this.stack.push( actionValue, action.type );
       }
 
       /*if(actionValue != undefined){
@@ -783,6 +660,9 @@ NWScript.ByteCodes = {
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
           }
         break;
+        default:
+          console.warn('EQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -827,6 +707,9 @@ NWScript.ByteCodes = {
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
           }
         break;
+        default:
+          console.warn('NEQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -851,6 +734,9 @@ NWScript.ByteCodes = {
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+        break;
+        default:
+          console.warn('GEQ: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
         break;
       }
     }, 
@@ -877,6 +763,9 @@ NWScript.ByteCodes = {
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
+        default:
+          console.warn('GT: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -902,6 +791,9 @@ NWScript.ByteCodes = {
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
+        default:
+          console.warn('LT: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -926,6 +818,9 @@ NWScript.ByteCodes = {
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+        break;
+        default:
+          console.warn('LEQ: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
         break;
       }
     }, 
@@ -988,6 +883,9 @@ NWScript.ByteCodes = {
           this.stack.push( var2 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
           this.stack.push( var3 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
         break;
+        default:
+          console.warn('ADD: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+        break;
       }
     }, 
     parse: function( instr, reader ){
@@ -1018,6 +916,9 @@ NWScript.ByteCodes = {
           this.stack.push( var1 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
           this.stack.push( var2 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
           this.stack.push( var3 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+        break;
+        default:
+          console.warn('SUB: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
         break;
       }
     }, 
@@ -1053,6 +954,9 @@ NWScript.ByteCodes = {
           this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT ); //Z
           this.stack.push( var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //Y
           this.stack.push( var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //X
+        break;
+        default:
+          console.warn('MUL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
         break;
       }
     }, 
@@ -1354,6 +1258,9 @@ NWScript.ByteCodes = {
         console.log('NWScript: '+this.name, 'CPTOPBP', scope.instr);
       }
       let stackBaseEle = this.stack.getAtBasePointer( scope.instr.pointer );
+      if(stackBaseEle == null){
+        var i = 0;
+      }
       this.stack.push( stackBaseEle );
     }, 
     parse: function( instr, reader ){
@@ -1372,7 +1279,7 @@ NWScript.ByteCodes = {
       var1.value -= 1;
     }, 
     parse: function( instr, reader ){
-
+      instr.offset = reader.ReadUInt32();
     }
   },
   41 : { 
@@ -1385,7 +1292,7 @@ NWScript.ByteCodes = {
       var1.value += 1;
     }, 
     parse: function( instr, reader ){
-
+      instr.offset = reader.ReadUInt32();
     }
   },
   42 : { 
@@ -1440,21 +1347,14 @@ NWScript.ByteCodes = {
 
       //console.log('STORE_STATE', this.stack.stack.length, this.stack.basePointer);
 
-      state.script = new NWScript();
-      state.script.name = this.name;
+      state.script = new NWScriptInstance();
+      state.script.nwscript = this.nwscript;
+      state.script.isStoreState = true;
+      state.script.name = this.name+':STORE_STATE';
       state.script.prevByteCode = 0;
-      state.script.Definition = this.Definition;
+      //state.script.Definition = this.Definition;
       state.script.instructions = this.instructions;//.slice();
       state.script.subRoutines = [];
-      state.script.objectPointers = this.objectPointers.slice();
-      state.script.stringPointers = this.stringPointers.slice();
-      state.script.integerPointers = this.integerPointers.slice();
-      state.script.floatPointers = this.floatPointers.slice();
-      state.script.locationPointers = this.locationPointers.slice();
-      state.script.effectPointers = this.effectPointers.slice();
-      state.script.eventPointers = this.eventPointers.slice();
-      state.script.actionPointers = this.actionPointers.slice();
-      state.script.talentPointers = this.talentPointers.slice();
       state.script.stack = new NWScriptStack();
 
       state.script.stack.stack = this.stack.stack.slice();
@@ -1466,6 +1366,9 @@ NWScript.ByteCodes = {
       state.script.listenPatternSpeaker = this.listenPatternSpeaker;
       this.state.push(state);
       state.script.state = this.state.slice();
+
+      //console.log('STORE_STATE', state.script);
+
     }, 
     parse: function( instr, reader ){
       instr.bpOffset = reader.ReadUInt32();
