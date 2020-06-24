@@ -3791,7 +3791,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["talent"],
     action: function(args, _instr, action){
-      console.log('GetIsTalentValid', args[0]);
+      //console.log('GetIsTalentValid', args[0]);
       return true;
       return typeof args[0] != 'undefined' && typeof args[0] == 'object' && typeof args[0].type != 'undefined' ? 1 : 0;
     }
@@ -3818,7 +3818,7 @@ NWScriptDefK1.Actions = {
     args: ["talent"],
     action: function(args, _instr, action){
       if(typeof args[0] == 'object'){
-        console.log('GetTypeFromTalent', args[0])
+        //console.log('GetTypeFromTalent', args[0])
         return args[0].type || 0;
       }else{
         return 0;
@@ -4175,7 +4175,7 @@ NWScriptDefK1.Actions = {
       if(args[0] == undefined)
         args[0] = this.caller;
 
-      console.log('ActionEquipMostDamagingRanged', args);
+      //console.log('ActionEquipMostDamagingRanged', args);
       if(args[0] instanceof ModuleCreature){
         let inventory = args[0].getInventory();
         let weapon = undefined
@@ -4188,7 +4188,7 @@ NWScriptDefK1.Actions = {
               if(!weapon){
                 weapon = item;
               }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
-                console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
+                //console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
                 weapon = item;
               }
             }
@@ -4202,14 +4202,14 @@ NWScriptDefK1.Actions = {
                 if(!weapon){
                   weapon = item;
                 }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
-                  console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
+                  //console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
                   weapon = item;
                 }
               }
             }
           }
 
-          console.log('ActionEquipMostDamagingRanged', weapon);
+          //console.log('ActionEquipMostDamagingRanged', weapon);
           if(weapon){
             args[0].equipItem(UTCObject.SLOT.RIGHTHAND, weapon);
           }
@@ -6453,7 +6453,7 @@ NWScriptDefK1.Actions = {
         //because the game currently freezes if they use the default ai style
         return 2;
       }else{
-        return args[0].aiStyle;
+        return 2;//args[0].aiStyle;
       }
     }
   },

@@ -40,9 +40,9 @@ function createWindowFromProfile( profile = {} ) {
   winGame.webContents.MyGlobal = Global;
   // and load the index.html of the app.
   winGame.loadURL(`file://${__dirname}/${profile.launch.path}`);
-  winGame.openDevTools();
+  //winGame.openDevTools();
   winGame.on('ready', () => {
-    winGame.webcontents.openDevTools();
+    //winGame.webcontents.openDevTools();
   });
 
   winGame.setMenuBarVisibility(false);
