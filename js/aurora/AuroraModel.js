@@ -790,15 +790,23 @@ class AuroraModel {
                       (data[rowOffset + 2] + data[rowOffset + 8]) || 0.0
                     )
                   );
+                  
+                  //If this is the first frame ignore the control point at v1 by copying the values from v0
+                  //This appears to fix the problem I was having with the camera going off the rails at times
+                  //This also appears to make all the isLinearBezier checks I was doing before
+                  //Further testing is needed before I can be sure isLinearBezier can be removed from the AnimationManager as well
+                  if(!r){
+                    frame.bezier.v1.copy(frame.bezier.v0);
+                  }
 
-                  frame.isLinearBezier = (frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6));
+                  /*frame.isLinearBezier = (frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6));
 
                   if(frame.isLinearBezier){
                     frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
                   }else if(frame.bezier.v0.length() - frame.bezier.v1.length() < 0.01){
                     frame.isLinearBezier = true;
                     frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
-                  }
+                  }*/
 
                   vec3.x = data[rowOffset + 0] || 0.0;
                   vec3.y = data[rowOffset + 1] || 0.0;
