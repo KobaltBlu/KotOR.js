@@ -129,6 +129,11 @@ class NWScript {
       this.instructions.get(this._lastOffset).nextInstr = instr;
     }
 
+    if(typeof NWScript.ByteCodes[instr.code] === 'undefined'){
+      console.error('Unhandled NWScript Instruction');
+      console.log(this, instr);
+    }
+
     //Run the instruction's parse method
     NWScript.ByteCodes[instr.code].parse.call(this, instr, reader);
     
@@ -666,7 +671,9 @@ NWScript.ByteCodes = {
       }
     }, 
     parse: function( instr, reader ){
-
+      if(instr.type == 0x24){
+        instr.sizeOfStructure = parseInt(reader.ReadUInt16());
+      }
     }
   }, //Constant Type is declared by the next byte x03, x04, x05, x06
   12 : { 
@@ -713,7 +720,9 @@ NWScript.ByteCodes = {
       }
     }, 
     parse: function( instr, reader ){
-
+      if(instr.type == 0x24){
+        instr.sizeOfStructure = parseInt(reader.ReadUInt16());
+      }
     }
   }, //Constant Type is declared by the next byte x03, x04, x05, x06
   13 : { 
