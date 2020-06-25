@@ -762,3 +762,57 @@ function bytesToSize(bytes) {
   var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
   return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
 };
+
+THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
+
+  //This is a performance tweak from https://discourse.threejs.org/t/updatematrixworld-performance/3217
+  if( !this.visible ){ return false; }
+
+  if ( this.matrixAutoUpdate ) this.updateMatrix();
+
+  if ( this.matrixWorldNeedsUpdate || force ) {
+
+      if ( this.parent === null ) {
+
+          this.matrixWorld.copy( this.matrix );
+
+      } else {
+
+          this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+
+      }
+
+      this.matrixWorldNeedsUpdate = false;
+
+      force = true;
+
+  }
+
+  // update children
+
+  var children = this.children;
+
+  for ( var i = 0, l = children.length; i < l; i ++ ) {
+
+      children[ i ].updateMatrixWorld( force );
+
+  }
+
+}
+
+THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
+
+  if(this.name == ignoreName)
+    return;
+
+  callback( this );
+
+  var children = this.children;
+
+  for ( var i = 0, l = children.length; i < l; i ++ ) {
+    if(typeof children[ i ].traverseIgnore === 'function'){
+      children[ i ].traverseIgnore( ignoreName, callback );
+    }
+  }
+
+}
