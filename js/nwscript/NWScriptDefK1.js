@@ -6714,10 +6714,10 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: async function(args, _instr, action){
       return new Promise( async ( resolve, reject) => {
+        console.log('PlayMovie', args[0]);
         //await Game.binkVideo.play(args[0]+'.bik', () => {
           resolve();
         //});
-        console.log('PlayMovie', args[0]);
       });
     }
   },

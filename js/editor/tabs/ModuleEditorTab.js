@@ -218,6 +218,18 @@ class ModuleEditorTab extends EditorTab {
     }, 1000 );
   }
 
+  updateFrustumObjects(object){
+
+    // every time the camera or objects change position (or every frame)
+    this.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
+    this.currentCamera.matrixWorldInverse.getInverse( this.currentCamera.matrixWorld );
+    this.viewportProjectionMatrix.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse );
+    this.viewportFrustum.setFromProjectionMatrix( this.viewportProjectionMatrix );
+
+    // frustum is now ready to check all the objects you need
+    //frustum.intersectsObject( object )
+  }
+
   Render(){
     if(this.isDestroyed)
       return;
@@ -233,7 +245,9 @@ class ModuleEditorTab extends EditorTab {
     //this.axes.update();
     this.controls.Update(delta);
 
-    editor3d.selectionBox.update();
+    try{
+      //editor3d.selectionBox.update();
+    }catch(e){}
 
     //CREATURES
     let obj = undefined;
@@ -368,6 +382,9 @@ class ModuleEditorTab extends EditorTab {
     this.animatedCameraIndex = 0;
     this.currentCamera = this.camera;
 
+    this.viewportFrustum = new THREE.Frustum();
+    this.viewportProjectionMatrix = new THREE.Matrix4();
+
     this.raycaster = new THREE.Raycaster();
 
     this.axes = new THREE.TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
@@ -375,7 +392,7 @@ class ModuleEditorTab extends EditorTab {
     this.scene.add(this.axes);
 
     //This works
-    this.selectionBox = new THREE.BoundingBoxHelper(new THREE.Object3D(), 0xffffff);
+    this.selectionBox = new THREE.BoxHelper(new THREE.Object3D(), 0xffffff);
     this.selectionBox.update();
     this.selectionBox.visible = false;
     this.scene.add( this.selectionBox );
@@ -970,6 +987,7 @@ class ModuleEditorTab extends EditorTab {
         array: this.module.area.doors,
         onLoop: (door, asyncLoop) => {
           //loader.SetMessage('Loading Door: '+(i+1)+'/'+this.triggers.length);
+          door.context = this;
           door.Load( () => {
             door.LoadModel( (model) => {
               //model.translateX(door.getX());
@@ -1000,6 +1018,7 @@ class ModuleEditorTab extends EditorTab {
         array: this.module.area.placeables,
         onLoop: (plc, asyncLoop) => {
           //loader.SetMessage('Loading Placeable: '+(i+1)+'/'+this.triggers.length);
+          plc.context = this;
           plc.Load( () => {
             plc.position.set(plc.getX(), plc.getY(), plc.getZ());
             plc.rotation.set(0, 0, plc.getBearing());
@@ -1037,6 +1056,7 @@ class ModuleEditorTab extends EditorTab {
         array: this.module.area.waypoints,
         onLoop: (waypoint, asyncLoop) => {
           //loader.SetMessage('Loading Waypoint: '+(i+1)+'/'+this.triggers.length);
+          waypoint.context = this;
           waypoint.Load( () => {
             //waypnt.LoadModel( (mesh) => {
               // wpObj.position.set(waypnt.getXPosition(), waypnt.getYPosition(), waypnt.getZPosition());
@@ -1063,6 +1083,7 @@ class ModuleEditorTab extends EditorTab {
       let loop = new AsyncLoop({
         array: this.module.area.triggers,
         onLoop: (trig, asyncLoop) => {
+          trig.context = this;
           trig.Load( () => {
             this.group.triggers.add(trig.mesh);
             asyncLoop._Loop();
@@ -1126,7 +1147,7 @@ class ModuleEditorTab extends EditorTab {
       let loop = new AsyncLoop({
         array: this.module.area.creatures,
         onLoop: (crt, asyncLoop) => {
-
+          crt.context = this;
           crt.Load( () => {
             crt.LoadModel( (model) => {
               crt.model.moduleObject = crt;
@@ -1161,6 +1182,7 @@ class ModuleEditorTab extends EditorTab {
       let loop = new AsyncLoop({
         array: this.module.area.rooms,
         onLoop: (room, asyncLoop) => {
+          room.context = this;
           room.load( (room) => {
             room.model.moduleObject = room;
             this.group.rooms.add(room.model);

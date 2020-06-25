@@ -100,6 +100,7 @@ function gamepadHandler(e, connecting) {
 window.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
 window.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
 
+const APP_MODE = 'GAME';
 
 const Games = {
   KOTOR: 1,

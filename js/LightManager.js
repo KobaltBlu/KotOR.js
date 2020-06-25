@@ -131,16 +131,26 @@ class LightManager {
   }
 
   static update(delta = 0, target = null){
-    
-    if(Game.Mode != Game.MODES.INGAME && Game.Mode != Game.MODES.MINIGAME && target == null)
-      return;
 
-    if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){
-      if(Game.inDialog){
-        target = Game.currentCamera;
+    if(APP_MODE == "FORGE"){
+      if(tabManager.currentTab.currentCamera instanceof THREE.Camera){
+        target = tabManager.currentTab.currentCamera;
       }else{
-        target = Game.getCurrentPlayer();
+        return;
       }
+    }else{
+    
+      if(Game.Mode != Game.MODES.INGAME && Game.Mode != Game.MODES.MINIGAME && target == null)
+        return;
+
+      if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){
+        if(Game.inDialog){
+          target = Game.currentCamera;
+        }else{
+          target = Game.getCurrentPlayer();
+        }
+      }
+
     }
     
     for(let i = 0, il = LightManager.lights.length; i < il; i++){

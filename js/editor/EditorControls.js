@@ -150,7 +150,7 @@ class EditorControls {
               let intersects = this.editor.raycaster.intersectObjects( this.editor.scene.children, true );
 
               this.editor.selectionBox.visible = false;
-              this.editor.selectionBox.update();
+              //this.editor.selectionBox.update();
               this.editor.selected = null;
 
               this.editor.axes.visible = false;
@@ -237,9 +237,9 @@ class EditorControls {
     this.signals.objectSelected.add( ( object ) => {
 
       console.log('Signal', 'objectSelected', object);
-      this.editor.selectionBox.object = object || null;
+      this.editor.selectionBox.setFromObject(object || null);
       this.editor.selectionBox.visible = true;
-      this.editor.selectionBox.update();
+      //this.editor.selectionBox.update();
 
       console.log(this.editor.selectionBox);
 
@@ -351,7 +351,7 @@ class EditorControls {
     if(this.keys['escape']){
       this.editor.selected = null;
       this.editor.selectionBox.visible = false;
-      this.editor.selectionBox.update();
+      //this.editor.selectionBox.update();
       this.editor.axes.visible = false;
       this.editor.cursorGroup = new THREE.Group();
     }
@@ -438,7 +438,7 @@ class EditorControls {
         this.editor.selected.rotation.set(originalRot.x, originalRot.y, originalRot.z);
         this.editor.selected.updateMatrix();
 
-        this.editor.selectionBox.update();
+        //this.editor.selectionBox.update();
 
       }*/
 

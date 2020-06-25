@@ -30,9 +30,19 @@ THREE.AuroraLight = function () {
   }
 
   this.isOnScreen = function( frustum = Game.viewportFrustum ){
-    this.sphere.center.copy(this.worldPosition);
-    this.sphere.radius = this.getRadius();
-    return frustum.intersectsSphere(this.sphere);
+    if(APP_MODE == 'FORGE'){
+      if(tabManager.currentTab instanceof ModuleEditorTab){
+        frustum = tabManager.currentTab.viewportFrustum;
+        this.sphere.center.copy(this.worldPosition);
+        this.sphere.radius = this.getRadius();
+        return frustum.intersectsSphere(this.sphere);
+      }
+      return false;
+    }else{
+      this.sphere.center.copy(this.worldPosition);
+      this.sphere.radius = this.getRadius();
+      return frustum.intersectsSphere(this.sphere);
+    }
   }
 
 };

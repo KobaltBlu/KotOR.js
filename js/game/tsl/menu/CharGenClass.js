@@ -47,6 +47,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 0;
             Game.player = this._3D_MODEL1.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 
@@ -55,6 +56,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 1;
             Game.player = this._3D_MODEL2.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 
@@ -63,6 +65,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 2;
             Game.player = this._3D_MODEL3.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 
@@ -71,6 +74,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 3;
             Game.player = this._3D_MODEL4.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 
@@ -79,6 +83,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 4;
             Game.player = this._3D_MODEL5.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 
@@ -87,6 +92,7 @@ class CharGenClass extends GameMenu {
             CharGenClass.SelectedClass = 5;
             Game.player = this._3D_MODEL6.objectCreature;
             Game.player.model.parent.remove(Game.player.model);
+            Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
             Game.CharGenMain.Open();
           });
 

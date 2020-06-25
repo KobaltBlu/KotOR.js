@@ -30,6 +30,8 @@ const isRunningInAsar = function(){
   return false;
 };//const isRunningInAsar = require('electron-is-running-in-asar');
 
+const APP_MODE = 'FORGE';
+
 const Games = {
   KOTOR: 1,
   TSL: 2

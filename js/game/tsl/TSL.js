@@ -736,10 +736,12 @@ class Game extends Engine {
           'InGameComputer',
           'InGameComputerCam',
 
-          /*'CharGenClass',
-          'CharGenPortCust', //Character Portrait
           'CharGenMain',
-
+          'CharGenQuickOrCustom',
+          'CharGenQuickPanel',
+          'CharGenName',
+          'CharGenPortCust', //Character Portrait
+          /*
           'MenuSaveLoad',
           'MainOptions',
           'MainMovies',

@@ -23,20 +23,20 @@ class InGameComputer extends GameMenu {
 
         this.LB_MESSAGE = this.getControlByName('LB_MESSAGE');
         this.LB_REPLIES = this.getControlByName('LB_REPLIES');
-        this.LBL_OBSCURE = this.getControlByName('LBL_OBSCURE');
+        //this.LBL_OBSCURE = this.getControlByName('LBL_OBSCURE');
 
-        this.LBL_REP_UNITS_ICON = this.getControlByName('LBL_REP_UNITS_ICON');;
-        this.LBL_COMP_SPIKES_ICON = this.getControlByName('LBL_COMP_SPIKES_ICON');;
-        this.LBL_REP_SKILL_ICON = this.getControlByName('LBL_REP_SKILL_ICON');;
-        this.LBL_COMP_SKILL_ICON = this.getControlByName('LBL_COMP_SKILL_ICON');;
-        this.LBL_REP_UNITS = this.getControlByName('LBL_REP_UNITS');;
-        this.LBL_REP_SKILL = this.getControlByName('LBL_REP_SKILL');;
-        this.LBL_COMP_SPIKES = this.getControlByName('LBL_COMP_SPIKES');;
-        this.LBL_COMP_SKILL = this.getControlByName('LBL_COMP_SKILL');;
-        this.LBL_COMP_SKILL_VAL = this.getControlByName('LBL_COMP_SKILL_VAL');;
-        this.LBL_COMP_SPIKES_VAL = this.getControlByName('LBL_COMP_SPIKES_VAL');;
-        this.LBL_REP_SKILL_VAL = this.getControlByName('LBL_REP_SKILL_VAL');;
-        this.LBL_REP_UNITS_VAL = this.getControlByName('LBL_REP_UNITS_VAL');;
+        //this.LBL_REP_UNITS_ICON = this.getControlByName('LBL_REP_UNITS_ICON');
+        //this.LBL_COMP_SPIKES_ICON = this.getControlByName('LBL_COMP_SPIKES_ICON');
+        //this.LBL_REP_SKILL_ICON = this.getControlByName('LBL_REP_SKILL_ICON');
+        //this.LBL_COMP_SKILL_ICON = this.getControlByName('LBL_COMP_SKILL_ICON');
+        this.LBL_REP_UNITS = this.getControlByName('LBL_REP_UNITS');
+        this.LBL_REP_SKILL = this.getControlByName('LBL_REP_SKILL');
+        this.LBL_COMP_SPIKES = this.getControlByName('LBL_COMP_SPIKES');
+        this.LBL_COMP_SKILL = this.getControlByName('LBL_COMP_SKILL');
+        this.LBL_COMP_SKILL_VAL = this.getControlByName('LBL_COMP_SKILL_VAL');
+        this.LBL_COMP_SPIKES_VAL = this.getControlByName('LBL_COMP_SPIKES_VAL');
+        this.LBL_REP_SKILL_VAL = this.getControlByName('LBL_REP_SKILL_VAL');
+        this.LBL_REP_UNITS_VAL = this.getControlByName('LBL_REP_UNITS_VAL');
 
         this.LB_MESSAGE.clearItems();
 
