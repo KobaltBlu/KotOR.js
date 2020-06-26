@@ -9,7 +9,7 @@ There is also very early attempt at a Modding Suite called KotOR Forge packaged 
 
 The code is written in Javascript. It uses THREE.js for the rendering engine, Electron to package and run the code as an app.
 
-If you plan on attempting to run either game you will first have to purchase and or install them. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be ask to locate the install directory of said game.
+If you plan on attempting to run either game you will first have to purchase and or install them. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
 
 [Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
