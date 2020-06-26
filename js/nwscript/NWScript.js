@@ -322,7 +322,14 @@ NWScript.ByteCodes = {
         console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(scope.instr.offset), this.stack.peek());
       }
 
-      this.stack.replace(scope.instr.offset, this.stack.peek());
+      //this.stack.replace(scope.instr.offset, this.stack.peek());
+      
+      //Calculate the number of stack elements that are going to be copied down
+      let count = scope.instr.size / 4;
+      for(let i = 0; i < count; i++){
+        //Replace the target stack element with the appropriate element relative to the top of the stack
+        this.stack.replace(scope.instr.offset + (4 * i), this.stack.peek(4 * i));
+      }
       
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(scope.instr.offset), this.stack.peek());
@@ -375,13 +382,21 @@ NWScript.ByteCodes = {
   3 : { 
     name: 'CPTOPSP', 
     run: function( scope = {} ){
-      var var1 = this.stack.getAtPointer( scope.instr.pointer );
-      //try{
-        this.stack.push( var1.value, var1.type );
-      //}catch(e){
-        //console.error(e);
-        //console.log(var1, scope, this);
-      //}
+      let tmp_values = [];
+      //Calculate the number of stack elements that are going to be copied to the top of the stack
+      let count = scope.instr.size / 4;
+      for(let i = 0; i < count; i++){
+        tmp_values.push(
+          this.stack.getAtPointer( scope.instr.pointer + (4 * i) )
+        );
+      }     
+      
+      for(let i = 0; i < tmp_values.length; i++){
+        this.stack.push(tmp_values[i].value, tmp_values[i].type);
+      }
+
+      //var var1 = this.stack.getAtPointer( scope.instr.pointer );
+      //this.stack.push( var1.value, var1.type );
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();
@@ -630,44 +645,75 @@ NWScript.ByteCodes = {
   11 : { 
     name: 'EQUAL', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      if(scope.instr.type == 0x24){
+        var struct2 = [];
+        var struct1 = [];
 
-      switch(NWScript.Types[scope.instr.type]){
-        case 'II':
-          if(var1 == var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'FF':
-          if(var1 == var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'OO':
-          if(var1 == var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'SS':
-          if(var1.toLowerCase() == var2.toLowerCase())
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'LOCLOC':
-          if(this.locationCompare(var1, var2)){
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          }else{
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
+        let count = scope.instr.sizeOfStructure / 4;
+        //populate structure2's variables
+        for(let i = 0; i < count; i++){
+          struct2.push(this.stack.pop().value);
+        }
+        //populate structure1's variables
+        for(let i = 0; i < count; i++){
+          struct1.push(this.stack.pop().value);
+        }
+
+        console.log('EQUALTT', struct1, struct2);
+
+        let areStructuresEqual = true;
+        //Check for equality between the structures variables
+        for(let i = 0; i < count; i++){
+          if(struct1[i] != struct2[i]){
+            areStructuresEqual = false;
           }
-        break;
-        default:
-          console.warn('EQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
-        break;
+        }
+
+        if(areStructuresEqual)
+          this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+        else
+          this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+
+      }else{
+        var var2 = this.stack.pop().value;
+        var var1 = this.stack.pop().value;
+
+        switch(NWScript.Types[scope.instr.type]){
+          case 'II':
+            if(var1 == var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'FF':
+            if(var1 == var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'OO':
+            if(var1 == var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'SS':
+            if(var1.toLowerCase() == var2.toLowerCase())
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'LOCLOC':
+            if(this.locationCompare(var1, var2)){
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            }else{
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
+            }
+          break;
+          default:
+            console.warn('EQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+          break;
+        }
       }
     }, 
     parse: function( instr, reader ){
@@ -679,44 +725,76 @@ NWScript.ByteCodes = {
   12 : { 
     name: 'NEQUAL', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      if(scope.instr.type == 0x24){
+        var struct2 = [];
+        var struct1 = [];
 
-      switch(NWScript.Types[scope.instr.type]){
-        case 'II':
-          if(var1 != var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'FF':
-          if(var1 != var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'OO':
-          if(var1 != var2)
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'SS':
-          if(var1.toLowerCase() != var2.toLowerCase())
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
-        break;
-        case 'LOCLOC':
-          if(!this.locationCompare(var1, var2)){
-            this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-          }else{
-            this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
+        let count = scope.instr.sizeOfStructure / 4;
+
+        //populate structure2's variables
+        for(let i = 0; i < count; i++){
+          struct2.push(this.stack.pop().value);
+        }
+        //populate structure1's variables
+        for(let i = 0; i < count; i++){
+          struct1.push(this.stack.pop().value);
+        }
+
+        console.log('NEQUALTT', struct1, struct2);
+
+        let areStructuresNEqual = false;
+        //Check for non equality between the structures variables
+        for(let i = 0; i < count; i++){
+          if(struct1[i] != struct2[i]){
+            areStructuresEqual = true;
           }
-        break;
-        default:
-          console.warn('NEQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
-        break;
+        }
+
+        if(areStructuresNEqual)
+          this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+        else
+          this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+
+      }else{
+        var var2 = this.stack.pop().value;
+        var var1 = this.stack.pop().value;
+
+        switch(NWScript.Types[scope.instr.type]){
+          case 'II':
+            if(var1 != var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'FF':
+            if(var1 != var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'OO':
+            if(var1 != var2)
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'SS':
+            if(var1.toLowerCase() != var2.toLowerCase())
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            else
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+          break;
+          case 'LOCLOC':
+            if(!this.locationCompare(var1, var2)){
+              this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
+            }else{
+              this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
+            }
+          break;
+          default:
+            console.warn('NEQUAL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
+          break;
+        }
       }
     }, 
     parse: function( instr, reader ){
@@ -1253,7 +1331,13 @@ NWScript.ByteCodes = {
   38 : { 
     name: 'CPDOWNBP', 
     run: function( scope = {} ){
-      this.stack.replaceBP(scope.instr.offset, this.stack.peek());
+      //this.stack.replaceBP(scope.instr.offset, this.stack.peek());
+      //Calculate the number of stack elements that are going to be copied down
+      let count = scope.instr.size / 4;
+      for(let i = 0; i < count; i++){
+        //Replace the target stack element with the appropriate element relative to the top of the stack
+        this.stack.replaceBP(scope.instr.offset + (4 * i), this.stack.peek(4 * i));
+      }
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadUInt32();
@@ -1266,11 +1350,24 @@ NWScript.ByteCodes = {
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'CPTOPBP', scope.instr);
       }
-      let stackBaseEle = this.stack.getAtBasePointer( scope.instr.pointer );
-      if(stackBaseEle == null){
-        var i = 0;
+      let tmp_values = [];
+      //Calculate the number of stack elements that are going to be copied to the top of the stack
+      let count = scope.instr.size / 4;
+      for(let i = 0; i < count; i++){
+        tmp_values.push(
+          this.stack.getAtBasePointer( scope.instr.pointer + (4 * i) )
+        );
+      }     
+      
+      for(let i = 0; i < tmp_values.length; i++){
+        this.stack.push(tmp_values[i].value, tmp_values[i].type);
       }
-      this.stack.push( stackBaseEle );
+
+      // let stackBaseEle = this.stack.getAtBasePointer( scope.instr.pointer );
+      // if(stackBaseEle == null){
+      //   var i = 0;
+      // }
+      // this.stack.push( stackBaseEle );
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();

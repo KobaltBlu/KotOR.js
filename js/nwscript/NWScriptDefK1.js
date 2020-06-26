@@ -3792,7 +3792,6 @@ NWScriptDefK1.Actions = {
     args: ["talent"],
     action: function(args, _instr, action){
       //console.log('GetIsTalentValid', args[0]);
-      return true;
       return typeof args[0] != 'undefined' && typeof args[0] == 'object' && typeof args[0].type != 'undefined' ? 1 : 0;
     }
   },
@@ -6448,13 +6447,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      if(PartyManager.party.indexOf(args[0]) >= 0){
-        //Hardcode partymembers to return NPCAIStyle = 2
-        //because the game currently freezes if they use the default ai style
-        return 2;
-      }else{
-        return 2;//args[0].aiStyle;
-      }
+      return args[0].aiStyle;
     }
   },
   706:{

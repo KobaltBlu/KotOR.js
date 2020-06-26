@@ -49,8 +49,8 @@ class NWScriptStack {
     return this.stack.pop();
   }
 
-  peek(){
-    return this.stack[(this.pointer - 4) / 4];
+  peek(offset = 0){
+    return this.stack[ ( (this.pointer - 4) - offset)  / 4];
   }
 
   getPointerPositionRelative(relPos = -4){
