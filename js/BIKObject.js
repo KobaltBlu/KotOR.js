@@ -197,7 +197,7 @@ class BIKObject {
   stop(){
     this.isPlaying = false;
     this.timer = 0;
-    window.clearTimeout(this.timeout);
+    global.clearTimeout(this.timeout);
 
     //clean up audio nodes
     while(this.audio_nodes.length){

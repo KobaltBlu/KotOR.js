@@ -349,174 +349,174 @@ for (var key in Global) {
 
 //let Global = remote.process.myGlobal;
 
-if (typeof window.TopMenu == 'undefined') {
-    window.TopMenu = {
-      title: 'KotOR Forge',
-      items: [
-        {name: 'File', items: [
-          {name: 'Open Project', onClick: async () => {
-            let payload = await dialog.showOpenDialog({
-              properties: ['openFile'],
+if (typeof global.TopMenu == 'undefined') {
+  global.TopMenu = {
+    title: 'KotOR Forge',
+    items: [
+      {name: 'File', items: [
+        {name: 'Open Project', onClick: async () => {
+          let payload = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [
+              {name: 'KForge Project', extensions: ['json']}
+          ]});
+          if(!payload.canceled && payload.filePaths.length){
+            Global.Project = new Project( path.dirname(payload.filePaths[0]) );
+            Global.Project.Open(() => {
+              loader.SetMessage("Loading Complete");
+              //Fade out the loading screen because the app is ready
+              loader.Dismiss();
+            });
+          }
+        }},
+        {name: 'New Project', onClick: () => {
+          let newProjectWizard = new NewProjectWizard();
+          newProjectWizard.Show();
+        }},
+        {name: 'Save Project'},
+        {name: 'Close Project', onClick: () => {
+          Global.Project = undefined;
+          for(let i = 0; i < tabManager.tabs.length; i++){
+            tabManager.tabs[i].Remove();
+          }
+          tabManager.AddTab(new QuickStartTab());
+        }},
+        {type: 'separator'},
+        {name: 'Change Game', onClick: async function(){
+          
+          let game_choice = await dialog.showMessageBox({
+            type: 'info',
+            title: 'Switch Game?',
+            message: 'Choose which game you would like to switch to.',
+            buttons: ['KotOR', 'TSL', 'Cancel']
+          });
+
+          console.log(game_choice);
+
+          switch(game_choice.response){
+            case 0: //KotOR
+              if(GameKey != 'KOTOR'){
+                GameKey = 'KOTOR';
+                initialize();
+              }
+            break;
+            case 1: //TSL
+              if(GameKey != 'TSL'){
+                GameKey = 'TSL';
+                initialize();
+              }
+            break;
+          }
+
+        }},
+        {type: 'separator'},
+        {name: 'New >', items: [
+          {name: 'Lip Sync File', onClick: function(){
+            tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
+          }},
+          {name: 'Creature Template', onClick: function(){
+            tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
+          }},
+          {name: 'Door Template', onClick: function(){
+            tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
+          }},
+          {name: 'Placeable Template', onClick: function(){
+            tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_placeable', reskey: ResourceTypes.utp })));
+          }}
+        ]},
+        {name: 'Open File', onClick: function(){
+          dialog.showOpenDialog(
+            {
+              title: 'Open File',
               filters: [
-                {name: 'KForge Project', extensions: ['json']}
-            ]});
-            if(!payload.canceled && payload.filePaths.length){
-              Global.Project = new Project( path.dirname(payload.filePaths[0]) );
-              Global.Project.Open(() => {
-                loader.SetMessage("Loading Complete");
-                //Fade out the loading screen because the app is ready
-                loader.Dismiss();
-              });
+                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
+                {name: 'TPC Image', extensions: ['tpc']},
+                {name: 'TGA Image', extensions: ['tga']},
+                {name: 'GFF', extensions: ['gff']},
+                {name: 'Creature Template', extensions: ['utc']},
+                {name: 'Door Template', extensions: ['utd']},
+                {name: 'Placeable Template', extensions: ['utp']},
+                {name: 'Merchant Template', extensions: ['utm']},
+                {name: 'Sound Template', extensions: ['uts']},
+                {name: 'Trigger Template', extensions: ['utt']},
+                {name: 'Waypoint Template', extensions: ['utw']},
+                {name: 'LIP Animation', extensions: ['lip']},
+                {name: 'Audio File', extensions: ['wav', 'mp3']},
+                {name: 'Video File', extensions: ['bik']},
+                {name: 'MOD File', extensions: ['mod']},
+                {name: 'ERF File', extensions: ['erf']},
+                {name: 'RIM File', extensions: ['rim']},
+                {name: 'All Formats', extensions: ['*']},
+              ]
             }
-          }},
-          {name: 'New Project', onClick: () => {
-            let newProjectWizard = new NewProjectWizard();
-            newProjectWizard.Show();
-          }},
-          {name: 'Save Project'},
-          {name: 'Close Project', onClick: () => {
-            Global.Project = undefined;
-            for(let i = 0; i < tabManager.tabs.length; i++){
-              tabManager.tabs[i].Remove();
-            }
-            tabManager.AddTab(new QuickStartTab());
-          }},
-          {type: 'separator'},
-          {name: 'Change Game', onClick: async function(){
-            
-            let game_choice = await dialog.showMessageBox({
-              type: 'info',
-              title: 'Switch Game?',
-              message: 'Choose which game you would like to switch to.',
-              buttons: ['KotOR', 'TSL', 'Cancel']
-            });
+          ).then(result => {
+            if(!result.canceled){
+              if(result.filePaths.length){
+                let filename = result.filePaths[0].split(path.sep).pop();
+                let fileParts = filename.split('.');
 
-            console.log(game_choice);
-
-            switch(game_choice.response){
-              case 0: //KotOR
-                if(GameKey != 'KOTOR'){
-                  GameKey = 'KOTOR';
-                  initialize();
-                }
-              break;
-              case 1: //TSL
-                if(GameKey != 'TSL'){
-                  GameKey = 'TSL';
-                  initialize();
-                }
-              break;
-            }
-
-          }},
-          {type: 'separator'},
-          {name: 'New >', items: [
-            {name: 'Lip Sync File', onClick: function(){
-              tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
-            }},
-            {name: 'Creature Template', onClick: function(){
-              tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
-            }},
-            {name: 'Door Template', onClick: function(){
-              tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
-            }},
-            {name: 'Placeable Template', onClick: function(){
-              tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_placeable', reskey: ResourceTypes.utp })));
-            }}
-          ]},
-          {name: 'Open File', onClick: function(){
-            dialog.showOpenDialog(
-              {
-                title: 'Open File',
-                filters: [
-                  {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
-                  {name: 'TPC Image', extensions: ['tpc']},
-                  {name: 'TGA Image', extensions: ['tga']},
-                  {name: 'GFF', extensions: ['gff']},
-                  {name: 'Creature Template', extensions: ['utc']},
-                  {name: 'Door Template', extensions: ['utd']},
-                  {name: 'Placeable Template', extensions: ['utp']},
-                  {name: 'Merchant Template', extensions: ['utm']},
-                  {name: 'Sound Template', extensions: ['uts']},
-                  {name: 'Trigger Template', extensions: ['utt']},
-                  {name: 'Waypoint Template', extensions: ['utw']},
-                  {name: 'LIP Animation', extensions: ['lip']},
-                  {name: 'Audio File', extensions: ['wav', 'mp3']},
-                  {name: 'Video File', extensions: ['bik']},
-                  {name: 'MOD File', extensions: ['mod']},
-                  {name: 'ERF File', extensions: ['erf']},
-                  {name: 'RIM File', extensions: ['rim']},
-                  {name: 'All Formats', extensions: ['*']},
-                ]
-              }
-            ).then(result => {
-              if(!result.canceled){
-                if(result.filePaths.length){
-                  let filename = result.filePaths[0].split(path.sep).pop();
-                  let fileParts = filename.split('.');
-
-                  FileTypeManager.onOpenFile({path: result.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
-                }
-              }
-              console.log(result.canceled);
-              console.log(result.filePaths);
-            });
-          }},
-          {name: 'Save File', onClick: function(){
-
-            if(tabManager.currentTab instanceof EditorTab){
-              try{
-                tabManager.currentTab.Save();
-              }catch(e){
-                console.error(e);
+                FileTypeManager.onOpenFile({path: result.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
               }
             }
+            console.log(result.canceled);
+            console.log(result.filePaths);
+          });
+        }},
+        {name: 'Save File', onClick: function(){
 
-          }},
-          {name: 'Save File As', onClick: function(){
-
-            if(tabManager.currentTab instanceof EditorTab){
-              try{
-                tabManager.currentTab.SaveAs();
-              }catch(e){
-                console.error(e);
-              }
+          if(tabManager.currentTab instanceof EditorTab){
+            try{
+              tabManager.currentTab.Save();
+            }catch(e){
+              console.error(e);
             }
+          }
 
-          }},
-          {name: 'Save All Files'},
-          {name: 'Close File'},
-          {type: 'separator'},
-          {name: 'Recent Projects', type: 'title'},
-          {type: 'separator'},
-          {name: 'Exit', onClick: function(){
-            window.canUnload = true;
-            window.close();
-          }}
-        ]},
-        {name: 'View', items: [
-          {name: 'Left Pane Toggle', onClick: () => {
-            $('#container').layout().toggle('west');
-          }},
-          /*{name: 'Right Pane Toggle', onClick: () => {
-            $('#container').layout().toggle('east');
-          }},
-          {name: 'Audio Player Toggle', onClick: () => {
-            if(inlineAudioPlayer.IsVisible()){
-              inlineAudioPlayer.Hide();
-            }else{
-              inlineAudioPlayer.Show();
+        }},
+        {name: 'Save File As', onClick: function(){
+
+          if(tabManager.currentTab instanceof EditorTab){
+            try{
+              tabManager.currentTab.SaveAs();
+            }catch(e){
+              console.error(e);
             }
-          }},*/
-          {name: 'Audio Toggle Mute', onClick: () => {
-            AudioEngine.ToggleMute();
-          }}
-        ]},
-        /*{name: 'Settings', onClick: function(){
-          let configWizard = new ConfigWizard();
-        }}*/
-      ]
-    };
+          }
+
+        }},
+        {name: 'Save All Files'},
+        {name: 'Close File'},
+        {type: 'separator'},
+        {name: 'Recent Projects', type: 'title'},
+        {type: 'separator'},
+        {name: 'Exit', onClick: function(){
+          window.canUnload = true;
+          window.close();
+        }}
+      ]},
+      {name: 'View', items: [
+        {name: 'Left Pane Toggle', onClick: () => {
+          $('#container').layout().toggle('west');
+        }},
+        /*{name: 'Right Pane Toggle', onClick: () => {
+          $('#container').layout().toggle('east');
+        }},
+        {name: 'Audio Player Toggle', onClick: () => {
+          if(inlineAudioPlayer.IsVisible()){
+            inlineAudioPlayer.Hide();
+          }else{
+            inlineAudioPlayer.Show();
+          }
+        }},*/
+        {name: 'Audio Toggle Mute', onClick: () => {
+          AudioEngine.ToggleMute();
+        }}
+      ]},
+      /*{name: 'Settings', onClick: function(){
+        let configWizard = new ConfigWizard();
+      }}*/
+    ]
+  };
 }
 
 function BuildTopMenu() {
@@ -543,11 +543,11 @@ function BuildTopMenu() {
     '</div>'+
   '</nav>');
 
-  if (typeof window.TopMenu.title == 'undefined') {
-    window.TopMenu.title = 'KotOR Modding Suite';
+  if (typeof global.TopMenu.title == 'undefined') {
+    global.TopMenu.title = 'KotOR Modding Suite';
   }
 
-  Object.defineProperty(window.TopMenu, 'windowTitle', {
+  Object.defineProperty(global.TopMenu, 'windowTitle', {
     get: function() {
       return windowTitle;
     },
@@ -558,9 +558,9 @@ function BuildTopMenu() {
 
   $('body').prepend($newMenu);
 
-  $('b#app-title', $newMenu).text(window.TopMenu.title);
+  $('b#app-title', $newMenu).text(global.TopMenu.title);
 
-  $.each(window.TopMenu.items, function(i, item){
+  $.each(global.TopMenu.items, function(i, item){
     BuildMenuItem(item, null)
   });
 

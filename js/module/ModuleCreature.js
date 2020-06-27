@@ -675,7 +675,7 @@ class ModuleCreature extends ModuleCreatureController {
 
     let talents = this.getTalents().filter( talent => talent.category == category || talent.category == category2 );
     let talent = talents[Math.floor(Math.random()*talents.length)];
-    console.log('getRandomTalent', talent);
+    //console.log('getRandomTalent', talent);
     return talent;
 
   }

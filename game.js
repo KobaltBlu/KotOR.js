@@ -97,8 +97,8 @@ function gamepadHandler(e, connecting) {
   }
 }
 
-window.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
-window.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+global.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
 
 const APP_MODE = 'GAME';
 
@@ -109,12 +109,12 @@ const Games = {
 
 switch(remote.getCurrentWindow().state.launch.args.gameChoice){
   case 2:
-    window._Game = Games.TSL;
-    window.GameKey = 'TSL';
+    global._Game = Games.TSL;
+    global.GameKey = 'TSL';
   break;
   default:
-    window._Game = Games.KOTOR;
-    window.GameKey = 'KOTOR';
+    global._Game = Games.KOTOR;
+    global.GameKey = 'KOTOR';
   break;
 }
 
@@ -310,10 +310,10 @@ if(GameKey == 'TSL'){
   let menus = fs.readdirSync(path.join(app.getAppPath(), 'js/game/', 'tsl', 'menu'));
   for(let i = 0; i < menus.length; i++){
     let menuPath = path.parse(menus[i]);
-    window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/tsl/menu/', menuPath.base)); 
+    global[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/tsl/menu/', menuPath.base)); 
   }
   
-  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
+  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
 
 }else{
@@ -321,10 +321,10 @@ if(GameKey == 'TSL'){
   let menus = fs.readdirSync(path.join(app.getAppPath(), 'js/game/', 'kotor', 'menu'));
   for(let i = 0; i < menus.length; i++){
     let menuPath = path.parse(menus[i]);
-    window[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/kotor/menu/', menuPath.base)); 
+    global[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/kotor/menu/', menuPath.base)); 
   }
 
-  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'))
+  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'))
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
 
 }

@@ -173,7 +173,7 @@ class UTDEditorTab extends EditorTab {
   }
 
   Reload( onLoad = null ){
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     this.door = new ModuleDoor(this.gff);
     this.door.InitProperties();
     this.door.LoadModel( (model) => {
@@ -476,7 +476,7 @@ class UTDEditorTab extends EditorTab {
   }
 
   onDestroy() {
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     super.onDestroy();
   }
 

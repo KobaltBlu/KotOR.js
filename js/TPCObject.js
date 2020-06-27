@@ -199,7 +199,7 @@ class TPCObject {
     //The commented code below is my attempt to merge the image frames back into one image without
     //decompressing and recompressing the DXT mipmaps. So far it has been unsuccessful. As my knowledge on
     //DXT compression is quite limited i'm not sure if this approach is even possible.
-    //For now the section after works, but it's too slow.
+    //For now the section after does work, but it's too slow for my liking.
 
     // if(this.txi.procedureType == 1){
     //   let strideMultiplier = (this.header.encoding == ENCODING.RGB) ? 0.5 : 1;

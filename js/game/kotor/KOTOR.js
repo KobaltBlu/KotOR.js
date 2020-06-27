@@ -58,7 +58,7 @@ class Game extends Engine {
     Game.depthTarget.depthTexture = new THREE.DepthTexture();
     Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
-    window.renderer = Game.renderer;
+    global.renderer = Game.renderer;
 
     Game.clock = new THREE.Clock();
     Game.stats = new Stats();

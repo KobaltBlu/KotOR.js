@@ -127,7 +127,7 @@ class EditorTabManager {
     this.$tabsScrollControlLeft.off('mouseenter').off('mouseleave').on('mouseenter', () => {
 
       if(this.timer != null)
-        window.clearTimeout(this.timer)
+        global.clearTimeout(this.timer)
 
       let func_scrollL = () => {
         this.ScrollTabsMenuLeft();
@@ -139,13 +139,13 @@ class EditorTabManager {
 
     }).on('mouseleave', () => {
       if(this.timer != null)
-        window.clearTimeout(this.timer)
+        global.clearTimeout(this.timer)
     });
 
     this.$tabsScrollControlRight.off('mouseenter').off('mouseleave').on('mouseenter', () => {
 
       if(this.timer != null)
-        window.clearTimeout(this.timer)
+        global.clearTimeout(this.timer)
 
       let func_scrollR = () => {
         this.ScrollTabsMenuRight();
@@ -157,7 +157,7 @@ class EditorTabManager {
 
     }).on('mouseleave', () => {
       if(this.timer != null)
-        window.clearTimeout(this.timer)
+        global.clearTimeout(this.timer)
     });
 
 

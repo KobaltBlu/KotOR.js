@@ -83,7 +83,7 @@ class Project {
 
         });
 
-        window.project = this;
+        global.project = this;
 
       }catch(e){
         console.log(e);

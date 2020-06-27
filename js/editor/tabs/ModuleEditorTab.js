@@ -333,7 +333,7 @@ class ModuleEditorTab extends EditorTab {
     loader.Show();
     loader.SetMessage("Loading Module...");
 
-    window.editor3d = this;
+    global.editor3d = this;
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,

@@ -317,7 +317,7 @@ class AudioEmitter {
       if(typeof this.currentSound.buffer.onEnd === 'function')
         this.currentSound.buffer.onEnd();
       
-      this.currentTimeout = window.setTimeout( () => {
+      this.currentTimeout = global.setTimeout( () => {
         //console.log('AudioEmitter', 'PlayNextSound', 'Timeout')
         if(this.isRandom){
           this.index = Math.floor(Math.random() * this.sounds.length);

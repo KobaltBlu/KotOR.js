@@ -186,7 +186,7 @@ class UTPEditorTab extends EditorTab {
   }
 
   Reload( onLoad = null ){
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     this.placeable = new ModulePlaceable(this.gff);
     this.placeable.InitProperties();
     this.placeable.LoadModel( (model) => {
@@ -502,7 +502,7 @@ class UTPEditorTab extends EditorTab {
   }
 
   onDestroy() {
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     super.onDestroy();
   }
 

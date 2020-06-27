@@ -36,7 +36,7 @@ class ImageViewerTab extends EditorTab {
       }
     });
 
-    window.testImage = this;
+    global.testImage = this;
 
     this.OpenFile(file);
 

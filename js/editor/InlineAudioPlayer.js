@@ -211,7 +211,7 @@ class InlineAudioPlayer {
   }
 
   ResumeLoop(){
-    this.loopId = window.setInterval(() => {
+    this.loopId = global.setInterval(() => {
       this.UpdateAudioTime();
       this.$audioProgress.val(this.GetCurrentTime());
     }, 100);

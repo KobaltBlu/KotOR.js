@@ -645,7 +645,7 @@ NWScript.ByteCodes = {
   11 : { 
     name: 'EQUAL', 
     run: function( scope = {} ){
-      if(scope.instr.type == 0x24){
+      if(scope.instr.type == NWScript.DATATYPE.STRUCTURE){
         var struct2 = [];
         var struct1 = [];
 
@@ -717,7 +717,7 @@ NWScript.ByteCodes = {
       }
     }, 
     parse: function( instr, reader ){
-      if(instr.type == 0x24){
+      if(instr.type == NWScript.DATATYPE.STRUCTURE){
         instr.sizeOfStructure = parseInt(reader.ReadUInt16());
       }
     }
@@ -725,7 +725,7 @@ NWScript.ByteCodes = {
   12 : { 
     name: 'NEQUAL', 
     run: function( scope = {} ){
-      if(scope.instr.type == 0x24){
+      if(scope.instr.type == NWScript.DATATYPE.STRUCTURE){
         var struct2 = [];
         var struct1 = [];
 
@@ -798,7 +798,7 @@ NWScript.ByteCodes = {
       }
     }, 
     parse: function( instr, reader ){
-      if(instr.type == 0x24){
+      if(instr.type == NWScript.DATATYPE.STRUCTURE){
         instr.sizeOfStructure = parseInt(reader.ReadUInt16());
       }
     }
@@ -1503,12 +1503,12 @@ NWScript.ByteCodes = {
   },
 
   getKeyByValue: function( value ) {
-      for( let prop in NWScript.ByteCodes ) {
-          if( NWScript.ByteCodes.hasOwnProperty( prop ) ) {
-                if( NWScript.ByteCodes[ prop ] === value )
-                    return prop;
-          }
+    for( let prop in NWScript.ByteCodes ) {
+      if( NWScript.ByteCodes.hasOwnProperty( prop ) ) {
+        if( NWScript.ByteCodes[ prop ] === value )
+          return prop;
       }
+    }
   }
 }
 
@@ -1524,6 +1524,7 @@ NWScript.DATATYPE = {
   LOCATION: 0x12,
   TALENT: 0x13,
   VECTOR: 0x14,
+  STRUCTURE: 0x24
 }
 
 NWScript.Types = {

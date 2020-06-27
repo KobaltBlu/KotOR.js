@@ -186,7 +186,7 @@ class AudioEngine {
     this.bgm.onended = () => {
       this.bgm.currentTime = 0;
       if(AudioEngine.loopBGM){// && this.dialogBGM == null){
-        this.bgmTimeout = window.setTimeout( () => {
+        this.bgmTimeout = global.setTimeout( () => {
           this.StartBackgroundMusic();
         }, this.GetBackgroundMusicLoopTime());
       }
@@ -265,7 +265,7 @@ class AudioEngine {
   Destroy(){
 
     //Clear the BGM repeat timeout just incase it is active
-    window.clearTimeout(this.bgmTimeout);
+    global.clearTimeout(this.bgmTimeout);
 
     for(let i = 0; i < this.emitters.length; i++)
       this.emitters[i].Destroy();
@@ -281,7 +281,7 @@ class AudioEngine {
   Reset(){
     
     //Clear the BGM repeat timeout just incase it is active
-    window.clearTimeout(this.bgmTimeout);
+    global.clearTimeout(this.bgmTimeout);
 
     for(let i = 0; i < this.emitters.length; i++)
       this.emitters[i].Destroy();
@@ -360,7 +360,7 @@ class AudioEngine {
 
 }
 
-AudioEngine.AudioCtx = (window.AudioContext || window.webkitAudioContext);
+AudioEngine.AudioCtx = (winglobaldow.AudioContext || global.webkitAudioContext);
 
 AudioEngine.engines = [];
 

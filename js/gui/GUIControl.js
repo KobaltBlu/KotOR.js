@@ -1932,7 +1932,7 @@ GUIControl.createIndicies = require('quad-indices');
 var itemSize = 2
 var box = { min: [0, 0], max: [0, 0] }
 
-window.bounds = function (positions) {
+global.bounds = function (positions) {
   var count = positions.length / itemSize
   box.min[0] = positions[0]
   box.min[1] = positions[1]
@@ -1949,13 +1949,13 @@ window.bounds = function (positions) {
   }
 }
 
-window.computeBox = function (positions, output) {
+global.computeBox = function (positions, output) {
   bounds(positions)
   output.min.set(box.min[0], box.min[1], 0)
   output.max.set(box.max[0], box.max[1], 0)
 }
 
-window.computeSphere = function (positions, output) {
+global.computeSphere = function (positions, output) {
   bounds(positions)
   var minX = box.min[0]
   var minY = box.min[1]

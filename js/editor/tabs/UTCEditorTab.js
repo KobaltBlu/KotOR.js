@@ -194,7 +194,7 @@ class UTCEditorTab extends EditorTab {
   }
 
   Reload( onLoad = null ){
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     this.creature = new ModuleCreature(this.gff);
     this.creature.InitProperties( () => {
       this.creature.LoadEquipment( () => {
@@ -690,7 +690,7 @@ class UTCEditorTab extends EditorTab {
               onClose: () => {
 
                 //Kill the render loop for the item preview
-                window.cancelAnimationFrame(requestId);
+                global.cancelAnimationFrame(requestId);
       
                 equippedRes = $('input[type="text"]', equip_popup.$body).val().trim();
                 let equipType = parseInt($slot.attr('type'));
@@ -879,7 +879,7 @@ class UTCEditorTab extends EditorTab {
   }
 
   onDestroy() {
-    window.cancelAnimationFrame(this.requestId);
+    global.cancelAnimationFrame(this.requestId);
     super.onDestroy();
   }
 
