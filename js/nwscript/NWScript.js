@@ -603,10 +603,7 @@ NWScript.ByteCodes = {
       var var2 = this.stack.pop().value;
       var var1 = this.stack.pop().value;
 
-      if( (var1 && var2) || (var1 || var2) )
-        this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-      else
-        this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+      this.stack.push( var1 | var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -617,11 +614,7 @@ NWScript.ByteCodes = {
     run: function( scope = {} ){
       var var2 = this.stack.pop().value;
       var var1 = this.stack.pop().value;
-
-      if( ( var1 && !var2 ) || ( !var1 && var2 ) )
-        this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-      else
-        this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+      this.stack.push( var1 ^ var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -633,10 +626,7 @@ NWScript.ByteCodes = {
       var var2 = this.stack.pop().value;
       var var1 = this.stack.pop().value;
 
-      if(var1 && var2)
-        this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
-      else
-        this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
+      this.stack.push( var1 & var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 

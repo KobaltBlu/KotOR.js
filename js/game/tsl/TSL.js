@@ -33,7 +33,7 @@ class Game extends Engine {
       antialias: true,
       canvas: Game.canvas,
       context: Game.context,
-      logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: false
     });
 
     Game.renderer.autoClear = false;
@@ -520,7 +520,7 @@ class Game extends Engine {
         Game.staticCameras[i].updateProjectionMatrix();
       }
 
-      Game.bokehPass.renderTargetColor.setSize(width, height);
+      //Game.bokehPass.renderTargetColor.setSize(width, height);
 
       /*if(Game.scene_gui.background != null){
         let x = width / 1600;

@@ -287,6 +287,21 @@ class ModuleItem extends ModuleObject {
     })
   }*/
 
+  getSpells(){
+    let spells = [];
+
+    //propertyName, subType, costTable, costValue, param1, param1Value, chanceAppear, usesPerDay, useable, upgradeType
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      //Activate Item
+      if(property.propertyName == 10){
+        spells.push(new TalentSpell({id: property.subType}));
+      }
+    }
+
+    return spells;
+  }
+
   InitProperties(){
 
     if(this.loaded){
@@ -355,6 +370,7 @@ class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.HasField('PropertiesList')){
       let propertiesList = this.template.GetFieldByLabel('PropertiesList').GetChildStructs();
+      this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
         let property = propertiesList[i];
         this.properties.push({

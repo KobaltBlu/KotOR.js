@@ -580,11 +580,10 @@ class LightManager {
 
   //Sort lights by distance and priority
   static sortLights (a, b){
-
-    if (a._distance < b._distance) return -1;
-    if (a._distance > b._distance) return 1;
     if (b.priority < a.priority) return -1;
     if (b.priority > a.priority) return 1;
+    if (a._distance < b._distance) return -1;
+    if (a._distance > b._distance) return 1;
     return 0;
 
     return a._distance - b._distance || b.priority - a.priority;

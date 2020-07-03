@@ -360,7 +360,7 @@ class AudioEngine {
 
 }
 
-AudioEngine.AudioCtx = (winglobaldow.AudioContext || global.webkitAudioContext);
+AudioEngine.AudioCtx = (global.AudioContext || global.webkitAudioContext);
 
 AudioEngine.engines = [];
 

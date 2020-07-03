@@ -263,6 +263,10 @@ THREE.AuroraModel = function () {
   
     this.update = function(delta){
 
+      for(let i = 0, len = this.effects.length; i < len; i++){
+        this.effects[i].update(delta);
+      }
+
       if(this.puppeteer && this.puppeteer.type == 'AuroraModel'){
         this.puppeteer.update(delta);
         if(this.puppeteer.currentAnimation && this.puppeteer.currentAnimation.type == 'AuroraModelAnimation'){
@@ -341,6 +345,11 @@ THREE.AuroraModel = function () {
         let material = this.materials[i];
         if(material.type == 'ShaderMaterial'){
           material.uniforms.time.value = Game.deltaTime;
+          //Saber Color Fix (Ignore ambient lighting)
+          if(typeof material.defines.SABER != 'undefined'){
+            material.uniforms.ambientLightColor.value = [1.0, 1.0, 1.0];
+            material.uniforms.ambientLightColor.needsUpdate = true;
+          }
         }
       }
 
@@ -1213,7 +1222,7 @@ THREE.AuroraModel = function () {
       try{
         //Create geometry only if the mesh is visible or it is a walkmesh
         //if(_node.FlagRender || node.isWalkmesh || auroraModel.name == 'plc_invis'){
-        if(_node.faces.length ){
+        if(_node.faces.length || (_node.NodeType & AuroraModel.NODETYPE.Saber) ){
 
           if(true){// (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
 
@@ -1279,7 +1288,7 @@ THREE.AuroraModel = function () {
             });
             material.uniforms.shininess.value = 0.0000001;
             material.extensions.derivatives = true;
-            material.extensions.fragDepth = true;
+            //material.extensions.fragDepth = true;
             if(options.useTweakColor){
               material.uniforms.diffuse.value = new THREE.Color( _node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
               material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
@@ -1299,7 +1308,8 @@ THREE.AuroraModel = function () {
             if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV1 || 
                _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2 || 
                _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV3 || 
-               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV4
+               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV4 ||
+               ((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber)
               ){
               material.defines.USE_UV = "";
             }
@@ -1334,7 +1344,14 @@ THREE.AuroraModel = function () {
               !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4) &&
               !_node.FlagShadow && !options.castShadow) || _node.BackgroundGeometry || options.static){
                 //console.log('IGNORE_LIGHTING', material);
-                material.defines.IGNORE_LIGHTING = "";
+                if(!options.lighting){
+                  material.defines.IGNORE_LIGHTING = "";
+                }
+            }
+
+            if((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber){
+              material.defines.IGNORE_LIGHTING = "";
+              material.defines.SABER = "";
             }
 
             if(options.isHologram){
@@ -1469,8 +1486,17 @@ THREE.AuroraModel = function () {
               auroraModel.walkmesh = mesh;
               mesh.visible = false;
             }
+            
+            //RenderOrder
+            if((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber){
+              node.mesh.renderOrder = 5500;
+            }else if(_node.BackgroundGeometry){
+              mesh.renderOrder = 1000;
+            }else if(options.isChildrenDynamic){
+              mesh.renderOrder = 5000;
+            }
 
-            if(!node.isWalkmesh && options.mergeStatic && _node.roomStatic && mesh.geometry.faces.length){
+            if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && mesh.geometry.faces.length){
 
               mesh.position.copy(node.getWorldPosition(new THREE.Vector3));
               mesh.quaternion.copy(node.getWorldQuaternion(new THREE.Quaternion));
@@ -1487,14 +1513,11 @@ THREE.AuroraModel = function () {
             }else{
               //mesh.visible = !node.isWalkmesh;
               mesh._node = _node;
-              mesh.matrixAutoUpdate = false;
+              mesh.matrixAutoUpdate = true;
               mesh.castShadow = _node.FlagShadow;// && !options.static;//options.castShadow;
               mesh.receiveShadow = options.receiveShadow;
               node.add( mesh );
             }
-
-            if(options.isChildrenDynamic)
-              mesh.renderOrder = 5000;
 
           }
 
@@ -1634,14 +1657,29 @@ THREE.AuroraModel = function () {
       case 'camerahook':
         auroraModel.camerahook = node;  
       break;
+      case 'freelookhook':
+        auroraModel.freelookhook = node;  
+      break;
       case 'lookathook':
         auroraModel.lookathook = node;
+      break;
+      case 'lightsaberhook':
+        auroraModel.lightsaberhook = node;
+      break;
+      case 'deflecthook':
+        auroraModel.deflecthook = node;
       break;
       case 'impact':
         auroraModel.impact = node;
       break;
+      case 'impact_bolt':
+        auroraModel.impact_bolt = node;
+      break;
       case 'headconjure':
         auroraModel.headconjure = node;
+      break;
+      case 'handconjure':
+        auroraModel.handconjure = node;
       break;
       case 'maskhook':
         auroraModel.maskhook = node;

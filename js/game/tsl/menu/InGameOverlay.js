@@ -505,7 +505,7 @@ class InGameOverlay extends GameMenu {
             action: {
               goal: ModuleCreature.ACTION.ATTACKOBJECT,
               object:Game.selectedObject,
-              feat: 0
+              feat: undefined
             },
             icon: 'i_attack'
           });
@@ -515,7 +515,7 @@ class InGameOverlay extends GameMenu {
           action: {
             goal: ModuleCreature.ACTION.ATTACKOBJECT,
             object: Game.selectedObject,
-            feat: 0
+            feat: undefined
           },
           icon: 'i_attack'
         });
@@ -528,7 +528,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (81)
+                feat: currentPlayer.getFeat(81)
               },
               icon: currentPlayer.getFeat(81).icon
             });
@@ -537,7 +537,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (19)
+                feat: currentPlayer.getFeat(19)
               },
               icon: currentPlayer.getFeat(19).icon
             });
@@ -546,7 +546,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (8)
+                feat: currentPlayer.getFeat(8)
               },
               icon: currentPlayer.getFeat(8).icon
             });
@@ -558,7 +558,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (83)
+                feat: currentPlayer.getFeat(83)
               },
               icon: currentPlayer.getFeat(83).icon
             });
@@ -567,7 +567,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (17)
+                feat: currentPlayer.getFeat(17)
               },
               icon: currentPlayer.getFeat(17).icon
             });
@@ -576,7 +576,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (28)
+                feat: currentPlayer.getFeat(28)
               },
               icon: currentPlayer.getFeat(28).icon
             });
@@ -588,7 +588,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (53)
+                feat: currentPlayer.getFeat(53)
               },
               icon: currentPlayer.getFeat(53).icon
             });
@@ -597,7 +597,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (91)
+                feat: currentPlayer.getFeat(91)
               },
               icon: currentPlayer.getFeat(91).icon
             });
@@ -606,7 +606,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (11)
+                feat: currentPlayer.getFeat(11)
               },
               icon: currentPlayer.getFeat(11).icon
             });
@@ -622,7 +622,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (77)
+                feat: currentPlayer.getFeat(77)
               },
               icon: currentPlayer.getFeat(77).icon
             });
@@ -631,7 +631,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (20)
+                feat: currentPlayer.getFeat(20)
               },
               icon: currentPlayer.getFeat(20).icon
             });
@@ -640,7 +640,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (31)
+                feat: currentPlayer.getFeat(31)
               },
               icon: currentPlayer.getFeat(31).icon
             });
@@ -653,7 +653,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (82)
+                feat: currentPlayer.getFeat(82)
               },
               icon: currentPlayer.getFeat(82).icon
             });
@@ -662,7 +662,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (18)
+                feat: currentPlayer.getFeat(18)
               },
               icon: currentPlayer.getFeat(18).icon
             });
@@ -671,7 +671,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (29)
+                feat: currentPlayer.getFeat(29)
               },
               icon: currentPlayer.getFeat(29).icon
             });
@@ -684,7 +684,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (26)
+                feat: currentPlayer.getFeat(26)
               },
               icon: currentPlayer.getFeat(26).icon
             });
@@ -693,7 +693,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (92)
+                feat: currentPlayer.getFeat(92)
               },
               icon: currentPlayer.getFeat(92).icon
             });
@@ -702,7 +702,7 @@ class InGameOverlay extends GameMenu {
               action: {
                 goal: ModuleCreature.ACTION.ATTACKOBJECT,
                 object: Game.selectedObject,
-                feat: (30)
+                feat: currentPlayer.getFeat(30)
               },
               icon: currentPlayer.getFeat(30).icon
             });

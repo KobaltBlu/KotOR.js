@@ -86,6 +86,8 @@ class ModuleCreatureController extends ModuleObject {
       }
 
       if(!this.isDead()){
+
+        this.deathStarted = false;
         
         if(this.animState != ModuleCreature.AnimState.DEAD){
 
@@ -376,6 +378,7 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               case ModuleCreature.ACTION.ATTACKOBJECT:
+                this.combatState = true;
                 if(!this.action.combatAction.isCutsceneAttack){
                   if(this.action.object.isDead()){
                     this.actionQueue.shift();
@@ -390,9 +393,18 @@ class ModuleCreatureController extends ModuleObject {
                       this.animState = ModuleCreature.AnimState.IDLE;
                       this.force = 0;
 
-                      //this.actionQueue.shift();
+                      this.actionQueue.shift();
                     }
                   }
+                }
+              break;
+              case ModuleCreature.ACTION.CASTSPELL:
+                console.log('ACTION.CASTSPELL', this.action);
+                if(this.action.spell.inRange(this.action.object, this)){
+                  this.action.spell.useTalentOnObject(this.action.object, this);
+                  this.actionQueue.shift();
+                }else{
+                  this.actionPathfinder(2, undefined, delta);
                 }
               break;
               default:
@@ -473,7 +485,8 @@ class ModuleCreatureController extends ModuleObject {
         if(this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING){
           this.clearAllActions();
           this.animState = ModuleCreature.AnimState.DEAD;
-          if(!this.deathAnimationPlayed){
+          if(!this.deathStarted){
+            this.deathStarted = true;
             this.onDeath();
             this.PlaySoundSet(SSFObject.TYPES.DEAD);
           }
@@ -481,6 +494,7 @@ class ModuleCreatureController extends ModuleObject {
       }
 
       this.updateCombat(delta);
+      this.updateCasting(delta);
       this.updateAnimationState();
       this.updateItems(delta);
 
@@ -575,24 +589,12 @@ class ModuleCreatureController extends ModuleObject {
             //console.log('updateListeningPatterns', pattern, str);
           }
 
-          if(this.scripts.onDialog instanceof NWScriptInstance && this.scripts.onDialog.running != true){
+          this.heardStrings.shift();
+          this.onDialog(str.speaker, pattern, () => {
             if(this == Game.player){
-              //console.log('Hearing: Starting', str.speaker, pattern);
+              //console.log('Hearing: Done', str.speaker, pattern);
             }
-
-            if(this.debugListening){
-              console.log('heard', this, str.speaker, str.string, pattern);
-            }
-
-            this.onDialog(str.speaker, pattern, () => {
-              if(this == Game.player){
-                //console.log('Hearing: Done', str.speaker, pattern);
-              }
-              this.heardStrings.shift();
-            });
-          }else{
-            this.heardStrings.shift();
-          }
+          });
         }
       }
     }
@@ -613,7 +615,7 @@ class ModuleCreatureController extends ModuleObject {
     //if(!Engine.Flags.CombatEnabled)
     //  return;
 
-    if(this.scripts.onNotice instanceof NWScriptInstance && !this.scripts.onNotice.running){
+    if(this.scripts.onNotice instanceof NWScriptInstance){
       //Check modules creatures
       let creatureLen = Game.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++ ){
@@ -623,15 +625,17 @@ class ModuleCreatureController extends ModuleObject {
           let distance = this.position.distanceTo(creature.position);
           if(index == -1){
             if(distance < parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
+
+              if(PartyManager.party.indexOf(this) == -1){
+                if(this.isHostile(creature)){
+                  this.combatState = true;
+                }
+              }
               
-              //if(this.scripts.onNotice instanceof NWScriptInstance && this.scripts.onNotice.running != true){
-                this.scripts.onNotice.running = true;
-                this.perceptionList.push(creature);
-                this.scripts.onNotice.lastPerceived = creature;
-                this.scripts.onNotice.run(this, 0, () => {
-                  this.scripts.onNotice.running = false;
-                });
-              //}
+              this.perceptionList.push(creature);
+              let instance = this.scripts.onNotice.nwscript.newInstance();
+              instance.lastPerceived = creature;
+              instance.run(this);
               return;
               /*if(PartyManager.party.indexOf(this) == -1){
                 
@@ -668,12 +672,16 @@ class ModuleCreatureController extends ModuleObject {
                 //this.combatState = true;
                 //if(this.scripts.onNotice instanceof NWScriptInstance && this.scripts.onNotice.running != true){
                   this.perceptionList.push(creature);
-                  this.scripts.onNotice.running = true;
-                  this.scripts.onNotice.lastPerceived = creature;
-                  this.scripts.onNotice.run(this, 0, () => {
-                    this.scripts.onNotice.running = false;
-                  });
+                  let instance = this.scripts.onNotice.nwscript.newInstance();
+                  //this.scripts.onNotice.running = true;
+                  instance.lastPerceived = creature;
+                  instance.run(this);
                 //}
+
+                if(this.isHostile(creature)){
+                  this.lastAttackTarget = creature;
+                }
+
                 return;
               }
             }
@@ -816,12 +824,14 @@ class ModuleCreatureController extends ModuleObject {
 
     if(this.isDead()){
       this.clearTarget();
-      //CombatEngine.RemoveCombatant(this);
+      if(CombatEngine.combatants.indexOf(this) >= 0){
+        CombatEngine.RemoveCombatant(this);
+      }
     }
 
     if(this.combatState){
 
-      if(this.action && this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
+      /*if(this.action && (this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT || this.action.goal == ModuleCreature.ACTION.CASTSPELL)){
         if(this.action.object.getHP() <= 0){
           this.clearTarget();
           this.actionQueue.shift();
@@ -829,7 +839,7 @@ class ModuleCreatureController extends ModuleObject {
         }
       }else{
         return;
-      }
+      }*/
 
       CombatEngine.AddCombatant(this);
 
@@ -886,21 +896,41 @@ class ModuleCreatureController extends ModuleObject {
     }
   }
 
+  updateCasting(delta = 0){
+    //Update active spells
+    for(let i = 0, len = this.casting.length; i < len; i++){
+      this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
+    }
+
+    //Remove completed spells
+    var i = this.casting.length;
+    while (i--) {
+      if(this.casting[i].completed){
+        this.casting.splice(i, 1);
+      }
+    }
+
+  }
+
   clearTarget(){
+    console.log('clearTarget');
     this.combatQueue = [];
     this.combatAction = undefined;
     this.lastAttackTarget = undefined;
     this.lastDamager = undefined;
     //this.combatActionTimer = 0;
-    CombatEngine.RemoveCombatant(this);
-    this.combatState = false;
+    //CombatEngine.RemoveCombatant(this);
   }
 
   actionInRange(action = undefined){
     if(action){
-      let distance = this.position.distanceTo(action.target.position);
-      //console.log('actionInRange', distance, action.target.position);
-      return distance < ( (this.getEquippedWeaponType() == 1 || this.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
+      if(action.type == ModuleCreature.ACTION.CASTSPELL){
+        return action.spell.inRange(action.target, this);
+      }else{
+        let distance = this.position.distanceTo(action.target.position);
+        //console.log('actionInRange', distance, action.target.position);
+        return distance < ( (this.getEquippedWeaponType() == 1 || this.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
+      }
     }
     return false;
   }
@@ -960,7 +990,17 @@ class ModuleCreatureController extends ModuleObject {
       return;
     }
 
-    if( this.combatAction == undefined || !this.combatAction.ready || !this.hasWeapons() || !currentAnimation ){
+    if(this.casting.length){
+      if(this.casting[0].conjuring){
+        if(currentAnimation != 'castout1'){
+          this.getModel().playAnimation('castout1', false);
+        }
+      }else if(this.casting[0].impact){
+        if(currentAnimation != 'castoutlp1'){
+          this.getModel().playAnimation('castoutlp1', false);
+        }
+      }
+    }else if( this.combatAction == undefined || !this.combatAction.ready || !this.hasWeapons() || !currentAnimation ){
 
       switch(this.animState){
         case ModuleCreature.AnimState.IDLE:
@@ -1249,78 +1289,65 @@ class ModuleCreatureController extends ModuleObject {
       }
 
     }else{
-      if(currentAnimation != this.combatAction.animation && this.combatAction.ready && !this.combatAction.animPlayed){
-
-        var atkMod = CombatEngine.GetMod(this.getSTR());
-        if(this.getEquippedWeaponType() == 4){
-          atkMod = CombatEngine.GetMod(this.getDEX());
+      if(this.combatAction.type == ModuleCreature.ACTION.CASTSPELL){
+        if(this.combatAction.conjuring){
+          if(currentAnimation != 'castout1'){
+            this.getModel().playAnimation('castout1', false);
+          }
+        }else if(this.combatAction.impact){
+          if(currentAnimation != 'castoutlp1'){
+            this.getModel().playAnimation('castoutlp1', false);
+          }
         }
+      }else{
+        if(currentAnimation != this.combatAction.animation && this.combatAction.ready && !this.combatAction.animPlayed){
         
-        this.combatAction.animPlayed = true;
-
-        if(!this.combatAction.isCutsceneAttack){
-          //Roll to hit
-          this.combatAction.hits = CombatEngine.DiceRoll(1, 'd20', atkMod) > CombatEngine.GetArmorClass(this.combatAction.target);
-          //Roll damage
-          this.combatAction.attackDice = CombatEngine.GetCreatureAttackDice(this);
-          this.combatAction.damage = CombatEngine.DiceRoll(this.combatAction.attackDice.num, this.combatAction.attackDice.type, atkMod);
+          var atkMod = CombatEngine.GetMod(this.getSTR());
+          if(this.getEquippedWeaponType() == 4){
+            atkMod = CombatEngine.GetMod(this.getDEX());
+          }
           
-          this.combatAction.target.lastAttacker = this;
-          this.combatAction.target.onAttacked();
-        }
+          this.combatAction.animPlayed = true;
 
-        let attackAnimation = this.model.getAnimationByName(this.combatAction.animation);
+          if(!this.combatAction.isCutsceneAttack){
+            //Roll to hit
+            this.combatAction.hits = CombatEngine.DiceRoll(1, 'd20', atkMod) > CombatEngine.GetArmorClass(this.combatAction.target);
+            //Roll damage
+            this.combatAction.attackDice = CombatEngine.GetCreatureAttackDice(this);
+            this.combatAction.damage = CombatEngine.DiceRoll(this.combatAction.attackDice.num, this.combatAction.attackDice.type, atkMod);
+            
+            this.combatAction.target.lastAttacker = this;
+            this.combatAction.target.onAttacked();
+          }
 
-        this.setFacing(
-          Math.atan2(
-            this.position.y - this.combatAction.target.position.y,
-            this.position.x - this.combatAction.target.position.x
-          ) + Math.PI/2,
-          false
-        );
+          let attackAnimation = this.model.getAnimationByName(this.combatAction.animation);
 
-        let attack_sound = THREE.Math.randInt(0, 2);
-        switch(attack_sound){
-          case 1:
-            this.PlaySoundSet(SSFObject.TYPES.ATTACK_2);
-          break;
-          case 2:
-            this.PlaySoundSet(SSFObject.TYPES.ATTACK_3);
-          break;
-          default:
-            this.PlaySoundSet(SSFObject.TYPES.ATTACK_1);
-          break;
-        }
+          this.setFacing(
+            Math.atan2(
+              this.position.y - this.combatAction.target.position.y,
+              this.position.x - this.combatAction.target.position.x
+            ) + Math.PI/2,
+            false
+          );
 
-        if(this.combatAction.isCutsceneAttack){
-
-          this.getModel().playAnimation(this.combatAction.animation, false);
-          //this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
-          this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
-
-          let painsound = THREE.Math.randInt(0, 1);
-          switch(painsound){
+          let attack_sound = THREE.Math.randInt(0, 2);
+          switch(attack_sound){
             case 1:
-              this.combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+              this.PlaySoundSet(SSFObject.TYPES.ATTACK_2);
+            break;
+            case 2:
+              this.PlaySoundSet(SSFObject.TYPES.ATTACK_3);
             break;
             default:
-              this.combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+              this.PlaySoundSet(SSFObject.TYPES.ATTACK_1);
             break;
           }
 
-          if(this.combatAction.damage)
-            this.combatAction.target.subtractHP(this.combatAction.damage);
+          if(this.combatAction.isCutsceneAttack){
 
-          setTimeout( () => {
-            this.actionQueue.shift();
-          }, attackAnimation.length * 500);
-
-        }else{
-          //Roll to hit
-          if(this.combatAction.hits){
-            
             this.getModel().playAnimation(this.combatAction.animation, false);
-            //this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
+            //this.combatAction.target.actionPlayAnimation(this.combatAction.target.getDamageAnimation(), false);
+            this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
 
             let painsound = THREE.Math.randInt(0, 1);
             switch(painsound){
@@ -1332,15 +1359,40 @@ class ModuleCreatureController extends ModuleObject {
               break;
             }
 
-            /*setTimeout( () => {
-              this.combatAction.target.damage(this.combatAction.damage, this);
-            }, attackAnimation.length * 500)*/
-            
+            if(this.combatAction.damage)
+              this.combatAction.target.subtractHP(this.combatAction.damage);
+
+            setTimeout( () => {
+              this.actionQueue.shift();
+            }, attackAnimation.length * 500);
+
           }else{
-            this.combatAction.target.lastAttacker = this;
-            this.getModel().playAnimation(this.combatAction.animation, false);
-            this.combatAction.target.overlayAnimation = this.combatAction.target.getDodgeAnimation();
-            //this.combatAction.target.getModel().playAnimation(this.combatAction.target.getDodgeAnimation(), false);
+            //Roll to hit
+            if(this.combatAction.hits){
+              
+              this.getModel().playAnimation(this.combatAction.animation, false);
+              //this.combatAction.target.overlayAnimation = this.combatAction.target.getDamageAnimation();
+
+              let painsound = THREE.Math.randInt(0, 1);
+              switch(painsound){
+                case 1:
+                  this.combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+                break;
+                default:
+                  this.combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+                break;
+              }
+
+              /*setTimeout( () => {
+                this.combatAction.target.damage(this.combatAction.damage, this);
+              }, attackAnimation.length * 500)*/
+              
+            }else{
+              this.combatAction.target.lastAttacker = this;
+              this.getModel().playAnimation(this.combatAction.animation, false);
+              this.combatAction.target.overlayAnimation = this.combatAction.target.getDodgeAnimation();
+              //this.combatAction.target.getModel().playAnimation(this.combatAction.target.getDodgeAnimation(), false);
+            }
           }
         }
       }
@@ -1356,6 +1408,11 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   onCombatRoundEnd(){
+
+    //Check to see if the current combatAction is running a TalentObject
+    if(this.combatAction && (this.combatAction.spell instanceof TalentObject)){
+      //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
+    }
     
     this.combatAction = undefined;
 
@@ -1366,7 +1423,8 @@ class ModuleCreatureController extends ModuleObject {
       return true;
 
     if(this.scripts.onEndRound instanceof NWScriptInstance){
-      this.scripts.onEndRound.run(this);
+      let instance = this.scripts.onEndRound.nwscript.newInstance();
+      instance.run(this);
     }
 
   }
@@ -1379,12 +1437,13 @@ class ModuleCreatureController extends ModuleObject {
 
   onDialog(oSpeaker = undefined, listenPatternNumber = -1, callback = null){
     if(this.scripts.onDialog instanceof NWScriptInstance){// && !this.scripts.onDialog.running){
-      this.scripts.onDialog.running = true;
-      this.scripts.onDialog.listenPatternNumber = listenPatternNumber;
-      this.scripts.onDialog.listenPatternSpeaker = oSpeaker;
-      //this.scripts.onDialog.debug['action'] = false;
-      this.scripts.onDialog.run(this, 0, () => {
-        this.scripts.onDialog.running = false;
+      let instance = this.scripts.onDialog.nwscript.newInstance();
+      //instance.running = true;
+      instance.listenPatternNumber = listenPatternNumber;
+      instance.listenPatternSpeaker = oSpeaker;
+      //instance.debug['action'] = false;
+      instance.run(this, 0, () => {
+        //this.scripts.onDialog.running = false;
         if(typeof callback === 'function')
           callback();
       });
@@ -1397,13 +1456,13 @@ class ModuleCreatureController extends ModuleObject {
 
   onAttacked(callback = null){
     CombatEngine.AddCombatant(this);
-    if(this.scripts.onAttacked instanceof NWScriptInstance && !this.scripts.onAttacked.running){
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+    if(this.scripts.onAttacked instanceof NWScriptInstance){
+      let instance = this.scripts.onAttacked.nwscript.newInstance();
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
       //console.log('onAttacked');
-      this.scripts.onAttacked.running = true;
-      this.scripts.onAttacked.debug['action'] = false;
-      this.scripts.onAttacked.run(this, script_num, () => {
-        this.scripts.onAttacked.running = false;
+      instance.running = true;
+      instance.debug['action'] = false;
+      instance.run(this, script_num, () => {
         if(typeof callback === 'function')
           callback();
       });
@@ -1418,13 +1477,13 @@ class ModuleCreatureController extends ModuleObject {
 
     CombatEngine.AddCombatant(this);
     
-    if(this.scripts.onDamaged instanceof NWScriptInstance){// && !this.scripts.onDamaged.running){
+    if(this.scripts.onDamaged instanceof NWScriptInstance){
+      let instance = this.scripts.onDamaged.nwscript.newInstance();
       let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
       //console.log('onDamaged');
       //this.scripts.onDamaged.running = true;
-      this.scripts.onDamaged.debug['action'] = false;
-      this.scripts.onDamaged.run(this, script_num, () => {
-        this.scripts.onDamaged.running = false;
+      instance.debug['action'] = false;
+      instance.run(this, script_num, () => {
         if(typeof callback === 'function')
           callback();
       });
@@ -1452,7 +1511,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   canMove(){
-    return (this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING);
+    return (this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING) && !this.casting.length;
   }
 
   getCurrentAction(){
@@ -1546,7 +1605,9 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  attackCreature(target = undefined, feat_id = 0, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null){
+  attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null){
+
+    console.log('attackCreature', this, target, feat);
 
     if(target == undefined)
       return;
@@ -1572,13 +1633,12 @@ class ModuleCreatureController extends ModuleObject {
       isRanged = true;
     }
 
-    if(feat_id){
-      let feat = Global.kotor2DA['feat'].rows[feat_id];
+    if(typeof feat != 'undefined'){
       icon = feat.icon;
       //console.log('Attacking with feat', feat);
       if(attackKey == 'm'){
         attackKey = 'f';
-        switch(feat_id){
+        switch(feat.id){
           case 81:
           case 19:
           case 8:
@@ -1596,7 +1656,7 @@ class ModuleCreatureController extends ModuleObject {
           break;
         }
       }else if(attackKey == 'b'){
-        switch(feat_id){
+        switch(feat.id){
           case 77:
           case 20:
           case 31:
@@ -1634,7 +1694,7 @@ class ModuleCreatureController extends ModuleObject {
       type: ModuleCreature.ACTION.ATTACKOBJECT,
       icon: icon,
       animation: animation,
-      feat_id: feat_id,
+      feat: feat,
       isMelee: isMelee,
       isRanged: isRanged,
       ready: false,
@@ -1647,10 +1707,25 @@ class ModuleCreatureController extends ModuleObject {
       this.actionQueue = [];
     //}
     
-    this.actionQueue.push(
-      {object: target, goal: ModuleCreature.ACTION.ATTACKOBJECT, combatAction: combatAction}
-    )
+    this.actionQueue.push({
+      object: target,
+      goal: ModuleCreature.ACTION.ATTACKOBJECT,
+      combatAction: combatAction
+    });
 
+  }
+
+  useTalentOnObject(talent, oTarget){
+    if(typeof talent != 'undefined'){
+
+      this.actionQueue.push({
+        object: oTarget,
+        spell: talent,
+        goal: ModuleCreature.ACTION.CASTSPELL
+      });
+
+      //talent.useTalentOnObject(oTarget, this);
+    }
   }
 
   castSpellAtCreature(target = undefined, spellId = 0){
@@ -1663,10 +1738,6 @@ class ModuleCreatureController extends ModuleObject {
 
     this.combatState = true;
     CombatEngine.AddCombatant(this);
-
-    let weaponWield = this.getCombatAnimationWeaponType();
-
-    let animation = 'c'+weaponWield+'a1';
 
     this.combatQueue.push({
       target: target,
@@ -1749,7 +1820,9 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   cancelCombat(){
+    console.log('cancelCombat');
     this.clearTarget();
+    this.combatState = false;
   }
 
   getDamageAnimation(){
@@ -2741,7 +2814,7 @@ class ModuleCreatureController extends ModuleObject {
         case 3:  //MEDITATE
           return 'meditate';
         case 4:  //WORSHIP
-          return 'meditate';//['kneel', 'meditate'];
+          return 'kneel';//['kneel', 'meditate'];
         case 5:  //TALK_NORMAL
           return 'tlknorm';
         case 6:  //TALK_PLEADING

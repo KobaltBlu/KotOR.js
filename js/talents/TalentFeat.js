@@ -1,0 +1,64 @@
+class TalentFeat extends TalentObject {
+
+  constructor(options = {}){
+    super(options);
+    this.type = 1;
+
+    //Merge the feat properties from the feat.2da row with this feat
+    if(Global.kotor2DA.feat.rows[options.id]){
+      Object.assign(this, Global.kotor2DA.feat.rows[options.id]);
+    }
+
+  }
+
+  useTalentOnObject(oTarget, oCaster){
+    super.useTalentOnObject(oTarget, oCaster);
+
+    //MELEE
+    if(this.category == 0x1104){
+      oCaster.attackCreature(oTarget, this);
+      return;
+      oCaster.actionQueue.push({
+        goal: ModuleCreature.ACTION.ATTACKOBJECT,
+        object: oTarget,
+        feat: this.id
+      });
+      oCaster.lastCombatFeatUsed = this;
+    }
+
+    //RANGED
+    if(this.category == 0x1111){
+      oCaster.attackCreature(oTarget, this);
+      return;
+      oCaster.actionQueue.push({
+        goal: ModuleCreature.ACTION.ATTACKOBJECT,
+        object: oTarget,
+        feat: this.id
+      });
+      oCaster.lastCombatFeatUsed = this;
+    }
+
+  }
+
+  inRange(oTarget, oCaster){
+    if(oTarget == oCaster){
+      return true;
+    }
+    let distance = oCaster.position.distanceTo(oTarget.position);
+
+    //MELEE
+    if(this.category == 0x1104){
+      return distance <= 2.0;
+    }
+
+    //RANGED
+    if(this.category == 0x1111){
+      return distance <= 15.0;
+    }
+
+    return true;
+  }
+
+}
+
+module.exports = TalentFeat;

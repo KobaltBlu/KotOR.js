@@ -231,6 +231,7 @@ class TextureLoader {
                 if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
                   //console.log('THREE.RawShaderMaterial', tex);
                   tex.material.uniforms.map.value = texture;
+                  tex.material.map = texture;
                   tex.material.uniformsNeedUpdate = true;
                   tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
                 }else{
@@ -270,6 +271,7 @@ class TextureLoader {
                     if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
                       //console.log('THREE.RawShaderMaterial', tex);
                       tex.material.uniforms.map.value = texture;
+                      tex.material.map = texture;
                       tex.material.uniformsNeedUpdate = true;
                       tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
                     }else{
@@ -320,6 +322,7 @@ class TextureLoader {
               if(lightmap != null){
                 if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
                   tex.material.uniforms.lightMap.value = lightmap;
+                  tex.material.lightMap = lightmap;
                   lightmap.updateMatrix();
                   if(tex.material.uniforms.map.value){
                     tex.material.uniforms.map.value.updateMatrix();
@@ -357,6 +360,7 @@ class TextureLoader {
               if(texture != null){
                 if(tex.partGroup instanceof THREE.AuroraEmitter){
                   tex.partGroup.material.uniforms.map.value = texture;
+                  tex.partGroup.material.map = texture;
                   tex.partGroup.material.depthWrite = false;
                   tex.partGroup.material.needsUpdate = true;
 
@@ -364,6 +368,7 @@ class TextureLoader {
 
                 }else{
                   tex.partGroup.material.uniforms.texture.value = texture;
+                  tex.partGroup.material.map = texture;
                   tex.partGroup.material.depthWrite = false;
                   tex.partGroup.material.needsUpdate = true;
                 }
@@ -405,6 +410,7 @@ class TextureLoader {
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               tex.material.uniforms.envMap.value = envmap;
+              tex.material.envMap = envmap;
               envmap.updateMatrix();
               if(tex.material.uniforms.map.value){
                 tex.material.uniforms.map.value.updateMatrix();
@@ -549,7 +555,7 @@ class TextureLoader {
       //DECAL
       if(texture.txi.decal || texture.txi.procedureType == 2){
         tex.material.side = THREE.DoubleSide;
-        //tex.material.depthWrite = false;
+        tex.material.depthWrite = false;
       }
 
       //BLENDING

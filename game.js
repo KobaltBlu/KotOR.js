@@ -217,10 +217,23 @@ const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWSc
 
 /* Effects */
 const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));
+const EffectAbilityIncrease = require(path.join(app.getAppPath(), 'js/effects/EffectAbilityIncrease.js'));
+const EffectAssuredHit = require(path.join(app.getAppPath(), 'js/effects/EffectAssuredHit.js'));
 const EffectBeam = require(path.join(app.getAppPath(), 'js/effects/EffectBeam.js'));
+const EffectDamage = require(path.join(app.getAppPath(), 'js/effects/EffectDamage.js'));
+const EffectDamageResistance = require(path.join(app.getAppPath(), 'js/effects/EffectDamageResistance.js'));
 const EffectDeath = require(path.join(app.getAppPath(), 'js/effects/EffectDeath.js'));
 const EffectDisguise = require(path.join(app.getAppPath(), 'js/effects/EffectDisguise.js'));
+const EffectHeal = require(path.join(app.getAppPath(), 'js/effects/EffectHeal.js'));
+const EffectLink = require(path.join(app.getAppPath(), 'js/effects/EffectLink.js'));
+const EffectResurrection = require(path.join(app.getAppPath(), 'js/effects/EffectResurrection.js'));
 const EffectVisualEffect = require(path.join(app.getAppPath(), 'js/effects/EffectVisualEffect.js'));
+
+/* Talents */
+const TalentObject = require(path.join(app.getAppPath(), 'js/talents/TalentObject.js'));
+const TalentFeat = require(path.join(app.getAppPath(), 'js/talents/TalentFeat.js'));
+const TalentSpell = require(path.join(app.getAppPath(), 'js/talents/TalentSpell.js'));
+const TalentSkill = require(path.join(app.getAppPath(), 'js/talents/TalentSkill.js'));
 
 /* Module */
 const ModuleObject = require(path.join(app.getAppPath(), 'js/module/ModuleObject.js'));
@@ -626,7 +639,7 @@ THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
 
   for ( var i = 0, l = children.length; i < l; i ++ ) {
 
-      children[ i ].updateMatrixWorld( force );
+      children[ i ].updateMatrixWorld( force, true );
 
   }
 

@@ -77,6 +77,7 @@ class ModuleObject {
 
     this.actionQueue = [];
     this.effects = [];
+    this.casting = [];
 
     this._locals = {
       Booleans: [],
@@ -219,6 +220,20 @@ class ModuleObject {
 
     if(this.scripts.onUserDefined instanceof NWScriptInstance){
       this.scripts.onUserDefined.run(this, parseInt(iValue), onComplete);
+    }
+  }
+
+  triggerSpellCastAtEvent(oCaster = undefined, nSpell = 0, bHarmful = 0){
+    if(this instanceof ModuleArea || this instanceof Module){
+      return;
+    }
+
+    if(this.scripts.onSpellAt instanceof NWScriptInstance){
+      let instance = this.scripts.onSpellAt.nwscript.newInstance();
+      instance.lastSpellCaster = oCaster;
+      instance.lastSpell = nSpell;
+      instance.lastSpellHarmful = bHarmful;
+      instance.run(this);
     }
   }
 
@@ -957,66 +972,68 @@ class ModuleObject {
 
 
   hasLineOfSight(oTarget = null, max_distance = 30){
-    
-    let position_a = this.position.clone();
-    let position_b = oTarget.position.clone();
-    position_a.z += 1;
-    position_b.z += 1;
-    let direction = position_b.clone().sub(position_a).normalize();
-    let distance = position_a.distanceTo(position_b);
+    if(oTarget instanceof ModuleObject){
+      let position_a = this.position.clone();
+      let position_b = oTarget.position.clone();
+      position_a.z += 1;
+      position_b.z += 1;
+      let direction = position_b.clone().sub(position_a).normalize();
+      let distance = position_a.distanceTo(position_b);
 
-    if(this.perceptionRange){
-      if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange)){
-        return;
+      if(this.perceptionRange){
+        if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange)){
+          return;
+        }
+        max_distance = parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange);
+      }else{
+        if(distance > 50)
+          return;
       }
-      max_distance = parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange);
-    }else{
-      if(distance > 50)
-        return;
-    }
 
-    Game.raycaster.ray.origin.copy(position_a);
-    Game.raycaster.ray.direction.copy(direction);
-    Game.raycaster.far = max_distance;
+      Game.raycaster.ray.origin.copy(position_a);
+      Game.raycaster.ray.direction.copy(direction);
+      Game.raycaster.far = max_distance;
 
-    let aabbFaces = [];
-    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+      let aabbFaces = [];
+      let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+      let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
 
-    for(let j = 0, jl = this.rooms.length; j < jl; j++){
-      let room = Game.module.area.rooms[this.rooms[j]];
-      if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
-        aabbFaces.push({
-          object: room, 
-          faces: room.walkmesh.faces
-        });
+      for(let j = 0, jl = this.rooms.length; j < jl; j++){
+        let room = Game.module.area.rooms[this.rooms[j]];
+        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+          aabbFaces.push({
+            object: room, 
+            faces: room.walkmesh.faces
+          });
+        }
       }
-    }
 
-    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
-      let door = Game.module.area.doors[j];
-      if(door && door.walkmesh && !door.isOpen()){
-        aabbFaces.push({
-          object: door,
-          faces: door.walkmesh.faces
-        });
+      for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+        let door = Game.module.area.doors[j];
+        if(door && door.walkmesh && !door.isOpen()){
+          aabbFaces.push({
+            object: door,
+            faces: door.walkmesh.faces
+          });
+        }
       }
-    }
 
-    for(let i = 0, il = aabbFaces.length; i < il; i++){
-      let castableFaces = aabbFaces[i];
-      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces);
-      if (intersects && intersects.length > 0 ) {
-        for(let j = 0; j < intersects.length; j++){
-          if(intersects[j].distance < distance){
-            return false;
+      for(let i = 0, il = aabbFaces.length; i < il; i++){
+        let castableFaces = aabbFaces[i];
+        intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces);
+        if (intersects && intersects.length > 0 ) {
+          for(let j = 0; j < intersects.length; j++){
+            if(intersects[j].distance < distance){
+              return false;
+            }
           }
         }
       }
+
+      return true;
+    }else{
+      return false;
     }
-
-    return true;
-
   }
 
 

@@ -851,7 +851,7 @@ THREE.AuroraEmitter = function ( auroraNode ) {
     });
 
     this.maxParticleCount = this.birthRate * this.lifeExp;
-    //this.material.uniforms.tDepth.value = Game.depthTarget.depthTexture;
+    this.material.uniforms.tDepth.value = Game.depthTarget.depthTexture;
     this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
     this.material.uniforms.colorStart.value.copy(this.colorStart);
     this.material.uniforms.colorMid.value.copy(this.colorMid);
@@ -882,7 +882,7 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
     switch(this.node.Blend){
       case 'Normal':
-        this.material.blending = THREE.CustomBlending;
+        this.material.blending = THREE.NormalBlending;
       break;
       case 'Lighten':
       case 'Punch-Through':

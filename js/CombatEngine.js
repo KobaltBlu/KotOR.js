@@ -14,21 +14,40 @@ class CombatEngine {
   }
 
   static Update(delta = 0){
-
+    //CombatEngine.combatants = [].concat(Game.module.area.creatures).concat(PartyManager.party);
     if(CombatEngine.combatants.length){
 
-      //combatGroups is an array of combatGroups (Arrays) that group object in combat eith eachother
+      //combatGroups is an array of combatGroups (Arrays) that group objects in combat with eachother
       let combatGroups = [];
 
       //Loop through the active combatants and group them
       for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
         let combatant = CombatEngine.combatants[i];
+
+        if(!combatant.combatQueue.length && combatant.combatAction == undefined){
+          //continue;
+        }
+
         combatant.combatOrder = i;
         let group = undefined;
 
         //Update the combatant's combatAction if needed
         if(combatant.combatQueue.length && combatant.combatAction == undefined){
           combatant.combatAction = combatant.combatQueue.shift();
+
+          if(typeof combatant.combatAction != 'undefined'){
+            if(combatant.combatAction.type == ModuleCreature.ACTION.ATTACKOBJECT){
+              combatant.lastCombatFeatUsed = combatant.combatAction.feat;
+            }
+
+            if(combatant.combatAction.type == ModuleCreature.ACTION.CASTSPELL){
+              combatant.lastForcePowerUsed = combatant.combatAction.spell;
+              combatant.lastSpellTarget = combatant.combatAction.target;
+              combatant.lastAttemptedSpellTarget = combatant.combatAction.target;
+              combatant.casting.push(combatant.combatAction);
+              console.log('CombatEngine: Adding spell to casting', combatant.combatAction, combatant);
+            }
+          }
         }
 
         //Find the correct combat list to add the combatant to
@@ -36,7 +55,7 @@ class CombatEngine {
           if(combatGroups[j].indexOf(combatant) >= 0){
             group = combatGroups[j];
           }else{
-            //Check to see if the combatant's target in in this group
+            //Check to see if the combatant's target is in this group
             if(combatant.lastAttemptedAttackTarget){
               if(combatGroups[j].indexOf(combatant.lastAttemptedAttackTarget) >= 0){
                 group = combatGroups[j];
@@ -59,6 +78,13 @@ class CombatEngine {
           if(group.indexOf(combatant) == -1){
             group.push(combatant);
           }
+        }
+      }
+
+      for (var i = CombatEngine.combatants.length - 1; i >= 0; i--){
+        let combatant = CombatEngine.combatants[i];
+        if(!combatant.combatQueue.length && combatant.combatAction == undefined){
+          //CombatEngine.RemoveCombatant(combatant);
         }
       }
 
@@ -95,6 +121,13 @@ class CombatEngine {
           }else{
             //Increment the combatant's roundTimer since it hasn't ended yet
             combatant.combatRoundTimer += delta;
+
+            //Check to see if the current combatAction is running a TalentObject
+            if(typeof combatant.combatAction != 'undefined'){
+              if(combatant.combatAction.spell instanceof TalentObject){
+                //combatant.combatAction.spell.update(combatant.combatAction.target, combatant, combatant.combatAction, delta);
+              }
+            }
           }
 
         }else{
@@ -150,6 +183,7 @@ class CombatEngine {
   }
 
   static AddCombatant(combatant = undefined){
+    //console.log('AddCombatant', combatant);
     if(!CombatEngine.IsActiveCombatant(combatant)){
       combatant.initiative = CombatEngine.DiceRoll(1, 'd20');
       combatant.combatRoundTimer = 0;
@@ -160,6 +194,7 @@ class CombatEngine {
           return;
         }
       }
+      //console.log('AddCombatant.index', index, combatant);
       //Add the combatant to the list respectful of it's initiative
       CombatEngine.combatants.splice(index, 0, combatant);
     }

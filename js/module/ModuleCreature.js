@@ -40,12 +40,18 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastAttackTarget = undefined;
     //Last target attacked with a spell by this creature
     this.lastSpellTarget = undefined;
+    //Last attempted target attacked with a spell by this creature
+    this.lastAttemptedSpellTarget = undefined;
     //Last creature who damaged this creature
     this.lastDamager = undefined;
     //Last creature who attacked this creature
     this.lastAttacker = undefined;
     //Last creature who attacked this creature with a spell
     this.lastSpellAttacker = undefined;
+    //Last Combat Feat Used
+    this.lastCombatFeatUsed = undefined;
+    //Last Force Power Used
+    this.lastForcePowerUsed = undefined;
 
     this.appearance = 0;
     this.bodyBag = 0;
@@ -257,7 +263,7 @@ class ModuleCreature extends ModuleCreatureController {
     }
 
     if(this.isHostile(callee) && !this.isDead()){
-      Game.getCurrentPlayer().attackCreature(this, 0);
+      Game.getCurrentPlayer().attackCreature(this, undefined);
     }else if(this.isHostile(callee) && this.isDead()){
       this.clearAllActions();
       Game.getCurrentPlayer().actionQueue.push({
@@ -572,14 +578,14 @@ class ModuleCreature extends ModuleCreatureController {
 
   getTotalClassLevel(){
     let total = 0;
-    for(let i = 0; i < this.classes.length; i++){
+    for(let i = 0, len = this.classes.length; i < len; i++){
       total += parseInt(this.classes[i].level);
     }
     return total;
   }
 
   getClassLevel(iClass){
-    for(let i = 0; i < this.classes.length; i++){
+    for(let i = 0, len = this.classes.length; i < len; i++){
       if(this.classes[i].class_id == iClass){
         return this.classes[i].level;
       }
@@ -591,10 +597,10 @@ class ModuleCreature extends ModuleCreatureController {
     return this.feats || [];
   }
 
-  getFeat(iFeat = 0){
+  getFeat(id = 0){
     let feats = this.getFeats();
     for(let i = 0, len = feats.length; i < len; i++){
-      if(feats[i].id == iFeat){
+      if(feats[i].id == id){
         return feats[i];
       }
     }
@@ -608,7 +614,13 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getHasFeat(id){
-    return this.feats.indexOf(id) >= 0;
+    let feats = this.getFeats();
+    for(let i = 0, len = feats.length; i < len; i++){
+      if(feats[i].id == id){
+        return true;
+      }
+    }
+    return false;
   }
 
   getSkillList(){
@@ -626,31 +638,51 @@ class ModuleCreature extends ModuleCreatureController {
     return this.skills[iSkill].rank;
   }
 
-  getHasSpell(id){
+  getHasSpell(id = 0){
+    return (this.getSpell(id) instanceof TalentSpell) ? true : false;
+  }
 
+  getSpell(id = 0){
     for(let i = 0; i < this.classes.length; i++){
       let cls = this.classes[i];
       for(let j = 0; j < cls.spells.length; j++){
-        let spell = cls.spells[i];
+        let spell = cls.spells[j];
         if(spell.id == id)
-          return true;
+          return spell;
       }
     }
 
-    return false;
+    if(typeof this.equipment.RIGHTARMBAND != 'undefined'){
+      let spells = this.equipment.RIGHTARMBAND.getSpells();
+      for(let i = 0, len = spells.length; i < len; i++){
+        if(spells[i].id == id){
+          return spells[i];
+        }
+      }
+    }
 
+    if(typeof this.equipment.LEFTARMBAND != 'undefined'){
+      let spells = this.equipment.LEFTARMBAND.getSpells();
+      for(let i = 0, len = spells.length; i < len; i++){
+        if(spells[i].id == id){
+          return spells[i];
+        }
+      }
+    }
+
+    return undefined;
   }
 
-  hasTalent(talent = undeifned){
+  hasTalent(talent = undefined){
     console.log('hasTalent', talent);
     if(typeof talent != 'undefined'){
       switch(talent.type){
         case 0: //Force / Spell
-          return this.getHasSpell(talent.id);
+          return this.getHasSpell(talent.id) ? true : false;
         case 1: //Feat
-          return this.getHasFeat(talent.id);
+          return this.getHasFeat(talent.id) ? true : false;
         case 2: //Skill
-          return this.getHasSkill(talent.id);
+          return this.getHasSkill(talent.id) ? true : false;
       }
     }
     return false;
@@ -663,8 +695,16 @@ class ModuleCreature extends ModuleCreatureController {
     for(let i = 0; i < this.classes.length; i++){
       let cls = this.classes[i];
       for(let j = 0; j < cls.spells.length; j++){
-        talents.push(cls.spells[i])
+        talents.push(cls.spells[i]);
       }
+    }
+
+    for(let i = 0; i < this.feats.length; i++){
+      talents.push(this.feats[i]);
+    }
+
+    for(let i = 0; i < this.skills.length; i++){
+      talents.push(this.skills[i]);
     }
 
     return talents;
@@ -680,8 +720,14 @@ class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  useTalentOnObject(talent, oTarget){
-    console.log('useTalentOnObject', this, talent, oTarget);
+  getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
+    let talents = this.getTalents().filter( talent => ( talent.category != '****' && ( (talent.category & nCategory) == nCategory ) && talent.maxcr <= nCRMax ) );
+    talents.sort((a, b) => (a.maxcr > b.maxcr) ? 1 : -1);
+    console.log('getTalentBest', talents);
+    if(talents.length){
+      return talents[0];
+    }
+    return undefined;
   }
 
   getPerceptionRange(){
@@ -1403,10 +1449,6 @@ class ModuleCreature extends ModuleCreatureController {
 
             if(known_spell_struct.HasField('Spell'))
               spell.id = known_spell_struct.GetFieldByLabel('Spell').GetValue();
-
-            //Merge the spell properties from the spells.2da row with this spell
-            if(Global.kotor2DA.spells.rows[spell.id])
-              spell = Object.assign(Global.kotor2DA.spells.rows[spell.id], spell);
         
             if(known_spell_struct.HasField('SpellFlags'))
               spell.flags = known_spell_struct.GetFieldByLabel('SpellFlags').GetValue();
@@ -1414,7 +1456,7 @@ class ModuleCreature extends ModuleCreatureController {
             if(known_spell_struct.HasField('SpellMetaMagic'))
               spell.metaMagic = known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue();
 
-            cls.spells.push(spell);
+            cls.spells.push(new TalentSpell(spell));
 
           }
         }
@@ -1472,12 +1514,8 @@ class ModuleCreature extends ModuleCreatureController {
           id: feats[i].GetFieldByLabel('Feat').GetValue()
         };
 
-        //Merge the feat properties from the feat.2da row with this feat
-        if(Global.kotor2DA.feat.rows[feat.id])
-          feat = Object.assign(Global.kotor2DA.feat.rows[feat.id], feat);
-
         this.feats.push(
-          feat
+          new TalentFeat(feat)
         );
       }
     }
@@ -1534,7 +1572,10 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('PerceptionRange')){
       this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
     }else{
-      this.perceptionRange = 13;
+      //https://forum.neverwintervault.org/t/perception-range/3191/9
+      //It appears that PerceptionRange isn't save inside the GIT file.
+      //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
+      this.perceptionRange = 11;
     }
 
     if(this.template.RootNode.HasField('Phenotype'))
@@ -1554,14 +1595,10 @@ class ModuleCreature extends ModuleCreatureController {
       for(let i = 0; i < skills.length; i++){
         let skill = {
           type: 2,
+          id: i,
           rank: skills[i].GetFieldByLabel('Rank').GetValue()
         };
-
-        //Merge the skill properties from the skills.2da row with this skill
-        if(Global.kotor2DA.skills.rows[i])
-          skill = Object.assign(Global.kotor2DA.skills.rows[i], skill);
-
-        this.skills[i] = skill;
+        this.skills[i] = new TalentSkill(skill);
       }
     }
 

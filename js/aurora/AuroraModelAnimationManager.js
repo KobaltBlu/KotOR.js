@@ -434,11 +434,12 @@ AuroraModelAnimationManager.AnimateController = {
       if(typeof this.modelNode.controllers.get(AuroraModel.ControllerType.Scale) != 'undefined'){
         offsetScale = this.modelNode.controllers.get(AuroraModel.ControllerType.Scale).data[0].value || 0.000000000001; //0 scale causes warnings
       }
-      this.modelNode.scale.setScalar( ( (data.value + offsetScale) * this.Scale ) || 0.00000001 );
+      //this.modelNode.scale.setScalar( ( (data.value + offsetScale) * this.model.Scale ) || 0.00000001 );
+      this.modelNode.scale.setScalar( ( (data.value) * this.model.Scale ) || 0.00000001 );
       this.modelNode.updateMatrix();
     },
     animate: function(anim = undefined, controller = undefined, last = undefined, next = undefined, fl = 0){
-      this.modelNode.scale.lerp( this._vec3.setScalar( ( (next.value) * this.Scale) || 0.000000001 ), fl);
+      this.modelNode.scale.lerp( this._vec3.setScalar( ( (next.value) * this.model.Scale) || 0.000000001 ), fl);
       this.modelNode.updateMatrix();
     }
   },

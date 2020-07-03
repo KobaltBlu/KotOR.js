@@ -35,7 +35,7 @@ class UI3DRenderer {
       autoClear: false,
       depth: true,
       alpha: true,
-      logarithmicDepthBuffer: true
+      logarithmicDepthBuffer: false
     });
 
     this._renderer.autoClear = false;

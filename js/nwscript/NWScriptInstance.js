@@ -9,6 +9,7 @@ class NWScriptInstance {
 
     this.name = args.name;
     this.instructions = args.instructions;
+    this.talent = undefined;
 
     this.init();
     this.globalCache = null;
@@ -226,6 +227,7 @@ class NWScriptInstance {
     script.debugging = scope.debugging;
     script.listenPatternNumber = scope.listenPatternNumber;
     script.listenPatternSpeaker = scope.listenPatternSpeaker;
+    script.talent = scope.talent;
 
     script.run(
       args[1],

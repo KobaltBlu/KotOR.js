@@ -3,7 +3,7 @@ THREE.UniformsLib.lights.pointLights.properties.animated = {};
 //https://stackoverflow.com/a/47424292/4958457
 
 //Fix the phong material to ignore light shading if a lightmap is present so that we can have shadows on level geometry
-THREE.ShaderLib[ 'phong' ].fragmentShader = THREE.ShaderLib[ 'phong' ].fragmentShader.replace(
+/*THREE.ShaderLib[ 'phong' ].fragmentShader = THREE.ShaderLib[ 'phong' ].fragmentShader.replace(
 
   `vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;`,
 
@@ -26,10 +26,10 @@ THREE.ShaderLib[ 'phong' ].fragmentShader = THREE.ShaderLib[ 'phong' ].fragmentS
     outgoingLight = vec3(diffuseColor.rgb);
   #endif`
 
-);
+);*/
 
 //Fixing the envmap shader to to mix acording to the Alpha Channel of the base texture
-THREE.ShaderChunk['envmap_fragment'] = `
+/*THREE.ShaderChunk['envmap_fragment'] = `
 #ifdef USE_ENVMAP
   #if defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( PHONG )
     vec3 cameraToVertex = normalize( vWorldPosition - cameraPosition );
@@ -66,7 +66,7 @@ THREE.ShaderChunk['envmap_fragment'] = `
     outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
   #endif
 #endif
-`;
+`;*/
 
 
 THREE.ShaderLib.aurora = {
@@ -114,11 +114,32 @@ THREE.ShaderLib.aurora = {
   #include <emissivemap_pars_fragment>
   #include <envmap_common_pars_fragment>
   #include <envmap_pars_fragment>
-  #include <gradientmap_pars_fragment>
+  #include <cube_uv_reflection_fragment>
   #include <fog_pars_fragment>
   #include <bsdfs>
   
+  //ADD Animated to PointLight struct
+  uniform bool receiveShadow;
   uniform vec3 ambientLightColor;
+  uniform vec3 lightProbe[ 9 ];
+  vec3 shGetIrradianceAt( in vec3 normal, in vec3 shCoefficients[ 9 ] ) {
+    float x = normal.x, y = normal.y, z = normal.z;
+    vec3 result = shCoefficients[ 0 ] * 0.886227;
+    result += shCoefficients[ 1 ] * 2.0 * 0.511664 * y;
+    result += shCoefficients[ 2 ] * 2.0 * 0.511664 * z;
+    result += shCoefficients[ 3 ] * 2.0 * 0.511664 * x;
+    result += shCoefficients[ 4 ] * 2.0 * 0.429043 * x * y;
+    result += shCoefficients[ 5 ] * 2.0 * 0.429043 * y * z;
+    result += shCoefficients[ 6 ] * ( 0.743125 * z * z - 0.247708 );
+    result += shCoefficients[ 7 ] * 2.0 * 0.429043 * x * z;
+    result += shCoefficients[ 8 ] * 0.429043 * ( x * x - y * y );
+    return result;
+  }
+  vec3 getLightProbeIrradiance( const in vec3 lightProbe[ 9 ], const in GeometricContext geometry ) {
+    vec3 worldNormal = inverseTransformDirection( geometry.normal, viewMatrix );
+    vec3 irradiance = shGetIrradianceAt( worldNormal, lightProbe );
+    return irradiance;
+  }
   vec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {
     vec3 irradiance = ambientLightColor;
     #ifndef PHYSICALLY_CORRECT_LIGHTS
@@ -130,10 +151,6 @@ THREE.ShaderLib.aurora = {
     struct DirectionalLight {
       vec3 direction;
       vec3 color;
-      int shadow;
-      float shadowBias;
-      float shadowRadius;
-      vec2 shadowMapSize;
     };
     uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
     void getDirectionalDirectLightIrradiance( const in DirectionalLight directionalLight, const in GeometricContext geometry, out IncidentLight directLight ) {
@@ -147,14 +164,8 @@ THREE.ShaderLib.aurora = {
       vec3 position;
       vec3 color;
       float distance;
-      float decay;
-      int shadow;
       float animated;
-      float shadowBias;
-      float shadowRadius;
-      vec2 shadowMapSize;
-      float shadowCameraNear;
-      float shadowCameraFar;
+      float decay;
     };
     uniform PointLight pointLights[ NUM_POINT_LIGHTS ];
     void getPointDirectLightIrradiance( const in PointLight pointLight, const in GeometricContext geometry, out IncidentLight directLight ) {
@@ -175,10 +186,6 @@ THREE.ShaderLib.aurora = {
       float decay;
       float coneCos;
       float penumbraCos;
-      int shadow;
-      float shadowBias;
-      float shadowRadius;
-      vec2 shadowMapSize;
     };
     uniform SpotLight spotLights[ NUM_SPOT_LIGHTS ];
     void getSpotDirectLightIrradiance( const in SpotLight spotLight, const in GeometricContext geometry, out IncidentLight directLight  ) {
@@ -224,6 +231,7 @@ THREE.ShaderLib.aurora = {
       return irradiance;
     }
   #endif
+  //END Animated to PointLight struct
 
   #include <lights_phong_pars_fragment>
   #include <shadowmap_pars_fragment>
@@ -305,71 +313,97 @@ THREE.ShaderLib.aurora = {
     #include <emissivemap_fragment>
     // accumulation
     #include <lights_phong_fragment>
+
+    //BEGIN Custom LIGHT
     GeometricContext geometry;
     geometry.position = - vViewPosition;
     geometry.normal = normal;
-    geometry.viewDir = normalize( vViewPosition );
+    geometry.viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );
+    #ifdef CLEARCOAT
+      geometry.clearcoatNormal = clearcoatNormal;
+    #endif
     IncidentLight directLight;
     #if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )
       PointLight pointLight;
-      #pragma unroll_loop
+      #if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0
+      PointLightShadow pointLightShadow;
+      #endif
+      #pragma unroll_loop_start
       for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {
         pointLight = pointLights[ i ];
         getPointDirectLightIrradiance( pointLight, geometry, directLight );
-        #ifdef USE_SHADOWMAP
-          directLight.color *= all( bvec2( pointLight.shadow, directLight.visible ) ) ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowBias, pointLight.shadowRadius, vPointShadowCoord[ i ], pointLight.shadowCameraNear, pointLight.shadowCameraFar ) : 1.0;
+        #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )
+        pointLightShadow = pointLightShadows[ i ];
+        directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;
         #endif
         RE_Direct( directLight, geometry, material, reflectedLight );
         
         RE_Direct_Anim( directLight, geometry, material, pointLight.animated, animatedLight );
         //animatedLight += (directLight.color * pointLight.distance * pointLight.animated) * 0.1;
       }
+      #pragma unroll_loop_end
     #endif
     #if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )
       SpotLight spotLight;
-      #pragma unroll_loop
+      #if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0
+      SpotLightShadow spotLightShadow;
+      #endif
+      #pragma unroll_loop_start
       for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {
         spotLight = spotLights[ i ];
         getSpotDirectLightIrradiance( spotLight, geometry, directLight );
-        #ifdef USE_SHADOWMAP
-        directLight.color *= all( bvec2( spotLight.shadow, directLight.visible ) ) ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowBias, spotLight.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;
+        #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )
+        spotLightShadow = spotLightShadows[ i ];
+        directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;
         #endif
         RE_Direct( directLight, geometry, material, reflectedLight );
       }
+      #pragma unroll_loop_end
     #endif
     #if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )
       DirectionalLight directionalLight;
-      #pragma unroll_loop
+      #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+      DirectionalLightShadow directionalLightShadow;
+      #endif
+      #pragma unroll_loop_start
       for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
         directionalLight = directionalLights[ i ];
         getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );
-        #ifdef USE_SHADOWMAP
-        directLight.color *= all( bvec2( directionalLight.shadow, directLight.visible ) ) ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowBias, directionalLight.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
+        #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
+        directionalLightShadow = directionalLightShadows[ i ];
+        directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
         #endif
         RE_Direct( directLight, geometry, material, reflectedLight );
       }
+      #pragma unroll_loop_end
     #endif
     #if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )
       RectAreaLight rectAreaLight;
-      #pragma unroll_loop
+      #pragma unroll_loop_start
       for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {
         rectAreaLight = rectAreaLights[ i ];
         RE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );
       }
+      #pragma unroll_loop_end
     #endif
     #if defined( RE_IndirectDiffuse )
+      vec3 iblIrradiance = vec3( 0.0 );
       vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
+      irradiance += getLightProbeIrradiance( lightProbe, geometry );
       #if ( NUM_HEMI_LIGHTS > 0 )
-        #pragma unroll_loop
+        #pragma unroll_loop_start
         for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
           irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );
         }
+        #pragma unroll_loop_end
       #endif
     #endif
     #if defined( RE_IndirectSpecular )
       vec3 radiance = vec3( 0.0 );
-      vec3 clearCoatRadiance = vec3( 0.0 );
+      vec3 clearcoatRadiance = vec3( 0.0 );
     #endif
+    //END Custom LIGHT
+
     #include <lights_fragment_maps>
     #include <lights_fragment_end>
     // modulation
@@ -406,33 +440,37 @@ THREE.ShaderLib.aurora = {
       //outgoingLight = max( diffuseColor.rgb, diffuseColor.rgb * emissive );// + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance)* 0.5);
     #endif
     #ifdef USE_ENVMAP
-      #if defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( PHONG )
-        vec3 cameraToVertex = normalize( vWorldPosition - cameraPosition );
+      #ifdef ENV_WORLDPOS
+        vec3 cameraToFrag;
+        
+        if ( isOrthographic ) {
+          cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
+        }  else {
+          cameraToFrag = normalize( vWorldPosition - cameraPosition );
+        }
         vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
         #ifdef ENVMAP_MODE_REFLECTION
-          vec3 reflectVec = reflect( cameraToVertex, worldNormal );
+          vec3 reflectVec = reflect( cameraToFrag, worldNormal );
         #else
-          vec3 reflectVec = refract( cameraToVertex, worldNormal, refractionRatio );
+          vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );
         #endif
       #else
         vec3 reflectVec = vReflect;
       #endif
       #ifdef ENVMAP_TYPE_CUBE
         vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
+      #elif defined( ENVMAP_TYPE_CUBE_UV )
+        vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
       #elif defined( ENVMAP_TYPE_EQUIREC )
-        vec2 sampleUV;
         reflectVec = normalize( reflectVec );
-        sampleUV.y = asin( clamp( reflectVec.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
-        sampleUV.x = atan( reflectVec.z, reflectVec.x ) * RECIPROCAL_PI2 + 0.5;
+        vec2 sampleUV = equirectUv( reflectVec );
         vec4 envColor = texture2D( envMap, sampleUV );
-      #elif defined( ENVMAP_TYPE_SPHERE )
-        reflectVec = normalize( reflectVec );
-        vec3 reflectView = normalize( ( viewMatrix * vec4( reflectVec, 0.0 ) ).xyz + vec3( 0.0, 0.0, 1.0 ) );
-        vec4 envColor = texture2D( envMap, reflectView.xy * 0.5 + 0.5 );
       #else
         vec4 envColor = vec4( 0.0 );
       #endif
-      envColor = envMapTexelToLinear( envColor );
+      #ifndef ENVMAP_TYPE_CUBE_UV
+        //envColor = envMapTexelToLinear( envColor );
+      #endif
       #ifdef ENVMAP_BLENDING_MULTIPLY
         outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
       #elif defined( ENVMAP_BLENDING_MIX )
@@ -441,7 +479,12 @@ THREE.ShaderLib.aurora = {
         outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
       #endif
     #endif
-    gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+    #ifdef SABER
+      texelColor = texture2D( map, vUv );
+      gl_FragColor = texelColor;
+    #else
+      gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+    #endif
     #include <tonemapping_fragment>
     #include <encodings_fragment>
     #include <fog_fragment>
@@ -469,7 +512,8 @@ THREE.ShaderLib.aurora = {
       gl_FragColor = vec4(col,0.5);
       
     #endif
-    #include <dithering_fragment>
+    #include <premultiplied_alpha_fragment>
+	  #include <dithering_fragment>
   }
   `,
   vertexShader: `

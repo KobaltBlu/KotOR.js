@@ -183,10 +183,7 @@ NWScriptDefK1.Actions = {
     comment: "12: Set the time to the time specified.\n- nHour should be from 0 to 23 inclusive\n- nMinute should be from 0 to 59 inclusive\n- nSecond should be from 0 to 59 inclusive\n- nMillisecond should be from 0 to 999 inclusive\n1) Time can only be advanced forwards; attempting to set the time backwards\nwill result in the day advancing and then the time being set to that\nspecified, e.g. if the current hour is 15 and then the hour is set to 3,\nthe day will be advanced by 1 and the hour will be set to 3.\n2) If values larger than the max hour, minute, second or millisecond are\nspecified, they will be wrapped around and the overflow will be used to\nadvance the next field, e.g. specifying 62 hours, 250 minutes, 10 seconds\nand 10 milliseconds will result in the calendar day being advanced by 2\nand the time being set to 18 hours, 10 minutes, 10 milliseconds.\n",
     name: "SetTime",
     type: 0,
-    args: ["int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int"]
   },
   13:{
     comment: "13: Sets (by NPC constant) which party member should be the controlled\ncharacter\n",
@@ -293,10 +290,7 @@ NWScriptDefK1.Actions = {
     comment: "23: Cause the action subject to move to a certain distance away from oFleeFrom.\n- oFleeFrom: This is the object we wish the action subject to move away from.\nIf oFleeFrom is not in the same area as the action subject, nothing will\nhappen.\n- bRun: If this is TRUE, the action subject will run rather than walk\n- fMoveAwayRange: This is the distance we wish the action subject to put\nbetween themselves and oFleeFrom\n* No return value, but if an error occurs the log file will contain\n'ActionMoveAwayFromObject failed.'\n",
     name: "ActionMoveAwayFromObject",
     type: 0,
-    args: ["object", "int", "float"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int", "float"]
   },
   24:{
     comment: "24: Get the area that oTarget is currently in\n* Return value on error: OBJECT_INVALID\n",
@@ -357,10 +351,7 @@ NWScriptDefK1.Actions = {
     comment: "29: Get the possessor of oItem\n* Return value on error: OBJECT_INVALID\n",
     name: "GetItemPossessor",
     type: 6,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   30:{
     comment: "30: Get the object possessed by oCreature with the tag sItemTag\n* Return value on error: OBJECT_INVALID\n",
@@ -430,19 +421,13 @@ NWScriptDefK1.Actions = {
     comment: "34: Pick up oItem from the ground.\n* No return value, but if an error occurs the log file will contain\n'ActionPickUpItem failed.'\n",
     name: "ActionPickUpItem",
     type: 0,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   35:{
     comment: "35: Put down oItem on the ground.\n* No return value, but if an error occurs the log file will contain\n'ActionPutDownItem failed.'\n",
     name: "ActionPutDownItem",
     type: 0,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   36:{
     comment: "36: Get the last attacker of oAttackee.  This should only be used ONLY in the\nOnAttacked events for creatures, placeables and doors.\n* Return value on error: OBJECT_INVALID\n",
@@ -492,10 +477,7 @@ NWScriptDefK1.Actions = {
     comment: "39: Add a speak action to the action subject.\n- sStringToSpeak: String to be spoken\n- nTalkVolume: TALKVOLUME_*\n",
     name: "ActionSpeakString",
     type: 0,
-    args: ["string", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["string", "int"]
   },
   40:{
     comment: "40: Cause the action subject to play an animation\n- nAnimation: ANIMATION_*\n- fSpeed: Speed of the animation\n- fDurationSeconds: Duration of the animation (this is not used for Fire and\nForget animations) If a time of -1.0f is specified for a looping animation\nit will loop until the next animation is applied.\n",
@@ -550,10 +532,7 @@ NWScriptDefK1.Actions = {
     comment: "45: Change the direction in which the camera is facing\n- fDirection is expressed as anticlockwise degrees from Due East.\n(0.0f=East, 90.0f=North, 180.0f=West, 270.0f=South)\nThis can be used to change the way the camera is facing after the player\nemerges from an area transition.\n",
     name: "SetCameraFacing",
     type: 0,
-    args: ["float"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["float"]
   },
   46:{
     comment: "46: Play sSoundName\n- sSoundName: TBD - SS\n",
@@ -574,17 +553,16 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      if(this.caller instanceof ModuleCreature){
+        return this.caller.lastSpellTarget;
+      }
     }
   },
   48:{
     comment: "48: This action casts a spell at oTarget.\n- nSpell: SPELL_*\n- oTarget: Target for the spell\n- nMetamagic: METAMAGIC_*\n- bCheat: If this is TRUE, then the executor of the action doesn't have to be\nable to cast the spell.\n- nDomainLevel: TBD - SS\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n- bInstantSpell: If this is TRUE, the spell is cast immediately. This allows\nthe end-user to simulate a high-level magic-user having lots of advance\nwarning of impending trouble\n",
     name: "ActionCastSpellAtObject",
     type: 0,
-    args: ["int", "object", "int", "int", "int", "int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "object", "int", "int", "int", "int", "int"]
   },
   49:{
     comment: "49: Get the current hitpoints of oObject\n* Return value on error: 0\n",
@@ -614,26 +592,22 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 74});
+      let effect = new EffectAssuredHit();
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   52:{
     comment: "52:\nReturns the last item that was equipped by a creature.\n",
     name: "GetLastItemEquipped",
     type: 6,
-    args: [],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: []
   },
   53:{
     comment: "53:\nReturns the ID of the subscreen that is currently onscreen.  This will be one of the\nSUBSCREEN_ID_* constant values.\n",
     name: "GetSubScreenID",
     type: 3,
-    args: [],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: []
   },
   54:{
     comment: "54:\nCancels combat for the specified creature.\n",
@@ -641,28 +615,22 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object"],
     action: function(args, _instr, action){
-        if(args[0] instanceof ModuleCreature){
+      if(args[0] instanceof ModuleCreature){
         args[0].cancelCombat();
-        }
+      }
     }
   },
   55:{
     comment: "55:\nreturns the current force points for the creature\n",
     name: "GetCurrentForcePoints",
     type: 3,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   56:{
     comment: "56:\nreturns the Max force points for the creature\n",
     name: "GetMaxForcePoints",
     type: 3,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   57:{
     comment: "57:\nPauses the game if bPause is TRUE.  Unpauses if bPause is FALSE.\n",
@@ -681,10 +649,7 @@ NWScriptDefK1.Actions = {
     comment: "58: SetPlayerRestrictMode\nSets whether the player is currently in 'restricted' mode\n",
     name: "SetPlayerRestrictMode",
     type: 0,
-    args: ["int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int"]
   },
   59:{
     comment: "59: Get the length of sString\n* Return value on error: -1\n",
@@ -870,7 +835,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 421, amount: args[0] });
+      let effect = new EffectHeal(args[0]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   79:{
@@ -879,7 +846,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 42, amount: args[0], damage_type: args[1], damage_power: args[2] });
+      let effect = new EffectDamage(args[0], args[1], args[2]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   80:{
@@ -888,7 +857,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 38, ability: args[0], amount: args[1] });
+      let effect = new EffectAbilityIncrease(args[0], args[1]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   81:{
@@ -897,7 +868,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 1, damage_type: args[1], damage_amount: args[1], damage_limit: args[2] });
+      let effect = new EffectDamageResistance(args[0], args[1], args[2]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   82:{
@@ -906,7 +879,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return new NWScriptEffect({type: 14});
+      let effect = new EffectResurrection();
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   83:{
@@ -922,10 +897,7 @@ NWScriptDefK1.Actions = {
     comment: "84: Get the Caster Level of oCreature.\n* Return value on error: 0;\n",
     name: "GetCasterLevel",
     type: 3,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   85:{
     comment: "85: Get the first in-game effect on oCreature.\n",
@@ -971,11 +943,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
-      if(typeof args[0] === 'undefined' || typeof args[0] !== 'object'){
-        return 0;
-      }else{
-        return 1;
-      }
+      return args[0] instanceof GameEffect ? 1 : 0;
     }
   },
   89:{
@@ -984,7 +952,10 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      if(args[0] instanceof GameEffect){
+        return args[0].durationType;
+      }
+      return 0;
     }
   },
   90:{
@@ -993,7 +964,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      return 0;
     }
   },
   91:{
@@ -1002,7 +973,10 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["effect"],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      if(args[0] instanceof GameEffect){
+        return args[0].creator;
+      }
+      return undefined;
     }
   },
   92:{
@@ -1124,28 +1098,19 @@ NWScriptDefK1.Actions = {
     comment: "104: Get the magnitude of vVector; this can be used to determine the\ndistance between two points.\n* Return value on error: 0.0f\n",
     name: "VectorMagnitude",
     type: 4,
-    args: ["vector"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["vector"]
   },
   105:{
     comment: "105: Get the metamagic type (METAMAGIC_*) of the last spell cast by the caller\n* Return value if the caster is not a valid object: -1\n",
     name: "GetMetaMagicFeat",
     type: 3,
-    args: [],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: []
   },
   106:{
     comment: "106: Get the object type (OBJECT_TYPE_*) of oTarget\n* Return value if oTarget is not a valid object: -1\n",
     name: "GetObjectType",
     type: 3,
-    args: ["object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object"]
   },
   107:{
     comment: "107: Get the racial type (RACIAL_TYPE_*) of oCreature\n* Return value if oCreature is not a valid creature: RACIAL_TYPE_INVALID\n",
@@ -1160,118 +1125,79 @@ NWScriptDefK1.Actions = {
     comment: "108: Do a Fortitude Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "FortitudeSave",
     type: 3,
-    args: ["object", "int", "int", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int", "int", "object"]
   },
   109:{
     comment: "109: Does a Reflex Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "ReflexSave",
     type: 3,
-    args: ["object", "int", "int", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int", "int", "object"]
   },
   110:{
     comment: "110: Does a Will Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "WillSave",
     type: 3,
-    args: ["object", "int", "int", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int", "int", "object"]
   },
   111:{
     comment: "111: Get the DC to save against for a spell (10 + spell level + relevant ability\nbonus).  This can be called by a creature or by an Area of Effect object.\n",
     name: "GetSpellSaveDC",
     type: 3,
-    args: [],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: []
   },
   112:{
     comment: "112: Set the subtype of eEffect to Magical and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "MagicalEffect",
     type: 16,
-    args: ["effect"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["effect"]
   },
   113:{
     comment: "113: Set the subtype of eEffect to Supernatural and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "SupernaturalEffect",
     type: 16,
-    args: ["effect"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["effect"]
   },
   114:{
     comment: "114: Set the subtype of eEffect to Extraordinary and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "ExtraordinaryEffect",
     type: 16,
-    args: ["effect"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["effect"]
   },
   115:{
     comment: "115: Create an AC Increase effect\n- nValue: size of AC increase\n- nModifyType: AC_*_BONUS\n- nDamageType: DAMAGE_TYPE_*\n* Default value for nDamageType should only ever be used in this function prototype.\n",
     name: "EffectACIncrease",
     type: 16,
-    args: ["int", "int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "int", "int"]
   },
   116:{
     comment: "116: If oObject is a creature, this will return that creature's armour class\nIf oObject is an item, door or placeable, this will return zero.\n- nForFutureUse: this parameter is not currently used\n* Return value if oObject is not a creature, item, door or placeable: -1\n",
     name: "GetAC",
     type: 3,
-    args: ["object", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int"]
   },
   117:{
     comment: "117: Create an AC Decrease effect\n- nSave: SAVING_THROW_* (not SAVING_THROW_TYPE_*)\n- nValue: size of AC decrease\n- nSaveType: SAVING_THROW_TYPE_*\n",
     name: "EffectSavingThrowIncrease",
     type: 16,
-    args: ["int", "int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "int", "int"]
   },
   118:{
     comment: "118: Create an Attack Increase effect\n- nBonus: size of attack bonus\n- nModifierType: ATTACK_BONUS_*\n",
     name: "EffectAttackIncrease",
     type: 16,
-    args: ["int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "int"]
   },
   119:{
     comment: "119: Create a Damage Reduction effect\n- nAmount: amount of damage reduction\n- nDamagePower: DAMAGE_POWER_*\n- nLimit: How much damage the effect can absorb before disappearing.\nSet to zero for infinite\n",
     name: "EffectDamageReduction",
     type: 16,
-    args: ["int", "int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "int", "int"]
   },
   120:{
     comment: "120: Create a Damage Increase effect\n- nBonus: DAMAGE_BONUS_*\n- nDamageType: DAMAGE_TYPE_*\n",
     name: "EffectDamageIncrease",
     type: 16,
-    args: ["int", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "int"]
   },
   121:{
     comment: "121: Convert nRounds into a number of seconds\nA round is always 6.0 seconds\n",
@@ -1279,26 +1205,20 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: ["int"],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      return args[0] * 6.0;
     }
   },
   122:{
     comment: "122: Convert nHours into a number of seconds\nThe result will depend on how many minutes there are per hour (game-time)\n",
     name: "HoursToSeconds",
     type: 4,
-    args: ["int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int"]
   },
   123:{
     comment: "123: Convert nTurns into a number of seconds\nA turn is always 60.0 seconds\n",
     name: "TurnsToSeconds",
     type: 4,
-    args: ["int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int"]
   },
   124:{
     comment: "124. SoundObjectSetFixedVariance\nSets the constant variance at which to play the sound object\nThis variance is a multiplier of the original sound\n",
@@ -1369,10 +1289,7 @@ NWScriptDefK1.Actions = {
     comment: "130: Create an Entangle effect\nWhen applied, this effect will restrict the creature's movement and apply a\n(-2) to all attacks and a -4 to AC.\n",
     name: "EffectEntangle",
     type: 16,
-    args: [],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: []
   },
   131:{
     comment: "131: Cause oObject to run evToRun\n",
@@ -1386,12 +1303,12 @@ NWScriptDefK1.Actions = {
       switch(args[1].name){
         case 'EventUserDefined':
           if(args[0] instanceof ModuleObject){
-            if(args[1].name == 'EventUserDefined'){
-            args[0].triggerUserDefinedEvent(
-              args[0],
-              args[1].value
-              );
-            }
+            args[0].triggerUserDefinedEvent( args[0], args[1].value );
+          }
+        break;
+        case 'EventSpellCastAt':
+          if(args[0] instanceof ModuleObject){
+            args[0].triggerSpellCastAtEvent(args[1].oCaster, args[1].nSpell, args[1].bHarmful);
           }
         break;
         default:
@@ -1420,6 +1337,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "int"],
     action: function(args, _instr, action){
       let effect = new EffectDeath(args[0], args[1]);
+      effect.setCreator(this.caller);
       return effect.initialize();
     }
   },
@@ -1436,19 +1354,13 @@ NWScriptDefK1.Actions = {
     comment: "135: Give oItem to oGiveTo\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.\n",
     name: "ActionGiveItem",
     type: 0,
-    args: ["object", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "object"]
   },
   136:{
     comment: "136: Take oItem from oTakeFrom\nIf oItem is not a valid item, or oTakeFrom is not a valid object, nothing\nwill happen.\n",
     name: "ActionTakeItem",
     type: 0,
-    args: ["object", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "object"]
   },
   137:{
     comment: "137: Normalize vVector\n",
@@ -1476,10 +1388,7 @@ NWScriptDefK1.Actions = {
     comment: "139: Get the ability score of type nAbility for a creature (otherwise 0)\n- oCreature: the creature whose ability score we wish to find out\n- nAbilityType: ABILITY_*\nReturn value on error: 0\n",
     name: "GetAbilityScore",
     type: 3,
-    args: ["object", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int"]
   },
   140:{
     comment: "140: * Returns TRUE if oCreature is a dead NPC, dead PC or a dying PC.\n",
@@ -1498,10 +1407,7 @@ NWScriptDefK1.Actions = {
     comment: "141: Output vVector to the logfile.\n- vVector\n- bPrepend: if this is TRUE, the message will be prefixed with 'PRINTVECTOR:'\n",
     name: "PrintVector",
     type: 0,
-    args: ["vector", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["vector", "int"]
   },
   142:{
     comment: "142: Create a vector with the specified values for x, y and z\n",
@@ -1519,7 +1425,7 @@ NWScriptDefK1.Actions = {
     args: ["vector"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-      args[0].FacePoint(args[1]);
+        args[0].FacePoint(args[1]);
       }
     }
   },
@@ -1527,37 +1433,25 @@ NWScriptDefK1.Actions = {
     comment: "144: Convert fAngle to a vector\n",
     name: "AngleToVector",
     type: 20,
-    args: ["float"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["float"]
   },
   145:{
     comment: "145: Convert vVector to an angle\n",
     name: "VectorToAngle",
     type: 4,
-    args: ["vector"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["vector"]
   },
   146:{
     comment: "146: The caller will perform a Melee Touch Attack on oTarget\nThis is not an action, and it assumes the caller is already within range of\noTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackMelee",
     type: 3,
-    args: ["object", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int"]
   },
   147:{
     comment: "147: The caller will perform a Ranged Touch Attack on oTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackRanged",
     type: 3,
-    args: ["object", "int"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "int"]
   },
   148:{
     comment: "148: Create a Paralyze effect\n",
@@ -1821,10 +1715,7 @@ NWScriptDefK1.Actions = {
     comment: "167: The action subject will follow oFollow until a ClearAllActions() is called.\n- oFollow: this is the object to be followed\n- fFollowDistance: follow distance in metres\n* No return value\n",
     name: "ActionForceFollowObject",
     type: 0,
-    args: ["object", "float"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["object", "float"]
   },
   168:{
     comment: "168: Get the Tag of oObject\n* Return value if oObject is not a valid object: ''\n",
@@ -1935,6 +1826,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "int"],
     action: function(args, _instr, action){
       let effect = new EffectVisualEffect(args[0], args[1]);
+      effect.setCreator(this.caller);
       return effect.initialize();
     }
   },
@@ -2069,7 +1961,9 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["effect", "effect"],
     action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
+      let effect = new EffectLink(args[0], args[1]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
     }
   },
   200:{
@@ -2178,6 +2072,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "object", "int", "int"],
     action: function(args, _instr, action){
       let effect = new EffectBeam(args[0], args[1], args[2], args[3]);
+      effect.setCreator(this.caller);
       return effect.initialize();
     }
   },
@@ -2309,9 +2204,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["int", "effect", "object", "float"],
     action: function(args, _instr, action){
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
-      }
+      //if(this.isDebugging()){
+        console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
+      //}
 
       if(args[2] instanceof ModuleObject){
         if(args[1] instanceof GameEffect){
@@ -2355,7 +2250,7 @@ NWScriptDefK1.Actions = {
         break;
       }
 
-      //console.log('SpeakString', args[1], args[0], this.caller);
+      console.log('SpeakString', args[1], args[0], this.caller);
 
       if(args[1] == 3){
         //console.log('SpeakString', args[1], args[0].toLowerCase());
@@ -2368,6 +2263,7 @@ NWScriptDefK1.Actions = {
                 string: args[0].toLowerCase(), 
                 volume: args[1]
               });
+              console.log('SpeakStringTO ->', args[1], args[0], Game.module.area.creatures[i]);
             }
           }
         }
@@ -2711,19 +2607,34 @@ NWScriptDefK1.Actions = {
     comment: "244: Create an event which triggers the 'SpellCastAt' script\n",
     name: "EventSpellCastAt",
     type: 17,
-    args: ["object", "int", "int"]
+    args: ["object", "int", "int"],
+    action: function(args, _instr, action){
+      return new NWScriptEvent({
+        name: 'EventSpellCastAt',
+        value: args[0],
+        oCaster: args[0],
+        nSpell: args[1],
+        bHarmful: args[2]
+      });
+    }
   },
   245:{
     comment: "245: This is for use in a 'Spell Cast' script, it gets who cast the spell.\nThe spell could have been cast by a creature, placeable or door.\n* Returns OBJECT_INVALID if the caller is not a creature, placeable or door.\n",
     name: "GetLastSpellCaster",
     type: 6,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return this.lastSpellCaster;
+    }
   },
   246:{
     comment: "246: This is for use in a 'Spell Cast' script, it gets the ID of the spell that\nwas cast.\n",
     name: "GetLastSpell",
     type: 3,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return this.lastSpell;
+    }
   },
   247:{
     comment: "247: This is for use in a user-defined script, it gets the event number.\n",
@@ -2740,7 +2651,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return 0;
+      if(this.talent instanceof TalentObject){
+        return this.talent.id;
+      }else{
+        return 0;
+      }
     }
   },
   249:{
@@ -3092,9 +3007,12 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object", "object"],
     action: function(args, _instr, action){
-      if(args[1] instanceof ModuleCreature)
-        return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
-      else
+      console.log('GetObjectSeen', args[0], args[1]);
+      if(args[1] instanceof ModuleCreature){
+        console.log('SEEN?', args[1].hasLineOfSight(args[0]) ? 'true' : 'false' );
+        return args[1].hasLineOfSight(args[0]) ? 1 : 0;
+        //return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
+      }else
         return 0;
     }
   },
@@ -3188,12 +3106,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return Object.assign(Global.kotor2DA.spells.rows[args[0]], {type: 0, id: args[0]});
-      // return {
-      //   type: 0,
-      //   id: args[0],
-      //   data: Global.kotor2DA.feat.rows[args[0]]
-      // };
+      return new TalentSpell({id: args[0]});
     }
   },
   302:{
@@ -3202,12 +3115,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return Object.assign(Global.kotor2DA.feat.rows[args[0]], {type: 1, id: args[0]});
-      // return {
-      //   type: 1,
-      //   id: args[0],
-      //   data: Global.kotor2DA.feat.rows[args[0]]
-      // };
+      return new TalentFeat({id: args[0]});
     }
   },
   303:{
@@ -3216,12 +3124,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return Object.assign(Global.kotor2DA.skills.rows[args[0]], {type: 2, id: args[0]});
-      // return {
-      //   type: 2,
-      //   id: args[0],
-      //   data: Global.kotor2DA.skills.rows[args[0]]
-      // };
+      return new TalentSkill({id: args[0]});
     }
   },
   304:{
@@ -3246,7 +3149,7 @@ NWScriptDefK1.Actions = {
     args: ["talent", "object"],
     action: function(args, _instr, action){
       if(args[1] instanceof ModuleCreature){
-        return 0;//args[1].hasTalent(args[0]) ? 1 : 0;
+        return args[1].hasTalent(args[0]) ? 1 : 0;
       }else{
         return 0;
       }
@@ -3271,6 +3174,10 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int", "int", "object", "int", "int", "int"],
     action: function(args, _instr, action){
+      console.log('GetCreatureTalentBest', args);
+      if(args[2] instanceof ModuleCreature){
+        return args[2].getTalentBest(args[0], args[1], args[3], args[4], args[5]);
+      }
       return undefined;
     }
   },
@@ -3477,6 +3384,22 @@ NWScriptDefK1.Actions = {
     args: ["int", "object"],
     action: function(args, _instr, action){
         if(args[1] instanceof ModuleCreature){
+
+          switch(args[0]){
+            case 0: //ABILITY_STRENGTH
+              return CombatEngine.GetMod(args[1].getSTR());
+            case 1: //ABILITY_DEXTERITY
+              return CombatEngine.GetMod(args[1].getDEX());
+            case 2: //ABILITY_CONSTITUTION
+              return CombatEngine.GetMod(args[1].getCON());
+            case 3: //ABILITY_INTELLIGENCE
+              return CombatEngine.GetMod(args[1].getINT());
+            case 4: //ABILITY_WISDOM
+              return CombatEngine.GetMod(args[1].getWIS());
+            case 5: //ABILITY_CHARISMA
+              return CombatEngine.GetMod(args[1].getCHA());
+          }
+
           return 0;
         }else{
           return 0;
@@ -3652,10 +3575,7 @@ NWScriptDefK1.Actions = {
     comment: "342: A creature can have up to three classes.  This function determines the\ncreature's class level based on nClass Position.\n- nClassPosition: 1, 2 or 3\n- oCreature\n* Returns 0 if oCreature does not have a class in nClassPosition\n(i.e. a single-class creature will only have a value in nClassLocation=1)\nor if oCreature is not a valid creature.\n",
     name: "GetLevelByPosition",
     type: 3,
-    args: ["int", "object"],
-    action: function(args, _instr, action){
-      console.error('Unhandled script action', _instr.address, action.name, action.args);
-    }
+    args: ["int", "object"]
   },
   343:{
     comment: "343: Determine the levels that oCreature holds in nClassType.\n- nClassType: CLASS_TYPE_*\n- oCreature\n",
@@ -3920,7 +3840,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return this.caller.lastSpellTarget;
+      return this.caller.lastAttemptedSpellTarget;
     }
   },
   376:{
@@ -4379,13 +4299,25 @@ NWScriptDefK1.Actions = {
     comment: "423: Use this in a SpellCast script to determine whether the spell was considered\nharmful.\n* Returns TRUE if the last spell cast was harmful.\n",
     name: "GetLastSpellHarmful",
     type: 3,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return this.lastSpellHarmful;
+    }
   },
   424:{
     comment: "424: Activate oItem.\n",
     name: "EventActivateItem",
     type: 17,
-    args: ["object", "location", "object"]
+    args: ["object", "location", "object"],
+    action: function(args, _instr, action){
+      return new NWScriptEvent({
+        name: 'EventActivateItem',
+        value: args[0],
+        oItem: args[0],
+        lTarget: args[1],
+        oTarget: args[2]
+      });
+    }
   },
   425:{
     comment: "425: Play the background music for oArea.\n",
@@ -4634,7 +4566,18 @@ NWScriptDefK1.Actions = {
     comment: "459: Create a Force Shield that has parameters from the guven index into the forceshields.2da\n",
     name: "EffectForceShield",
     type: 16,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      let forceshield = Global.kotor2DA.forceshields.rows[args[0]];
+      if(forceshield){
+        let vfx_id = forceshield.visualeffectdef;
+        let effect = new EffectVisualEffect(vfx_id, false);
+        effect.setCreator(this.caller);
+        return effect.initialize();
+      }else{
+        return undefined;
+      }
+    }
   },
   460:{
     comment: "460: Create a Dispel Magic All effect.\n",
@@ -4667,6 +4610,7 @@ NWScriptDefK1.Actions = {
     args: ["int"],
     action: function(args, _instr, action){
       let effect = new EffectDisguise(args[0]);
+      effect.setCreator(this.caller);
       return effect.initialize();
     }
   },
@@ -4930,7 +4874,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
         //console.log('attackCreature', this.caller, args, Global.kotor2DA.animations.rows[args[1]].name);
-        this.caller.attackCreature(args[0], 0, true, args[3], Global.kotor2DA.animations.rows[args[1]].name);
+        this.caller.attackCreature(args[0], undefined, true, args[3], Global.kotor2DA.animations.rows[args[1]].name);
         /*args[0].actionQueue.push({ 
           goal: ModuleCreature.ACTION.ANIMATE,
           animation: Global.kotor2DA.animations.rows[args[1]].name,
@@ -5287,7 +5231,10 @@ NWScriptDefK1.Actions = {
     comment: "552: SetEffectIcon\nThis will link the specified effect icon to the specified effect.  The\neffect returned will contain the link to the effect icon and applying this\neffect will cause an effect icon to appear on the portrait/charsheet gui.\neEffect: The effect which should cause the effect icon to appear.\nnIcon: Index into effecticon.2da of the effect icon to use.\n",
     name: "SetEffectIcon",
     type: 16,
-    args: ["effect", "int"]
+    args: ["effect", "int"],
+    action: function(args, _instr, action){
+      return args[0];
+    }
   },
   553:{
     comment: "553: FaceObjectAwayFromObject\nThis will cause the object oFacer to face away from oObjectToFaceAwayFrom.\nThe objects must be in the same area for this to work.\n",
@@ -5313,7 +5260,12 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object"],
     action: function(args, _instr, action){
-      //console.log('GetLastHostileActor', args[0]?.getName(), (args[0].lastAttackTarget || args[0].lastDamager || args[0].lastAttacker || undefined) );
+      
+      if(typeof args[0] == 'undefined')
+        return undefined;
+
+      console.log('GetLastHostileActor', args[0].getName(), args[0].lastAttackTarget, args[0].lastDamager, args[0].lastAttacker );
+
       return args[0].lastAttackTarget || args[0].lastAttacker || args[0].lastDamager || undefined;
     }
   },
@@ -6626,6 +6578,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        if(args[0].lastForcePowerUsed instanceof TalentSpell){
+          return args[0].lastForcePowerUsed.id;
+        }
+      }
       return -1;
     }
   },
@@ -6635,6 +6592,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        if(args[0].lastCombatFeatUsed instanceof TalentFeat){
+          return args[0].lastCombatFeatUsed.id;
+        }
+      }
       return -1;
     }
   },
@@ -6726,6 +6688,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["talent"],
     action: function(args, _instr, action){
+      console.log(GetCategoryFromTalent, args);
       if(typeof args[0] != 'undefined'){
         let category = parseInt(args[0].category);
         if(isNaN(category))
@@ -6887,6 +6850,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object"],
     action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].lastSpellTarget || args[0].lastAttemptedSpellTarget;
+      }
       return undefined;
     }
   },

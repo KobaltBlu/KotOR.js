@@ -186,7 +186,7 @@ class ModuleRoom extends ModuleObject {
               }
 
               //Disable matrix update for static objects
-              room.disableMatrixUpdate();
+              //room.disableMatrixUpdate();
 
             },
             context: this.context,

@@ -1,6 +1,7 @@
 class GameEffect {
   constructor(){
-    this.durationType = null;
+    this.creator = undefined;
+    this.durationType = 0;
     this.duration = 0;
   }
 
@@ -20,6 +21,10 @@ class GameEffect {
     this.object = obj;
   }
 
+  setCreator(oCreator = undefined){
+    this.creator = oCreator;
+  }
+
   update(delta){}
 
   ///////////////
@@ -28,7 +33,7 @@ class GameEffect {
 
   //Called when the effect is applied ingame
   onApply(){
-
+    
   }
 
   //When the effect is removed ingame
@@ -54,9 +59,16 @@ GameEffect.DurationType = {
 };
 
 GameEffect.Type = {
+  EffectAbilityIncrease: 38,
+  EffectAssuredHit:   74,
   EffectBeam:         21,
+  EffectDamage:       42,
+  EffectDamageResistance: 1,
   EffectDeath:        99999,
   EffectDisguise:     62,
+  EffectLink:         99997,
+  EffectHeal:         99998,
+  EffectResurrection:  14,
   EffectVisualEffect: 75
 };
 
