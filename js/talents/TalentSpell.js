@@ -163,6 +163,23 @@ class TalentSpell extends TalentObject {
     return true;
   }
 
+  getCastRange(){
+    switch(this.range){
+      case 'L': //Large
+        return 28;
+      case 'M': //Medium
+        return 15;
+      case 'P': //Personal
+        return Infinity;
+      case 'S': //Small
+        return 10;
+      case 'T': //Touch
+        return Infinity;//distance < 2.25;
+      case 'W': //Throw
+        return 15;
+    }
+  }
+
 }
 
 TalentSpell.MODE = {

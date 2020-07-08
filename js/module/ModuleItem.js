@@ -26,6 +26,7 @@ class ModuleItem extends ModuleObject {
     this.palleteID = 0;
     this.loaded = false;
     this.properties = [];
+    this.upgradeItems = {};
 
     this.InitProperties();
 
@@ -145,6 +146,127 @@ class ModuleItem extends ModuleObject {
     return 0;
   }
 
+  getDexBonus(){
+    if(this.baseItem){
+      return parseInt(this.baseItem.dexbonus) || 0;
+    }
+    return 0;
+  }
+
+  getAttackBonus(){
+    let bonus = 0;
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.propertyName == 38){ //Attack_Bonus
+        let upgrade_flag = (1 << property.upgradeType);
+        //If no upgrade is required or the upgrade is present on the item
+        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
+          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
+          let costTable = Global.kotor2DA[costTableName];
+          let costTableRow = costTable.rows[property.costValue];
+
+          //Random Cost
+          if(property.costValue == 0){
+            let rowCount = costTable.rows.length - 1;
+            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
+            costTableRow = costTable.rows[randomCostValue];
+          }
+
+          if(property.costTable == 2){ //Melee
+            bonus += parseInt(costTableRow.value);
+          }
+
+        }
+      }
+    }
+    return bonus;
+  }
+
+  getDamageBonus(){
+    let bonus = 0;
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.propertyName == 11){ //Damage_Bonus
+        let upgrade_flag = (1 << property.upgradeType);
+        //If no upgrade is required or the upgrade is present on the item
+        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
+          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
+          let costTable = Global.kotor2DA[costTableName];
+          let costTableRow = costTable.rows[property.costValue];
+
+          //Random Cost
+          if(property.costValue == 0){
+            let rowCount = costTable.rows.length - 1;
+            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
+            costTableRow = costTable.rows[randomCostValue];
+          }
+
+          if(property.costTable == 4){ //Damage
+            if(costTableRow.numdice != '****'){
+              bonus += CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+            }else{
+              bonus += parseInt(costTableRow.label);
+            }
+          }
+
+        }
+      }
+    }
+    return bonus;
+  }
+
+  getMonsterDamage(){
+    let damage = 0;
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.propertyName == 51){ //Monster_Damage
+        let upgrade_flag = (1 << property.upgradeType);
+        //If no upgrade is required or the upgrade is present on the item
+        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
+          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
+          let costTable = Global.kotor2DA[costTableName];
+          let costTableRow = costTable.rows[property.costValue];
+
+          //Random Cost
+          if(property.costValue == 0){
+            let rowCount = costTable.rows.length - 1;
+            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
+            costTableRow = costTable.rows[randomCostValue];
+          }
+
+          if(property.costTable == 19){ //Monster_Cost
+            if(costTableRow.numdice != '****'){
+              damage += CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+            }
+          }
+
+        }
+      }
+      return damage;
+    }
+
+  }
+
+  getBaseDamage(){
+    if(parseInt(this.getBaseItem().numdice)){
+      return CombatEngine.DiceRoll(parseInt(this.getBaseItem().numdice), 'd'+this.getBaseItem().dietoroll);
+    }
+    return 0;
+  }
+
+  castAmmunitionAtTarget(oCaster = undefined, oTarget = undefined){
+    if(typeof oTarget != 'undefined'){
+      let ammunitiontype = parseInt(this.getBaseItem().ammunitiontype);
+      if( ammunitiontype >= 1 ){
+        let ammunition = Global.kotor2DA.ammunitiontypes.rows[ammunitiontype];
+        if(typeof ammunition != 'undefined'){
+          
+        }
+      }
+
+    }
+  }
+
   Load( onLoad = null ){
 
     if(!this.loaded && this.getEquippedRes()){
@@ -244,7 +366,7 @@ class ModuleItem extends ModuleObject {
   static FromResRef(sResRef, onLoad = null){
     
     TemplateLoader.Load({
-      ResRef: sResRef,
+      ResRef: sResRef.toLowerCase(),
       ResType: ResourceTypes.uti,
       onLoad: (gff) => {
         //console.log('ModuleItem', 'Template Loaded')
@@ -400,8 +522,9 @@ class ModuleItem extends ModuleObject {
     if(this.template.RootNode.HasField('TextureVar'))
       this.textureVariation = this.template.GetFieldByLabel('TextureVar').GetValue();
 
-    if(this.template.RootNode.HasField('Upgrades'))
+    if(this.template.RootNode.HasField('Upgrades')){
       this.upgrades = this.template.GetFieldByLabel('Upgrades').GetValue();
+    }
 
     if(this.template.RootNode.HasField('XPosition'))
       this.xPosition = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();

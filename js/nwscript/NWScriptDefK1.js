@@ -462,6 +462,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["int", "int", "object", "int", "int", "int", "int", "int"],
     action: function(args, _instr, action){
+      //console.log('GetNearestCreature', args);
       return Game.GetNearestCreature(
       args[0],
       args[1],
@@ -1743,7 +1744,7 @@ NWScriptDefK1.Actions = {
     args: ["effect"],
     action: function(args, _instr, action){
       if(typeof args[0] != 'undefined'){
-        console.log('GetEffectType', args[0]);
+        //console.log('GetEffectType', args[0]);
         return args[0].type || -1;
       }else{
         return -1;
@@ -2009,9 +2010,9 @@ NWScriptDefK1.Actions = {
     args: ["object", "string", "int", "int", "int", "string", "string", "string", "string", "string", "string"],
     action: function(args, _instr, action){
       //try{
-        if(this.isDebugging()){
+        //if(this.isDebugging()){
           //console.log('NWScript: '+this.name, 'ActionStartConversation', args, this);
-        }
+        //}
         //console.log(this.caller.conversation);
         //If the dialog name is blank default to the callers dialog file
         if(args[1] == ''){
@@ -2177,7 +2178,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return (args[0] == Game.player) ? 1 : 0;
+      return (PartyManager.party.indexOf(args[0]) >= 0) ? 1 : 0;
     }
   },
   218:{
@@ -2205,7 +2206,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "effect", "object", "float"],
     action: function(args, _instr, action){
       //if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
+        //console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
       //}
 
       if(args[2] instanceof ModuleObject){
@@ -2214,7 +2215,7 @@ NWScriptDefK1.Actions = {
           args[1].setDuration(args[3]);
           args[2].AddEffect(args[1], args[0], args[3]);
         }else{
-          console.log('ApplyEffectToObject'. args);
+          //console.log('ApplyEffectToObject'. args);
           console.error('ApplyEffectToObject', 'Expected a GameEffect');
         }
       }else{
@@ -2250,12 +2251,12 @@ NWScriptDefK1.Actions = {
         break;
       }
 
-      console.log('SpeakString', args[1], args[0], this.caller);
+      //console.log('SpeakString', args[1], args[0], this.caller);
 
       if(args[1] == 3){
         //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-          if(Game.module.area.creatures[i] != this.caller){
+          if(Game.module.area.creatures[i] != this.caller && !Game.module.area.creatures[i].isDead()){
             let distance = this.caller.position.distanceTo(Game.module.area.creatures[i].position);
             if(distance <= range){
               Game.module.area.creatures[i].heardStrings.push({
@@ -2263,14 +2264,14 @@ NWScriptDefK1.Actions = {
                 string: args[0].toLowerCase(), 
                 volume: args[1]
               });
-              console.log('SpeakStringTO ->', args[1], args[0], Game.module.area.creatures[i]);
+              //console.log('SpeakStringTO ->', args[1], args[0], Game.module.area.creatures[i]);
             }
           }
         }
       }else if(args[1] == 4){
         //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = PartyManager.party.length; i < len; i++){
-          if(PartyManager.party[i] != this.caller){
+          if(PartyManager.party[i] != this.caller && !PartyManager.party[i].isDead()){
             let distance = this.caller.position.distanceTo(PartyManager.party[i].position);
             if(distance <= range){
               PartyManager.party[i].heardStrings.push({
@@ -2282,7 +2283,7 @@ NWScriptDefK1.Actions = {
           }
         }
         for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-          if(Game.module.area.creatures[i] != this.caller){
+          if(Game.module.area.creatures[i] != this.caller && !Game.module.area.creatures[i].isDead()){
             let distance = this.caller.position.distanceTo(Game.module.area.creatures[i].position);
             if(distance <= range){
               Game.module.area.creatures[i].heardStrings.push({
@@ -2420,6 +2421,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object", "object"],
     action: function(args, _instr, action){
+      //console.log('GetIsFriend', args[0], args[1]);
       if(args[0] instanceof ModuleCreature){
         if( ( PartyManager.party.indexOf(args[0]) >= 0 ? 1 : 0 ) && ( PartyManager.party.indexOf(args[1]) >= 0 ? 1 : 0 ) ){
           return 1;
@@ -2512,31 +2514,16 @@ NWScriptDefK1.Actions = {
                   Game.module.area.creatures.push(creature);
     
                   resolve(creature);
-
-                  // if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
-                  //   try{
-                  //     Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                  //   }catch(e){
-                  //     console.error(e);
-                  //   }
-                  // }
     
                   creature.LoadScripts( () => {
                     creature.LoadModel( (model) => {
-                      creature.isReady = false;
                       model.moduleObject = creature;
                       model.hasCollision = true;
                       model.name = creature.getTag();
                       model.buildSkeleton();
                       Game.group.creatures.add( model );
                       creature.getCurrentRoom();
-                      if(creature.scripts.onSpawn instanceof NWScriptInstance){
-                        creature.scripts.onSpawn.run(creature, 0, () => {
-                          creature.isReady = true;
-                        });
-                      }else{
-                        creature.isReady = true;
-                      }
+                      creature.onSpawn();
                     });
                   });
                 });
@@ -2584,6 +2571,7 @@ NWScriptDefK1.Actions = {
                       }
       
                       plc.getCurrentRoom();
+                      plc.onSpawn();
       
                     });
                   });
@@ -3007,11 +2995,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object", "object"],
     action: function(args, _instr, action){
-      console.log('GetObjectSeen', args[0], args[1]);
+      //console.log('GetObjectSeen', args[0], args[1]);
       if(args[1] instanceof ModuleCreature){
-        console.log('SEEN?', args[1].hasLineOfSight(args[0]) ? 'true' : 'false' );
-        return args[1].hasLineOfSight(args[0]) ? 1 : 0;
-        //return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
+        //console.log('SEEN?', args[1].hasLineOfSight(args[0]) ? 'true' : 'false' );
+        //return args[1].hasLineOfSight(args[0]) ? 1 : 0;
+        return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
       }else
         return 0;
     }
@@ -3174,7 +3162,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int", "int", "object", "int", "int", "int"],
     action: function(args, _instr, action){
-      console.log('GetCreatureTalentBest', args);
+      //console.log('GetCreatureTalentBest', args);
       if(args[2] instanceof ModuleCreature){
         return args[2].getTalentBest(args[0], args[1], args[3], args[4], args[5]);
       }
@@ -3981,7 +3969,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
-    args[0].addXP(args[1]);
+      args[0].addXP(args[1]);
     }
   },
   394:{
@@ -5264,7 +5252,7 @@ NWScriptDefK1.Actions = {
       if(typeof args[0] == 'undefined')
         return undefined;
 
-      console.log('GetLastHostileActor', args[0].getName(), args[0].lastAttackTarget, args[0].lastDamager, args[0].lastAttacker );
+      //console.log('GetLastHostileActor', args[0].getName(), args[0].lastAttackTarget, args[0].lastDamager, args[0].lastAttacker );
 
       return args[0].lastAttackTarget || args[0].lastAttacker || args[0].lastDamager || undefined;
     }
@@ -6408,7 +6396,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["int"],
     action: function(args, _instr, action){
-      console.log('SetPartyAIStyle', args, this);
+      //console.log('SetPartyAIStyle', args, this);
       PartyManager.aiStyle = args[0];
     }
   },
@@ -6418,7 +6406,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
-      console.log('SetNPCAIStyle', args, this);
+      //console.log('SetNPCAIStyle', args, this);
       if(args[0] instanceof ModuleCreature)
         args[0].aiStyle = args[1];
     }
@@ -6669,7 +6657,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: async function(args, _instr, action){
       return new Promise( async ( resolve, reject) => {
-        console.log('PlayMovie', args[0]);
+        //console.log('PlayMovie', args[0]);
         //await Game.binkVideo.play(args[0]+'.bik', () => {
           resolve();
         //});
@@ -6688,7 +6676,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["talent"],
     action: function(args, _instr, action){
-      console.log(GetCategoryFromTalent, args);
+      //console.log(GetCategoryFromTalent, args);
       if(typeof args[0] != 'undefined'){
         let category = parseInt(args[0].category);
         if(isNaN(category))
@@ -6720,7 +6708,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //if(Game.Mode == Game.MODES.INGAME){
         try{
-          console.log('PlayRoomAnimation', args[0], args[1]);
+          //console.log('PlayRoomAnimation', args[0], args[1]);
           Game.group.rooms.getObjectByName(
             args[0].toLowerCase()
           ).playAnimation(
@@ -6851,7 +6839,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        return args[0].lastSpellTarget || args[0].lastAttemptedSpellTarget;
+        return args[0].lastSpellTarget;
       }
       return undefined;
     }
@@ -6898,7 +6886,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["float"],
     action: function(args, _instr, action){
-      //TODO
+      Game.noClickTimer = args[0] || 0;
     }
   },
   760:{

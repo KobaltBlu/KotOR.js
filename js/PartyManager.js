@@ -234,7 +234,7 @@ class PartyManager {
             Game.group.party.add( model );
             Game.player.destroy();
             Game.player = partyMember;
-
+            partyMember.onSpawn();
             if(typeof onLoad === 'function')
               onLoad();
 
@@ -283,7 +283,7 @@ class PartyManager {
 
                 //The follow leader action will be controlled by the heartbeat script when it is implemented
                 //partyMember.actionQueue.push({object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER});
-
+                partyMember.onSpawn();
                 if(typeof onLoad === 'function')
                   onLoad();
 
@@ -319,7 +319,7 @@ class PartyManager {
           partyMember.LoadModel( (model) => {
             model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
-
+            partyMember.onSpawn();
             if(typeof onLoad === 'function')
               onLoad(partyMember);
 

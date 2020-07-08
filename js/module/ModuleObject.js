@@ -106,6 +106,7 @@ class ModuleObject {
     this.listeningPatterns = {};
     this.initiative = 0;
 
+    this.spawned = false;
 
     //Pointers
     this._inventoryPointer = 0;
@@ -238,16 +239,29 @@ class ModuleObject {
   }
 
   triggerHeartbeat(){
-    if(this.scripts.onHeartbeat instanceof NWScriptInstance){// && this._locals.Booleans[28]){
-      if(PartyManager.party.indexOf(this) > -1){
-        //process.nextTick(() => {
-          this.scripts.onHeartbeat.run(this, 2001);
-        //});
-      }else{
-        //process.nextTick(() => {
-          this.scripts.onHeartbeat.run(this, 1001);
-        //});
+    //Only allow the heartbeat script to run after the onspawn is called
+    if(this.spawned === true){
+      if(this.scripts.onHeartbeat instanceof NWScriptInstance){// && this._locals.Booleans[28]){
+        if(PartyManager.party.indexOf(this) > -1){
+          //process.nextTick(() => {
+            this.scripts.onHeartbeat.run(this, 2001);
+          //});
+        }else{
+          //process.nextTick(() => {
+            this.scripts.onHeartbeat.run(this, 1001);
+          //});
+        }
       }
+    }
+  }
+
+  onSpawn(){
+    if(this.scripts.onSpawn instanceof NWScriptInstance){
+      this.scripts.onSpawn.run(this, 0, () => {
+        this.spawned = true;
+      });
+    }else{
+      this.spawned = true;
     }
   }
 

@@ -988,7 +988,6 @@ class Game extends Engine {
           module.initScripts( () => {
             Game.LoadScreen.Close();
             process.nextTick( ()=> {
-
               //Game.scene_gui.background = null;
               Game.scene.visible = true;
               
@@ -1048,18 +1047,38 @@ class Game extends Engine {
 
                   if(runSpawnScripts){
                     for(let i = 0; i < Game.module.area.creatures.length; i++){
-                      if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                        if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
-                          Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                        }
+                      if(Game.module.area.creatures[i] instanceof ModuleObject){
+                        Game.module.area.creatures[i].onSpawn();
                       }
                     }
 
                     for(let i = 0; i < PartyManager.party.length; i++){
-                      if(PartyManager.party[i] instanceof ModuleCreature){
-                        if(PartyManager.party[i].scripts.onSpawn instanceof NWScriptInstance){
-                          PartyManager.party[i].scripts.onSpawn.run(PartyManager.party[i]);
-                        }
+                      if(PartyManager.party[i] instanceof ModuleObject){
+                        PartyManager.party[i].onSpawn();
+                      }
+                    }
+
+                    for(let i = 0; i < Game.module.area.placeables.length; i++){
+                      if(Game.module.area.placeables[i] instanceof ModuleObject){
+                        Game.module.area.placeables[i].onSpawn();
+                      }
+                    }
+
+                    for(let i = 0; i < Game.module.area.doors.length; i++){
+                      if(Game.module.area.doors[i] instanceof ModuleObject){
+                        Game.module.area.doors[i].onSpawn();
+                      }
+                    }
+
+                    for(let i = 0; i < Game.module.area.triggers.length; i++){
+                      if(Game.module.area.triggers[i] instanceof ModuleObject){
+                        Game.module.area.triggers[i].onSpawn();
+                      }
+                    }
+
+                    for(let i = 0; i < Game.module.area.waypoints.length; i++){
+                      if(Game.module.area.waypoints[i] instanceof ModuleObject){
+                        Game.module.area.waypoints[i].onSpawn();
                       }
                     }
                   }
@@ -1453,6 +1472,16 @@ class Game extends Engine {
     }
 
     Game.camera_shake.afterRender();
+
+    //NoClickTimer
+    if( ((Game.Mode == Game.MODES.MINIGAME) || (Game.Mode == Game.MODES.INGAME)) && Game.State != Game.STATES.PAUSED){
+      if(Game.noClickTimer){
+        Game.noClickTimer -= (1 * delta);
+        if(Game.noClickTimer < 0){
+          Game.noClickTimer = 0;
+        }
+      }
+    }
 
     Game.stats.update();
     

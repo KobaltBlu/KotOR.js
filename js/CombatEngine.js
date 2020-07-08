@@ -43,7 +43,9 @@ class CombatEngine {
             if(combatant.combatAction.type == ModuleCreature.ACTION.CASTSPELL){
               combatant.lastForcePowerUsed = combatant.combatAction.spell;
               combatant.lastSpellTarget = combatant.combatAction.target;
-              combatant.lastAttemptedSpellTarget = combatant.combatAction.target;
+              if(combatant.combatAction.target != combatant){
+                combatant.lastAttemptedSpellTarget = combatant.combatAction.target;
+              }
               combatant.casting.push(combatant.combatAction);
               console.log('CombatEngine: Adding spell to casting', combatant.combatAction, combatant);
             }
@@ -95,44 +97,50 @@ class CombatEngine {
         //Sort the combatGroup to make sure the combatants stay in the correct order
         combatGroups[i].sort(CombatEngine.GroupSort);
 
-        //Get the first combatant of the group
-        let combatant = combatGroups[i][0];
-        if(!combatant.isDead()){
+        for(let j = 0, jlen = combatGroups[i].length; j < jlen; j++){
 
-          if(combatant.combatRoundTimer == 0){
-            if(combatant.combatAction){
-              if(combatant.actionInRange(combatant.combatAction)){
-                combatant.combatAction.ready = true;
+          //Get the first combatant of the group
+          let combatant = combatGroups[i][j];
+          if(!combatant.isDead()){
+            if(combatant.combatRoundTimer == 0){
+              if(combatant.combatAction){
+                if(combatant.actionInRange(combatant.combatAction)){
+                  combatant.combatAction.ready = true;
+                }else{
+                  //Continue to the next combatant in the group since this one can't act yet
+                  continue;
+                }
               }
             }
-          }
 
-          if(combatant.combatRoundTimer >= 1.5){
-            //Get the index of the current combatant from the combatants list
-            let index = CombatEngine.combatants.indexOf(combatant);
-            //Remove the combatant from the combatants list
-            CombatEngine.combatants.splice(index, 1);
-            //And push it to the end of the combatants list
-            CombatEngine.combatants.push( combatant );
-            //Reset the combatant's roundTimer
-            combatant.combatRoundTimer = 0;
-            //Call the combatant's onCombatRoundEnd script
-            combatant.onCombatRoundEnd();
-          }else{
-            //Increment the combatant's roundTimer since it hasn't ended yet
-            combatant.combatRoundTimer += delta;
-
-            //Check to see if the current combatAction is running a TalentObject
-            if(typeof combatant.combatAction != 'undefined'){
-              if(combatant.combatAction.spell instanceof TalentObject){
-                //combatant.combatAction.spell.update(combatant.combatAction.target, combatant, combatant.combatAction, delta);
-              }
+            if(combatant.combatRoundTimer >= 1.5){
+              //Get the index of the current combatant from the combatants list
+              let index = CombatEngine.combatants.indexOf(combatant);
+              //Remove the combatant from the combatants list
+              CombatEngine.combatants.splice(index, 1);
+              //And push it to the end of the combatants list
+              CombatEngine.combatants.push( combatant );
+              //Reset the combatant's roundTimer
+              combatant.combatRoundTimer = 0;
+              //Call the combatant's onCombatRoundEnd script
+              combatant.onCombatRoundEnd();
+            }else{
+              //Increment the combatant's roundTimer since it hasn't ended yet
+              combatant.combatRoundTimer += delta;
             }
+
+            //Break the loop now that a combatant in the group was updated
+            break;
           }
 
-        }else{
-          //Remove dead combatants from the initiative order
-          CombatEngine.combatants.splice(0, 1);
+        }
+
+        //Remove dead combatants from the initiative order
+        for (let j = combatGroups[i].length - 1; j >= 0; j--){
+          let combatant = combatGroups[i][j];
+          if(combatant.isDead()){
+            CombatEngine.combatants.splice(0, 1);
+          }
         }
 
       }
@@ -214,13 +222,12 @@ class CombatEngine {
       let baseAC = 10;
       let bonus = 0;
       if(creature.equipment.ARMOR){
-        let baseItem = creature.equipment.ARMOR.getBaseItem();
         //Base AC bonus applied by the armor if there is one
         bonus += creature.equipment.ARMOR.getACBonus();
 
         //Dex Bonus Restriction if there is one
-        if(parseInt(baseItem.dexbonus) < dexMod){
-          dexMod = parseInt(baseItem.dexbonus);
+        if(dexMod > creature.equipment.ARMOR.getDexBonus()){
+          dexMod = creature.equipment.ARMOR.getDexBonus();
         }
       }
       return baseAC + dexMod + bonus;

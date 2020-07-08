@@ -192,7 +192,6 @@ class NWScriptInstance {
     }
 
     let returnValue = this.getReturnValue();
-
     this.init();
 
     if(this.isStoreState){

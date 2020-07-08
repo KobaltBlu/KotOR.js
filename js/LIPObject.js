@@ -9,14 +9,13 @@ class LIPObject {
 
   constructor(file = null, onComplete = null){
     this.file = file;
-    this.HeaderSize = 21;
+    this.HeaderSize = 16;
 
     this.Header = {
       FileType: 'LIP ',
       FileVersion: 'V1.0',
       Length: 1,
-      EntryCount: 0,
-      Unknown1: [0, 0, 0, 0, 0]
+      EntryCount: 0
     };
 
     this.keyframes = [];
@@ -57,91 +56,55 @@ class LIPObject {
           return;
         }
 
-        var header = Buffer.from(this.file, 0, this.HeaderSize);
-        this.Reader = new BinaryReader(header);
-
-        this.Header = {};
-
-        this.Header.FileType = this.Reader.ReadChars(4);
-        this.Header.FileVersion = this.Reader.ReadChars(4);
-        this.Header.Length = this.Reader.ReadSingle();
-        this.Header.EntryCount = this.Reader.ReadUInt32()-1;
-        this.Header.Unknown1 = this.Reader.ReadBytes(5); 
-
-        header = this.Reader = null;
-
-        this.lipDataOffset = 21;
-        this.Reader = new BinaryReader(this.file);
-        this.Reader.Seek(this.lipDataOffset);
-
-        for (let i = 0; i < this.Header.EntryCount; i++) {
-          let keyframe = {};
-          keyframe.time = this.Reader.ReadSingle();
-          keyframe.shape = this.Reader.ReadByte();
-          this.keyframes.push(keyframe);
-        }
-
-        header = this.Reader = null;
-
-        if(typeof onComplete == 'function')
-          onComplete(this);
+        this.readBinary(Buffer.from(this.file), onComplete);
 
       }else{
-        fs.open(this.file, 'r', (e, fd) => {
+
+        fs.readFile(this.file, (e, buffer) => {
           if (e) {
-            console.error('LIPObject', 'LIP Header Read', status.message);
+            console.error('LIPObject', 'LIP Header Read', e);
             return;
           }
-          var header = Buffer.alloc(this.HeaderSize);
-          fs.read(fd, header, 0, this.HeaderSize, 0, (e, num) => {
-            this.Reader = new BinaryReader(header);
-            this.Header = {};
 
-            this.Header.FileType = this.Reader.ReadChars(4);
-            this.Header.FileVersion = this.Reader.ReadChars(4);
-            this.Header.Length = this.Reader.ReadSingle();
-            this.Header.EntryCount = this.Reader.ReadUInt32()-1;
-            this.Header.Unknown1 = this.Reader.ReadBytes(5);
-
-            header = this.Reader = null;
-
-            this.lipDataOffset = 21;
-            header = Buffer.alloc(this.HeaderSize + (5 * this.Header.EntryCount));
-            fs.read(fd, header, 0, this.HeaderSize + (5 * this.Header.EntryCount), 0, (e, num) => {
-              this.Reader = new BinaryReader(header);
-              this.Reader.Seek(this.lipDataOffset);
-
-              for (let i = 0; i < this.Header.EntryCount; i++) {
-                let keyframe = {};
-                keyframe.time = this.Reader.ReadSingle();
-                keyframe.shape = this.Reader.ReadByte();
-                this.keyframes.push(keyframe);
-              }
-
-              header = this.Reader = null;
-
-              fs.close(fd, function(e) {
-
-                if(typeof onComplete == 'function')
-                  onComplete(this);
-
-                if (e) {
-                  console.error('LIPObject', "close error:  " + error.message);
-                } else {
-                  console.log('LIPObject', "File was closed!");
-                }
-              });
-
-            });
-
-          });
+          this.readBinary(Buffer.from(buffer), onComplete);
 
         });
+
       }
     }catch(e){
       console.error('LIPObject', 'LIP Open Error', e);
       if(typeof onComplete == 'function')
         onComplete(this);
+    }
+  }
+
+  readBinary(buffer = undefined, onComplete = undefined){
+
+    if(buffer instanceof Buffer){
+
+      let reader = new BinaryReader(buffer);
+
+      this.Header = {};
+      this.Header.FileType = reader.ReadChars(4);
+      this.Header.FileVersion = reader.ReadChars(4);
+      this.Header.Length = reader.ReadSingle();
+      this.Header.EntryCount = reader.ReadUInt32();
+
+      this.lipDataOffset = 16;
+      reader.Seek(this.lipDataOffset);
+
+      for (let i = 0; i < this.Header.EntryCount; i++) {
+        let keyframe = {};
+        keyframe.time = reader.ReadSingle();
+        keyframe.shape = reader.ReadByte();
+        this.keyframes.push(keyframe);
+      }
+
+      buffer = reader = undefined;
+
+      if(typeof onComplete == 'function')
+        onComplete(this);
+
     }
   }
 
@@ -207,7 +170,9 @@ class LIPObject {
               if(!next_frame){
                 next_frame = controller.data[0];
               }
-              if(last_frame){
+
+              //Only interpolate if there is a previos frame and it isn't the same shape as the current
+              if(last_frame && (last.shape != next.shape)){
                 switch(controller.type){
                   case AuroraModel.ControllerType.Position:
                     if(modelNode.controllers.get(AuroraModel.ControllerType.Position)){
@@ -270,12 +235,7 @@ class LIPObject {
     writer.WriteChars(this.Header.FileType);
     writer.WriteChars(this.Header.FileVersion);
     writer.WriteSingle(this.Header.Length);
-    writer.WriteUInt32(this.Header.EntryCount + 1);
-    writer.WriteByte(0);
-    writer.WriteByte(0);
-    writer.WriteByte(0);
-    writer.WriteByte(0);
-    writer.WriteByte(0);
+    writer.WriteUInt32(this.Header.EntryCount);
 
     //Write the keyframe data to the buffer
     for (let i = 0; i < this.Header.EntryCount; i++) {

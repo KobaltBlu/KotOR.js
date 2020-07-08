@@ -163,6 +163,7 @@ class ModuleCreature extends ModuleCreatureController {
     this.combatState = false;
     this.combatQueue = [];
     this.lastAttackAction = -1;
+    this.blockingTimer = 0;
 
     this.groundFace = undefined;
     this.groundTilt = new THREE.Vector3();
@@ -175,6 +176,21 @@ class ModuleCreature extends ModuleCreatureController {
     this.isListening = false;
     this.listeningPatterns = {};
     this.heardStrings = [];
+
+    this.targetPositions = [];
+    let numNodes = 8;
+    for (let i = 0; i < numNodes; i++) {
+      let angle = (i / (numNodes/2)) * Math.PI; // Calculate the angle at which the element will be placed.
+                                            // For a semicircle, we would use (i / numNodes) * Math.PI.
+      this.targetPositions.push({
+        angle:        angle,
+        object:       undefined,
+        cos:          Math.cos(angle),
+        sin:          Math.sin(angle),
+        owner:        this,
+        targetVector: new THREE.Vector3()
+      });
+    }
 
     try{
 
@@ -226,6 +242,68 @@ class ModuleCreature extends ModuleCreatureController {
       console.error('AudioEmitter failed to create on object', e);
     }
 
+  }
+
+  getClosesetOpenSpot(oObject = undefined){
+    let maxDistance = Infinity;
+    let radius = parseInt(this.getAppearance().hitdist);
+    let closest = undefined;
+    let distance = 0;
+    let origin = this.position.clone();
+
+    let alreadyClaimedSpot = false;
+
+    //Check to see if oObject already has claimed a targetPosition around this creature
+    for(let i = 0, len = this.targetPositions.length; i < len; i++){
+      let targetPosition = this.targetPositions[i];
+      if(targetPosition.object == oObject){
+        closest = targetPosition;
+        alreadyClaimedSpot = true;
+        break;
+      }
+    }
+
+    if(!alreadyClaimedSpot){
+      for(let i = 0, len = this.targetPositions.length; i < len; i++){
+        let targetPosition = this.targetPositions[i];
+        if(targetPosition.object == undefined){
+          //Generate the target vector for the 
+          targetPosition.targetVector.x = origin.x + (targetPosition.cos * radius);
+          targetPosition.targetVector.y = origin.y + (targetPosition.sin * radius);
+          targetPosition.targetVector.z = origin.z;
+          distance = targetPosition.targetVector.distanceTo(oObject.position);
+
+          //is this target position is closer to oObject
+          if(distance < maxDistance){
+            //Set the current targetPosition as the current closest position
+            closest = targetPosition;
+            //Update the maxDistance
+            maxDistance = distance;
+          }
+        }
+      }
+      if(typeof closest != 'undefined'){
+        for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+          Game.module.area.creatures[i].removeObjectFromTargetPositions(oObject);
+        }
+
+        for(let i = 0, len = PartyManager.party.length; i < len; i++){
+          PartyManager.party[i].removeObjectFromTargetPositions(oObject);
+        }
+        closest.object = oObject;
+      }
+    }
+    return closest;
+  }
+
+  removeObjectFromTargetPositions(oObject = undefined){
+    if(typeof oObject != 'undefined'){
+      for(let i = 0, len = this.targetPositions.length; i < len; i++){
+        if(this.targetPositions[i].object == oObject){
+          this.targetPositions[i].object = undefined;
+        }
+      }
+    }
   }
 
   SetFacingVector( facing = new THREE.Vector3() ){
@@ -569,13 +647,6 @@ class ModuleCreature extends ModuleCreatureController {
     return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
   }
 
-  getClassList(){
-    if(this.template.RootNode.HasField('ClassList')){
-      return this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
-    }
-    return [];
-  }
-
   getTotalClassLevel(){
     let total = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
@@ -584,13 +655,21 @@ class ModuleCreature extends ModuleCreatureController {
     return total;
   }
 
-  getClassLevel(iClass){
+  getClassLevel(nClass = 0){
     for(let i = 0, len = this.classes.length; i < len; i++){
-      if(this.classes[i].class_id == iClass){
+      if(this.classes[i].id == nClass){
         return this.classes[i].level;
       }
     }
     return 0;
+  }
+
+  getBaseAttackBonus(){
+    let bab = 0;
+    for(let i = 0, len = this.classes.length; i < len; i++){
+      bab += this.classes[i].getBaseAttackBonus();
+    }
+    return bab;
   }
 
   getFeats(){
@@ -607,9 +686,9 @@ class ModuleCreature extends ModuleCreatureController {
     return null;
   }
 
-  addFeat(iFeat = 0){
-    if(!this.getFeat(iFeat)){
-      this.feats.push(iFeat);
+  addFeat(nFeat = 0){
+    if(!this.getFeat(nFeat)){
+      this.feats.push(nFeat);
     }
   }
 
@@ -645,8 +724,9 @@ class ModuleCreature extends ModuleCreatureController {
   getSpell(id = 0){
     for(let i = 0; i < this.classes.length; i++){
       let cls = this.classes[i];
-      for(let j = 0; j < cls.spells.length; j++){
-        let spell = cls.spells[j];
+      let spells = cls.getSpells();
+      for(let j = 0, len = spells.length; j < len; j++){
+        let spell = spells[j];
         if(spell.id == id)
           return spell;
       }
@@ -674,7 +754,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   hasTalent(talent = undefined){
-    console.log('hasTalent', talent);
+    //console.log('hasTalent', talent);
     if(typeof talent != 'undefined'){
       switch(talent.type){
         case 0: //Force / Spell
@@ -692,20 +772,15 @@ class ModuleCreature extends ModuleCreatureController {
 
     let talents = [];
 
+    //Merge Spell Talents from all classs
     for(let i = 0; i < this.classes.length; i++){
-      let cls = this.classes[i];
-      for(let j = 0; j < cls.spells.length; j++){
-        talents.push(cls.spells[i]);
-      }
+      talents = talents.concat(this.classes[i].getSpells());
     }
 
-    for(let i = 0; i < this.feats.length; i++){
-      talents.push(this.feats[i]);
-    }
-
-    for(let i = 0; i < this.skills.length; i++){
-      talents.push(this.skills[i]);
-    }
+    //Merge Feat Talents
+    talents = talents.concat(this.feats);
+    //Merge Skill Talents
+    talents = talents.concat(this.skills);
 
     return talents;
 
@@ -723,7 +798,7 @@ class ModuleCreature extends ModuleCreatureController {
   getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
     let talents = this.getTalents().filter( talent => ( talent.category != '****' && ( (talent.category & nCategory) == nCategory ) && talent.maxcr <= nCRMax ) );
     talents.sort((a, b) => (a.maxcr > b.maxcr) ? 1 : -1);
-    console.log('getTalentBest', talents);
+    //console.log('getTalentBest', talents);
     if(talents.length){
       return talents[0];
     }
@@ -1428,39 +1503,9 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('ClassList')){
       let classes = this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
       for(let i = 0; i < classes.length; i++){
-        let cls_struct = classes[i];
-        let cls = {
-          class_id: cls_struct.GetFieldByLabel('Class').GetValue(),
-          level: cls_struct.GetFieldByLabel('ClassLevel').GetValue(),
-          spells: []
-        };
-        let known_struct = cls_struct.GetFieldByLabel('KnownList0');
-        if(known_struct){
-          let known_spell_structs = known_struct.GetChildStructs();
-          for(let i = 0; i < known_spell_structs.length; i++){
-
-            let known_spell_struct = known_spell_structs[i];
-            let spell = {
-              type: 0,
-              id: 0,
-              flags: 0,
-              metaMagic: 0
-            };
-
-            if(known_spell_struct.HasField('Spell'))
-              spell.id = known_spell_struct.GetFieldByLabel('Spell').GetValue();
-        
-            if(known_spell_struct.HasField('SpellFlags'))
-              spell.flags = known_spell_struct.GetFieldByLabel('SpellFlags').GetValue();
-        
-            if(known_spell_struct.HasField('SpellMetaMagic'))
-              spell.metaMagic = known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue();
-
-            cls.spells.push(new TalentSpell(spell));
-
-          }
-        }
-        this.classes.push(cls);
+        this.classes.push(
+          CreatureClass.FromCreatureClassStruct(classes[i])
+        );
       }
     }
 
@@ -1573,7 +1618,7 @@ class ModuleCreature extends ModuleCreatureController {
       this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
     }else{
       //https://forum.neverwintervault.org/t/perception-range/3191/9
-      //It appears that PerceptionRange isn't save inside the GIT file.
+      //It appears that PerceptionRange isn't saved inside the GIT file.
       //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
       this.perceptionRange = 11;
     }
@@ -1815,7 +1860,6 @@ class ModuleCreature extends ModuleCreatureController {
         }
       }
     }
-
 
   }
 

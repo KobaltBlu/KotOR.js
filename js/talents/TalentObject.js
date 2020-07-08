@@ -21,6 +21,10 @@ class TalentObject {
     return true;
   }
 
+  getCastRange(){
+    return 1;
+  }
+
 }
 
 module.exports = TalentObject;

@@ -194,6 +194,8 @@ const TalentFeat = require(path.join(app.getAppPath(), 'js/talents/TalentFeat.js
 const TalentSpell = require(path.join(app.getAppPath(), 'js/talents/TalentSpell.js'));
 const TalentSkill = require(path.join(app.getAppPath(), 'js/talents/TalentSkill.js'));
 
+const CreatureClass = require(path.join(app.getAppPath(), 'js/CreatureClass.js'));
+
 /* EDITOR TABS */
 const EditorTabManager = require(path.join(app.getAppPath(), 'js/editor/EditorTabManager.js'));
 const EditorTab = require(path.join(app.getAppPath(), 'js/editor/EditorTab.js'));

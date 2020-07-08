@@ -525,6 +525,7 @@ class ModuleArea extends ModuleObject {
     Game.LoadScreen.setProgress(90);
 
     await this.loadAudio();
+    await this.loadBackgroundMusic();
 
     Game.LoadScreen.setProgress(100);
 
@@ -666,6 +667,7 @@ class ModuleArea extends ModuleObject {
         let _class = new Struct();
         _class.AddField( new Field(GFFDataTypes.INT, 'Class') ).SetValue(0);
         _class.AddField( new Field(GFFDataTypes.SHORT, 'ClassLevel') ).SetValue(1);
+        _class.AddField( new Field(GFFDataTypes.LIST, 'KnownList0') );
         classList.AddChildStruct(_class);
       }
   
@@ -1441,34 +1443,34 @@ class ModuleArea extends ModuleObject {
 
   }
 
-  loadAudio( onLoad = null ){
+  loadAudio( ){
+    return new Promise( (resolve, reject) => {
+      let ambientDay = Global.kotor2DA['ambientsound'].rows[this.audio.AmbientSndDay].resource;
 
-    let ambientDay = Global.kotor2DA['ambientsound'].rows[this.audio.AmbientSndDay].resource;
+      AudioLoader.LoadAmbientSound(ambientDay, (data) => {
+        //console.log('Loaded Ambient Sound', ambientDay);
+        Game.audioEngine.SetAmbientSound(data);
+        resolve();
+      }, () => {
+        console.error('Ambient Audio not found', ambientDay);
+        resolve();
+      });
+    });
+  }
 
-    AudioLoader.LoadAmbientSound(ambientDay, (data) => {
-      //console.log('Loaded Ambient Sound', ambientDay);
-      Game.audioEngine.SetAmbientSound(data);
-
+  loadBackgroundMusic(){
+    return new Promise( (resolve, reject) => {
       let bgMusic = Global.kotor2DA['ambientmusic'].rows[this.audio.MusicDay].resource;
 
       AudioLoader.LoadMusic(bgMusic, (data) => {
         //console.log('Loaded Background Music', bgMusic);
         Game.audioEngine.SetBackgroundMusic(data);
-        if(typeof onLoad === 'function')
-          onLoad();
-
+        resolve();
       }, () => {
         console.error('Background Music not found', bgMusic);
-        if(typeof onLoad === 'function')
-          onLoad();
+        resolve();
       });
-
-    }, () => {
-      console.error('Ambient Audio not found', ambientDay);
-      if(typeof onLoad === 'function')
-        onLoad();
     });
-
   }
 
   async loadTextures(){

@@ -176,7 +176,7 @@ class ModuleDoor extends ModuleObject {
     
   }
 
-  use(object = null){
+  use(object = undefined){
 
     if(!this.openState){
       

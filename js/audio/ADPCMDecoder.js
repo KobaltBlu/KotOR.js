@@ -69,13 +69,14 @@ class ADPCMDecoder {
 
 		let inputIdx = index, outputIdx = 0, outputEnd = count, blockIndex = index / this.header.frameSize;
 
-		this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
+		let currentBlock = this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
 
 		/* Block Header */
-		for(let i = 0; i < this.header.channels; i++){
+		let byte1 = undefined, byte2 = undefined, dummyByte = undefined;
+		for(let i = 0, len = this.header.channels; i < len; i++){
 
-			let byte1 = this.blocks[blockIndex].header.samples[i][0] = output[ outputIdx++ ] = input[ inputIdx++ ];
-			let byte2 = this.blocks[blockIndex].header.samples[i][1] = output[ outputIdx++ ] = input[ inputIdx++ ];
+			byte1 = currentBlock.header.samples[i][0] = output[ outputIdx++ ] = input[ inputIdx++ ];
+			byte2 = currentBlock.header.samples[i][1] = output[ outputIdx++ ] = input[ inputIdx++ ];
 
 			this.predictor[i] = byte1 | (byte2 << 8); //byte2 << 8 | (byte1 & 0xFF)
 
@@ -84,26 +85,30 @@ class ADPCMDecoder {
 
 			this.stepIdx[i] = input[ inputIdx++ ] & 0xFF;
 
-			let dummyByte = input[ inputIdx++ ]; //Always Zero
+			dummyByte = input[ inputIdx++ ]; //Always Zero
 
 		}
 		/* END Block Header */
 
 		/* Sample Parser: Start */
 		let sampleIdx = 0;
+		let channelSamples = undefined;
+		let channel = undefined, bytes = undefined;
 		while( outputIdx < (outputEnd) ) {
 
-			let channel = (sampleIdx & 4) >> 2;
+			channel = (sampleIdx & 4) >> 2;
 
 			if(this.header.channels == 1)
 			  channel = 0;
 
-			let bytes = this.getNibblesFromByte(input[ inputIdx++ ], channel);
+			bytes = this.getNibblesFromByte(input[ inputIdx++ ], channel);
 
-			this.blocks[blockIndex].samples[channel].push(bytes[0]);
-			this.blocks[blockIndex].samples[channel].push(bytes[1]);
-			this.blocks[blockIndex].samples[channel].push(bytes[2]);
-			this.blocks[blockIndex].samples[channel].push(bytes[3]);
+			channelSamples = currentBlock.samples[channel];
+
+			channelSamples.push(bytes[0]);
+			channelSamples.push(bytes[1]);
+			channelSamples.push(bytes[2]);
+			channelSamples.push(bytes[3]);
 
 			output[ outputIdx++ ] = bytes[0];
 			output[ outputIdx++ ] = bytes[1];
@@ -119,16 +124,18 @@ class ADPCMDecoder {
 		outputIdx = 2 * this.header.channels;
 		sampleIdx = 0;
 
+		let channelMultiplier = (this.header.channels * 2);
+		let sIdx = 0, idx1 = 0, idx2 = 0;
 		while( outputIdx < outputEnd ){
 
-			let sIdx = sampleIdx / (this.header.channels * 2);
+			sIdx = sampleIdx / channelMultiplier;
 
-			let idx1 = sIdx + sIdx;
-			let idx2 = idx1 + 1;
+			idx1 = sIdx + sIdx;
+			idx2 = idx1 + 1;
 
-			for(let i = 0; i < this.header.channels; i++){
-				output[ outputIdx++ ] = this.blocks[blockIndex].samples[i][idx1];
-				output[ outputIdx++ ] = this.blocks[blockIndex].samples[i][idx2];
+			for(let i = 0, len = this.header.channels; i < len; i++){
+				output[ outputIdx++ ] = currentBlock.samples[i][idx1];
+				output[ outputIdx++ ] = currentBlock.samples[i][idx2];
 			}
 			sampleIdx += (this.header.channels * 2);
 		}
@@ -164,10 +171,10 @@ class ADPCMDecoder {
 
 		predictor += diff ;
 
-		predictor = this.CLAMP(predictor, -32768, 32767);
+		predictor = ADPCMDecoder.CLAMP(predictor, -32768, 32767);
 
 		this.stepIdx[channel] += ADPCMDecoder.stepIdxTable[bytecode] ;
-		this.stepIdx[channel] = this.CLAMP(this.stepIdx[channel], 0, 88) ;
+		this.stepIdx[channel] = ADPCMDecoder.CLAMP(this.stepIdx[channel], 0, 88) ;
 
 		this.predictor[channel] = predictor;
 
@@ -175,7 +182,7 @@ class ADPCMDecoder {
 
 	}
 
-	CLAMP(value, min, max){
+	static CLAMP(value, min, max){
 		return Math.min(Math.max(parseInt(value), min), max);
 	}
 

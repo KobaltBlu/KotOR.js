@@ -235,6 +235,8 @@ const TalentFeat = require(path.join(app.getAppPath(), 'js/talents/TalentFeat.js
 const TalentSpell = require(path.join(app.getAppPath(), 'js/talents/TalentSpell.js'));
 const TalentSkill = require(path.join(app.getAppPath(), 'js/talents/TalentSkill.js'));
 
+const CreatureClass = require(path.join(app.getAppPath(), 'js/CreatureClass.js'));
+
 /* Module */
 const ModuleObject = require(path.join(app.getAppPath(), 'js/module/ModuleObject.js'));
 const Module = require(path.join(app.getAppPath(), 'js/module/Module.js'));
@@ -258,7 +260,6 @@ const ModuleMGTrack = require(path.join(app.getAppPath(), 'js/module/ModuleMGTra
 const ModuleMGPlayer = require(path.join(app.getAppPath(), 'js/module/ModuleMGPlayer.js'));
 const ModuleMGEnemy = require(path.join(app.getAppPath(), 'js/module/ModuleMGEnemy.js'));
 const ModuleMGObstacle = require(path.join(app.getAppPath(), 'js/module/ModuleMGObstacle.js'));
-
 
 /* Combat */
 

@@ -325,25 +325,14 @@ class ModuleCreatureController extends ModuleObject {
 
                     this.action.object._conversation = this.action.conversation;
                     this._conversation = this.action.conversation;
+
+                    console.log('_converstation', this.action.conversation);
                     
-                    if(this.action.object.scripts.onDialog instanceof NWScriptInstance){
-                      //Keep a copy of the current action because it will be gone by the time the script completes
-                      //let dlgAction = this.action;
-                      //dlgAction.self = this;
-                      //console.log('dlgAction', this.action);
+                    if(this.scripts.onDialog instanceof NWScriptInstance){
                       this.heardStrings = [];
-                      if(this.onDialog(this.action.object, -1)){
+                      this.onDialog(this.action.object, -1, () => {
                         this.actionQueue.shift();
-                      }
-                      /*, () => {
-                        //This should only run if a dialog isn't started inside the onDialog script
-                        //Game.InGameDialog.StartConversation(dlgAction.conversation, dlgAction.object, dlgAction.self);
-                      });*/
-                      /*dlgAction.object.scripts.onDialog.listenPatternNumber = -1;
-                      dlgAction.object.scripts.onDialog.run(dlgAction.object, 0, () => {
-                        //This should only run if a dialog isn't started inside the onDialog script
-                        Game.InGameDialog.StartConversation(dlgAction.conversation, dlgAction.object, dlgAction.self);
-                      });*/
+                      });
                     }else{
                       Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
                       this.actionQueue.shift();
@@ -387,7 +376,7 @@ class ModuleCreatureController extends ModuleObject {
 
                     if(distance > ( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ) ){
                       try{
-                        this.actionPathfinder(2, undefined, delta);
+                        this.actionPathfinder(( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ), undefined, delta);
                       }catch(e){}
                     }else{
                       this.animState = ModuleCreature.AnimState.IDLE;
@@ -399,12 +388,12 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               case ModuleCreature.ACTION.CASTSPELL:
-                console.log('ACTION.CASTSPELL', this.action);
+                //console.log('ACTION.CASTSPELL', this.action);
                 if(this.action.spell.inRange(this.action.object, this)){
                   this.action.spell.useTalentOnObject(this.action.object, this);
                   this.actionQueue.shift();
                 }else{
-                  this.actionPathfinder(2, undefined, delta);
+                  this.actionPathfinder(this.action.spell.getCastRange(), undefined, delta);
                 }
               break;
               default:
@@ -483,13 +472,13 @@ class ModuleCreatureController extends ModuleObject {
       }else{
         this.getUpAnimationPlayed = false;
         if(this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING){
-          this.clearAllActions();
           this.animState = ModuleCreature.AnimState.DEAD;
-          if(!this.deathStarted){
-            this.deathStarted = true;
-            this.onDeath();
-            this.PlaySoundSet(SSFObject.TYPES.DEAD);
-          }
+        }
+        if(!this.deathStarted){
+          this.deathStarted = true;
+          this.clearAllActions();
+          this.onDeath();
+          this.PlaySoundSet(SSFObject.TYPES.DEAD);
         }
       }
 
@@ -507,6 +496,10 @@ class ModuleCreatureController extends ModuleObject {
       //  forceDelta *= 0.5;
         
       this.AxisFront.multiply(new THREE.Vector3(forceDelta, forceDelta, gravityDelta));
+
+      if(!this.AxisFront.length() && ( this.animState == ModuleCreature.AnimState.RUNNING || this.animState == ModuleCreature.AnimState.WALKING )){
+        this.animState = ModuleCreature.AnimState.IDLE;
+      }
       
 
       //if(this.model instanceof THREE.AuroraModel)
@@ -571,12 +564,17 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   updateListeningPatterns(){
+
+    if(this.isDead())
+      return;
+
     if(this.heardStrings.length){
 
       //if(this.scripts.onDialog instanceof NWScriptInstance && this.scripts.onDialog.running)
       //  return;
 
       let str = this.heardStrings[0];
+      //console.log('HeardString', this.id, str, this.isListening, this);
       if(this.isListening && str){
         let pattern = this.listeningPatterns[str.string];
 
@@ -637,14 +635,7 @@ class ModuleCreatureController extends ModuleObject {
               instance.lastPerceived = creature;
               instance.run(this);
               return;
-              /*if(PartyManager.party.indexOf(this) == -1){
-                
-              }else if(this == PartyManager.party[0]){
-                if(this.isHostile(creature)){
-                  //this.combatState = true;
-                  //Game.State = Game.STATES.PAUSED;
-                }
-              }*/
+
             }
           }else{
             if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
@@ -669,17 +660,14 @@ class ModuleCreatureController extends ModuleObject {
           if(index == -1){
             if(distance < 9 && this.hasLineOfSight(creature)){
               if(PartyManager.party.indexOf(this) == -1){
-                //this.combatState = true;
-                //if(this.scripts.onNotice instanceof NWScriptInstance && this.scripts.onNotice.running != true){
-                  this.perceptionList.push(creature);
-                  let instance = this.scripts.onNotice.nwscript.newInstance();
-                  //this.scripts.onNotice.running = true;
-                  instance.lastPerceived = creature;
-                  instance.run(this);
-                //}
+
+                this.perceptionList.push(creature);
+                let instance = this.scripts.onNotice.nwscript.newInstance();
+                instance.lastPerceived = creature;
+                instance.run(this);
 
                 if(this.isHostile(creature)){
-                  this.lastAttackTarget = creature;
+                  this.combatState = true;
                 }
 
                 return;
@@ -702,15 +690,53 @@ class ModuleCreatureController extends ModuleObject {
 
   actionPathfinder(distance, run = !this.walk, delta = 1){
     if(this.action.path == undefined){
-      this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
       if(this.action.goal == ModuleCreature.ACTION.FOLLOWLEADER){
-        this.action.path.push(PartyManager.GetFollowPosition(this));
+        this.action.path = Game.module.area.path.traverseToPoint(this.position, PartyManager.GetFollowPosition(this));
+        //this.action.path.push(PartyManager.GetFollowPosition(this));
+      }else if(this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
+        //if(PartyManager.party.indexOf(this) >= 0){
+          this.action.path_realtime = true;
+          let openSpot = this.action.object.getClosesetOpenSpot(this);
+          if(typeof openSpot != 'undefined'){
+            //console.log('openSpot', this.getName(), openSpot);
+            this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
+            this.action.path.unshift(this.action.object.position.clone());
+          }else{
+            console.error('openSpot', 'Not found');
+          }
+        //}
+      }else if(this.action.goal == ModuleCreature.ACTION.CASTSPELL){
+        //if(PartyManager.party.indexOf(this) >= 0){
+          this.action.path_realtime = true;
+          let openSpot = this.action.object.getClosesetOpenSpot(this);
+          if(typeof openSpot != 'undefined'){
+            //console.log('openSpot', this.getName(), openSpot);
+            this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
+            this.action.path.unshift(this.action.object.position.clone());
+          }else{
+            console.error('openSpot', 'Not found');
+          }
+        //}
+      }else{
+        this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
       }
       this.action.path_timer = 20;
     }
 
     this.invalidateCollision = true;
     let point = this.action.path[0];
+
+    if(this.blockingTimer >= 5){
+      point = this.action.path[this.action.path.length - 1];
+      this.action.path = [point];
+      
+      if(!(point instanceof THREE.Vector3))
+        point = point.vector;
+
+      this.position.copy(point);
+
+      this.blockingTimer = 0;
+    }
 
     if(point == undefined)
       point = this.action.object.position;
@@ -726,62 +752,86 @@ class ModuleCreatureController extends ModuleObject {
       this.AxisFront.x = Math.cos(atan);
       this.AxisFront.y = Math.sin(atan);
 
-      //Check Creature Avoidance
-      /*let threatening = undefined;
-      let threateningDistance = Infinity;
-      let ahead = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1);
-      let ahead2 = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
-      for(let i = 0; i < Game.module.area.creatures.length; i++){
-        let creature = Game.module.area.creatures[i];
-        if(creature === this)
-          continue;
+      if(PartyManager.party.indexOf(this) >= 0){
 
-        let hitDistance = +creature.getAppearance().hitdist;
-        let creaturePos = creature.position.clone();
-        let distance = this.position.distanceTo(creature.position);
+        //Check Creature Avoidance
+        let threatening = undefined;
+        let threateningDistance = Infinity;
+        let ahead = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1);
+        let ahead2 = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
+        for(let i = 0; i < Game.module.area.creatures.length; i++){
+          let creature = Game.module.area.creatures[i];
+          if(creature === this || creature.isDead())
+            continue;
 
-        if(ahead.distanceTo(creaturePos) <= hitDistance || ahead2.distanceTo(creaturePos) <= hitDistance){
-          //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-          if(distance < threateningDistance){
-            threatening = creature;
-            threateningDistance = distance;
-          }
-        }     
-      }
+          let hitDistance = parseInt(creature.getAppearance().hitdist);
+          let creaturePos = creature.position.clone();
+          let distance = this.position.distanceTo(creature.position);
 
-      for(let i = 0; i < PartyManager.party.length; i++){
-        let creature = PartyManager.party[i];
-        if(creature === this)
-          continue;
+          if(ahead.distanceTo(creaturePos) <= hitDistance){
+            if(ahead.distanceTo(creaturePos) < threateningDistance){
+              threatening = creature;
+              threateningDistance = ahead.distanceTo(creaturePos);
+            }
+          }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
+            //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
+            if(ahead2.distanceTo(creaturePos) < threateningDistance){
+              threatening = creature;
+              threateningDistance = ahead2.distanceTo(creaturePos);
+            }
+          }   
+        }
 
-        let hitDistance = +creature.getAppearance().hitdist;
-        let creaturePos = creature.position.clone();
-        let distance = this.position.distanceTo(creature.position);
+        for(let i = 0; i < PartyManager.party.length; i++){
+          let creature = PartyManager.party[i];
+          if(creature === this || creature.isDead())
+            continue;
 
-        if(ahead.distanceTo(creaturePos) <= hitDistance || ahead2.distanceTo(creaturePos) <= hitDistance){
-          //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-          if(distance < threateningDistance){
-            threatening = creature;
-            threateningDistance = distance;
+          let hitDistance = parseInt(creature.getAppearance().hitdist);
+          let creaturePos = creature.position.clone();
+          let distance = this.position.distanceTo(creature.position);
+
+          if(ahead.distanceTo(creaturePos) <= hitDistance){
+            if(ahead.distanceTo(creaturePos) < threateningDistance){
+              threatening = creature;
+              threateningDistance = ahead.distanceTo(creaturePos);
+            }
+          }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
+            //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
+            if(ahead2.distanceTo(creaturePos) < threateningDistance){
+              threatening = creature;
+              threateningDistance = ahead2.distanceTo(creaturePos);
+            }
           }
         }
+
+        if(threatening instanceof ModuleCreature){
+          console.log(threatening.getName(), 'is threatening', this.getName());
+
+          let dVector = threatening.position.clone().sub(this.position).normalize();
+
+          
+          let creaturePos = threatening.position.clone();        
+          let avoidance_force = ahead.clone().sub(dVector);
+          avoidance_force.z = 0;
+          let newTarget = this.position.clone().add(avoidance_force);
+
+          let tangent = newTarget.sub(this.position.clone());
+          let atan = Math.atan2(-avoidance_force.y, -avoidance_force.x);
+          this.rotation.z = (atan + Math.PI/2); //(1 - delta) * this.rotation.z + delta * (atan + Math.PI/2)
+          this.AxisFront.x = Math.cos(atan);
+          this.AxisFront.y = Math.sin(atan);
+
+          this.blockingTimer += 1;
+        }else{
+          if(this.blockingTimer > 0){
+            this.blockingTimer -= 0.5;
+          }
+          if(this.blockingTimer > 0)
+            this.blockingTimer = 0;
+        }
+
       }
-
-      if(threatening instanceof ModuleCreature){
-        console.log('threatening', threatening.firstName)
-        
-        let creaturePos = threatening.position.clone();        
-        let avoidance_force = ahead.clone().sub(threatening.position).normalize().multiplyScalar(1*delta);
-        avoidance_force.z = 0;
-        let newTarget = this.position.clone().add(avoidance_force);
-
-        let tangent = newTarget.sub(this.position.clone());
-        let atan = Math.atan2(-tangent.y, -tangent.x);
-        this.rotation.z = (atan + Math.PI/2); //(1 - delta) * this.rotation.z + delta * (atan + Math.PI/2)
-        this.AxisFront.x = Math.cos(atan);
-        this.AxisFront.y = Math.sin(atan);
-    
-      }*/
       
       if(run){
         this.force = -this.getRunSpeed();
@@ -802,6 +852,12 @@ class ModuleCreatureController extends ModuleObject {
       }
     }else{
       this.action.path_timer -= 10*delta;
+    }
+
+    if(pointDistance > distance){
+      return false;
+    }else{
+      return true;
     }
 
   }
@@ -913,7 +969,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   clearTarget(){
-    console.log('clearTarget');
+    //console.log('clearTarget');
     this.combatQueue = [];
     this.combatAction = undefined;
     this.lastAttackTarget = undefined;
@@ -1310,11 +1366,74 @@ class ModuleCreatureController extends ModuleObject {
           this.combatAction.animPlayed = true;
 
           if(!this.combatAction.isCutsceneAttack){
-            //Roll to hit
-            this.combatAction.hits = CombatEngine.DiceRoll(1, 'd20', atkMod) > CombatEngine.GetArmorClass(this.combatAction.target);
-            //Roll damage
-            this.combatAction.attackDice = CombatEngine.GetCreatureAttackDice(this);
-            this.combatAction.damage = CombatEngine.DiceRoll(this.combatAction.attackDice.num, this.combatAction.attackDice.type, atkMod);
+
+            //All of the Combat Logic needs to be separated from the Combat Animation Logic
+            //It works for now, but I don't feel this is the proper place for it.
+
+            this.combatAction.hits = 0;
+            this.combatAction.damage = 0;
+
+            if(!this.isSimpleCreature()){
+
+              if(this.equipment.RIGHTHAND instanceof ModuleItem){
+                //Roll to hit
+                let hits = CombatEngine.DiceRoll(1, 'd20', this.getBaseAttackBonus() + this.equipment.RIGHTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(this.combatAction.target);
+                if(hits){
+                  this.combatAction.hits = true;
+                  //Roll damage
+                  this.combatAction.damage += this.equipment.RIGHTHAND.getBaseDamage() + this.equipment.RIGHTHAND.getDamageBonus();
+                }
+                //TOOD: Log to combat menu
+              }
+
+              if(this.equipment.LEFTHAND instanceof ModuleItem){
+                //Roll to hit
+                let hits = CombatEngine.DiceRoll(1, 'd20', this.getBaseAttackBonus() + this.equipment.LEFTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(this.combatAction.target);
+                if(hits){
+                  this.combatAction.hits = true;
+                  //Roll damage
+                  this.combatAction.damage += this.equipment.LEFTHAND.getBaseDamage() + this.equipment.LEFTHAND.getDamageBonus();
+                }
+                //TOOD: Log to combat menu
+              }
+              
+              //TOOD: Bonus attacks
+
+            }else{
+
+              if(this.equipment.CLAW1 instanceof ModuleItem){
+                //Roll to hit
+                let hits = CombatEngine.DiceRoll(1, 'd20', this.getBaseAttackBonus() + this.equipment.CLAW1.getAttackBonus()) > CombatEngine.GetArmorClass(this.combatAction.target);
+                if(hits){
+                  this.combatAction.hits = true;
+                  //Roll damage
+                  this.combatAction.damage += this.equipment.CLAW1.getMonsterDamage() + this.equipment.CLAW1.getDamageBonus();
+                }
+                //TOOD: Log to combat menu
+              }
+
+              if(this.equipment.CLAW2 instanceof ModuleItem){
+                //Roll to hit
+                let hits = CombatEngine.DiceRoll(1, 'd20', this.getBaseAttackBonus() + this.equipment.CLAW2.getAttackBonus()) > CombatEngine.GetArmorClass(this.combatAction.target);
+                if(hits){
+                  this.combatAction.hits = true;
+                  //Roll damage
+                  this.combatAction.damage += this.equipment.CLAW2.getMonsterDamage() + this.equipment.CLAW2.getDamageBonus();
+                }
+                //TOOD: Log to combat menu
+              }
+
+              if(this.equipment.CLAW3 instanceof ModuleItem){
+                //Roll to hit
+                let hits = CombatEngine.DiceRoll(1, 'd20', this.getBaseAttackBonus() + this.equipment.CLAW3.getAttackBonus()) > CombatEngine.GetArmorClass(this.combatAction.target);
+                if(hits){
+                  this.combatAction.hits = true;
+                  //Roll damage
+                  this.combatAction.damage += this.equipment.CLAW3.getMonsterDamage() + this.equipment.CLAW3.getDamageBonus();
+                }
+                //TOOD: Log to combat menu
+              }
+            }
             
             this.combatAction.target.lastAttacker = this;
             this.combatAction.target.onAttacked();
@@ -1430,6 +1549,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   onDeath(){
+    this.weaponPowered(false);
     if(this.scripts.onDeath instanceof NWScriptInstance){
       this.scripts.onDeath.run(this);
     }
@@ -1607,7 +1727,7 @@ class ModuleCreatureController extends ModuleObject {
 
   attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null){
 
-    console.log('attackCreature', this, target, feat);
+    //console.log('attackCreature', this, target, feat);
 
     if(target == undefined)
       return;

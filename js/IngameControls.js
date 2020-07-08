@@ -226,6 +226,11 @@ class IngameControls {
       if(Game.mouse.leftDown){
         Game.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
         Game.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+        //If the NoClickTimer is active then we will return out of this function
+        if(Game.noClickTimer){
+          return;
+        }
   
         Game.raycaster.setFromCamera( Mouse.Vector, Game.camera_gui );
         

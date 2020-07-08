@@ -45,18 +45,33 @@ class TalentFeat extends TalentObject {
       return true;
     }
     let distance = oCaster.position.distanceTo(oTarget.position);
+    let rangeTolerance = 0.25;
 
     //MELEE
     if(this.category == 0x1104){
-      return distance <= 2.0;
+      return distance <= 2.0 + rangeTolerance;
     }
 
     //RANGED
     if(this.category == 0x1111){
-      return distance <= 15.0;
+      return distance <= 15.0 + rangeTolerance;
     }
 
     return true;
+  }
+
+  getCastRange(){
+    //MELEE
+    if(this.category == 0x1104){
+      return 2.0;
+    }
+
+    //RANGED
+    if(this.category == 0x1111){
+      return 15;
+    }
+
+    return 1;
   }
 
 }

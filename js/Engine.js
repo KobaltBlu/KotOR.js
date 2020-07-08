@@ -1280,6 +1280,7 @@ Engine.Mode = Engine.MODES.MAINMENU;
 Engine.holdWorldFadeInForDialog = false;
 Engine.autoRun = false;
 Engine.AlphaTest = 0.5;
+Engine.noClickTimer = 0;
 
 Engine._emitters = {};
 
