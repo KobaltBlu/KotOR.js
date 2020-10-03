@@ -11,14 +11,14 @@
   "author": "KobaltBlu",
   "license": "GPL-3.0",
   "devDependencies": {
-    "electron": "^9.1.0",
+    "electron": "^10.1.3",
     "electron-packager": "^14.2.1",
     "electron-rebuild": "^1.11.0"
   },
   "dependencies": {
     "bit-buffer": "^0.2.4",
     "bluebird": "^3.7.2",
-    "blueimp-md5": "^2.16.0",
+    "blueimp-md5": "^2.18.0",
     "dxt": "github:alexkirsz/node-dxt#master",
     "electron-is-running-in-asar": "^1.0.0",
     "interpolate-angle": "^1.0.2",

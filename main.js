@@ -31,7 +31,8 @@ function createWindowFromProfile( profile = {} ) {
     backgroundColor: profile.launch.backgroundColor,
     webPreferences: {
       nodeIntegration: true,
-      nodeIntegrationInWorker: true
+      nodeIntegrationInWorker: true,
+      enableRemoteModule: true
     }
   });
 
@@ -84,7 +85,8 @@ function createLauncherWindow() {
     backgroundColor: "#000000",
     webPreferences: {
       webviewTag: true,
-      nodeIntegration: true
+      nodeIntegration: true,
+      enableRemoteModule: true
     }
   });
   winLauncher.webContents.MyGlobal = Global;
