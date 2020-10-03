@@ -1515,11 +1515,11 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('CurrentForce'))
       this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
 
-    //if(this.template.RootNode.HasField('CurrentHitPoints'))
-    //  this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('CurrentHitPoints').GetValue()]))[0];
+    if(this.template.RootNode.HasField('CurrentHitPoints'))
+      this.currentHitPoints = this.template.GetFieldByLabel('CurrentHitPoints').GetValue();
 
     if(this.template.RootNode.HasField('HitPoints'))
-     this.currentHitPoints = (new Int16Array([this.template.GetFieldByLabel('HitPoints').GetValue()]))[0];
+      this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
 
     if(this.template.RootNode.HasField('Disarmable'))
       this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
@@ -1576,9 +1576,6 @@ class ModuleCreature extends ModuleCreatureController {
   
     if(this.template.RootNode.HasField('GoodEvil'))
       this.goodEvil = this.template.RootNode.GetFieldByLabel('GoodEvil').GetValue();
-      
-    if(this.template.RootNode.HasField('HitPoints'))
-      this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
       
     if(this.template.RootNode.HasField('Hologram'))
       this.isHologram = this.template.GetFieldByLabel('Hologram').GetValue();

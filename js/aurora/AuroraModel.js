@@ -513,7 +513,7 @@ class AuroraModel {
 
     if (node.BoneMapCount > 0) {
       this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneMapOffset);
-      node.bone_mapping = new Array(node.BoneMapCount);
+      node.bone_mapping = [];
       for(let i = 0; i < node.BoneMapCount; i++){
         node.bone_mapping[i] = this.mdlReader.ReadSingle();
       }
@@ -521,7 +521,7 @@ class AuroraModel {
 
     if (node.BoneQuaternionDef.count > 0) {
       this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneQuaternionDef.offset);
-      node.bone_quats = new Array(node.BoneQuaternionDef.count);
+      node.bone_quats = [];
       for(let i = 0; i < node.BoneQuaternionDef.count; i++){
         let w = this.mdlReader.ReadSingle();
         node.bone_quats[i] = new THREE.Quaternion(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), w);
@@ -531,7 +531,7 @@ class AuroraModel {
 
     if (node.BoneVertexDef.count > 0) {
       this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneVertexDef.offset);
-      node.bone_vertex = new Array(node.BoneVertexDef.count);
+      node.bone_vertex = [];
       for(let i = 0; i < node.BoneVertexDef.count; i++){
         node.bone_vertex[i] = new THREE.Vector3(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle());
         //node.bone_vertex[i].normalize();
@@ -540,7 +540,7 @@ class AuroraModel {
 
     if (node.BoneConstantsDef.count > 0) {
       this.mdlReader.Seek(this.fileHeader.ModelDataOffset + node.BoneConstantsDef.offset);
-      node.bone_constants = new Array(node.BoneConstantsDef.count);
+      node.bone_constants = [];
       for(let i = 0; i < node.BoneConstantsDef.count; i++){
         node.bone_constants[i] = this.mdlReader.ReadByte();
       }
