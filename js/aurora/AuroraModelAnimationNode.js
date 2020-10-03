@@ -13,7 +13,30 @@
     this.quaternion = new THREE.Quaternion();
     this.controllers = new Map();
     this.children = [];
-    this.name = '';;
+    this.name = '';
+
+    this.modelNodeCache = {};
+
+
+  }
+
+  getNode(node, model){
+
+    if(node && model){
+      let cache = this.modelNodeCache[model.uuid] || undefined;
+      if(typeof cache == 'undefined'){
+        cache = this.modelNodeCache[model.uuid] = {};
+      }
+
+      let nodeCache = cache[node.name] || undefined;
+      if(typeof nodeCache == 'undefined'){
+        nodeCache = this.modelNodeCache[model.uuid][node.name] = model.nodes.get(node.name);
+      }
+
+      return nodeCache;
+
+    }
+
   }
 
 }

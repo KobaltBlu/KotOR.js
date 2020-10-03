@@ -1240,7 +1240,7 @@ class MenuDialog extends GameMenu {
       //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
         if(script instanceof NWScriptInstance){
           //let script = new NWScript(buffer);
-          //console.log('dialog.OnEndScript', script);
+          //console.log('dialog.onEndScript', script);
           script.name = entry.isActive;
           //console.log(this.owner);
           script.run(this.owner, 0, (bSuccess) => {
@@ -1335,11 +1335,11 @@ class MenuDialog extends GameMenu {
           //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversation, (buffer) => {
             if(script instanceof NWScriptInstance){
               //let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
+              //console.log('dialog.onEndScript', script);
               script.name = this.onEndConversation;
               //console.log(this.owner);
               script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
+                //console.log('dialog.onEndScript', script, bSuccess);
               })
             }
           //});
@@ -1350,11 +1350,11 @@ class MenuDialog extends GameMenu {
           //ResourceLoader.loadResource(ResourceTypes['ncs'], this.onEndConversationAbort, (buffer) => {
             if(script instanceof NWScriptInstance){
               //let script = new NWScript(buffer);
-              //console.log('dialog.OnEndScript', script);
+              //console.log('dialog.onEndScript', script);
               script.name = this.onEndConversationAbort;
               //console.log(this.owner);
               script.run(this.owner, 0, (bSuccess) => {
-                //console.log('dialog.OnEndScript', script, bSuccess);
+                //console.log('dialog.onEndScript', script, bSuccess);
               })
             }
           //});

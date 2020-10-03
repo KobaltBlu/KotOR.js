@@ -233,16 +233,16 @@ class ModuleArea extends ModuleObject {
     this.NoHangBack = this.are.GetFieldByLabel('NoHangBack').GetValue();
     this.NoRest = this.are.GetFieldByLabel('NoRest').GetValue();
 
-    this.OnEnter = this.are.GetFieldByLabel('OnEnter').GetValue();
-    this.OnExit = this.are.GetFieldByLabel('OnExit').GetValue();
-    this.OnHeartbeat = this.are.GetFieldByLabel('OnHeartbeat').GetValue();
-    this.OnUserDefined = this.are.GetFieldByLabel('OnUserDefined').GetValue();
+    this.onEnter = this.are.GetFieldByLabel('OnEnter').GetValue();
+    this.onExit = this.are.GetFieldByLabel('OnExit').GetValue();
+    this.onHeartbeat = this.are.GetFieldByLabel('OnHeartbeat').GetValue();
+    this.onUserDefined = this.are.GetFieldByLabel('OnUserDefined').GetValue();
 
     this.scripts = {
-      OnEnter: this.OnEnter,
-      OnExit: this.OnExit,
-      OnHeartbeat: this.OnHeartbeat,
-      OnUserDefined: this.OnUserDefined
+      onEnter: this.onEnter,
+      onExit: this.onExit,
+      onHeartbeat: this.onHeartbeat,
+      onUserDefined: this.onUserDefined
     };
 
     this.PlayerOnly = this.are.GetFieldByLabel('PlayerOnly').GetValue();
@@ -1641,16 +1641,16 @@ class ModuleArea extends ModuleObject {
       new Field(GFFDataTypes.BYTE, 'NoRest', this.NoRest)
     );
     are.RootNode.AddField(
-      new Field(GFFDataTypes.RESREF, 'OnEnter', this.OnEnter)
+      new Field(GFFDataTypes.RESREF, 'OnEnter', this.onEnter)
     );
     are.RootNode.AddField(
-      new Field(GFFDataTypes.RESREF, 'OnExit', this.OnExit)
+      new Field(GFFDataTypes.RESREF, 'OnExit', this.onExit)
     );
     are.RootNode.AddField(
-      new Field(GFFDataTypes.RESREF, 'OnHeartbeat', this.OnHeartbeat)
+      new Field(GFFDataTypes.RESREF, 'OnHeartbeat', this.onHeartbeat)
     );
     are.RootNode.AddField(
-      new Field(GFFDataTypes.RESREF, 'OnUserDefined', this.OnUserDefined)
+      new Field(GFFDataTypes.RESREF, 'OnUserDefined', this.onUserDefined)
     );
     are.RootNode.AddField(
       new Field(GFFDataTypes.BYTE, 'PlayerOnly', this.PlayerOnly)

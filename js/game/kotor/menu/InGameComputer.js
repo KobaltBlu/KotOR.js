@@ -562,7 +562,7 @@ class InGameComputer extends GameMenu {
     if(this.onEndConversation != ''){
       let script = await NWScript.Load(this.onEndConversation);
       if(script instanceof NWScriptInstance){
-        //console.log('dialog.OnEndScript', script);
+        //console.log('dialog.onEndScript', script);
         script.name = this.onEndConversation;
         //console.log(this.owner);
         script.run(this.owner, 0, (bSuccess) => {
@@ -628,11 +628,11 @@ class InGameComputer extends GameMenu {
         if(this.onEndConversation != ''){
           let script = await NWScript.Load(this.onEndConversation);
           if(script instanceof NWScriptInstance){
-            //console.log('dialog.OnEndScript', script);
+            //console.log('dialog.onEndScript', script);
             script.name = this.onEndConversation;
             //console.log(this.owner);
             script.run(this.owner, 0, (bSuccess) => {
-              //console.log('dialog.OnEndScript', script, bSuccess);
+              //console.log('dialog.onEndScript', script, bSuccess);
             });
           }
         }
@@ -640,11 +640,11 @@ class InGameComputer extends GameMenu {
         if(this.onEndConversationAbort != ''){
           let script = await NWScript.Load(this.onEndConversationAbort);
           if(script instanceof NWScriptInstance){
-            //console.log('dialog.OnEndScript', script);
+            //console.log('dialog.onEndScript', script);
             script.name = this.onEndConversationAbort;
             //console.log(this.owner);
             script.run(this.owner, 0, (bSuccess) => {
-              //console.log('dialog.OnEndScript', script, bSuccess);
+              //console.log('dialog.onEndScript', script, bSuccess);
             })
           }
         }

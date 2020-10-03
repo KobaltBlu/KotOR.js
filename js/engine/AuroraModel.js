@@ -1278,140 +1278,149 @@ THREE.AuroraModel = function () {
               //_node.Diffuse.r = _node.Diffuse.g = _node.Diffuse.b = 0.8;
             }
 
-            material = new THREE.ShaderMaterial({
-              fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
-              vertexShader: THREE.ShaderLib.aurora.vertexShader,
-              uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
-              side:THREE.FrontSide,
-              lights: true,
-              fog: auroraModel.affectedByFog,
-            });
-            material.uniforms.shininess.value = 0.0000001;
-            material.extensions.derivatives = true;
-            //material.extensions.fragDepth = true;
-            if(options.useTweakColor){
-              material.uniforms.diffuse.value = new THREE.Color( _node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
-              material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
+            if((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB){
+              material = new THREE.MeshBasicMaterial({
+                fog: false,
+                lights: false,
+                side:THREE.FrontSide,
+              });
             }else{
-              material.uniforms.tweakColor.value.setRGB(1, 1, 1);
-              material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//_node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
-            }
-            material.uniforms.time.value = Game.time;
-            material.defines = material.defines || {};
-            material.defines.AURORA = "";
 
-            if(options.isForceShield){
-              material.defines.FORCE_SHIELD = "";
-              material.defines.IGNORE_LIGHTING = "";
-            }
-
-            if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV1 || 
-               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2 || 
-               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV3 || 
-               _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV4 ||
-               ((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber)
-              ){
-              material.defines.USE_UV = "";
-            }
-
-            if(node.controllers.has(AuroraModel.ControllerType.SelfIllumColor)){
-              let selfIllumColor = node.controllers.get(AuroraModel.ControllerType.SelfIllumColor);
-              if(selfIllumColor.data[0].r || selfIllumColor.data[0].g || selfIllumColor.data[0].b){
-                material.defines.SELFILLUMCOLOR = "";
-                material.uniforms.selfIllumColor.value.copy(selfIllumColor.data[0]);
+              material = new THREE.ShaderMaterial({
+                fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
+                vertexShader: THREE.ShaderLib.aurora.vertexShader,
+                uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
+                side:THREE.FrontSide,
+                lights: true,
+                fog: auroraModel.affectedByFog,
+              });
+              material.uniforms.shininess.value = 0.0000001;
+              material.extensions.derivatives = true;
+              //material.extensions.fragDepth = true;
+              if(options.useTweakColor){
+                material.uniforms.diffuse.value = new THREE.Color( _node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
+                material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
+              }else{
+                material.uniforms.tweakColor.value.setRGB(1, 1, 1);
+                material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//_node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
               }
-            }
+              material.uniforms.time.value = Game.time;
+              material.defines = material.defines || {};
+              material.defines.AURORA = "";
 
-            if(!_node.FlagRender && !node.isWalkmesh){
-              material.visible = false;
-            }
+              if(options.isForceShield){
+                material.defines.FORCE_SHIELD = "";
+                material.defines.IGNORE_LIGHTING = "";
+              }
 
-            auroraModel.materials.push(material);
-            
-            if(_node.HasLightmap && tMap2.length){
-              //material.lightMap = map2;
-              //material.uniforms.lightMap.value = map2;
-              map2 = TextureLoader.enQueue(tMap2, material, TextureLoader.Type.LIGHTMAP);
-              geometry.faceUvs[1] = _node.tvectors[1];
-              geometry.faceVertexUvs[1] = _node.texCords[1];
-              if(!geometry.faceUvs[0].length)
-                geometry.faceUvs[0] = _node.tvectors[1];
-            }
+              if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV1 || 
+                _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2 || 
+                _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV3 || 
+                _node.MDXDataBitmap & AuroraModel.MDXFLAG.UV4 ||
+                ((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber)
+                ){
+                material.defines.USE_UV = "";
+              }
 
-            if((!(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1) && 
-              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2) && 
-              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3) && 
-              !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4) &&
-              !_node.FlagShadow && !options.castShadow) || _node.BackgroundGeometry || options.static){
-                //console.log('IGNORE_LIGHTING', material);
-                if(!options.lighting){
-                  material.defines.IGNORE_LIGHTING = "";
+              if(node.controllers.has(AuroraModel.ControllerType.SelfIllumColor)){
+                let selfIllumColor = node.controllers.get(AuroraModel.ControllerType.SelfIllumColor);
+                if(selfIllumColor.data[0].r || selfIllumColor.data[0].g || selfIllumColor.data[0].b){
+                  material.defines.SELFILLUMCOLOR = "";
+                  material.uniforms.selfIllumColor.value.copy(selfIllumColor.data[0]);
                 }
-            }
+              }
 
-            if((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber){
-              material.defines.IGNORE_LIGHTING = "";
-              material.defines.SABER = "";
-            }
-
-            if(options.isHologram){
-              material.defines.HOLOGRAM = "";
-              material.transparent = true;
-              if(_node.HideInHolograms){
+              if(!_node.FlagRender && !node.isWalkmesh){
                 material.visible = false;
               }
-            }
 
-            //Set dangly uniforms
-            if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
-              material.uniforms.danglyDisplacement.value = _node.danglyDisplacement;
-              material.uniforms.danglyTightness.value = _node.danglyTightness;
-              material.uniforms.danglyPeriod.value = _node.danglyPeriod;
-              material.defines.DANGLY = '';
-            }
-
-            //Set animated uv uniforms
-            if(_node.nAnimateUV){
-              material.uniforms.animatedUV.value.set(_node.fUVDirectionX, _node.fUVDirectionY, _node.fUVJitter, _node.fUVJitterSpeed);
-              material.defines.ANIMATED_UV = '';
-            }
-
-
-            if(_node.Transparent){
-              material.transparent = true;
-            }
-
-            _node.controllers.forEach( (controller) => {
-            //for(let cIDX in _node.controllers){
-              //let controller = _node.controllers[cIDX];
-              switch(controller.type){
-                case AuroraModel.ControllerType.Alpha:
-
-                  if(material instanceof THREE.ShaderMaterial){
-                    material.uniforms.opacity.value = controller.data[0].value;
-                  }else{
-                    material.opacity = controller.data[0].value;
-                  }
-
-                  if(controller.data[0].value < 1){
-                    material.transparent = true;
-                  }else{
-                    material.transparent = false;
-                  }
-                break;
+              auroraModel.materials.push(material);
+              
+              if(_node.HasLightmap && tMap2.length){
+                //material.lightMap = map2;
+                //material.uniforms.lightMap.value = map2;
+                map2 = TextureLoader.enQueue(tMap2, material, TextureLoader.Type.LIGHTMAP);
+                geometry.faceUvs[1] = _node.tvectors[1];
+                geometry.faceVertexUvs[1] = _node.texCords[1];
+                if(!geometry.faceUvs[0].length)
+                  geometry.faceUvs[0] = _node.tvectors[1];
               }
-            });
-      
-            if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
-              map1 = TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, (texture, tex) => {
-                if(material.type != tex.material.type){
-                  material = tex.material;
-                  console.log('Material mismatch', tex.material);
-                }
-              }, fallbackTexture);
-            }
 
-            material.needsUpdate = true;
+              if((!(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1) && 
+                !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2) && 
+                !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3) && 
+                !(_node.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4) &&
+                !_node.FlagShadow && !options.castShadow) || _node.BackgroundGeometry || options.static){
+                  //console.log('IGNORE_LIGHTING', material);
+                  if(!options.lighting){
+                    material.defines.IGNORE_LIGHTING = "";
+                  }
+              }
+
+              if((_node.NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber){
+                material.defines.IGNORE_LIGHTING = "";
+                material.defines.SABER = "";
+              }
+
+              if(options.isHologram){
+                material.defines.HOLOGRAM = "";
+                material.transparent = true;
+                if(_node.HideInHolograms){
+                  material.visible = false;
+                }
+              }
+
+              //Set dangly uniforms
+              if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
+                material.uniforms.danglyDisplacement.value = _node.danglyDisplacement;
+                material.uniforms.danglyTightness.value = _node.danglyTightness;
+                material.uniforms.danglyPeriod.value = _node.danglyPeriod;
+                material.defines.DANGLY = '';
+              }
+
+              //Set animated uv uniforms
+              if(_node.nAnimateUV){
+                material.uniforms.animatedUV.value.set(_node.fUVDirectionX, _node.fUVDirectionY, _node.fUVJitter, _node.fUVJitterSpeed);
+                material.defines.ANIMATED_UV = '';
+              }
+
+
+              if(_node.Transparent){
+                material.transparent = true;
+              }
+
+              _node.controllers.forEach( (controller) => {
+              //for(let cIDX in _node.controllers){
+                //let controller = _node.controllers[cIDX];
+                switch(controller.type){
+                  case AuroraModel.ControllerType.Alpha:
+
+                    if(material instanceof THREE.ShaderMaterial){
+                      material.uniforms.opacity.value = controller.data[0].value;
+                    }else{
+                      material.opacity = controller.data[0].value;
+                    }
+
+                    if(controller.data[0].value < 1){
+                      material.transparent = true;
+                    }else{
+                      material.transparent = false;
+                    }
+                  break;
+                }
+              });
+        
+              if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
+                map1 = TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, (texture, tex) => {
+                  if(material.type != tex.material.type){
+                    material = tex.material;
+                    console.log('Material mismatch', tex.material);
+                  }
+                }, fallbackTexture);
+              }
+
+              material.needsUpdate = true;
+            }
       
             geometry.verticesNeedUpdate = true;
             geometry.normalsNeedUpdate = true;
@@ -1514,9 +1523,11 @@ THREE.AuroraModel = function () {
               //mesh.visible = !node.isWalkmesh;
               mesh._node = _node;
               mesh.matrixAutoUpdate = true;
-              mesh.castShadow = _node.FlagShadow;// && !options.static;//options.castShadow;
-              mesh.receiveShadow = options.receiveShadow;
               node.add( mesh );
+              if(!((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB)){
+                mesh.castShadow = _node.FlagShadow;// && !options.static;//options.castShadow;
+                mesh.receiveShadow = options.receiveShadow;
+              }
             }
 
           }

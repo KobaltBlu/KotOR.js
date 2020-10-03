@@ -216,7 +216,7 @@ class ModuleObject {
   triggerUserDefinedEvent(caller = this, iValue = 0, onComplete = null ){
 
     if(this instanceof ModuleArea || this instanceof Module){
-      return;
+      //return;
     }
 
     if(this.scripts.onUserDefined instanceof NWScriptInstance){
@@ -226,7 +226,7 @@ class ModuleObject {
 
   triggerSpellCastAtEvent(oCaster = undefined, nSpell = 0, bHarmful = 0){
     if(this instanceof ModuleArea || this instanceof Module){
-      return;
+      //return;
     }
 
     if(this.scripts.onSpellAt instanceof NWScriptInstance){

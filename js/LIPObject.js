@@ -171,7 +171,7 @@ class LIPObject {
                 next_frame = controller.data[0];
               }
 
-              //Only interpolate if there is a previos frame and it isn't the same shape as the current
+              //Only interpolate keyframes if there is a previos frame and it isn't the same shape as the current
               if(last_frame && (last.shape != next.shape)){
                 switch(controller.type){
                   case AuroraModel.ControllerType.Position:

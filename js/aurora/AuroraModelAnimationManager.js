@@ -62,7 +62,7 @@ class AuroraModelAnimationManager {
     //MiniGame Animations
     if(this.model.bonesInitialized && this.model.mgAnims.length){
       let dead_animations = [];
-      for(let i = 0; i < this.model.mgAnims.length; i++){
+      for(let i = 0, mgL = this.model.mgAnims.length; i < mgL; i++){
         this.updateAnimation(this.model.mgAnims[i], delta);
         if(this.model.mgAnims[i].data.elapsed >= this.model.mgAnims[i].length){
           dead_animations.push(i);
@@ -87,8 +87,7 @@ class AuroraModelAnimationManager {
       return;
     
     this.updateAnimationEvents(anim);
-    let animNodesLen = anim.nodes.length;
-    for(let i = 0; i < animNodesLen; i++){
+    for(let i = 0, nl = anim.nodes.length; i < nl; i++){
       this.updateAnimationNode(anim, anim.nodes[i]);
     }
     //this.updateAnimationNode(anim, anim.rooNode);
@@ -100,8 +99,7 @@ class AuroraModelAnimationManager {
       if(anim.data.elapsed > anim.length){
         anim.data.elapsed = anim.length;
         this.updateAnimationEvents(anim);
-        let animNodesLen = anim.nodes.length;
-        for(let i = 0; i < animNodesLen; i++){
+        for(let i = 0, nl = anim.nodes.length; i < nl; i++){
           this.updateAnimationNode(anim, anim.nodes[i]);
         }
       }
@@ -127,7 +125,7 @@ class AuroraModelAnimationManager {
       anim.data.events = [];
     }
 
-    for(let f = 0; f < anim.events.length; f++){
+    for(let f = 0, el = anim.events.length; f < el; f++){
 
       if(anim.events[f].length <= anim.data.elapsed && !anim.data.events[f]){
         this.model.playEvent(anim.events[f].name, f);
@@ -153,7 +151,7 @@ class AuroraModelAnimationManager {
   }
 
   updateAnimationNode(anim, node){
-    this.modelNode = this.model.nodes.get(node.name);
+    this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
 
     if(this.model.moduleObject && this.model.moduleObject.head && this.model.moduleObject.head != this.model){
       //This if statement is a hack to get around using getObjectByName because it was too expensive
@@ -200,7 +198,7 @@ class AuroraModelAnimationManager {
         }else{
 
           this.lastFrame = 0;
-          for(let f = 0; f < controller.frameCount; f++){
+          for(let f = 0, fc = controller.frameCount; f < fc; f++){
             if(controller.data[f].time <= anim.data.elapsed){
               this.lastFrame = f;
             }

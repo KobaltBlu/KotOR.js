@@ -39,6 +39,7 @@ function pad(n, width, z) {
 /* NodeJS Libraries */
 const remote = require('electron').remote;
 const app = remote.app;
+app.allowRendererProcessReuse = false;
 const {BrowserWindow} = require('electron').remote;
 const {ipcRenderer} = require('electron');
 const {Menu, MenuItem} = remote;
@@ -54,7 +55,7 @@ const objectHash = require('object-hash');
 var Promise = require("bluebird");
 const Reverb = require('soundbank-reverb');
 const BitBuffer = require('bit-buffer');
-const beamcoder = require('beamcoder');
+//const beamcoder = require('beamcoder');
 const dxt = require('dxt');
 
 const isRunningInAsar = function(){

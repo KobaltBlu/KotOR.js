@@ -2467,8 +2467,8 @@ class ModuleCreatureController extends ModuleObject {
               }else{
                 let intersect = intersects[i];
 
-                let posMin = this.position.clone();//.sub( _axisFront.clone() );
-                let posMax = this.position.clone().add( _axisFront.clone() );
+                let posMin = this.position.clone();
+                let posMax = this.position.clone().add( _axisFront.clone().normalize().multiplyScalar(2) );
 
                 //The three lines that make up the triangle
                 let line_a = [intersect.object.vertices[intersect.face.a], intersect.object.vertices[intersect.face.b]];
@@ -2522,8 +2522,26 @@ class ModuleCreatureController extends ModuleObject {
                 }
                 
                 if(closest_point){
-                  //console.log('closest_point', closest_point);
-                  let i_dist = closest_point.distanceTo(posMax);
+
+
+                  /*
+                  console.log('closest_point', closest_point);
+                  let normalized = closest_point.clone().normalize();
+                  let dotProduct = this.position.dot(normalized);
+                  this.AxisFront.x = normalized.x;//this.AxisFront.x - (dotProduct * normalized.x);
+                  this.AxisFront.y = normalized.y;//this.AxisFront.y - (dotProduct * normalized.y);
+                  this.AxisFront.multiply(_axisFront).sub(_axisFront);
+                  this.AxisFront.z = 0;
+                  console.log(normalized, this.AxisFront, _axisFront, this.position, dotProduct)
+                  */
+
+                  console.log('closest_point', closest_point);
+                  let normalized = closest_point.clone().normalize();
+                  let dotProduct = this.position.dot(normalized);
+                  this.AxisFront.x = this.AxisFront.x - (dotProduct * normalized.x);
+                  this.AxisFront.y = this.AxisFront.y - (dotProduct * normalized.y);
+                  this.AxisFront.z = 0;
+                  /*let i_dist = closest_point.distanceTo(posMax);
                   let planeOrigin = closest_point.clone();
                   let planeNormal = posMax.clone().sub(closest_point);
                   planeNormal.normalize();
@@ -2551,7 +2569,7 @@ class ModuleCreatureController extends ModuleObject {
                   //this.AxisFront.copy(closest_point.clone().sub(this.position));
                   //if(this == Game.player){
                     //console.log(this.AxisFront.cross(_axisFront), this.AxisFront, _axisFront)
-                  //}
+                  //}*/
                 }else{
                   //console.log('no intersect');
                   this.AxisFront.set(posMax.x - intersect.point.x, posMax.y - intersect.point.y, 0);

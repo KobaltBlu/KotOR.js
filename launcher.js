@@ -1,5 +1,6 @@
 const remote = require('electron').remote;
 const app = remote.app;
+app.allowRendererProcessReuse = false;
 const {BrowserWindow, dialog} = require('electron').remote;
 const {ipcRenderer} = require('electron');
 const shell = require('electron').shell;
@@ -330,7 +331,10 @@ function buildProfileElement(profile = {}){
         alert(err);
       });
     }else{
-      ipcRenderer.send('launch_profile', profile);
+      let clean_profle = Object.assign({}, profile);
+      delete clean_profle.nodes;
+      console.log(clean_profle);
+      ipcRenderer.send('launch_profile', clean_profle);
     }
   });
 

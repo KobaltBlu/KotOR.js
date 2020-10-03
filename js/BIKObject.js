@@ -149,6 +149,11 @@ class BIKObject {
   }
 
   async play(file = '', onComplete = undefined) {
+    return;
+    // Beamcoder has been removed from the project.
+    // I plan on writing a bink decoder at some point,
+    // which will be more lightweight than the beamcoder library was.
+
     this.file = file;
 
     let _path = this.abs_path ? this.file : path.join(Config.options.Games[GameKey].Location, 'Movies', this.file);

@@ -164,11 +164,11 @@ class Module {
 
     let initScripts = [];
 
-    if(this.scripts.OnModLoad != ''){
+    if(this.scripts.onModLoad != ''){
       initScripts.push('OnModLoad');
     }
     
-    if(this.scripts.OnClientEntr != ''){
+    if(this.scripts.onClientEntr != ''){
       initScripts.push('OnClientEntr');
     }
 
@@ -194,11 +194,11 @@ class Module {
       //Load any MiniGame scripts if available
       this.miniGameScripts( () => {
         //Load the Module Area's OnEnter Script
-        if(this.area.scripts.OnEnter instanceof NWScriptInstance){
-          console.log('onEnter', this.area.scripts.OnEnter)
-          this.area.scripts.OnEnter.enteringObject = Game.player;
-          this.area.scripts.OnEnter.debug.action = true;
-          this.area.scripts.OnEnter.run(this.area, 0, () => {
+        if(this.area.scripts.onEnter instanceof NWScriptInstance){
+          console.log('onEnter', this.area.scripts.onEnter)
+          this.area.scripts.onEnter.enteringObject = Game.player;
+          this.area.scripts.onEnter.debug.action = true;
+          this.area.scripts.onEnter.run(this.area, 0, () => {
             if(typeof onComplete === 'function')
               onComplete();
           });
@@ -508,20 +508,20 @@ class Module {
               }
 
               //Scripts
-              module.scripts.OnAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
-              module.scripts.OnActvItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
-              module.scripts.OnClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
-              module.scripts.OnClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
-              module.scripts.OnHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
-              module.scripts.OnModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
-              module.scripts.OnModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
-              module.scripts.OnPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
-              module.scripts.OnPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
-              module.scripts.OnPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
-              module.scripts.OnPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
-              module.scripts.OnSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
-              module.scripts.OnUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
-              module.scripts.OnUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
+              module.scripts.onAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
+              module.scripts.onActvItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
+              module.scripts.onClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
+              module.scripts.onClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
+              module.scripts.onHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
+              module.scripts.onModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
+              module.scripts.onModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
+              module.scripts.onPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
+              module.scripts.onPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
+              module.scripts.onPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
+              module.scripts.onPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
+              module.scripts.onSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
+              module.scripts.onUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
+              module.scripts.onUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
 
               module.Mod_StartDay = gff.GetFieldByLabel('Mod_StartDay').GetValue();
               module.Mod_StartHour = gff.GetFieldByLabel('Mod_StartHour').GetValue();
@@ -638,20 +638,20 @@ class Module {
           }
 
           //Scripts
-          module.scripts.OnAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
-          module.scripts.OnActvItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
-          module.scripts.OnClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
-          module.scripts.OnClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
-          module.scripts.OnHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
-          module.scripts.OnModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
-          module.scripts.OnModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
-          module.scripts.OnPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
-          module.scripts.OnPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
-          module.scripts.OnPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
-          module.scripts.OnPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
-          module.scripts.OnSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
-          module.scripts.OnUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
-          module.scripts.OnUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
+          module.scripts.onAcquirItem = gff.GetFieldByLabel('Mod_OnAcquirItem').GetValue();
+          module.scripts.onActvItem = gff.GetFieldByLabel('Mod_OnActvtItem').GetValue();
+          module.scripts.onClientEntr = gff.GetFieldByLabel('Mod_OnClientEntr').GetValue();
+          module.scripts.onClientLeav = gff.GetFieldByLabel('Mod_OnClientLeav').GetValue();
+          module.scripts.onHeartbeat = gff.GetFieldByLabel('Mod_OnHeartbeat').GetValue();
+          module.scripts.onModLoad = gff.GetFieldByLabel('Mod_OnModLoad').GetValue();
+          module.scripts.onModStart = gff.GetFieldByLabel('Mod_OnModStart').GetValue();
+          module.scripts.onPlrDeath = gff.GetFieldByLabel('Mod_OnPlrDeath').GetValue();
+          module.scripts.onPlrDying = gff.GetFieldByLabel('Mod_OnPlrDying').GetValue();
+          module.scripts.onPlrLvlUp = gff.GetFieldByLabel('Mod_OnPlrLvlUp').GetValue();
+          module.scripts.onPlrRest = gff.GetFieldByLabel('Mod_OnPlrRest').GetValue();
+          module.scripts.onSpawnBtnDn = gff.GetFieldByLabel('Mod_OnSpawnBtnDn').GetValue();
+          module.scripts.onUnAqreItem = gff.GetFieldByLabel('Mod_OnUnAqreItem').GetValue();
+          module.scripts.onUsrDefined = gff.GetFieldByLabel('Mod_OnUsrDefined').GetValue();
 
           module.Mod_StartDay = gff.GetFieldByLabel('Mod_StartDay').GetValue();
           module.Mod_StartHour = gff.GetFieldByLabel('Mod_StartHour').GetValue();
@@ -784,20 +784,20 @@ class Module {
     ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_IsSaveGame', 0) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_MinPerHour', this.Mod_MinPerHour) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_Name') ).CExoLocString = this.Mod_Name;
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnAcquirItem', this.OnAcquirItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnActvtItem', this.OnActvItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientEntr', this.OnClientEntr) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientLeav', this.OnClientLeav) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnHeartbeat', this.OnHeartbeat) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModLoad', this.OnModLoad) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModStart', this.OnModStart) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDeath', this.OnPlrDeath) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDying', this.OnPlrDying) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrLvlUp', this.OnPlrLvlUp) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrRest', this.OnPlrRest) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnSpawnBtnDn', this.OnSpawnBtnDn) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUnAqreItem', this.OnUnAqreItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUsrDefined', this.OnUsrDefined) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnAcquirItem', this.onAcquirItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnActvtItem', this.onActvItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientEntr', this.onClientEntr) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientLeav', this.onClientLeav) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnHeartbeat', this.onHeartbeat) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModLoad', this.onModLoad) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModStart', this.onModStart) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDeath', this.onPlrDeath) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDying', this.onPlrDying) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrLvlUp', this.onPlrLvlUp) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrRest', this.onPlrRest) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnSpawnBtnDn', this.onSpawnBtnDn) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUnAqreItem', this.onUnAqreItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUsrDefined', this.onUsrDefined) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartDay', this.Mod_StartDay) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartHour', this.Mod_StartHour) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartMonth', this.Mod_StartMonth) );

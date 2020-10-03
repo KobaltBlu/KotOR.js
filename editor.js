@@ -23,7 +23,7 @@ const recursive = require('recursive-readdir');
 const StringDecoder = require('string_decoder').StringDecoder;
 const Reverb = require('soundbank-reverb');
 const BitBuffer = require('bit-buffer');
-const beamcoder = require('beamcoder');
+//const beamcoder = require('beamcoder');
 const dxt = require('dxt');
 
 const isRunningInAsar = function(){

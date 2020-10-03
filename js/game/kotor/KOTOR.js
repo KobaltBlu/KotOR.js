@@ -1489,53 +1489,55 @@ class Game extends Engine {
   }
 
   static UpdateVisibleRooms(){
-    if(Game.inDialog){
 
-      let rooms = [];
-      //let _room = undefined;
-      //let _distance = 1000000000;
-      for(let i = 0; i < Game.module.area.rooms.length; i++){
-        let room = Game.module.area.rooms[i];
-        let model = room.model;
-        if(model != undefined && model.type === 'AuroraModel'){
-          let pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
-          if(model.box.containsPoint(pos)){
-            rooms.push(room);
-            /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-            let distance = pos.distanceTo(roomCenter);
-            if(distance < _distance){
-              _distance = distance;
-              _room = room;
-            }*/
+    let rooms = [];
+    let room = undefined;
+    let model = undefined;
+    let pos = 0;
+    //let _room = undefined;
+    //let _distance = 1000000000;
+    
+    if(Game.inDialog){
+      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
+      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
+        room = Game.module.area.rooms[i] || undefined;
+        if(room){
+          model = room.model || undefined;
+          if(model != undefined && model.type === 'AuroraModel'){
+            
+            if(model.box.containsPoint(pos)){
+              rooms.push(room);
+              /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
+              let distance = pos.distanceTo(roomCenter);
+              if(distance < _distance){
+                _distance = distance;
+                _room = room;
+              }*/
+            }
           }
         }
       }
 
       //if(_room)
         //_room.show(true);
-
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
-      }
 
     }else if(PartyManager.party[0]){
 
-      let rooms = [];
-      //let _room = undefined;
-      //let _distance = 1000000000;
-      for(let i = 0; i < Game.module.area.rooms.length; i++){
-        let room = Game.module.area.rooms[i];
-        let model = room.model;
-        if(model != undefined && model.type === 'AuroraModel'){
-          let pos = PartyManager.party[0].position.clone().add(Game.playerFeetOffset);
-          if(model.box.containsPoint(pos)){
-            rooms.push(room);
-            /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-            let distance = pos.distanceTo(roomCenter);
-            if(distance < _distance){
-              _distance = distance;
-              _room = room;
-            }*/
+      pos = PartyManager.party[0].position.clone().add(Game.playerFeetOffset);
+      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
+        room = Game.module.area.rooms[i] || undefined;
+        if(room){
+          model = room.model || undefined;
+          if(model != undefined && model.type === 'AuroraModel'){
+            if(model.box.containsPoint(pos)){
+              rooms.push(room);
+              /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
+              let distance = pos.distanceTo(roomCenter);
+              if(distance < _distance){
+                _distance = distance;
+                _room = room;
+              }*/
+            }
           }
         }
       }
@@ -1543,11 +1545,12 @@ class Game extends Engine {
       //if(_room)
         //_room.show(true);
 
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
-      }
-
     }
+
+    for(let i = 0; i < rooms.length; i++){
+      rooms[i].show(true);
+    }
+
   }
 
   static getCurrentPlayer(){

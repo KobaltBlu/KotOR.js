@@ -229,9 +229,9 @@ class Engine {
           console.log('loadScene', d);
 
           process.nextTick( ()=> {
-            if(Engine.module.area.scripts.OnEnter instanceof NWScriptInstance){
-              Engine.module.area.scripts.OnEnter.enteringObject = Engine.player;
-              Engine.module.area.scripts.OnEnter.run(Engine.module.area, 0, () => {
+            if(Engine.module.area.scripts.onEnter instanceof NWScriptInstance){
+              Engine.module.area.scripts.onEnter.enteringObject = Engine.player;
+              Engine.module.area.scripts.onEnter.run(Engine.module.area, 0, () => {
                 AudioEngine.Unmute();
                 Engine.InGameDialog.audioEmitter = undefined
                 Engine.InGameOverlay.RecalculatePosition();
