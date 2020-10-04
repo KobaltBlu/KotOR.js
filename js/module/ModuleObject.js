@@ -255,8 +255,8 @@ class ModuleObject {
     }
   }
 
-  onSpawn(){
-    if(this.scripts.onSpawn instanceof NWScriptInstance){
+  onSpawn(runScript = true){
+    if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
       this.scripts.onSpawn.run(this, 0, () => {
         this.spawned = true;
       });

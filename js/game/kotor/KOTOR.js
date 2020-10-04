@@ -39,7 +39,7 @@ class Game extends Engine {
     Game.context = Game.canvas.getContext( 'webgl' );
 
     Game.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      //antialias: true,
       canvas: Game.canvas,
       context: Game.context,
       logarithmicDepthBuffer: false
@@ -416,12 +416,10 @@ class Game extends Engine {
 
     Game.composer = new THREE.EffectComposer(Game.renderer);
     Game.renderPass = new THREE.RenderPass(Game.scene, Game.currentCamera);
-    Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
+    //Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
     Game.saturationPass = new THREE.ShaderPass(saturationShader);
     Game.colorPass = new THREE.ShaderPass(THREE.ColorCorrectionShader);
     Game.copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    Game.copyPass2 = new THREE.ShaderPass(THREE.CopyShader);
-    Game.copyPass3 = new THREE.ShaderPass(THREE.CopyShader);
     Game.renderPassGUI = new THREE.RenderPass(Game.scene_gui, Game.camera_gui);
     Game.renderPassCursor = new THREE.RenderPass(Game.scene_cursor, Game.camera_gui);
     
@@ -437,15 +435,20 @@ class Game extends Engine {
 
     //Game.renderPassAA.sampleLevel = 1;
 
-    Game.renderPass.needsSwap = true;
-    Game.renderPassGUI.needsSwap  = false;
-    Game.renderPassCursor.needsSwap  = true;
-    // Game.bloomPass.clear = false;
-    // Game.filmPass.clear = false;
-    // Game.colorPass.clear = false;
-    // Game.saturationPass.clear = false;
-    // //Game.renderPassAA.clear = false;
-    // Game.copyPass.clear = false;
+    Game.copyPass.renderToScreen = true;
+    Game.renderPassGUI.renderToScreen = true;
+    Game.renderPassCursor.renderToScreen = true;
+
+    Game.renderPass.clear = true;
+    Game.bloomPass.clear = false;
+    Game.filmPass.clear = false;
+    Game.colorPass.clear = false;
+    Game.saturationPass.clear = false;
+    //Game.renderPassAA.clear = false;
+    Game.copyPass.clear = false;
+    Game.renderPassGUI.clear = false;
+    Game.renderPassCursor.clear = false;
+    Game.renderPassGUI.clearDepth = true;
 
     Game.colorPass.uniforms.powRGB.value.set(1,1,1);
     Game.colorPass.uniforms.mulRGB.value.set(0.5,.5,.5);
@@ -453,29 +456,19 @@ class Game extends Engine {
     Game.bokehPass.needsSwap = true;
     Game.bokehPass.enabled = false;
 
-    /*Game.renderPass.renderToScreen = true;
-    Game.renderPass.clear = false;
-    Game.renderPassGUI.renderToScreen = true;
-    Game.renderPassGUI.clear = false;
-    Game.renderPassCursor.renderToScreen = true;
-    Game.renderPassCursor.clear = false;*/
-    
-    //Game.renderPassGUI.renderToScreen = true;
-
     Game.composer.addPass(Game.renderPass);
-    // Game.composer.addPass(Game.bokehPass);
-    // //Game.composer.addPass(Game.renderPassAA);
-    // Game.composer.addPass(Game.filmPass);
-    // Game.composer.addPass(Game.colorPass);
-    // Game.composer.addPass(Game.saturationPass);
-    // Game.composer.addPass(Game.bloomPass);
-    // Game.composer.addPass(Game.copyPass);
-    //Game.composer.addPass(Game.copyPass);
+    Game.composer.addPass(Game.bokehPass);
+    //Game.composer.addPass(Game.renderPassAA);
+    Game.composer.addPass(Game.filmPass);
+    Game.composer.addPass(Game.colorPass);
+    Game.composer.addPass(Game.saturationPass);
+    Game.composer.addPass(Game.bloomPass);
+
     Game.composer.addPass(Game.renderPassGUI);
     Game.composer.addPass(Game.renderPassCursor);
     Game.composer.addPass(Game.copyPass);
 
-    Game.renderPass.clearDepth = false;
+    Game.renderPass.clearDepth = true;
     Game.renderPassGUI.clearDepth = true;
     Game.renderPassCursor.clearDepth = true;
     Game.renderPass.clear = true;
@@ -484,8 +477,6 @@ class Game extends Engine {
     Game.renderPass.needsSwap = false;
     Game.renderPassGUI.needsSwap = false;
     Game.renderPassCursor.needsSwap = false;
-
-    //END: PostProcessing
 
     $( window ).resize(() => {
 
@@ -1045,43 +1036,43 @@ class Game extends Engine {
                   Game.FadeOverlay.FadeIn(1, 0, 0, 0);
                   Game.module.readyToProcessEvents = true;
 
-                  if(runSpawnScripts){
-                    for(let i = 0; i < Game.module.area.creatures.length; i++){
-                      if(Game.module.area.creatures[i] instanceof ModuleObject){
-                        Game.module.area.creatures[i].onSpawn();
-                      }
-                    }
-
-                    for(let i = 0; i < PartyManager.party.length; i++){
-                      if(PartyManager.party[i] instanceof ModuleObject){
-                        PartyManager.party[i].onSpawn();
-                      }
-                    }
-
-                    for(let i = 0; i < Game.module.area.placeables.length; i++){
-                      if(Game.module.area.placeables[i] instanceof ModuleObject){
-                        Game.module.area.placeables[i].onSpawn();
-                      }
-                    }
-
-                    for(let i = 0; i < Game.module.area.doors.length; i++){
-                      if(Game.module.area.doors[i] instanceof ModuleObject){
-                        Game.module.area.doors[i].onSpawn();
-                      }
-                    }
-
-                    for(let i = 0; i < Game.module.area.triggers.length; i++){
-                      if(Game.module.area.triggers[i] instanceof ModuleObject){
-                        Game.module.area.triggers[i].onSpawn();
-                      }
-                    }
-
-                    for(let i = 0; i < Game.module.area.waypoints.length; i++){
-                      if(Game.module.area.waypoints[i] instanceof ModuleObject){
-                        Game.module.area.waypoints[i].onSpawn();
-                      }
+                  for(let i = 0; i < Game.module.area.creatures.length; i++){
+                    if(Game.module.area.creatures[i] instanceof ModuleObject){
+                      Game.module.area.creatures[i].onSpawn(runSpawnScripts);
                     }
                   }
+
+                  for(let i = 0; i < PartyManager.party.length; i++){
+                    if(PartyManager.party[i] instanceof ModuleObject){
+                      PartyManager.party[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.placeables.length; i++){
+                    if(Game.module.area.placeables[i] instanceof ModuleObject){
+                      Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.doors.length; i++){
+                    if(Game.module.area.doors[i] instanceof ModuleObject){
+                      Game.module.area.doors[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.triggers.length; i++){
+                    if(Game.module.area.triggers[i] instanceof ModuleObject){
+                      Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.waypoints.length; i++){
+                    if(Game.module.area.waypoints[i] instanceof ModuleObject){
+                      Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+                  
+                  Game.player.onSpawn(runSpawnScripts);
 
               }, 1000);                
               
@@ -1454,7 +1445,7 @@ class Game extends Engine {
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
       Game.updateCursor();
       Game.renderPass.camera = Game.currentCamera;
-      Game.renderPassAA.camera = Game.currentCamera;
+      //Game.renderPassAA.camera = Game.currentCamera;
       Game.bokehPass.camera = Game.currentCamera;
 
       // render scene into target

@@ -1,3 +1,7 @@
+:focus {
+  outline: -webkit-focus-ring-color auto 0px;
+}
+
 html {
   cursor: none;
 }

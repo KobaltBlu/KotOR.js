@@ -463,6 +463,23 @@ class AuroraModel {
       }
     }
 
+    if(mesh.TextureCount){
+      this.mdlReader.position = this.fileHeader.ModelDataOffset + mesh.FaceArrayOffset;
+      for (let i = 0; i < mesh.FaceArrayCount; i++) {
+        mesh.faces[i].normalX = this.mdlReader.ReadSingle();
+        mesh.faces[i].normalY = this.mdlReader.ReadSingle();
+        mesh.faces[i].normalZ = this.mdlReader.ReadSingle();
+        mesh.faces[i].distance = this.mdlReader.ReadSingle();
+        mesh.faces[i].materialId = this.mdlReader.ReadUInt32();
+        mesh.faces[i].nAdjacentFaces1 = this.mdlReader.ReadUInt16();
+        mesh.faces[i].nAdjacentFaces2 = this.mdlReader.ReadUInt16();
+        mesh.faces[i].nAdjacentFaces3 = this.mdlReader.ReadUInt16();
+        mesh.faces[i].indexVertex1 = this.mdlReader.ReadUInt16();
+        mesh.faces[i].indexVertex2 = this.mdlReader.ReadUInt16();
+        mesh.faces[i].indexVertex3 = this.mdlReader.ReadUInt16();
+      }
+    }
+
     this.mdlReader.position = endPos;
 
     return mesh;

@@ -624,6 +624,11 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getWalkRateId(){
+
+    if(PartyManager.party.indexOf(this) >= 0){
+      return 0;
+    }
+
     return this.walkRate;
   }
 
@@ -640,10 +645,16 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getRunSpeed(){
+    if(this.getWalkRateId() == 7){
+      return parseFloat(this.getAppearance().rundist)
+    }
     return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].runrate);
   }
 
   getWalkSpeed(){
+    if(this.getWalkRateId() == 7){
+      return parseFloat(this.getAppearance().walkdist)
+    }
     return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
   }
 

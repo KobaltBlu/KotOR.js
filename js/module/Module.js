@@ -165,11 +165,11 @@ class Module {
     let initScripts = [];
 
     if(this.scripts.onModLoad != ''){
-      initScripts.push('OnModLoad');
+      initScripts.push('onModLoad');
     }
     
     if(this.scripts.onClientEntr != ''){
-      initScripts.push('OnClientEntr');
+      initScripts.push('onClientEntr');
     }
 
     let keys = Object.keys(this.scripts);
@@ -180,11 +180,16 @@ class Module {
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          this.scripts[key].enteringObject = Game.player;
-          this.scripts[key].run(Game.module.area, 0, () => {
+          if(this.scripts[key] instanceof NWScriptInstance){
+            //this.scripts[key].name = _script;
+            this.scripts[key].enteringObject = Game.player;
+            this.scripts[key].run(Game.module.area, 0, () => {
+              asyncLoop._Loop();
+            });
+          }else{
+            console.error('Module failed to load script', _script, key);
             asyncLoop._Loop();
-          });
+          }
         }else{
           asyncLoop._Loop();
         }
@@ -193,7 +198,7 @@ class Module {
     loop.Begin(() => {
       //Load any MiniGame scripts if available
       this.miniGameScripts( () => {
-        //Load the Module Area's OnEnter Script
+        //Load the Module Area's onEnter Script
         if(this.area.scripts.onEnter instanceof NWScriptInstance){
           console.log('onEnter', this.area.scripts.onEnter)
           this.area.scripts.onEnter.enteringObject = Game.player;

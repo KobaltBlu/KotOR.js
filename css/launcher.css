@@ -1,3 +1,7 @@
+:focus {
+  outline: -webkit-focus-ring-color auto 0px;
+}
+
 @font-face {
 	font-family: 'Trajan';
 	src: url('editor/Trajan Pro Regular.woff2') format('woff2'),

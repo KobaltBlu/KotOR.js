@@ -1040,6 +1040,13 @@ class Game extends Engine {
 
             process.nextTick( () => {
             
+              if(Game.module.area.MiniGame){
+                Game.Mode = Game.MODES.MINIGAME
+              }else{
+                Game.Mode = Game.MODES.INGAME;
+              }
+
+              let runSpawnScripts = !Game.isLoadingSave;
               Game.isLoadingSave = false;
 
               Game.player.scripts.onDialog.debug.action = true;
@@ -1056,12 +1063,42 @@ class Game extends Engine {
 
                 //console.log('Running creature onSpawn scripts');
                 for(let i = 0; i < Game.module.area.creatures.length; i++){
-                  if(Game.module.area.creatures[i] instanceof ModuleCreature){
-                    if(Game.module.area.creatures[i].scripts.onSpawn instanceof NWScriptInstance){
-                      Game.module.area.creatures[i].scripts.onSpawn.run(Game.module.area.creatures[i]);
-                    }
+                  if(Game.module.area.creatures[i] instanceof ModuleObject){
+                    Game.module.area.creatures[i].onSpawn(runSpawnScripts);
                   }
                 }
+
+                for(let i = 0; i < PartyManager.party.length; i++){
+                  if(PartyManager.party[i] instanceof ModuleObject){
+                    PartyManager.party[i].onSpawn(runSpawnScripts);
+                  }
+                }
+
+                for(let i = 0; i < Game.module.area.placeables.length; i++){
+                  if(Game.module.area.placeables[i] instanceof ModuleObject){
+                    Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+                  }
+                }
+
+                for(let i = 0; i < Game.module.area.doors.length; i++){
+                  if(Game.module.area.doors[i] instanceof ModuleObject){
+                    Game.module.area.doors[i].onSpawn(runSpawnScripts);
+                  }
+                }
+
+                for(let i = 0; i < Game.module.area.triggers.length; i++){
+                  if(Game.module.area.triggers[i] instanceof ModuleObject){
+                    Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+                  }
+                }
+
+                for(let i = 0; i < Game.module.area.waypoints.length; i++){
+                  if(Game.module.area.waypoints[i] instanceof ModuleObject){
+                    Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+                  }
+                }
+                
+                Game.player.onSpawn(runSpawnScripts);
 
                 Game.InGameOverlay.RecalculatePosition();
                 Game.InGameOverlay.Open();
