@@ -1336,13 +1336,6 @@ class Game extends Engine {
         Game.module.area.grassMaterial.uniforms.time.value += delta;
         Game.module.area.grassMaterial.uniforms.playerPosition.value = Game.player.position;
 
-        Game.UpdateVisibleRooms();
-
-        //update rooms
-        for(let i = 0; i < roomCount; i++){
-          Game.module.area.rooms[i].update(delta);
-        }
-
         //update triggers
         for(let i = 0; i < trigCount; i++){
           Game.module.area.triggers[i].update(delta);
@@ -1383,6 +1376,14 @@ class Game extends Engine {
             Game.module.area.MiniGame.Enemies[i].update(delta);
           }
         }
+
+        //update rooms
+        for(let i = 0; i < roomCount; i++){
+          Game.module.area.rooms[i].update(delta);
+          Game.module.area.rooms[i].hide();
+        }
+
+        Game.UpdateVisibleRooms();
 
         for(let i = 0; i < Game.walkmeshList.length; i++){
           let obj = Game.walkmeshList[i];
@@ -1510,14 +1511,24 @@ class Game extends Engine {
   }
 
   static UpdateVisibleRooms(){
-    if(Game.inDialog){
 
-      let rooms = [];
-      for(let i = 0; i < Game.module.area.rooms.length; i++){
-        let room = Game.module.area.rooms[i];
-        room.hide();
-        if(room.containsPoint2d(Game.currentCamera.position)){
-          rooms.push(room);
+    let rooms = [];
+    let room = undefined;
+    let model = undefined;
+    let pos = 0;
+    
+    if(Game.inDialog){
+      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
+      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
+        room = Game.module.area.rooms[i] || undefined;
+        if(room){
+          model = room.model || undefined;
+          if(model != undefined && model.type === 'AuroraModel'){
+            
+            if(model.box.containsPoint(pos)){
+              rooms.push(room);
+            }
+          }
         }
       }
 
@@ -1527,23 +1538,26 @@ class Game extends Engine {
 
     }else if(PartyManager.party[0]){
 
-      let rooms = [];
-      //let _room = undefined;
-      //let _distance = 1000000000;
-      for(let i = 0; i < Game.module.area.rooms.length; i++){
-        let room = Game.module.area.rooms[i];
-        room.hide();
-        let pos = PartyManager.party[0].position.clone().add(Game.playerFeetOffset);
-        if(room.containsPoint2d(pos)){
-          rooms.push(room);
+      let player = Game.getCurrentPlayer();
+      if(player && player.room){
+        player.room.show(true);
+      }
+
+      //SKYBOX Fix
+      if(player){
+        for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
+          let room = Game.module.area.rooms[i];
+          if(room.model instanceof THREE.AuroraModel){
+            if(room.model.box.containsPoint(player.position)){
+              //Show the room, but don't recursively show it's children
+              room.show(false);
+            }
+          }
         }
       }
 
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
-      }
-
     }
+
   }
 
   static getCurrentPlayer(){

@@ -457,12 +457,12 @@ class Game extends Engine {
     Game.bokehPass.enabled = false;
 
     Game.composer.addPass(Game.renderPass);
-    Game.composer.addPass(Game.bokehPass);
+    //Game.composer.addPass(Game.bokehPass);
     //Game.composer.addPass(Game.renderPassAA);
-    Game.composer.addPass(Game.filmPass);
-    Game.composer.addPass(Game.colorPass);
-    Game.composer.addPass(Game.saturationPass);
-    Game.composer.addPass(Game.bloomPass);
+    //Game.composer.addPass(Game.filmPass);
+    //Game.composer.addPass(Game.colorPass);
+    //Game.composer.addPass(Game.saturationPass);
+    //Game.composer.addPass(Game.bloomPass);
 
     Game.composer.addPass(Game.renderPassGUI);
     Game.composer.addPass(Game.renderPassCursor);
@@ -1296,13 +1296,6 @@ class Game extends Engine {
         Game.module.area.grassMaterial.uniforms.time.value += delta;
         Game.module.area.grassMaterial.uniforms.playerPosition.value = Game.player.position;
 
-        Game.UpdateVisibleRooms();
-
-        //update rooms
-        for(let i = 0; i < roomCount; i++){
-          Game.module.area.rooms[i].update(delta);
-        }
-
         //update triggers
         for(let i = 0; i < trigCount; i++){
           Game.module.area.triggers[i].update(delta);
@@ -1343,6 +1336,14 @@ class Game extends Engine {
             Game.module.area.MiniGame.Enemies[i].update(delta);
           }
         }
+
+        //update rooms
+        for(let i = 0; i < roomCount; i++){
+          Game.module.area.rooms[i].update(delta);
+          Game.module.area.rooms[i].hide();
+        }
+
+        Game.UpdateVisibleRooms();
 
         for(let i = 0; i < Game.walkmeshList.length; i++){
           let obj = Game.walkmeshList[i];
@@ -1485,8 +1486,6 @@ class Game extends Engine {
     let room = undefined;
     let model = undefined;
     let pos = 0;
-    //let _room = undefined;
-    //let _distance = 1000000000;
     
     if(Game.inDialog){
       pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
@@ -1498,48 +1497,35 @@ class Game extends Engine {
             
             if(model.box.containsPoint(pos)){
               rooms.push(room);
-              /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-              let distance = pos.distanceTo(roomCenter);
-              if(distance < _distance){
-                _distance = distance;
-                _room = room;
-              }*/
             }
           }
         }
       }
 
-      //if(_room)
-        //_room.show(true);
+      for(let i = 0; i < rooms.length; i++){
+        rooms[i].show(true);
+      }
 
     }else if(PartyManager.party[0]){
 
-      pos = PartyManager.party[0].position.clone().add(Game.playerFeetOffset);
-      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-        room = Game.module.area.rooms[i] || undefined;
-        if(room){
-          model = room.model || undefined;
-          if(model != undefined && model.type === 'AuroraModel'){
-            if(model.box.containsPoint(pos)){
-              rooms.push(room);
-              /*let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-              let distance = pos.distanceTo(roomCenter);
-              if(distance < _distance){
-                _distance = distance;
-                _room = room;
-              }*/
+      let player = Game.getCurrentPlayer();
+      if(player && player.room){
+        player.room.show(true);
+      }
+
+      //SKYBOX Fix
+      if(player){
+        for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
+          let room = Game.module.area.rooms[i];
+          if(room.model instanceof THREE.AuroraModel){
+            if(room.model.box.containsPoint(player.position)){
+              //Show the room, but don't recursively show it's children
+              room.show(false);
             }
           }
         }
       }
 
-      //if(_room)
-        //_room.show(true);
-
-    }
-
-    for(let i = 0; i < rooms.length; i++){
-      rooms[i].show(true);
     }
 
   }

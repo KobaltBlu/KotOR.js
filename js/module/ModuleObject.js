@@ -190,6 +190,24 @@ class ModuleObject {
       }
     }
 
+    if(this.spawned){
+      if(!this.room){
+        if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
+          this.roomCheckTimer = 1;
+          this.getCurrentRoom();
+        }
+        this.roomCheckTimer -= delta;
+      }
+
+      if(this.model){
+        if(!this.room || (this.room && !this.room.model.visible)){
+          this.model.visible = false;
+        }else{
+          this.model.visible = true;
+        }
+      }
+    }
+
   }
 
   setFacing(facing = 0, instant = false){
@@ -391,8 +409,12 @@ class ModuleObject {
 
   getCurrentRoom(){
     this.room = undefined;
+    let aabbFaces = [];
+    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+    let box = this.model.box.clone();
+
     this.rooms = [];
-    let _distance = 1000000000;
     for(let i = 0; i < Game.module.area.rooms.length; i++){
       let room = Game.module.area.rooms[i];
       let model = room.model;
@@ -400,14 +422,44 @@ class ModuleObject {
         let pos = this.position.clone();
         if(model.box.containsPoint(pos)){
           this.rooms.push(i);
-          let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-          let distance = pos.distanceTo(roomCenter);
-          if(distance < _distance){
-            _distance = distance;
-            this.room = room;
-          }
         }
       }
+    }
+
+    if(box){
+      for(let j = 0, jl = this.rooms.length; j < jl; j++){
+        let room = Game.module.area.rooms[this.rooms[j]];
+        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+          aabbFaces.push({
+            object: room, 
+            faces: room.walkmesh.getAABBCollisionFaces(box)
+          });
+        }
+      }
+    }
+    
+    let scratchVec3 = new THREE.Vector3(0, 0, 2);
+    let playerFeetRay = this.position.clone().add(scratchVec3);
+    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+    Game.raycaster.ray.direction.set(0, 0,-1);
+    
+    for(let j = 0, jl = aabbFaces.length; j < jl; j++){
+      let castableFaces = aabbFaces[j];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      
+      if(intersects.length){
+        if(this == Game.player){
+          //console.log(intersects);
+        }
+        if(intersects[0].object.moduleObject){
+          this.room = intersects[0].object.moduleObject;
+          return;
+        }
+      }
+    }
+    if(this.rooms.length){
+      this.room = Game.module.area.rooms[this.rooms[0]];
+      return;
     }
   }
 
