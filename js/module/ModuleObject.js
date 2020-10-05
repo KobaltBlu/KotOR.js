@@ -210,6 +210,137 @@ class ModuleObject {
 
   }
 
+  getAnimationNameById(id=-1){
+    if(typeof id === 'string'){
+      return id;
+    }else{
+      switch(id){
+        case 0:  //PAUSE
+          return 'pause';
+        case 1:  //PAUSE2
+          return 'pause2';
+        case 2:  //LISTEN
+          return 'listen';
+        case 3:  //MEDITATE
+          return 'meditate';
+        case 4:  //WORSHIP
+          return 'kneel';//['kneel', 'meditate'];
+        case 5:  //TALK_NORMAL
+          return 'tlknorm';
+        case 6:  //TALK_PLEADING
+          return 'tlkplead';
+        case 7:  //TALK_FORCEFUL
+          return 'tlkforce';
+        case 8:  //TALK_LAUGHING
+          return 'tlklaugh';
+        case 9:  //TALK_SAD
+          return 'tlksad';
+        case 10: //GET_LOW
+          return 'getfromgnd';
+        case 11: //GET_MID
+          return 'getfromcntr';
+        //case 12: //PAUSE_TIRED
+        //case 13: //PAUSE_DRUNK
+        case 14: //FLIRT
+          return 'flirt';
+        case 15: //USE_COMPUTER
+          return 'usecomplp';
+        case 16: //DANCE
+          return 'dance';
+        case 17: //DANCE1
+          return 'dance1';
+        case 18: //HORROR
+          return 'horror';
+        //case 19: //READY
+        //case 20: //DEACTIVATE
+        //case 21: //SPASM
+        case 22: //SLEEP
+          return 'sleep';
+        case 23: //PRONE
+          return 'prone';
+        case 24: //PAUSE3
+          return 'pause3';
+        case 25: //WELD
+          return 'weld';
+        case 26: //DEAD
+          return 'dead';
+        case 27: //TALK_INJURED
+          return 'talkinj';
+        case 28: //LISTEN_INJURED
+          return 'listeninj';
+        case 29: //TREAT_INJURED
+          return 'treatinj';
+        case 30: //DEAD_PRONE
+          return 'dead';
+        //case 31: //KNEEL_TALK_ANGRY
+        //case 32: //KNEEL_TALK_SAD
+        case 35: //MEDITATE LOOP
+          return 'meditate';
+        case 100: //HEAD_TURN_LEFT
+          return 'hturnl';
+        case 101: //HEAD_TURN_RIGHT
+          return 'hturnr';
+        case 102: //PAUSE_SCRATCH_HEAD
+          return 'pause3';
+        case 103: //PAUSE_BORED
+          return 'pause2';
+        case 104: //SALUTE
+          return 'salute';
+        case 105: //BOW
+          return 'bow';
+        case 106: //GREETING
+          return 'greeting';
+        case 107: //TAUNT
+          return 'taunt';
+        case 108: //VICTORY1
+          return 'victory';
+        case 109: //VICTORY2
+          return 'victory';
+        case 110: //VICTORY3
+          return 'victory';
+        //case 111: //READ
+        //  return 'salute';
+        case 112: //INJECT
+          return 'inject';
+        case 113: //USE_COMPUTER
+          return 'usecomp';
+        case 114: //PERSUADE
+          return 'persuade';
+        case 115: //ACTIVATE
+          return 'activate';
+        case 116: //CHOKE
+          return 'choke';
+        case 117: //THROW_HIGH
+          return 'throwgren';
+        case 118: //THROW_LOW
+          return 'throwsab';
+        case 119: //CUSTOM01
+          return 'dunno???';
+        case 120: //TREAT_INJURED
+          return 'treatinj';
+
+        // Placeable animation constants
+        case 200: return 'activate';
+        case 201: return 'deactivate';
+        case 202: return 'open';
+        case 203: return 'close';
+        case 204: return 'animloop01';
+        case 205: return 'animloop02';
+        case 206: return 'animloop03';
+        case 207: return 'animloop04';
+        case 208: return 'animloop05';
+        case 209: return 'animloop06';
+        case 210: return 'animloop07';
+        case 211: return 'animloop08';
+        case 212: return 'animloop09';
+        case 213: return 'animloop10';
+
+      }
+      //console.error('Animation case missing', id);
+      return 'pause1';
+    }
+  }
+
   setFacing(facing = 0, instant = false){
     let diff = this.rotation.z - facing;
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);

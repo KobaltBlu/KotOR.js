@@ -84,7 +84,7 @@ class EffectBeam extends GameEffect {
   }
 
   onApply(){
-    this.duration = duration;
+    //this.duration = duration;
     if(this.model instanceof THREE.AuroraModel){
       if(this.caster.model instanceof THREE.AuroraModel){
         //Add the effect to the casters model

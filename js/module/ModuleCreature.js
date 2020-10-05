@@ -1602,9 +1602,6 @@ class ModuleCreature extends ModuleCreatureController {
 
     if(this.template.RootNode.HasField('MaxHitPoints')){
       this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
-      /*if(!this.currentHitPoints){
-        this.currentHitPoints = this.hitPoints = this.maxHitPoints;
-      }*/
     }
 
     if(this.template.RootNode.HasField('Min1HP'))

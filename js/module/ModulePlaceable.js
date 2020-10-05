@@ -65,7 +65,6 @@ class ModulePlaceable extends ModuleObject {
     this.inventory = [];
 
     try{
-
       this.audioEmitter = new AudioEmitter({
         engine: Game.audioEngine,
         props: this,
@@ -219,6 +218,29 @@ class ModulePlaceable extends ModuleObject {
               });
             }
             this.actionQueue.shift();
+          break;
+          case ModuleCreature.ACTION.ANIMATE:
+            let _animShouldChange = false;
+            let _anim = this.getAnimationNameById(this.action.animation).toLowerCase();
+
+            if(this.model.animationManager.currentAnimation instanceof AuroraModelAnimation){
+              if(this.model.animationManager.currentAnimation.name.toLowerCase() != _anim){
+                _animShouldChange = true;
+              }
+            }else{
+              _animShouldChange = true;
+            }
+
+            if(_animShouldChange){
+              let _newAnim = this.model.getAnimationByName(_anim);
+              if(_newAnim instanceof AuroraModelAnimation){
+                this.model.playAnimation(_newAnim, true);
+              }else{
+                //console.log('Animation Missing', this.action.animation)
+                //Kill the action if the animation isn't found
+                this.actionQueue.shift()
+              }
+            }
           break;
         }
       //}
@@ -607,8 +629,6 @@ class ModulePlaceable extends ModuleObject {
       onUsed: undefined,
       onUserDefined: undefined
     };
-
-    //console.log(this);
 
     if(this.template.RootNode.HasField('OnClosed'))
       this.scripts.onClosed = this.template.GetFieldByLabel('OnClosed').GetValue();

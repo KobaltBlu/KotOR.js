@@ -2300,7 +2300,7 @@ class ModuleCreatureController extends ModuleObject {
       //if(worldCollide)
       //  break;
       let dx = Math.cos(i), dy = Math.sin(i);
-      Game.raycaster.ray.direction.set(dx, dy, 0);
+      Game.raycaster.ray.direction.set(dx, dy, -.5);
       for(let k = 0, kl = aabbFaces.length; k < kl; k++){
         playerFeetRay.copy(this.position).add(this.AxisFront);
         playerFeetRay.z += 0.25;
@@ -2324,17 +2324,39 @@ class ModuleCreatureController extends ModuleObject {
                   collider = intersects[j];
 
                 world_collisions.push(collider);
+                let dot = _axisFront.clone().dot(intersects[j].face.normal);
 
-                this.AxisFront.add(
-                  intersects[j].face.normal.clone().multiplyScalar(
-                    - _axisFront.clone().dot(
-                      intersects[j].face.normal
-                    )
-                  )
-                );
+                if(this == Game.getCurrentPlayer()){
+                  //console.log('intersect', intersects[j], dot);
+                }
+                
+                if(dot){
+                  this.AxisFront.add(
+                    intersects[j].face.normal.clone().multiplyScalar(-dot)
+                  );
+                }else{
+                  let point = intersects[j].point.clone().sub(this.position);
+                  let point2 = intersects[j].point.clone().sub(new THREE.Vector3(point.y, point.x, 0));
+                  let point3 = point2.clone().sub(intersects[j].point);
+                  //console.log(this.position, _axisFront.clone(), point, point2, point3)
+                  //this.AxisFront.set(point2.y, point2.x, 0);
+                  //console.log(this.position, intersects[j].point, this.position.clone().reflect(intersects[j].face.normal));
+                  this.AxisFront.set(point3.y*0.05, point3.x*0.05, 0);
+                }
+
+                if(intersects[j].face.normal.z >= 0.9){
+                  let point = intersects[j].point.clone().sub(this.position);
+                  let point2 = intersects[j].point.clone().sub(new THREE.Vector3(point.y, point.x, 0));
+                  let point3 = point2.clone().sub(intersects[j].point);
+                  //console.log(this.position, _axisFront.clone(), point, point2, point3)
+                  //this.AxisFront.set(point2.y, point2.x, 0);
+                  //console.log(this.position, intersects[j].point, this.position.clone().reflect(intersects[j].face.normal));
+                  this.AxisFront.set(point3.y*0.05, point3.x*0.05, 0);
+                }
+
 
                 //break;
-                continue;
+                /*continue;
 
                 let oldPos = this.position.clone();
 
@@ -2369,7 +2391,7 @@ class ModuleCreatureController extends ModuleObject {
 
                 playerFeetRay.copy(this.position);
                 playerFeetRay.z += 0.25;
-                worldCollide = true;
+                worldCollide = true;*/
               }else{
                 //console.log(intersects[j].face.walkIndex);
               }
@@ -2383,7 +2405,7 @@ class ModuleCreatureController extends ModuleObject {
 
     //If there is more than one collision this frame set the velocity to (0, 0, 0)
     if(world_collisions.length >= 2){
-      this.AxisFront.set(0, 0, 0);
+      //this.AxisFront.set(0, 0, 0);
     }
 
     // if(collider != undefined){
@@ -2397,38 +2419,6 @@ class ModuleCreatureController extends ModuleObject {
     // }
 
     //END: PLAYER WORLD COLLISION
-
-    // line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
-    // Determine the intersection point of two line segments
-    // Return FALSE if the lines don't intersect
-    function intersectLine(x1, y1, x2, y2, x3, y3, x4, y4) {
-
-      // Check if none of the lines are of length 0
-      if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
-        return false
-      }
-
-      let denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
-
-      // Lines are parallel
-      if (denominator === 0) {
-        return false
-      }
-
-      let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
-      let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
-
-      // is the intersection along the segments
-      if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
-        return false
-      }
-
-      // Return a object with the x and y coordinates of the intersection
-      let x = x1 + ua * (x2 - x1)
-      let y = y1 + ua * (y2 - y1)
-
-      return new THREE.Vector3(x, y, 0.0);
-    }
     
     falling = true;
 
@@ -2465,174 +2455,9 @@ class ModuleCreatureController extends ModuleObject {
                   this.rotation.y = this.groundTilt.y;
                 }
               }else{
-                let intersect = intersects[i];
-
-                let posMin = this.position.clone();
-                let posMax = this.position.clone().add( _axisFront.clone().normalize().multiplyScalar(2) );
-
-                //The three lines that make up the triangle
-                let line_a = [intersect.object.vertices[intersect.face.a], intersect.object.vertices[intersect.face.b]];
-                let line_b = [intersect.object.vertices[intersect.face.b], intersect.object.vertices[intersect.face.c]];
-                let line_c = [intersect.object.vertices[intersect.face.c], intersect.object.vertices[intersect.face.a]];
-
-                let collision_line = [posMin.clone(), posMax.clone()];
-
-                let point_a = intersectLine(line_a[0].x, line_a[0].y, line_a[1].x, line_a[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
-                let point_b = intersectLine(line_b[0].x, line_b[0].y, line_b[1].x, line_b[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
-                let point_c = intersectLine(line_c[0].x, line_c[0].y, line_c[1].x, line_c[1].y, collision_line[0].x, collision_line[0].y, collision_line[1].x, collision_line[1].y);
-                
-                let closest_point = false;
-                let distance = Infinity;
-
-                for(let p = 0; p < 3; p++){
-                  let _dist = Infinity;
-                  switch(p){
-                    case 0:
-                      if(point_a){
-                        _dist = point_a.distanceTo(this.position);
-                        if(_dist < distance){
-                          closest_point = point_a;
-                          distance = _dist;
-                        }
-                      }
-                    break;
-                    case 1:
-                      if(point_b){
-                        _dist = point_b.distanceTo(this.position);
-                        if(_dist < distance){
-                          closest_point = point_b;
-                          distance = _dist;
-                        }
-                      }
-                    break;
-                    case 2:
-                      if(point_c){
-                        _dist = point_c.distanceTo(this.position);
-                        if(_dist < distance){
-                          closest_point = point_c;
-                          distance = _dist;
-                        }
-                      }
-                    break;
-                  }
-                }
-
-                if(this == Game.player){
-                  //console.log('POINTS',closest_point, point_a, point_b, point_c);
-                }
-                
-                if(closest_point){
-
-
-                  /*
-                  console.log('closest_point', closest_point);
-                  let normalized = closest_point.clone().normalize();
-                  let dotProduct = this.position.dot(normalized);
-                  this.AxisFront.x = normalized.x;//this.AxisFront.x - (dotProduct * normalized.x);
-                  this.AxisFront.y = normalized.y;//this.AxisFront.y - (dotProduct * normalized.y);
-                  this.AxisFront.multiply(_axisFront).sub(_axisFront);
-                  this.AxisFront.z = 0;
-                  console.log(normalized, this.AxisFront, _axisFront, this.position, dotProduct)
-                  */
-
-                  console.log('closest_point', closest_point);
-                  let normalized = closest_point.clone().normalize();
-                  let dotProduct = this.position.dot(normalized);
-                  this.AxisFront.x = this.AxisFront.x - (dotProduct * normalized.x);
-                  this.AxisFront.y = this.AxisFront.y - (dotProduct * normalized.y);
-                  this.AxisFront.z = 0;
-                  /*let i_dist = closest_point.distanceTo(posMax);
-                  let planeOrigin = closest_point.clone();
-                  let planeNormal = posMax.clone().sub(closest_point);
-                  planeNormal.normalize();
-
-                  // calculate reflection, because collided
-                  let wallAngle = Math.atan2(closest_point.y, closest_point.x);
-                  let wallNormalX = Math.sin(wallAngle);
-                  let wallNormalY = -Math.cos(wallAngle);
-
-                  //console.log('reflect', _axisFront.x, wallNormalX, _axisFront.y, wallNormalY);
-
-                  let newDestinationPoint = posMax.clone().sub(planeNormal.clone().subScalar(distance));
-                  //this.AxisFront.copy( newDestinationPoint.clone().sub(this.position) );
-                  //this.AxisFront.z = 0;
-                  //this.AxisFront.multiplyScalar(0.001);
-                  this.AxisFront.add(
-                    planeNormal.clone().multiplyScalar(
-                      - _axisFront.clone().dot(
-                        planeNormal
-                      )
-                    )
-                  );
-                  this.AxisFront.z = 0;
-
-                  //this.AxisFront.copy(closest_point.clone().sub(this.position));
-                  //if(this == Game.player){
-                    //console.log(this.AxisFront.cross(_axisFront), this.AxisFront, _axisFront)
-                  //}*/
-                }else{
-                  //console.log('no intersect');
-                  this.AxisFront.set(posMax.x - intersect.point.x, posMax.y - intersect.point.y, 0);
-                  //this.AxisFront.negate()
-                  if(this == Game.player){
-                    //console.log(this.AxisFront.cross(_axisFront), this.AxisFront, _axisFront)
-                  }
-                }
-
-                // let bounce_pos = _axisFront.clone();
-                // bounce_pos.applyAxisAngle(new THREE.Vector3( 0, 1, 0 ).normalize(), Math.PI/2);
-                // bounce_pos = intersect.face.normal.clone().multiplyScalar(
-                //     - bounce_pos.clone().dot(
-                //         intersect.face.normal
-                //     )
-                // )
-                // bounce_pos.applyAxisAngle(new THREE.Vector3( 0, 1, 0 ).normalize(), -Math.PI/2);
-                // this.AxisFront.copy(bounce_pos);
-                // this.AxisFront.z = 0;
-
-                // this.AxisFront.multiplyScalar(0.1);
-
-                // worldCollide = true;
-
-                // break;
-
-                // if(this.rotation.z > -Math.PI/2 && this.rotation.z < Math.PI/2){
-                //     bounce_pos.set(this.position.x + _axisFront.x, posMax.y + _axisFront.y-1, 0);
-                //     this.AxisFront.copy(bounce_pos).sub(this.position);
-                // }else{ //if(this.rotation.z > Math.PI/2 && this.rotation.z < Math.PI/2){
-                //     bounce_pos.set(this.position.x + _axisFront.x, posMax.y + _axisFront.y-1, 0);
-                //     this.AxisFront.copy(bounce_pos).sub(this.position);
-                //     this.AxisFront.negate()
-                // }
-
-                // this.AxisFront.set(0, 0, 0);
-                // console.log(intersect.face);
-                //this.AxisFront.multiplyScalar(0.5);
-                //this.AxisFront.negate()
                 this.AxisFront.z = 0;
-
                 worldCollide = true;
-
                 break;
-
-                /*let flippedNormal = intersects[i].face.normal.clone();
-
-                flippedNormal.x = -intersects[i].face.normal.z;
-                flippedNormal.y = -intersects[i].face.normal.y;
-                flippedNormal.z = -intersects[i].face.normal.x;
-
-                this.AxisFront.add(
-                  flippedNormal.clone().multiplyScalar(
-                    - _axisFront.clone().dot(
-                      flippedNormal
-                    )
-                  )
-                );*/
-
-                //this.AxisFront.set(0, 0, 0);
-                //this.AxisFront.copy(_axisFront);
-                //this.AxisFront.negate();
-                //negateAxis = true;
               }
             }
           }
@@ -2936,120 +2761,6 @@ class ModuleCreatureController extends ModuleObject {
         }
     }
 
-  }
-
-  getAnimationNameById(id=-1){
-    if(typeof id === 'string'){
-      return id;
-    }else{
-      switch(id){
-        case 0:  //PAUSE
-          return 'pause';
-        case 1:  //PAUSE2
-          return 'pause2';
-        case 2:  //LISTEN
-          return 'listen';
-        case 3:  //MEDITATE
-          return 'meditate';
-        case 4:  //WORSHIP
-          return 'kneel';//['kneel', 'meditate'];
-        case 5:  //TALK_NORMAL
-          return 'tlknorm';
-        case 6:  //TALK_PLEADING
-          return 'tlkplead';
-        case 7:  //TALK_FORCEFUL
-          return 'tlkforce';
-        case 8:  //TALK_LAUGHING
-          return 'tlklaugh';
-        case 9:  //TALK_SAD
-          return 'tlksad';
-        case 10: //GET_LOW
-          return 'getfromgnd';
-        case 11: //GET_MID
-          return 'getfromcntr';
-        //case 12: //PAUSE_TIRED
-        //case 13: //PAUSE_DRUNK
-        case 14: //FLIRT
-          return 'flirt';
-        case 15: //USE_COMPUTER
-          return 'usecomplp';
-        case 16: //DANCE
-          return 'dance';
-        case 17: //DANCE1
-          return 'dance1';
-        case 18: //HORROR
-          return 'horror';
-        //case 19: //READY
-        //case 20: //DEACTIVATE
-        //case 21: //SPASM
-        case 22: //SLEEP
-          return 'sleep';
-        case 23: //PRONE
-          return 'prone';
-        case 24: //PAUSE3
-          return 'pause3';
-        case 25: //WELD
-          return 'weld';
-        case 26: //DEAD
-          return 'dead';
-        case 27: //TALK_INJURED
-          return 'talkinj';
-        case 28: //LISTEN_INJURED
-          return 'listeninj';
-        case 29: //TREAT_INJURED
-          return 'treatinj';
-        case 30: //DEAD_PRONE
-          return 'dead';
-        //case 31: //KNEEL_TALK_ANGRY
-        //case 32: //KNEEL_TALK_SAD
-        case 35: //MEDITATE LOOP
-          return 'meditate';
-        case 100: //HEAD_TURN_LEFT
-          return 'hturnl';
-        case 101: //HEAD_TURN_RIGHT
-          return 'hturnr';
-        case 102: //PAUSE_SCRATCH_HEAD
-          return 'pause3';
-        case 103: //PAUSE_BORED
-          return 'pause2';
-        case 104: //SALUTE
-          return 'salute';
-        case 105: //BOW
-          return 'bow';
-        case 106: //GREETING
-          return 'greeting';
-        case 107: //TAUNT
-          return 'taunt';
-        case 108: //VICTORY1
-          return 'victory';
-        case 109: //VICTORY2
-          return 'victory';
-        case 110: //VICTORY3
-          return 'victory';
-        //case 111: //READ
-        //  return 'salute';
-        case 112: //INJECT
-          return 'inject';
-        case 113: //USE_COMPUTER
-          return 'usecomp';
-        case 114: //PERSUADE
-          return 'persuade';
-        case 115: //ACTIVATE
-          return 'activate';
-        case 116: //CHOKE
-          return 'choke';
-        case 117: //THROW_HIGH
-          return 'throwgren';
-        case 118: //THROW_LOW
-          return 'throwsab';
-        case 119: //CUSTOM01
-          return 'dunno???';
-        case 120: //TREAT_INJURED
-          return 'treatinj';
-      }
-      //console.error('Animation case missing', id);
-      return 'pause1';
-    }
   }
 
 
