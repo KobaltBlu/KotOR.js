@@ -250,6 +250,7 @@ const ModuleItem = require(path.join(app.getAppPath(), 'js/module/ModuleItem.js'
 const ModuleSound = require(path.join(app.getAppPath(), 'js/module/ModuleSound.js'));
 const ModuleTrigger = require(path.join(app.getAppPath(), 'js/module/ModuleTrigger.js'));
 const ModuleCreature = require(path.join(app.getAppPath(), 'js/module/ModuleCreature.js'));
+const ModulePlayer = require(path.join(app.getAppPath(), 'js/module/ModulePlayer.js'));
 const ModuleWaypoint = require(path.join(app.getAppPath(), 'js/module/ModuleWaypoint.js'));
 const ModuleStore = require(path.join(app.getAppPath(), 'js/module/ModuleStore.js'));
 const ModulePlaceable = require(path.join(app.getAppPath(), 'js/module/ModulePlaceable.js'));

@@ -541,20 +541,20 @@ class ModuleCreature extends ModuleCreatureController {
     return this.goodEvil;
   }
 
-  setHP(nVal = 0){
-    this.currentHitPoints = nVal;
+  setHP(nAmount = 0){
+    this.currentHitPoints = nAmount;
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
-  addHP(nVal = 0){
-    this.currentHitPoints = (this.getHP() + nVal);
+  addHP(nAmount = 0){
+    this.currentHitPoints = (this.getHP() + nAmount);
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
-  subtractHP(nVal = 0){
-    this.setHP(this.getHP() - nVal);
+  subtractHP(nAmount = 0){
+    this.setHP(this.getHP() - nAmount);
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
@@ -567,12 +567,12 @@ class ModuleCreature extends ModuleCreatureController {
     return this.maxHitPoints;
   }
 
-  setMaxHP(nVal = 0){
-    return this.maxHitPoints = nVal;
+  setMaxHP(nAmount = 0){
+    return this.maxHitPoints = nAmount;
   }
 
-  setMinOneHP(iVal){
-    this.min1HP = iVal ? true : false;
+  setMinOneHP(bMinOneHP = false){
+    this.min1HP = bMinOneHP ? true : false;
   }  
 
   getCameraHeight(){

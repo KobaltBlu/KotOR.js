@@ -805,7 +805,7 @@ class ModuleArea extends ModuleObject {
           });
         });
       }else{
-        let player = new ModuleCreature(this.getPlayerTemplate());
+        let player = new ModulePlayer(this.getPlayerTemplate());
         player.partyID = -1;
         player.id = ModuleObject.GetNextPlayerId();
         if(!this.MiniGame)
