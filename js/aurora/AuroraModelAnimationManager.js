@@ -87,8 +87,10 @@ class AuroraModelAnimationManager {
       return;
     
     this.updateAnimationEvents(anim);
-    for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-      this.updateAnimationNode(anim, anim.nodes[i]);
+    if(this.model.visible){
+      for(let i = 0, nl = anim.nodes.length; i < nl; i++){
+        this.updateAnimationNode(anim, anim.nodes[i]);
+      }
     }
     //this.updateAnimationNode(anim, anim.rooNode);
     anim.data.lastTime = anim.data.elapsed;
