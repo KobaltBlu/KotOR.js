@@ -58,6 +58,7 @@ THREE.AuroraModel = function () {
   
     this.type = 'AuroraModel';
     this.box = new THREE.Box3;
+    this.sphere = new THREE.Sphere();
     this.context = undefined;
     this.meshes = [];
     this.danglyMeshes = [];

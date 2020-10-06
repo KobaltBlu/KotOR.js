@@ -48,10 +48,10 @@ class ModuleCreatureController extends ModuleObject {
       }
 
       if(!this.isReady){
-        this.getModel().visible = true;
+        //this.getModel().visible = true;
         return;
       }else{
-        this.getModel().visible = true;
+        //this.getModel().visible = true;
         this.getModel().rotation.copy(this.rotation);
         //this.getModel().quaternion = this.quaternion;
       }
@@ -59,7 +59,7 @@ class ModuleCreatureController extends ModuleObject {
       //Get the first action in the queue
       this.action = this.actionQueue[0];
       
-      if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized && this.model.visible){
+      if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized){
         this.model.update(delta);
         if(this.lipObject instanceof LIPObject){
           this.lipObject.update(delta, this.head ? this.head : this.model);
@@ -69,7 +69,7 @@ class ModuleCreatureController extends ModuleObject {
       this.areas = [];
       this.area = Game.module.area;
 
-      if(this == Game.getCurrentPlayer() && this.room instanceof ModuleRoom){
+      /*if(this == Game.getCurrentPlayer() && this.room instanceof ModuleRoom){
         //this.room.show(true);
       }else if(this.room instanceof ModuleRoom){
         if(this.room.model instanceof THREE.AuroraModel){
@@ -77,7 +77,7 @@ class ModuleCreatureController extends ModuleObject {
             this.model.visible = this.room.model.visible;
           }
         }
-      }
+      }*/
 
       if(!this.isDead() && this.animState == ModuleCreature.AnimState.DEAD){
         this.animState = ModuleCreature.AnimState.IDLE;
@@ -2167,6 +2167,7 @@ class ModuleCreatureController extends ModuleObject {
     
     if(this.model && this.model.box){
       this.model.box.setFromObject(this.model);
+      this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
       box = this.model.box.clone();
       box.translate(_axisFront);
     }

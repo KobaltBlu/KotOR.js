@@ -99,8 +99,11 @@ class AuroraModelAnimationManager {
       if(anim.data.elapsed > anim.length){
         anim.data.elapsed = anim.length;
         this.updateAnimationEvents(anim);
-        for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-          this.updateAnimationNode(anim, anim.nodes[i]);
+        //Update animation nodes if the model is being rendered
+        if(this.model.visible){
+          for(let i = 0, nl = anim.nodes.length; i < nl; i++){
+            this.updateAnimationNode(anim, anim.nodes[i]);
+          }
         }
       }
 

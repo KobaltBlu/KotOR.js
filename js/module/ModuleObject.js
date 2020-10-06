@@ -27,6 +27,7 @@ class ModuleObject {
 	  this.quaternion._onChange( () => { this.onQuaternionChange } );
 
     this.box = new THREE.Box3();
+    this.sphere = new THREE.Sphere();
     this.facing = 0;
     this.wasFacing = 0;
     this.facingTweenTime = 0;
@@ -205,6 +206,12 @@ class ModuleObject {
         }else{
           this.model.visible = true;
         }
+
+        //Check to see if the model is inside the current camera's frustum
+        if(!this.isOnScreen()){
+          this.model.visible = false;
+        }
+
       }
     }
 
@@ -1026,6 +1033,24 @@ class ModuleObject {
   computeBoundingBox(){
     if(this.model){
       this.model.box = this.box.setFromObject(this.model);
+      this.model.sphere = this.box.getBoundingSphere(this.model.sphere);
+    }
+  }
+
+  isOnScreen(frustum = Game.viewportFrustum){
+    if(this.model && this.model.box != this.box){
+      this.box = this.model.box;
+    }
+    if(APP_MODE == 'FORGE'){
+      if(tabManager.currentTab instanceof ModuleEditorTab){
+        frustum = tabManager.currentTab.viewportFrustum;
+        this.box.getBoundingSphere(this.sphere);
+        return frustum.intersectsSphere(this.sphere);
+      }
+      return false;
+    }else{
+      this.box.getBoundingSphere(this.sphere);
+      return frustum.intersectsSphere(this.sphere);
     }
   }
 
