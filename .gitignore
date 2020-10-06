@@ -2,3 +2,4 @@ node_modules/
 release/
 settings.json
 crash.log
+npm-debug.log
