@@ -2354,45 +2354,6 @@ class ModuleCreatureController extends ModuleObject {
                   //console.log(this.position, intersects[j].point, this.position.clone().reflect(intersects[j].face.normal));
                   this.AxisFront.set(point3.y*0.05, point3.x*0.05, 0);
                 }
-
-
-                //break;
-                /*continue;
-
-                let oldPos = this.position.clone();
-
-                this.AxisFront.copy(_axisFront).negate();
-                playerFeetRay.copy(this.position).add(this.AxisFront);
-                playerFeetRay.z += 0.25;
-                worldCollide = true;
-                continue;
-
-                //let newDir = this.position.clone().sub(oldPos);
-                //this.position.add(newDir.negate());
-
-                let normal = intersects[j].face.normal.clone();
-                //console.log(intersects[j].face.normal);
- 
-                if(normal.z == 1){
-                  let pDistance = (1 - intersects[j].distance) * 0.1;
-                  this.AxisFront.set(pDistance * Math.cos(i), pDistance * Math.sin(i), 0).negate()
-                }else if(normal.length() == 0 ){
-                  this.AxisFront.set(0, 0, 0);
-                }else{
-                  if(this == Game.player){
-                      //console.log(normal);
-                  }
-                  let invNormal = normal.clone().negate();
-                  invNormal = invNormal.multiplyScalar(this.AxisFront.clone().multiply(normal).length());
-                  let wallDir = this.AxisFront.clone().sub(invNormal);
-                  let newPos = oldPos.clone().add(wallDir);
-                  let direction = newPos.sub(oldPos);
-                  this.AxisFront.copy(direction);
-                }
-
-                playerFeetRay.copy(this.position);
-                playerFeetRay.z += 0.25;
-                worldCollide = true;*/
               }else{
                 //console.log(intersects[j].face.walkIndex);
               }
@@ -2409,16 +2370,6 @@ class ModuleCreatureController extends ModuleObject {
       //this.AxisFront.set(0, 0, 0);
     }
 
-    // if(collider != undefined){
-    //   this.AxisFront.add(
-    //     collider.face.normal.clone().multiplyScalar(
-    //       - _axisFront.clone().dot(
-    //         collider.face.normal
-    //       )
-    //     )
-    //   );
-    // }
-
     //END: PLAYER WORLD COLLISION
     
     falling = true;
@@ -2434,38 +2385,27 @@ class ModuleCreatureController extends ModuleObject {
     
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
       let castableFaces = aabbFaces[j];
-      
-      //if(object && object.walkmesh && object.walkmesh.aabbNodes.length){
-        //object.walkmesh.getAABBCollisionFaces(box, null, castableFaces);
-        intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
-        //if(this == PartyManager.party[0])
-          //console.log(intersects, aabbFaces);
-        //return;//var intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
-        //if (intersects && intersects.length > 0 ) {
-          for(let i = 0; i < intersects.length; i++){
-            if(intersects[i].distance) {
-              this.surfaceId = intersects[i].face.walkIndex;
-              falling = false;
-              if(intersects[i].face.walkIndex != 7 && intersects[i].face.walkIndex != 2){
-                this.position.z = intersects[i].point.z + .005;
-                this.groundFace = intersects[i];
-                if(this.groundFace && this.getAppearance().groundtilt == '1'){
-                  this.groundTilt.set(0, 0, 0);
-                  this.groundTilt.crossVectors(this.up, this.groundFace.face.normal);
-                  this.rotation.x = this.groundTilt.x;
-                  this.rotation.y = this.groundTilt.y;
-                }
-              }else{
-                this.AxisFront.z = 0;
-                worldCollide = true;
-                break;
-              }
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      for(let i = 0; i < intersects.length; i++){
+        if(intersects[i].distance) {
+          this.surfaceId = intersects[i].face.walkIndex;
+          falling = false;
+          if(intersects[i].face.walkIndex != 7 && intersects[i].face.walkIndex != 2){
+            this.position.z = intersects[i].point.z + .005;
+            this.groundFace = intersects[i];
+            if(this.groundFace && this.getAppearance().groundtilt == '1'){
+              this.groundTilt.set(0, 0, 0);
+              this.groundTilt.crossVectors(this.up, this.groundFace.face.normal);
+              this.rotation.x = this.groundTilt.x;
+              this.rotation.y = this.groundTilt.y;
             }
+          }else{
+            this.AxisFront.z = 0;
+            worldCollide = true;
+            break;
           }
-        //}
-
-      //}
-
+        }
+      }
     }
 
     if(worldCollide){
@@ -2489,7 +2429,6 @@ class ModuleCreatureController extends ModuleObject {
     //END Gravity
     this.invalidateCollision = false;
     Game.raycaster.far = Infinity;
-    //this.model.updateMatrixWorld();
 
   }
 

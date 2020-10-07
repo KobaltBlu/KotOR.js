@@ -39,7 +39,7 @@ class Game extends Engine {
     Game.context = Game.canvas.getContext( 'webgl' );
 
     Game.renderer = new THREE.WebGLRenderer({
-      //antialias: true,
+      antialias: false,
       canvas: Game.canvas,
       context: Game.context,
       logarithmicDepthBuffer: false
@@ -1220,7 +1220,6 @@ class Game extends Engine {
   }
 
   static Update(){
-    
     
     /*if(!Game.visible){
       requestAnimationFrame( Game.Update );

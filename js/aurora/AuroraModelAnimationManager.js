@@ -87,7 +87,7 @@ class AuroraModelAnimationManager {
       return;
     
     this.updateAnimationEvents(anim);
-    if(this.model.visible){
+    if(this.model.animateFrame){
       for(let i = 0, nl = anim.nodes.length; i < nl; i++){
         this.updateAnimationNode(anim, anim.nodes[i]);
       }
@@ -102,7 +102,7 @@ class AuroraModelAnimationManager {
         anim.data.elapsed = anim.length;
         this.updateAnimationEvents(anim);
         //Update animation nodes if the model is being rendered
-        if(this.model.visible){
+        if(this.model.animateFrame){
           for(let i = 0, nl = anim.nodes.length; i < nl; i++){
             this.updateAnimationNode(anim, anim.nodes[i]);
           }
@@ -173,6 +173,8 @@ class AuroraModelAnimationManager {
       anim._position.x = anim._position.y = anim._position.z = 0;
       anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
       anim._quaternion.w = 1;
+
+      let last, next, fl, data, shouldBlend;
       
       //Loop through and animate all the controllers for the current node
       for(var controller of node.controllers){
@@ -185,14 +187,14 @@ class AuroraModelAnimationManager {
           continue;
         }
 
-        let shouldBlend = false;
+        shouldBlend = false;
 
         if(anim.data.animation){
           shouldBlend = parseInt(anim.data.animation.looping) || parseInt(anim.data.animation.running) || parseInt(anim.data.animation.walking);
         }
           
         if( (controller.frameCount == 1 || anim.data.elapsed == 0 || controller.data[0].time >= anim.data.elapsed) && !shouldBlend ){
-          let data = controller.data[0];
+          data = controller.data[0];
           //AuroraModelAnimationManager.AnimateController[controller.type].setFrame(anim, data);
           if(typeof AuroraModelAnimationManager.AnimateController[controller.type].setFrame === 'function'){
             AuroraModelAnimationManager.AnimateController[controller.type].setFrame.call(this, anim, controller, data);
@@ -209,11 +211,19 @@ class AuroraModelAnimationManager {
             }
           }
 
-          let last = controller.data[this.lastFrame];
+          last = controller.data[this.lastFrame];
           if(last){
 
-            let next = controller.data[this.lastFrame + 1];
-            let fl = 0;
+            //If the model was offscreen last frame pose the lastFrame 
+            //To fix the spaghetti limbs issue
+            if(this.model.wasOffscreen){
+              if(typeof AuroraModelAnimationManager.AnimateController[controller.type].setFrame === 'function'){
+                AuroraModelAnimationManager.AnimateController[controller.type].setFrame.call(this, anim, controller, last);
+              }
+            }
+
+            next = controller.data[this.lastFrame + 1];
+            fl = 0;
 
             if (next) { 
               fl = Math.abs( (anim.data.elapsed - last.time) / (next.time - last.time) ) % 1;

@@ -191,6 +191,10 @@ class ModuleObject {
       }
     }
 
+    if(Game.currentCamera){
+      this.distanceToCamera = this.position.distanceTo(Game.currentCamera.position);
+    }
+
     if(this.spawned){
       if(!this.room){
         if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
@@ -201,6 +205,7 @@ class ModuleObject {
       }
 
       if(this.model){
+        this.model.wasOffscreen = !this.model.visible;
         if(!this.room || (this.room && !this.room.model.visible)){
           this.model.visible = false;
         }else{
@@ -210,6 +215,10 @@ class ModuleObject {
         //Check to see if the model is inside the current camera's frustum
         if(!this.isOnScreen()){
           this.model.visible = false;
+        }
+
+        if(Game.inDialog){
+          this.model.visible = true;
         }
 
       }
@@ -1041,6 +1050,13 @@ class ModuleObject {
     if(this.model && this.model.box != this.box){
       this.box = this.model.box;
     }
+
+    if(Game.scene.fog){
+      if(this.distanceToCamera >= Game.scene.fog.far){
+        return false;
+      }
+    }
+
     if(APP_MODE == 'FORGE'){
       if(tabManager.currentTab instanceof ModuleEditorTab){
         frustum = tabManager.currentTab.viewportFrustum;

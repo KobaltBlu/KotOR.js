@@ -111,18 +111,6 @@ class ModuleRoom extends ModuleObject {
 
   }
 
-  turnLightsOn(delta = 0, recurse = false){
-    if(this.model instanceof THREE.AuroraModel){
-      this.model.turnLightsOn();
-      if(recurse){
-        for(let i = 0; i < this.linked_rooms.length; i++){
-          //if(typeof this.linked_rooms[i] == 'object')
-          //  this.linked_rooms[i].model.turnLightsOn();
-        }
-      }
-    }
-  }
-
   load( onComplete = null ){
     
     if(!Utility.is2daNULL(this.roomName)){

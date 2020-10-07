@@ -65,9 +65,6 @@ class LBL_3DView {
   addModel(model){
     if(model instanceof THREE.Object3D){
       this.scene.add(model);
-      model.turnLightsOn({
-        sortByPcPosition: false
-      });
     }
   }
 

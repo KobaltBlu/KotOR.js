@@ -173,8 +173,8 @@ class LightManager {
     //This object is to store the amount of lights that have tried to spawn per parent object
     //Since only 3 lights can be on at any given time per object only the first 3 that try to spawn will do so
     //This is reset every tick like so 
-    LightManager.modelLightCounter = {};
-    LightManager.updateShadowLights(delta);
+    //LightManager.modelLightCounter = {};
+    //LightManager.updateShadowLights(delta);
 
   }
 
@@ -182,7 +182,7 @@ class LightManager {
     LightManager.tmpLights = [];//LightManager.lights.slice();
     //let ambientLights = LightManager.lights.filter(light => light.auroraModel.visible && (light.isAmbient || (light._node.radius*light._node.multiplier) > 50));
     //let shadowLights = LightManager.lights.filter(light => light.auroraModel.visible && light.castShadow);
-    let fadingLights = LightManager.lights.filter(light => light.auroraModel.visible && !light.castShadow && !light.isAmbient);
+    let fadingLights = LightManager.lights.filter(light => light.auroraModel.visible);
     
     //ambientLights.sort(LightManager.sortLights).reverse();
     //shadowLights.sort(LightManager.sortLights);
@@ -190,7 +190,11 @@ class LightManager {
 
     //LightManager.tmpLights = LightManager.tmpLights.concat(ambientLights, fadingLights);
     //LightManager.tmpLights = LightManager.tmpLights.concat(fadingLights);
-
+    
+    //Attempt to reclaim lights that are no longer used
+    LightManager.lightsShown = [];
+    LightManager.reclaimLights(delta);
+    //console.log(LightManager.lightsShown);
     LightManager.new_lights = [];
     LightManager.new_lights_uuids = [];
     LightManager.new_lights_spawned = 0;
@@ -214,10 +218,16 @@ class LightManager {
       }
       
     }
+
+    //Last ditch effort to make sure lights don't get duplicated
+    for(let i = 0, il = LightManager.MAXLIGHTS; i < il; i++){
+      let lightNode = LightManager.light_pool[i];
+      if(!lightNode.reclaimed && lightNode.light && LightManager.lightsShown.indexOf(lightNode.light.uuid) == -1){
+        LightManager.lightsShown.push(lightNode.light.uuid);
+      }
+    }
     
-    //Attempt to reclaim lights that are no longer used
-    LightManager.lightsShown = [];
-    LightManager.reclaimLights(delta);
+    //console.log(LightManager.new_lights_uuids, LightManager.new_lights.length);
     
     //Try to update lights with the pool of reclaimed lights
     for( let i = 0, il = LightManager.new_lights.length; i < il; i++ ){
@@ -227,7 +237,14 @@ class LightManager {
         break;
 
       let light = LightManager.new_lights[i];
-      let lightNode = LightManager.light_pool[LightManager.spawned];
+      let lightNode = undefined;//LightManager.light_pool[LightManager.spawned];
+      for(let i2 = 0, il2 = LightManager.MAXLIGHTS; i2 < il2; i2++){
+        if(LightManager.light_pool[i2].reclaimed == true){
+          lightNode = LightManager.light_pool[i2];
+          break;
+        }
+      }
+
 
       //The only way this wouldn't be true is if we have a different number of lights in our light_pool than the
       //engine maximum light number which should be 8 most of the time.
@@ -288,6 +305,7 @@ class LightManager {
 
           //Increment the spawn count
           LightManager.spawned++;
+          lightNode.reclaimed = false;
         }
 
       }
@@ -311,6 +329,8 @@ class LightManager {
 
     LightManager.spawned = 0;
 
+    let lightsUsed = [];
+
     for(let i = 0, il = LightManager.MAXLIGHTS; i < il; i++){
       
       //Get the THREE Light Object from the light_pool
@@ -318,7 +338,13 @@ class LightManager {
 
       if(lightNode.light && lightNode.light.isFading){
         //FADINGLIGHT
-        if(LightManager.new_lights_uuids.indexOf(lightNode.light.uuid) >= 0 && lightNode.light.isOnScreen(Game.viewportFrustum)){
+        if(lightsUsed.indexOf(lightNode.light.uuid) == -1 && lightNode.light.isOnScreen(Game.viewportFrustum)){
+          lightsUsed.push(lightNode.light.uuid);
+          //lightNode.light.getWorldPosition(lightNode.position);
+          //lightNode.distance = lightNode.light.getRadius();
+          //lightNode.color.r = lightNode.light.color.r;
+          //lightNode.color.g = lightNode.light.color.g;
+          //lightNode.color.b = lightNode.light.color.b;
           //The light is still active so update as needed
           if(lightNode.intensity < lightNode.maxIntensity){
             lightNode.intensity += 2*delta;
@@ -336,10 +362,11 @@ class LightManager {
           LightManager.lightsShown.push(lightNode.lightUUID);
           //Move the light to the beginning of the array so it is skipped until it is reclaimed
           //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
-          LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
+          //LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
           LightManager.spawned++;
           
         }else{
+          lightNode.reclaimed = false;
           //The light is no longer active so fade out and reclaim so this light can be reused
           lightNode.intensity -= 2*delta;
 
@@ -351,13 +378,14 @@ class LightManager {
           lightNode.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
           lightNode.helper.material.transparent = true;
 
-          if(lightNode.intensity > 0){
+          if(lightsUsed.indexOf(lightNode.light.uuid) == -1 && lightNode.intensity > 0){
+            lightsUsed.push(lightNode.light.uuid);
             //The light hasn't completed it's fadeout yet
 
             LightManager.lightsShown.push(lightNode.light.uuid);
             //Move the light to the beginning of the array so it is skipped until it is reclaimed
             //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
-            LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
+            //LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
             LightManager.spawned++;
           }else{
             //Reclaim the light
@@ -366,22 +394,47 @@ class LightManager {
             //Reset the light helper properties
             lightNode.helper.material.opacity = 0;
             lightNode.helper.material.transparent = true;
+            lightNode.reclaimed = true;
+            lightNode.light = undefined;
           }
 
         }
-
-        lightNode.color.r = lightNode.light.color.r;
-        lightNode.color.g = lightNode.light.color.g;
-        lightNode.color.b = lightNode.light.color.b;
+        if(lightNode.light){
+          lightNode.color.r = lightNode.light.color.r;
+          lightNode.color.g = lightNode.light.color.g;
+          lightNode.color.b = lightNode.light.color.b;
+        }
         lightNode.maxIntensity = 1;//lightNode.light.getIntensity();
         
       }else{
-        //This light is not a fading light so it can be instantly turned off and reclaimed
-        lightNode.position.set(0,0,0);
-        lightNode.intensity = 0;
-        //Reset the light helper properties
-        lightNode.helper.material.opacity = 0;
-        lightNode.helper.material.transparent = true;
+        if(lightNode.light && lightsUsed.indexOf(lightNode.light.uuid) == -1 && lightNode.light.isOnScreen(Game.viewportFrustum)){
+          lightsUsed.push(lightNode.light.uuid);
+          //This light is not a fading light so it can be instantly turned off and reclaimed
+//           lightNode.light.getWorldPosition(lightNode.position)
+//           lightNode.color.r = lightNode.light.color.r;
+//           lightNode.color.g = lightNode.light.color.g;
+//           lightNode.color.b = lightNode.light.color.b;
+//           lightNode.decay = 1;
+          
+//           lightNode.updateMatrix();
+//           lightNode.animated = lightNode.light.isAnimated ? 1 : 0;
+          lightNode.intensity = 1;
+          lightNode.distance = lightNode.light.getRadius();
+          //Reset the light helper properties
+          lightNode.helper.material.opacity = 1;
+          lightNode.helper.material.transparent = false;
+          LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
+          lightNode.reclaimed = false;
+        }else{
+          //This light is not a fading light so it can be instantly turned off and reclaimed
+          lightNode.position.set(0,0,0);
+          lightNode.intensity = 0;
+          //Reset the light helper properties
+          lightNode.helper.material.opacity = 0;
+          lightNode.helper.material.transparent = true;
+          lightNode.reclaimed = true;
+          lightNode.light = undefined;
+        }
       }
 
     }
@@ -592,6 +645,9 @@ class LightManager {
 
   //Check to see if the model that owns the light has already met it's limit of three active lights
   static canShowLight(light){
+
+    if(LightManager.lightsShown.indexOf(light.uuid) >= 0)
+      return false;
 
     if(!light || !light.isOnScreen(Game.viewportFrustum) || !light.auroraModel.visible)
       return false;

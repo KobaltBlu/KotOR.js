@@ -32,6 +32,9 @@ THREE.AuroraLight = function () {
   this.isOnScreen = function( frustum = Game.viewportFrustum ){
     if(APP_MODE == 'FORGE'){
       if(tabManager.currentTab instanceof ModuleEditorTab){
+        if(!this.auroraModel.visible)
+          return false;
+        
         frustum = tabManager.currentTab.viewportFrustum;
         this.sphere.center.copy(this.worldPosition);
         this.sphere.radius = this.getRadius();
@@ -39,6 +42,9 @@ THREE.AuroraLight = function () {
       }
       return false;
     }else{
+      if(!this.auroraModel.visible)
+        return false;
+
       this.sphere.center.copy(this.worldPosition);
       this.sphere.radius = this.getRadius();
       return frustum.intersectsSphere(this.sphere);
@@ -72,6 +78,7 @@ THREE.AuroraModel = function () {
     this.effects = [];
 
     this.puppeteer = undefined; 
+    this.oddFrame = false;
   
     this.names = [];
     this.supermodels = [];
@@ -264,6 +271,33 @@ THREE.AuroraModel = function () {
   
     this.update = function(delta){
 
+      //BEGIN: Animation Optimization
+      this.animateFrame = true;
+      if(this.moduleObject instanceof ModuleCreature){
+        //If the object is further than 50 meters, animate every other frame
+        if(this.moduleObject.distanceToCamera > 50){
+          this.animateFrame = this.oddFrame;
+        }
+        
+        if(this.animateFrame){
+          //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
+          if(PartyManager.party.indexOf(this.moduleObject) == -1 && Game.scene.fog){
+            if(this.moduleObject.distanceToCamera >= Game.scene.fog.far){
+              this.animateFrame = false;
+              //If the object is past the near point, and the near point is greater than zero, animate every other frame
+            }else if(Game.scene.fog.near && this.moduleObject.distanceToCamera >= Game.scene.fog.near){
+              this.animateFrame = this.oddFrame;
+            }
+          }
+        }
+
+      }
+
+      if(!this.visible){
+        this.animateFrame = false;
+      }
+      //END: Animation Optimization
+
       for(let i = 0, len = this.effects.length; i < len; i++){
         this.effects[i].update(delta);
       }
@@ -280,65 +314,8 @@ THREE.AuroraModel = function () {
           }
         }
       }else{
-        
-        //New Animation System (TESTING!!!!)
+        //New Animation System
         this.animationManager.update(delta);
-
-
-        //Generic Model Animations
-        // if(this.animationManager.currentAnimation && this.animationManager.currentAnimation.type == 'AuroraModelAnimation'){
-        //   if(this.bonesInitialized){
-        //     this.updateAnimation(this.animationManager.currentAnimation, delta, () => {
-        //       if(!this.animationManager.currentAnimation.data.loop){
-        //         this.stopAnimation();
-        //       }else{
-        //         if(this.animationManager.currentAnimation){
-        //           this.animationManager.lastAnimation = this.animationManager.currentAnimation;
-        //         }
-        //         this.animationManager.currentAnimation.data.events = [];
-        //       }
-        //     });
-        //   }
-        // }
-
-        //World Model Animation Loops
-        //if(this.bonesInitialized && this.animLoops.length){
-
-          /*if(this.animLoop instanceof AuroraModelAnimation){
-            this.updateAnimation(this.animLoop, delta, () => {
-
-              let index = this.animLoops.indexOf(this.animLoop) + 1;
-              if(index >= this.animLoops.length ){
-                index = 0;
-              }
-              this.stopAnimationLoop();
-              this.animLoop = this.animLoops[index];
-            });
-          }else{
-            this.animLoop = this.animLoops[0];
-          }*/
-
-        //  for(let i = 0; i < this.animLoops.length; i++){
-        //    this.updateAnimation(this.animLoops[i], delta);
-        //  }
-        //}
-        
-        // //MiniGame Animations
-        // if(this.bonesInitialized && this.mgAnims.length){
-        //   let dead_animations = [];
-        //   for(let i = 0; i < this.mgAnims.length; i++){
-        //     this.updateAnimation(this.mgAnims[i], delta);
-        //     if(this.mgAnims[i].data.elapsed >= this.mgAnims[i].length){
-        //       dead_animations.push(i);
-        //     }
-        //   }
-        //   let old_anims = dead_animations.length;
-        //   while (old_anims--) {
-        //     let anim_index = dead_animations[old_anims];
-        //     this.mgAnims.splice(anim_index, 1);
-        //   }
-        // }
-
       }
 
       //Update the time uniform on materials in this array
@@ -346,11 +323,6 @@ THREE.AuroraModel = function () {
         let material = this.materials[i];
         if(material.type == 'ShaderMaterial'){
           material.uniforms.time.value = Game.deltaTime;
-          //Saber Color Fix (Ignore ambient lighting)
-          if(typeof material.defines.SABER != 'undefined'){
-            material.uniforms.ambientLightColor.value = [1.0, 1.0, 1.0];
-            material.uniforms.ambientLightColor.needsUpdate = true;
-          }
         }
       }
 
@@ -372,6 +344,8 @@ THREE.AuroraModel = function () {
       for(let i = 0; i < this.emitters.length; i++){
         this.emitters[i].tick(delta);
       }
+
+      this.oddFrame = !this.oddFrame;
   
     }
 
@@ -599,105 +573,6 @@ THREE.AuroraModel = function () {
       for(let i = 0; i < node.children.length; i++){
         this.pose(node.children[i])
       }
-    }
-
-    this.updateLights = function(delta){
-      /*for( let i = 0; i < this.lights.length; i++ ){
-        
-        let light = this.lights[i];
-        
-        if(!light._worldPos)
-            light._worldPos = light.getWorldPosition(new THREE.Vector3());
-
-        light._distance = Game.getCurrentPlayer().getModel().position.distanceTo(light._worldPos);
-
-      }
-
-      //this.lights.sort(function(a,b) { return a._distance - b._distance } );
-      
-      let limit = 3;
-
-      for( let i = 0; i < this.lights.length; i++ ){
-
-        let light = this.lights[i];
-        if( i >= limit ){
-
-          if( light.intensity <= 0 ){
-            light.intensity = 0;
-            light.visible = true;
-
-          }else{
-
-            light.intensity -= delta;
-
-          }
-
-        }else{
-
-          //light.visible = true;
-          if(light.intensity < light.maxIntensity){
-
-            light.intensity += delta;
-            if(light.intensity > light.maxIntensity)
-                light.intensity = light.maxIntensity;
-
-          }
-
-        }
-
-      }*/
-        
-    }
-  
-    this.turnLightsOff = function(){
-      /*for(let i = 0; i < this.lights.length; i++){
-        let light = this.lights[i];
-        if(light instanceof THREE.AmbientLight){
-          light.visible = true;
-          light.intensity = 0.000000001;
-        }else{
-          light.intensity = 0.000000001;
-        }
-        //light.helper.visible = false;
-      }*/
-    }
-  
-    this.turnLightsOn = function(args = {}){
-
-      /*args = Object.assign({
-        sortByPcPosition: true
-      }, args);
-
-      if(args.sortByPcPosition){
-
-        for( let i = 0; i < this.lights.length; i++ ){
-          let light = this.lights[i];
-          light._distance = Game.getCurrentPlayer().getModel().position.distanceTo(light.getWorldPosition(new THREE.Vector3()));
-        }
-
-        this.lights.sort(function(a,b) { return a.priority > b.priority || a._distance - b._distance } );
-
-      }
-      
-      let limit = 3;
-
-      for( let i = 0; i < this.lights.length; i++ ){
-        let light = this.lights[i];
-        if(i >= limit){
-          //light.visible = light.helper.visible = true;
-        }else{
-          if(light instanceof THREE.AmbientLight){
-            light.visible = true;
-            light.intensity = light.maxIntensity;
-          }else{
-            light.visible = true;
-            light.intensity = light.maxIntensity;// = this.lights[i].helper.visible = true;
-          }
-          //light.helper.visible = true;
-        }
-        
-      }*/
-
     }
 
     this.playEvent = function(event, index){
@@ -1189,26 +1064,7 @@ THREE.AuroraModel = function () {
     }
   
     node.getControllerByType = function(type = -1){
-
       return this.controllers.get(type);
-
-      /*if(typeof this.controllers[type] != 'undefined'){
-        return this.controllers[type];
-      }
-  
-      return null;*/
-
-      /*if(typeof this.controllerCache[type] != 'undefined')
-        return this.controllerCache[type];
-  
-      for(let i = 0; i < this.controllers.length; i++){
-        let cntrler = this.controllers[i];
-        if(cntrler.type == type){
-          this.controllerCache[type] = cntrler;
-          return cntrler;
-        }
-      }*/
-  
     }
   
     if (_node instanceof AuroraModelNodeAABB) {

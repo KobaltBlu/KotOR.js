@@ -49,7 +49,6 @@ class UTPObject {
               this.model.translateZ(position.z);
 
               this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-              this.model.turnLightsOn();
             }
 
             TextureLoader.LoadQueue(() => {
