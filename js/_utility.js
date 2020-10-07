@@ -146,3 +146,26 @@ UIItem.TYPE = {
   GLYPHICON: 2,
   SEPARATOR: 3
 };
+
+
+// Polyfills
+
+if ( Number.EPSILON === undefined ) {
+
+	Number.EPSILON = Math.pow( 2, - 52 );
+
+}
+
+//
+
+if ( Math.sign === undefined ) {
+
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/sign
+
+	Math.sign = function ( x ) {
+
+		return ( x < 0 ) ? - 1 : ( x > 0 ) ? 1 : + x;
+
+	};
+
+}
