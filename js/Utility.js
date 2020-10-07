@@ -127,7 +127,6 @@ class Utility {
     //isLocal
     if(filePath.indexOf(':\\') > -1){
 
-      //D:\Users\James\Music\3dXsqVPynY3C.128.mp3
       let filePathInfo = path.parse(filePath);
 
       let fileInfo = filePath.split('\\');
