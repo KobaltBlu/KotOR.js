@@ -40,7 +40,7 @@ function createWindowFromProfile( profile = {} ) {
 
   winGame.webContents.MyGlobal = Global;
   // and load the index.html of the app.
-  winGame.loadURL(`file://${__dirname}/${profile.launch.path}`);
+  winGame.loadURL(`file://${__dirname}/apps/${profile.launch.path}`);
   //winGame.openDevTools();
   winGame.on('ready', () => {
     //winGame.webcontents.openDevTools();
@@ -91,7 +91,7 @@ function createLauncherWindow() {
   });
   winLauncher.webContents.MyGlobal = Global;
   // and load the index.html of the app.
-  winLauncher.loadURL(`file://${__dirname}/launcher.html`);
+  winLauncher.loadURL(`file://${__dirname}/launcher/launcher.html`);
   //winLauncher.openDevTools();
   //winLauncher.on('ready', () => {
     //winLauncher.webcontents.openDevTools();
