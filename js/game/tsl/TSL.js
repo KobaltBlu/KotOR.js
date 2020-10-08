@@ -886,6 +886,7 @@ class Game extends Engine {
     clearTimeout(Game.Heartbeat);
     Game.audioEngine.stopBackgroundMusic();
     Game.audioEngine.Reset();
+    CombatEngine.Reset();
 
     LightManager.clearLights();
 

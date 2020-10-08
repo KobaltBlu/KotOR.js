@@ -336,6 +336,10 @@ class CombatEngine {
     return ( ( val - 10 ) / 2 );
   }
 
+  static Reset(){
+    CombatEngine.combatants = [];
+  }
+
 }
 
 CombatEngine.active = true;

@@ -851,6 +851,7 @@ class Game extends Engine {
     Game.holdWorldFadeInForDialog = false;
     Game.audioEngine.stopBackgroundMusic();
     Game.audioEngine.Reset();
+    CombatEngine.Reset();
 
     //Game.InGameOverlay.Show();
     //Game.InGameOverlay.Hide();
