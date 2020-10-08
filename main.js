@@ -5,11 +5,7 @@ const {ipcMain} = require('electron');
 const {app} = electron;
 // Module to create native browser window.
 const {BrowserWindow, Tray, Menu} = electron;
-
 const {dialog} = electron;
-
-let Global = {};
-let tlkStrings = [];
 
 console.log(process.argv);
 
@@ -38,7 +34,6 @@ function createWindowFromProfile( profile = {} ) {
 
   winGame.state = profile;
 
-  winGame.webContents.MyGlobal = Global;
   // and load the index.html of the app.
   winGame.loadURL(`file://${__dirname}/apps/${profile.launch.path}`);
   //winGame.openDevTools();
@@ -89,7 +84,6 @@ function createLauncherWindow() {
       enableRemoteModule: true
     }
   });
-  winLauncher.webContents.MyGlobal = Global;
   // and load the index.html of the app.
   winLauncher.loadURL(`file://${__dirname}/launcher/launcher.html`);
   //winLauncher.openDevTools();

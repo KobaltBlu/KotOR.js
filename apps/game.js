@@ -291,7 +291,7 @@ const JournalManager = require(path.join(app.getAppPath(), 'js/JournalManager.js
 
 let Config = new ConfigManager('settings.json');
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
-let Global = remote.getCurrentWebContents().MyGlobal;
+let Global = {};
 let Clipboard = null;
 
 /* GUI Controls */

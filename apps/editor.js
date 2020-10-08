@@ -299,7 +299,7 @@ let inlineAudioPlayer =  new InlineAudioPlayer();
 LightManager.init();
 
 let Config = new ConfigManager('settings.json');
-let Global = remote.getCurrentWebContents().MyGlobal;
+let Global = {};
 let Clipboard = null;
 
 let objProps = new ObjectPropertiesWizard({
