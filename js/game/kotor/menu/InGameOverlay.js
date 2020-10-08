@@ -987,7 +987,7 @@ class InGameOverlay extends GameMenu {
 
       }
 
-      if(Game.getCurrentPlayer().combatState){
+      if((Game.selectedObject && Game.selectedObject.isHostile()) || (Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){
         this.showCombatUI();
 
         let action0 = Game.getCurrentPlayer().combatAction;
@@ -1001,7 +1001,6 @@ class InGameOverlay extends GameMenu {
             TextureLoader.tpcLoader.fetch(action0.icon, (texture) => {
               this.LBL_QUEUE0.setFillTexture(texture)
             });
-
           }
         }else{
           this.LBL_QUEUE0.setFillTextureName('');
