@@ -78,12 +78,11 @@ NWScriptDefK1.Actions = {
       //console.log('AssignCommand', this.name, args);
       if(args[0] instanceof ModuleObject){
         if(typeof args[1] === 'object'){
-          //args[1].script.caller = args[0];
-        args[1].script.caller = args[0];
-        args[1].script.debug = this.debug;
-          //args[1].script.stack.push((0)); //Don't know why this makes things work :/
-  
-        args[1].script.runScript({
+          args[1].script.caller = args[0];
+          args[1].script.debug = this.debug;
+            //args[1].script.stack.push((0)); //Don't know why this makes things work :/
+    
+          args[1].script.runScript({
             _instr: null, 
             index: -1, 
             seek: args[1].offset,
@@ -91,12 +90,6 @@ NWScriptDefK1.Actions = {
               //console.log('ACTION.SCRIPT', 'Complete', this.action);
             }
           });
-  
-          /*args[0].doCommand(
-          args[1].script, //script
-          args[1], //state
-            _instr.nextInstr, //instruction
-          );*/
         }else{
           console.error('AssignCommand', args);
         }

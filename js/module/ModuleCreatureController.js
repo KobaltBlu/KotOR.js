@@ -884,6 +884,11 @@ class ModuleCreatureController extends ModuleObject {
         CombatEngine.RemoveCombatant(this);
       }
     }
+    
+    //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
+    if((Game.getCurrentPlayer() == this) && this.lastAttackTarget && !this.lastAttackTarget.isDead() && !this.combatAction && !this.combatQueue.length){
+      this.attackCreature(this.lastAttackTarget, undefined);
+    }
 
     if(this.combatState){
 

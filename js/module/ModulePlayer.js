@@ -14,6 +14,10 @@ class ModulePlayer extends ModuleCreature {
     super(gff);
   }
 
+  update(delta){
+    super.update(delta);
+  }
+
   setHP(nAmount = 0){
     this.currentHitPoints = nAmount;
     if(this.min1HP && this.getHP() < 1)
