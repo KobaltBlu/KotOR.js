@@ -1119,6 +1119,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(typeof args[0] === 'undefined')
+        return undefined;
+
       return args[0].getRace();
     }
   },
@@ -1236,6 +1239,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(typeof args[0] === 'undefined')
+        return -1;
+
       return args[0].getGoodEvil();
     }
   },
@@ -1493,7 +1499,7 @@ NWScriptDefK1.Actions = {
           args[1].GetPosition()
           );
       }else{
-        return -1.00;
+        return 0.00;
       }
     }
   },
@@ -2484,8 +2490,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return Game.module
-      
+      return Game.module;
     }
   },
   243:{
@@ -3421,7 +3426,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleObject){
         return new THREE.Vector2( this.caller.position.x, this.caller.position.y).distanceTo(args[0].position);
       }else{
-        return 0.0;
+        return -1.0;
       }
     }
   },
