@@ -2026,7 +2026,8 @@ ModuleCreature.AnimState = {
   DEAD: -1,
   IDLE: 0,
   WALKING: 1,
-  RUNNING: 2
+  RUNNING: 2,
+  ANIMATING: 4,
 };
 
 ModuleCreature.ACTION = {

@@ -123,6 +123,10 @@ class ModuleCreatureController extends ModuleObject {
                       _animShouldChange = true;
                     }
 
+                    if(_anim){
+                      this.animState = ModuleCreature.AnimState.ANIMATING;
+                    }
+
                     if(_animShouldChange){
                       let _newAnim = this.model.getAnimationByName(_anim);
                       if(_newAnim instanceof AuroraModelAnimation){
@@ -2743,8 +2747,6 @@ class ModuleCreatureController extends ModuleObject {
     //console.log(lip);
     this.lipObject = lip;
   }
-
-
-
+  
 }
 module.exports = ModuleCreatureController;

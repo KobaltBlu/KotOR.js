@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-const ModuleCreature = require("../module/ModuleCreature");
-
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
  */
