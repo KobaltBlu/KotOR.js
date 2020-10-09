@@ -59,17 +59,18 @@ GameEffect.DurationType = {
 };
 
 GameEffect.Type = {
-  EffectAbilityIncrease: 38,
-  EffectAssuredHit:   74,
-  EffectBeam:         21,
-  EffectDamage:       42,
+  EffectAbilityIncrease:  38,
+  EffectAssuredHit:       74,
+  EffectBeam:             21,
+  EffectDamage:           42,
   EffectDamageResistance: 1,
-  EffectDeath:        99999,
-  EffectDisguise:     62,
-  EffectLink:         99997,
-  EffectHeal:         99998,
-  EffectResurrection:  14,
-  EffectVisualEffect: 75
+  EffectDeath:            99999,
+  EffectDisguise:         62,
+  EffectForcePushed:      80,
+  EffectLink:             99997,
+  EffectHeal:             99998,
+  EffectResurrection:     14,
+  EffectVisualEffect:     75
 };
 
 module.exports = GameEffect;

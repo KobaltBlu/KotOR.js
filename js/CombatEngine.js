@@ -17,7 +17,7 @@ class CombatEngine {
     //CombatEngine.combatants = [].concat(Game.module.area.creatures).concat(PartyManager.party);
     if(CombatEngine.combatants.length){
 
-      //combatGroups is an array of combatGroups (Arrays) that group objects in combat with eachother
+      //combatGroups is an array of combatGroups (Arrays) that group objects in combat with each other
       let combatGroups = [];
 
       //Loop through the active combatants and group them

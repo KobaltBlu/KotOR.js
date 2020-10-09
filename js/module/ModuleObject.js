@@ -1047,8 +1047,10 @@ class ModuleObject {
   }
 
   isOnScreen(frustum = Game.viewportFrustum){
-    if(this.model && this.model.box != this.box){
-      this.box = this.model.box;
+    if(!(this instanceof ModuleTrigger)){
+      if(this.model && this.model.box != this.box){
+        this.box = this.model.box;
+      }
     }
 
     if(Game.scene.fog){
@@ -1208,6 +1210,21 @@ class ModuleObject {
     }
   }
 
+  getPerceptionRangePrimary(){
+    let range = Global.kotor2DA.ranges.rows[this.perceptionRange];
+    if(range){
+      return parseInt(range.primaryrange);
+    }
+    return 1;
+  }
+
+  getPerceptionRangeSecondary(){
+    let range = Global.kotor2DA.ranges.rows[this.perceptionRange];
+    if(range){
+      return parseInt(range.secondaryrange);
+    }
+    return 1;
+  }
 
   hasLineOfSight(oTarget = null, max_distance = 30){
     if(oTarget instanceof ModuleObject){
@@ -1219,10 +1236,10 @@ class ModuleObject {
       let distance = position_a.distanceTo(position_b);
 
       if(this.perceptionRange){
-        if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange)){
+        if(distance > this.getPerceptionRangePrimary()){
           return;
         }
-        max_distance = parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange);
+        max_distance = this.getPerceptionRangePrimary();
       }else{
         if(distance > 50)
           return;
@@ -1236,6 +1253,8 @@ class ModuleObject {
       let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
       let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
 
+      let doors = [];
+
       for(let j = 0, jl = this.rooms.length; j < jl; j++){
         let room = Game.module.area.rooms[this.rooms[j]];
         if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
@@ -1248,13 +1267,16 @@ class ModuleObject {
 
       for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
         let door = Game.module.area.doors[j];
-        if(door && door.walkmesh && !door.isOpen()){
-          aabbFaces.push({
-            object: door,
-            faces: door.walkmesh.faces
-          });
+        if(door && !door.isOpen()){
+          let box3 = door.box;
+          if(box3){
+            if(Game.raycaster.ray.intersectsBox(box3)){
+              return false;
+            }
+          }
         }
       }
+
 
       for(let i = 0, il = aabbFaces.length; i < il; i++){
         let castableFaces = aabbFaces[i];

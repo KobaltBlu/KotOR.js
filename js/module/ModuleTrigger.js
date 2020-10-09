@@ -18,6 +18,7 @@ class ModuleTrigger extends ModuleObject {
 
     this.tag = '';
     this.vertices = [];
+    this.box = new THREE.Box3();
 
     this.triggered = false;
     this.InitProperties();
@@ -178,16 +179,14 @@ class ModuleTrigger extends ModuleObject {
 
     this.mesh = new THREE.Mesh( trigGeom, material );
     this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
-
-    this.mesh.box = this.box = new THREE.Box3().setFromObject(this.mesh);
-
     this.mesh.box.min.z -= 100;
     this.mesh.box.max.z += 100;
+    this.box = this.mesh.box;
 
     /*
-    Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
-    */
-    //this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
+     * Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
+     * // this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
+     */
 
     this.mesh.moduleObject = this;
     this.mesh.visible = false;

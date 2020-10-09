@@ -184,6 +184,7 @@ const EffectDamageResistance = require(path.join(app.getAppPath(), 'js/effects/E
 const EffectDeath = require(path.join(app.getAppPath(), 'js/effects/EffectDeath.js'));
 const EffectDisguise = require(path.join(app.getAppPath(), 'js/effects/EffectDisguise.js'));
 const EffectHeal = require(path.join(app.getAppPath(), 'js/effects/EffectHeal.js'));
+const EffectForcePushed = require(path.join(app.getAppPath(), 'js/effects/EffectForcePushed.js'));
 const EffectLink = require(path.join(app.getAppPath(), 'js/effects/EffectLink.js'));
 const EffectResurrection = require(path.join(app.getAppPath(), 'js/effects/EffectResurrection.js'));
 const EffectVisualEffect = require(path.join(app.getAppPath(), 'js/effects/EffectVisualEffect.js'));

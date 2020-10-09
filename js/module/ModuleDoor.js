@@ -283,6 +283,20 @@ class ModuleDoor extends ModuleObject {
         //this.model.poseAnimation('opened1');
       }, 100);
     });
+
+    //Notice all creatures within range that someone opened this door
+    if(object instanceof ModuleCreature){
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        let creature = Game.module.area.creatures[i];
+        if(creature.perceptionHeard.indexOf(object) == -1){
+          let distance = creature.position.distanceTo(this.position);
+          if(distance <= creature.getPerceptionRangePrimary()){
+            creature.perceptionHeard.push(object);
+          }
+        }
+      }
+    }
+
   }
 
   closeDoor(object = undefined){

@@ -176,6 +176,7 @@ class ModuleCreature extends ModuleCreatureController {
     this.isListening = false;
     this.listeningPatterns = {};
     this.heardStrings = [];
+    this.perceptionHeard = [];
 
     this.targetPositions = [];
     let numNodes = 8;

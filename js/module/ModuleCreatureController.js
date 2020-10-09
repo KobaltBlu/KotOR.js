@@ -136,11 +136,14 @@ class ModuleCreatureController extends ModuleObject {
                             //this.actionQueue.shift()
                           })
                         }
+                        this.actionQueue.shift();
                       }else{
                         //console.log('Animation Missing', this.action.animation)
                         //Kill the action if the animation isn't found
-                        this.actionQueue.shift()
+                        this.actionQueue.shift();
                       }
+                    }else{
+                      this.actionQueue.shift();
                     }
 
                   }else{
@@ -373,15 +376,13 @@ class ModuleCreatureController extends ModuleObject {
                     this.actionQueue.shift();
                   }else{
                     distance = Utility.Distance2D(this.position, this.action.object.position);
-
-                    if(distance > ( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ) ){
+                    if(distance > ( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ) ){
                       try{
-                        this.actionPathfinder(( this.getEquippedWeaponType() == 1 ? 2.0 : 15.0 ), undefined, delta);
+                        this.actionPathfinder(( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ), undefined, delta);
                       }catch(e){}
                     }else{
                       this.animState = ModuleCreature.AnimState.IDLE;
                       this.force = 0;
-
                       this.actionQueue.shift();
                     }
                   }
@@ -614,6 +615,33 @@ class ModuleCreatureController extends ModuleObject {
     //  return;
 
     if(this.scripts.onNotice instanceof NWScriptInstance){
+
+      //Check for creatures that this creature has heard
+      for(let i = 0, len = this.perceptionHeard.length; i < len; i++){
+        let creature = this.perceptionHeard[i];
+        if(this != creature && !creature.isDead() && creature.isVisible()){
+          let index = this.perceptionList.indexOf(creature);
+          let distance = this.position.distanceTo(creature.position);
+          if(index == -1){
+            if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+              if(PartyManager.party.indexOf(this) == -1){
+                if(this.isHostile(creature)){
+                  this.combatState = true;
+                }
+
+                this.perceptionList.push(creature);
+                let instance = this.scripts.onNotice.nwscript.newInstance();
+                instance.lastPerceived = creature;
+                instance.run(this);
+                this.perceptionHeard.shift();
+                return;
+              }
+            }
+          }
+        }
+      }
+
+
       //Check modules creatures
       let creatureLen = Game.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++ ){
@@ -622,8 +650,7 @@ class ModuleCreatureController extends ModuleObject {
           let index = this.perceptionList.indexOf(creature);
           let distance = this.position.distanceTo(creature.position);
           if(index == -1){
-            if(distance < parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
-
+            if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
               if(PartyManager.party.indexOf(this) == -1){
                 if(this.isHostile(creature)){
                   this.combatState = true;
@@ -635,10 +662,9 @@ class ModuleCreatureController extends ModuleObject {
               instance.lastPerceived = creature;
               instance.run(this);
               return;
-
             }
           }else{
-            if(distance > parseInt(Global.kotor2DA.ranges.rows[this.perceptionRange].primaryrange) && this.hasLineOfSight(creature)){
+            if(distance > this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
               this.perceptionList.splice(index, 1);
             }
           }
@@ -675,13 +701,13 @@ class ModuleCreatureController extends ModuleObject {
             }
           }else{
             if(distance > 9 && this.hasLineOfSight(creature)){
-              this.perceptionList.splice(index, 1);
+              //this.perceptionList.splice(index, 1);
             }
           }
         }else{
           let index = this.perceptionList.indexOf(creature);
           if(index != -1){
-            this.perceptionList.splice(index, 1);
+            //this.perceptionList.splice(index, 1);
           }
         }
       }
@@ -694,7 +720,9 @@ class ModuleCreatureController extends ModuleObject {
         this.action.path = Game.module.area.path.traverseToPoint(this.position, PartyManager.GetFollowPosition(this));
         //this.action.path.push(PartyManager.GetFollowPosition(this));
       }else if(this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
-        //if(PartyManager.party.indexOf(this) >= 0){
+        if(this.getEquippedWeaponType() == 4){ //RANGED
+          this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
+        }else{ //MELEE
           this.action.path_realtime = true;
           let openSpot = this.action.object.getClosesetOpenSpot(this);
           if(typeof openSpot != 'undefined'){
@@ -704,7 +732,7 @@ class ModuleCreatureController extends ModuleObject {
           }else{
             console.error('openSpot', 'Not found');
           }
-        //}
+        }
       }else if(this.action.goal == ModuleCreature.ACTION.CASTSPELL){
         //if(PartyManager.party.indexOf(this) >= 0){
           this.action.path_realtime = true;
@@ -1730,7 +1758,7 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null){
+  attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null, attackResult = undefined){
 
     //console.log('attackCreature', this, target, feat);
 
@@ -1824,6 +1852,7 @@ class ModuleCreatureController extends ModuleObject {
       isRanged: isRanged,
       ready: false,
       isCutsceneAttack: isCutsceneAttack,
+      attackResult: attackResult,
       damage: attackDamage
     };
 

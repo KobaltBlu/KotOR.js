@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const ModuleCreature = require("../module/ModuleCreature");
+
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
  */
@@ -2733,7 +2735,10 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return this.lastPerceived;
+      if(this.lastPerceived instanceof ModuleCreature){
+        return this.lastPerceived;
+      }
+      return undefined;
     }
   },
   257:{
@@ -2855,7 +2860,14 @@ NWScriptDefK1.Actions = {
     comment: "269: EffectForcePushTargeted\nThis effect is exactly the same as force push, except it takes a location parameter that specifies\nwhere the location of the force push is to be done from.  All orientations are also based on this location.\nAMF:  The new ignore test direct line variable should be used with extreme caution\nIt overrides geometry checks for force pushes, so that the object that the effect is applied to\nis guaranteed to move that far, ignoring collisions.  It is best used for cutscenes.\n",
     name: "EffectForcePushTargeted",
     type: 16,
-    args: ["location", "int"]
+    args: ["location", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectForcePushed();
+      effect.location = args[0];
+      effect.ignoreCollision = args[1] ? true : false;
+      effect.setCreator(this.caller);
+      return effect.initialize();
+    }
   },
   270:{
     comment: "270: Create a Haste effect.\n",
@@ -3959,7 +3971,12 @@ NWScriptDefK1.Actions = {
     comment: "392: Force push the creature...\n",
     name: "EffectForcePushed",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectForcePushed(args[0]);
+      effect.setCreator(this.caller);
+      return effect.initialize();
+    }
   },
   393:{
     comment: "393: Gives nXpAmount to oCreature.\n",
@@ -3976,9 +3993,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
-    args[0].setXP(
-      args[1]
-      )
+      args[0].setXP(args[1])
     }
   },
   395:{
@@ -4858,15 +4873,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int", "int", "int"],
     action: function(args, _instr, action){
-      if(args[0] instanceof ModuleCreature){
-        //console.log('attackCreature', this.caller, args, Global.kotor2DA.animations.rows[args[1]].name);
-        this.caller.attackCreature(args[0], undefined, true, args[3], Global.kotor2DA.animations.rows[args[1]].name);
-        /*args[0].actionQueue.push({ 
-          goal: ModuleCreature.ACTION.ANIMATE,
-          animation: Global.kotor2DA.animations.rows[args[1]].name,
-          speed: 1,
-          time: 0
-        });*/
+      if(args[0] instanceof ModuleCreature || args[0] instanceof ModulePlaceable){
+        this.caller.attackCreature(args[0], undefined, true, args[3], Global.kotor2DA.animations.rows[args[1]].name, args[2]);
       }else{
         console.error('attackCreature', args[0]);
       }
