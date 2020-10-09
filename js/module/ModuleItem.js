@@ -61,7 +61,11 @@ class ModuleItem extends ModuleObject {
   }
 
   getWeaponWield(){
-    return null;
+    return parseInt(this.getBaseItem().weaponwield);
+  }
+
+  getWeaponType(){
+    return parseInt(this.getBaseItem().weapontype);
   }
 
   isStolen(){

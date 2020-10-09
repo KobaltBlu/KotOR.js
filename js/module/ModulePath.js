@@ -138,7 +138,7 @@ class ModulePath {
       let tDistance = point.vector.distanceTo(ending);
 
       //Don't target anything that is further away from the destination than we already are
-      let distanceToTarget = point.vector.distanceTo(ending);
+      let distanceToTarget = point.vector.distanceTo(ending)*.5;
       if(pDistance < distance && distanceToTarget < maxDistance){
         //If this point is closer than the current point update the current point
         //if(pDistance < distance){

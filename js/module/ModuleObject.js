@@ -428,6 +428,11 @@ class ModuleObject {
     }else{
       this.spawned = true;
     }
+
+    if(this instanceof ModuleCreature){
+      this.initPerceptionList();
+    }
+
   }
 
   addItem(template = new GFFObject(), onLoad = null){
@@ -1224,6 +1229,95 @@ class ModuleObject {
       return parseInt(range.secondaryrange);
     }
     return 1;
+  }
+
+  initPerceptionList(){
+    let length = this.perceptionList.length;
+    while(length--){
+      let perceptionObject = this.perceptionList[length];
+      if(perceptionObject){
+        if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
+          perceptionObject.object = ModuleObject.GetObjectById(perceptionObject.objectId);
+          if(!(perceptionObject.object instanceof ModuleObject)){
+            this.perceptionList.splice(length, 1);
+          }
+        }
+      }
+    }
+  }
+
+  notifyPerceptionHeardObject(object = undefined, heard = false){
+    if(object instanceof ModuleCreature){
+      let triggerOnNotice = false;
+      let perceptionObject;
+      let exists = this.perceptionList.filter( (o) => o.object == object );
+      if(exists.length){
+        let existingObject = exists[0];
+        triggerOnNotice = (existingObject.heard != heard);
+        existingObject.hasHeard = existingObject.hasHeard ? true : (existingObject.heard == heard ? true : false);
+        existingObject.heard = heard;
+        perceptionObject = existingObject;
+      }else{
+        if(heard){
+          let newObject = {
+            object: object,
+            heard: heard,
+            seen: false,
+            hasSeen: false,
+            hasHeard: false
+          };
+          this.perceptionList.push(newObject);
+          perceptionObject = newObject;
+          triggerOnNotice = true;
+        }
+      }
+
+      if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+        //console.log('notifyPerceptionHeardObject', heard, this, object);
+        let instance = this.scripts.onNotice.nwscript.newInstance();
+        instance.lastPerceived = perceptionObject;
+        instance.run(this);
+        return true;
+      }
+      
+    }
+  }
+
+  notifyPerceptionSeenObject(object = undefined, seen = false){
+    if(object instanceof ModuleCreature){
+      let triggerOnNotice = false;
+      let perceptionObject;
+      let exists = this.perceptionList.filter( (o) => o.object == object );
+      if(exists.length){
+        let existingObject = exists[0];
+        triggerOnNotice = (existingObject.seen != seen);
+        existingObject.hasSeen = existingObject.seen == seen;
+        existingObject.seen = seen;
+        perceptionObject = existingObject;
+      }else{
+        if(seen){
+          let newObject = {
+            object: object,
+            heard: false,
+            seen: seen,
+            hasSeen: false,
+            hasHeard: false
+          };
+          this.perceptionList.push(newObject);
+          perceptionObject = newObject;
+          triggerOnNotice = true;
+        }
+      }
+
+      if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+        //console.log('notifyPerceptionSeenObject', seen, this, object);
+        let instance = this.scripts.onNotice.nwscript.newInstance();
+        instance.lastPerceived = perceptionObject;
+        instance.run(this);
+        return true;
+      }
+
+    }
   }
 
   hasLineOfSight(oTarget = null, max_distance = 30){

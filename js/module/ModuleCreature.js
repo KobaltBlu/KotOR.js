@@ -176,7 +176,6 @@ class ModuleCreature extends ModuleCreatureController {
     this.isListening = false;
     this.listeningPatterns = {};
     this.heardStrings = [];
-    this.perceptionHeard = [];
 
     this.targetPositions = [];
     let numNodes = 8;
@@ -1810,8 +1809,7 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('ActionList')){
       let actions = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
       for(let i = 0, len = actions.length; i < len; i++){
-        
-          let action = actions[i];
+        let action = actions[i];
         try{
           let actionId = action.GetFieldByLabel('ActionId').GetValue();
           let paramCount = action.GetFieldByLabel('NumParams').GetValue();
@@ -1864,6 +1862,59 @@ class ModuleCreature extends ModuleCreatureController {
         }catch(e){
           console.error('ActionList', e, action, this);
         }
+      }
+    }
+
+    //PerceptionList
+    if(this.template.RootNode.HasField('PerceptionList')){
+      let perceptionList = this.template.RootNode.GetFieldByLabel('PerceptionList').GetChildStructs();
+      for(let i = 0, len = perceptionList.length; i < len; i++){
+        let perception = perceptionList[i];
+
+        let objectId = perception.GetFieldByLabel('ObjectId').GetValue();
+        let data = perception.GetFieldByLabel('PerceptionData').GetValue();
+
+        let seen = false;
+        let heard = false;
+        let hasSeen = false;
+        let hasHeard = false;
+        //https://nwnlexicon.com/index.php?title=Perception
+        switch(data){
+          case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
+            seen = true; heard = true;
+          break;
+          case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
+            seen = false; heard = false;
+          break;
+          case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
+            seen = false; heard = true;
+          break;
+          case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
+            seen = true; heard = false;
+          break;
+          case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
+            seen = false; heard = false;
+          break;
+          case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
+            seen = false; heard = true;
+          break;
+          case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
+            seen = false; heard = false;
+          break;
+          case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
+            seen = true; heard = false;
+          break;
+        }
+
+        this.perceptionList.push({
+          objectId: objectId,
+          data: data,
+          seen: seen,
+          heard: heard,
+          hasSeen: seen,
+          hasHeard: heard
+        });
+
       }
     }
 

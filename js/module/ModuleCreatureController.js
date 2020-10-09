@@ -618,104 +618,58 @@ class ModuleCreatureController extends ModuleObject {
     //if(!Engine.Flags.CombatEnabled)
     //  return;
 
-    if(this.scripts.onNotice instanceof NWScriptInstance){
-
-      //Check for creatures that this creature has heard
-      for(let i = 0, len = this.perceptionHeard.length; i < len; i++){
-        let creature = this.perceptionHeard[i];
-        if(this != creature && !creature.isDead() && creature.isVisible()){
-          let index = this.perceptionList.indexOf(creature);
+    //Check modules creatures
+    let creatureLen = Game.module.area.creatures.length;
+    for(let i = 0; i < creatureLen; i++ ){
+      let creature = Game.module.area.creatures[i];
+      if(this != creature){
+        if(!creature.isDead()){
           let distance = this.position.distanceTo(creature.position);
-          if(index == -1){
-            if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-              if(PartyManager.party.indexOf(this) == -1){
-                if(this.isHostile(creature)){
-                  this.combatState = true;
-                }
-
-                this.perceptionList.push(creature);
-                let instance = this.scripts.onNotice.nwscript.newInstance();
-                instance.lastPerceived = creature;
-                instance.run(this);
-                this.perceptionHeard.shift();
-                return;
+          if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+            if(PartyManager.party.indexOf(this) == -1){
+              if(this.isHostile(creature)){
+                this.combatState = true;
               }
             }
-          }
-        }
-      }
-
-
-      //Check modules creatures
-      let creatureLen = Game.module.area.creatures.length;
-      for(let i = 0; i < creatureLen; i++ ){
-        let creature = Game.module.area.creatures[i];
-        if(this != creature && !creature.isDead() && creature.isVisible()){
-          let index = this.perceptionList.indexOf(creature);
-          let distance = this.position.distanceTo(creature.position);
-          if(index == -1){
-            if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-              if(PartyManager.party.indexOf(this) == -1){
-                if(this.isHostile(creature)){
-                  this.combatState = true;
-                }
-              }
-              
-              this.perceptionList.push(creature);
-              let instance = this.scripts.onNotice.nwscript.newInstance();
-              instance.lastPerceived = creature;
-              instance.run(this);
-              return;
-            }
-          }else{
-            if(distance > this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-              this.perceptionList.splice(index, 1);
-            }
+            
+            this.notifyPerceptionSeenObject(creature, true);
+          }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+            this.notifyPerceptionHeardObject(creature, true);
           }
         }else{
-          let index = this.perceptionList.indexOf(creature);
-          if(index != -1){
-            this.perceptionList.splice(index, 1);
-          }
-        }
-      }
-
-      //Check party creatures
-      let partyLen = PartyManager.party.length;
-      for(let i = 0; i < partyLen; i++ ){
-        let creature = PartyManager.party[i];
-        if(this != creature && !creature.isDead()){
-          let index = this.perceptionList.indexOf(creature);
-          let distance = this.position.distanceTo(creature.position);
-          if(index == -1){
-            if(distance < 9 && this.hasLineOfSight(creature)){
-              if(PartyManager.party.indexOf(this) == -1){
-
-                this.perceptionList.push(creature);
-                let instance = this.scripts.onNotice.nwscript.newInstance();
-                instance.lastPerceived = creature;
-                instance.run(this);
-
-                if(this.isHostile(creature)){
-                  this.combatState = true;
-                }
-
-                return;
-              }
-            }
-          }else{
-            if(distance > 9 && this.hasLineOfSight(creature)){
-              //this.perceptionList.splice(index, 1);
-            }
-          }
-        }else{
-          let index = this.perceptionList.indexOf(creature);
-          if(index != -1){
-            //this.perceptionList.splice(index, 1);
-          }
+          this.notifyPerceptionSeenObject(creature, false);
         }
       }
     }
+
+    //Check party creatures
+    let partyLen = PartyManager.party.length;
+    for(let i = 0; i < partyLen; i++ ){
+      let creature = PartyManager.party[i];
+      if(this != creature){
+        if(!creature.isDead()){
+          let distance = this.position.distanceTo(creature.position);
+          if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+            if(PartyManager.party.indexOf(this) == -1){
+
+              if(this.isHostile(creature)){
+                this.combatState = true;
+              }
+
+              this.notifyPerceptionSeenObject(creature, true);
+            }
+          }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+            this.notifyPerceptionHeardObject(creature, true);
+          }
+        }else{
+          // if(distance > 9 && this.hasLineOfSight(creature)){
+          //   this.notifyPerceptionSeenObject(creature, false);
+          // }
+          this.notifyPerceptionSeenObject(creature, false);
+        }
+      }
+    }
+    
   }
 
   actionPathfinder(distance, run = !this.walk, delta = 1){
@@ -1100,7 +1054,7 @@ class ModuleCreatureController extends ModuleObject {
             if(this.combatState){
               if(!isSimple){
                 if(hasHands && bothHands){
-                  switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                  switch(parseInt(rWeapon.getWeaponWield())){
                     case 2:
                       if(currentAnimation != 'g4r1'){
                         this.getModel().playAnimation('g4r1', false);
@@ -1119,7 +1073,7 @@ class ModuleCreatureController extends ModuleObject {
                   }
                 }else{
                   if(hasHands && rWeapon){
-                    switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                    switch(parseInt(rWeapon.getWeaponWield())){
                       case 1:
                         if(currentAnimation != 'g1r1'){
                           this.getModel().playAnimation('g1r1', false);
@@ -1236,7 +1190,7 @@ class ModuleCreatureController extends ModuleObject {
             default:
               if(this.combatState){
                 if(hasHands && bothHands){
-                  switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                  switch(parseInt(rWeapon.getWeaponWield())){
                     case 2:
                       if(currentAnimation != 'runds')
                         this.getModel().playAnimation('runds', false);
@@ -1256,7 +1210,7 @@ class ModuleCreatureController extends ModuleObject {
                   }
                 }else{
                   if(hasHands && rWeapon){
-                    switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                    switch(parseInt(rWeapon.getWeaponWield())){
                       case 2:
                       case 3:
                         if(currentAnimation != 'runss')
@@ -1283,7 +1237,7 @@ class ModuleCreatureController extends ModuleObject {
               }else{
                 if(currentAnimation != 'run'){
                   if(hasHands && bothHands){
-                    switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                    switch(parseInt(rWeapon.getWeaponWield())){
                       case 2:
                         if(currentAnimation != 'runds')
                           this.getModel().playAnimation('runds', false);
@@ -1303,7 +1257,7 @@ class ModuleCreatureController extends ModuleObject {
                     }
                   }else{
                     if(hasHands && rWeapon){
-                      switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+                      switch(parseInt(rWeapon.getWeaponWield())){
                         case 2:
                         case 3:
                           if(currentAnimation != 'runss')
@@ -1861,7 +1815,11 @@ class ModuleCreatureController extends ModuleObject {
     };
 
     //if(!isCutsceneAttack){
-      this.combatQueue.push(combatAction);
+      if(this.combatAction == undefined){
+        this.combatAction = combatAction;
+      }else{
+        this.combatQueue.push(combatAction);
+      }
       this.actionQueue = [];
     //}
     
@@ -2038,7 +1996,7 @@ class ModuleCreatureController extends ModuleObject {
     //let weaponWield = this.getCombatAnimationWeaponType();
 
     if(this.equipment.RIGHTHAND){
-      weaponType = parseInt(this.equipment.RIGHTHAND.getBaseItem().weapontype);
+      weaponType = parseInt(this.equipment.RIGHTHAND.getWeaponType());
 
       switch(weaponType){
         case 4:
@@ -2048,7 +2006,7 @@ class ModuleCreatureController extends ModuleObject {
       }
 
     }else if(this.equipment.CLAW1){
-      weaponType = parseInt(this.equipment.CLAW1.getBaseItem().weapontype);
+      weaponType = parseInt(this.equipment.CLAW1.getWeaponType());
 
       switch(weaponType){
         case 1:
@@ -2057,7 +2015,7 @@ class ModuleCreatureController extends ModuleObject {
           return 'm';
       }
     }else if(this.equipment.CLAW2){
-      weaponType = parseInt(this.equipment.CLAW2.getBaseItem().weapontype);
+      weaponType = parseInt(this.equipment.CLAW2.getWeaponType());
 
       switch(weaponType){
         case 1:
@@ -2066,7 +2024,7 @@ class ModuleCreatureController extends ModuleObject {
           return 'm';
       }
     }else if(this.equipment.CLAW3){
-      weaponType = parseInt(this.equipment.CLAW3.getBaseItem().weapontype);
+      weaponType = parseInt(this.equipment.CLAW3.getWeaponType());
 
       switch(weaponType){
         case 1:
@@ -2108,7 +2066,7 @@ class ModuleCreatureController extends ModuleObject {
     if(lWeapon || rWeapon){
 
       if(bothHands){
-        switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+        switch(parseInt(rWeapon.getWeaponWield())){
           case 2:
             return 4;
           case 4:
@@ -2117,7 +2075,7 @@ class ModuleCreatureController extends ModuleObject {
             return 6;
         }
       }else{
-        switch(parseInt(rWeapon.getBaseItem().weaponwield)){
+        switch(parseInt(rWeapon.getWeaponWield())){
           case 1:
             return 1;
           case 2:
@@ -2138,7 +2096,7 @@ class ModuleCreatureController extends ModuleObject {
             return 9;
         }
       }
-      return parseInt(rWeapon.getBaseItem().weaponwield);
+      return parseInt(rWeapon.getWeaponWield());
     }
 
     return 0;
@@ -2153,23 +2111,23 @@ class ModuleCreatureController extends ModuleObject {
     let claw3 = this.equipment.CLAW3;
 
     if(rWeapon){
-      return parseInt(rWeapon.getBaseItem().weapontype);
+      return parseInt(rWeapon.getWeaponType());
     }
 
     if(lWeapon){
-      return parseInt(lWeapon.getBaseItem().weapontype);
+      return parseInt(lWeapon.getWeaponType());
     }
 
     if(claw1){
-      return parseInt(claw1.getBaseItem().weapontype);
+      return parseInt(claw1.getWeaponType());
     }
 
     if(claw2){
-      return parseInt(claw2.getBaseItem().weapontype);
+      return parseInt(claw2.getWeaponType());
     }
 
     if(claw3){
-      return parseInt(claw3.getBaseItem().weapontype);
+      return parseInt(claw3.getWeaponType());
     }
 
     return 0;
@@ -2209,8 +2167,6 @@ class ModuleCreatureController extends ModuleObject {
       box = this.model.box.clone();
       box.translate(_axisFront);
     }
-
-    
 
     //I'm trying to clamp the delta incase of lag spikes that are sometimes warping the creature beyond a colliding object
     if(delta > 1){

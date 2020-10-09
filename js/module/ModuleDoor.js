@@ -288,11 +288,9 @@ class ModuleDoor extends ModuleObject {
     if(object instanceof ModuleCreature){
       for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
         let creature = Game.module.area.creatures[i];
-        if(creature.perceptionHeard.indexOf(object) == -1){
-          let distance = creature.position.distanceTo(this.position);
-          if(distance <= creature.getPerceptionRangePrimary()){
-            creature.perceptionHeard.push(object);
-          }
+        let distance = creature.position.distanceTo(this.position);
+        if(distance <= creature.getPerceptionRangePrimary()){
+          creature.notifyPerceptionHeardObject(object, true);
         }
       }
     }

@@ -293,8 +293,10 @@ THREE.AuroraModel = function () {
 
       }
 
-      if(!this.visible){
-        this.animateFrame = false;
+      if(!(this.moduleObject instanceof ModuleRoom)){
+        if(!this.visible){
+          this.animateFrame = false;
+        }
       }
       //END: Animation Optimization
 

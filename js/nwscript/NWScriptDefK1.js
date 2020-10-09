@@ -2772,7 +2772,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleCreature)
-        return this.caller.perceptionList.indexOf(this.lastPerceived) == -1 ? 0 : 1;
+        return this.lastPerceived.seen ? true : false;
       else
         return 0;
     }
@@ -2789,8 +2789,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      if(this.lastPerceived instanceof ModuleObject){
-        return this.lastPerceived.isDead() || (this.caller.perceptionList.indexOf(this.lastPerceived) == -1) ? 1 : 0;
+      if(this.lastPerceived.object instanceof ModuleObject){
+        return this.lastPerceived.object.isDead() || (this.lastPerceived.seen ? false : true);
       }else{
         return 0;
       }
@@ -3007,7 +3007,14 @@ NWScriptDefK1.Actions = {
       if(args[1] instanceof ModuleCreature){
         //console.log('SEEN?', args[1].hasLineOfSight(args[0]) ? 'true' : 'false' );
         //return args[1].hasLineOfSight(args[0]) ? 1 : 0;
-        return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
+        
+        for(let i = 0, len = args[1].perceptionList.length; i < len; i++){
+          let perception = args[1].perceptionList[i];
+          if(perception.object == args[0] && perception.seen){
+            return true;
+          }
+        }
+        //return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
       }else
         return 0;
     }
@@ -4941,7 +4948,13 @@ NWScriptDefK1.Actions = {
     comment: "511: * Returns TRUE if oItem is a ranged weapon.\n",
     name: "GetWeaponRanged",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleItem){
+        return args[0].getWeaponType() == 4 ? true : false;
+      }
+      return false;
+    }
   },
   512:{
     comment: "512: Only if we are in a single player game, AutoSave the game.\n",

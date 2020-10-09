@@ -964,9 +964,49 @@ class Engine {
       break;
       case CREATURE_TYPE_PERCEPTION:
         for(var i = 0; i < list.length; i++){
-          if(oTarget.perceptionList.indexOf(list[i]) >= 0){
-            results.push(list[i]);
+          switch(nFirstCriteriaValue){
+            case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen && o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen && !o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen && o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen && !o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.heard ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen ).length){
+                results.push(list[i]);
+              }
+            break;
+            case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
+              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen ).length){
+                results.push(list[i]);
+              }
+            break;
           }
+
         }
       break;
     }

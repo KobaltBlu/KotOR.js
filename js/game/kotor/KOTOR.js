@@ -1035,45 +1035,46 @@ class Game extends Engine {
                 console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
                 if(!Game.holdWorldFadeInForDialog)
                   Game.FadeOverlay.FadeIn(1, 0, 0, 0);
-                  Game.module.readyToProcessEvents = true;
+                
+                Game.module.readyToProcessEvents = true;
 
-                  for(let i = 0; i < Game.module.area.creatures.length; i++){
-                    if(Game.module.area.creatures[i] instanceof ModuleObject){
-                      Game.module.area.creatures[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < Game.module.area.creatures.length; i++){
+                  if(Game.module.area.creatures[i] instanceof ModuleObject){
+                    Game.module.area.creatures[i].onSpawn(runSpawnScripts);
                   }
+                }
 
-                  for(let i = 0; i < PartyManager.party.length; i++){
-                    if(PartyManager.party[i] instanceof ModuleObject){
-                      PartyManager.party[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < PartyManager.party.length; i++){
+                  if(PartyManager.party[i] instanceof ModuleObject){
+                    PartyManager.party[i].onSpawn(runSpawnScripts);
                   }
+                }
 
-                  for(let i = 0; i < Game.module.area.placeables.length; i++){
-                    if(Game.module.area.placeables[i] instanceof ModuleObject){
-                      Game.module.area.placeables[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < Game.module.area.placeables.length; i++){
+                  if(Game.module.area.placeables[i] instanceof ModuleObject){
+                    Game.module.area.placeables[i].onSpawn(runSpawnScripts);
                   }
+                }
 
-                  for(let i = 0; i < Game.module.area.doors.length; i++){
-                    if(Game.module.area.doors[i] instanceof ModuleObject){
-                      Game.module.area.doors[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < Game.module.area.doors.length; i++){
+                  if(Game.module.area.doors[i] instanceof ModuleObject){
+                    Game.module.area.doors[i].onSpawn(runSpawnScripts);
                   }
+                }
 
-                  for(let i = 0; i < Game.module.area.triggers.length; i++){
-                    if(Game.module.area.triggers[i] instanceof ModuleObject){
-                      Game.module.area.triggers[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < Game.module.area.triggers.length; i++){
+                  if(Game.module.area.triggers[i] instanceof ModuleObject){
+                    Game.module.area.triggers[i].onSpawn(runSpawnScripts);
                   }
+                }
 
-                  for(let i = 0; i < Game.module.area.waypoints.length; i++){
-                    if(Game.module.area.waypoints[i] instanceof ModuleObject){
-                      Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
-                    }
+                for(let i = 0; i < Game.module.area.waypoints.length; i++){
+                  if(Game.module.area.waypoints[i] instanceof ModuleObject){
+                    Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
                   }
-                  
-                  Game.player.onSpawn(runSpawnScripts);
+                }
+                
+                Game.player.onSpawn(runSpawnScripts);
 
               }, 1000);                
               

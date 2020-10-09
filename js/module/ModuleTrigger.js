@@ -179,6 +179,9 @@ class ModuleTrigger extends ModuleObject {
 
     this.mesh = new THREE.Mesh( trigGeom, material );
     this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
+    if(!this.mesh.box){
+      this.mesh.box = new THREE.Box3();
+    }
     this.mesh.box.min.z -= 100;
     this.mesh.box.max.z += 100;
     this.box = this.mesh.box;
