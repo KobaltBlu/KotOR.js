@@ -315,8 +315,9 @@ class GUIListBox extends GUIControl {
       let nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
       let nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
       let nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
-      let inside = (nodeTop < this.minY && nodeBottom > this.maxY);
-      //console.log('contains '+i, inside);
+      let height = nodeBottom - nodeTop;
+      let nodeCenter = nodeTop + height/2;
+      let inside = ( (nodeTop < this.minY && nodeBottom > this.maxY) || (nodeCenter < this.minY && nodeCenter > this.maxY) );
       nodes[i].visible = inside;
     }
   }
