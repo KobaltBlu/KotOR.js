@@ -528,7 +528,7 @@ class Game extends Engine {
       Game.depthTarget.setSize(window.innerWidth, window.innerHeight);
       
     });
-
+    console.log('Game: Start')
     Game.Start();
 
   }
@@ -566,13 +566,19 @@ class Game extends Engine {
       }
     }
     
+    //Remove the currently controlled PC from the SceneGraph, so it will be ignored during the next check
+    Game.group.party.add(Game.getCurrentPlayer().model);
+
     Game.raycaster.setFromCamera( Game.mouse, Game.camera );
     let intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );
+
+    //Add the currently controlled PC back to the SceneGraph
+    Game.group.party.add(Game.getCurrentPlayer().model);
 
     //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
     if(intersects.length){
       let intersection = intersects[0],
-          obj = intersection.object;
+        obj = intersection.object;
 
       if(typeof obj.auroraModel !== 'undefined'){
         obj = obj.auroraModel;
@@ -663,10 +669,14 @@ class Game extends Engine {
 
       }
     }
-
+    
+    console.log('SaveGames: Loading');
     SaveGame.getSaveGames( () => {
-
+      console.log('SaveGames: Complete');
+      
+      console.log('CursorManager: Init');
       CursorManager.init( () => {
+        console.log('CursorManager: Complete');
 
         //MENU LOADER
 
@@ -737,21 +747,20 @@ class Game extends Engine {
           'CharGenName',
         ];
 
-        let menuLoader = (i = 0, onComplete) => {
-          if(i < menus.length){
-            let menuName = menus[i++];
+        let menuLoader = new AsyncLoop({
+          array: menus,
+          onLoop: (menuName, asyncLoop) => {
             Game[menuName] = new window[menuName]({
               onLoad: () => {
-                menuLoader(i, onComplete);
+                asyncLoop._Loop();
               }
             });
-          }else{
-            if(typeof onComplete === 'function')
-              onComplete();
+  
           }
-        }
-
-        menuLoader(0, () => {
+        });
+        console.log('MenuLoader: Init');
+        menuLoader.Begin(() => {
+          console.log('MenuLoader: Complete');
 
           Game.MenuJournal.childMenu = Game.MenuTop;
           Game.MenuInventory.childMenu = Game.MenuTop;
@@ -781,7 +790,7 @@ class Game extends Engine {
             Game.Update();
             loader.Hide();
           });
-        })
+        });
 
       });
 

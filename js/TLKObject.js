@@ -10,11 +10,10 @@ class TLKObject {
   constructor(file, onSuccess, onProgress){
     this.file = file;
     this.TLKStrings = [];
-    console.log('Loading TLK');
+    console.log('TLKObject', 'Opening TLK');
     if(this.file != null){
-      console.log('TLK');
       fs.readFile(this.file, (err, binary) => {
-        console.log('TLK: Reading');
+        console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(binary);
         this.reader.Seek(0);
         
@@ -43,8 +42,11 @@ class TLKObject {
           this.TLKStrings[i].Value = this.reader.ReadChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
           this.reader.Seek(pos);
 
+          //if(typeof onProgress == 'function')
+          //  onProgress(i+1, this.StringCount);
+
         }
-        console.log('done');
+        console.log('TLKObject', 'Done');
         if(onSuccess != null)
           onSuccess();
       });

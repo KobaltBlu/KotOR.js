@@ -567,13 +567,19 @@ class Game extends Engine {
         }
       }
     }
-    
+
+    //Remove the currently controlled PC from the SceneGraph, so it will be ignored during the next check
+    Game.group.party.add(Game.getCurrentPlayer().model);
+
     Game.raycaster.setFromCamera( Game.mouse, Game.camera );
     let intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );
 
+    //Add the currently controlled PC back to the SceneGraph
+    Game.group.party.add(Game.getCurrentPlayer().model);
+
     if(intersects.length){
       let intersection = intersects[0],
-          obj = intersection.object;
+        obj = intersection.object;
 
       obj.traverseAncestors( (obj) => {
         if(obj instanceof THREE.AuroraModel){

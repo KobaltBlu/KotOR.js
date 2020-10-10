@@ -12,6 +12,8 @@ class BinaryReader {
     this.position = 0;
     this.reader = reader;
     this.endians = endians;
+
+    this._value = undefined;
   }
 
   Seek(pos){
@@ -38,73 +40,71 @@ class BinaryReader {
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.reader.readInt8(this.position);
+    this._value = this.reader.readInt8(this.position);
     this.position += 1;
-    return val;
+    return this._value;
   }
 
   ReadUInt8(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.reader.readUInt8(this.position);
+    this._value = this.reader.readUInt8(this.position);
     this.position += 1;
-    return val;
+    return this._value;
   }
 
   ReadInt16(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readInt16LE(this.position) : this.reader.readInt16BE(this.position);
+    this._value = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readInt16LE(this.position) : this.reader.readInt16BE(this.position);
     this.position += 2;
-    return val;
+    return this._value;
   }
 
   ReadUInt16(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readUInt16LE(this.position) : this.reader.readUInt16BE(this.position);
+    this._value = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readUInt16LE(this.position) : this.reader.readUInt16BE(this.position);
     this.position += 2;
-    return val;
+    return this._value;
   }
 
   ReadUInt32(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readUInt32LE(this.position) : this.reader.readInt32BE(this.position);
+    this._value = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readUInt32LE(this.position) : this.reader.readInt32BE(this.position);
     this.position += 4;
-    return val;
+    return this._value;
   }
 
   ReadInt32(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readInt32LE(this.position) : this.reader.readInt32BE(this.position);
+    this._value = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readInt32LE(this.position) : this.reader.readInt32BE(this.position);
     this.position += 4;
-    return val;
+    return this._value;
   }
 
-  ReadChar(encoding='ascii'){
+  ReadChar(){
     if(this.position == this.reader.length)
       return '\0';
 
-    let val = String.fromCharCode(this.ReadInt8());
-    return val;
+    this._value = String.fromCharCode(this.ReadInt8());
+    return this._value;
   }
 
-  ReadChars(num, encoding='utf8'){
+  ReadChars(num, encoding='latin1'){
     if(this.position == this.reader.length)
       return '\0';
 
-    let val = '';//this.reader.toString(encoding, this.position, num);
-    for(var i = 0; i!=num; i++){
-      val += String.fromCharCode(this.ReadInt8());
-    }
-    return val;
+    this._value = this.reader.slice(this.position, this.position + num).toString(encoding);
+    this.position += (1*num);
+    return this._value;
   }
 
   ReadByte(){
@@ -125,61 +125,53 @@ class BinaryReader {
     if(this.position == this.reader.length)
       return null;
 
-    let bytes = [];
-    for(var i = 0; i!=num; i++){
-      bytes[i] = this.ReadInt8();
-    }
-    return Buffer.from(bytes);
+    this._value = this.reader.slice(this.position, this.position + num);
+    this.position += num;
+    return this._value;
   }
 
   ReadSingle(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readFloatLE(this.position) : this.reader.readFloatBE(this.position);
+    this._value = (this.endians == BinaryReader.Endians.LITTLE) ? this.reader.readFloatLE(this.position) : this.reader.readFloatBE(this.position);
     this.position += 4;
-    return val;
+    return this._value;
   }
 
   ReadDouble(){
     if(this.position == this.reader.length)
       return null;
 
-    let val = this.endians == BinaryReader.Endians.LITTLE ? this.reader.readDoubleLE(this.position) : this.reader.readDoubleBE(this.position);
+    this._value = (this.endians == BinaryReader.Endians.LITTLE) ? this.reader.readDoubleLE(this.position) : this.reader.readDoubleBE(this.position);
     this.position += 8;
-    return val;
+    return this._value;
   }
 
   ReadUInt64(){
     if(this.position == this.reader.length)
       return null;
 
-    let bytes = [];
-    for(var i = 0; i < 8; i++){
-      bytes[i] = this.ReadUInt8();
-    }
-    return bytes;
+    this._value = this.reader.slice(this.position, this.position + 8);
+    this.position += 8;
+    return this._value;
   }
 
   ReadInt64(){
     if(this.position == this.reader.length)
       return null;
 
-    let bytes = [];
-    for(var i = 0; i < 8; i++){
-      bytes[i] = this.ReadUInt8();
-    }
-    return bytes;
+    this._value = this.reader.slice(this.position, this.position + 8);
+    this.position += 8;
+    return this._value;
   }
 
-  Slice(offset = 0, length = 0){
+  Slice(offset = 0, end = 0){
+    if(!end)
+      end = this.reader.length;
 
-    if(!length)
-      length = this.reader.length;
-
-    let buffer = this.reader.slice(offset, length);
+    let buffer = this.reader.slice(offset, end);
     return new BinaryReader(buffer, this.endians)
-
   }
 
 }

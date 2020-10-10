@@ -41,21 +41,6 @@
     <script type="text/javascript" src="game.js"></script>
     <script>
       console.log(_Game);
-      let db = new Dexie('K'+_Game);
-
-      let deleteDB = false;
-      if(deleteDB){
-        db.delete();
-        db = new Dexie('K'+_Game);
-      }
-
-      // Define a schema
-      db.version(1).stores({
-        tlkStrings: '++id, flags, SoundResRef, VolumeVariance, PitchVariance, Value'
-      });
-
-      // Open the database
-      db.open();
 
       function gamePathVerify () {
         let verified = { KOTOR: false, TSL: false };
@@ -89,6 +74,8 @@
             GameInitializer.Init({
               game: Games[GameKey],
               onLoad: () => {
+                loader.SetMessage("Loading Game Menus");
+                console.log('Game: Init');
                 GUIListBox.InitTextures();
                 Game.Init();
                 //window.mainmenu = new MainMenu();

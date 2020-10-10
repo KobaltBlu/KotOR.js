@@ -662,9 +662,6 @@ class ModuleCreatureController extends ModuleObject {
             this.notifyPerceptionHeardObject(creature, true);
           }
         }else{
-          // if(distance > 9 && this.hasLineOfSight(creature)){
-          //   this.notifyPerceptionSeenObject(creature, false);
-          // }
           this.notifyPerceptionSeenObject(creature, false);
         }
       }
