@@ -569,7 +569,7 @@ class Game extends Engine {
     }
 
     //Remove the currently controlled PC from the SceneGraph, so it will be ignored during the next check
-    Game.group.party.add(Game.getCurrentPlayer().model);
+    Game.group.party.remove(Game.getCurrentPlayer().model);
 
     Game.raycaster.setFromCamera( Game.mouse, Game.camera );
     let intersects = Game.raycaster.intersectObjects( Game.interactableObjects, true );

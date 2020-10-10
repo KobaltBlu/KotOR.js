@@ -205,6 +205,8 @@ class CombatEngine {
       //console.log('AddCombatant.index', index, combatant);
       //Add the combatant to the list respectful of it's initiative
       CombatEngine.combatants.splice(index, 0, combatant);
+      //Call the combatant's onCombatRoundEnd script
+      combatant.onCombatRoundEnd();
     }
   }
 
