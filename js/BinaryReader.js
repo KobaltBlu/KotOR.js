@@ -103,8 +103,21 @@ class BinaryReader {
       return '\0';
 
     this._value = this.reader.slice(this.position, this.position + num).toString(encoding);
-    this.position += (1*num);
+    this.position += num;
+    //console.log(num, this._value);
     return this._value;
+  }
+
+  ReadString(){
+    if(this.position == this.reader.length)
+      return '';
+
+    let _value = '';
+    let lastChar;
+    while((lastChar = this.ReadInt8()) > 0){
+      _value += String.fromCharCode(lastChar);
+    }
+    return _value;
   }
 
   ReadByte(){

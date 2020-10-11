@@ -609,27 +609,41 @@ class AuroraModel {
       textures: []
     };
 
-    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareTextures.offset);
-    for(let i = 0; i < FlareTextures.count; i++){
-      let size = this.mdlReader.ReadInt32();
-      light.flare.textures.push(this.mdlReader.ReadChars(size).replace(/\0[\s\S]*$/g,'').trim().toLowerCase())
+    if(FlareTextures.count){
+      //FlareTextures are stored as follows offset1,offset2,string1,string2
+      for(let i = 0; i < FlareTextures.count; i++){
+        //Seek to the location of the textures offset value
+        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareTextures.offset + (4*i));
+        //Read out the offset value
+        let stringOffset = this.mdlReader.ReadUInt32();
+        //Seek the reader to where the beginning of the flare texture name should be located
+        this.mdlReader.Seek(this.fileHeader.ModelDataOffset + stringOffset);
+        //Read the string and push it to the textures array
+        light.flare.textures.push(this.mdlReader.ReadString().replace(/\0[\s\S]*$/g,'').trim().toLowerCase());
+      }
     }
 
-    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareSizes.offset);
-    for(let i = 0; i < FlareSizes.count; i++){
-      light.flare.sizes.push(this.mdlReader.ReadSingle())
+    if(FlareSizes.count){
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareSizes.offset);
+      for(let i = 0; i < FlareSizes.count; i++){
+        light.flare.sizes.push(this.mdlReader.ReadSingle())
+      }
     }
 
-    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlarePositions.offset);
-    for(let i = 0; i < FlarePositions.count; i++){
-      light.flare.positions.push(this.mdlReader.ReadSingle())
+    if(FlarePositions.count){
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlarePositions.offset);
+      for(let i = 0; i < FlarePositions.count; i++){
+        light.flare.positions.push(this.mdlReader.ReadSingle())
+      }
     }
 
-    this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareColorShifts.offset);
-    for(let i = 0; i < FlareColorShifts.count; i++){
-      light.flare.colorShifts.push(
-        new THREE.Color(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle())
-        );
+    if(FlareColorShifts.count){
+      this.mdlReader.Seek(this.fileHeader.ModelDataOffset + FlareColorShifts.offset);
+      for(let i = 0; i < FlareColorShifts.count; i++){
+        light.flare.colorShifts.push(
+          new THREE.Color(this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle(), this.mdlReader.ReadSingle())
+          );
+      }
     }
 
     return light;

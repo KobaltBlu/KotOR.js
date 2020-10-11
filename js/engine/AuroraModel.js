@@ -171,7 +171,7 @@ THREE.AuroraModel = function () {
           object.geometry.dispose();
           //object.dispose();
         }else if(object.type === 'AuroraLight'){
-          console.log('Light', node);
+          //console.log('Light', node);
           LightManager.removeLight(node);
         }else{
           if(object.hasOwnProperty('mesh')){
