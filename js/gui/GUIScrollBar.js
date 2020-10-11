@@ -15,7 +15,7 @@ class GUIScrollBar extends GUIControl{
     this.scrollMax = 1;
     this.mouseOffset = {x: 0, y: 0};
 
-    this.extent.height -= (32*2);
+    this.extent.height -= (16*2);
 
     this.arrowTex = undefined;
 

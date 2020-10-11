@@ -271,9 +271,9 @@ class GUIListBox extends GUIControl {
 
     for(let i = 0; i < this.children.length; i++){
       let node = this.children[i];
-      let height = this.getNodeHeight(node);
+      let height = this.getNodeHeight(node) + 5;
       innerOffset = node.border.inneroffset;
-      if((height + this.padding)*i >= this.extent.height)
+      if((height + this.padding)*i >= this.extent.height - 5)
         this.maxScroll++;
     }
 
@@ -285,10 +285,9 @@ class GUIListBox extends GUIControl {
       let height = this.getNodeHeight(node);
       if(this.getProtoItemType() == 6){
         node.widget.position.y = (topY - nodeOffset - this.getNodeHeight()/2);
-        //node.widget.position.x = ( (this.extent.left - node.extent.left)/2) * (this.isScrollBarLeft() ? -1 : 1);
       }else{
-        node.widget.position.y = topY - nodeOffset - height;
-        //node.widget.position.x = ( (this.extent.left - node.extent.left)/2) * (this.isScrollBarLeft() ? -1 : 1);
+        node.widget.position.y = (topY - nodeOffset - height/2) + 5;
+        height += 5;
       }
       nodeOffset += parseInt(height);
     }
