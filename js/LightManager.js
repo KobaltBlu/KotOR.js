@@ -633,6 +633,8 @@ class LightManager {
 
   //Sort lights by distance and priority
   static sortLights (a, b){
+    if (b.getRadius() < a.getRadius()) return -1;
+    if (b.getRadius() > a.getRadius()) return 1;
     if (b.priority < a.priority) return -1;
     if (b.priority > a.priority) return 1;
     if (a._distance < b._distance) return -1;
