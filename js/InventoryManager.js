@@ -99,7 +99,6 @@ class InventoryManager {
 
     if(item instanceof ModuleItem){
       item.Load( () => {
-        console.log('LOADED')
         let hasItem = InventoryManager.getItem(item.getTag());
         if(hasItem){
 

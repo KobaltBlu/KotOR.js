@@ -653,7 +653,7 @@ class ModuleObject {
 
   destroy(){
     try{
-      console.log('ModuleObject.destory', this)
+      //console.log('ModuleObject.destory', this)
 
       if(this.model instanceof THREE.AuroraModel){
         if(this.model.parent instanceof THREE.Object3D){
@@ -680,13 +680,13 @@ class ModuleObject {
       if(Game.module){
         if(this instanceof ModuleCreature){
           let cIdx = Game.module.area.creatures.indexOf(this);
-          console.log('ModuleObject.destory', 'creature', cIdx)
+          //console.log('ModuleObject.destory', 'creature', cIdx)
           if(cIdx > -1){
             Game.module.area.creatures.splice(cIdx, 1);
           }
         }else if(this instanceof ModulePlaceable){
           let pIdx = Game.module.area.placeables.indexOf(this);
-          console.log('ModuleObject.destory', 'placeable', pIdx)
+          //console.log('ModuleObject.destory', 'placeable', pIdx)
           if(pIdx > -1){
             Game.module.area.placeables.splice(pIdx, 1);
 
@@ -699,7 +699,7 @@ class ModuleObject {
           }
         }else if(this instanceof ModuleRoom){
           let pIdx = Game.module.area.rooms.indexOf(this);
-          console.log('ModuleObject.destory', 'placeable', pIdx)
+          //console.log('ModuleObject.destory', 'placeable', pIdx)
           if(pIdx > -1){
             let room = Game.module.area.rooms.splice(pIdx, 1)[0];
             
@@ -715,7 +715,7 @@ class ModuleObject {
           }
         }else if(this instanceof ModuleDoor){
           let pIdx = Game.module.area.doors.indexOf(this);
-          console.log('ModuleObject.destory', 'placeable', pIdx)
+          //console.log('ModuleObject.destory', 'placeable', pIdx)
           if(pIdx > -1){
             Game.module.area.doors.splice(pIdx, 1);
 
@@ -728,7 +728,7 @@ class ModuleObject {
           }
         }else if(this instanceof ModuleTrigger){
           let pIdx = Game.module.area.triggers.indexOf(this);
-          console.log('ModuleObject.destory', 'trigger', pIdx)
+          //console.log('ModuleObject.destory', 'trigger', pIdx)
           if(pIdx > -1){
             Game.module.area.triggers.splice(pIdx, 1);            
           }
