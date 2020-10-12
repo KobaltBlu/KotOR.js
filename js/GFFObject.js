@@ -252,7 +252,7 @@ class GFFObject {
         field.SetValue(data.readUInt8());
         break;
       case GFFDataTypes.CHAR: //Char
-        field.SetValue(String.fromCharCode(data.readUInt8()));
+        field.SetValue(data.readUInt8());
         break;
       case GFFDataTypes.WORD: //UInt16
         field.SetValue(data.readUInt16LE());
