@@ -335,7 +335,7 @@ class CombatEngine {
   }
 
   static GetMod(val=0){
-    return ( ( val - 10 ) / 2 );
+    return Math.floor( ( val - 10 ) / 2 );
   }
 
   static Reset(){
