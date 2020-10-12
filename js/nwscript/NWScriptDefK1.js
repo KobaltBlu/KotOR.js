@@ -3874,7 +3874,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "object"],
     action: function(args, _instr, action){
       if(args[1] instanceof ModuleCreature){
-        return 0;//args[1].getHasSpell(args[0]) ? 1 : 0;
+        return args[1].getHasSpell(args[0]) ? 1 : 0;
       }else{
         return 0;
       }
