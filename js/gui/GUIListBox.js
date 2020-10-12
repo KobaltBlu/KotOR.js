@@ -15,6 +15,7 @@ class GUIListBox extends GUIControl {
     this.lastHeight = 0;
     this.scroll = 0;
     this.maxScroll = 0;
+    this.offset = new THREE.Vector2(0, 0);
 
     //ProtoItem
     this.hasProtoItem = control.HasField('PROTOITEM');
@@ -122,6 +123,7 @@ class GUIListBox extends GUIControl {
         case 4:
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(node);
           ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+          ctrl.offset = this.offset;
           ctrl.node = node;
           ctrl.setList( this );
           this.children.push(ctrl);
@@ -145,6 +147,7 @@ class GUIListBox extends GUIControl {
             node.getName()
           );
           ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+          ctrl.offset = this.offset;
           ctrl.node = node;
           ctrl.setList( this );
           this.children.push(ctrl);

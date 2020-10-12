@@ -46,6 +46,13 @@ class MenuEquipment extends GameMenu {
         this.LBL_INV_BELT =     this.getControlByName('LBL_INV_BELT');
         this.LBL_INV_WEAP_R =   this.getControlByName('LBL_INV_WEAP_R');
 
+        let extentWidth = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('WIDTH');
+        //let extentLeft = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('LEFT');
+
+        extentWidth.SetValue(extentWidth.GetValue() - 52);
+        //extentLeft.SetValue(extentLeft.GetValue() + 52);
+        this.LB_ITEMS.padding = 5;
+        this.LB_ITEMS.offset.x = 52;
         
         this.LB_DESC.hide();
         this.LBL_CANTEQUIP.hide();
@@ -53,11 +60,23 @@ class MenuEquipment extends GameMenu {
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.Close();
+          if(this.equipmentSelectionActive){
+            this.slot = null;
+            this.equipmentSelectionActive = false;
+            this.UpdateList();
+          }else{
+            this.Close();
+          }
         });
 
         this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.slot = UTCObject.SLOT.IMPLANT;
+          this.equipmentSelectionActive = true;
+          this.UpdateList();
+        });
+
+        this.BTN_INV_IMPLANT.addEventListener('hover', (e) => {
           this.slot = UTCObject.SLOT.IMPLANT;
           this.UpdateList();
         });
@@ -65,48 +84,61 @@ class MenuEquipment extends GameMenu {
         this.BTN_INV_HEAD.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.HEAD;
+          this.equipmentSelectionActive = true;
+          this.UpdateList();
+        });
+
+        this.BTN_INV_HEAD.addEventListener('hover', (e) => {
+          this.slot = UTCObject.SLOT.HEAD;
           this.UpdateList();
         });
 
         this.BTN_INV_HANDS.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.ARMS;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_ARM_L.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.LEFTARMBAND;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_BODY.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.ARMOR;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_ARM_R.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.RIGHTARMBAND;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.LEFTHAND;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_BELT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.BELT;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
         this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
           e.stopPropagation();
           this.slot = UTCObject.SLOT.RIGHTHAND;
+          this.equipmentSelectionActive = true;
           this.UpdateList();
         });
 
@@ -132,6 +164,71 @@ class MenuEquipment extends GameMenu {
   }
 
   UpdateList(){
+
+    if(!this.equipmentSelectionActive){
+      this.BTN_EQUIP.hide();
+      this.BTN_EXIT.setText(Global.kotorTLK.GetStringById(1582));
+      this.LB_DESC.hide();
+
+      this.BTN_INV_IMPLANT.show();
+      this.BTN_INV_HEAD.show();
+      this.BTN_INV_HANDS.show();
+      this.BTN_INV_ARM_L.show();
+      this.BTN_INV_BODY.show();
+      this.BTN_INV_ARM_R.show();
+      this.BTN_INV_WEAP_L.show();
+      this.BTN_INV_BELT.show();
+      this.BTN_INV_WEAP_R.show();
+
+      this.LBL_INV_IMPLANT.show();
+      this.LBL_INV_HEAD.show();
+      this.LBL_INV_HANDS.show();
+      this.LBL_INV_ARM_L.show();
+      this.LBL_INV_BODY.show();
+      this.LBL_INV_ARM_R.show();
+      this.LBL_INV_WEAP_L.show();
+      this.LBL_INV_BELT.show();
+      this.LBL_INV_WEAP_R.show();
+      
+      this.LBL_PORTRAIT.show();
+      this.LBL_PORT_BORD.show();
+      this.LBL_SLOTNAME.show();
+      this.LBL_TXTBAR.show();
+
+      this.LBL_SELECTTITLE.setText('');
+    }else{
+      this.BTN_EQUIP.show();
+      this.BTN_EXIT.setText(Global.kotorTLK.GetStringById(1581));
+      this.LB_DESC.show();
+
+      this.BTN_INV_IMPLANT.hide();
+      this.BTN_INV_HEAD.hide();
+      this.BTN_INV_HANDS.hide();
+      this.BTN_INV_ARM_L.hide();
+      this.BTN_INV_BODY.hide();
+      this.BTN_INV_ARM_R.hide();
+      this.BTN_INV_WEAP_L.hide();
+      this.BTN_INV_BELT.hide();
+      this.BTN_INV_WEAP_R.hide();
+
+      this.LBL_INV_IMPLANT.hide();
+      this.LBL_INV_HEAD.hide();
+      this.LBL_INV_HANDS.hide();
+      this.LBL_INV_ARM_L.hide();
+      this.LBL_INV_BODY.hide();
+      this.LBL_INV_ARM_R.hide();
+      this.LBL_INV_WEAP_L.hide();
+      this.LBL_INV_BELT.hide();
+      this.LBL_INV_WEAP_R.hide();
+      
+      this.LBL_PORTRAIT.hide();
+      this.LBL_PORT_BORD.hide();
+      this.LBL_SLOTNAME.hide();
+      this.LBL_TXTBAR.hide();
+
+      this.LBL_SELECTTITLE.setText('');
+    }
+
     this.LB_ITEMS.clearItems();
     this.selectedItem = null;
     //console.log('updatelist', this.slot);
@@ -382,12 +479,20 @@ class MenuEquipment extends GameMenu {
     Game.MenuPartySelection.Hide();
     Game.MenuTop.Show();*/
 
+    this.equipmentSelectionActive = false;
+
     this.UpdateList();
 
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
 
     this.UpdateSlotIcons();
+
+    let currentPC = PartyManager.party[0];
+    if(currentPC){
+      this.LBL_VITALITY.setText(currentPC.getHP()+'/'+currentPC.getMaxHP());
+      this.LBL_DEF.setText(currentPC.getAC());
+    }
 
     for(let i = 0; i < PartyManager.party.length; i++){
       let partyMember = PartyManager.party[i];

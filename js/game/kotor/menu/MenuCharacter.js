@@ -224,6 +224,10 @@ class MenuCharacter extends GameMenu {
     let clone = PartyManager.party[0];
     objectCreature.appearance = clone.appearance;
 
+    if(clone.equipment.ARMOR){
+      objectCreature.equipment.ARMOR = new ModuleItem(clone.equipment.ARMOR.template);
+    }
+
     if(clone.goodEvil >= 95){
       this._3dViewModel.playAnimation('good');
     }else if(clone.goodEvil >= 90){

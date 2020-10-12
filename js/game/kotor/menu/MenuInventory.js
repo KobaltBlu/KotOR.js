@@ -22,6 +22,14 @@ class MenuInventory extends GameMenu {
         this.BTN_CHANGE1 = this.getControlByName('BTN_CHANGE1');
         this.BTN_CHANGE2 = this.getControlByName('BTN_CHANGE2');
 
+        let extentWidth = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('WIDTH');
+        //let extentLeft = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('LEFT');
+
+        extentWidth.SetValue(extentWidth.GetValue() - 52);
+        //extentLeft.SetValue(extentLeft.GetValue() + 52);
+        this.LB_ITEMS.padding = 5;
+        this.LB_ITEMS.offset.x = 0;
+
         if(typeof this.onLoad === 'function')
           this.onLoad();
 
@@ -55,6 +63,12 @@ class MenuInventory extends GameMenu {
 
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
+
+    let currentPC = PartyManager.party[0];
+    if(currentPC){
+      this.LBL_VIT.setText(currentPC.getHP()+'/'+currentPC.getMaxHP());
+      this.LBL_DEF.setText(currentPC.getAC());
+    }
 
     for(let i = 0; i < PartyManager.party.length; i++){
       let partyMember = PartyManager.party[i];

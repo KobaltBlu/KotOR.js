@@ -58,8 +58,8 @@ class GUIProtoItem extends GUIControl{
     this.anchor = 'none';
     this.anchorOffset = {x: posX, y: posY};
 
-    this.widget.position.x = this.anchorOffset.x;
-    this.widget.position.y = this.anchorOffset.y;
+    this.widget.position.x = this.anchorOffset.x + this.offset.x;
+    this.widget.position.y = this.anchorOffset.y + this.offset.y;
     
     this.calculateBox();
 
