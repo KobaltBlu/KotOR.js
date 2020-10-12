@@ -158,102 +158,98 @@ class ModuleItem extends ModuleObject {
   }
 
   getAttackBonus(){
-    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.propertyName == 38){ //Attack_Bonus
-        let upgrade_flag = (1 << property.upgradeType);
-        //If no upgrade is required or the upgrade is present on the item
-        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
-          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
-          let costTable = Global.kotor2DA[costTableName];
-          let costTableRow = costTable.rows[property.costValue];
-
-          //Random Cost
-          if(property.costValue == 0){
-            let rowCount = costTable.rows.length - 1;
-            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
-            costTableRow = costTable.rows[randomCostValue];
-          }
-
-          if(property.costTable == 2){ //Melee
-            bonus += parseInt(costTableRow.value);
-          }
-
-        }
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.AttackBonus)){
+        return property.getValue();
       }
     }
-    return bonus;
+    return 0;
   }
 
   getDamageBonus(){
-    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.propertyName == 11){ //Damage_Bonus
-        let upgrade_flag = (1 << property.upgradeType);
-        //If no upgrade is required or the upgrade is present on the item
-        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
-          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
-          let costTable = Global.kotor2DA[costTableName];
-          let costTableRow = costTable.rows[property.costValue];
-
-          //Random Cost
-          if(property.costValue == 0){
-            let rowCount = costTable.rows.length - 1;
-            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
-            costTableRow = costTable.rows[randomCostValue];
-          }
-
-          if(property.costTable == 4){ //Damage
-            if(costTableRow.numdice != '****'){
-              bonus += CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-            }else{
-              bonus += parseInt(costTableRow.label);
-            }
-          }
-
-        }
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Damage)){
+        return property.getValue();
       }
     }
-    return bonus;
+    return 0;
   }
 
   getMonsterDamage(){
-    let damage = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.propertyName == 51){ //Monster_Damage
-        let upgrade_flag = (1 << property.upgradeType);
-        //If no upgrade is required or the upgrade is present on the item
-        if(property.upgradeType == -1 || ((this.upgrades & upgrade_flag) == upgrade_flag)){
-          let costTableName = Global.kotor2DA.iprp_costtable.rows[property.costTable].name.toLowerCase();
-          let costTable = Global.kotor2DA[costTableName];
-          let costTableRow = costTable.rows[property.costValue];
-
-          //Random Cost
-          if(property.costValue == 0){
-            let rowCount = costTable.rows.length - 1;
-            let randomCostValue = Math.floor(Math.random() * rowCount) + 1; 
-            costTableRow = costTable.rows[randomCostValue];
-          }
-
-          if(property.costTable == 19){ //Monster_Cost
-            if(costTableRow.numdice != '****'){
-              damage += CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-            }
-          }
-
-        }
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Monster_Damage)){
+        return property.getValue();
       }
-      return damage;
     }
-
+    return 0;
   }
 
   getBaseDamage(){
     if(parseInt(this.getBaseItem().numdice)){
       return CombatEngine.DiceRoll(parseInt(this.getBaseItem().numdice), 'd'+this.getBaseItem().dietoroll);
+    }
+    return 0;
+  }
+
+  getSTRBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 0)){
+        return property.getValue();
+      }
+    }
+    return 0;
+  }
+
+  getDEXBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 1)){
+        return property.getValue();
+      }
+    }
+    return 0;
+  }
+
+  getCONBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 2)){
+        return property.getValue();
+      }
+    }
+    return 0;
+  }
+
+  getINTBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 3)){
+        return property.getValue();
+      }
+    }
+    return 0;
+  }
+
+  getWISBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 4)){
+        return property.getValue();
+      }
+    }
+    return 0;
+  }
+
+  getCHABonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 5)){
+        return property.getValue();
+      }
     }
     return 0;
   }
@@ -499,7 +495,7 @@ class ModuleItem extends ModuleObject {
       this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
         let property = propertiesList[i];
-        this.properties.push({
+        this.properties.push(new ItemProperty({
           propertyName: property.GetFieldByLabel('PropertyName')?.GetValue(),
           subType: property.GetFieldByLabel('Subtype')?.GetValue(),
           costTable: property.GetFieldByLabel('CostTable')?.GetValue(),
@@ -510,7 +506,7 @@ class ModuleItem extends ModuleObject {
           usesPerDay: property.GetFieldByLabel('UsesPerDay')?.GetValue(),
           useable: property.GetFieldByLabel('Useable')?.GetValue(),
           upgradeType: property.GetFieldByLabel('UpgradeType')?.GetValue(),
-        });
+        }, this));
       }
     }
 
@@ -555,5 +551,211 @@ class ModuleItem extends ModuleObject {
 
 
 }
+
+class ItemProperty {
+
+  constructor(props = {}, item = undefined){
+    this.propertyName = props.propertyName == 255 ? -1 : props.propertyName;
+    this.subType = props.subType == 255 ? -1 : props.subType;
+    this.costTable = props.costTable == 255 ? -1 : props.costTable;
+    this.costValue = props.costValue == 255 ? -1 : props.costValue;
+    this.param1 = props.param1 == 255 ? -1 : props.param1;
+    this.param1Value = props.param1Value == 255 ? -1 : props.param1Value;
+    this.chanceAppear = props.chanceAppear == 255 ? -1 : props.chanceAppear;
+    this.usesPerDay = props.usesPerDay == 255 ? -1 : props.usesPerDay;
+    this.useable = props.useable == 255 ? -1 : props.useable;
+    this.upgradeType = props.upgradeType == 255 ? -1 : props.upgradeType;
+
+    this.item = item;
+  }
+
+  getProperty(){
+    return Global.kotor2DA.itempropdef.rows[this.propertyName];
+  }
+
+  getPropertyName(){
+    let property;
+    if(property = this.getProperty()){
+      if(property.name != '****'){
+        return Global.kotorTLK.GetStringById(property.name);
+      }else{
+        return Global.kotorTLK.GetStringById(0);
+      }
+    }
+    return 'ERROR!!!';
+  }
+
+  getSubType(){
+    let property;
+    if(property = this.getProperty()){
+      if(property && property.subtyperesref != '****'){
+        return Global.kotor2DA[property.subtyperesref.toLowerCase()].rows[this.subType];
+      }
+    }
+  }
+
+  getSubtypeName(){
+    let subType;
+    if(subType = this.getSubType()){
+      if(subType){
+        if(subType.name != '****'){
+          return Global.kotorTLK.GetStringById(subType.name);
+        }else{
+          return Global.kotorTLK.GetStringById(0);
+        }
+      }
+    }
+    return 'ERROR!!!';
+  }
+
+  getCostTable(){
+    let costTableName = Global.kotor2DA.iprp_costtable.rows[this.costTable].name.toLowerCase();
+    return Global.kotor2DA[costTableName];
+  }
+
+  getCostTableRow(){
+    let costTable = this.getCostTable();
+    if(costTable){
+      return costTable.rows[this.costValue];
+    }
+    return undefined;
+  }
+
+  //Determine if the property requires an upgrade to use, or if it is always useable
+  isUseable(){
+    let upgrade_flag = (1 << this.upgradeType);
+    //If no upgrade is required or the upgrade is present on the item
+    if(this.upgradeType == -1 || ((this.item.upgrades & upgrade_flag) == upgrade_flag)){
+      return true;
+    }
+    return false;
+  }
+
+  is(property = undefined, subType = undefined){
+    if(typeof property != 'undefined' && typeof subType != 'undefined'){
+      return this.propertyName == property && this.subType == subType;
+    }else{
+      return this.propertyName == property;
+    }
+  }
+
+  getValue(){
+    let costTable = this.getCostTable();
+    let costTableRow = this.getCostTableRow();
+    if(costTableRow){
+      switch(this.propertyName){
+        case ModuleItem.PROPERTY.Ability:
+          return parseInt(costTableRow.value);
+        break;
+        case ModuleItem.PROPERTY.AttackBonus:
+          //Random Cost
+          if(this.costValue == 0){
+            let rowCount = costTable.rows.length - 1;
+            let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
+            costTableRow = costTable.rows[randomCostValue];
+          }
+
+          return parseInt(costTableRow.value);
+        break;
+        case ModuleItem.PROPERTY.Damage:
+        case ModuleItem.PROPERTY.Monster_Damage:
+          //Random Cost
+          if(this.costValue == 0){
+            let rowCount = costTable.rows.length - 1;
+            let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
+            costTableRow = costTable.rows[randomCostValue];
+          }
+
+          switch(this.costTable){
+            case 4://Damage
+              if(costTableRow.numdice != '****'){
+                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+              }else{
+                return parseInt(costTableRow.label);
+              }
+            break;
+            case 19: //MonsterCost
+              if(costTableRow.numdice != '****'){
+                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+              }
+            break;
+            default:
+              if(costTableRow.numdice != '****'){
+                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+              }
+            break;
+          }
+        break;
+
+      }
+    }
+
+    return 0;
+  }
+
+}
+
+ModuleItem.PROPERTY = {
+  Ability: 0,
+  Armor: 1,
+  ArmorAlignmentGroup: 2,
+  ArmorDamageType: 3,
+  ArmorRacialGroup: 4,
+  AttackBonus: 38,
+  AttackBonusAlignmentGroup: 39,
+  AttackBonusRacialGroup: 40,
+  AttackPenalty: 8,
+  Blaster_Bolt_Defect_Decrease: 56,
+  Blaster_Bolt_Deflect_Increase: 55,
+  BonusFeats: 9,
+  CastSpell: 10,
+  Computer_Spike: 53,
+  Damage: 11,
+  DamageAlignmentGroup: 12,
+  DamageImmunity: 14,
+  DamageMelee: 22,
+  DamageNone: 31,
+  DamagePenalty: 15,
+  DamageRacialGroup: 13,
+  DamageRanged: 23,
+  DamageReduced: 16,
+  DamageResist: 17,
+  Damage_Vulnerability: 18,
+  DecreaseAC: 20,
+  DecreaseAbilityScore: 19,
+  DecreasedSkill: 21,
+  Disguise: 59,
+  Droid_Repair_Kit: 58,
+  Enhancement: 5,
+  EnhancementAlignmentGroup: 6,
+  EnhancementRacialGroup: 7,
+  Freedom_of_Movement: 50,
+  Immunity: 24,
+  ImprovedMagicResist: 25,
+  ImprovedSavingThrows: 26,
+  ImprovedSavingThrowsSpecific: 27,
+  Keen: 28,
+  Light: 29,
+  Massive_Criticals: 49,
+  Mighty: 30,
+  Monster_Damage: 51,
+  OnHit: 32,
+  OnMonsterHit: 48,
+  ReducedSavingThrows: 33,
+  ReducedSpecificSavingThrow: 34,
+  Regeneration: 35,
+  Regeneration_Force_Points: 54,
+  Skill: 36,
+  Special_Walk: 52,
+  ThievesTools: 37,
+  ToHitPenalty: 41,
+  Trap: 46,
+  True_Seeing: 47,
+  UnlimitedAmmo: 42,
+  UseLimitationAlignmentGroup: 43,
+  UseLimitationClass: 44,
+  UseLimitationRacial: 45,
+  Use_Limitation_Feat: 57,
+};
 
 module.exports = ModuleItem;
