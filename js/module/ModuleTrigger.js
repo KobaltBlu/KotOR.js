@@ -179,12 +179,10 @@ class ModuleTrigger extends ModuleObject {
 
     this.mesh = new THREE.Mesh( trigGeom, material );
     this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
-    if(!this.mesh.box){
-      this.mesh.box = new THREE.Box3();
-    }
-    this.mesh.box.min.z -= 100;
-    this.mesh.box.max.z += 100;
-    this.box = this.mesh.box;
+    this.box.setFromObject(this.mesh);
+    this.box.min.z -= 100;
+    this.box.max.z += 100;
+    //this.box = this.mesh.box;
 
     /*
      * Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
@@ -246,7 +244,7 @@ class ModuleTrigger extends ModuleObject {
     this.action = this.actionQueue[0];
 
     if(this.action != null){
-            
+            console.log(this.action);
       /*if(this.action.object instanceof ModuleObject){
         
       }else{*/
@@ -358,7 +356,7 @@ class ModuleTrigger extends ModuleObject {
   }
 
   onEnter(object = undefined){
-    console.log('enter 2')
+    console.log('ModuleTrigger', this.getTag(), 'enter 2')
     if(this.linkedToModule && !Game.inDialog){
       if(object == Game.getCurrentPlayer()){
         Game.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase(), () => { 
@@ -366,9 +364,9 @@ class ModuleTrigger extends ModuleObject {
         });
       }
     }else{
-      console.log('enter 1')
+      console.log('ModuleTrigger', this.getTag(), 'enter 1')
       if(this.scripts.onEnter instanceof NWScriptInstance && this.scripts.onEnter.running != true){
-        console.log('enter running')
+        console.log('ModuleTrigger', this.getTag(), this.scripts.onEnter.name, 'enter running')
         this.scripts.onEnter.running = true;
         //let script = this.scripts.onEnter.clone();
         this.scripts.onEnter.debug.action = true;
