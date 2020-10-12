@@ -76,7 +76,7 @@ class TPCObject {
     if(this.header === null)
       this.header = this.readHeader();
 
-    let worker = new Worker('worker/worker-tex.js');
+    let worker = new Worker('../worker/worker-tex.js');
 
     this.txi = new TXI( this.getTXIData() );
 

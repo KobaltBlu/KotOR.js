@@ -36,7 +36,7 @@ class TemplateEngine {
     if(typeof data != 'object'){ data = {} };
     if(!(file in TemplateEngine.templates)){
       jQuery.ajax({
-        url: file,
+        url: path.join('..', file),
         success: (result) => {
           TemplateEngine.templates[file] = result;
           if(onSuccess != null)
