@@ -2032,7 +2032,7 @@ NWScriptDefK1.Actions = {
   
         if(this.caller instanceof ModuleObject){
           //console.log('ActionStartConversation', args, this.caller);
-        args[0].actionQueue.push({
+          args[0].actionQueue.push({
             object: this.caller,
             conversation: args[1],
             //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
