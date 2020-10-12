@@ -160,9 +160,31 @@ class MenuCharacter extends GameMenu {
   }
 
   updateCharacterStats(character){
-    
+
+    this.LBL_CLASS1.hide();
+    this.LBL_LEVEL1.hide();
+    this.LBL_CLASS2.hide();
+    this.LBL_LEVEL2.hide();
+
+    if(character.classes[0]){
+      this.LBL_CLASS1.setText(character.classes[0].getName());
+      this.LBL_LEVEL1.setText(character.classes[0].level);
+      this.LBL_CLASS1.show();
+      this.LBL_LEVEL1.show();
+      this.LBL_CLASS1.extent.top = 98;
+      this.LBL_CLASS1.recalculate();
+    }
+
+    if(character.classes[1]){
+      this.LBL_CLASS2.setText(character.classes[1].getName());
+      this.LBL_LEVEL2.setText(character.classes[1].level);
+      this.LBL_CLASS2.show();
+      this.LBL_LEVEL2.show();
+    }
+
     this.LBL_VITALITY_STAT.setText(character.getHP()+'/'+character.getMaxHP());
     this.LBL_FORCE_STAT.setText(character.getFP()+'/'+character.getMaxFP());
+    this.LBL_DEFENSE_STAT.setText(character.getAC());
 
     this.LBL_STR.setText(character.getSTR());
     this.LBL_DEX.setText(character.getDEX());

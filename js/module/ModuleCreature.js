@@ -591,6 +591,21 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
+  getAC(){
+    let baseac = 10;
+    let classBonus = 0;
+
+    for(let i = 0; i < this.classes.length; i++){
+      classBonus += this.classes[i].getACBonus();
+    }
+
+    let armorAC = (this.equipment.ARMOR?.getACBonus() || 0);
+
+    let dexBonus = Math.floor((this.getDEX() - 10) / 2);
+
+    return baseac + classBonus + armorAC + dexBonus;
+  }
+
   getSTR(calculateBonuses = true){
     if(!calculateBonuses){
       return this.str;

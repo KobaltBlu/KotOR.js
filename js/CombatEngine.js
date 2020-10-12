@@ -220,7 +220,8 @@ class CombatEngine {
   static GetArmorClass(creature = null){
     //console.log(creature);
     if(creature instanceof ModuleCreature){
-      let dexMod = CombatEngine.GetMod(creature.getDEX());
+      return creature.getAC();
+      /*let dexMod = CombatEngine.GetMod(creature.getDEX());
       let baseAC = 10;
       let bonus = 0;
       if(creature.equipment.ARMOR){
@@ -232,7 +233,7 @@ class CombatEngine {
           dexMod = creature.equipment.ARMOR.getDexBonus();
         }
       }
-      return baseAC + dexMod + bonus;
+      return baseAC + dexMod + bonus;*/
     }
     return 10;
   }

@@ -14,6 +14,14 @@ class CreatureClass {
     Object.assign(this, Global.kotor2DA.classes.rows[this.id]);
   }
 
+  getName(){
+    return Global.kotorTLK.GetStringById(this.name);
+  }
+
+  getDescription(){
+    return Global.kotorTLK.GetStringById(this.description);
+  }
+
   setLevel(nLevel = 0){
     this.level = nLevel;
   }
@@ -30,6 +38,10 @@ class CreatureClass {
 
   getBaseAttackBonus(){
     return parseInt(Global.kotor2DA[this.attackbonustable.toLowerCase()].rows[this.level].bab);
+  }
+
+  getACBonus(){
+    return parseInt(Global.kotor2DA.acbonus.rows[this.level][this.armorclasscolumn.toLowerCase()]);
   }
 
   static FromCreatureClassStruct(cls_struct = undefined){

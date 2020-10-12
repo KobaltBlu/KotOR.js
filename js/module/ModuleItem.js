@@ -138,16 +138,14 @@ class ModuleItem extends ModuleObject {
   }
 
   getACBonus(){
-
+    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let prop = this.properties[i];
-      //Defense Bonus
-      if(prop.propertyName == 17){
-        return prop.costValue;
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Armor)){
+        bonus += property.getValue();
       }
     }
-
-    return 0;
+    return parseInt(this.getBaseItem().baseac) + bonus;
   }
 
   getDexBonus(){
@@ -639,51 +637,80 @@ class ItemProperty {
     }
   }
 
+  costTableRandomCheck(){
+    //Random Cost Check
+    if(this.costValue == 0){
+      let rowCount = costTable.rows.length - 1;
+      let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
+      return costTable.rows[randomCostValue];
+    }
+    return this.getCostTableRow();
+  }
+
   getValue(){
     let costTable = this.getCostTable();
     let costTableRow = this.getCostTableRow();
     if(costTableRow){
-      switch(this.propertyName){
-        case ModuleItem.PROPERTY.Ability:
-          return parseInt(costTableRow.value);
+      switch(this.costTable){
+        case ModuleItem.COSTTABLE.Base1:
+
         break;
-        case ModuleItem.PROPERTY.AttackBonus:
-          //Random Cost
-          if(this.costValue == 0){
-            let rowCount = costTable.rows.length - 1;
-            let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
-            costTableRow = costTable.rows[randomCostValue];
-          }
+        case ModuleItem.COSTTABLE.Bonus:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
 
           return parseInt(costTableRow.value);
         break;
-        case ModuleItem.PROPERTY.Damage:
-        case ModuleItem.PROPERTY.Monster_Damage:
-          //Random Cost
-          if(this.costValue == 0){
-            let rowCount = costTable.rows.length - 1;
-            let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
-            costTableRow = costTable.rows[randomCostValue];
-          }
+        case ModuleItem.COSTTABLE.Melee:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
 
-          switch(this.costTable){
-            case 4://Damage
-              if(costTableRow.numdice != '****'){
-                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-              }else{
-                return parseInt(costTableRow.label);
-              }
-            break;
-            case 19: //MonsterCost
-              if(costTableRow.numdice != '****'){
-                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-              }
-            break;
-            default:
-              if(costTableRow.numdice != '****'){
-                return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-              }
-            break;
+          return parseInt(costTableRow.value);
+        break;
+        case ModuleItem.COSTTABLE.SpellUse:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+
+        break;
+        case ModuleItem.COSTTABLE.Damage:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+
+          if(costTableRow.numdice != '****'){
+            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+          }else{
+            return parseInt(costTableRow.label);
+          }
+        break;
+        case ModuleItem.COSTTABLE.Immune:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+          return parseInt(costTableRow.value);
+        break;
+        case ModuleItem.COSTTABLE.DamageSoak:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+          return parseInt(costTableRow.amount);
+        break;
+        case ModuleItem.COSTTABLE.DamageResist:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+          return parseInt(costTableRow.amount);
+        break;
+        case ModuleItem.COSTTABLE.DancingScimitar:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+
+        break;
+        case ModuleItem.COSTTABLE.Slots:
+          
+        break;
+        case ModuleItem.COSTTABLE.Monster_Cost:
+          //Random Cost Check
+          costTableRow = this.costTableRandomCheck();
+
+          if(costTableRow.numdice != '****'){
+            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
           }
         break;
 
@@ -757,5 +784,33 @@ ModuleItem.PROPERTY = {
   UseLimitationRacial: 45,
   Use_Limitation_Feat: 57,
 };
+
+ModuleItem.COSTTABLE = {
+  Ammo: 14,
+  Base1: 0,
+  Bonus: 1,
+  Damage: 4,
+  DamageResist: 7,
+  DamageSoak: 6,
+  Damage_vulnerability: 22,
+  DancingScimitar: 8,
+  Immune: 5,
+  Light: 18,
+  Melee: 2,
+  Monster_Cost: 19,
+  Negative_Modifiers: 21,
+  OnHitCosts: 24,
+  OnHitDC_saves: 25,
+  Slots: 9,
+  SpellLevel: 13,
+  SpellResist: 11,
+  SpellUse: 3,
+  Spell_Level_Immunity: 23,
+  Spells: 16,
+  Stamina: 12,
+  Traps: 17,
+  Weight: 10,
+  WeightReduction: 15,
+}
 
 module.exports = ModuleItem;
