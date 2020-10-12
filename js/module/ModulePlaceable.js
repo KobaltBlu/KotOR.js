@@ -195,7 +195,7 @@ class ModulePlaceable extends ModuleObject {
       }else{*/
         switch(this.action.goal){
           case ModuleCreature.ACTION.DIALOGOBJECT:
-            Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
+            Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this.action.object, this);
             this.actionQueue.shift()
           break;
           case ModuleCreature.ACTION.WAIT:
