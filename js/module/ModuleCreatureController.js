@@ -1144,15 +1144,15 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               default:
-              if(this.getHP()/this.getMaxHP() > .1){
-                if(currentAnimation != 'walk'){
-                  this.getModel().playAnimation('walk', false);
+                if(this.getHP()/this.getMaxHP() > .25){
+                  if(currentAnimation != 'walk'){
+                    this.getModel().playAnimation('walk', false);
+                  }
+                }else{
+                  if(currentAnimation != 'walkinj'){
+                    this.getModel().playAnimation('walkinj', false);
+                  }
                 }
-              }else{
-                if(currentAnimation != 'walkinj'){
-                  this.getModel().playAnimation('walkinj', false);
-                }
-              }
               break;
             }
           }else{
@@ -1235,31 +1235,11 @@ class ModuleCreatureController extends ModuleObject {
               }else{
                 if(currentAnimation != 'run'){
                   if(hasHands && bothHands){
-                    switch(parseInt(rWeapon.getWeaponWield())){
-                      case 2:
-                        if(currentAnimation != 'runds')
-                          this.getModel().playAnimation('runds', false);
-                      break;
-                      case 4:
-                        if(currentAnimation != 'runst')
-                          this.getModel().playAnimation('runst', false);
-                      break;
-                      case 5:
-                        if(currentAnimation != 'runrf')
-                          this.getModel().playAnimation('runrf', false);
-                      break;
-                      default:
-                        if(currentAnimation != 'run')
-                          this.getModel().playAnimation('run', false);
-                      break;
-                    }
-                  }else{
-                    if(hasHands && rWeapon){
+                    if(this.getHP() / this.getMaxHP() > .25){
                       switch(parseInt(rWeapon.getWeaponWield())){
                         case 2:
-                        case 3:
-                          if(currentAnimation != 'runss')
-                            this.getModel().playAnimation('runss', false);
+                          if(currentAnimation != 'runds')
+                            this.getModel().playAnimation('runds', false);
                         break;
                         case 4:
                           if(currentAnimation != 'runst')
@@ -1273,6 +1253,38 @@ class ModuleCreatureController extends ModuleObject {
                           if(currentAnimation != 'run')
                             this.getModel().playAnimation('run', false);
                         break;
+                      }
+                    }else{
+                      if(this.model.getAnimationByName('runinj') && currentAnimation != 'runinj'){
+                        this.getModel().playAnimation('runinj', false);
+                      }
+                    }
+                  }else{
+                    if(hasHands && rWeapon){
+                      if(this.getHP() / this.getMaxHP() > .25){
+                        switch(parseInt(rWeapon.getWeaponWield())){
+                          case 2:
+                          case 3:
+                            if(currentAnimation != 'runss')
+                              this.getModel().playAnimation('runss', false);
+                          break;
+                          case 4:
+                            if(currentAnimation != 'runst')
+                              this.getModel().playAnimation('runst', false);
+                          break;
+                          case 5:
+                            if(currentAnimation != 'runrf')
+                              this.getModel().playAnimation('runrf', false);
+                          break;
+                          default:
+                            if(currentAnimation != 'run')
+                              this.getModel().playAnimation('run', false);
+                          break;
+                        }
+                      }else{
+                        if(this.model.getAnimationByName('runinj') && currentAnimation != 'runinj'){
+                          this.getModel().playAnimation('runinj', false);
+                        }
                       }
                     }else{
                       if(this.getHP() / this.getMaxHP() > .25){
