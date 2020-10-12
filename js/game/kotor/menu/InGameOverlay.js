@@ -984,6 +984,7 @@ class InGameOverlay extends GameMenu {
         }
 
         this['PB_VIT'+(id+1)].setProgress( Math.min( 1.0, partyMember.getHP() / partyMember.getMaxHP() ) * 100 );
+        this['PB_FORCE'+(id+1)].setProgress( Math.min( 1.0, partyMember.getFP() / partyMember.getMaxFP() ) * 100 );
 
       }
 

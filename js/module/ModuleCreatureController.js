@@ -134,6 +134,7 @@ class ModuleCreatureController extends ModuleObject {
                           this.model.playAnimation(_newAnim, true, () => {
                             //this.actionQueue.shift()
                           });
+                          this.actionQueue.shift();
                         }else{
                           this.model.playAnimation(_newAnim, false, () => {
                             //Kill the action after the animation ends
@@ -147,7 +148,7 @@ class ModuleCreatureController extends ModuleObject {
                         this.actionQueue.shift();
                       }
                     }else{
-                      this.actionQueue.shift();
+                      //this.actionQueue.shift();
                     }
 
                   }else{
@@ -1120,7 +1121,7 @@ class ModuleCreatureController extends ModuleObject {
                   }
                 break;
                 default:
-                  if(this.getHP()/this.getMaxHP() > .1){
+                  if(this.getHP()/this.getMaxHP() > .25){
                     if(idleAnimations.indexOf(currentAnimation) == -1){
                       this.getModel().playAnimation(idleAnimations[Math.round(Math.random()*(idleAnimations.length-1))], false);
                     }
@@ -1163,7 +1164,7 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               default:
-                if(this.getHP()/this.getMaxHP() > .1){
+                if(this.getHP()/this.getMaxHP() > .25){
                   if(currentAnimation != 'walk'){
                     this.getModel().playAnimation('walk', false);
                   }
@@ -1274,7 +1275,7 @@ class ModuleCreatureController extends ModuleObject {
                         break;
                       }
                     }else{
-                      if(this.getHP() / this.getMaxHP() > .1){
+                      if(this.getHP() / this.getMaxHP() > .25){
                         if(!this.walk && this.model.getAnimationByName('run') && currentAnimation != 'run'){
                           this.getModel().playAnimation('run', false);
                         }else if(this.walk && this.model.getAnimationByName('walk') && currentAnimation != 'walk'){

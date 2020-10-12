@@ -42,7 +42,8 @@ class Game extends Engine {
       antialias: false,
       canvas: Game.canvas,
       context: Game.context,
-      logarithmicDepthBuffer: false
+      logarithmicDepthBuffer: false,
+      alpha: true
     });
 
     Game.renderer.autoClear = false;

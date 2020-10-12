@@ -25,19 +25,19 @@ class ModulePlayer extends ModuleCreature {
   }
 
   addHP(nAmount = 0){
-    this.currentHitPoints -= nAmount;
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
-  }
-
-  subtractHP(nAmount = 0){
     this.currentHitPoints += nAmount;
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
+  subtractHP(nAmount = 0){
+    this.currentHitPoints -= nAmount;
+    if(this.min1HP && this.getHP() < 1)
+      this.setHP(1);
+  }
+
   getHP(){
-    return this.maxHitPoints - this.currentHitPoints;
+    return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
   }
 
   getMaxHP(){
@@ -50,7 +50,15 @@ class ModulePlayer extends ModuleCreature {
 
   setMinOneHP(bMinOneHP = false){
     this.min1HP = bMinOneHP ? true : false;
-  }  
+  }
+
+  getFP(){
+    return (this.maxForcePoints + this.currentForce) - this.forcePoints;
+  }
+
+  getMaxFP(){
+    return this.maxForcePoints;
+  }
 
 }
 

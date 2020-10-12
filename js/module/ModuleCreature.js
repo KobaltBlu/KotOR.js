@@ -573,7 +573,15 @@ class ModuleCreature extends ModuleCreatureController {
 
   setMinOneHP(bMinOneHP = false){
     this.min1HP = bMinOneHP ? true : false;
-  }  
+  }
+
+  getFP(){
+    return this.forcePoints;
+  }
+
+  getMaxFP(){
+    return this.maxForcePoints;
+  }
 
   getCameraHeight(){
     if(this.model && this.model.camerahook){
@@ -583,28 +591,124 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  getSTR(){
-    return this.str;
+  getSTR(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.str;
+    }else{
+      return this.str +
+      (this.equipment.HEAD?.getSTRBonus() || 0) +
+      (this.equipment.ARMOR?.getSTRBonus() || 0) +
+      (this.equipment.ARMS?.getSTRBonus() || 0) +
+      (this.equipment.RIGHTHAND?.getSTRBonus() || 0) +
+      (this.equipment.LEFTHAND?.getSTRBonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getSTRBonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getSTRBonus() || 0) +
+      (this.equipment.IMPLANT?.getSTRBonus() || 0) +
+      (this.equipment.BELT?.getSTRBonus() || 0) +
+      (this.equipment.CLAW1?.getSTRBonus() || 0) +
+      (this.equipment.CLAW2?.getSTRBonus() || 0) +
+      (this.equipment.HIDE?.getSTRBonus() || 0);
+    }
   }
 
-  getDEX(){
-    return this.dex;
+  getDEX(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.dex;
+    }else{
+      return this.dex +
+      (this.equipment.HEAD?.getDEXBonus() || 0) +
+      (this.equipment.ARMOR?.getDEXBonus() || 0) +
+      (this.equipment.ARMS?.getDEXBonus() || 0) +
+      (this.equipment.RIGHTHAND?.getDEXBonus() || 0) +
+      (this.equipment.LEFTHAND?.getDEXBonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getDEXBonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getDEXBonus() || 0) +
+      (this.equipment.IMPLANT?.getDEXBonus() || 0) +
+      (this.equipment.BELT?.getDEXBonus() || 0) +
+      (this.equipment.CLAW1?.getDEXBonus() || 0) +
+      (this.equipment.CLAW2?.getDEXBonus() || 0) +
+      (this.equipment.HIDE?.getDEXBonus() || 0);
+    }
   }
 
-  getCON(){
-    return this.con;
+  getCON(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.con;
+    }else{
+      return this.con +
+      (this.equipment.HEAD?.getCONBonus() || 0) +
+      (this.equipment.ARMOR?.getCONBonus() || 0) +
+      (this.equipment.ARMS?.getCONBonus() || 0) +
+      (this.equipment.RIGHTHAND?.getCONBonus() || 0) +
+      (this.equipment.LEFTHAND?.getCONBonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getCONBonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getCONBonus() || 0) +
+      (this.equipment.IMPLANT?.getCONBonus() || 0) +
+      (this.equipment.BELT?.getCONBonus() || 0) +
+      (this.equipment.CLAW1?.getCONBonus() || 0) +
+      (this.equipment.CLAW2?.getCONBonus() || 0) +
+      (this.equipment.HIDE?.getCONBonus() || 0);
+    }
   }
 
-  getCHA(){
-    return this.cha;
+  getCHA(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.cha;
+    }else{
+      return this.cha +
+      (this.equipment.HEAD?.getCHABonus() || 0) +
+      (this.equipment.ARMOR?.getCHABonus() || 0) +
+      (this.equipment.ARMS?.getCHABonus() || 0) +
+      (this.equipment.RIGHTHAND?.getCHABonus() || 0) +
+      (this.equipment.LEFTHAND?.getCHABonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getCHABonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getCHABonus() || 0) +
+      (this.equipment.IMPLANT?.getCHABonus() || 0) +
+      (this.equipment.BELT?.getCHABonus() || 0) +
+      (this.equipment.CLAW1?.getCHABonus() || 0) +
+      (this.equipment.CLAW2?.getCHABonus() || 0) +
+      (this.equipment.HIDE?.getCHABonus() || 0);
+    }
   }
 
-  getWIS(){
-    return this.wis;
+  getWIS(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.wis;
+    }else{
+      return this.wis +
+      (this.equipment.HEAD?.getWISBonus() || 0) +
+      (this.equipment.ARMOR?.getWISBonus() || 0) +
+      (this.equipment.ARMS?.getWISBonus() || 0) +
+      (this.equipment.RIGHTHAND?.getWISBonus() || 0) +
+      (this.equipment.LEFTHAND?.getWISBonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getWISBonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getWISBonus() || 0) +
+      (this.equipment.IMPLANT?.getWISBonus() || 0) +
+      (this.equipment.BELT?.getWISBonus() || 0) +
+      (this.equipment.CLAW1?.getWISBonus() || 0) +
+      (this.equipment.CLAW2?.getWISBonus() || 0) +
+      (this.equipment.HIDE?.getWISBonus() || 0);
+    }
   }
 
-  getINT(){
-    return this.int;
+  getINT(calculateBonuses = true){
+    if(!calculateBonuses){
+      return this.int;
+    }else{
+      return this.int +
+      (this.equipment.HEAD?.getINTBonus() || 0) +
+      (this.equipment.ARMOR?.getINTBonus() || 0) +
+      (this.equipment.ARMS?.getINTBonus() || 0) +
+      (this.equipment.RIGHTHAND?.getINTBonus() || 0) +
+      (this.equipment.LEFTHAND?.getINTBonus() || 0) +
+      (this.equipment.LEFTARMBAND?.getINTBonus() || 0) +
+      (this.equipment.RIGHTARMBAND?.getINTBonus() || 0) +
+      (this.equipment.IMPLANT?.getINTBonus() || 0) +
+      (this.equipment.BELT?.getINTBonus() || 0) +
+      (this.equipment.CLAW1?.getINTBonus() || 0) +
+      (this.equipment.CLAW2?.getINTBonus() || 0) +
+      (this.equipment.HIDE?.getINTBonus() || 0);
+    }
   }
 
   getIsPC(){
@@ -1602,6 +1706,10 @@ class ModuleCreature extends ModuleCreatureController {
 
     if(this.template.RootNode.HasField('MaxHitPoints')){
       this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
+    }
+
+    if(this.template.RootNode.HasField('MaxForcePoints')){
+      this.maxForcePoints = this.template.GetFieldByLabel('MaxForcePoints').GetValue();
     }
 
     if(this.template.RootNode.HasField('Min1HP'))

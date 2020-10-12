@@ -618,13 +618,25 @@ NWScriptDefK1.Actions = {
     comment: "55:\nreturns the current force points for the creature\n",
     name: "GetCurrentForcePoints",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].getFP()
+      }
+      return 0;
+    }
   },
   56:{
     comment: "56:\nreturns the Max force points for the creature\n",
     name: "GetMaxForcePoints",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].getMaxFP()
+      }
+      return 0;
+    }
   },
   57:{
     comment: "57:\nPauses the game if bPause is TRUE.  Unpauses if bPause is FALSE.\n",

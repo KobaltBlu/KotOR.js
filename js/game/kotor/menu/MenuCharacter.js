@@ -161,21 +161,22 @@ class MenuCharacter extends GameMenu {
 
   updateCharacterStats(character){
     
-    this.LBL_VITALITY_STAT.setText(character.currentHitPoints+'/'+character.maxHitPoints);
+    this.LBL_VITALITY_STAT.setText(character.getHP()+'/'+character.getMaxHP());
+    this.LBL_FORCE_STAT.setText(character.getFP()+'/'+character.getMaxFP());
 
-    this.LBL_STR.setText(character.str);
-    this.LBL_DEX.setText(character.dex);
-    this.LBL_CON.setText(character.con);
-    this.LBL_INT.setText(character.int);
-    this.LBL_WIS.setText(character.wis);
-    this.LBL_CHA.setText(character.cha);
+    this.LBL_STR.setText(character.getSTR());
+    this.LBL_DEX.setText(character.getDEX());
+    this.LBL_CON.setText(character.getCON());
+    this.LBL_INT.setText(character.getINT());
+    this.LBL_WIS.setText(character.getWIS());
+    this.LBL_CHA.setText(character.getCHA());
 
-    this.LBL_STR_MOD.setText((character.str - 10)/2);
-    this.LBL_DEX_MOD.setText((character.dex - 10)/2);
-    this.LBL_CON_MOD.setText((character.con - 10)/2);
-    this.LBL_INT_MOD.setText((character.int - 10)/2);
-    this.LBL_WIS_MOD.setText((character.wis - 10)/2);
-    this.LBL_CHA_MOD.setText((character.cha - 10)/2);
+    this.LBL_STR_MOD.setText(Math.floor((character.getSTR() - 10)/2));
+    this.LBL_DEX_MOD.setText(Math.floor((character.getDEX() - 10)/2));
+    this.LBL_CON_MOD.setText(Math.floor((character.getCON() - 10)/2));
+    this.LBL_INT_MOD.setText(Math.floor((character.getINT() - 10)/2));
+    this.LBL_WIS_MOD.setText(Math.floor((character.getWIS() - 10)/2));
+    this.LBL_CHA_MOD.setText(Math.floor((character.getCHA() - 10)/2));
 
     this.LBL_EXPERIENCE_STAT.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
     this.LBL_NEEDED_XP.setText(
