@@ -173,6 +173,11 @@ class SaveGame {
     }catch(e){}
 
     Game.SaveGame = this;
+
+    if(Game.player instanceof ModuleObject){
+      Game.player.destroy();
+      Game.player = undefined;
+    }
     
     //Init SAVEGAME.sav
     this.InitSaveGameResourceLoader( ()=> {
