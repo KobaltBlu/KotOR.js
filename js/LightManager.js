@@ -303,6 +303,17 @@ class LightManager {
           lightNode.lightUUID = light.uuid;
           LightManager.lightsShown.push(light.uuid);
 
+          if(lightNode.lensFlare != light.lensFlare){
+            while(lightNode.children.length){
+              lightNode.remove(lightNode.children[0]);
+            }
+          }
+          
+          lightNode.lensFlare = light.lensFlare;
+          if(lightNode.lensFlare){
+            lightNode.add(lightNode.lensFlare);
+          }
+
           //Increment the spawn count
           LightManager.spawned++;
           lightNode.reclaimed = false;

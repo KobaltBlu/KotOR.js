@@ -1477,17 +1477,26 @@ THREE.AuroraModel = function () {
       lightNode.color = _node.color;
 
       if(_node.flare.radius){
-        let lendsFlare = new THREE.Lensflare();
+        let lensFlare = new THREE.Lensflare();
 
-        TextureLoader.enQueue(_node.flare.textures[0], null, TextureLoader.Type.TEXTURE, (texture, tex) => {
-          lendsFlare.addElement( new THREE.LensflareElement( texture, _node.flare.sizes[0],  _node.flare.positions[0],  _node.flare.colorShifts[0] ) );
-        });
+        for(let i = 0, len = _node.flare.textures.length; i < len; i++){
 
-        TextureLoader.Load(_node.flare.textures[0], (texture) => {
-          textureFlare0 = texture;
-        });
+          TextureLoader.enQueue(_node.flare.textures[i], null, TextureLoader.Type.TEXTURE, (texture, tex) => {
+            console.log('LensFlare', i, texture, _node.flare.sizes[i],  _node.flare.positions[i],  _node.flare.colorShifts[i]);
+            lensFlare.addElement( new THREE.LensflareElement( texture, _node.flare.sizes[i],  _node.flare.positions[i],  _node.flare.colorShifts[i] ) );
+          });
 
-        lightNode.add(lendsFlare);
+          /*TextureLoader.Load(_node.flare.textures[i], (texture) => {
+            textureFlare0 = texture;
+          });*/
+
+        }
+
+        if(!options.manageLighting){
+          lightNode.add(lensFlare);
+        }else{
+          lightNode.lensFlare = lensFlare;
+        }
       }
 
       if(options.manageLighting){
