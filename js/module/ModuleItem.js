@@ -165,12 +165,9 @@ class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDamageBonus(){
-    for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Damage)){
-        return property.getValue();
-      }
+  getBaseDamage(){
+    if(parseInt(this.getBaseItem().numdice)){
+      return CombatEngine.DiceRoll(parseInt(this.getBaseItem().numdice), 'd'+this.getBaseItem().dietoroll);
     }
     return 0;
   }
@@ -185,9 +182,12 @@ class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getBaseDamage(){
-    if(parseInt(this.getBaseItem().numdice)){
-      return CombatEngine.DiceRoll(parseInt(this.getBaseItem().numdice), 'd'+this.getBaseItem().dietoroll);
+  getDamageBonus(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Damage)){
+        return property.getValue();
+      }
     }
     return 0;
   }

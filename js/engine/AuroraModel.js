@@ -1243,7 +1243,6 @@ THREE.AuroraModel = function () {
                 material.defines.ANIMATED_UV = '';
               }
 
-
               if(_node.Transparent){
                 material.transparent = true;
               }

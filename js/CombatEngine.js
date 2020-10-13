@@ -106,6 +106,7 @@ class CombatEngine {
               if(combatant.combatAction){
                 if(combatant.actionInRange(combatant.combatAction)){
                   combatant.combatAction.ready = true;
+                  CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
                 }else{
                   //Continue to the next combatant in the group since this one can't act yet
                   continue;
@@ -172,6 +173,182 @@ class CombatEngine {
       CombatEngine.timer = 0;
     }*/
     
+  }
+
+  static CalculateAttackDamage(combatAction = undefined, creature = undefined){
+
+    if(!combatAction || combatAction.damageCalculated)
+      return;
+
+    combatAction.damageCalculated = true;
+
+    if(!combatAction.isCutsceneAttack){
+
+      combatAction.hits = 0;
+      combatAction.damage = 0;
+
+      if(!creature.isSimpleCreature()){
+
+        if(creature.equipment.RIGHTHAND instanceof ModuleItem){
+          //Roll to hit
+          let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.RIGHTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+          if(hits){
+            combatAction.hits = true;
+            //Roll damage
+            combatAction.damage += creature.equipment.RIGHTHAND.getBaseDamage() + creature.equipment.RIGHTHAND.getDamageBonus();
+            //Add strength MOD to melee damage
+            if(creature.equipment.RIGHTHAND.getWeaponType() == 1){
+              combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+            }
+          }
+          //TOOD: Log to combat menu
+        }
+
+        if(creature.equipment.LEFTHAND instanceof ModuleItem){
+          //Roll to hit
+          let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.LEFTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+          if(hits){
+            combatAction.hits = true;
+            //Roll damage
+            combatAction.damage += creature.equipment.LEFTHAND.getBaseDamage() + creature.equipment.LEFTHAND.getDamageBonus();
+            //Add strength MOD to melee damage
+            if(creature.equipment.LEFTHAND.getWeaponType() == 1){
+              combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+            }
+
+          }
+          //TOOD: Log to combat menu
+        }
+        
+        //TOOD: Bonus attacks
+
+      }else{
+
+        if(creature.equipment.CLAW1 instanceof ModuleItem){
+          //Roll to hit
+          let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW1.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+          if(hits){
+            combatAction.hits = true;
+            //Roll damage
+            combatAction.damage += creature.equipment.CLAW1.getMonsterDamage() + creature.equipment.CLAW1.getDamageBonus();
+            //Add strength MOD to melee damage
+            if(creature.equipment.CLAW1.getWeaponType() == 1){
+              combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+            }
+          }
+          //TOOD: Log to combat menu
+        }
+
+        if(creature.equipment.CLAW2 instanceof ModuleItem){
+          //Roll to hit
+          let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW2.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+          if(hits){
+            combatAction.hits = true;
+            //Roll damage
+            combatAction.damage += creature.equipment.CLAW2.getMonsterDamage() + creature.equipment.CLAW2.getDamageBonus();
+            //Add strength MOD to melee damage
+            if(creature.equipment.CLAW2.getWeaponType() == 1){
+              combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+            }
+          }
+          //TOOD: Log to combat menu
+        }
+
+        if(creature.equipment.CLAW3 instanceof ModuleItem){
+          //Roll to hit
+          let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW3.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+          if(hits){
+            combatAction.hits = true;
+            //Roll damage
+            combatAction.damage += creature.equipment.CLAW3.getMonsterDamage() + creature.equipment.CLAW3.getDamageBonus();
+            //Add strength MOD to melee damage
+            if(creature.equipment.CLAW3.getWeaponType() == 1){
+              combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+            }
+          }
+          //TOOD: Log to combat menu
+        }
+      }
+      
+      combatAction.target.lastAttacker = this;
+      combatAction.target.onAttacked();
+    }
+
+    let attackAnimation = creature.model.getAnimationByName(combatAction.animation);
+
+    creature.setFacing(
+      Math.atan2(
+        creature.position.y - combatAction.target.position.y,
+        creature.position.x - combatAction.target.position.x
+      ) + Math.PI/2,
+      false
+    );
+
+    let attack_sound = THREE.Math.randInt(0, 2);
+    switch(attack_sound){
+      case 1:
+        creature.PlaySoundSet(SSFObject.TYPES.ATTACK_2);
+      break;
+      case 2:
+        creature.PlaySoundSet(SSFObject.TYPES.ATTACK_3);
+      break;
+      default:
+        creature.PlaySoundSet(SSFObject.TYPES.ATTACK_1);
+      break;
+    }
+
+    if(combatAction.isCutsceneAttack){
+
+      creature.getModel().playAnimation(combatAction.animation, false);
+      //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
+      combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation();
+
+      let painsound = THREE.Math.randInt(0, 1);
+      switch(painsound){
+        case 1:
+          combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+        break;
+        default:
+          combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+        break;
+      }
+
+      if(combatAction.damage)
+        combatAction.target.subtractHP(combatAction.damage);
+
+      setTimeout( () => {
+        creature.actionQueue.shift();
+      }, attackAnimation.length * 500);
+
+    }else{
+      //Roll to hit
+      if(combatAction.hits){
+        
+        creature.getModel().playAnimation(combatAction.animation, false);
+        //combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation();
+
+        let painsound = THREE.Math.randInt(0, 1);
+        switch(painsound){
+          case 1:
+            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+          break;
+          default:
+            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+          break;
+        }
+
+        /*setTimeout( () => {
+          combatAction.target.damage(combatAction.damage, this);
+        }, attackAnimation.length * 500)*/
+        
+      }else{
+        combatAction.target.lastAttacker = this;
+        creature.getModel().playAnimation(combatAction.animation, false);
+        combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation();
+        //combatAction.target.getModel().playAnimation(combatAction.target.getDodgeAnimation(), false);
+      }
+    }
+
   }
 
   static InitiativeSort(a, b){

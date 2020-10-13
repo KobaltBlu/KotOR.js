@@ -799,6 +799,16 @@ class ModuleCreature extends ModuleCreatureController {
     for(let i = 0, len = this.classes.length; i < len; i++){
       bab += this.classes[i].getBaseAttackBonus();
     }
+
+    let strMod = Math.floor(( this.getSTR() - 10) / 2);
+    let dexMod = Math.floor(( this.getSTR() - 10) / 2);
+
+    if(strMod > dexMod){
+      bab += strMod;
+    }else if(dexMod > strMod){
+      bab += dexMod;
+    }
+
     return bab;
   }
 
