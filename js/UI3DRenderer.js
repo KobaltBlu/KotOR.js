@@ -91,7 +91,7 @@ class UI3DRenderer {
   Render(){
     this._renderer.clear();
 
-    var delta = this.clock.getDelta();
+    let delta = this.clock.getDelta();
 
     //Custom render logic can run here
     if(typeof this.onBeforeRender === 'function')

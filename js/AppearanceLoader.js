@@ -111,9 +111,9 @@ class AppearanceLoader {
       Game.ModelLoader.load(bodyModel, (model) => {
 
         if(this.model != null){
-          var scene = this.model.parent;
-          var position = this.model.position;
-          var rotation = this.model.rotation;
+          let scene = this.model.parent;
+          let position = this.model.position;
+          let rotation = this.model.rotation;
           scene.remove(this.model);
         }
 
@@ -191,9 +191,9 @@ class AppearanceLoader {
       Game.ModelLoader.load(modelName, (door) => {
 
         if(this.model != null){
-          var scene = this.model.parent;
-          var position = this.model.position;
-          var rotation = this.model.rotation;
+          let scene = this.model.parent;
+          let position = this.model.position;
+          let rotation = this.model.rotation;
           scene.remove(this.model);
         }
 
@@ -238,9 +238,9 @@ class AppearanceLoader {
       Game.ModelLoader.load(modelName, (plc) => {
 
         if(this.model != null){
-          var scene = this.model.parent;
-          var position = this.model.position;
-          var rotation = this.model.rotation;
+          let scene = this.model.parent;
+          let position = this.model.position;
+          let rotation = this.model.rotation;
           scene.remove(this.model);
         }
 

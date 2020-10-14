@@ -101,7 +101,7 @@ class CreatureAppearanceWizard extends Wizard {
   }
 
   IsOnscreen(el){
-    var rect = el.getBoundingClientRect();
+    let rect = el.getBoundingClientRect();
     return (
            (rect.x + rect.width) < 0
              || (rect.y + rect.height) < 0

@@ -948,7 +948,7 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     //Remove completed spells
-    var i = this.casting.length;
+    let i = this.casting.length;
     while (i--) {
       if(this.casting[i].completed){
         this.casting.splice(i, 1);

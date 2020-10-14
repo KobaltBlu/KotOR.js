@@ -125,7 +125,7 @@ class IngameControls {
       
       let clickCaptured = false;
 
-      var customEvent = {
+      let customEvent = {
         propagate: true,
         stopPropagation: function(){
           this.propagate = false;
@@ -236,7 +236,7 @@ class IngameControls {
         
         let clickCaptured = false;
   
-        var customEvent = {
+        let customEvent = {
           propagate: true,
           stopPropagation: function(){
             this.propagate = false;
@@ -460,8 +460,8 @@ class IngameControls {
 
   Update(delta){
 
-    var xoffset = 0;
-    var yoffset = 0;
+    let xoffset = 0;
+    let yoffset = 0;
 
     let gp = undefined;
     if(currentGamepad instanceof Gamepad){

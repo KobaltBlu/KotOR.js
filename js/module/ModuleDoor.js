@@ -513,7 +513,7 @@ class ModuleDoor extends ModuleObject {
           onComplete: (door) => {
 
             if(this.model != null){
-              var scene = this.model.parent;
+              let scene = this.model.parent;
               scene.remove(this.model);
               Game.octree.remove( this.model );
               this.model.dispose();

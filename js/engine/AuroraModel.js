@@ -175,7 +175,7 @@ THREE.AuroraModel = function () {
           LightManager.removeLight(node);
         }else{
           if(object.hasOwnProperty('mesh')){
-            delete object.mesh;
+            object.mesh = undefined;
           }
         }
 
@@ -1327,7 +1327,7 @@ THREE.AuroraModel = function () {
                 newConstraints.push(_node.danglyVec4[_node.faces[i].c]);
               }
 
-              var constraints = new Float32Array( newConstraints.length * 4 );
+              let constraints = new Float32Array( newConstraints.length * 4 );
               geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( newConstraints ) );
 
               mesh = new THREE.Mesh( geometry , material );
@@ -1592,7 +1592,7 @@ THREE.AuroraModel = function () {
 
 		}
 
-		var normalMatrix,
+		let normalMatrix,
 			vertexOffset = geometry1.vertices.length,
 			vertices1 = geometry1.vertices,
 			vertices2 = geometry2.vertices,
@@ -1617,11 +1617,11 @@ THREE.AuroraModel = function () {
 
 		// vertices
 
-		for ( var i = 0, il = vertices2.length; i < il; i ++ ) {
+		for ( let i = 0, il = vertices2.length; i < il; i ++ ) {
 
-			var vertex = vertices2[ i ];
+			let vertex = vertices2[ i ];
 
-			var vertexCopy = vertex.clone();
+			let vertexCopy = vertex.clone();
 
 			if ( matrix !== undefined ) vertexCopy.applyMatrix4( matrix );
 
@@ -1631,7 +1631,7 @@ THREE.AuroraModel = function () {
 
 		// colors
 
-		for ( var i = 0, il = colors2.length; i < il; i ++ ) {
+		for ( let i = 0, il = colors2.length; i < il; i ++ ) {
 
 			colors1.push( colors2[ i ].clone() );
 
@@ -1641,7 +1641,7 @@ THREE.AuroraModel = function () {
 
 		for ( i = 0, il = faces2.length; i < il; i ++ ) {
 
-			var face = faces2[ i ], faceCopy, normal, color,
+			let face = faces2[ i ], faceCopy, normal, color,
 				faceVertexNormals = face.vertexNormals,
 				faceVertexColors = face.vertexColors;
 
@@ -1654,7 +1654,7 @@ THREE.AuroraModel = function () {
 
 			}
 
-			for ( var j = 0, jl = faceVertexNormals.length; j < jl; j ++ ) {
+			for ( let j = 0, jl = faceVertexNormals.length; j < jl; j ++ ) {
 
 				normal = faceVertexNormals[ j ].clone();
 
@@ -1670,7 +1670,7 @@ THREE.AuroraModel = function () {
 
 			faceCopy.color.copy( face.color );
 
-			for ( var j = 0, jl = faceVertexColors.length; j < jl; j ++ ) {
+			for ( let j = 0, jl = faceVertexColors.length; j < jl; j ++ ) {
 
 				color = faceVertexColors[ j ];
 				faceCopy.vertexColors.push( color.clone() );
@@ -1686,7 +1686,7 @@ THREE.AuroraModel = function () {
 		// uvs1
     for ( i = 0, il = uvs2.length; i < il; i ++ ) {
 
-      var uv = uvs2[ i ], uvCopy = [];
+      let uv = uvs2[ i ], uvCopy = [];
 
       if ( uv === undefined ) {
 
@@ -1694,7 +1694,7 @@ THREE.AuroraModel = function () {
 
       }
 
-      for ( var j = 0, jl = uv.length; j < jl; j ++ ) {
+      for ( let j = 0, jl = uv.length; j < jl; j ++ ) {
 
         uvCopy.push( uv[ j ].clone() );
 
@@ -1707,7 +1707,7 @@ THREE.AuroraModel = function () {
 		// uvs2
     for ( i = 0, il = uvs22.length; i < il; i ++ ) {
 
-      var uv = uvs22[ i ], uvCopy = [];
+      let uv = uvs22[ i ], uvCopy = [];
 
       if ( uv === undefined ) {
 
@@ -1715,7 +1715,7 @@ THREE.AuroraModel = function () {
 
       }
 
-      for ( var j = 0, jl = uv.length; j < jl; j ++ ) {
+      for ( let j = 0, jl = uv.length; j < jl; j ++ ) {
 
         uvCopy.push( uv[ j ].clone() );
 

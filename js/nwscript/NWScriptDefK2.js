@@ -6216,7 +6216,7 @@ NWScriptDefK2.Actions = {
   }
 };
 
-for (var property in NWScriptDefK1.Actions) {
+for (let property in NWScriptDefK1.Actions) {
   if (NWScriptDefK1.Actions.hasOwnProperty(property)) {
     if(NWScriptDefK2.Actions[property]){
       if(NWScriptDefK2.Actions[property].action === undefined){

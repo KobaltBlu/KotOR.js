@@ -14,7 +14,7 @@ class TemplateEngine {
   static GetTemplate(file, data = {}){
     if(!(file in TemplateEngine.templates)){
 
-      /*var link = document.createElement('link');
+      /*let link = document.createElement('link');
       link.rel = 'import';
       link.href = file;
       //link.setAttribute('async', ''); // make it async!

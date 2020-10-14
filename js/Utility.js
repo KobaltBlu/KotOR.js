@@ -14,7 +14,7 @@ class Utility {
   }
 
   static PadInt(num, size) {
-    var s = "000000000" + num;
+    let s = "000000000" + num;
     return s.substr(s.length-size);
   }
 
@@ -199,7 +199,7 @@ class Utility {
   }
   
   static Distance2D(v0, v1){
-    var dx = v0.x - v1.x, dy = v0.y - v1.y;
+    let dx = v0.x - v1.x, dy = v0.y - v1.y;
 		return Math.abs(Math.sqrt( dx * dx + dy * dy ));
   }
 

@@ -130,7 +130,7 @@ class BinaryWriter {
       chars = chars.split('');
 
     let tmpBuffer = Buffer.alloc(chars.length);
-    for(var i = 0; i!=chars.length; i++){
+    for(let i = 0; i!=chars.length; i++){
       tmpBuffer.writeUInt8(chars[i].charCodeAt(), i);
     }
     this.AppendData(tmpBuffer);

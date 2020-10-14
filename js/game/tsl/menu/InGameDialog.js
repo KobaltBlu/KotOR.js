@@ -48,8 +48,8 @@ class MenuDialog extends GameMenu {
 
         this.barHeight = 100;
 
-        var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-        var material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+        let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+        let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
@@ -1718,8 +1718,8 @@ class MenuDialog extends GameMenu {
 
   GetCameraMidPoint(pointA, pointB, percentage = 0.5){
 
-    var dir = pointB.clone().sub(pointA);
-    var len = dir.length();
+    let dir = pointB.clone().sub(pointA);
+    let len = dir.length();
     dir = dir.normalize().multiplyScalar(len*percentage);
     return pointA.clone().add(dir);
   }

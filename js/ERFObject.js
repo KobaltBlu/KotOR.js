@@ -31,7 +31,7 @@ class ERFObject {
 
       if(this.inMemory){
 
-        var header = Buffer.from(this.buffer, 0, this.HeaderSize);
+        let header = Buffer.from(this.buffer, 0, this.HeaderSize);
         this.Reader = new BinaryReader(header);
 
         this.Header.FileType = this.Reader.ReadChars(4);
@@ -96,7 +96,7 @@ class ERFObject {
             console.error('ERFObject', 'ERF Header Read', status.message);
             return;
           }
-          var header = Buffer.alloc(this.HeaderSize);
+          let header = Buffer.alloc(this.HeaderSize);
           fs.read(fd, header, 0, this.HeaderSize, 0, (e, num) => {
             this.Reader = new BinaryReader(header);
 
@@ -196,7 +196,7 @@ class ERFObject {
         }else{
 
           fs.open(this.file, 'r', (e, fd) => {
-            var buffer = Buffer.alloc(resource.ResourceSize);
+            let buffer = Buffer.alloc(resource.ResourceSize);
             fs.read(fd, buffer, 0, buffer.length, resource.OffsetToResource, function(err, br, buf) {
               //console.log(err, buf);
               fs.close(fd, function(e) {
@@ -250,7 +250,7 @@ class ERFObject {
               console.log('ERF Read', status.message);
               return;
             }
-            var buffer = Buffer.alloc(resource.DataSize);
+            let buffer = Buffer.alloc(resource.DataSize);
             fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
               console.log('ERF Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
               fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {

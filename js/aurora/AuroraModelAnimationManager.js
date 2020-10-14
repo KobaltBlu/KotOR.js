@@ -177,7 +177,7 @@ class AuroraModelAnimationManager {
       let last, next, fl, data, shouldBlend;
       
       //Loop through and animate all the controllers for the current node
-      for(var controller of node.controllers){
+      for(let controller of node.controllers){
 
         controller = controller[1];
 

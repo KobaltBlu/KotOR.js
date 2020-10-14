@@ -163,13 +163,13 @@ class ModelViewerControls {
 
   Update(delta){
     //console.log('Camera.Update')
-    var speed = EditorControls.CameraMoveSpeed * delta;
-    var speed2 = 0.5 * delta;
+    let speed = EditorControls.CameraMoveSpeed * delta;
+    let speed2 = 0.5 * delta;
 
-    var xoffset = 0;
-    var yoffset = 0;
+    let xoffset = 0;
+    let yoffset = 0;
 
-    var _cacheZ = this.camera.position.z;
+    let _cacheZ = this.camera.position.z;
 
     if(Mouse.Dragging){
       xoffset = Mouse.OffsetX || 0;

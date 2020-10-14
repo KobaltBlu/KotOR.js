@@ -155,7 +155,6 @@ THREE.TPCLoader.prototype.loadTexture = function(texName, onLoad = null, onProgr
     });
 
     let texture = tpc.toCompressedTexture();
-    delete tpc;
     //console.log("loaded texture", texName);
 
     if ( onLoad ) onLoad( texture );
@@ -180,7 +179,6 @@ THREE.TPCLoader.prototype.fetch_override = function ( name = '', onLoad = null, 
     });
 
     let texture = tpc.toCompressedTexture();
-    delete tpc;
     //console.log("loaded texture", texName);
 
     if ( onLoad ) onLoad( texture );
@@ -202,7 +200,6 @@ THREE.TPCLoader.prototype.fetch_local = function ( name = '', onLoad = null, onP
       });
 
       let texture = tpc.toCompressedTexture();
-      delete tpc;
       //console.log("loaded texture", texName);
 
       if ( onLoad ) onLoad( texture );

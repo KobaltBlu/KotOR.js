@@ -374,10 +374,10 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
       this._lightningDelay = 0;
       for(let iy = 0; iy < lightningZigZag; iy++){
-        var percentage = iy/lightningZigZag;
-        var x = start.x + ( (target.x - start.x) * percentage);
-        var y = start.y + ( (target.z - start.z) * percentage);
-        var z = start.z + ( (target.y - start.y) * percentage);
+        let percentage = iy/lightningZigZag;
+        let x = start.x + ( (target.x - start.x) * percentage);
+        let y = start.y + ( (target.z - start.z) * percentage);
+        let z = start.z + ( (target.y - start.y) * percentage);
 
         if(iy){
           x = this.randomFloat(x, spread);
@@ -392,8 +392,8 @@ THREE.AuroraEmitter = function ( auroraNode ) {
         for ( ix = 0; ix < 2; ix ++ ) {
 
 
-          //var x = (ix * xStep) * scale - half_scale;
-          var xO = scale/2;
+          //let x = (ix * xStep) * scale - half_scale;
+          let xO = scale/2;
           if(ix == 1){
             xO = -scale/2;
           }
@@ -423,10 +423,10 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
           for ( ix = 0; ix < 1; ix ++ ) {
 
-            var a = ix + gridX1 * iy;
-            var b = ix + gridX1 * ( iy + 1 );
-            var c = ( ix + 1 ) + gridX1 * ( iy + 1 );
-            var d = ( ix + 1 ) + gridX1 * iy;
+            let a = ix + gridX1 * iy;
+            let b = ix + gridX1 * ( iy + 1 );
+            let c = ( ix + 1 ) + gridX1 * ( iy + 1 );
+            let d = ( ix + 1 ) + gridX1 * iy;
 
             // faces
 

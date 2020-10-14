@@ -953,7 +953,7 @@ class LIPEditorTab extends EditorTab {
     if(!this.visible)
       return;
 
-    var delta = this.clock.getDelta();
+    let delta = this.clock.getDelta();
     //this.controls.Update(delta);
 
     if(this.head instanceof THREE.AuroraModel){
@@ -1014,8 +1014,8 @@ class LIPEditorTab extends EditorTab {
 
     // Geometry
     let cbgeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
-    var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-    var wireframe = new THREE.LineSegments( cbgeometry, mat );
+    let mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+    let wireframe = new THREE.LineSegments( cbgeometry, mat );
     this.scene.add( wireframe );
 
   }

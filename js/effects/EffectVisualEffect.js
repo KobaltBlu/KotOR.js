@@ -53,7 +53,7 @@ class EffectVisualEffect extends GameEffect {
         this.model.animationManager.currentAnimation = undefined;
 
         if(this.object.model){
-          for(var node of this.object.model.nodes){
+          for(let node of this.object.model.nodes){
             let c_node = this.model.nodes.get(node[0]);
             c_node.position.copy(node[1].position);
             c_node.quaternion.copy(node[1].quaternion);
@@ -62,7 +62,7 @@ class EffectVisualEffect extends GameEffect {
         }
         
         if(this.object.head){
-          for(var node of this.object.head.nodes){
+          for(let node of this.object.head.nodes){
             let c_node = this.model.headhook.head.nodes.get(node[0]);
             c_node.position.copy(node[1].position);
             c_node.quaternion.copy(node[1].quaternion);

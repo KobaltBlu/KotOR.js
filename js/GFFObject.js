@@ -318,7 +318,7 @@ class GFFObject {
   }
 
   static TypeValueToString(val){
-    for (var key in GFFDataTypes) {
+    for (let key in GFFDataTypes) {
       if (GFFDataTypes.hasOwnProperty(key)) {
         if(val == GFFDataTypes[key])
           return String(key);

@@ -445,7 +445,7 @@ class ModelViewerTab extends EditorTab {
 
     this.selectionBox.update();
 
-    var delta = this.clock.getDelta();
+    let delta = this.clock.getDelta();
     this.controls.Update(delta);
     for(let i = 0; i < this.selectable.children.length; i++){
       let obj = this.selectable.children[i];
@@ -535,9 +535,9 @@ class ModelViewerTab extends EditorTab {
         cbgeometry.faces[ j + 1 ].materialIndex = ((i + Math.floor(i/8)) % 2); // Add this line in, the material index should stay the same, we're just doing the other half of the same face
     }*/
 
-    //var geo = new THREE.EdgesGeometry( new THREE.CylinderGeometry( 6, 1, 12, 4) ); // or WireframeGeometry( geometry )
-    var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-    var wireframe = new THREE.LineSegments( cbgeometry, mat );
+    //let geo = new THREE.EdgesGeometry( new THREE.CylinderGeometry( 6, 1, 12, 4) ); // or WireframeGeometry( geometry )
+    let mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+    let wireframe = new THREE.LineSegments( cbgeometry, mat );
 
     // Mesh
     //let cb = new THREE.Mesh( cbgeometry, new THREE.MeshFaceMaterial( cbmaterials ) );

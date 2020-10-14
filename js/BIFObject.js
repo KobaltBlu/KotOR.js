@@ -21,7 +21,7 @@ class BIFObject {
             throw 'BIFObject: Failed to open '+this.file+' for reading.';
             return;
         }
-        var header = Buffer.alloc(this.HeaderSize);
+        let header = Buffer.alloc(this.HeaderSize);
         fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
           this.reader = new BinaryReader(header);
 
@@ -37,7 +37,7 @@ class BIFObject {
           header = this.reader = null;
 
           //Read variable tabs blocks
-          var variableTable = Buffer.alloc(this.VariableTableSize);
+          let variableTable = Buffer.alloc(this.VariableTableSize);
           fs.read(fd, variableTable, 0, this.VariableTableSize, this.VariableTableOffset, (err, num) => {
             this.reader = new BinaryReader(variableTable);
 
@@ -124,7 +124,7 @@ class BIFObject {
       if(res.FileSize){
 
         fs.open(this.file, 'r', (e, fd) => {
-          var buffer = Buffer.alloc(res.FileSize);
+          let buffer = Buffer.alloc(res.FileSize);
           fs.read(fd, buffer, 0, buffer.length, res.Offset, function(err, br, buf) {
             //console.log(err, buf);
             fs.close(fd, function(e) {

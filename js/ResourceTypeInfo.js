@@ -72,7 +72,7 @@ module.exports = {
     "key" : 'BIF Archive KEY',
 
     getKeyByValue: function( value ) {
-        for( var prop in this ) {
+        for( let prop in this ) {
             if( this.hasOwnProperty( prop ) ) {
                  if( this[ prop ] === value )
                      return prop;

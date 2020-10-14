@@ -25,7 +25,7 @@ class ConfigWizard extends Wizard {
       this.$content.append(this.$themePage);
 
       for(key in Config.options.Theme){
-        var index = Object.keys(Config.options.Theme).indexOf(key);
+        let index = Object.keys(Config.options.Theme).indexOf(key);
         let tabId = 'modal-config-theme-tabs-'+key.toLowerCase();
 
         let $tab = $('<li><a data-target="#'+tabId+'" data-toggle="tab">'+key+'</a></li>');

@@ -24,7 +24,7 @@ class RIMObject {
             console.log('RIM Header Read', status.message);
             return;
           }
-          var header = Buffer.alloc(this.HeaderSize);
+          let header = Buffer.alloc(this.HeaderSize);
           fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
             this.Reader = new BinaryReader(header);
   
@@ -73,7 +73,7 @@ class RIMObject {
       }else{
         this.inMemory = true;
 
-        var header = Buffer.from(this.file, 0, this.HeaderSize);
+        let header = Buffer.from(this.file, 0, this.HeaderSize);
         this.Reader = new BinaryReader(header);
 
         this.Header = {};
@@ -232,7 +232,7 @@ class RIMObject {
                   console.log('RIM Read', status.message);
                   return;
                 }
-                var buffer = Buffer.alloc(resource.DataSize);
+                let buffer = Buffer.alloc(resource.DataSize);
                 fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
                   console.log('RIM Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
                   fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {

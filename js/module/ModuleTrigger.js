@@ -86,13 +86,13 @@ class ModuleTrigger extends ModuleObject {
   }
 
   getGeometry(){
-    var trigGeom = new THREE.Geometry();
+    let trigGeom = new THREE.Geometry();
     trigGeom.vertices = this.vertices.slice();
 
     try{
       let holes = [];
       let triangles = THREE.ShapeUtils.triangulateShape ( trigGeom.vertices, holes );
-      for( var i = 0; i < triangles.length; i++ ){
+      for( let i = 0; i < triangles.length; i++ ){
         trigGeom.faces.push( new THREE.Face3( triangles[i][0], triangles[i][1], triangles[i][2] ));
       }
     }catch(e){
@@ -158,7 +158,7 @@ class ModuleTrigger extends ModuleObject {
   }
 
   buildGeometry(){
-    var trigGeom = this.getGeometry();
+    let trigGeom = this.getGeometry();
 
     let material = new THREE.MeshBasicMaterial({
       color: new THREE.Color( 0xFFFFFF ),

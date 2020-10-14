@@ -451,7 +451,7 @@ class ModuleMGPlayer extends ModuleObject {
     //if(!this.jumpVelcolity){
       meshesSearch = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
       intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
-      //var intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
+      //let intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
       if ( intersects.length > 0) {
         if(intersects[ 0 ].distance < 6) { 
           this.track.position.z = intersects[ 0 ].point.z + 5.75;

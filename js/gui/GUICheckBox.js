@@ -143,9 +143,9 @@ class GUICheckBox extends GUIControl{
   buildFill(){
     let extent = this.getFillExtent();
     
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
 
     material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
     
@@ -208,9 +208,9 @@ class GUICheckBox extends GUIControl{
   buildHighlightFill(){
     let extent = this.getFillExtent();
     
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
 
     material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
     

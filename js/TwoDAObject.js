@@ -116,7 +116,7 @@ class TwoDAObject {
   }
 
   getRowByIndex(index = -1){
-    for (var key of Object.keys(this.rows)) {
+    for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['__index'] == index){
         return this.rows[key];
       }
@@ -124,7 +124,7 @@ class TwoDAObject {
   }
 
   getByID(index = -1){
-    for (var key of Object.keys(this.rows)) {
+    for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['(Row Label)'] == index){
         return this.rows[key];
       }

@@ -83,7 +83,7 @@ class ObjectPropertiesWizard extends Wizard {
     try {
       let placeables = Global.kotor2DA['placeables'].rows;
       this.$list.html('').off('change');
-      for (var key in placeables) {
+      for (let key in placeables) {
         if (placeables.hasOwnProperty(key)) {
           this.$list.append('<option value="'+placeables[key]['(Row Label)']+'">'+placeables[key].modelname+'</option>');
         }
@@ -118,7 +118,7 @@ class ObjectPropertiesWizard extends Wizard {
     try {
       let doors = Global.kotor2DA['genericdoors'].rows;
       this.$list.html('').off('change');
-      for (var key in doors) {
+      for (let key in doors) {
         if (doors.hasOwnProperty(key)) {
           this.$list.append('<option value="'+doors[key]['(Row Label)']+'">'+doors[key].modelname+'</option>');
         }

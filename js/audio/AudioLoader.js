@@ -14,9 +14,9 @@ class AudioLoader {
   }
 
   static toArrayBuffer(buffer) {
-    var ab = new ArrayBuffer(buffer.length);
-    var view = new Uint8Array(ab);
-    for (var i = 0; i < buffer.length; ++i) {
+    let ab = new ArrayBuffer(buffer.length);
+    let view = new Uint8Array(ab);
+    for (let i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
     return ab;

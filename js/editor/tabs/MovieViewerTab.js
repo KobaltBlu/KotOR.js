@@ -134,7 +134,7 @@ class MovieViewerTab extends EditorTab {
 
     this.TabSizeUpdate();
 
-    var delta = this.clock.getDelta();
+    let delta = this.clock.getDelta();
 
     if(this.binkVideo.isPlaying){
       this.binkVideo.resize(this.width, this.height);

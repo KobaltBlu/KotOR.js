@@ -241,7 +241,7 @@ class ModuleEditorTab extends EditorTab {
 
     this.axes.enabled = this.axes.visible;
 
-    var delta = this.clock.getDelta();
+    let delta = this.clock.getDelta();
     //this.axes.update();
     this.controls.Update(delta);
 
@@ -742,7 +742,7 @@ class ModuleEditorTab extends EditorTab {
 
   addNewDoor() {
 
-    var vec = this.getCameraBasedPos();
+    let vec = this.getCameraBasedPos();
 
     let door = new ModuleDoor({
       'TemplateResRef': 'sw_door_dan1',
@@ -773,7 +773,7 @@ class ModuleEditorTab extends EditorTab {
 
   addNewPlaceable () {
 
-    var vec = this.getCameraBasedPos();
+    let vec = this.getCameraBasedPos();
 
     let viewportSize = this.renderer.getSize();
     let viewportMiddle = new THREE.Vector2(viewportSize.width / 2, viewportSize.height / 2);
@@ -1091,7 +1091,7 @@ class ModuleEditorTab extends EditorTab {
           //loader.SetMessage('Loading Trigger: '+(i+1)+'/'+this.triggers.length);
           /*trig.LoadTemplate( (template) => {
             let type = template.gff.GetFieldByLabel('Type').Value;
-            var trigGeom = new THREE.Geometry();
+            let trigGeom = new THREE.Geometry();
     
             //Push verticies
             for(let tgvi = 0; tgvi < trig.props.Geometry.length; tgvi++){

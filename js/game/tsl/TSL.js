@@ -665,7 +665,7 @@ class Game extends Engine {
     Game.State = Game.STATES.RUNNING;
     Game.inMenu = false;
     let _initGlobals = Global.kotor2DA.globalcat.rows;
-    for (var key in _initGlobals) {
+    for (let key in _initGlobals) {
       if (_initGlobals.hasOwnProperty(key)) {
         let globItem = _initGlobals[key];
 
@@ -1276,7 +1276,7 @@ class Game extends Engine {
 
     requestAnimationFrame( Game.Update );
 
-    var delta = Game.clock.getDelta();
+    let delta = Game.clock.getDelta();
     Game.limiter.now = Date.now();
     Game.limiter.elapsed = Game.limiter.now - Game.limiter.then;
 

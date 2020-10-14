@@ -222,7 +222,7 @@ class InlineAudioPlayer {
   }
 
   Pause(){
-    var elapsed = Game.audioEngine.audioCtx.currentTime - this.startedAt;
+    let elapsed = Game.audioEngine.audioCtx.currentTime - this.startedAt;
     this.Stop();
     this.pausedAt = elapsed;
 

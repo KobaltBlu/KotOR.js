@@ -7001,7 +7001,7 @@ NWScriptDefK1.Actions = {
   }
 };
 
-// for (var property in NWScriptDef.Actions) {
+// for (let property in NWScriptDef.Actions) {
 //   if (NWScriptDef.Actions.hasOwnProperty(property)) {
 //     if(NWScriptDefK1.Actions[property]){
 //       if(NWScriptDefK1.Actions[property].action === undefined){

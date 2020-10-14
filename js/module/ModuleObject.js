@@ -494,7 +494,7 @@ class ModuleObject {
     
     Game.raycaster.ray.direction.set(0, 0,-1);
     
-    var intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
+    let intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
     if ( intersects.length > 0 ) {
       if(intersects[ 0 ].distance < 0.5) {
         let faceIdx = intersects[0].faceIndex;
@@ -511,7 +511,7 @@ class ModuleObject {
     for(let i = 0; i < 360; i += 36) {
       Game.raycaster.ray.direction.set(Math.cos(i), Math.sin(i),-1);
       Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-      var intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
+      let intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
       if ( intersects.length > 0 ) {
         if(intersects[ 0 ].distance < 0.5){
           let faceIdx = intersects[0].faceIndex;

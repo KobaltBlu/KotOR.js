@@ -83,7 +83,7 @@ class CombatEngine {
         }
       }
 
-      for (var i = CombatEngine.combatants.length - 1; i >= 0; i--){
+      for (let i = CombatEngine.combatants.length - 1; i >= 0; i--){
         let combatant = CombatEngine.combatants[i];
         if(!combatant.combatQueue.length && combatant.combatAction == undefined){
           //CombatEngine.RemoveCombatant(combatant);

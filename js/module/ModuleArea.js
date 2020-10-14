@@ -1415,8 +1415,6 @@ class ModuleArea extends ModuleObject {
       this.grassMesh.frustumCulled = false;
       Game.group.grass.add(this.grassMesh);
 
-      //delete this.grassInstances;
-
     }
 
   }
