@@ -395,8 +395,8 @@ NWScript.ByteCodes = {
         this.stack.push(tmp_values[i].value, tmp_values[i].type);
       }
 
-      //var var1 = this.stack.getAtPointer( scope.instr.pointer );
-      //this.stack.push( var1.value, var1.type );
+      //this.var1 = this.stack.getAtPointer( scope.instr.pointer );
+      //this.stack.push( this.var1.value, this.var1.type );
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();
@@ -570,10 +570,10 @@ NWScript.ByteCodes = {
   6 : { 
     name: 'LOGANDII', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
-      if(var1 && var2)
+      if(this.var1 && this.var2)
         this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
       else
         this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -585,10 +585,10 @@ NWScript.ByteCodes = {
   7 : { 
     name: 'LOGORII', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
-      if(var1 || var2)
+      if(this.var1 || this.var2)
         this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
       else
         this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -600,10 +600,10 @@ NWScript.ByteCodes = {
   8 : { 
     name: 'INCORII', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
-      this.stack.push( var1 | var2, NWScript.DATATYPE.INTEGER );
+      this.stack.push( this.var1 | this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -612,9 +612,9 @@ NWScript.ByteCodes = {
   9 : { 
     name: 'EXCORII', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
-      this.stack.push( var1 ^ var2, NWScript.DATATYPE.INTEGER );
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
+      this.stack.push( this.var1 ^ this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -623,10 +623,10 @@ NWScript.ByteCodes = {
   10 : { 
     name: 'BOOLANDII', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
-      this.stack.push( var1 & var2, NWScript.DATATYPE.INTEGER );
+      this.stack.push( this.var1 & this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -636,17 +636,17 @@ NWScript.ByteCodes = {
     name: 'EQUAL', 
     run: function( scope = {} ){
       if(scope.instr.type == NWScript.DATATYPE.STRUCTURE){
-        var struct2 = [];
-        var struct1 = [];
+        this.struct2 = [];
+        this.struct1 = [];
 
         let count = scope.instr.sizeOfStructure / 4;
         //populate structure2's variables
         for(let i = 0; i < count; i++){
-          struct2.push(this.stack.pop().value);
+          this.struct2.push(this.stack.pop().value);
         }
         //populate structure1's variables
         for(let i = 0; i < count; i++){
-          struct1.push(this.stack.pop().value);
+          this.struct1.push(this.stack.pop().value);
         }
 
         console.log('EQUALTT', struct1, struct2);
@@ -654,7 +654,7 @@ NWScript.ByteCodes = {
         let areStructuresEqual = true;
         //Check for equality between the structures variables
         for(let i = 0; i < count; i++){
-          if(struct1[i] != struct2[i]){
+          if(this.struct1[i] != this.struct2[i]){
             areStructuresEqual = false;
           }
         }
@@ -665,36 +665,36 @@ NWScript.ByteCodes = {
           this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
 
       }else{
-        var var2 = this.stack.pop().value;
-        var var1 = this.stack.pop().value;
+        this.var2 = this.stack.pop().value;
+        this.var1 = this.stack.pop().value;
 
         switch(NWScript.Types[scope.instr.type]){
           case 'II':
-            if(var1 == var2)
+            if(this.var1 == this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'FF':
-            if(var1 == var2)
+            if(this.var1 == this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'OO':
-            if(var1 == var2)
+            if(this.var1 == this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'SS':
-            if(var1.toLowerCase() == var2.toLowerCase())
+            if(this.var1.toLowerCase() == this.var2.toLowerCase())
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'LOCLOC':
-            if(this.locationCompare(var1, var2)){
+            if(this.locationCompare(this.var1, this.var2)){
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             }else{
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
@@ -716,18 +716,18 @@ NWScript.ByteCodes = {
     name: 'NEQUAL', 
     run: function( scope = {} ){
       if(scope.instr.type == NWScript.DATATYPE.STRUCTURE){
-        var struct2 = [];
-        var struct1 = [];
+        this.struct2 = [];
+        this.struct1 = [];
 
         let count = scope.instr.sizeOfStructure / 4;
 
         //populate structure2's variables
         for(let i = 0; i < count; i++){
-          struct2.push(this.stack.pop().value);
+          this.struct2.push(this.stack.pop().value);
         }
         //populate structure1's variables
         for(let i = 0; i < count; i++){
-          struct1.push(this.stack.pop().value);
+          this.struct1.push(this.stack.pop().value);
         }
 
         console.log('NEQUALTT', struct1, struct2);
@@ -735,7 +735,7 @@ NWScript.ByteCodes = {
         let areStructuresNEqual = false;
         //Check for non equality between the structures variables
         for(let i = 0; i < count; i++){
-          if(struct1[i] != struct2[i]){
+          if(this.struct1[i] != this.struct2[i]){
             areStructuresEqual = true;
           }
         }
@@ -746,36 +746,36 @@ NWScript.ByteCodes = {
           this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
 
       }else{
-        var var2 = this.stack.pop().value;
-        var var1 = this.stack.pop().value;
+        this.var2 = this.stack.pop().value;
+        this.var1 = this.stack.pop().value;
 
         switch(NWScript.Types[scope.instr.type]){
           case 'II':
-            if(var1 != var2)
+            if(this.var1 != this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'FF':
-            if(var1 != var2)
+            if(this.var1 != this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'OO':
-            if(var1 != var2)
+            if(this.var1 != this.var2)
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'SS':
-            if(var1.toLowerCase() != var2.toLowerCase())
+            if(this.var1.toLowerCase() != this.var2.toLowerCase())
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             else
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
           break;
           case 'LOCLOC':
-            if(!this.locationCompare(var1, var2)){
+            if(!this.locationCompare(this.var1, this.var2)){
               this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
             }else{
               this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//TRUE
@@ -796,18 +796,18 @@ NWScript.ByteCodes = {
   13 : { 
     name: 'GEQ', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          if(var1 >= var2)
+          if(this.var1 >= this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
         case 'FF':
-          if(var1 >= var2)
+          if(this.var1 >= this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -824,18 +824,18 @@ NWScript.ByteCodes = {
   14 : { 
     name: 'GT', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          if(var1 > var2)
+          if(this.var1 > this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
         case 'FF':
-          if(var1 > var2)
+          if(this.var1 > this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -852,18 +852,18 @@ NWScript.ByteCodes = {
   15 : { 
     name: 'LT', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          if(var1 < var2)
+          if(this.var1 < this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
         case 'FF':
-          if(var1 < var2)
+          if(this.var1 < this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -880,18 +880,18 @@ NWScript.ByteCodes = {
   16 : { 
     name: 'LEQ', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          if(var1 <= var2)
+          if(this.var1 <= this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
         break;
         case 'FF':
-          if(var1 <= var2)
+          if(this.var1 <= this.var2)
             this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
           else
             this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -935,30 +935,30 @@ NWScript.ByteCodes = {
   20 : { 
     name: 'ADD', 
     run: function( scope = {} ){
-      var var2 = (this.stack.pop().value);
-      var var1 = (this.stack.pop().value);
+      this.var2 = (this.stack.pop().value);
+      this.var1 = (this.stack.pop().value);
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( var1 + var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1 + this.var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( var1 + var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 + this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( var1 + var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 + this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( var1 + var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 + this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'SS':
-          this.stack.push( var1 + var2, NWScript.DATATYPE.STRING );
+          this.stack.push( this.var1 + this.var2, NWScript.DATATYPE.STRING );
         break;
         case 'VV':
-          var var3 = this.stack.pop().value;
-          this.stack.push( var1 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
-          this.stack.push( var2 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
-          this.stack.push( var3 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.var3 = this.stack.pop().value;
+          this.stack.push( this.var1 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var2 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var3 + this.stack.pop().value, NWScript.DATATYPE.FLOAT );
         break;
         default:
           console.warn('ADD: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
@@ -972,27 +972,27 @@ NWScript.ByteCodes = {
   21 : { 
     name: 'SUB', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( var1 - var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1 - this.var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( var1 - var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 - this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( var1 - var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 - this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( var1 - var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 - this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'VV':
-          var var3 = this.stack.pop().value;
-          this.stack.push( var1 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
-          this.stack.push( var2 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
-          this.stack.push( var3 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.var3 = this.stack.pop().value;
+          this.stack.push( this.var1 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var2 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var3 - this.stack.pop().value, NWScript.DATATYPE.FLOAT );
         break;
         default:
           console.warn('SUB: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
@@ -1006,31 +1006,31 @@ NWScript.ByteCodes = {
   22 : { 
     name: 'MUL', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'VF':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT ); //Z
-          this.stack.push( this.stack.pop().value * var2, NWScript.DATATYPE.FLOAT ); //Y
-          this.stack.push( this.stack.pop().value * var2, NWScript.DATATYPE.FLOAT ); //X
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.FLOAT ); //Z
+          this.stack.push( this.stack.pop().value * this.var2, NWScript.DATATYPE.FLOAT ); //Y
+          this.stack.push( this.stack.pop().value * this.var2, NWScript.DATATYPE.FLOAT ); //X
         break;
         case 'FV':
-          this.stack.push( var1 * var2, NWScript.DATATYPE.FLOAT ); //Z
-          this.stack.push( var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //Y
-          this.stack.push( var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //X
+          this.stack.push( this.var1 * this.var2, NWScript.DATATYPE.FLOAT ); //Z
+          this.stack.push( this.var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //Y
+          this.stack.push( this.var1 * this.stack.pop().value, NWScript.DATATYPE.FLOAT ); //X
         break;
         default:
           console.warn('MUL: Missing Type', scope.instr.type, NWScript.Types[scope.instr.type]);
@@ -1045,26 +1045,26 @@ NWScript.ByteCodes = {
     name: 'DIV', 
     run: function( scope = {} ){
 
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( var1 / var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( var1 / var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( var1 / var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( var1 / var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'VF':
-          this.stack.push( var1 / var2, NWScript.DATATYPE.FLOAT ); //Z
-          this.stack.push( this.stack.pop().value / var2, NWScript.DATATYPE.FLOAT ); //Y
-          this.stack.push( this.stack.pop().value / var2, NWScript.DATATYPE.FLOAT ); //X
+          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.FLOAT ); //Z
+          this.stack.push( this.stack.pop().value / this.var2, NWScript.DATATYPE.FLOAT ); //Y
+          this.stack.push( this.stack.pop().value / this.var2, NWScript.DATATYPE.FLOAT ); //X
         break;
       }
     }, 
@@ -1075,26 +1075,26 @@ NWScript.ByteCodes = {
   24 : { 
     name: 'MOD', 
     run: function( scope = {} ){
-      var var2 = this.stack.pop().value;
-      var var1 = this.stack.pop().value;
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( var1%var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1%var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'VF':
-          this.stack.push( var1 % var2, NWScript.DATATYPE.FLOAT ); //Z
-          this.stack.push( this.stack.pop().value % var2, NWScript.DATATYPE.FLOAT ); //Y
-          this.stack.push( this.stack.pop().value % var2, NWScript.DATATYPE.FLOAT ); //X
+          this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.FLOAT ); //Z
+          this.stack.push( this.stack.pop().value % this.var2, NWScript.DATATYPE.FLOAT ); //Y
+          this.stack.push( this.stack.pop().value % this.var2, NWScript.DATATYPE.FLOAT ); //X
         break;
       }
     }, 
@@ -1283,8 +1283,8 @@ NWScript.ByteCodes = {
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'DECISP', this.stack.getAtPointer( scope.instr.offset));
       }
-      var var1 = (this.stack.getAtPointer( scope.instr.offset));
-      var1.value -= 1;
+      this.var1 = (this.stack.getAtPointer( scope.instr.offset));
+      this.var1.value -= 1;
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadInt32();
@@ -1296,8 +1296,8 @@ NWScript.ByteCodes = {
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'INCISP', this.stack.getAtPointer( scope.instr.offset));
       }
-      var var1 = (this.stack.getAtPointer( scope.instr.offset));
-      var1.value += 1;
+      this.var1 = (this.stack.getAtPointer( scope.instr.offset));
+      this.var1.value += 1;
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadInt32();
@@ -1355,7 +1355,7 @@ NWScript.ByteCodes = {
 
       // let stackBaseEle = this.stack.getAtBasePointer( scope.instr.pointer );
       // if(stackBaseEle == null){
-      //   var i = 0;
+      //   let i = 0;
       // }
       // this.stack.push( stackBaseEle );
     }, 
@@ -1371,8 +1371,8 @@ NWScript.ByteCodes = {
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'DECIBP', this.stack.getAtBasePointer( scope.instr.offset));
       }
-      var var1 = (this.stack.getAtBasePointer( scope.instr.offset));
-      var1.value -= 1;
+      this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
+      this.var1.value -= 1;
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadUInt32();
@@ -1384,8 +1384,8 @@ NWScript.ByteCodes = {
       if(this.isDebugging()){
         console.log('NWScript: '+this.name, 'INCIBP', this.stack.getAtBasePointer( scope.instr.offset));
       }
-      var var1 = (this.stack.getAtBasePointer( scope.instr.offset));
-      var1.value += 1;
+      this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
+      this.var1.value += 1;
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadUInt32();

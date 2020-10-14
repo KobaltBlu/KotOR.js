@@ -52,6 +52,12 @@ class NWScriptInstance {
 
     this.state = [];
 
+    this.var1 = undefined;
+    this.var2 = undefined;
+    this.var3 = undefined;
+    this.struct1 = undefined;
+    this.struct2 = undefined;
+
     this.params = [0, 0, 0, 0, 0];
     this.paramString = '';
     this.verified = false;
