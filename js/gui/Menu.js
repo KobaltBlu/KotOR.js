@@ -58,10 +58,7 @@ class GameMenu {
         //This auto assigns references for the controls to the menu object.
         //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
         //You can just use this.CONTROL_NAME 
-        for(let i = 0, len = this.tGuiPanel.children.length; i < len; i++){
-          let ctrl = this.tGuiPanel.children[i];
-          this[ctrl.name] = ctrl;
-        }
+        this.AssignChildControlsToMenu(this.tGuiPanel);
 
         TextureLoader.LoadQueue(() => {
           if(typeof args.onLoad === 'function')
@@ -75,6 +72,16 @@ class GameMenu {
     });
   }
 
+  AssignChildControlsToMenu(object = undefined){
+    if(object instanceof GUIControl){
+      for(let i = 0, len = object.children.length; i < len; i++){
+        let ctrl = object.children[i];
+        this[ctrl.name] = ctrl;
+        this.AssignChildControlsToMenu(ctrl);
+      }
+    }
+  }
+
   LoadBackground( onLoad = null ){
     if(this.background){
       TextureLoader.tpcLoader.fetch(this.background, (texture) => {
@@ -85,7 +92,7 @@ class GameMenu {
         this.backgroundSprite.scale.set( 1600, 1200, 1.0 );
         this.backgroundSprite.position.z = -1;*/
 
-        var geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
+        let geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
         this.backgroundMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, map: texture, side: THREE.DoubleSide} );
         this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
         this.backgroundSprite.position.z = -5;
