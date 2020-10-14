@@ -39,6 +39,7 @@ class GUIControl {
     this.widget.control = this;
     this.children = []; 
     this.zOffset = 1;
+    this.zIndex = 0;
 
     this.worldPosition = new THREE.Vector3();
     this.box = new THREE.Box2(
@@ -512,10 +513,15 @@ class GUIControl {
             break;
           }
 
+          gui.zIndex = this.zIndex+1;
+
           this.children.push(gui);
 
           let _cWidget = gui.createControl();
-          this.widget.add(_cWidget);
+          _cWidget.position.z = gui.zIndex;
+          
+          //this.widget.add(_cWidget);
+          this.menu.tGuiPanel.widget.add(_cWidget);
 
         }
       }
@@ -696,19 +702,20 @@ class GUIControl {
     //  parentOffsetX = parentOffsetY = 0;
     //}
 
-    if( this.parent != this.menu.tGuiPanel){
+    if( this.parent && this.parent != this.menu.tGuiPanel && !this.scale){
       parentExtent = this.menu.tGuiPanel.extent;
       parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
       parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
 
-      this.widget.position.x = this.offset.x;
-      this.widget.position.y = this.offset.y;
+      let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
+      let posY = ((this.extent.top - ( (parentExtent.height - this.extent.height) / 2 ) ));
 
+      this.widget.position.x = this.offset.x + (posX);
+      this.widget.position.y = (-posY);
       
       this.updateBounds();
 
       return;
-
     }else{
       parentOffsetX = this.menu.tGuiPanel.extent.left;
       parentOffsetY = this.menu.tGuiPanel.extent.top;
@@ -1068,9 +1075,9 @@ class GUIControl {
   buildFill(){
     let extent = this.getFillExtent();
     
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
     
     sprite.name = this.widget.name+' center fill';
     sprite.scale.x = extent.width || 0.000001;
@@ -1289,9 +1296,9 @@ class GUIControl {
   buildHighlightFill(){
     let extent = this.getFillExtent();
     
-    var geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
     
     sprite.name = this.widget.name+' highlight fill';
     sprite.scale.x = extent.width || 0.000001;
@@ -1409,8 +1416,8 @@ class GUIControl {
         this.boundingSphere = new THREE.Sphere()
       }
     
-      var positions = this.attributes.position.array
-      var itemSize = this.attributes.position.itemSize
+      let positions = this.attributes.position.array
+      let itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -1429,9 +1436,9 @@ class GUIControl {
         this.boundingBox = new THREE.Box3()
       }
     
-      var bbox = this.boundingBox
-      var positions = this.attributes.position.array
-      var itemSize = this.attributes.position.itemSize
+      let bbox = this.boundingBox
+      let positions = this.attributes.position.array
+      let itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         bbox.makeEmpty()
         return
@@ -1748,9 +1755,9 @@ class GUIControl {
     
     /*let extent = this.getHighlightExtent(side);
 
-    var geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
 
     if(this.highlight.edge != ''){
       TextureLoader.enQueue(this.highlight.edge, material, TextureLoader.Type.TEXTURE);
@@ -1813,9 +1820,9 @@ class GUIControl {
     
     /*let extent = this.getHighlightExtent(side);
 
-    var geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    var sprite = new THREE.Mesh( geometry, material );
+    let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let sprite = new THREE.Mesh( geometry, material );
 
     if(this.highlight.corner != ''){
       TextureLoader.enQueue(this.highlight.corner, material, TextureLoader.Type.TEXTURE);
@@ -1929,19 +1936,19 @@ GUIControl.colors = {
 
 GUIControl.createIndicies = require('quad-indices');
 
-var itemSize = 2
-var box = { min: [0, 0], max: [0, 0] }
+let itemSize = 2
+let box = { min: [0, 0], max: [0, 0] }
 
 global.bounds = function (positions) {
-  var count = positions.length / itemSize
+  let count = positions.length / itemSize
   box.min[0] = positions[0]
   box.min[1] = positions[1]
   box.max[0] = positions[0]
   box.max[1] = positions[1]
 
-  for (var i = 0; i < count; i++) {
-    var x = positions[i * itemSize + 0]
-    var y = positions[i * itemSize + 1]
+  for (let i = 0; i < count; i++) {
+    let x = positions[i * itemSize + 0]
+    let y = positions[i * itemSize + 1]
     box.min[0] = Math.min(x, box.min[0])
     box.min[1] = Math.min(y, box.min[1])
     box.max[0] = Math.max(x, box.max[0])
@@ -1957,13 +1964,13 @@ global.computeBox = function (positions, output) {
 
 global.computeSphere = function (positions, output) {
   bounds(positions)
-  var minX = box.min[0]
-  var minY = box.min[1]
-  var maxX = box.max[0]
-  var maxY = box.max[1]
-  var width = maxX - minX
-  var height = maxY - minY
-  var length = Math.sqrt(width * width + height * height)
+  let minX = box.min[0]
+  let minY = box.min[1]
+  let maxX = box.max[0]
+  let maxY = box.max[1]
+  let width = maxX - minX
+  let height = maxY - minY
+  let length = Math.sqrt(width * width + height * height)
   output.center.set(minX + width / 2, minY + height / 2, 0)
   output.radius = length / 2
 }
