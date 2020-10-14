@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const Game = require("../KOTOR");
+
 /* @file
  * The CharGenSkills menu class.
  */
@@ -18,10 +20,71 @@ class CharGenSkills extends GameMenu {
 
         //this.lbl_hint = this.getControlByName('LBL_HINT');
 
+        this.availPoints = 0;
+
+        this.computerUse = 0;
+        this.demolitions = 0;
+        this.stealth = 0;
+        this.awareness = 0;
+        this.persuade = 0;
+        this.repair = 0;
+        this.security = 0;
+        this.treatInjury = 0;
+
         this.BTN_BACK = this.getControlByName('BTN_BACK');
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Close();
+        });
+
+        this.BTN_RECOMMENDED.addEventListener('click', (e) => {
+
+          this.resetPoints();
+          this.availPoints = this.getMaxSkillPoints();
+          let skillOrder = this.getRecommendedOrder();
+          
+          while(this.availPoints > 0){
+            for(let i = 0; i < 8; i++){
+              let skillIndex = skillOrder[i];
+
+              if(!this.availPoints)
+                break;
+
+              switch(skillIndex){
+                case 0:
+                  this.computerUse++;
+                break;
+                case 1:
+                  this.demolitions++;
+                break;
+                case 2:
+                  this.stealth++;
+                break;
+                case 3:
+                  this.awareness++;
+                break;
+                case 4:
+                  this.persuade++;
+                break;
+                case 5:
+                  this.repair++;
+                break;
+                case 6:
+                  this.security++;
+                break;
+                case 7:
+                  this.treatInjury++;
+                break;
+              }
+              
+              if(skillIndex >= 0){
+                this.availPoints -= 1;
+              }
+            }
+          }
+
+          this.updateButtonStates();
+
         });
 
         if(typeof this.onLoad === 'function')
@@ -30,6 +93,63 @@ class CharGenSkills extends GameMenu {
       }
     })
 
+  }
+
+  Show(){
+    super.Show();
+    this.updateButtonStates();
+  }
+
+  updateButtonStates(){
+    this.COMPUTER_USE_POINTS_BTN.setText(this.computerUse);
+    this.DEMOLITIONS_POINTS_BTN.setText(this.demolitions);
+    this.STEALTH_POINTS_BTN.setText(this.stealth);
+    this.AWARENESS_POINTS_BTN.setText(this.awareness);
+    this.PERSUADE_POINTS_BTN.setText(this.persuade);
+    this.REPAIR_POINTS_BTN.setText(this.repair);
+    this.SECURITY_POINTS_BTN.setText(this.security);
+    this.TREAT_INJURY_POINTS_BTN.setText(this.treatInjury);
+
+    this.REMAINING_SELECTIONS_LBL.setText(this.availPoints);
+  }
+
+  reset(){
+    this.availPoints = this.getMaxSkillPoints();
+    this.resetPoints();
+  }
+
+  resetPoints(){
+    this.computerUse = 0;
+    this.demolitions = 0;
+    this.stealth = 0;
+    this.awareness = 0;
+    this.persuade = 0;
+    this.repair = 0;
+    this.security = 0;
+    this.treatInjury = 0;
+  }
+
+  getMaxSkillPoints(){
+    return 10 + parseInt(Game.player.classes[0].skillpointbase);
+  }
+
+  getSkillTableColumn(){
+    return Game.player.classes[0].skillstable.toLowerCase()+'_class';
+  }
+
+  getSkillTableColumnRecommended(){
+    return Game.player.classes[0].skillstable.toLowerCase()+'_reco';
+  }
+
+  getRecommendedOrder(){
+    let skillOrder = {'0': -1, '1': -1, '2': -1, '3': -1, '4': -1, '5': -1, '6': -1, '7': -1};
+    for(let i = 0; i < 8; i++){
+      let value = Global.kotor2DA.skills.rows[i][this.getSkillTableColumnRecommended()];
+      if(value != '****'){
+        skillOrder[value-1] = i;
+      }
+    }
+    return skillOrder;
   }
 
 }

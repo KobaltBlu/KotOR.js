@@ -18,6 +18,9 @@ class CharGenQuickPanel extends GameMenu {
 
         //this.lbl_hint = this.getControlByName('LBL_HINT');
 
+        this.step1 = false;
+        this.step2 = false;
+
         this.BTN_BACK = this.getControlByName('BTN_BACK');
 
         this.LBL_1 = this.getControlByName('LBL_1');
@@ -50,7 +53,6 @@ class CharGenQuickPanel extends GameMenu {
         });
 
         this.BTN_BACK.addEventListener('click', (e) => {
-
           e.stopPropagation();
           Game.CharGenMain.Close();
           Game.CharGenMain.childMenu = Game.CharGenQuickOrCustom;
@@ -59,16 +61,8 @@ class CharGenQuickPanel extends GameMenu {
 
         this.BTN_BACK.reattach(this.tGuiPanel);
 
-        this.LBL_NUM1.reattach(this.LBL_1);
-        this.LBL_NUM2.reattach(this.LBL_2);
-        this.LBL_NUM3.reattach(this.LBL_3);
-
-        //this.LBL_NUM1.widget.text.children[0].children[0].renderOrder = 5;
-        //this.LBL_NUM2.widget.text.children[0].children[0].renderOrder = 5;
-        //this.LBL_NUM3.widget.text.children[0].children[0].renderOrder = 5;
-
-        this.tGuiPanel.offset.x = 138;
-        this.tGuiPanel.offset.y = 13;
+        this.tGuiPanel.offset.x = -180;
+        this.tGuiPanel.offset.y = 85;
         this.RecalculatePosition();
 
         if(typeof this.onLoad === 'function')
@@ -76,6 +70,31 @@ class CharGenQuickPanel extends GameMenu {
 
       }
     })
+
+  }
+
+  Show(){
+    super.Show();
+
+    this.BTN_STEPNAME2.hide();
+    this.LBL_2.hide();
+    this.LBL_NUM2.hide();
+
+    this.BTN_STEPNAME3.hide();
+    this.LBL_3.hide();
+    this.LBL_NUM3.hide();
+
+    if(this.step1){
+      this.BTN_STEPNAME2.show();
+      this.LBL_2.show();
+      this.LBL_NUM2.show();
+    }
+
+    if(this.step2){
+      this.BTN_STEPNAME3.show();
+      this.LBL_3.show();
+      this.LBL_NUM3.show();
+    }
 
   }
 

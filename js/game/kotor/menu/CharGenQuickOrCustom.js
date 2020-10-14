@@ -66,6 +66,9 @@ class CharGenQuickOrCustom extends GameMenu {
           Game.CharGenMain.Close();
           Game.CharGenMain.childMenu = Game.CharGenCustomPanel;
           Game.CharGenMain.Open();
+
+          //Reset the Skills window
+          Game.CharGenSkills.reset();
         });
 
         this.BTN_BACK.addEventListener('click', (e) => {
@@ -83,10 +86,10 @@ class CharGenQuickOrCustom extends GameMenu {
 
         //Hide because this submenu is very incomplete.
         //Comment out this line to work on the custom chargen screen
-        this.CUST_CHAR_BTN.hide();
+        //this.CUST_CHAR_BTN.hide();
 
-        this.tGuiPanel.offset.x = 138;
-        this.tGuiPanel.offset.y = 13;
+        this.tGuiPanel.offset.x = -180;
+        this.tGuiPanel.offset.y = 100;
         this.RecalculatePosition();
 
         if(typeof this.onLoad === 'function')

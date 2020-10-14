@@ -66,6 +66,7 @@ class CharGenName extends GameMenu {
         this.END_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
           Game.player.firstName = this.NAME_BOX_EDIT.text.text;
+          Game.CharGenQuickPanel.step2 = true;
           this.Close();
         });
 

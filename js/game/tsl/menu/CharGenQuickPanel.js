@@ -59,14 +59,6 @@ class CharGenQuickPanel extends GameMenu {
 
         this.BTN_BACK.reattach(this.tGuiPanel);
 
-        this.LBL_NUM1.reattach(this.LBL_1);
-        this.LBL_NUM2.reattach(this.LBL_2);
-        this.LBL_NUM3.reattach(this.LBL_3);
-
-        //this.LBL_NUM1.widget.text.children[0].children[0].renderOrder = 5;
-        //this.LBL_NUM2.widget.text.children[0].children[0].renderOrder = 5;
-        //this.LBL_NUM3.widget.text.children[0].children[0].renderOrder = 5;
-
         this.RecalculatePosition();
 
         if(typeof this.onLoad === 'function')

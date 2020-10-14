@@ -45,7 +45,8 @@ class CharGenMain extends GameMenu {
         this.MODEL_LBL._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
         this.MODEL_LBL._3dView.camera.updateProjectionMatrix();
         this.MODEL_LBL.widget.fill.children[0].material.map = this.MODEL_LBL._3dView.texture.texture;
-        this.MODEL_LBL.widget.fill.children[0].material.transparent = false;
+        this.MODEL_LBL.widget.fill.children[0].material.transparent = true;
+        this.MODEL_LBL.widget.fill.children[0].material.blending = 1;
 
         Game.ModelLoader.load({
           file: 'cgbody_light',
@@ -87,8 +88,6 @@ class CharGenMain extends GameMenu {
           control.camerahook.quaternion.z,
           control.camerahook.quaternion.w
         );
-
-        control._3dView.camera.position.z = 1;
 
         //control._3dViewModel.buildSkeleton();
         control._3dViewModel.playAnimation(0, true);
@@ -138,9 +137,13 @@ class CharGenMain extends GameMenu {
       Game.player.model.parent.remove(Game.player.model);
     }catch(e){}
     this.MODEL_LBL._3dView.scene.add(Game.player.model);
+    Game.player.model.rotation.z = -Math.PI/2;
 
     let portraitId = Game.player.getPortraitId();
     let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+
+    Game.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
+    Game.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
 
     this.PORTRAIT_LBL.show();
     if(this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref){
