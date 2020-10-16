@@ -128,6 +128,7 @@ class GUIInventoryItem extends GUIProtoItem {
 
       let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
+      buttonIcon.disableTextAlignment();
       buttonIcon.extent.width = 55;
       buttonIcon.extent.height = 55;
       buttonIcon.extent.top = 0;
