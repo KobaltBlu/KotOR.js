@@ -88,64 +88,157 @@ class MenuContainer extends GameMenu {
 
   Show(){
     super.Show();
+    this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     if(this.container instanceof ModuleCreature || this.container instanceof ModulePlaceable){
       let inventory = this.container.getInventory();
       for(let i = 0; i < inventory.length; i++){
-
         let item = inventory[i];
-        this.LB_ITEMS.addItem(item, null, (control, type) => {
-          control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
-            item.getName()
-          );
-          let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS, this.LB_ITEMS.scale);
-          _ctrl2.extent.width -= 52;
-          _ctrl2.extent.left += 52;
-          _ctrl2.setList( this.LB_ITEMS );
-          this.LB_ITEMS.children.push(_ctrl2);
-          let idx2 = this.LB_ITEMS.itemGroup.children.length;
-          let item2 = _ctrl2.createControl();
-
-          let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          iconMaterial.transparent = true;
-          let iconSprite = new THREE.Sprite( iconMaterial );
-          //console.log(item.getIcon());
-          TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
-          
-          item2.spriteGroup = new THREE.Group();
-
-          let iconScale = 48;
-
-          item2.spriteGroup.position.x = -(_ctrl2.extent.width/2)-(iconScale/2); //HACK
-          item2.spriteGroup.position.y -= 4;
-          iconSprite.scale.x = iconScale;
-          iconSprite.scale.y = iconScale;
-
-          let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          hexMaterial.transparent = true;
-          let hexSprite = new THREE.Sprite( hexMaterial );
-
-          hexSprite.name = 'lbl_hex';
-          hexMaterial.map = this.protoTextures[hexSprite.name];
-          hexSprite.visible = true;
-          hexMaterial.needsUpdate = true;
-          hexSprite.scale.x = hexSprite.scale.y = iconScale;
-          item2.spriteGroup.add(hexSprite);
-
-          item2.add(item2.spriteGroup);
-          item2.spriteGroup.add(iconSprite);
-          this.LB_ITEMS.itemGroup.add(item2);
-
-          _ctrl2.addEventListener('click', (e) => {
-            e.stopPropagation();
-          });
-
-        });
+        this.LB_ITEMS.addItem(item, null);
       }
-
       TextureLoader.LoadQueue();
     }
 
+  }
+
+}
+
+class GUIInventoryItem extends GUIProtoItem {
+
+  constructor(menu = null, control = null, parent = null, scale = false){
+    super(menu, control, parent, scale);
+  }
+
+  buildFill(){}
+  buildBorder(){}
+  buildHighlight(){}
+  buildText(){}
+
+  createControl(){
+    super.createControl();
+    //Create the actual control elements below
+    let button = new GUIButton(this.menu, this.control, this, this.scale);
+    button.extent.width = 200;
+    button.text.text = this.node.getName();
+    button.text.alignment = 9;
+    button.autoCalculatePosition = false;
+    this.children.push(button);
+
+    let _buttonWidget = button.createControl();
+    _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
+    _buttonWidget.position.y = 0;
+    _buttonWidget.position.z = this.zIndex + 1;
+    this.widget.add(_buttonWidget);
+
+    let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+    buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
+    buttonIcon.text.mesh.scale.setScalar(.9);
+    buttonIcon.disableTextAlignment();
+    buttonIcon.extent.width = 42;
+    buttonIcon.extent.height = 42;
+    buttonIcon.extent.top = 0;
+    buttonIcon.extent.left = 0;
+    buttonIcon.hasBorder = false;
+    buttonIcon.hasHighlight = false;
+    buttonIcon.hasText = true;
+    buttonIcon.autoCalculatePosition = false;
+    this.children.push(buttonIcon);
+
+    let _buttonIconWidget = buttonIcon.createControl();
+    _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
+    _buttonIconWidget.position.y = 0;
+    _buttonIconWidget.position.z = this.zIndex + 1;
+
+    //Stack Count Text Position
+    if(this.node.getStackSize() >= 100){
+      buttonIcon.widget.text.position.set(6, -8, 5);
+    }else if(this.node.getStackSize() >= 10){
+      buttonIcon.widget.text.position.set(10, -8, 5);
+    }else{
+      buttonIcon.widget.text.position.set(14, -8, 5);
+    }
+
+    this.widget.add(_buttonIconWidget);
+
+    this.widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+    this.widget.iconMaterial.transparent = true;
+    this.widget.iconSprite = new THREE.Sprite( this.widget.iconMaterial );
+    //console.log(this.node.getIcon());
+    TextureLoader.enQueue(this.node.getIcon(), this.widget.iconMaterial, TextureLoader.Type.TEXTURE);
+    
+    this.widget.spriteGroup = new THREE.Group();
+    //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
+    //this.widget.spriteGroup.position.y -= 4;
+    this.widget.iconSprite.scale.x = 52;
+    this.widget.iconSprite.scale.y = 52;
+    this.widget.iconSprite.position.z = 1;
+
+    this.widget.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+    this.widget.hexMaterial.transparent = true;
+    this.widget.hexSprite = new THREE.Sprite( this.widget.hexMaterial );
+    this.widget.hexSprite.scale.x = this.widget.hexSprite.scale.y = 52;
+    this.widget.hexSprite.position.z = 1;
+
+    if(GameKey != 'TSL')
+      this.widget.spriteGroup.add(this.widget.hexSprite);
+      
+    this.widget.spriteGroup.add(this.widget.iconSprite);
+
+    if(this.node.getStackSize() >= 100){
+      this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
+      this.widget.hexMaterial.needsUpdate = true;
+    }else if(this.node.getStackSize() > 1){
+      this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
+      this.widget.hexMaterial.needsUpdate = true;
+    }else{
+      this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex');
+      this.widget.hexMaterial.needsUpdate = true;
+    }
+
+    this.onSelect = () => {
+      if(this.selected){
+        /*this.showHighlight();
+        this.hideBorder();
+        this.pulsing = true;
+        this.text.color.setRGB(1, 1, 0);
+        this.text.material.color = this.text.color;
+        this.text.material.needsUpdate = true;
+
+        button.showHighlight();
+        button.hideBorder();
+        this.widget.hexMaterial.color.setRGB(1, 1, 0);
+        button.setHighlightColor(1, 1, 0);
+        button.pulsing = true;
+        buttonIcon.pulsing = true;
+
+        button.text.color.setRGB(1, 1, 0);
+        button.text.material.color = button.text.color;
+        button.text.material.needsUpdate = true;*/
+      }else{
+        /*this.hideHighlight();
+        this.showBorder();
+        this.pulsing = false;
+        this.text.color.setRGB(0, 0.658824, 0.980392);
+        this.text.material.color = this.text.color;
+        this.text.material.needsUpdate = true;
+
+        button.hideHighlight();
+        button.showBorder();
+        this.widget.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
+        button.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
+        button.pulsing = false;
+        buttonIcon.pulsing = false;
+
+        button.text.color.setRGB(0, 0.658824, 0.980392);
+        button.text.material.color = button.text.color;
+        button.text.material.needsUpdate = true;*/
+      }
+    };
+    this.onSelect();
+
+    //StackCount Text
+    _buttonIconWidget.add(this.widget.spriteGroup);
+    return this.widget;
   }
 
 }
