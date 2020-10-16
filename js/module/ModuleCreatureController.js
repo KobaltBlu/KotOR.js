@@ -1121,7 +1121,7 @@ class ModuleCreatureController extends ModuleObject {
                   }
                 break;
                 default:
-                  if(this.getHP()/this.getMaxHP() > .25){
+                  if(this.getHP()/this.getMaxHP() > .15){
                     if(idleAnimations.indexOf(currentAnimation) == -1){
                       this.getModel().playAnimation(idleAnimations[Math.round(Math.random()*(idleAnimations.length-1))], false);
                     }
@@ -1144,7 +1144,7 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               default:
-                if(this.getHP()/this.getMaxHP() > .25){
+                if(this.getHP()/this.getMaxHP() > .15){
                   if(currentAnimation != 'walk'){
                     this.getModel().playAnimation('walk', false);
                   }
@@ -1164,7 +1164,7 @@ class ModuleCreatureController extends ModuleObject {
                 }
               break;
               default:
-                if(this.getHP()/this.getMaxHP() > .25){
+                if(this.getHP()/this.getMaxHP() > .15){
                   if(currentAnimation != 'walk'){
                     this.getModel().playAnimation('walk', false);
                   }
@@ -1235,7 +1235,7 @@ class ModuleCreatureController extends ModuleObject {
               }else{
                 if(currentAnimation != 'run'){
                   if(hasHands && bothHands){
-                    if(this.getHP() / this.getMaxHP() > .25){
+                    if(this.getHP() / this.getMaxHP() > .15){
                       switch(parseInt(rWeapon.getWeaponWield())){
                         case 2:
                           if(currentAnimation != 'runds')
@@ -1261,7 +1261,7 @@ class ModuleCreatureController extends ModuleObject {
                     }
                   }else{
                     if(hasHands && rWeapon){
-                      if(this.getHP() / this.getMaxHP() > .25){
+                      if(this.getHP() / this.getMaxHP() > .15){
                         switch(parseInt(rWeapon.getWeaponWield())){
                           case 2:
                           case 3:
@@ -1287,7 +1287,7 @@ class ModuleCreatureController extends ModuleObject {
                         }
                       }
                     }else{
-                      if(this.getHP() / this.getMaxHP() > .25){
+                      if(this.getHP() / this.getMaxHP() > .15){
                         if(!this.walk && this.model.getAnimationByName('run') && currentAnimation != 'run'){
                           this.getModel().playAnimation('run', false);
                         }else if(this.walk && this.model.getAnimationByName('walk') && currentAnimation != 'walk'){
