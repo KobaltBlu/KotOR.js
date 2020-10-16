@@ -196,12 +196,26 @@ class TextureLoader {
     if(typeof name == 'string'){
       name = name.toLowerCase();
       let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad };
-      TextureLoader.queue.push(obj);
+      if(TextureLoader.textures.has(name)){
+        setTimeout(() => {
+          TextureLoader.UpdateMaterial(obj);
+          if(typeof onLoad == 'function')
+            onLoad(TextureLoader.textures.get(name), obj)
+        }, 0);
+      }else{
+        TextureLoader.queue.push(obj);
+      }
     }else if(Array.isArray(name)){
       for(let i = 0, len = name.length; i < len; i++){
         let texName = name[i].toLowerCase();
         let obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad };
-        TextureLoader.queue.push(obj);
+        if(TextureLoader.textures.has(texName)){
+          TextureLoader.UpdateMaterial(obj);
+          if(typeof onLoad == 'function')
+            onLoad(TextureLoader.textures.get(texName), obj)
+        }else{
+          TextureLoader.queue.push(obj);
+        }
       }
     }
   }
@@ -223,9 +237,67 @@ class TextureLoader {
 
         //console.log('loadTex', tex.name);
 
-        switch(tex.type){
-          case TextureLoader.Type.TEXTURE:
-            TextureLoader.Load(tex.name, (texture = null) => {
+        TextureLoader.UpdateMaterial(tex);
+        asyncLoop._Loop();
+
+      }
+    });
+    loop.Begin(() => {
+
+      //let queue = TextureLoader.queue.slice(0);
+      TextureLoader.queue = [];
+
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
+
+  }
+
+  static UpdateMaterial(tex){
+    
+    switch(tex.type){
+      case TextureLoader.Type.TEXTURE:
+        TextureLoader.Load(tex.name, (texture = null) => {
+          if(texture != null && tex.material instanceof THREE.Material){
+
+            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+              //console.log('THREE.RawShaderMaterial', tex);
+              tex.material.uniforms.map.value = texture;
+              tex.material.map = texture;
+              tex.material.uniformsNeedUpdate = true;
+              tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+            }else{
+              tex.material.map = texture;
+              tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+            }
+
+            /*
+              //Obsolete now that the alpha value was discovered in the TPC Header
+              //This was causing all DTX5 textures to enable transparency even if they were opaque
+              //This lead to bad issues with auto sorting objects in the renderer because opaque and
+              //objects with transparency need to be on separate layers when rendering to keep everything
+              //blending smoothly. I'm leaving the commented code below just because :/
+            
+              if(texture.format == THREE.RGBA_S3TC_DXT5_Format){
+                tex.material.transparent = true;
+              }
+            */
+
+            TextureLoader.ParseTXI(texture, tex);
+
+            //Check to see if alpha value is set in the TPC Header
+            //I think this has to do with alphaTesting... Not sure...
+            if(typeof texture.header === 'object'){
+              if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
+                tex.material.transparent = true;
+              }
+            }
+
+            //tex.material.needsUpdate = true;
+            if(typeof tex.onLoad == 'function')
+              tex.onLoad(texture, tex)
+          }else if(texture == null && tex.fallback != null){
+            TextureLoader.Load(tex.fallback, (texture = null) => {
               if(texture != null && tex.material instanceof THREE.Material){
 
                 if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
@@ -264,135 +336,75 @@ class TextureLoader {
                 //tex.material.needsUpdate = true;
               }
 
-              if(texture == null && tex.fallback != null){
-                TextureLoader.Load(tex.fallback, (texture = null) => {
-                  if(texture != null && tex.material instanceof THREE.Material){
-    
-                    if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-                      //console.log('THREE.RawShaderMaterial', tex);
-                      tex.material.uniforms.map.value = texture;
-                      tex.material.map = texture;
-                      tex.material.uniformsNeedUpdate = true;
-                      tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-                    }else{
-                      tex.material.map = texture;
-                      tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-                    }
-    
-                    /*
-                      //Obsolete now that the alpha value was discovered in the TPC Header
-                      //This was causing all DTX5 textures to enable transparency even if they were opaque
-                      //This lead to bad issues with auto sorting objects in the renderer because opaque and
-                      //objects with transparency need to be on separate layers when rendering to keep everything
-                      //blending smoothly. I'm leaving the commented code below just because :/
-                    
-                      if(texture.format == THREE.RGBA_S3TC_DXT5_Format){
-                        tex.material.transparent = true;
-                      }
-                    */
-    
-                    TextureLoader.ParseTXI(texture, tex);
-    
-                    //Check to see if alpha value is set in the TPC Header
-                    //I think this has to do with alphaTesting... Not sure...
-                    if(typeof texture.header === 'object'){
-                      if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                        tex.material.transparent = true;
-                      }
-                    }
-    
-                    //tex.material.needsUpdate = true;
-                  }
-    
-                  if(typeof tex.onLoad == 'function')
-                    tex.onLoad(texture, tex)
-  
-                  asyncLoop._Loop();
-                }, TextureLoader.CACHE);
-              }else{
-                if(typeof tex.onLoad == 'function')
-                  tex.onLoad(texture, tex)
-
-                asyncLoop._Loop();
-              }
-            }, TextureLoader.CACHE);
-          break;
-          case TextureLoader.Type.LIGHTMAP:
-            TextureLoader.LoadLightmap(tex.name, (lightmap = null) => {
-              if(lightmap != null){
-                if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-                  tex.material.uniforms.lightMap.value = lightmap;
-                  tex.material.lightMap = lightmap;
-                  lightmap.updateMatrix();
-                  if(tex.material.uniforms.map.value){
-                    tex.material.uniforms.map.value.updateMatrix();
-                  }
-                  tex.material.defines.USE_LIGHTMAP = '';
-                  tex.material.defines.USE_ENVMAP = '';
-                  tex.material.defines.ENVMAP_TYPE_CUBE = '';
-                  delete tex.material.defines.IGNORE_LIGHTING;
-                  tex.material.defines.AURORA = "";
-                  tex.material.uniformsNeedUpdate = true;
-                }else{
-                  tex.material.lightMap = lightmap;
-                  tex.material.defines = tex.material.defines || {};
-                  if(tex.material.defines.hasOwnProperty('IGNORE_LIGHTING')){
-                    delete tex.material.defines.IGNORE_LIGHTING;
-                  }
-                }
-                
-                tex.material.needsUpdate = true;
-              }else{
-                if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-                  delete tex.material.defines.IGNORE_LIGHTING;
-                  tex.material.uniformsNeedUpdate = true;
-                }
-              }
-
               if(typeof tex.onLoad == 'function')
                 tex.onLoad(texture, tex)
-
-              asyncLoop._Loop();
             }, TextureLoader.CACHE);
-          break;
-          case TextureLoader.Type.PARTICLE:
-            TextureLoader.Load(tex.name, (texture = null) => {
-              if(texture != null){
-                if(tex.partGroup instanceof THREE.AuroraEmitter){
-                  tex.partGroup.material.uniforms.map.value = texture;
-                  tex.partGroup.material.map = texture;
-                  tex.partGroup.material.depthWrite = false;
-                  tex.partGroup.material.needsUpdate = true;
-
-                  //AnimatedTextures.push( new AnimatedTexture(texture, 1/tex.partGroup.node.GridX, 1/tex.partGroup.node.GridY, 16) );
-
-                }else{
-                  tex.partGroup.material.uniforms.texture.value = texture;
-                  tex.partGroup.material.map = texture;
-                  tex.partGroup.material.depthWrite = false;
-                  tex.partGroup.material.needsUpdate = true;
-                }
+          }else{
+            if(typeof tex.onLoad == 'function')
+              tex.onLoad(texture, tex)
+          }
+        }, TextureLoader.CACHE);
+      break;
+      case TextureLoader.Type.LIGHTMAP:
+        TextureLoader.LoadLightmap(tex.name, (lightmap = null) => {
+          if(lightmap != null){
+            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+              tex.material.uniforms.lightMap.value = lightmap;
+              tex.material.lightMap = lightmap;
+              lightmap.updateMatrix();
+              if(tex.material.uniforms.map.value){
+                tex.material.uniforms.map.value.updateMatrix();
               }
+              tex.material.defines.USE_LIGHTMAP = '';
+              tex.material.defines.USE_ENVMAP = '';
+              tex.material.defines.ENVMAP_TYPE_CUBE = '';
+              delete tex.material.defines.IGNORE_LIGHTING;
+              tex.material.defines.AURORA = "";
+              tex.material.uniformsNeedUpdate = true;
+            }else{
+              tex.material.lightMap = lightmap;
+              tex.material.defines = tex.material.defines || {};
+              if(tex.material.defines.hasOwnProperty('IGNORE_LIGHTING')){
+                delete tex.material.defines.IGNORE_LIGHTING;
+              }
+            }
+            
+            tex.material.needsUpdate = true;
+          }else{
+            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+              delete tex.material.defines.IGNORE_LIGHTING;
+              tex.material.uniformsNeedUpdate = true;
+            }
+          }
 
-              if(typeof tex.onLoad == 'function')
-                tex.onLoad(texture, tex)
+          if(typeof tex.onLoad == 'function')
+            tex.onLoad(texture, tex)
+        }, TextureLoader.CACHE);
+      break;
+      case TextureLoader.Type.PARTICLE:
+        TextureLoader.Load(tex.name, (texture = null) => {
+          if(texture != null){
+            if(tex.partGroup instanceof THREE.AuroraEmitter){
+              tex.partGroup.material.uniforms.map.value = texture;
+              tex.partGroup.material.map = texture;
+              tex.partGroup.material.depthWrite = false;
+              tex.partGroup.material.needsUpdate = true;
 
-              asyncLoop._Loop();
-            }, TextureLoader.CACHE);
-          break;
-        }
+              //AnimatedTextures.push( new AnimatedTexture(texture, 1/tex.partGroup.node.GridX, 1/tex.partGroup.node.GridY, 16) );
 
-      }
-    });
-    loop.Begin(() => {
+            }else{
+              tex.partGroup.material.uniforms.texture.value = texture;
+              tex.partGroup.material.map = texture;
+              tex.partGroup.material.depthWrite = false;
+              tex.partGroup.material.needsUpdate = true;
+            }
+          }
 
-      //let queue = TextureLoader.queue.slice(0);
-      TextureLoader.queue = [];
-
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
-
+          if(typeof tex.onLoad == 'function')
+            tex.onLoad(texture, tex)
+        }, TextureLoader.CACHE);
+      break;
+    }
   }
 
   static ParseTXI(texture, tex){
