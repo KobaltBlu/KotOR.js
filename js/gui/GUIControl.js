@@ -484,7 +484,7 @@ class GUIControl {
     }
 
     if(this.text.font != ''){
-      TextureLoader.enQueue(this.text.font, null, TextureLoader.Type.TEXTURE, (texture) => {
+      TextureLoader.enQueue(this.text.font, this.text.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.text.font, texture);
 
@@ -1693,6 +1693,10 @@ class GUIControl {
     let size = new THREE.Vector3();
     this.text.geometry.boundingBox.getSize(size);
     this.widget.text.position.z = this.zOffset;
+
+    if(!this.text.alignment)
+      return;
+
     switch(this.text.alignment){
       case 9:
         this.widget.text.position.x = - (this.extent.width/2 - size.x/2) - size.x/2;
@@ -1704,6 +1708,10 @@ class GUIControl {
         this.widget.text.position.y = size.y/2;
       break;
     }
+  }
+
+  disableTextAlignment(){
+    this.text.alignment = 0;
   }
 
   getRendererSize(){
