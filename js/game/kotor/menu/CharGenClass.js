@@ -144,8 +144,6 @@ class CharGenClass extends GameMenu {
 
     InitCharacter3D(control, nth = 0, onLoad = null){
 
-      //console.log('3D Texture', control._3dView.texture.texture);
-
       if(control._3dViewModel instanceof THREE.AuroraModel){
         control._3dViewModel.dispose();
         control._3dViewModel = undefined;
@@ -178,14 +176,14 @@ class CharGenClass extends GameMenu {
             control.camerahook.quaternion.w
           );
 
-          control._3dView.camera.position.z = 1;
+          control._3dView.camera.position.z = .9;
 
           let template = this.GetPlayerTemplate(nth);
           control.objectCreature = new ModuleCreature(template);
           control.objectCreature.Load( () => {
             control.objectCreature.LoadModel( (model) => {
               model.position.set(0, 0, 0);
-              model.rotation.z = -Math.PI/2
+              model.rotation.z = -Math.PI/2;
               model.box = new THREE.Box3().setFromObject(model);
               control.char = model;
               //control._3dViewModel.children[0].children[1].add(control.char);
@@ -210,14 +208,16 @@ class CharGenClass extends GameMenu {
         context: control._3dView
       });
 
+      control.widget.fill.children[0].material.map = control._3dView.texture.texture;
+      control.widget.fill.children[0].material.transparent = true;
+      control.widget.fill.children[0].material.blending = 1;
+
     }
 
     GetPlayerTemplate(nth = 0){
 
       let template = new GFFObject();
-
       let idx = Math.floor(Math.random() * 15);
-
       let classId = 0;
 
       switch(nth){
@@ -365,9 +365,7 @@ class CharGenClass extends GameMenu {
           let btnControl = this['BTN_SEL'+(i+1)];
           if(modelControl.objectCreature){
             modelControl.objectCreature.update(delta);
-          }
-          modelControl._3dView.render(delta);
-          modelControl.widget.fill.children[0].material.needsUpdate = true;          
+          }     
 
           if(btnControl.hover){
             if(CharGenClass.HoveredClass != i){
@@ -384,25 +382,26 @@ class CharGenClass extends GameMenu {
               modelControl.extent.height++;
               modelControl.extent.width++;
             }
-
           }else{
-              
             if(btnControl.extent.height > 193){
               btnControl.extent.height--;
               btnControl.extent.width--;
             }
-              
 
             if(modelControl.extent.height > 187){
               modelControl.extent.height--;
               modelControl.extent.width--;
             }
-
           }
+
+          //Upscale the renderer a bit so that it will look a little better at this smaller size
+          modelControl._3dView.setSize(modelControl.extent.width * 2, modelControl.extent.height * 2);
+          //Render the frame
+          modelControl._3dView.render(delta);
+          modelControl.widget.fill.children[0].material.needsUpdate = true;
 
           btnControl.resizeControl();
           modelControl.resizeControl();
-
         }
 
         //

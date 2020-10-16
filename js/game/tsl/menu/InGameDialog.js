@@ -49,7 +49,7 @@ class MenuDialog extends GameMenu {
         this.barHeight = 100;
 
         let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-        let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+        let material = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x00000), side: THREE.DoubleSide} );
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
@@ -1804,10 +1804,10 @@ class MenuDialog extends GameMenu {
 
   updateTextPosition(){
 
-    if(typeof this.LBL_MESSAGE.textGeometry !== 'undefined'){
-      this.LBL_MESSAGE.textGeometry.computeBoundingBox();
+    if(typeof this.LBL_MESSAGE.text.geometry !== 'undefined'){
+      this.LBL_MESSAGE.text.geometry.computeBoundingBox();
 
-      let bb = this.LBL_MESSAGE.textGeometry.boundingBox;
+      let bb = this.LBL_MESSAGE.text.geometry.boundingBox;
       let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
       let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
       let padding = 10;

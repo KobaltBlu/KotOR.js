@@ -26,13 +26,15 @@ class GUICheckBox extends GUIControl{
       let selected = control.GetFieldByLabel('SELECTED').GetChildStructs()[0];
       this.selected = {};
 
-      if(selected.HasField('COLOR'))
-        this.selected.color = selected.GetFieldByLabel('COLOR').GetVector();
+      if(selected.HasField('COLOR')){
+        let color = selected.GetFieldByLabel('COLOR').GetVector();
+        selected.color = new THREE.Color(color.x, color.y, color.z);
+      }
 
       if(typeof this.selected.color !== 'undefined'){
-        this.selected.color.x = 0.0;
-        this.selected.color.y = 0.658824;
-        this.selected.color.z = 0.980392;
+        this.selected.color.r = 0.0;
+        this.selected.color.g = 0.658824;
+        this.selected.color.b = 0.980392;
       }
 
       this.selected.dimension = selected.GetFieldByLabel('DIMENSION').GetValue() || 0;
@@ -47,14 +49,14 @@ class GUICheckBox extends GUIControl{
 
     if(this.hasBorder){
 
-      this.cbMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.cbMaterial = new THREE.SpriteMaterial( { map: null, color: this.text.color } );
       this.cbMaterial.transparent = true;
       this.cb = new THREE.Sprite( this.cbMaterial );
       this.widget.add(this.cb);
       this.cb.name = 'cb';
       this.cb.scale.x = 32;
       this.cb.scale.y = 32;
-      this.cbMaterial.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
+      //this.cbMaterial.color.setRGB(this.text.color.r, this.text.color.g, this.text.color.b);
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
@@ -144,10 +146,10 @@ class GUICheckBox extends GUIControl{
     let extent = this.getFillExtent();
     
     let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {color: this.text.color, side: THREE.DoubleSide} );
     let sprite = new THREE.Mesh( geometry, material );
 
-    material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
+    //material.color.setRGB(this.text.r, this.text.color.g, this.text.color.b);
     
     sprite.name = this.widget.name+' center fill';
     sprite.scale.x = extent.height || 0.000001;
@@ -209,10 +211,10 @@ class GUICheckBox extends GUIControl{
     let extent = this.getFillExtent();
     
     let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {color: this.text.color, side: THREE.DoubleSide} );
     let sprite = new THREE.Mesh( geometry, material );
 
-    material.color.setRGB(this.text.color.x, this.text.color.y, this.text.color.z);
+    //material.color.setRGB(this.text.color.r, this.text.color.g, this.text.color.b);
     
     sprite.name = this.widget.name+' highlight fill';
     sprite.scale.x = extent.height || 0.000001;

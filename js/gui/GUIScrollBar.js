@@ -27,7 +27,7 @@ class GUIScrollBar extends GUIControl{
           
           //Up Arrow
           this.upArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
-          this.upArrowMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, map: this.arrowTex, side: THREE.DoubleSide} );
+          this.upArrowMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: this.arrowTex, side: THREE.DoubleSide} );
           this.upArrow = new THREE.Mesh( this.upArrowGeometry, this.upArrowMaterial );
 
           this.widget.add(this.upArrow);
@@ -62,7 +62,7 @@ class GUIScrollBar extends GUIControl{
 
           //Down Arrow
           this.downArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
-          this.downArrowMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, map: this.arrowTex, side: THREE.DoubleSide} );
+          this.downArrowMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: this.arrowTex, side: THREE.DoubleSide} );
           this.downArrow = new THREE.Mesh( this.downArrowGeometry, this.downArrowMaterial );
 
           this.widget.add(this.downArrow);
@@ -109,12 +109,12 @@ class GUIScrollBar extends GUIControl{
 
     if(this.control.HasField('THUMB')){
       this._thumb = this.control.GetFieldByLabel('THUMB').GetChildStructs()[0];
-      /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
       this.thumbMaterial.transparent = true;
       this.thumb = new THREE.Sprite( this.thumbMaterial );*/
 
       this.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      this.thumbMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+      this.thumbMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
       this.thumb = new THREE.Mesh( this.geometry, this.thumbMaterial );
 
       this.widget.add(this.thumb);
@@ -311,78 +311,6 @@ class GUIScrollBar extends GUIControl{
       width: this.extent.width - 8,// + (this.padding * 2),
       height: this.extent.height - 8// + (this.padding * 2)
     };
-  }
-  
-  getBorderExtent(side = null){
-    let extent = this.getControlExtent();
-    let inner = this.getInnerSize2();
-    let innerOffset = this.border.inneroffset;
-    switch(side){
-      case 'top':
-        return {
-          top: -( (inner.height/2) + (this.border.dimension) - innerOffset ), 
-          left: 0, 
-          width: inner.width - (innerOffset ),
-          height: this.border.dimension
-        };
-      break;
-      case 'bottom':
-        return {
-          top: (inner.height/2) + (this.border.dimension) - innerOffset, 
-          left: 0, 
-          width: inner.width - (innerOffset ),
-          height: this.border.dimension
-        };
-      break;
-      case 'left':
-        return {
-          top: 0, 
-          left: -(inner.width/2) - (this.border.dimension) + innerOffset, 
-          width: inner.height - (innerOffset ),
-          height: this.border.dimension
-        };
-      break;
-      case 'right':
-        return {
-          top: 0, 
-          left: (this.border.dimension) + (inner.width/2) - innerOffset, 
-          width: inner.height - (innerOffset ),
-          height: this.border.dimension
-        };
-      break;
-      case 'topLeft':
-        return {
-          top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
-          left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
-          width: this.border.dimension,
-          height: this.border.dimension
-        };
-      break;
-      case 'topRight':
-        return {
-          top: ((this.border.dimension) + (inner.height/2)) - innerOffset, 
-          left: ((this.border.dimension) + (inner.width/2)) - innerOffset, 
-          width: this.border.dimension,
-          height: this.border.dimension
-        };
-      break;
-      case 'bottomLeft':
-        return {
-          top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
-          left: -((this.border.dimension) + (inner.width/2)) + innerOffset, 
-          width: this.border.dimension,
-          height: this.border.dimension
-        };
-      break;
-      case 'bottomRight':
-        return {
-          top: -((this.border.dimension) + (inner.height/2)) + innerOffset, 
-          left: ((this.border.dimension) + (inner.width / 2)) - innerOffset, 
-          width: this.border.dimension,
-          height: this.border.dimension
-        };
-      break;
-    }
   }
 
   calculatePosition(){

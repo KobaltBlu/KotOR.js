@@ -42,7 +42,7 @@ class InGameBark extends GameMenu {
       this.LBL_BARKTEXT.setText(entry.text);
 
       let size = new THREE.Vector3();
-      this.LBL_BARKTEXT.textGeometry.boundingBox.getSize(size);
+      this.LBL_BARKTEXT.text.geometry.boundingBox.getSize(size);
       
       //this.tGuiPanel.extent.width = Math.ceil(size.x) + 14;
       this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;

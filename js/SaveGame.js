@@ -121,11 +121,9 @@ class SaveGame {
   GetThumbnail( onLoad = null ){
 
     if(this.thumbnail == null){
-      console.log(path.join(this.directory, 'Screen.tga'));
       TextureLoader.tgaLoader.load_local(
         path.join(this.directory, 'Screen.tga'),
         (texture) => {
-          console.log(texture)
           this.thumbnail = texture;
           if(typeof onLoad === 'function'){
             onLoad(this.thumbnail);
@@ -150,7 +148,6 @@ class SaveGame {
       name = this['PORTRAIT'+nth];
     }
     if(typeof name === 'string'){
-      console.log('SaveGame', 'GetPortrait', nth, name);
       TextureLoader.Load(name, (texture) => {
         if(typeof onLoad === 'function'){
           onLoad(texture);
@@ -319,7 +316,6 @@ class SaveGame {
     for(let i = 0; i < this.SAVEGAME.KeyList.length; i++){
       if(this.SAVEGAME.KeyList[i].ResRef.toLowerCase() === name.toLowerCase()){
         this.SAVEGAME.getRawResource(this.SAVEGAME.KeyList[i].ResRef, this.SAVEGAME.KeyList[i].ResType, (sav) => {
-          
           new ERFObject(sav, (rim) => {
             console.log('SaveGame', 'GetModuleRum', rim);
             if(typeof onLoad === 'function')

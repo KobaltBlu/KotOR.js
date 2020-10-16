@@ -14,23 +14,7 @@ class GUIControl {
     this.parent = parent;
     this.scale = scale;
     this.iniProperty = undefined;
-
-    this.textGeometry = new THREE.BufferGeometry();
-
-    this.textGeometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
-
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    this.textGeometry.setAttribute( 'position', posAttribute );
-    this.textGeometry.setAttribute( 'uv', uvAttribute );
-
-    this.textGeometry.index.needsUpdate = true;
-    this.textGeometry.attributes.position.needsUpdate = true;
-    this.textGeometry.attributes.uv.needsUpdate = true;
-
-    this.textMaterial = undefined;
-    this.textMesh = undefined;
-    this.textAnchor = new THREE.Object3D();
+    this.autoCalculatePosition = true;
 
     this.anchor = 'none';
     this.offset = new THREE.Vector2();
@@ -90,6 +74,7 @@ class GUIControl {
     this.onMouseOut = null;
     this.onDrag = null;
     this.onDragEnd = null;
+    this.onHover = null;
 
     this.onKeyUp = null;
     this.onKeyDown = null;
@@ -111,8 +96,237 @@ class GUIControl {
     this.widget.add(this.widget.fill);
     this.widget.add(this.widget.text);
 
-    this.widget._control = this;
-    if(control instanceof Struct){
+    this.initObjects();
+    this.initInputListeners();
+    this.initProperties();
+    this.initTextures();
+
+  }
+
+  initObjects(){
+    //--------//
+    // Extent
+    //--------//
+
+    this.extent = {
+      top: 0,
+      left: 0,
+      width: 0,
+      height: 0
+    };
+
+    //--------//
+    // Border
+    //--------//
+
+    this.border = {
+      color: new THREE.Color(0, 0.658824, 0.980392),
+      corner: '',
+      edge: '',
+      fill: '',
+      fillstyle: -1,
+      dimension: 0,
+      inneroffset: 0,
+      inneroffsety: 0,
+      pulsing: 0
+    };
+
+    this.border.geometry = new THREE.BufferGeometry();
+    this.border.edge_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
+    this.border.corner_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
+    this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
+    this.widget.border.add(this.border.mesh);
+
+    //-----------//
+    // Highlight
+    //-----------//
+
+    this.highlight = {
+      color: new THREE.Color(1, 1, 0),
+      corner: '',
+      edge: '',
+      fill: '',
+      fillstyle: -1,
+      dimension: 0,
+      inneroffset: 0,
+      inneroffsety: 0,
+      pulsing: 0
+    };
+
+    this.highlight.geometry = new THREE.BufferGeometry();
+    this.highlight.edge_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
+    this.highlight.corner_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
+    this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
+    this.widget.highlight.add(this.highlight.mesh);
+
+    //------//
+    // Text
+    //------//
+
+    this.text = {
+      color: new THREE.Color(0, 0.658824, 0.980392),
+      font: '', //fnt_d16x16b
+      strref: -1,
+      text: '',
+      alignment: 9, //9 //18 //17
+      pulsing: 0
+    };
+
+    this.text.geometry = new THREE.BufferGeometry();
+    this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
+
+    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    this.text.geometry.setAttribute( 'position', posAttribute );
+    this.text.geometry.setAttribute( 'uv', uvAttribute );
+
+    this.text.geometry.index.needsUpdate = true;
+    this.text.geometry.attributes.position.needsUpdate = true;
+    this.text.geometry.attributes.uv.needsUpdate = true;
+
+    this.text.material = new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
+    this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
+    //this.widget.text.add(this.text.mesh);
+
+    //--------//
+    // MoveTo
+    //--------//
+
+    this.moveTo = {
+      up: 0,
+      down: 0,
+      left: 0,
+      right: 0
+    };
+  }
+
+  initInputListeners(){
+    //---------//
+    //  Border
+    //---------//
+
+    this.border.mesh.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    this.border.mesh.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    this.border.mesh.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
+    }
+
+    this.border.mesh.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    this.border.mesh.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    this.border.mesh.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    this.border.mesh.getControl = () => {
+      return this;
+    }
+
+    this.border.mesh.name = 'GUIBorder';
+    this.border.mesh.position.z = this.zOffset;
+
+    /*if(this.border.mesh.parent)
+      this.border.mesh.parent.remove(this.border.mesh);
+
+    this.widget.border.add(this.border.mesh);*/
+
+    //-----------//
+    // Highlight
+    //-----------//
+
+    this.highlight.mesh.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    this.highlight.mesh.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    this.highlight.mesh.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
+    }
+
+    this.highlight.mesh.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    this.highlight.mesh.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    this.highlight.mesh.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    this.highlight.mesh.getControl = () => {
+      return this;
+    }
+
+    this.highlight.mesh.name = 'GUIHighlight';
+    this.highlight.mesh.position.z = this.zOffset;
+
+    /*if(this.highlight.mesh.parent)
+      this.highlight.mesh.parent.remove(this.highlight.mesh);
+
+    this.widget.highlight.add(this.highlight.mesh);*/
+
+    //------//
+    // Text
+    //------//
+
+    this.text.mesh.isClickable = (e) => {
+      return this.isClickable();
+    };
+
+    this.text.mesh.onClick = (e) => {
+      this.processEventListener('click', [e]);
+    };
+
+    this.text.mesh.onMouseMove = (e) =>{
+      this.processEventListener('mouseMove', [e]);
+    }
+
+    this.text.mesh.onMouseDown = (e) => {
+      this.processEventListener('mouseDown', [e]);
+    };
+
+    this.text.mesh.onMouseUp = (e) => {
+      this.processEventListener('mouseUp', [e]);
+    };
+    
+    this.text.mesh.onHover = (e) => {
+      this.processEventListener('hover', [e]);
+    };
+
+    this.text.mesh.getControl = () => {
+      return this;
+    }
+
+    this.text.mesh.name = 'GUIText';
+    this.text.mesh.position.z = this.zOffset;
+    this.text.mesh.renderOrder = 5;
+
+    /*if(this.text.mesh.parent)
+      this.text.mesh.parent.remove(this.text.mesh);
+
+    this.widget.text.add(this.text.mesh);*/
+  }
+
+  initProperties(){
+    if(this.control instanceof Struct){
+      let control = this.control;
+
       this.type = ( control.HasField('CONTROLTYPE') ? control.GetFieldByLabel('CONTROLTYPE').GetValue() : -1 );
       this.widget.name = this.name = ( control.HasField('TAG') ? control.GetFieldByLabel('TAG').GetValue() : -1 );
       this.id = ( control.HasField('ID') ? control.GetFieldByLabel('ID').GetValue() : -1 );
@@ -126,24 +340,11 @@ class GUIControl {
       this.hasExtent = control.HasField('EXTENT');
       if(this.hasExtent){
         let extent = control.GetFieldByLabel('EXTENT').GetChildStructs()[0];
-        this.extent = {};
         this.extent.top = extent.GetFieldByLabel('TOP').GetValue();
         this.extent.left = extent.GetFieldByLabel('LEFT').GetValue();
         this.extent.width = extent.GetFieldByLabel('WIDTH').GetValue();
         this.extent.height = extent.GetFieldByLabel('HEIGHT').GetValue();
       }
-
-      this.border = {
-        color: new THREE.Color(),
-        corner: '',
-        edge: '',
-        fill: '',
-        fillstyle: -1,
-        dimension: 0,
-        inneroffset: 0,
-        inneroffsety: 0,
-        pulsing: 0
-      };
   
       //Border
       this.hasBorder = control.HasField('BORDER');
@@ -151,8 +352,8 @@ class GUIControl {
         let border = control.GetFieldByLabel('BORDER').GetChildStructs()[0];
 
         if(border.HasField('COLOR')){
-          let colorV = border.GetFieldByLabel('COLOR').GetVector();
-          this.border.color = new THREE.Color(colorV.x, colorV.y, colorV.z);
+          let color = border.GetFieldByLabel('COLOR').GetVector();
+          this.border.color.setRGB(color.x, color.y, color.z)
         }
   
         if(typeof this.border.color === 'undefined'){
@@ -169,64 +370,7 @@ class GUIControl {
         if(border.HasField('INNEROFFSETY'))
           this.border.inneroffsety = border.GetFieldByLabel('INNEROFFSETY').GetValue();
 
-
         this.border.pulsing = border.GetFieldByLabel('PULSING').GetValue() || 0;
-
-        this.border.geometry = new THREE.BufferGeometry();
-
-        this.border.edge_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
-        this.border.corner_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
-        this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
-
-        this.border.mesh.name = 'GUIBorder';
-        this.border.mesh.position.z = this.zOffset;
-        this.widget.border.add(this.border.mesh);
-
-        this.border.mesh.isClickable = (e) => {
-          return this.isClickable();
-        };
-
-        this.border.mesh.onClick = (e) => {
-          this.processEventListener('click', [e]);
-        };
-
-        this.border.mesh.onMouseMove = (e) =>{
-          this.processEventListener('mouseMove', [e]);
-        }
-
-        this.border.mesh.onMouseDown = (e) => {
-          this.processEventListener('mouseDown', [e]);
-        };
-
-        this.border.mesh.onMouseUp = (e) => {
-          this.processEventListener('mouseUp', [e]);
-        };
-        
-        this.border.mesh.onHover = (e) => {
-          this.processEventListener('hover', [e]);
-        };
-
-        this.border.mesh.getControl = () => {
-          return this;
-        }
-
-        if(this.border.edge != ''){
-          TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
-            //texture.offset.x = 0.1;
-            //texture.offset.y = 0.1;
-            texture.wrapS = THREE.ClampToEdgeWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-          });
-        }
-
-        if(this.border.corner != ''){
-          TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
-            //texture.offset.x = 0.1;
-            //texture.offset.y = 0.1;
-            texture.wrapS = THREE.ClampToEdgeWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-          });
-        }
 
       }
   
@@ -234,19 +378,20 @@ class GUIControl {
       this.hasText = control.HasField('TEXT');
       if(this.hasText){
         let text = control.GetFieldByLabel('TEXT').GetChildStructs()[0];
-        this.text = {};
         this.text.font = text.GetFieldByLabel('FONT').GetValue();
         this.text.strref = text.GetFieldByLabel('STRREF').GetValue();
         this.text.text = ( text.HasField('TEXT') ? text.GetFieldByLabel('TEXT').GetValue().replace(/\{.*\}/gi, '') : '' );
         this.text.alignment = text.GetFieldByLabel('ALIGNMENT').GetValue();
         this.text.pulsing = text.GetFieldByLabel('PULSING').GetValue();
 
-        if(this.text.font == 'fnt_d16x16'){ //|| this.text.font == 'dialogfont10x10'){
+        if(this.text.font == 'fnt_d16x16'){
           this.text.font = 'fnt_d16x16b';
         }
 
-        if(text.HasField('COLOR'))
-          this.text.color = text.GetFieldByLabel('COLOR').GetVector();
+        if(text.HasField('COLOR')){
+          let color = text.GetFieldByLabel('COLOR').GetVector();
+          this.text.color.setRGB(color.x, color.y, color.z)
+        }
 
         if(typeof this.text.color === 'undefined'){
           this.text.color = this.defaultColor;
@@ -256,13 +401,12 @@ class GUIControl {
   
       //Highlight
       this.hasHighlight = control.HasField('HILIGHT');
-      this.highlight = {};
       if(this.hasHighlight){
         let highlight = control.GetFieldByLabel('HILIGHT').GetChildStructs()[0];
 
         if(highlight.HasField('COLOR')){
-          let colorV = highlight.GetFieldByLabel('COLOR').GetVector();
-          this.highlight.color = new THREE.Color(colorV.x, colorV.y, colorV.z);
+          let color = highlight.GetFieldByLabel('COLOR').GetVector();
+          this.highlight.color.setRGB(color.x, color.y, color.z);
         }
   
         if(typeof this.highlight.color === 'undefined'){
@@ -281,74 +425,76 @@ class GUIControl {
 
         this.highlight.pulsing = highlight.GetFieldByLabel('PULSING').GetValue() || 0;
 
-        this.highlight.geometry = new THREE.BufferGeometry();
-
-        this.highlight.edge_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
-        this.highlight.corner_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
-        this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
-
-        this.highlight.mesh.name = 'GUIHighlight';
-        this.highlight.mesh.position.z = this.zOffset;
-        this.widget.highlight.add(this.highlight.mesh);
-
-        this.highlight.mesh.isClickable = (e) => {
-          return this.isClickable();
-        };
-
-        this.highlight.mesh.onClick = (e) => {
-          this.processEventListener('click', [e]);
-        };
-
-        this.highlight.mesh.onMouseMove = (e) =>{
-          this.processEventListener('mouseMove', [e]);
-        }
-
-        this.highlight.mesh.onMouseDown = (e) => {
-          this.processEventListener('mouseDown', [e]);
-        };
-
-        this.highlight.mesh.onMouseUp = (e) => {
-          this.processEventListener('mouseUp', [e]);
-        };
-        
-        this.highlight.mesh.onHover = (e) => {
-          this.processEventListener('hover', [e]);
-        };
-
-        this.highlight.mesh.getControl = () => {
-          return this;
-        }
-
-        if(this.highlight.edge != ''){
-          TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
-            //texture.offset.x = 0.1;
-            //texture.offset.y = 0.1;
-            texture.wrapS = THREE.ClampToEdgeWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-          });
-        }
-
-        if(this.highlight.corner != ''){
-          TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
-            //texture.offset.x = 0.1;
-            //texture.offset.y = 0.1;
-            texture.wrapS = THREE.ClampToEdgeWrapping;
-            texture.wrapT = THREE.ClampToEdgeWrapping;
-          });
-        }
-
       }
   
       //Moveto
       this.hasMoveTo = control.HasField('MOVETO');
       if(this.hasMoveTo){
         let moveTo = control.GetFieldByLabel('MOVETO').GetChildStructs()[0];
-        this.moveTo = {};
         this.moveTo.down = moveTo.GetFieldByLabel('DOWN').GetValue();
         this.moveTo.left = moveTo.GetFieldByLabel('LEFT').GetValue();
         this.moveTo.right = moveTo.GetFieldByLabel('RIGHT').GetValue();
         this.moveTo.up = moveTo.GetFieldByLabel('UP').GetValue();
       }
+    }else if(typeof controll !== 'undefined'){
+      //TODO
+    }
+  }
+
+  initTextures(){
+
+    if(this.border.edge != ''){
+      TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(!texture)
+          console.log('initTextures', this.border.edge, texture);
+
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+      });
+    }
+
+    if(this.border.corner != ''){
+      TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(!texture)
+          console.log('initTextures', this.border.corner, texture);
+
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+      });
+    }
+
+    if(this.highlight.edge != ''){
+      TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(!texture)
+          console.log('initTextures', this.highlight.edge, texture);
+
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+      });
+    }
+
+    if(this.highlight.corner != ''){
+      TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(!texture)
+          console.log('initTextures', this.highlight.corner, texture);
+
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+      });
+    }
+
+    if(this.text.font != ''){
+      TextureLoader.enQueue(this.text.font, null, TextureLoader.Type.TEXTURE, (texture) => {
+        if(!texture)
+          console.log('initTextures', this.text.font, texture);
+
+        if(texture){
+          this.text.texture = texture;
+          this.text.material.map = texture;
+          this.text.material.needsUpdate = true;
+          this.onFontTextureLoaded();
+        }
+      });
     }
 
   }
@@ -378,6 +524,9 @@ class GUIControl {
 
   onHoverIn(){
 
+    if(!this.hover && typeof this.onHover === 'function')
+      this.onHover();
+
     this.hover = true;
 
     if(typeof this.onMouseIn === 'function')
@@ -390,12 +539,17 @@ class GUIControl {
       }
     }
 
-    this.hideBorder();
+    if(this.highlight.texture)
+      this.hideBorder();
 
     if(this.isClickable()){
       Game.guiAudioEmitter.PlaySound('gui_scroll');
     }
     
+  }
+
+  onFontTextureLoaded(){
+    this.buildText();
   }
 
   resizeControl(){
@@ -447,41 +601,26 @@ class GUIControl {
     }
 
     this.buildFill();
-
-    if(this.hasText){
-      if(this.text.font && !(this.text.texture instanceof THREE.Texture)){
-        TextureLoader.enQueue(this.text.font, null, TextureLoader.Type.TEXTURE, (texture) => {
-          this.text.texture = texture;
-        });
-        TextureLoader.LoadQueue(() => {
-          this.buildText();
-          this._onCreate();
-          //Calculate the widget screen position
-          this.calculatePosition();
-          //this.buildChildren();
-        });
-        /*TextureLoader.tpcLoader.fetch(this.text.font, (texture) => {
-          
-        });*/
-      }else{
-        this.buildText();
-        this._onCreate();
-        //Calculate the widget screen position
-        this.calculatePosition();
-        //this.buildChildren();
-      }
-    }else{
-      this._onCreate();
-      //Calculate the widget screen position
-      this.calculatePosition();
-      //this.buildChildren();
-    }
+    
+    this._onCreate();
+    //Calculate the widget screen position
+    this.calculatePosition();
     this.buildChildren();
+
+    //Load any textures in the queue
+    TextureLoader.LoadQueue(() => {});
     return this.widget;
 
   }
 
   buildChildren(){
+
+    if(!(this.menu) instanceof GameMenu)
+      return false;
+
+    if(!(this.menu.tGuiPanel.control instanceof Struct))
+      return false;
+
     if(this.menu.tGuiPanel.control.HasField('CONTROLS')){
       let children = this.menu.tGuiPanel.control.GetFieldByLabel('CONTROLS').GetChildStructs();
       
@@ -552,55 +691,63 @@ class GUIControl {
 
   update(delta){
     if(this.pulsing){
-      this.pulse += delta;
-      if(this.pulse > 2){
-        this.pulse = 0;
+      if(this.border.edge_material){
+        this.border.edge_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
       }
 
+      if(this.border.corner_material){
+        this.border.corner_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+      }
 
-      let bordersLen = this.widget.border.children.length;
-      for(let i = 0; i < bordersLen; i++){
-  
-        let mat = this.widget.border.children[i].material;
-        
-        if(this.pulse > 2){
-          mat.opacity = 0;
-        }
-  
-        if(this.pulse > 1){
-          mat.opacity -= delta;
-        }else{
-          mat.opacity += delta;
-        }
-        
+      if(this.highlight.edge_material){
+        this.highlight.edge_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+      }
+
+      if(this.highlight.corner_material){
+        this.highlight.corner_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+      }
+
+      if(this.text.material){
+        this.text.material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
       }
   
       let fill = this.widget.fill.children[0];
-  
-      if(this.pulse > 2){
-        fill.material.opacity = 0;
-      }
-  
-      if(this.pulse > 1){
-        fill.material.opacity -= delta;
-      }else{
-        fill.material.opacity += delta;
-      }
+      if(fill)
+        fill.material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+    }else{
+      this.resetPulse();
     }
 
     let len = this.children.length;
     for(let i = 0; i < len; i++){
       this.children[i].update(delta);
     }
-
   }
 
   resetPulse(){
-    let bordersLen = this.widget.border.children.length;
-    for(let i = 0; i < bordersLen; i++){
-      this.widget.border.children[i].material.opacity = 1;
+    if(this.border.edge_material){
+      this.border.edge_material.opacity = 1;
     }
-    this.widget.fill.children[0].material.opacity = 1;
+
+    if(this.border.corner_material){
+      this.border.corner_material.opacity = 1;
+    }
+
+    if(this.highlight.edge_material){
+      this.highlight.edge_material.opacity = 1;
+    }
+
+    if(this.highlight.corner_material){
+      this.highlight.corner_material.opacity = 1;
+    }
+
+    if(this.text.material){
+      this.text.material.opacity = 1;
+    }
+    
+    let fill = this.widget.fill.children[0];
+    if(fill)
+      fill.material.opacity = 1;
   }
 
   setHovering(bState){
@@ -634,17 +781,25 @@ class GUIControl {
     this.widget.fill.visible = true;
   }
 
+  setBorderColor(r = 1, g = 1, b = 1){
+    this.border.edge_material.color.setRGB(r, g, b);
+    this.border.corner_material.color.setRGB(r, g, b);
+  }
+
+  setHighlightColor(r = 1, g = 1, b = 1){
+    this.highlight.edge_material.color.setRGB(r, g, b);
+    this.highlight.corner_material.color.setRGB(r, g, b);
+  }
+
   setTextColor(r = 1, g = 1, b = 1){
     //0.0, 0.658824, 0.980392
-    if(typeof this.textGeometry != 'undefined'){
-      this.textMaterial.color.set(r, g, b);
-    }
+    this.text.material.color.setRGB(r, g, b);
   }
 
   /*setText(text = '', renderOrder){
     //0.0, 0.658824, 0.980392
-    if(typeof this.textGeometry != 'undefined'){
-      this.textGeometry.update(text);
+    if(typeof this.text.geometry != 'undefined'){
+      this.text.geometry.update(text);
     }
   }*/
 
@@ -690,6 +845,9 @@ class GUIControl {
 
 
   calculatePosition(){
+    if(!this.autoCalculatePosition)
+      return;
+
     let parentExtent = { width: this.menu.width, height: this.menu.height };
     let parentOffsetX, parentOffsetY;
     //if(!(this.parent instanceof THREE.Scene)){
@@ -881,7 +1039,7 @@ class GUIControl {
     let extent = this.getControlExtent();
     return {
       top: extent.top,
-      left: extent.left + this.border.dimension,
+      left: extent.left,
       width: extent.width,
       height: extent.height
     };
@@ -1297,7 +1455,7 @@ class GUIControl {
     let extent = this.getFillExtent();
     
     let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
     let sprite = new THREE.Mesh( geometry, material );
     
     sprite.name = this.widget.name+' highlight fill';
@@ -1357,61 +1515,23 @@ class GUIControl {
 
   buildText(){
 
-    if(this.widget.text.children.length){
-      this.widget.text.remove(this.widget.text.children[0]);
-    }
+    if(!this.text.texture)
+      return;
+
+    if(this.text.mesh.parent)
+      this.text.mesh.parent.remove(this.text.mesh);
+
+    this.widget.text.add(this.text.mesh);
     
     let texture = this.text.texture;
     texture.flipY = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof Global.kotorTLK.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.text.text : Global.kotorTLK.TLKStrings[this.text.strref].Value);
 
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    this.textMaterial = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.DoubleSide,
-      transparent: true,
-      color: new THREE.Color(this.text.color.x, this.text.color.y, this.text.color.z)
-    });
-
-    this.textMesh = new THREE.Mesh(this.textGeometry, this.textMaterial);
-    //this.textMesh.rotation.x = Math.PI;
-  
-    
-    this.textAnchor.add(this.textMesh)
-    this.widget.text.add(this.textAnchor);
-
-    this.textMesh.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    this.textMesh.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    this.textMesh.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    this.textMesh.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    this.textMesh.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    this.textMesh.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    this.textMesh.getControl = () => {
-      return this;
-    }
-
-    this.textGeometry.computeBoundingSphere = function () {
+    this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
       }
@@ -1431,7 +1551,7 @@ class GUIControl {
       }
     }
     
-    this.textGeometry.computeBoundingBox = function () {
+    this.text.geometry.computeBoundingBox = function () {
       if (this.boundingBox === null) {
         this.boundingBox = new THREE.Box3()
       }
@@ -1449,6 +1569,10 @@ class GUIControl {
   }
 
   updateTextGeometry(text){
+
+    if(!this.text.texture)
+      return;
+
     let scale = 1;
     let texture = this.text.texture;
 
@@ -1470,43 +1594,47 @@ class GUIControl {
       count: textCharCount
     });
 
+    let maxLineWidth = this.getInnerSize().width;
+
     let x = 0, y = 0;
     let space_code = 32;
     let words = text.split(' ');
+    let word, wordLength, wordWidth, char, ul, lr, w, h;
+    let u0, v1, u1, v0;
     for(let j = 0, len = words.length; j < len; j++){
 
-      let word = words[j];
-      let wordLength = word.length;
-      let wordWidth = 0;
+      word = words[j];
+      wordLength = word.length;
+      wordWidth = 0;
 
       //Calculate the length of the word to be printed
       for(let i = 0; i < wordLength; i++){
-        let char = word.charCodeAt(i);
-        let ul = texture.txi.upperleftcoords[char];
-        let lr = texture.txi.lowerrightcoords[char];
+        char = word.charCodeAt(i);
+        ul = texture.txi.upperleftcoords[char];
+        lr = texture.txi.lowerrightcoords[char];
         wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
       }
 
       //Wrap to new line if needed
-      if(x + wordWidth > this.extent.width){
+      if(x + wordWidth > (maxLineWidth - txi_height)){
         y -= txi_bsline;
         x = 0;
       }
       
-      //If this isn't the last word of the text append a space back to it
-      if(j < len - 1){
-        word += ' ';
+      //If this isn't the first word of the line prepend a space to it
+      if(x){
+        word = ' '+word;
         wordLength++;
       }
 
       for(let i = 0; i < wordLength; i++){
-        let char = word.charCodeAt(i);
+        char = word.charCodeAt(i);
 
-        let ul = texture.txi.upperleftcoords[char];
-        let lr = texture.txi.lowerrightcoords[char];
+        ul = texture.txi.upperleftcoords[char];
+        lr = texture.txi.lowerrightcoords[char];
 
-        let w = ((lr.x - ul.x) * texture.image.width) * scale;
-        let h = ((lr.y - ul.y) * texture.image.height) * scale;
+        w = ((lr.x - ul.x) * texture.image.width) * scale;
+        h = ((lr.y - ul.y) * texture.image.height) * scale;
 
         // BL
         positions[posI++] = x
@@ -1522,10 +1650,10 @@ class GUIControl {
         positions[posI++] = y
 
         // top left position
-        let u0 = ul.x
-        let v1 = ul.y
-        let u1 = lr.x
-        let v0 = lr.y
+        u0 = ul.x;
+        v1 = ul.y;
+        u1 = lr.x;
+        v0 = lr.y;
 
         // BL
         uvs[uvI++] = u0
@@ -1545,90 +1673,35 @@ class GUIControl {
       }
 
     }
-
-    //this code doesn't support word wrapping
-    // for(let i = 0; i < charCount; i++){
-
-    //   let char = text.charCodeAt(i);
-
-    //   let ul = texture.txi.upperleftcoords[char];
-    //   let lr = texture.txi.lowerrightcoords[char];
-
-    //   let yScale = texture.image.height/256;
-
-    //   let w = ((lr.x - ul.x) * texture.image.width) * scale;
-    //   let h = ((lr.y - ul.y) * texture.image.height) * scale;
-
-    //   // BL
-    //   positions[posI++] = x
-    //   positions[posI++] = y
-    //   // TL
-    //   positions[posI++] = x
-    //   positions[posI++] = y + h
-    //   // TR
-    //   positions[posI++] = x + w
-    //   positions[posI++] = y + h
-    //   // BR
-    //   positions[posI++] = x + w
-    //   positions[posI++] = y
-
-    //   // top left position
-    //   let u0 = ul.x
-    //   let v1 = ul.y
-    //   let u1 = lr.x
-    //   let v0 = lr.y
-
-    //   // BL
-    //   uvs[uvI++] = u0
-    //   uvs[uvI++] = v1
-    //   // TL
-    //   uvs[uvI++] = u0
-    //   uvs[uvI++] = v0
-    //   // TR
-    //   uvs[uvI++] = u1
-    //   uvs[uvI++] = v0
-    //   // BR
-    //   uvs[uvI++] = u1
-    //   uvs[uvI++] = v1
-
-    //   //Advance the x position by the width of the current char
-    //   x += w;
-
-    //   //Wrap to new line
-    //   if(x >= this.extent.width){
-    //     y -= txi_bsline;
-    //     x = 0;
-    //   }
-    // }
     
-    this.textGeometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
+    this.text.geometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
 
     let posAttribute = new THREE.BufferAttribute( new Float32Array( positions ), 2 ).setUsage( THREE.StaticDrawUsage );
     let uvAttribute = new THREE.BufferAttribute( new Float32Array( uvs ), 2 ).setUsage( THREE.StaticDrawUsage );
-    this.textGeometry.setAttribute( 'position', posAttribute );
-    this.textGeometry.setAttribute( 'uv', uvAttribute );
+    this.text.geometry.setAttribute( 'position', posAttribute );
+    this.text.geometry.setAttribute( 'uv', uvAttribute );
 
-    this.textGeometry.index.needsUpdate = true;
-    this.textGeometry.attributes.position.needsUpdate = true;
-    this.textGeometry.attributes.uv.needsUpdate = true;
-    this.textGeometry.computeBoundingBox();
+    this.text.geometry.index.needsUpdate = true;
+    this.text.geometry.attributes.position.needsUpdate = true;
+    this.text.geometry.attributes.uv.needsUpdate = true;
+    this.text.geometry.computeBoundingBox();
     this.alignText();
 
   }
 
   alignText(){
     let size = new THREE.Vector3();
-    this.textGeometry.boundingBox.getSize(size);
-    this.textAnchor.position.z = this.zOffset;
+    this.text.geometry.boundingBox.getSize(size);
+    this.widget.text.position.z = this.zOffset;
     switch(this.text.alignment){
       case 9:
-        this.textAnchor.position.x = - (this.extent.width/2 - size.x/2) - size.x/2;
-        this.textAnchor.position.y = size.y/2;	     		
+        this.widget.text.position.x = - (this.extent.width/2 - size.x/2) - size.x/2;
+        this.widget.text.position.y = size.y/2;	     		
       break;
       //case 18:
       default:
-        this.textAnchor.position.x = -size.x/2;
-        this.textAnchor.position.y = size.y/2;
+        this.widget.text.position.x = -size.x/2;
+        this.widget.text.position.y = size.y/2;
       break;
     }
   }
@@ -1643,13 +1716,12 @@ class GUIControl {
     let oldText = this.text.text;
     this.text.text = (str).toString().replace(/\s*\{.*?\}\s*/gi, '');
 
-    if(typeof this.textGeometry !== 'object')
+    if(typeof this.text.geometry !== 'object')
       this.buildText();
     
-    if(this.textMesh)
-      this.textMesh.renderOrder = renderOrder;
+    this.text.mesh.renderOrder = renderOrder;
 
-    if(oldText != this.text.text && typeof this.textGeometry === 'object'){
+    if(oldText != this.text.text && typeof this.text.geometry === 'object'){
       //console.log('updateText', this.text.text);
       this.updateTextGeometry(this.text.text);
     }
@@ -1756,7 +1828,7 @@ class GUIControl {
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
     let sprite = new THREE.Mesh( geometry, material );
 
     if(this.highlight.edge != ''){
@@ -1821,7 +1893,7 @@ class GUIControl {
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
     let sprite = new THREE.Mesh( geometry, material );
 
     if(this.highlight.corner != ''){

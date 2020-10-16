@@ -811,10 +811,10 @@ class InGameComputer extends GameMenu {
 
   updateTextPosition(){
 
-    /*if(typeof this.LB_MESSAGE.textGeometry !== 'undefined'){
-      this.LB_MESSAGE.textGeometry.computeBoundingBox();
+    /*if(typeof this.LB_MESSAGE.text.geometry !== 'undefined'){
+      this.LB_MESSAGE.text.geometry.computeBoundingBox();
 
-      let bb = this.LB_MESSAGE.textGeometry.boundingBox;
+      let bb = this.LB_MESSAGE.text.geometry.boundingBox;
       let height = this.LB_MESSAGE.extent.height;//Math.abs(bb.min.y) + Math.abs(bb.max.y);
       let width = this.LB_MESSAGE.extent.width;//Math.abs(bb.min.x) + Math.abs(bb.max.x);
       let padding = 10;

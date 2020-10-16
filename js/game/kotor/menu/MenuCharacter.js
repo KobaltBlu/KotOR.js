@@ -66,7 +66,7 @@ class MenuCharacter extends GameMenu {
     
               let model = new AuroraModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
 
-              this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
+              //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
 
               this._3dView = new LBL_3DView(this.lbl_3dview.extent.width, this.lbl_3dview.extent.height);
               this._3dView.setControl(this.lbl_3dview);

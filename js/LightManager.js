@@ -644,16 +644,19 @@ class LightManager {
 
   //Sort lights by distance and priority
   static sortLights (a, b){
+    if (b.isAnimated < a.isAnimated) return -1;
+    if (b.isAnimated > a.isAnimated) return 1;
+
     if (b.getRadius() < a.getRadius()) return -1;
     if (b.getRadius() > a.getRadius()) return 1;
+
     if (b.priority < a.priority) return -1;
     if (b.priority > a.priority) return 1;
+
     if (a._distance < b._distance) return -1;
     if (a._distance > b._distance) return 1;
+    
     return 0;
-
-    return a._distance - b._distance || b.priority - a.priority;
-
   }
 
   //Check to see if the model that owns the light has already met it's limit of three active lights

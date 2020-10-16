@@ -18,7 +18,7 @@ class GUISlider extends GUIControl{
 
     if(this.control.HasField('THUMB')){
       this._thumb = this.control.GetFieldByLabel('THUMB').GetChildStructs()[0];
-      this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
       this.thumbMaterial.transparent = true;
       this.thumb = new THREE.Sprite( this.thumbMaterial );
       this.thumb.position.z = 2;

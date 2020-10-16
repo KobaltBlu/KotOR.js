@@ -46,13 +46,8 @@ class MenuEquipment extends GameMenu {
         this.LBL_INV_BELT =     this.getControlByName('LBL_INV_BELT');
         this.LBL_INV_WEAP_R =   this.getControlByName('LBL_INV_WEAP_R');
 
-        let extentWidth = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('WIDTH');
-        //let extentLeft = this.LB_ITEMS.protoItem.GetFieldByLabel('EXTENT').GetFieldByLabel('LEFT');
-
-        extentWidth.SetValue(extentWidth.GetValue() - 52);
-        //extentLeft.SetValue(extentLeft.GetValue() + 52);
         this.LB_ITEMS.padding = 5;
-        this.LB_ITEMS.offset.x = 52;
+        this.LB_ITEMS.offset.x = 0;
         
         this.LB_DESC.hide();
         this.LBL_CANTEQUIP.hide();
@@ -229,6 +224,7 @@ class MenuEquipment extends GameMenu {
       this.LBL_SELECTTITLE.setText('');
     }
 
+    this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     this.selectedItem = null;
     //console.log('updatelist', this.slot);
@@ -239,68 +235,11 @@ class MenuEquipment extends GameMenu {
       for(let i = 0; i < inv.length; i++){
         this.LB_ITEMS.addItem(inv[i], () => {
           this.UpdateSelected(inv[i]);
-        });/*, null, (control, type) => {
-          this.ListItemBuilder(inv[i], control, type);
-        });*/
+        });
       }
 
       TextureLoader.LoadQueue();
     }
-  }
-
-  ListItemBuilder(item, control, type){
-    control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
-      item.getName()
-    );
-    let ctrl = new GUIProtoItem(this, control, this.LB_ITEMS, this.LB_ITEMS.scale);
-
-    ctrl.extent.width -= 52;
-    ctrl.extent.left -= 46;
-    ctrl.setList( this.LB_ITEMS );
-    this.LB_ITEMS.children.push(ctrl);
-    let idx2 = this.LB_ITEMS.itemGroup.children.length;
-    let item2 = ctrl.createControl();
-
-    let iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-    iconMaterial.transparent = true;
-    let iconSprite = new THREE.Sprite( iconMaterial );
-     
-    TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureLoader.Type.TEXTURE);
-    
-    item2.spriteGroup = new THREE.Group();
-    item2.spriteGroup.position.x = -(ctrl.extent.width/2)-(52/2); //HACK
-    item2.spriteGroup.position.y += 1;
-    iconSprite.scale.x = 48;
-    iconSprite.scale.y = 48;
-    iconSprite.position.z = 1;
-
-    for(let i = 0; i < 7; i++){
-      let hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-      hexMaterial.transparent = true;
-      let hexSprite = new THREE.Sprite( hexMaterial );
-      
-      if(!i){
-        hexSprite.name = 'lbl_hex';
-        TextureLoader.enQueue('lbl_hex', hexMaterial, TextureLoader.Type.TEXTURE);
-        hexSprite.visible = true;
-      }else{
-        hexSprite.name = 'lbl_hex_'+(i+1);
-        TextureLoader.enQueue('lbl_hex_'+(i+1), hexMaterial, TextureLoader.Type.TEXTURE);
-        hexSprite.visible = false;
-      }
-      hexSprite.scale.x = hexSprite.scale.y = 64;
-      hexSprite.position.z = 1;
-      item2.spriteGroup.add(hexSprite);
-    }
-
-    item2.add(item2.spriteGroup);
-    item2.spriteGroup.add(iconSprite);
-    this.LB_ITEMS.itemGroup.add(item2);
-
-    ctrl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.UpdateSelected(item);
-    });
   }
 
   UpdateSelected(item = null){
@@ -518,6 +457,149 @@ class MenuEquipment extends GameMenu {
         }
       }
     }
+
+  }
+
+}
+
+class GUIInventoryItem extends GUIProtoItem {
+
+  constructor(menu = null, control = null, parent = null, scale = false){
+    super(menu, control, parent, scale);
+  }
+
+  buildFill(){}
+  buildBorder(){}
+  buildHighlight(){}
+  buildText(){}
+
+  createControl(){
+    try{
+      super.createControl();
+      //Create the actual control elements below
+      let button = new GUIButton(this.menu, this.control, this, this.scale);
+      button.extent.width = 190;
+      button.text.text = this.node.getName();
+      button.autoCalculatePosition = false;
+      this.children.push(button);
+
+      let _buttonWidget = button.createControl();
+      _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
+      _buttonWidget.position.y = 0;
+      _buttonWidget.position.z = this.zIndex + 1;
+      this.widget.add(_buttonWidget);
+
+      let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+      buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
+      buttonIcon.extent.width = 55;
+      buttonIcon.extent.height = 55;
+      buttonIcon.extent.top = 0;
+      buttonIcon.extent.left = 0;
+      buttonIcon.hasBorder = false;
+      buttonIcon.hasHighlight = false;
+      buttonIcon.hasText = true;
+      buttonIcon.autoCalculatePosition = false;
+      this.children.push(buttonIcon);
+
+      let _buttonIconWidget = buttonIcon.createControl();
+      _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
+      _buttonIconWidget.position.y = 0;
+      _buttonIconWidget.position.z = this.zIndex + 1;
+
+      //Stack Count Text Position
+      if(this.node.getStackSize() >= 100){
+        buttonIcon.widget.text.position.set(6, -10, 5);
+      }else if(this.node.getStackSize() >= 10){
+        buttonIcon.widget.text.position.set(10, -10, 5);
+      }else{
+        buttonIcon.widget.text.position.set(14, -10, 5);
+      }
+
+      this.widget.add(_buttonIconWidget);
+
+      this.widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.iconMaterial.transparent = true;
+      this.widget.iconSprite = new THREE.Sprite( this.widget.iconMaterial );
+      //console.log(this.node.getIcon());
+      TextureLoader.enQueue(this.node.getIcon(), this.widget.iconMaterial, TextureLoader.Type.TEXTURE);
+      
+      this.widget.spriteGroup = new THREE.Group();
+      //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
+      //this.widget.spriteGroup.position.y -= 4;
+      this.widget.iconSprite.scale.x = 52;
+      this.widget.iconSprite.scale.y = 52;
+      this.widget.iconSprite.position.z = 1;
+
+      this.widget.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.hexMaterial.transparent = true;
+      this.widget.hexSprite = new THREE.Sprite( this.widget.hexMaterial );
+      this.widget.hexSprite.scale.x = this.widget.hexSprite.scale.y = 64;
+      this.widget.hexSprite.position.z = 1;
+
+      if(GameKey != 'TSL')
+        this.widget.spriteGroup.add(this.widget.hexSprite);
+        
+      this.widget.spriteGroup.add(this.widget.iconSprite);
+
+      if(this.node.getStackSize() >= 100){
+        this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_7');
+        this.widget.hexMaterial.needsUpdate = true;
+      }else if(this.node.getStackSize() > 1){
+        this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_6');
+        this.widget.hexMaterial.needsUpdate = true;
+      }else{
+        this.widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_3');
+        this.widget.hexMaterial.needsUpdate = true;
+      }
+
+      this.onSelect = () => {
+        if(this.selected){
+          this.showHighlight();
+          this.hideBorder();
+          this.pulsing = true;
+          this.text.color.setRGB(1, 1, 0);
+          this.text.material.color = this.text.color;
+          this.text.material.needsUpdate = true;
+  
+          button.showHighlight();
+          button.hideBorder();
+          this.widget.hexMaterial.color.setRGB(1, 1, 0);
+          button.setHighlightColor(1, 1, 0);
+          button.pulsing = true;
+          buttonIcon.pulsing = true;
+
+          button.text.color.setRGB(1, 1, 0);
+          button.text.material.color = button.text.color;
+          button.text.material.needsUpdate = true;
+        }else{
+          this.hideHighlight();
+          this.showBorder();
+          this.pulsing = false;
+          this.text.color.setRGB(0, 0.658824, 0.980392);
+          this.text.material.color = this.text.color;
+          this.text.material.needsUpdate = true;
+  
+          button.hideHighlight();
+          button.showBorder();
+          this.widget.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
+          button.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
+          button.pulsing = false;
+          buttonIcon.pulsing = false;
+
+          button.text.color.setRGB(0, 0.658824, 0.980392);
+          button.text.material.color = button.text.color;
+          button.text.material.needsUpdate = true;
+        }
+      };
+      this.onSelect();
+
+      //StackCount Text
+      _buttonIconWidget.add(this.widget.spriteGroup);
+      return this.widget;
+    }catch(e){
+      console.error(e);
+    }
+    return this.widget;
 
   }
 

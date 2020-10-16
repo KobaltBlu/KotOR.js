@@ -155,6 +155,10 @@ class CharGenMain extends GameMenu {
 
   }
 
+  updateAttributes(){
+    
+  }
+
 }
 
 CharGenMain.STATES = {

@@ -37,6 +37,20 @@ class CharGenSkills extends GameMenu {
           this.Close();
         });
 
+        this.BTN_ACCEPT.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log('CharGenSkills', 'Assigning skillpoints')
+          Game.getCurrentPlayer().skills[0].rank = this.computerUse;
+          Game.getCurrentPlayer().skills[1].rank = this.demolitions;
+          Game.getCurrentPlayer().skills[2].rank = this.stealth;
+          Game.getCurrentPlayer().skills[3].rank = this.awareness;
+          Game.getCurrentPlayer().skills[4].rank = this.persuade;
+          Game.getCurrentPlayer().skills[5].rank = this.repair;
+          Game.getCurrentPlayer().skills[6].rank = this.security;
+          Game.getCurrentPlayer().skills[7].rank = this.treatInjury;
+          this.Close();
+        });
+
         this.BTN_RECOMMENDED.addEventListener('click', (e) => {
 
           this.resetPoints();
@@ -119,14 +133,17 @@ class CharGenSkills extends GameMenu {
   }
 
   resetPoints(){
-    this.computerUse = 0;
-    this.demolitions = 0;
-    this.stealth = 0;
-    this.awareness = 0;
-    this.persuade = 0;
-    this.repair = 0;
-    this.security = 0;
-    this.treatInjury = 0;
+    for(let i = 0; i < 8; i++){
+      Game.getCurrentPlayer().skills[i].rank = 0;
+    }
+    this.computerUse = Game.getCurrentPlayer().skills[0].rank;
+    this.demolitions = Game.getCurrentPlayer().skills[1].rank;
+    this.stealth = Game.getCurrentPlayer().skills[2].rank;
+    this.awareness = Game.getCurrentPlayer().skills[3].rank;
+    this.persuade = Game.getCurrentPlayer().skills[4].rank;
+    this.repair = Game.getCurrentPlayer().skills[5].rank;
+    this.security = Game.getCurrentPlayer().skills[6].rank;
+    this.treatInjury = Game.getCurrentPlayer().skills[7].rank;
   }
 
   getMaxSkillPoints(){

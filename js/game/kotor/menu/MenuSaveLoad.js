@@ -48,6 +48,11 @@ class MenuSaveLoad extends GameMenu {
           this.Close();
         });
 
+        this.LB_GAMES.onSelected = (save) => {
+          this.selected = save;
+          this.UpdateSelected();
+        }
+
         this.tGuiPanel.widget.fill.children[0].position.z = -1;
 
         if(typeof this.onLoad === 'function')
@@ -74,35 +79,16 @@ class MenuSaveLoad extends GameMenu {
     Game.MenuPartySelection.Hide();
     Game.MenuTop.Hide();*/
 
+    this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
     this.LB_GAMES.clearItems();
     let saves = SaveGame.saves;
-    console.log('CREATEz');
     for(let i = 0; i < saves.length; i++){
-
+      let save = saves[i];
       if(!i){
-        this.selected = saves[i];
+        this.selected = save;
         this.UpdateSelected();
       }
-
-      //console.log('CREATE');
-      let save = saves[i]
-      this.LB_GAMES.addItem(save, null, (control, type) => {
-        //console.log('CREATE2', this);
-        control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(save.getFullName());
-        let _ctrl = new GUIProtoItem(this.LB_GAMES.menu, control, this.LB_GAMES, this.LB_GAMES.scale);
-        _ctrl.setList( this.LB_GAMES );
-        this.LB_GAMES.children.push(_ctrl);
-        let idx = this.LB_GAMES.itemGroup.children.length;
-        let item = _ctrl.createControl();
-        this.LB_GAMES.itemGroup.add(item);
-        //console.log('CREATE3');
-        _ctrl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.selected = save;
-          this.UpdateSelected();
-          //Pick Save Item
-        });;
-      });
+      this.LB_GAMES.addItem(save, null);
     }
 
     TextureLoader.LoadQueue();
@@ -118,7 +104,6 @@ class MenuSaveLoad extends GameMenu {
     }
 
     this.selected.GetPortrait(0, (texture) => {
-      console.log(texture);
       this.LBL_PM1.setFillTexture(texture);
       this.LBL_PM1.widget.fill.children[0].material.transparent = false;
     });
@@ -142,6 +127,24 @@ class MenuSaveLoad extends GameMenu {
       this.LBL_AREANAME.setText(areaNames[0]);
     }
 
+  }
+
+}
+
+class GUISaveGameItem extends GUIProtoItem {
+
+  constructor(menu = null, control = null, parent = null, scale = false){
+    super(menu, control, parent, scale);
+  }
+
+  createControl(){
+    try{
+      super.createControl();
+      this.setText(this.node.getFullName());
+    }catch(e){
+      console.error(e);
+    }
+    return this.widget;
   }
 
 }

@@ -52,8 +52,9 @@ class CharGenPortCust extends GameMenu {
           }
 
           Game.player.LoadModel( (model) => {
-            this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
+            this.updateCamera();
             this.UpdatePortrait();
+            model.rotation.z = -Math.PI/2;
           });
 
         });
@@ -84,8 +85,9 @@ class CharGenPortCust extends GameMenu {
           }
 
           Game.player.LoadModel( (model) => {
-            this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
+            this.updateCamera();
             this.UpdatePortrait();
+            model.rotation.z = -Math.PI/2;
           });
 
         });
@@ -163,13 +165,17 @@ class CharGenPortCust extends GameMenu {
           control.camerahook.quaternion.w
         );
 
-        control._3dView.camera.position.z = 1;
+        //control._3dView.camera.position.z = 1;
         control._3dViewModel.playAnimation(0, true);
 
       },
       manageLighting: false,
       context: control._3dView
     });
+
+    control.widget.fill.children[0].material.map = control._3dView.texture.texture;
+    control.widget.fill.children[0].material.transparent = true;
+    control.widget.fill.children[0].material.blending = 1;
 
   }
 
@@ -214,10 +220,35 @@ class CharGenPortCust extends GameMenu {
       Game.player.model.parent.remove(Game.player.model);
     }catch(e){}
     this.LBL_HEAD._3dView.scene.add(Game.player.model);
+    this.LBL_PORTRAIT.getFill().material.blending = 1;
 
-    this.LBL_HEAD._3dView.camera.position.z = Game.player.model.getObjectByName('camerahook').getWorldPosition().z;
+    this.updateCamera();
+
+    //this.LBL_HEAD._3dView.camera.position.z = Game.player.model.getObjectByName('camerahook').getWorldPosition().z;
     this.UpdatePortrait();
 
+  }
+
+  updateCamera(){
+    if(Game.getCurrentPlayer().getGender() == 0){
+      this.LBL_HEAD.camerahook = this.LBL_HEAD._3dViewModel.getObjectByName('camerahookm');
+    }else{
+      this.LBL_HEAD.camerahook = this.LBL_HEAD._3dViewModel.getObjectByName('camerahookf');
+    }
+    this.LBL_HEAD._3dView.camera.position.set(
+      this.LBL_HEAD.camerahook.position.x,
+      this.LBL_HEAD.camerahook.position.y,
+      this.LBL_HEAD.camerahook.position.z
+    );
+
+    this.LBL_HEAD._3dView.camera.quaternion.set(
+      this.LBL_HEAD.camerahook.quaternion.x,
+      this.LBL_HEAD.camerahook.quaternion.y,
+      this.LBL_HEAD.camerahook.quaternion.z,
+      this.LBL_HEAD.camerahook.quaternion.w
+    );
+    
+    this.LBL_HEAD._3dView.camera.position.z = Game.player.model.getObjectByName('camerahook').getWorldPosition().z;
   }
 
 }

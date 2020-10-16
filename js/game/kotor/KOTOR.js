@@ -38,6 +38,7 @@ class Game extends Engine {
     Game.canvas.style = { width: 0, height: 0};
     Game.context = Game.canvas.getContext( 'webgl' );
 
+    Game.rendererUpscaleFactor = 2;
     Game.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: Game.canvas,
@@ -47,7 +48,6 @@ class Game extends Engine {
     });
 
     Game.renderer.autoClear = false;
-    
     Game.renderer.setSize( $(window).innerWidth(), $(window).innerHeight() );
     Game.renderer.setClearColor(0x000000);
 
@@ -484,7 +484,7 @@ class Game extends Engine {
       let width = $(window).innerWidth();
       let height = $(window).innerHeight();
 
-      Game.composer.setSize(width, height);
+      Game.composer.setSize(width * Game.rendererUpscaleFactor, height * Game.rendererUpscaleFactor);
 
       Game.FadeOverlay.plane.scale.set(width, height, 1);
       
@@ -511,7 +511,7 @@ class Game extends Engine {
         Game.staticCameras[i].updateProjectionMatrix();
       }
 
-      //Game.bokehPass.renderTargetColor.setSize(width, height);
+      //Game.bokehPass.renderTargetColor.setSize(width * Game.rendererUpscaleFactor, height * Game.rendererUpscaleFactor);
 
       /*if(Game.scene_gui.background != null){
         let x = width / 1600;
@@ -526,7 +526,7 @@ class Game extends Engine {
 
       MenuManager.Resize();
 
-      Game.depthTarget.setSize(window.innerWidth, window.innerHeight);
+      Game.depthTarget.setSize(window.innerWidth * Game.rendererUpscaleFactor, window.innerHeight * Game.rendererUpscaleFactor);
       
     });
     console.log('Game: Start')
@@ -1257,6 +1257,7 @@ class Game extends Engine {
     requestAnimationFrame( Game.Update );
 
     Game.UpdateVideoEffect();
+    MenuManager.Update(delta);
 
     Game.currentRoom = null;
     Game.currentDistance = 10000000;
@@ -1379,11 +1380,11 @@ class Game extends Engine {
         }
 
         if(Game.inDialog){
-          Game.InGameDialog.Update(delta);
+          //Game.InGameDialog.Update(delta);
         }else if(Game.MenuCharacter.bVisible){
-          Game.MenuCharacter.Update(delta);
+          //Game.MenuCharacter.Update(delta);
         }else if(Game.MenuGalaxyMap.bVisible){
-          Game.MenuGalaxyMap.Update(delta);
+          //Game.MenuGalaxyMap.Update(delta);
         }
 
         for(let i = 0; i < Game.weather_effects.length; i++){
@@ -1402,18 +1403,18 @@ class Game extends Engine {
         Game.UpdateFollowerCamera(delta);
       }else if(Game.Mode == Game.MODES.MAINMENU){
         if(Game.CharGenClass.bVisible){
-          Game.CharGenClass.Update(delta);
+          //Game.CharGenClass.Update(delta);
         }else if(Game.CharGenMain.bVisible){
-          Game.CharGenMain.Update(delta);
+          //Game.CharGenMain.Update(delta);
         }else if(Game.CharGenPortCust.bVisible){
-          Game.CharGenPortCust.Update(delta);
+          //Game.CharGenPortCust.Update(delta);
         }else{
-          Game.MainMenu.Update(delta);
+          //Game.MainMenu.Update(delta);
         }
       }else if(Game.MenuCharacter.bVisible){
-        Game.MenuCharacter.Update(delta);
+        //Game.MenuCharacter.Update(delta);
       }else if(Game.MenuGalaxyMap.bVisible){
-        Game.MenuGalaxyMap.Update(delta);
+        //Game.MenuGalaxyMap.Update(delta);
       }
 
       //Game.limiter.then = Game.limiter.now - (Game.limiter.elapsed % Game.limiter.fpsInterval);
@@ -1426,8 +1427,8 @@ class Game extends Engine {
       Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
       Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
       LightManager.update(delta);
-      Game.InGameOverlay.Update(delta);
-      Game.InGameAreaTransition.Update(delta);
+      //Game.InGameOverlay.Update(delta);
+      //Game.InGameAreaTransition.Update(delta);
 
       if(!Game.inDialog){
         Game.currentCamera = Game.camera;

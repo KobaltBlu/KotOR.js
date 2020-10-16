@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const GUIProtoItem = require("./GUIProtoItem");
+
 /* @file
  * The base GameMenu class.
  */
@@ -87,13 +89,13 @@ class GameMenu {
       TextureLoader.tpcLoader.fetch(this.background, (texture) => {
         //Game.scene_gui.background = texture;
 
-        /*this.backgroundMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xFFFFFF } );
+        /*this.backgroundMaterial = new THREE.SpriteMaterial( { map: texture, color: new THREE.Color(0xFFFFFF) } );
         this.backgroundSprite = new THREE.Sprite( this.backgroundMaterial );
         this.backgroundSprite.scale.set( 1600, 1200, 1.0 );
         this.backgroundSprite.position.z = -1;*/
 
         let geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
-        this.backgroundMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, map: texture, side: THREE.DoubleSide} );
+        this.backgroundMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: texture, side: THREE.DoubleSide} );
         this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
         this.backgroundSprite.position.z = -5;
         this.backgroundSprite.renderOrder = -5;
@@ -179,7 +181,7 @@ class GameMenu {
 
   SetWidgetHoverActive(widget = undefined, bActive = false){
 
-    if(!(widget instanceof GUIControl))
+    if(!(widget instanceof GUIControl) || (widget instanceof GUIProtoItem))
       return false;
 
     let idx = this.activeWidget.indexOf(widget);

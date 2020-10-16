@@ -33,16 +33,8 @@ class InGamePause extends GameMenu {
     super.Show();
 
     this.tGuiPanel.pulsing = true;
-    this.tGuiPanel.pulse = 1;
-    this.tGuiPanel.resetPulse();
-
     this.LBL_PAUSEREASON.pulsing = true;
-    this.LBL_PAUSEREASON.pulse = 1;
-    this.LBL_PAUSEREASON.resetPulse();
-
     this.LBL_PRESS.pulsing = true;
-    this.LBL_PRESS.pulse = 1;
-    this.LBL_PRESS.resetPulse();
 
   }
 

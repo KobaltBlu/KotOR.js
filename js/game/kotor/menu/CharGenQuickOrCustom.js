@@ -67,6 +67,9 @@ class CharGenQuickOrCustom extends GameMenu {
           Game.CharGenMain.childMenu = Game.CharGenCustomPanel;
           Game.CharGenMain.Open();
 
+          //Reset the Attributes window
+          Game.CharGenAbilities.reset();
+
           //Reset the Skills window
           Game.CharGenSkills.reset();
         });

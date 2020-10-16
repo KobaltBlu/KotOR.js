@@ -8,11 +8,28 @@
 class GUIProtoItem extends GUIControl{
 
   constructor(menu = null, control = null, parent = null, scale = false){
-    
     super(menu, control, parent, scale);
     this.zOffset = 2;
     this.list = null;
+    this.isProtoItem = false;
 
+    this.onSelect = () => {
+      if(this.selected){
+        this.showHighlight();
+        this.hideBorder();
+        this.pulsing = true;
+        this.text.color.setRGB(1, 1, 0);
+        this.text.material.color = this.text.color;
+        this.text.material.needsUpdate = true;
+      }else{
+        this.hideHighlight();
+        this.showBorder();
+        this.pulsing = false;
+        this.text.color.setRGB(0, 0.658824, 0.980392);
+        this.text.material.color = this.text.color;
+        this.text.material.needsUpdate = true;
+      }
+    };
   }
 
   setList(list = null){
@@ -70,9 +87,9 @@ class GUIProtoItem extends GUIControl{
 
     let cHeight = (this.extent.height + (this.getBorderSize()/2));
 
-    if(this.textGeometry){
-      this.textGeometry.computeBoundingBox();
-      let tSize = this.textGeometry.boundingBox.getSize(new THREE.Vector3);
+    if(this.text.geometry){
+      this.text.geometry.computeBoundingBox();
+      let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > cHeight){
         cHeight = tSize.y/2;
       }

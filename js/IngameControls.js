@@ -30,9 +30,9 @@ class IngameControls {
     this.editor.$canvas.keydown( ( event ) => {
 
       if(event.which >= 48 && event.which <= 57){
-        this.keys[event.key].down = this.keys[event.key].pressed = true;
+        this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = true;
       }else if(event.which >= 65 && event.which <= 90){
-        this.keys[event.key].down = this.keys[event.key].pressed = true;
+        this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = true;
       }else {
         if ( event.which == 32 )
           this.keys['space'].down = this.keys['space'].pressed = true;
@@ -61,9 +61,9 @@ class IngameControls {
       if(event.which >= 48 && event.which <= 57){
         if(Game.debug.controls)
           console.log(event.key)
-        this.keys[event.key].down = this.keys[event.key].pressed = false;
+        this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = false;
       }else if(event.which >= 65 && event.which <= 90){
-        this.keys[event.key].down = this.keys[event.key].pressed = false;
+        this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = false;
       }else {
         if ( event.which == 32 )
           this.keys['space'].down = this.keys['space'].pressed = false;

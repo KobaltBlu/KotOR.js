@@ -5,6 +5,8 @@ class MenuManager {
   static Init(){
 
     MenuManager.activeMenus = [];
+    MenuManager.pulse = 0;
+    MenuManager.pulseOpacity = 1;
 
   }
 
@@ -49,6 +51,29 @@ class MenuManager {
     for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
       MenuManager.activeMenus[i].Resize();
     }
+  }
+
+  static Update(delta = 0){
+    MenuManager.pulse += delta;
+    if(MenuManager.pulse > 2){
+      MenuManager.pulse = 0;
+    }
+
+    if(this.pulse > 2){
+      MenuManager.pulseOpacity = 0;
+    }
+
+    if(this.pulse > 1){
+      MenuManager.pulseOpacity = this.pulse - 1;
+    }else{
+      MenuManager.pulseOpacity = 1 - this.pulse;
+    }
+
+    let activeMenus = MenuManager.activeMenus;
+    for(let i = 0, len = activeMenus.length; i < len; i++){
+      activeMenus[i].Update(delta);
+    }
+
   }
 
 }

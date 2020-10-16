@@ -1291,6 +1291,7 @@ class Game extends Engine {
     }
 
     Game.UpdateVideoEffect();
+    MenuManager.Update(delta);
 
     Game.currentRoom = null;
     Game.currentDistance = 10000000;

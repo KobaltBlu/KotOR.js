@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const GUIProtoItem = require("./GUIProtoItem");
+
 /* @file
  * The GUIListBox class.
  */
@@ -16,6 +18,8 @@ class GUIListBox extends GUIControl {
     this.scroll = 0;
     this.maxScroll = 0;
     this.offset = new THREE.Vector2(0, 0);
+    this.GUIProtoItemClass = undefined;
+    this.onSelected = undefined;
 
     //ProtoItem
     this.hasProtoItem = control.HasField('PROTOITEM');
@@ -119,119 +123,90 @@ class GUIListBox extends GUIControl {
       let ctrl;
       let widget;
 
-      switch(type){
-        case 4:
-          control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(node);
-          ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
-          ctrl.offset = this.offset;
-          ctrl.node = node;
-          ctrl.setList( this );
-          this.children.push(ctrl);
+      if(typeof this.GUIProtoItemClass === 'undefined'){
+        switch(type){
+          case 4:
+            ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+            ctrl.text.text = node;
+            ctrl.isProtoItem = false;
+            ctrl.offset = this.offset;
+            ctrl.node = node;
+            ctrl.setList( this );
+            this.children.push(ctrl);
 
-          index = this.itemGroup.children.length;
-          widget = ctrl.createControl();
-          this.itemGroup.add(widget);
+            widget = ctrl.createControl();
+            ctrl.setText(node);
 
-          ctrl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if(typeof onClick === 'function')
-              onClick(node, ctrl);
-          });
+            this.itemGroup.add(widget);
 
-          //this.calculatePosition();
-          //this.cullOffscreen();
+            ctrl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if(typeof onClick === 'function')
+                onClick(node, ctrl);
+            });
 
-        break;
-        case 6:
-          control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(
-            node.getName()
-          );
-          ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
-          ctrl.offset = this.offset;
-          ctrl.node = node;
-          ctrl.setList( this );
-          this.children.push(ctrl);
-          ctrl.originalWidth = ctrl.extent.width;
-          ctrl.originalLeft = ctrl.extent.left;
-          //ctrl.extent.width -= 52;
-          //ctrl.extent.left += 52;
+            //this.calculatePosition();
+            //this.cullOffscreen();
 
-          ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
-          ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
+          break;
+          case 6:
+            try{
+              ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+              ctrl.isProtoItem = false;
+              ctrl.offset = this.offset;
+              ctrl.node = node;
+              ctrl.setList( this );
+              this.children.push(ctrl);
 
-          index = this.itemGroup.children.length;
-          widget = ctrl.createControl();
+              ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+              ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
-          widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          widget.iconMaterial.transparent = true;
-          widget.iconSprite = new THREE.Sprite( widget.iconMaterial );
-          //console.log(node.getIcon());
-          TextureLoader.enQueue(node.getIcon(), widget.iconMaterial, TextureLoader.Type.TEXTURE);
-          
-          widget.spriteGroup = new THREE.Group();
-          widget.spriteGroup.position.x = -(ctrl.extent.width/2)-(52/2); //HACK
-          //widget.spriteGroup.position.y -= 4;
-          widget.iconSprite.scale.x = 52;
-          widget.iconSprite.scale.y = 52;
-          widget.iconSprite.position.z = 1;
+              widget = ctrl.createControl();
+              ctrl.setText(node.getName());
 
-          widget.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-          widget.hexMaterial.transparent = true;
-          widget.hexSprite = new THREE.Sprite( widget.hexMaterial );
-          widget.hexSprite.scale.x = widget.hexSprite.scale.y = 64;
-          widget.hexSprite.position.z = 1;
+              this.itemGroup.add(widget);
 
-          if(GameKey != 'TSL')
-            widget.spriteGroup.add(widget.hexSprite);
-            
-          widget.spriteGroup.add(widget.iconSprite);
+              ctrl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.select(ctrl);
 
-          ctrl.onSelect = () => {
-            if(ctrl.selected){
-              ctrl.showHighlight();
-              ctrl.hideBorder();
-              if(node.getStackSize() > 1){
-                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_5');
-                widget.hexMaterial.needsUpdate = true;
-              }else{
-                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_2');
-                widget.hexMaterial.needsUpdate = true;
-              }
-            }else{
-              ctrl.hideHighlight();
-              ctrl.showBorder();
-              if(node.getStackSize() > 1){
-                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
-                widget.hexMaterial.needsUpdate = true;
-              }else{
-                widget.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex');
-                widget.hexMaterial.needsUpdate = true;
-              }
+                if(typeof onClick === 'function')
+                  onClick(node, ctrl);
+              });
+            }catch(e){
+              console.log(e);
             }
-          };
-          ctrl.onSelect();
+          break;
+          default:
+            console.error('GUIListBox.add', 'Unknown ControlType', type);
+          break;
+        }
+      }else{
+        ctrl = new this.GUIProtoItemClass(this.menu, control, this, this.scale);
+        ctrl.isProtoItem = true;
+        ctrl.offset = this.offset;
+        ctrl.node = node;
+        ctrl.setList( this );
+        this.children.push(ctrl);
 
-          //StackCount Text
+        ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+        ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
-          widget.add(widget.spriteGroup);
-          this.itemGroup.add(widget);
+        index = this.itemGroup.children.length;
+        widget = ctrl.createControl();
 
-          //widget.position.x += 52/2;
+        this.itemGroup.add(widget);
 
-          ctrl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.select(ctrl);
+        //widget.position.x += 52/2;
 
-            if(typeof onClick === 'function')
-              onClick(node, ctrl);
-          });
+        ctrl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.select(ctrl);
 
-          //this.calculatePosition();
-          //this.cullOffscreen();
-
-        break;
+          if(typeof onClick === 'function')
+            onClick(node, ctrl);
+        });
       }
-
     }
 
     this.updateList();
@@ -240,23 +215,27 @@ class GUIListBox extends GUIControl {
   }
 
   select(item = null){
-
-    let len = this.children.length;
-    for(let i = 0; i < len; i++){
-      this.children[i].selected = false;
-      if(typeof this.children[i].onSelect === 'function'){
-        this.children[i].onSelect();
+    try{
+      let len = this.children.length;
+      for(let i = 0; i < len; i++){
+        this.children[i].selected = false;
+        if(typeof this.children[i].onSelect === 'function'){
+          this.children[i].onSelect();
+        }
       }
-    }
 
-    if(item instanceof GUIControl){
-      item.selected = true;
-      this.selectedItem = item;
-      if(typeof item.onSelect === 'function'){
-        item.onSelect();
+      if(item instanceof GUIControl){
+        item.selected = true;
+        this.selectedItem = item;
+        if(typeof item.onSelect === 'function'){
+          item.onSelect();
+        }
+        if(typeof this.onSelected === 'function')
+          this.onSelected(item.node);
       }
+    }catch(e){
+      console.error(e);
     }
-
   }
 
   updateList(){
@@ -297,6 +276,12 @@ class GUIListBox extends GUIControl {
     
     if(this.scrollbar){
       //this.scrollbar.updateScrollThumb();
+    }
+
+    if(!this.maxScroll){
+      this.scrollbar.hide();
+    }else{
+      this.scrollbar.show();
     }
 
     this.calculateBox();
@@ -350,10 +335,10 @@ class GUIListBox extends GUIControl {
       let control = node;
       let cHeight = (node.extent.height + (node.getBorderSize()/2));
 
-      if(control.textGeometry){
+      if(control.text.geometry){
         //console.log('tSize')
-        control.textGeometry.computeBoundingBox();
-        let tSize = control.textGeometry.boundingBox.getSize(new THREE.Vector3());
+        control.text.geometry.computeBoundingBox();
+        let tSize = control.text.geometry.boundingBox.getSize(new THREE.Vector3());
         if(tSize.y > cHeight){
           cHeight = tSize.y;
         }
@@ -372,10 +357,10 @@ class GUIListBox extends GUIControl {
 
       let cHeight = (control.extent.height + (control.getBorderSize()/2));
 
-      if(control.textGeometry){
-        control.textGeometry.computeBoundingBox();
+      if(control.text.geometry){
+        control.text.geometry.computeBoundingBox();
         //let tSize = new THREE.Box3();
-        let tSize = control.textGeometry.boundingBox.getSize(new THREE.Vector3());
+        let tSize = control.text.geometry.boundingBox.getSize(new THREE.Vector3());
         if(tSize.y > cHeight){
           cHeight = tSize.y;
         }
