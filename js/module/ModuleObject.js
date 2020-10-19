@@ -431,6 +431,7 @@ class ModuleObject {
 
     if(this instanceof ModuleCreature){
       this.initPerceptionList();
+      this.updateCollision();
     }
 
   }
