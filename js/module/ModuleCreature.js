@@ -777,6 +777,13 @@ class ModuleCreature extends ModuleCreatureController {
     return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
   }
 
+  getMainClass(){
+    if(!this.classes.length)
+      return false;
+
+    return this.classes[this.classes.length - 1];
+  }
+
   getTotalClassLevel(){
     let total = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
