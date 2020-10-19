@@ -43,6 +43,7 @@ class MenuDialog extends GameMenu {
         this.LB_REPLIES.extent.top = (window.innerHeight/2) - this.LB_REPLIES.extent.height/2;
         this.LB_REPLIES.calculatePosition();
         this.LB_REPLIES.calculateBox();
+        this.LB_REPLIES.padding = 5;
 
         this.barHeight = 100;
 
@@ -1346,9 +1347,9 @@ class MenuDialog extends GameMenu {
       let padding = 10;
 
       if(this.isListening){
-        this.LBL_MESSAGE.widget.position.y = (-window.innerHeight / 2 ) + ( 100 - (height));
+        this.LBL_MESSAGE.widget.position.y = (-window.innerHeight / 2 ) + ( 50 );
       }else{
-        this.LBL_MESSAGE.widget.position.y = (window.innerHeight / 2) - ( 100 - (height / 2) );
+        this.LBL_MESSAGE.widget.position.y = (window.innerHeight / 2) - ( 50 );
       }
 
       this.LBL_MESSAGE.box = new THREE.Box2(

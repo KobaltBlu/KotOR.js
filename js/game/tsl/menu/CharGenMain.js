@@ -38,14 +38,14 @@ class CharGenMain extends GameMenu {
         this.PORTRAIT_LBL = this.getControlByName('PORTRAIT_LBL');
         this.MODEL_LBL = this.getControlByName('MODEL_LBL');
 
-        this.tGuiPanel.widget.fill.children[0].position.z = -0.5;
+        this.tGuiPanel.getFill().position.z = -0.5;
 
         this.MODEL_LBL._3dView = new LBL_3DView();
         this.MODEL_LBL._3dView.visible = true;
         this.MODEL_LBL._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
         this.MODEL_LBL._3dView.camera.updateProjectionMatrix();
-        this.MODEL_LBL.widget.fill.children[0].material.map = this.MODEL_LBL._3dView.texture.texture;
-        this.MODEL_LBL.widget.fill.children[0].material.transparent = false;
+        this.MODEL_LBL.getFill().material.uniforms.map.value = this.MODEL_LBL._3dView.texture.texture;
+        this.MODEL_LBL.getFill().material.transparent = false;
 
         Game.ModelLoader.load({
           file: 'cgbody_light',
@@ -110,7 +110,7 @@ class CharGenMain extends GameMenu {
       let modelControl = this.MODEL_LBL;
       Game.player.update(delta);
       modelControl._3dView.render(delta);
-      modelControl.widget.fill.children[0].material.needsUpdate = true;
+      modelControl.getFill().material.needsUpdate = true;
       
     }catch(e){
       console.error(e);

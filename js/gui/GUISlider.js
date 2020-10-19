@@ -13,23 +13,37 @@ class GUISlider extends GUIControl{
     this.scrollPos = 0.5;
     this.scrollMax = 1;
     this.mouseOffset = {x: 0, y: 0};
-    this.value = 0.5;
+    this.value = 0.50;
     this.onValueChanged = undefined;
+
+    this.thumb = {
+      texture: '',
+      material: undefined,
+      mesh: undefined,
+      geometry: undefined
+    };
+
+    this.thumb.material = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
+    this.thumb.material.transparent = true;
+    this.thumb.mesh = new THREE.Sprite( this.thumb.material );
+    this.widget.add(this.thumb.mesh);
+
+    this.thumb.mesh.addEventListener('click', (e) => {
+      console.log('hello');
+      this.mouseInside();
+    });
 
     if(this.control.HasField('THUMB')){
       this._thumb = this.control.GetFieldByLabel('THUMB').GetChildStructs()[0];
-      this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
-      this.thumbMaterial.transparent = true;
-      this.thumb = new THREE.Sprite( this.thumbMaterial );
-      this.thumb.position.z = 2;
-      this.widget.add(this.thumb);
-      this.thumb.name = 'SCROLLBAR thumb';
-      this.thumb.scale.x = 8;//this.extent.width/2;
-      this.thumb.scale.y = 32;//this.extent.height/2;
+
+      this.thumb.mesh.position.z = 2;
+      this.thumb.mesh.name = 'SCROLLBAR thumb';
+      this.thumb.mesh.scale.x = 8;
+      this.thumb.mesh.scale.y = 32;
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
-      this.thumb.box = new THREE.Box2(
+      this.thumb.mesh.box = new THREE.Box2(
         new THREE.Vector2(
           (parentPos.x - this.extent.width/2),
           (parentPos.y - this.extent.height/2)
@@ -40,15 +54,11 @@ class GUISlider extends GUIControl{
         )
       )
 
-      this.thumb.addEventListener('click', (e) => {
-        this.mouseInside();
-      });
-
       if(this._thumb.HasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumbMaterial, TextureLoader.Type.TEXTURE, () => {
-          this.thumbMaterial.transparent = false;
-          this.thumbMaterial.alphaTest = 0.5;
-          this.thumbMaterial.needsUpdate = true;
+        TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumb.material, TextureLoader.Type.TEXTURE, () => {
+          this.thumb.material.transparent = false;
+          this.thumb.material.alphaTest = 0.5;
+          this.thumb.material.needsUpdate = true;
         });
         TextureLoader.LoadQueue();
       }
@@ -61,7 +71,7 @@ class GUISlider extends GUIControl{
     this.addEventListener('click', () =>{
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
 
-      let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
+      let scrollLeft = ( this.thumb.mesh.position.x + (thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
       this.mouseInside();
     });
@@ -69,7 +79,7 @@ class GUISlider extends GUIControl{
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-      let scrollLeft = ( this.thumb.position.x + (this.thumb.scale.x / 2) ) + mouseX;
+      let scrollLeft = ( this.thumb.mesh.position.x + (thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
     });
 
@@ -91,20 +101,20 @@ class GUISlider extends GUIControl{
     let mouseX = Mouse.Client.x - (window.innerWidth / 2);
     let scrollBarWidth = this.extent.width;
     let threshold = (this.extent.width - 8)/2;
-    this.thumb.position.x = (mouseX + 21) + this.extent.width/2;
+    this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;
 
-    if(this.thumb.position.x < -((scrollBarWidth - this.thumb.scale.x))/2 ){
-      this.thumb.position.x = -((scrollBarWidth - this.thumb.scale.x))/2
+    if(thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+      this.thumb.mesh.position.x = -((scrollBarWidth - this.thumb.mesh.scale.x))/2
     }
 
-    if(this.thumb.position.x > ((scrollBarWidth - this.thumb.scale.x))/2 ){
-      this.thumb.position.x = ((scrollBarWidth - this.thumb.scale.x))/2
+    if(thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+      this.thumb.mesh.position.x = ((scrollBarWidth - this.thumb.mesh.scale.x))/2
     }
 
-    //console.log((this.thumb.position.x + threshold) / threshold);
+    //console.log((thumb.mesh.position.x + threshold) / threshold);
 
-    let maxScroll = ((scrollBarWidth - this.thumb.scale.x)/2);
-    scrollX = (this.thumb.position.x + maxScroll) / (maxScroll*2);
+    let maxScroll = ((scrollBarWidth - this.thumb.mesh.scale.x)/2);
+    scrollX = (thumb.mesh.position.x + maxScroll) / (maxScroll*2);
     let valueChanged = (scrollX != this.value);
     this.value = scrollX;
 
@@ -122,7 +132,7 @@ class GUISlider extends GUIControl{
     let maxWidth = (this.extent.width - 8)
     let threshold = maxWidth/2;
     let thumbX = (maxWidth * value) - threshold;
-    this.thumb.position.x = thumbX;
+    this.thumb.mesh.position.x = thumbX;
 
     if(this.iniProperty)
       this.iniProperty.value = parseInt(this.value * 100);

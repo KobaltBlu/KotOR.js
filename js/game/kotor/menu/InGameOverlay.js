@@ -166,9 +166,9 @@ class InGameOverlay extends GameMenu {
 
           this.tGuiPanel.widget.fill.visible = false;
 
-          this.TB_STEALTH.hideBorder();
-          this.TB_PAUSE.hideBorder();
-          this.TB_SOLO.hideBorder();
+          //this.TB_STEALTH.hideBorder();
+          //this.TB_PAUSE.hideBorder();
+          //this.TB_SOLO.hideBorder();
 
           this.LBL_LIGHTSHIFT.hide();
           this.LBL_DARKSHIFT.hide();
@@ -180,7 +180,7 @@ class InGameOverlay extends GameMenu {
           this.LBL_ITEMLOST.hide();
 
           //Map INIT
-          this.LBL_MAPBORDER.hideBorder();
+          //this.LBL_MAPBORDER.hideBorder();
           this.LBL_MAP.hide();
           this.LBL_ARROW_MARGIN.hide();
 
@@ -216,7 +216,7 @@ class InGameOverlay extends GameMenu {
 
           this.LBL_CMBTMSGBG.hide();
           this.LBL_CMBTMODEMSG.hide();
-          this.BTN_CLEARALL.hideBorder();
+          //this.BTN_CLEARALL.hideBorder();
 
 
           this.BTN_MSG.addEventListener('click', (e) => {
@@ -472,7 +472,7 @@ class InGameOverlay extends GameMenu {
 
     SetMapTexture(sTexture = ''){
       try{
-        this.LBL_MAPVIEW.widget.fill.children[0].material.transparent = false;
+        this.LBL_MAPVIEW.getFill().material.transparent = false;
         this.LBL_MAPVIEW.setFillTextureName(sTexture);
         TextureLoader.tpcLoader.fetch(sTexture, (texture) => {
           this.LBL_MAPVIEW.setFillTexture(texture);

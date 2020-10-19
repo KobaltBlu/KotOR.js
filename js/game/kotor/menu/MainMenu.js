@@ -30,11 +30,11 @@ class MainMenu extends GameMenu {
         this.btn_options = Game.MainMenu.getControlByName('BTN_OPTIONS');
         this.btn_exit = Game.MainMenu.getControlByName('BTN_EXIT');
 
-        this.btn_newgame.hideBorder();
-        this.btn_loadgame.hideBorder();
-        this.btn_movies.hideBorder();
-        this.btn_options.hideBorder();
-        this.btn_exit.hideBorder();
+        //this.btn_newgame.hideBorder();
+        //this.btn_loadgame.hideBorder();
+        //this.btn_movies.hideBorder();
+        //this.btn_options.hideBorder();
+        //this.btn_exit.hideBorder();
 
         this.btn_newgame.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -84,8 +84,8 @@ class MainMenu extends GameMenu {
 
               this._3dView = new LBL_3DView();
               this._3dView.visible = true;
-              this.lbl_3dview.widget.fill.children[0].material.map = this._3dView.texture.texture;
-              this.lbl_3dview.widget.fill.children[0].material.transparent = false;
+              this.lbl_3dview.getFill().material.uniforms.map.value = this._3dView.texture.texture;
+              this.lbl_3dview.getFill().material.transparent = false;
               
               
               THREE.AuroraModel.FromMDL(model, { 
@@ -158,7 +158,7 @@ class MainMenu extends GameMenu {
     super.Update(delta);
     try{
       this._3dView.render(delta);
-      this.lbl_3dview.fill.children[0].material.needsUpdate = true;
+      this.lbl_3dview.getFill().material.needsUpdate = true;
     }catch(e){}
   }
 

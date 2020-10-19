@@ -50,14 +50,14 @@ class MenuTop extends GameMenu {
         this.BTN_INV = this.getControlByName('BTN_INV');
         this.BTN_EQU = this.getControlByName('BTN_EQU');
 
-        this.LBLH_OPT.hideBorder();
-        this.LBLH_MAP.hideBorder();
-        this.LBLH_JOU.hideBorder();
-        this.LBLH_MSG.hideBorder();
-        this.LBLH_ABI.hideBorder();
-        this.LBLH_CHA.hideBorder();
-        this.LBLH_INV.hideBorder();
-        this.LBLH_EQU.hideBorder();
+        // this.LBLH_OPT.hideBorder();
+        // this.LBLH_MAP.hideBorder();
+        // this.LBLH_JOU.hideBorder();
+        // this.LBLH_MSG.hideBorder();
+        // this.LBLH_ABI.hideBorder();
+        // this.LBLH_CHA.hideBorder();
+        // this.LBLH_INV.hideBorder();
+        // this.LBLH_EQU.hideBorder();
 
         this.LBLH_OPT.widget.position.z = 5;
         this.LBLH_MAP.widget.position.z = 5;

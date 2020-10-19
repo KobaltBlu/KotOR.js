@@ -19,14 +19,14 @@ class GUIProtoItem extends GUIControl{
         this.hideBorder();
         this.pulsing = true;
         this.text.color.setRGB(1, 1, 0);
-        this.text.material.color = this.text.color;
+        this.text.material.uniforms.diffuse.value = this.text.color;
         this.text.material.needsUpdate = true;
       }else{
         this.hideHighlight();
         this.showBorder();
         this.pulsing = false;
         this.text.color.setRGB(0, 0.658824, 0.980392);
-        this.text.material.color = this.text.color;
+        this.text.material.uniforms.diffuse.value = this.text.color;
         this.text.material.needsUpdate = true;
       }
     };
@@ -116,6 +116,11 @@ class GUIProtoItem extends GUIControl{
         this.widget.position.y + this.extent.height/2 + worldPosition.y
       )
     );*/
+    
+    for(let i = 0; i < this.children.length; i++){
+      this.children[i].updateBounds();
+    }
+
   }
 
 }

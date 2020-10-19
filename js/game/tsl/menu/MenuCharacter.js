@@ -40,8 +40,8 @@ class MenuCharacter extends GameMenu {
               this._3dView.visible = true;
               this._3dView.camera.aspect = this.lbl_3dview.extent.width / this.lbl_3dview.extent.height;
               this._3dView.camera.updateProjectionMatrix();
-              this.lbl_3dview.widget.fill.children[0].material.map = this._3dView.texture.texture;
-              this.lbl_3dview.widget.fill.children[0].material.transparent = false;
+              this.lbl_3dview.getFill().material.uniforms.map.value = this._3dView.texture.texture;
+              this.lbl_3dview.getFill().material.transparent = false;
 
               /*this.getControlByName('LBL_GOOD1').hide();
               this.getControlByName('LBL_GOOD2').hide();

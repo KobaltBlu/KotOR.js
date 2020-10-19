@@ -124,8 +124,8 @@ class CharGenPortCust extends GameMenu {
         this.LBL_HEAD._3dView.visible = true;
         this.LBL_HEAD._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
         this.LBL_HEAD._3dView.camera.updateProjectionMatrix();
-        this.LBL_HEAD.widget.fill.children[0].material.map = this.LBL_HEAD._3dView.texture.texture;
-        this.LBL_HEAD.widget.fill.children[0].material.transparent = false;
+        this.LBL_HEAD.getFill().material.uniforms.map.value = this.LBL_HEAD._3dView.texture.texture;
+        this.LBL_HEAD.getFill().material.transparent = false;
 
         Game.ModelLoader.load({
           file: 'cghead_light',
@@ -173,9 +173,9 @@ class CharGenPortCust extends GameMenu {
       context: control._3dView
     });
 
-    control.widget.fill.children[0].material.map = control._3dView.texture.texture;
-    control.widget.fill.children[0].material.transparent = true;
-    control.widget.fill.children[0].material.blending = 1;
+    control.getFill().material.uniforms.map.value = control._3dView.texture.texture;
+    control.getFill().material.transparent = true;
+    control.getFill().material.blending = 1;
 
   }
 
@@ -189,7 +189,7 @@ class CharGenPortCust extends GameMenu {
       let modelControl = this.LBL_HEAD;
       Game.player.update(delta);
       modelControl._3dView.render(delta);
-      modelControl.widget.fill.children[0].material.needsUpdate = true;
+      modelControl.getFill().material.needsUpdate = true;
     }catch(e){
       console.error(e);
     }

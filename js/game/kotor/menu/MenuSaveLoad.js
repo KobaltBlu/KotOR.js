@@ -53,7 +53,7 @@ class MenuSaveLoad extends GameMenu {
           this.UpdateSelected();
         }
 
-        this.tGuiPanel.widget.fill.children[0].position.z = -1;
+        this.tGuiPanel.getFill().position.z = -1;
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -99,23 +99,23 @@ class MenuSaveLoad extends GameMenu {
     if(this.selected instanceof SaveGame){
       this.selected.GetThumbnail( (texture) => {
         this.LBL_SCREENSHOT.setFillTexture(texture);
-        this.LBL_SCREENSHOT.widget.fill.children[0].material.transparent = false;
+        this.LBL_SCREENSHOT.getFill().material.transparent = false;
       })
     }
 
     this.selected.GetPortrait(0, (texture) => {
       this.LBL_PM1.setFillTexture(texture);
-      this.LBL_PM1.widget.fill.children[0].material.transparent = false;
+      this.LBL_PM1.getFill().material.transparent = false;
     });
 
     this.selected.GetPortrait(1, (texture) => {
       this.LBL_PM2.setFillTexture(texture);
-      this.LBL_PM2.widget.fill.children[0].material.transparent = false;
+      this.LBL_PM2.getFill().material.transparent = false;
     });
 
     this.selected.GetPortrait(2, (texture) => {
       this.LBL_PM3.setFillTexture(texture);
-      this.LBL_PM3.widget.fill.children[0].material.transparent = false;
+      this.LBL_PM3.getFill().material.transparent = false;
     });
 
     let areaNames = this.selected.getAreaName().split(' - ');

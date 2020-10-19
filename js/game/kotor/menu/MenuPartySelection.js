@@ -74,7 +74,7 @@ class MenuPartySelection extends GameMenu {
           this.btn_back = this.getControlByName('BTN_BACK');
           this.btn_accept = this.getControlByName('BTN_ACCEPT');
     
-          this.btn_party0.hideBorder();
+          /*this.btn_party0.hideBorder();
           this.btn_party1.hideBorder();
           this.btn_party2.hideBorder();
           this.btn_party3.hideBorder();
@@ -92,7 +92,7 @@ class MenuPartySelection extends GameMenu {
           this.lbl_na5.hideBorder();
           this.lbl_na6.hideBorder();
           this.lbl_na7.hideBorder();
-          this.lbl_na8.hideBorder();
+          this.lbl_na8.hideBorder();*/
 
           this.default0 = this.lbl_na0.getFillTextureName();
           this.default1 = this.lbl_na1.getFillTextureName();
@@ -104,7 +104,7 @@ class MenuPartySelection extends GameMenu {
           this.default7 = this.lbl_na7.getFillTextureName();
           this.default8 = this.lbl_na8.getFillTextureName();
     
-          this.lbl_party0.hideBorder();
+          /*this.lbl_party0.hideBorder();
           this.lbl_party1.hideBorder();
           this.lbl_party2.hideBorder();
           this.lbl_party3.hideBorder();
@@ -116,7 +116,7 @@ class MenuPartySelection extends GameMenu {
 
           this.btn_done.hideBorder();
           this.btn_back.hideBorder();
-          this.btn_accept.hideBorder();
+          this.btn_accept.hideBorder();*/
     
           this.btn_party0.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -332,16 +332,16 @@ class MenuPartySelection extends GameMenu {
             TextureLoader.Load(portrait, (texture) => {
               this['lbl_party'+i].setFillTexture(texture);
               if(this.isSelectable(i)){
-                this['lbl_party'+i].getFill().material.opacity = 1;
+                this['lbl_party'+i].getFill().material.uniforms.opacity.value = 1;
               }else{
-                this['lbl_party'+i].getFill().material.opacity = 0.5;
+                this['lbl_party'+i].getFill().material.uniforms.opacity.value = 0.5;
               }
             });
           }else{
             if(this.isSelectable(i)){
-              this['lbl_party'+i].getFill().material.opacity = 1;
+              this['lbl_party'+i].getFill().material.uniforms.opacity.value = 1;
             }else{
-              this['lbl_party'+i].getFill().material.opacity = 0.5;
+              this['lbl_party'+i].getFill().material.uniforms.opacity.value = 0.5;
             }
           }
           this['lbl_party'+i].show();

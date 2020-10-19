@@ -15,6 +15,7 @@ class GUIButton extends GUIControl {
 
   onHoverIn(){
     super.onHoverIn();
+    this.hideBorder();
 
     this.pulsing = true;
     this.text.color.setRGB(1, 1, 0);
@@ -25,6 +26,7 @@ class GUIButton extends GUIControl {
 
   onHoverOut(){
     super.onHoverOut();
+    this.showBorder();
 
     this.pulsing = false;
     this.text.color.setRGB(0, 0.658824, 0.980392);

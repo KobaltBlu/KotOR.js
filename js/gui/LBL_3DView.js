@@ -50,8 +50,8 @@ class LBL_3DView {
 
   setControl(control){
     this.control = control;
-    this.control.getFill().material.map = this.texture.texture;
-    this.control.getFill().material.color.setHex(0xFFFFFF);
+    this.control.getFill().material.uniforms.map.value = this.texture.texture;
+    this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
   }
 
   getCamera(){
@@ -112,7 +112,7 @@ class LBL_3DView {
 
     if(this.control instanceof GUIControl){
       let material = this.control.getFill().material;
-      material.map = this.texture.texture;
+      material.uniforms.map.value = this.texture.texture;
       material.transparent = true;
       material.needsUpdate = true;
     }

@@ -199,14 +199,17 @@ class GUIListBox extends GUIControl {
 
         //widget.position.x += 52/2;
 
-        ctrl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.select(ctrl);
+        if(!ctrl.disableSelection){
+          ctrl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.select(ctrl);
 
-          if(typeof onClick === 'function')
-            onClick(node, ctrl);
-        });
+            if(typeof onClick === 'function')
+              onClick(node, ctrl);
+          });
+        }
       }
+
     }
 
     this.updateList();
@@ -471,7 +474,7 @@ class GUIListBox extends GUIControl {
     super._onCreate();
 
     //let extent = this.getFillExtent();
-    //let sprite = this.widget.fill.children[0];
+    //let sprite = this.getFill();
     //sprite.material.color = new THREE.Color(0.0, 0.658824, 0.980392);
 
     //this.setProgress(this.curValue);

@@ -28,12 +28,12 @@ class LoadScreen extends GameMenu {
 
         this.lbl_hint.visible = false;
 
-        this.defaultTex = this.tGuiPanel.widget.fill.children[0].material.map;
+        this.defaultTex = this.tGuiPanel.getFill().material.uniforms.map.value;
 
         if(this.args.loadscreen.length){
           this.LoadTexture(this.args.loadscreen, (texture) => {
 
-            this.tGuiPanel.widget.fill.children[0].material.map = texture;
+            this.tGuiPanel.getFill().uniforms.material.uniforms.map.value.value = texture;
 
             if(typeof this.onLoad === 'function')
               this.onLoad();
@@ -56,12 +56,12 @@ class LoadScreen extends GameMenu {
     if(resref){
       this.LoadTexture(resref, (texture) => {
         if(texture){
-          this.tGuiPanel.widget.fill.children[0].material.map = texture;
+          this.tGuiPanel.getFill().material.uniforms.map.value = texture;
           if(typeof onLoad === 'function')
             onLoad();
         }else{
           this.LoadTexture('load_default', (texture) => {
-            this.tGuiPanel.widget.fill.children[0].material.map = this.defaultTex = texture;
+            this.tGuiPanel.getFill().material.uniforms.map.value = this.defaultTex = texture;
             if(typeof onLoad === 'function')
               onLoad();
           });

@@ -83,8 +83,8 @@ class MenuGalaxyMap extends GameMenu {
 
               this._3dView = new LBL_3DView();
               this._3dView.visible = true;
-              this.THREED_PlanetDisplay.widget.fill.children[0].material.map = this._3dView.texture.texture;
-              this.THREED_PlanetDisplay.widget.fill.children[0].material.transparent = false;
+              this.THREED_PlanetDisplay.getFill().material.uniforms.map.value = this._3dView.texture.texture;
+              this.THREED_PlanetDisplay.getFill().material.transparent = false;
               
               
               THREE.AuroraModel.FromMDL(model, { 
@@ -191,7 +191,7 @@ class MenuGalaxyMap extends GameMenu {
         if(plnt.enabled){
           control.show();
           control.disableBorder = true;
-          control.hideBorder();
+          //control.hideBorder();
           control.addEventListener('click', (e) => {
             e.stopPropagation();
             this.LBL_PLANETNAME.setText(plnt.getName());
@@ -202,7 +202,7 @@ class MenuGalaxyMap extends GameMenu {
         }else{
           control.hide();
           control.disableBorder = true;
-          control.hideBorder();
+          //control.hideBorder();
           control.removeEventListener('click');
         }
       }

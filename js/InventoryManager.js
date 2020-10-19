@@ -98,28 +98,33 @@ class InventoryManager {
     }
 
     if(item instanceof ModuleItem){
-      item.Load( () => {
-        let hasItem = InventoryManager.getItem(item.getTag());
-        if(hasItem){
 
-          if(!limitOne){
-            hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+      if(item.getBaseItemId() == 57){ //Credits
+        PartyManager.Gold += item.getStackSize();
+      }else{
+        item.Load( () => {
+          let hasItem = InventoryManager.getItem(item.getTag());
+          if(hasItem){
+
+            if(!limitOne){
+              hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+            }else{
+              hasItem.setStackSize(hasItem.getStackSize() + 1);
+            }
+
+            if(typeof onLoad === 'function')
+              onLoad(hasItem);
           }else{
-            hasItem.setStackSize(hasItem.getStackSize() + 1);
+
+            if(limitOne)
+              item.setStackSize(1);
+
+            InventoryManager.inventory.push(item);
+            if(typeof onLoad === 'function')
+              onLoad(item);
           }
-
-          if(typeof onLoad === 'function')
-            onLoad(hasItem);
-        }else{
-
-          if(limitOne)
-            item.setStackSize(1);
-
-          InventoryManager.inventory.push(item);
-          if(typeof onLoad === 'function')
-            onLoad(item);
-        }
-      });
+        });
+      }
     }else{
       throw 'You can only add an item of type ModuleItem to an inventory';
     }

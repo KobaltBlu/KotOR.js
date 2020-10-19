@@ -123,7 +123,12 @@ class GUIControl {
       color: new THREE.Color(0, 0.658824, 0.980392),
       corner: '',
       edge: '',
-      fill: '',
+      fill: {
+        texture: '',
+        material: undefined,
+        mesh: undefined,
+        geometry: undefined
+      },
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
@@ -132,10 +137,56 @@ class GUIControl {
     };
 
     this.border.geometry = new THREE.BufferGeometry();
-    this.border.edge_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
-    this.border.corner_material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.FrontSide} );
+    
+    this.border.edge_material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    this.border.edge_material.defines.USE_MAP = '';
+    this.border.edge_material.uniforms.diffuse.value = this.border.color;
+
+    this.border.corner_material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    //this.border.corner_material.defines.USE_MAP = '';
+    this.border.corner_material.uniforms.diffuse.value = this.border.color;
+
     this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
     this.widget.border.add(this.border.mesh);
+
+    //-------------//
+    // Border Fill
+    //-------------//
+    
+    this.border.fill.material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    //this.border.fill.material.defines.USE_MAP = '';
+    this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
+    this.border.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+    this.border.fill.mesh = new THREE.Mesh( this.border.fill.geometry, this.border.fill.material );
+
+    this.widget.border.add( this.border.fill.mesh );
 
     //-----------//
     // Highlight
@@ -145,7 +196,12 @@ class GUIControl {
       color: new THREE.Color(1, 1, 0),
       corner: '',
       edge: '',
-      fill: '',
+      fill: {
+        texture: '',
+        material: undefined,
+        mesh: undefined,
+        geometry: undefined
+      },
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
@@ -154,10 +210,56 @@ class GUIControl {
     };
 
     this.highlight.geometry = new THREE.BufferGeometry();
-    this.highlight.edge_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
-    this.highlight.corner_material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.FrontSide} );
+
+    this.highlight.edge_material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    //this.highlight.edge_material.defines.USE_MAP = '';
+    this.highlight.edge_material.uniforms.diffuse.value = this.highlight.color;
+
+    this.highlight.corner_material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    //this.highlight.corner_material.defines.USE_MAP = '';
+    this.highlight.corner_material.uniforms.diffuse.value = this.highlight.color;
+
     this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
     this.widget.highlight.add(this.highlight.mesh);
+
+    //----------------//
+    // Highlight Fill
+    //----------------//
+    
+    this.highlight.fill.material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.FrontSide,
+      fog: false,
+      visible: true
+    });
+    //this.highlight.fill.material.defines.USE_MAP = '';
+    this.highlight.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
+    this.highlight.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+    this.highlight.fill.mesh = new THREE.Mesh( this.highlight.fill.geometry, this.highlight.fill.material );
+
+    this.widget.highlight.add( this.highlight.fill.mesh );
 
     //------//
     // Text
@@ -184,7 +286,20 @@ class GUIControl {
     this.text.geometry.attributes.position.needsUpdate = true;
     this.text.geometry.attributes.uv.needsUpdate = true;
 
-    this.text.material = new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
+    this.text.material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.odysseyGUI.uniforms
+      ]),
+      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
+      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      side: THREE.DoubleSide,
+      transparent: true,
+      fog: false,
+      visible: true
+    });
+    //this.text.material.defines.USE_MAP = '';
+    this.text.material.uniforms.diffuse.value = this.text.color;
+    //new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
     this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
     //this.widget.text.add(this.text.mesh);
 
@@ -205,122 +320,72 @@ class GUIControl {
     //  Border
     //---------//
 
-    this.border.mesh.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    this.border.mesh.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    this.border.mesh.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    this.border.mesh.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    this.border.mesh.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    this.border.mesh.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    this.border.mesh.getControl = () => {
-      return this;
-    }
-
     this.border.mesh.name = 'GUIBorder';
     this.border.mesh.position.z = this.zOffset;
+    this.attachEventListenters( this.border.mesh );
 
-    /*if(this.border.mesh.parent)
-      this.border.mesh.parent.remove(this.border.mesh);
+    //-------------//
+    // Border Fill
+    //-------------//
 
-    this.widget.border.add(this.border.mesh);*/
+    this.border.fill.mesh.renderOrder = this.id;
+    this.attachEventListenters( this.border.fill.mesh );
 
     //-----------//
     // Highlight
     //-----------//
 
-    this.highlight.mesh.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    this.highlight.mesh.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    this.highlight.mesh.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    this.highlight.mesh.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    this.highlight.mesh.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    this.highlight.mesh.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    this.highlight.mesh.getControl = () => {
-      return this;
-    }
-
     this.highlight.mesh.name = 'GUIHighlight';
     this.highlight.mesh.position.z = this.zOffset;
+    this.attachEventListenters( this.highlight.mesh );
 
-    /*if(this.highlight.mesh.parent)
-      this.highlight.mesh.parent.remove(this.highlight.mesh);
+    //----------------//
+    // Highlight Fill
+    //----------------//
 
-    this.widget.highlight.add(this.highlight.mesh);*/
+    this.highlight.fill.mesh.renderOrder = this.id;
+    this.attachEventListenters( this.highlight.fill.mesh );
 
     //------//
     // Text
     //------//
 
-    this.text.mesh.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    this.text.mesh.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    this.text.mesh.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    this.text.mesh.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    this.text.mesh.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    this.text.mesh.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    this.text.mesh.getControl = () => {
-      return this;
-    }
-
     this.text.mesh.name = 'GUIText';
     this.text.mesh.position.z = this.zOffset;
     this.text.mesh.renderOrder = 5;
+    this.attachEventListenters( this.text.mesh );
+  }
 
-    /*if(this.text.mesh.parent)
-      this.text.mesh.parent.remove(this.text.mesh);
+  attachEventListenters( object = undefined){
+    if( object instanceof THREE.Object3D ){
+      object.isClickable = (e) => {
+        return this.isClickable();
+      };
 
-    this.widget.text.add(this.text.mesh);*/
+      object.onClick = (e) => {
+        this.processEventListener('click', [e]);
+      };
+
+      object.onMouseMove = (e) =>{
+        this.processEventListener('mouseMove', [e]);
+      }
+
+      object.onMouseDown = (e) => {
+        this.processEventListener('mouseDown', [e]);
+      };
+
+      object.onMouseUp = (e) => {
+        this.processEventListener('mouseUp', [e]);
+      };
+      
+      object.onHover = (e) => {
+        this.processEventListener('hover', [e]);
+      };
+
+      object.getControl = () => {
+        return this;
+      }
+    }
   }
 
   initProperties(){
@@ -353,7 +418,8 @@ class GUIControl {
 
         if(border.HasField('COLOR')){
           let color = border.GetFieldByLabel('COLOR').GetVector();
-          this.border.color.setRGB(color.x, color.y, color.z)
+          if( (color.x * color.y * color.z) < 1 )
+            this.border.color.setRGB(color.x, color.y, color.z)
         }
   
         if(typeof this.border.color === 'undefined'){
@@ -363,7 +429,7 @@ class GUIControl {
         this.border.dimension = border.GetFieldByLabel('DIMENSION').GetValue() || 0;
         this.border.corner = border.GetFieldByLabel('CORNER').GetValue();
         this.border.edge = border.GetFieldByLabel('EDGE').GetValue();
-        this.border.fill = border.GetFieldByLabel('FILL').GetValue();
+        this.border.fill.texture = border.GetFieldByLabel('FILL').GetValue();
         this.border.fillstyle = border.GetFieldByLabel('FILLSTYLE').GetValue() || 0;
         this.border.inneroffset = this.border.inneroffsety = border.GetFieldByLabel('INNEROFFSET').GetValue() || 0;
 
@@ -416,7 +482,7 @@ class GUIControl {
         this.highlight.dimension = highlight.GetFieldByLabel('DIMENSION').GetValue() || 0;
         this.highlight.corner = highlight.GetFieldByLabel('CORNER').GetValue() || '';
         this.highlight.edge = highlight.GetFieldByLabel('EDGE').GetValue() || '';
-        this.highlight.fill = highlight.GetFieldByLabel('FILL').GetValue() || '';
+        this.highlight.fill.texture = highlight.GetFieldByLabel('FILL').GetValue() || '';
         this.highlight.fillstyle = highlight.GetFieldByLabel('FILLSTYLE').GetValue() || 0;
         this.highlight.inneroffset = this.highlight.inneroffsety = highlight.GetFieldByLabel('INNEROFFSET').GetValue() || 0;
 
@@ -443,6 +509,10 @@ class GUIControl {
 
   initTextures(){
 
+    //--------//
+    // Border
+    //--------//
+
     if(this.border.edge != ''){
       TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
@@ -462,6 +532,26 @@ class GUIControl {
         texture.wrapT = THREE.ClampToEdgeWrapping;
       });
     }
+
+    if(this.border.fill.texture != ''){
+      this.border.fill.material.transparent = true;
+      TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(texture == null){
+          this.border.fill.material.uniforms.opacity.value = 0.01;
+        }
+      });
+    }else{
+      this.border.fill.material.visible = false;
+      /*TextureLoader.enQueue('fx_static', this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
+        this.border.fill.material.uniforms.opacity.value = 1;
+        this.border.fill.material.alphaTest = 0.5;
+        this.border.fill.material.transparent = true;
+      });*/
+    }
+
+    //-----------//
+    // Highlight
+    //-----------//
 
     if(this.highlight.edge != ''){
       TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
@@ -483,6 +573,26 @@ class GUIControl {
       });
     }
 
+    if(this.highlight.fill.texture != ''){
+      this.highlight.fill.material.transparent = true;
+      TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
+        if(texture == null){
+          this.highlight.fill.material.uniforms.opacity.value = 0.01;
+        }
+      });
+    }else{
+      this.highlight.fill.material.visible = false;
+      /*TextureLoader.enQueue('fx_static', this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
+        this.highlight.fill.material.uniforms.opacity.value = 1;
+        this.highlight.fill.material.alphaTest = 0.5;
+        this.highlight.fill.material.transparent = true;
+      });*/
+    }
+
+    //------//
+    // Text
+    //------//
+
     if(this.text.font != ''){
       TextureLoader.enQueue(this.text.font, this.text.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
@@ -490,7 +600,7 @@ class GUIControl {
 
         if(texture){
           this.text.texture = texture;
-          this.text.material.map = texture;
+          this.text.material.uniforms.map.value = texture;
           this.text.material.needsUpdate = true;
           this.onFontTextureLoaded();
         }
@@ -515,7 +625,6 @@ class GUIControl {
       this.onMouseOut();
 
     this.hideHighlight();
-    this.widget.fill.visible = true;
 
     if(this.border.edge != '' && !this.disableBorder)
       this.showBorder();
@@ -535,7 +644,6 @@ class GUIControl {
     if(this.hasHighlight){
       if(this.highlight.edge != '' || this.highlight.fill != ''){
         this.showHighlight();
-        this.widget.fill.visible = false;
       }
     }
 
@@ -587,20 +695,21 @@ class GUIControl {
         this.buildBorder();
       }
 
-      if(this.border.edge == '')
-        this.hideBorder();
+      //if(this.border.edge == '')
+      //  this.hideBorder();
 
     }
+
+    this.buildFill();
 
     if(this.hasHighlight){
       if(this.highlight.edge != '' && this.highlight.corner != ''){
         this.buildHighlight();
       }
       this.buildHighlightFill();
-      this.hideHighlight();
     }
 
-    this.buildFill();
+    this.hideHighlight();
     
     this._onCreate();
     //Calculate the widget screen position
@@ -679,12 +788,10 @@ class GUIControl {
   }
 
   hide(){
-    //this.widget.border.visible = this.widget.highlight.visible = this.widget.fill.visible = this.widget.text.visible = false;
     this.widget.visible = false;
   }
 
   show(){
-    //this.widget.border.visible = this.widget.highlight.visible = this.widget.fill.visible = this.widget.text.visible = true;
     this.updateWorldPosition();
     this.widget.visible = true;
   }
@@ -692,28 +799,27 @@ class GUIControl {
   update(delta){
     if(this.pulsing){
       if(this.border.edge_material){
-        this.border.edge_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
       }
 
       if(this.border.corner_material){
-        this.border.corner_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.border.corner_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
       }
 
       if(this.highlight.edge_material){
-        this.highlight.edge_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.highlight.edge_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
       }
 
       if(this.highlight.corner_material){
-        this.highlight.corner_material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.highlight.corner_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
       }
 
       if(this.text.material){
-        this.text.material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.text.material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
       }
   
-      let fill = this.widget.fill.children[0];
-      if(fill)
-        fill.material.opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+      if(this.border.fill.material)
+        this.border.fill.material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
     }else{
       this.resetPulse();
     }
@@ -726,28 +832,27 @@ class GUIControl {
 
   resetPulse(){
     if(this.border.edge_material){
-      this.border.edge_material.opacity = 1;
+      this.border.edge_material.uniforms.opacity.value = 1;
     }
 
     if(this.border.corner_material){
-      this.border.corner_material.opacity = 1;
+      this.border.corner_material.uniforms.opacity.value = 1;
     }
 
     if(this.highlight.edge_material){
-      this.highlight.edge_material.opacity = 1;
+      this.highlight.edge_material.uniforms.opacity.value = 1;
     }
 
     if(this.highlight.corner_material){
-      this.highlight.corner_material.opacity = 1;
+      this.highlight.corner_material.uniforms.opacity.value = 1;
     }
 
     if(this.text.material){
-      this.text.material.opacity = 1;
+      this.text.material.uniforms.opacity.value = 1;
     }
     
-    let fill = this.widget.fill.children[0];
-    if(fill)
-      fill.material.opacity = 1;
+    if(this.border.fill.material)
+      this.border.fill.material.uniforms.opacity.value = 1;
   }
 
   setHovering(bState){
@@ -758,42 +863,56 @@ class GUIControl {
   }
 
   hideBorder(){
-    this.widget.border.visible = false;
+    this.border.mesh.visible = false;
+    this.hideFill();
   }
 
   showBorder(){
-    this.widget.border.visible = true;
+    this.border.mesh.visible = true;
+    this.showFill();
   }
 
   hideHighlight(){
-    this.widget.highlight.visible = false;
+    this.highlight.mesh.visible = false;
+    this.hideHighlightFill();
   }
 
   showHighlight(){
-    this.widget.highlight.visible = true;
+    this.highlight.mesh.visible = true;
+    this.highlight.corner_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.highlight.edge_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.showHighlightFill();
   }
 
   hideFill(){
-    this.widget.fill.visible = false;
+    this.border.fill.mesh.visible = false;
   }
 
   showFill(){
-    this.widget.fill.visible = true;
+    this.border.fill.mesh.visible = true;
+  }
+
+  hideHighlightFill(){
+    this.highlight.fill.mesh.visible = false;
+  }
+
+  showHighlightFill(){
+    this.highlight.fill.mesh.visible = true;
   }
 
   setBorderColor(r = 1, g = 1, b = 1){
-    this.border.edge_material.color.setRGB(r, g, b);
-    this.border.corner_material.color.setRGB(r, g, b);
+    this.border.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.border.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
   }
 
   setHighlightColor(r = 1, g = 1, b = 1){
-    this.highlight.edge_material.color.setRGB(r, g, b);
-    this.highlight.corner_material.color.setRGB(r, g, b);
+    this.highlight.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.highlight.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
   }
 
   setTextColor(r = 1, g = 1, b = 1){
     //0.0, 0.658824, 0.980392
-    this.text.material.color.setRGB(r, g, b);
+    this.text.material.uniforms.diffuse.value.setRGB(r, g, b);
   }
 
   /*setText(text = '', renderOrder){
@@ -804,43 +923,78 @@ class GUIControl {
   }*/
 
   getFill(){
-    return this.widget.fill.children[0];
+    return this.border.fill.mesh;
   }
 
   getHighlightFill(){
-    return this.widget.highlight.children[0];
+    return this.highlight.fill.mesh;
   }
 
   setFillColor(r = 1, g = 1, b = 1){
     //0.0, 0.658824, 0.980392
     if(typeof this.getFill() != 'undefined'){
-      this.getFill().material.color.setRGB(r, g, b);
+      this.getFill().material.uniforms.diffuse.value.setRGB(r, g, b);
     }
   }
 
   getFillTexture(){
-    return this.widget.fill.children[0].material.map;
+    return this.border.fill.material.uniforms.map.value;
   }
 
   setFillTexture(map = undefined){
-    this.widget.fill.children[0].material.map = map;
-    this.widget.fill.children[0].material.needsUpdate = true;
-    this.widget.fill.children[0].material.visible = (map != undefined);
-
-    if(map == undefined){
-      this.widget.fill.children[0].material.opacity = 0.01;
-    }else{
-      this.widget.fill.children[0].material.opacity = 1;
+    
+    if(!(map instanceof THREE.Texture)){
+      map = TextureLoader.textures.get('fx_static');
     }
 
+    this.border.fill.material.uniforms.map.value = map;
+    this.border.fill.material.map = map;
+
+    if(map instanceof THREE.Texture){
+      this.border.fill.material.visible = true;
+      this.border.fill.material.uniforms.opacity.value = 1;
+      this.border.fill.material.uniforms.uvTransform.value = this.border.fill.material.uniforms.map.value.matrix;
+      this.border.fill.material.uniforms.map.value.updateMatrix();
+      this.border.fill.material.defines.USE_UV = '';
+      this.border.fill.material.defines.USE_MAP = '';
+    }else{
+      this.border.fill.material.visible = false;
+    }
+
+    this.border.fill.material.needsUpdate = true;
+    this.border.fill.material.uniformsNeedUpdate = true;
+    this.border.fill.material.visible = (map instanceof THREE.Texture);
   }
 
   getFillTextureName(){
-    return this.border.fill;
+    return this.border.fill.texture;
   }
 
   setFillTextureName(name = ''){
-    this.border.fill = name;
+    this.border.fill.texture = name;
+  }
+
+  setMaterialTexture(material = undefined, texture = undefined){
+    if(!(material instanceof THREE.ShaderMaterial) || !(texture instanceof THREE.Texture))
+      return false;
+
+    material.uniforms.map.value = map;
+    material.map = map;
+
+    if(map instanceof THREE.Texture){
+      material.visible = true;
+      material.uniforms.opacity.value = 1;
+      material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
+      material.uniforms.map.value.updateMatrix();
+      material.defines.USE_UV = '';
+      material.defines.USE_MAP = '';
+    }else{
+      material.visible = false;
+    }
+
+    material.needsUpdate = true;
+    material.uniformsNeedUpdate = true;
+    material.visible = (map instanceof THREE.Texture);
   }
 
 
@@ -1232,63 +1386,10 @@ class GUIControl {
 
   buildFill(){
     let extent = this.getFillExtent();
-    
-    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: this.border.color, side: THREE.DoubleSide} );
-    let sprite = new THREE.Mesh( geometry, material );
-    
-    sprite.name = this.widget.name+' center fill';
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
-    sprite.position.z = this.zOffset;
-
-    this.widget.fill.add( sprite );
-
-    if(this.border.fill != ''){
-      material.transparent = true;
-      TextureLoader.enQueue(this.border.fill, material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(texture == null){
-          material.opacity = 0.01;
-        }
-      });
-    }else{
-      TextureLoader.enQueue('fx_static', material, TextureLoader.Type.TEXTURE, (texture) => {
-        material.opacity = 1;
-        material.alphaTest = 0.5;
-        material.transparent = true;
-      });
-    }
-
-    sprite.renderOrder = this.id;
-
-    sprite.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    sprite.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    sprite.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    sprite.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    sprite.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    sprite.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    sprite.getControl = (e) => {
-      return this;
-    };
-
+    this.border.fill.mesh.name = this.widget.name+' center fill';
+    this.border.fill.mesh.scale.x = extent.width || 0.000001;
+    this.border.fill.mesh.scale.y = extent.height || 0.000001;
+    this.border.fill.mesh.position.z = this.zOffset;
   }
 
   buildBorder(){
@@ -1453,64 +1554,10 @@ class GUIControl {
 
   buildHighlightFill(){
     let extent = this.getFillExtent();
-    
-    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: this.highlight.color, side: THREE.DoubleSide} );
-    let sprite = new THREE.Mesh( geometry, material );
-    
-    sprite.name = this.widget.name+' highlight fill';
-    sprite.scale.x = extent.width || 0.000001;
-    sprite.scale.y = extent.height || 0.000001;
-    sprite.position.z = this.zOffset;
-
-    this.widget.highlight.add( sprite );
-    this.widget.hightlightfill = sprite;
-
-    if(this.highlight.fill != ''){
-      material.transparent = true;
-      TextureLoader.enQueue(this.highlight.fill, material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(texture == null){
-          material.opacity = 0.01;
-        }
-      });
-    }else{
-      TextureLoader.enQueue('fx_static', material, TextureLoader.Type.TEXTURE, (texture) => {
-        material.opacity = 1;
-        material.alphaTest = 0.5;
-        material.transparent = true;
-      });
-    }
-
-    sprite.renderOrder = this.id;
-
-    sprite.isClickable = (e) => {
-      return this.isClickable();
-    };
-
-    sprite.onClick = (e) => {
-      this.processEventListener('click', [e]);
-    };
-
-    sprite.onMouseMove = (e) =>{
-      this.processEventListener('mouseMove', [e]);
-    }
-
-    sprite.onMouseDown = (e) => {
-      this.processEventListener('mouseDown', [e]);
-    };
-
-    sprite.onMouseUp = (e) => {
-      this.processEventListener('mouseUp', [e]);
-    };
-    
-    sprite.onHover = (e) => {
-      this.processEventListener('hover', [e]);
-    };
-
-    sprite.getControl = (e) => {
-      return this;
-    };
-
+    this.highlight.fill.mesh.name = this.widget.name+' center fill';
+    this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
+    this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
+    this.highlight.fill.mesh.position.z = this.zOffset;
   }
 
   buildText(){
@@ -1759,18 +1806,14 @@ class GUIControl {
 
   resizeFill(){
     let extent = this.getFillExtent();
-    if(this.widget.fill.children.length){
-      this.widget.fill.children[0].scale.x = extent.width || 0.000001;
-      this.widget.fill.children[0].scale.y = extent.height || 0.000001;
-    }
+    this.border.fill.mesh.scale.x = extent.width || 0.000001;
+    this.border.fill.mesh.scale.y = extent.height || 0.000001;
   }
 
   resizeHighlightFill(){
     let extent = this.getFillExtent();
-    if(this.widget.hightlightfill.children.length){
-      this.widget.hightlightfill.children[0].scale.x = extent.width || 0.000001;
-      this.widget.hightlightfill.children[0].scale.y = extent.height || 0.000001;
-    }
+    this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
+    this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
   }
 
   resizeBorder(side = null){

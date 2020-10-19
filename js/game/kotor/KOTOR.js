@@ -748,6 +748,7 @@ class Game extends Engine {
           'CharGenName',
           'CharGenAbilities',
           'CharGenSkills',
+          'CharGenFeats',
         ];
 
         let menuLoader = new AsyncLoop({

@@ -96,7 +96,7 @@ class CharGenClass extends GameMenu {
             Game.CharGenMain.Open();
           });
 
-          this.tGuiPanel.widget.fill.children[0].position.z = -0.5;
+          this.tGuiPanel.getFill().position.z = -0.5;
 
           for(let i = 0; i < 6; i++){
             let control = this['_3D_MODEL'+(i+1)];
@@ -104,8 +104,8 @@ class CharGenClass extends GameMenu {
             control._3dView.visible = true;
             control._3dView.camera.aspect = control.extent.width / control.extent.height;
             control._3dView.camera.updateProjectionMatrix();
-            control.widget.fill.children[0].material.map = control._3dView.texture.texture;
-            control.widget.fill.children[0].material.transparent = false;
+            control.getFill().material.uniforms.map.value = control._3dView.texture.texture;
+            control.getFill().material.transparent = false;
           }
 
           Game.ModelLoader.load({
@@ -344,7 +344,7 @@ class CharGenClass extends GameMenu {
             modelControl.objectCreature.update(delta);
           }
           modelControl._3dView.render(delta);
-          modelControl.widget.fill.children[0].material.needsUpdate = true;          
+          modelControl.getFill().material.needsUpdate = true;          
 
           if(btnControl.hover){
             if(CharGenClass.HoveredClass != i){

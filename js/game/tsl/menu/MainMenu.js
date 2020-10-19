@@ -73,8 +73,8 @@ class MainMenu extends GameMenu {
 
               this._3dView = new LBL_3DView();
               this._3dView.visible = true;
-              this.lbl_3dview.widget.fill.children[0].material.map = this._3dView.texture.texture;
-              this.lbl_3dview.widget.fill.children[0].material.transparent = false;
+              this.lbl_3dview.getFill().material.uniforms.map.value = this._3dView.texture.texture;
+              this.lbl_3dview.getFill().material.transparent = false;
               
               
               THREE.AuroraModel.FromMDL(model, { 
