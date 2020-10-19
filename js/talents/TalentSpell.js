@@ -180,6 +180,16 @@ class TalentSpell extends TalentObject {
     }
   }
 
+  static From2DA( object = undefined ){
+    if(typeof object == 'object'){
+      let spell = new TalentSpell();
+      Object.assign(feat, Global.kotor2DA.spells.rows[object.__index]);
+      spell.id = object.__index;
+      return spell;
+    }
+    return false;
+  }
+
 }
 
 TalentSpell.MODE = {
