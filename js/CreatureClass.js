@@ -44,6 +44,44 @@ class CreatureClass {
     return parseInt(Global.kotor2DA.acbonus.rows[this.level][this.armorclasscolumn.toLowerCase()]);
   }
 
+  isFeatAvailable( feat = undefined ){
+    if(typeof feat != 'undefined'){
+      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      if(isNaN(status)){
+        return false;
+      }
+
+      if(status != 4){ //UNAVAILABLE
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getFeatStatus( feat = undefined ){
+    if(typeof feat != 'undefined'){
+      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      if(isNaN(status)){
+        return false;
+      }
+
+      return status;
+    }
+    return -1;
+  }
+
+  getFeatGrantedLevel( feat = undefined ){
+    if(typeof feat != 'undefined'){
+      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
+      if(isNaN(granted)){
+        return -1;
+      }
+
+      return granted;
+    }
+    return -1;
+  }
+
   static FromCreatureClassStruct(cls_struct = undefined){
     if(typeof cls_struct != 'undefined'){
       let cls = new CreatureClass(cls_struct.GetFieldByLabel('Class').GetValue());
