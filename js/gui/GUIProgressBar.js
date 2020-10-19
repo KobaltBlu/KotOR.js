@@ -169,7 +169,7 @@ class GUIProgressBar extends GUIControl {
     this.curValue = val < 0 ? 0 : val;
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
     
-    let value = this.curValue / this.maxValue;
+    let value = Math.min(this.curValue / this.maxValue, 1);
 
     let extent = this.getFillExtent();
     let sprite = this.progress.fill.mesh;
@@ -197,13 +197,7 @@ class GUIProgressBar extends GUIControl {
 
   _onCreate(){
     super._onCreate();
-
-    let extent = this.getFillExtent();
-    let sprite = this.getFill();
-    //sprite.material.color = new THREE.Color(0.0, 0.658824, 0.980392);
-
     this.setProgress(this.curValue);
-    
   }
 
 }
