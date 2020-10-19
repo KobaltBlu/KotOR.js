@@ -74,6 +74,22 @@ class TalentFeat extends TalentObject {
     return 1;
   }
 
+  static From2DA( object = undefined ){
+    if(typeof object == 'object'){
+      let feat = new TalentFeat();
+      Object.assign(feat, Global.kotor2DA.feat.rows[object.__index]);
+      feat.id = object.__index;
+      return feat;
+    }
+    return false;
+  }
+
 }
+
+TalentFeat.STATUS = {
+  UNAVAILABLE: 4,
+  GRANTED: 3,
+  AVAILABLE: 1
+};
 
 module.exports = TalentFeat;
