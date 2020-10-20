@@ -360,6 +360,7 @@ class ModuleCreatureController extends ModuleObject {
                   
                   this.setFacing(this.action.object.rotation.z, false);
                   this.getCurrentRoom();
+                  this.updateCollision();
                   this.actionQueue.shift()
                 }else{
                   distance = Utility.Distance2D(this.position, this.action.object.position);

@@ -754,7 +754,16 @@ class ModuleObject {
 
   SetPosition(x = 0, y = 0, z = 0){
     try{
+      if(this.model instanceof THREE.AuroraModel){
+        this.model.position.set(x, y, z);
+        this.model.box.setFromObject(this.model);
+        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
+      }
+
       this.position.set(x, y, z);
+
+      if(this instanceof ModuleCreature)
+        this.updateCollision();
     }catch(e){
       console.error('ModuleObject.SetPosition failed ');
     }
@@ -873,12 +882,15 @@ class ModuleObject {
     console.log('JumpToLocation', lLocation, this);
     if(typeof lLocation === 'object'){
       if(this.model instanceof THREE.AuroraModel){
-        this.model.position.set(
-          lLocation.position.x,
-          lLocation.position.y,
-          lLocation.position.z
-        )
+        this.model.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+        this.model.box.setFromObject(this.model);
+        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
       }
+
+      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+
+      if(this instanceof ModuleCreature)
+        this.updateCollision();
     }
   }
 

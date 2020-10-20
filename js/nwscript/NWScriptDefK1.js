@@ -1945,9 +1945,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        this.caller.jumpToObject(
-        args[0]
-        );
+        this.caller.jumpToObject( args[0] );
       }
     }
   },
@@ -2158,9 +2156,7 @@ NWScriptDefK1.Actions = {
     args: ["location"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        this.caller.jumpToLocation(
-        args[0]
-        );
+        this.caller.jumpToLocation( args[0] );
       }
     }
   },
