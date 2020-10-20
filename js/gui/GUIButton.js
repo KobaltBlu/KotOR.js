@@ -18,7 +18,7 @@ class GUIButton extends GUIControl {
     this.hideBorder();
 
     this.pulsing = true;
-    this.text.color.setRGB(1, 1, 0);
+    this.text.color.set(this.defaultHighlightColor);
     this.text.material.color = this.text.color;
     this.text.material.needsUpdate = true;
     
@@ -29,7 +29,7 @@ class GUIButton extends GUIControl {
     this.showBorder();
 
     this.pulsing = false;
-    this.text.color.setRGB(0, 0.658824, 0.980392);
+    this.text.color.set(this.defaultColor);
     this.text.material.color = this.text.color;
     this.text.material.needsUpdate = true;
     

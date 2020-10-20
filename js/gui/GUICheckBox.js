@@ -230,8 +230,10 @@ class GUICheckBox extends GUIControl{
 
     if(this.selected.edge != ''){
       TextureLoader.enQueue(this.selected.edge, this.selected.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.selected.edge, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -240,8 +242,10 @@ class GUICheckBox extends GUIControl{
 
     if(this.selected.corner != ''){
       TextureLoader.enQueue(this.selected.corner, this.selected.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.selected.corner, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -256,11 +260,7 @@ class GUICheckBox extends GUIControl{
         }
       });
     }else{
-      TextureLoader.enQueue('fx_static', this.selected.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        this.selected.fill.material.uniforms.opacity.value = 1;
-        this.selected.fill.material.alphaTest = 0.5;
-        this.selected.fill.material.transparent = true;
-      });
+      this.selected.fill.material.visible = false;
     }
 
     //--------------------//
@@ -269,8 +269,10 @@ class GUICheckBox extends GUIControl{
 
     if(this.highlightSelected.edge != ''){
       TextureLoader.enQueue(this.highlightSelected.edge, this.highlightSelected.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.highlightSelected.edge, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -279,8 +281,10 @@ class GUICheckBox extends GUIControl{
 
     if(this.highlightSelected.corner != ''){
       TextureLoader.enQueue(this.highlightSelected.corner, this.highlightSelected.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.highlightSelected.corner, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -295,11 +299,7 @@ class GUICheckBox extends GUIControl{
         }
       });
     }else{
-      TextureLoader.enQueue('fx_static', this.highlightSelected.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        this.highlightSelected.fill.material.uniforms.opacity.value = 1;
-        this.highlightSelected.fill.material.alphaTest = 0.5;
-        this.highlightSelected.fill.material.transparent = true;
-      });
+      this.highlightSelected.fill.material.visible = false;
     }
 
     //Control Input Events

@@ -177,7 +177,10 @@ class GUIFeatItem extends GUIProtoItem {
         this.widget.add(_buttonIconWidget);
 
         TextureLoader.enQueue('lbl_indent', this.border.fill.material, TextureLoader.Type.TEXTURE, (texture, tex) => {
-          buttonIcon.setFillTexture(texture);
+          buttonIcon.setMaterialTexture( buttonIcon.border.fill.material, texture);
+          buttonIcon.border.fill.material.transparent = true;
+          buttonIcon.setMaterialTexture( buttonIcon.highlight.fill.material, texture);
+          buttonIcon.highlight.fill.material.transparent = true;
           if(locked){
             buttonIcon.getFill().material.uniforms.opacity.value = 0.25;
           }
@@ -240,10 +243,13 @@ class GUIFeatItem extends GUIProtoItem {
           this.widget.add(_arrowIconWidget);
 
           TextureLoader.enQueue('lbl_skarr', this.border.fill.material, TextureLoader.Type.TEXTURE, (texture, tex) => {
-            arrowIcon.setFillTexture(texture);
-            arrowIcon.getFill().material.transparent = true;
+            arrowIcon.setMaterialTexture( arrowIcon.border.fill.material, texture);
+            arrowIcon.border.fill.material.transparent = true;
+            arrowIcon.setMaterialTexture( arrowIcon.highlight.fill.material, texture);
+            arrowIcon.highlight.fill.material.transparent = true;
             if(locked){
-              arrowIcon.getFill().material.uniforms.opacity.value = 0.25;
+              arrowIcon.border.fill.material.uniforms.opacity.value = 0.25;
+              arrowIcon.highlight.fill.material.uniforms.opacity.value = 0.25;
             }
           });
 

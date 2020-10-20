@@ -496,8 +496,8 @@ class GUIInventoryItem extends GUIProtoItem {
       buttonIcon.extent.height = 55;
       buttonIcon.extent.top = 0;
       buttonIcon.extent.left = 0;
-      buttonIcon.hasBorder = false;
-      buttonIcon.hasHighlight = false;
+      buttonIcon.disableBorder();
+      buttonIcon.disableHighlight();
       buttonIcon.hasText = true;
       buttonIcon.autoCalculatePosition = false;
       this.children.push(buttonIcon);

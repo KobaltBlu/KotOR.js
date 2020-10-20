@@ -88,6 +88,7 @@ class GUIProgressBar extends GUIControl {
     this.progress.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     this.progress.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
     this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
+    this.progress.fill.mesh.position.z = 1;
 
     this.widget.progress.add( this.progress.fill.mesh );
 
@@ -155,11 +156,6 @@ class GUIProgressBar extends GUIControl {
       });
     }else{
       this.progress.fill.material.visible = false;
-      /*TextureLoader.enQueue('fx_static', this.progress.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        this.progress.fill.material.uniforms.opacity.value = 1;
-        this.progress.fill.material.alphaTest = 0.5;
-        this.progress.fill.material.transparent = true;
-      });*/
     }
 
   }
@@ -193,6 +189,38 @@ class GUIProgressBar extends GUIControl {
     sprite.material.uniforms.opacity.value = 1;
     sprite.material.transparent = true;
 
+  }
+
+  getFillTextureName(){
+    return this.progress.fill.texture;
+  }
+
+  setFillTextureName(name = ''){
+    this.progress.fill.texture = name;
+  }
+
+  setFillTexture(map = undefined){
+    if(!(map instanceof THREE.Texture)){
+      map = TextureLoader.textures.get('fx_static');
+    }
+
+    this.progress.fill.material.uniforms.map.value = map;
+    this.progress.fill.material.map = map;
+
+    if(map instanceof THREE.Texture){
+      this.progress.fill.material.visible = true;
+      this.progress.fill.material.uniforms.opacity.value = 1;
+      this.progress.fill.material.uniforms.uvTransform.value = this.progress.fill.material.uniforms.map.value.matrix;
+      this.progress.fill.material.uniforms.map.value.updateMatrix();
+      this.progress.fill.material.defines.USE_UV = '';
+      this.progress.fill.material.defines.USE_MAP = '';
+    }else{
+      this.progress.fill.material.visible = false;
+    }
+
+    this.progress.fill.material.needsUpdate = true;
+    this.progress.fill.material.uniformsNeedUpdate = true;
+    this.progress.fill.material.visible = (map instanceof THREE.Texture);
   }
 
   _onCreate(){

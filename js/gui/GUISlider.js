@@ -71,7 +71,7 @@ class GUISlider extends GUIControl{
     this.addEventListener('click', () =>{
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
 
-      let scrollLeft = ( this.thumb.mesh.position.x + (thumb.mesh.scale.x / 2) ) + mouseX;
+      let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
       this.mouseInside();
     });
@@ -79,7 +79,7 @@ class GUISlider extends GUIControl{
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-      let scrollLeft = ( this.thumb.mesh.position.x + (thumb.mesh.scale.x / 2) ) + mouseX;
+      let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
     });
 
@@ -103,18 +103,18 @@ class GUISlider extends GUIControl{
     let threshold = (this.extent.width - 8)/2;
     this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;
 
-    if(thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+    if(this.thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
       this.thumb.mesh.position.x = -((scrollBarWidth - this.thumb.mesh.scale.x))/2
     }
 
-    if(thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+    if(this.thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
       this.thumb.mesh.position.x = ((scrollBarWidth - this.thumb.mesh.scale.x))/2
     }
 
     //console.log((thumb.mesh.position.x + threshold) / threshold);
 
     let maxScroll = ((scrollBarWidth - this.thumb.mesh.scale.x)/2);
-    scrollX = (thumb.mesh.position.x + maxScroll) / (maxScroll*2);
+    scrollX = (this.thumb.mesh.position.x + maxScroll) / (maxScroll*2);
     let valueChanged = (scrollX != this.value);
     this.value = scrollX;
 

@@ -735,17 +735,24 @@ class InGameOverlay extends GameMenu {
     }
 
     UpdateTargetUIIcon(index = 0){
+      let guiControl = this['LBL_TARGET'+index];
       if(this.targetSkills['target'+index].length){
         let action = this.targetSkills['target'+index][this['target'+index+'_idx']];
 
-        if(this['LBL_TARGET'+index].getFillTextureName() != action.icon){
+        if(guiControl.getFillTextureName() != action.icon){
+          guiControl.setFillTextureName(action.icon);
           TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
-            this['LBL_TARGET'+index].setFillTexture(texture);
+            guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
+            guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
+            guiControl.border.fill.material.transparent = true;
+            guiControl.highlight.fill.material.transparent = true;
+            guiControl.widget.position.z = 1;
           });
         }
         
       }else{
-        this['LBL_TARGET'+index].setFillTexture(null);
+        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
       }
     }
 
@@ -1001,6 +1008,7 @@ class InGameOverlay extends GameMenu {
             this.LBL_QUEUE0.setFillTextureName(action0.icon)
             TextureLoader.tpcLoader.fetch(action0.icon, (texture) => {
               this.LBL_QUEUE0.setFillTexture(texture)
+              this.LBL_QUEUE0.border.fill.material.transparent = true;
             });
           }
         }else{
@@ -1013,6 +1021,7 @@ class InGameOverlay extends GameMenu {
             this.LBL_QUEUE1.setFillTextureName(action1.icon)
             TextureLoader.tpcLoader.fetch(action1.icon, (texture) => {
               this.LBL_QUEUE1.setFillTexture(texture)
+              this.LBL_QUEUE1.border.fill.material.transparent = true;
             });
           }
         }else{
@@ -1025,6 +1034,7 @@ class InGameOverlay extends GameMenu {
             this.LBL_QUEUE2.setFillTextureName(action2.icon)
             TextureLoader.tpcLoader.fetch(action2.icon, (texture) => {
               this.LBL_QUEUE2.setFillTexture(texture)
+              this.LBL_QUEUE2.border.fill.material.transparent = true;
             });
           }
         }else{
@@ -1037,6 +1047,7 @@ class InGameOverlay extends GameMenu {
             this.LBL_QUEUE3.setFillTextureName(action3.icon)
             TextureLoader.tpcLoader.fetch(action3.icon, (texture) => {
               this.LBL_QUEUE3.setFillTexture(texture)
+              this.LBL_QUEUE3.border.fill.material.transparent = true;
             });
           }
         }else{

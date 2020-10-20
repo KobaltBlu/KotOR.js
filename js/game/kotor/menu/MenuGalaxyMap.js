@@ -190,7 +190,7 @@ class MenuGalaxyMap extends GameMenu {
       if(plnt){
         if(plnt.enabled){
           control.show();
-          control.disableBorder = true;
+          control.disableBorder();
           //control.hideBorder();
           control.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -201,7 +201,7 @@ class MenuGalaxyMap extends GameMenu {
           });
         }else{
           control.hide();
-          control.disableBorder = true;
+          control.disableBorder();
           //control.hideBorder();
           control.removeEventListener('click');
         }

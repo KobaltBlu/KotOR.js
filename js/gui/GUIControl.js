@@ -47,23 +47,13 @@ class GUIControl {
       'hover': []
     };
 
-    this.defaultColor = {
-      x: 0.0,
-      y: 0.658824,
-      z: 0.980392
-    };
+    this.defaultColor = new THREE.Color(0.0, 0.658824, 0.980392);
+    this.defaultHighlightColor = new THREE.Color(1, 1, 0);
 
     if(GameKey == 'TSL'){
-      this.defaultColor = {
-        /*x: 0.10196078568697,
-        y: 0.69803923368454,
-        z: 0.549019634723663*/
-        x: 1,
-        y: 1,
-        z: 1
-      };
+      this.defaultColor = new THREE.Color(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      this.defaultHighlightColor = new THREE.Color(0.800000011920929, 0.800000011920929, 0.6980392336845398);
     }
-
 
     this.allowClick = true;
     this.onClick = null;
@@ -83,8 +73,6 @@ class GUIControl {
     this.pulse = 1;
     this.opacity = 1;
     this.hover = false;
-
-    this.disableBorder = false;
 
     this.widget.border = new THREE.Group();
     this.widget.highlight = new THREE.Group();
@@ -120,7 +108,7 @@ class GUIControl {
     //--------//
 
     this.border = {
-      color: new THREE.Color(0, 0.658824, 0.980392),
+      color: new THREE.Color(this.defaultColor),
       corner: '',
       edge: '',
       fill: {
@@ -193,7 +181,7 @@ class GUIControl {
     //-----------//
 
     this.highlight = {
-      color: new THREE.Color(1, 1, 0),
+      color: new THREE.Color(this.defaultHighlightColor),
       corner: '',
       edge: '',
       fill: {
@@ -266,7 +254,7 @@ class GUIControl {
     //------//
 
     this.text = {
-      color: new THREE.Color(0, 0.658824, 0.980392),
+      color: new THREE.Color(this.defaultColor),
       font: '', //fnt_d16x16b
       strref: -1,
       text: '',
@@ -521,6 +509,8 @@ class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
       });
+    }else{
+      this.border.edge_material.visible = false;
     }
 
     if(this.border.corner != ''){
@@ -531,6 +521,8 @@ class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
       });
+    }else{
+      this.border.corner_material.visible = false;
     }
 
     if(this.border.fill.texture != ''){
@@ -542,11 +534,6 @@ class GUIControl {
       });
     }else{
       this.border.fill.material.visible = false;
-      /*TextureLoader.enQueue('fx_static', this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        this.border.fill.material.uniforms.opacity.value = 1;
-        this.border.fill.material.alphaTest = 0.5;
-        this.border.fill.material.transparent = true;
-      });*/
     }
 
     //-----------//
@@ -561,6 +548,8 @@ class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
       });
+    }else{
+      this.highlight.edge_material.visible = false;
     }
 
     if(this.highlight.corner != ''){
@@ -571,6 +560,8 @@ class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
       });
+    }else{
+      this.highlight.corner_material.visible = false;
     }
 
     if(this.highlight.fill.texture != ''){
@@ -582,11 +573,6 @@ class GUIControl {
       });
     }else{
       this.highlight.fill.material.visible = false;
-      /*TextureLoader.enQueue('fx_static', this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        this.highlight.fill.material.uniforms.opacity.value = 1;
-        this.highlight.fill.material.alphaTest = 0.5;
-        this.highlight.fill.material.transparent = true;
-      });*/
     }
 
     //------//
@@ -605,6 +591,8 @@ class GUIControl {
           this.onFontTextureLoaded();
         }
       });
+    }else{
+      this.text.material.visible = false;
     }
 
   }
@@ -626,7 +614,7 @@ class GUIControl {
 
     this.hideHighlight();
 
-    if(this.border.edge != '' && !this.disableBorder)
+    if(this.border.edge != '')
       this.showBorder();
 
   }
@@ -641,11 +629,8 @@ class GUIControl {
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();
 
-    if(this.hasHighlight){
-      if(this.highlight.edge != '' || this.highlight.fill != ''){
-        this.showHighlight();
-      }
-    }
+    if(this.highlight.edge != '' || this.highlight.fill != '')
+      this.showHighlight();
 
     if(this.highlight.texture)
       this.hideBorder();
@@ -690,24 +675,11 @@ class GUIControl {
     //  this.widget.add(this.menu.backgroundSprite);
     //}
 
-    if(this.hasBorder){
-      if(this.border.edge != '' && this.border.corner != ''){
-        this.buildBorder();
-      }
-
-      //if(this.border.edge == '')
-      //  this.hideBorder();
-
-    }
-
+    this.buildBorder();
     this.buildFill();
 
-    if(this.hasHighlight){
-      if(this.highlight.edge != '' && this.highlight.corner != ''){
-        this.buildHighlight();
-      }
-      this.buildHighlightFill();
-    }
+    this.buildHighlight();
+    this.buildHighlightFill();
 
     this.hideHighlight();
     
@@ -879,8 +851,8 @@ class GUIControl {
 
   showHighlight(){
     this.highlight.mesh.visible = true;
-    this.highlight.corner_material.uniforms.diffuse.value.setRGB(1, 1, 0);
-    this.highlight.edge_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.highlight.corner_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    this.highlight.edge_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
     this.showHighlightFill();
   }
 
@@ -975,13 +947,16 @@ class GUIControl {
   }
 
   setMaterialTexture(material = undefined, texture = undefined){
-    if(!(material instanceof THREE.ShaderMaterial) || !(texture instanceof THREE.Texture))
+    if(!(material instanceof THREE.ShaderMaterial))
       return false;
 
-    material.uniforms.map.value = map;
-    material.map = map;
+    if(texture == undefined)
+      texture = null;
 
-    if(map instanceof THREE.Texture){
+    material.uniforms.map.value = texture;
+    material.map = texture;
+
+    if(texture instanceof THREE.Texture){
       material.visible = true;
       material.uniforms.opacity.value = 1;
       material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
@@ -994,7 +969,7 @@ class GUIControl {
 
     material.needsUpdate = true;
     material.uniformsNeedUpdate = true;
-    material.visible = (map instanceof THREE.Texture);
+    material.visible = (texture instanceof THREE.Texture);
   }
 
 
@@ -1755,6 +1730,16 @@ class GUIControl {
         this.widget.text.position.y = size.y/2;
       break;
     }
+  }
+
+  disableBorder(){
+    this.border.corner_material.visible = false;
+    this.border.edge_material.visible = false;
+  }
+
+  disableHighlight(){
+    this.highlight.corner_material.visible = false;
+    this.highlight.edge_material.visible = false;
   }
 
   disableTextAlignment(){
