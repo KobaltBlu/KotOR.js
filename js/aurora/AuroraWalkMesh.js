@@ -193,8 +193,8 @@
     ReadAABB(){
       return {
         box: new THREE.Box3(
-          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() - 1),
-          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() + 1)
+          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() - 10),
+          new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle() + 10)
         ),
         leafFaceIndex: this.wokReader.ReadInt32(),
         unknownFixedAt4: this.wokReader.ReadInt32(),
