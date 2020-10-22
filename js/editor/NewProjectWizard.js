@@ -252,7 +252,7 @@ class NewProjectWizard extends Wizard {
 
                           gff.GetFieldByLabel('Mod_Entry_Area').SetValue('area_001');
                           gff.path = Global.Project.directory;
-                          gff.Save('module', () => {
+                          gff.Save(path.join(Global.Project.directory, 'module.ifo'), () => {
                             //Rename the Extracted ARE file
                             fs.rename(path.join(Global.Project.directory, originalAreaName+'.are'), path.join(Global.Project.directory, 'area_001.are'), function(err) {
                               //Rename the Extracted GIT file

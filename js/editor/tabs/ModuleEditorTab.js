@@ -40,9 +40,19 @@ class ModuleEditorTab extends EditorTab {
               this.toggleNodeVisibility(ModuleEditorTab.NODES.WALKMESH);
             }}
           ]},
-          {name: 'Toggle Preview', onClick: () => {
-            this.setMode(!this.mode ? ModuleEditorTab.MODES.PREVIEW : ModuleEditorTab.MODES.EDIT);
-          }},
+          {name: 'Editor', items: [
+            {name: 'Camera', items: [
+              {name: 'Editor Camera', onClick: () => {
+                this.setMode(ModuleEditorTab.MODES.EDIT);
+              }},
+              {name: 'Player Camera', onClick: () => {
+                this.setMode(ModuleEditorTab.MODES.PREVIEW);
+              }}
+            ]},
+            {name: 'Toggle Fog', onClick: () => {
+              this.scene.fog = !this.scene.fog ? this.module.area.fog : undefined;
+            }}
+          ]},
         ]
       }
     });
@@ -515,6 +525,7 @@ class ModuleEditorTab extends EditorTab {
           this.Render();
   
           this.updateInfoBox();
+          this.cam_controls.target.set(Game.module.Mod_Entry_X, Game.module.Mod_Entry_Y, Game.module.Mod_Entry_Z);
         });
       });
 

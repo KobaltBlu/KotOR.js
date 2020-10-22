@@ -2,12 +2,8 @@ class TwoDAEditorTab extends EditorTab {
   constructor(file){
     super();
     this.$tabName.text("2DA Editor");
-
     this.twoDAObject = null;
-
     this.OpenFile(file);
-
-
   }
 
   init(){
@@ -31,13 +27,16 @@ class TwoDAEditorTab extends EditorTab {
 
     let bodyStr = '';
 
+    let index = 0;
     for(let key in this.twoDAObject.rows){
       let row = this.twoDAObject.rows[key];
 
-      bodyStr += '<tr>';
+      bodyStr += '<tr tabindex="'+(index++)+'">';
 
       for(let propKey in row){
-        bodyStr += '<td>'+row[propKey]+'</td>';
+        if(this.twoDAObject.columns.indexOf(propKey) >= 0){
+          bodyStr += '<td contenteditable="true" data-value="'+row[propKey]+'">'+row[propKey]+'</td>';
+        }
       }
       bodyStr += '</tr>';
     }
@@ -50,21 +49,12 @@ class TwoDAEditorTab extends EditorTab {
 
     this.$tabContent.perfectScrollbar();
 
-    /*setTimeout( () => {
-      let $target = this.$tableHeaderRow;
-      let $target_children = $target.children();
-
-      let $clone = $target.clone();
-
-      $clone.children().width( function(i,val) {
-          return $target_children.eq(i).outerWidth(true);
-      });
-
-      $('thead', this.$tableFixed).append($clone);
-
-      this.$tabContent.append(this.$tableFixed);
-    }, 1000);*/
-
+    $('tr', this.$tableBody).off('click').on('click', (e) => {
+      $('tr', this.$tableBody).removeClass('focus').removeClass('focus-before').removeClass('focus-after');
+      $(e.currentTarget).prev().addClass('focus-before');
+      $(e.currentTarget).next().addClass('focus-after');
+      $(e.currentTarget).addClass('focus');
+    });
 
     this.SmartifyCells();
   }
@@ -98,71 +88,26 @@ class TwoDAEditorTab extends EditorTab {
     console.log('SmartifyCells: Started');
     $('td', this.$tableBody).each( (i, td) => {
       let $td = $(td);
-
-      $td.data('value', $td.text());
-
-      $td.enableEditMode = () => {
-
-        console.log($('tr td.editing', this.$tableBody));
-
-        $('tr td.editing', this.$tableBody).each( function() {
-          $(this).disableEditMode();
-        });
-
-        if(!$td.hasClass('editing')){
-
-          $td.addClass('editing');
-
-          let $input = $('<input style="width: 100%;" />');
-          $input.val(this.GetEditableValue($td.data('value')));
-          $td.html('').append($input);
-
-          $input.on('input', () => {
-            $td.data('value', $input.val());
-          });
-
-          $input.on('blur', () => {
-            $td.disableEditMode();
-          });
-
-          $input.on('click', (e) => {
-            e.stopPropagation();
-          });
-
-          $input.focus();
-
-        }
-      };
-
-      $td.disableEditMode = () => {
-        if($td.hasClass('editing')){
-          $td.removeClass('editing');
-
-          $td.data( 'value', this.GetDisplayValue( $td.data('value') ) );
-
-          $td.html($td.data('value'));
-        }
-      };
-
-      $td.on('dblclick', (e) => {
-        e.preventDefault();
-        $td.enableEditMode();
+      $td.off('input').on('input', function(e){
+        let $ele = $(this);
+        $ele.data('value', $ele.text());
+        $ele.attr('data-value', $ele.text());
       });
 
+      $td.off('blur').on('blur', function(e){
+        let $ele = $(this);
+        $ele.text($ele.text().trim());
+
+        if($ele.text() == ''){
+          $ele.text('****');
+        }
+
+        $ele.data('value', $ele.text());
+        $ele.attr('data-value', $ele.text());
+      });
     });
     console.log('SmartifyCells: Finished');
   }
-
-  GetEditableValue(value){
-    if(value == '****')
-      return '';
-  }
-
-  GetDisplayValue(value){
-    if(value == '')
-      return '***';
-  }
-
 
 }
 

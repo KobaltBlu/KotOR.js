@@ -1092,6 +1092,13 @@ table.twoda > thead > tr > th {
     padding: 5px;
     background-color: #265c8c;
     border-right: 1px solid #192631;
+    position: sticky;
+    top: 0;
+}
+
+table.twoda > thead > tr > th:nth-child(1) {
+    left: 0;
+    z-index: 1;
 }
 
 table.twoda > tbody > tr:nth-child(odd) > td {
@@ -1100,13 +1107,61 @@ table.twoda > tbody > tr:nth-child(odd) > td {
 
 table.twoda > tbody > tr > td {
     padding: 5px;
-    border-right: 1px solid #192631;
+    border: 1px solid #192631;
+    transition: .5s ease-in-out all;
+}
+
+table.twoda > tbody > tr > td:nth-child(1) {
+    background: #212121;
+    position: sticky;
+    left: 0;
+}
+
+table.twoda > tbody > tr.focus > td {
+    background: #1f2e3c;
+    border: 1px solid #337ab7!important;
+}
+
+table.twoda > tbody > tr.focus-before > td {
+    border-bottom: 1px solid #337ab7!important;
+}
+
+table.twoda > tbody > tr.focus-after > td {
+    border-top: 1px solid #337ab7!important;
 }
 
 table.twoda.fixed {
 	position: absolute;
 	top:0;
 	left:0;
+}
+
+/* HEX Values */
+table.twoda > tbody > tr > td[data-value^="0x"] {
+    color: #00dada;
+}
+
+/* NULL Values */
+table.twoda > tbody > tr > td[data-value="****"] {
+    color: #a00000;
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu>a:after {
+    content: "\e258";
+    float: right;
+    border: none;
+    font-family: 'Glyphicons Halflings';
+}
+
+.dropdown-submenu>.dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: 0px;
+    margin-left: 0px;
 }
 
 

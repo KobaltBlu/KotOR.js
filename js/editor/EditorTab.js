@@ -111,6 +111,25 @@ class EditorTab {
       this.BuildToolbarItem(item, null)
     });
 
+    // ------------------------------------------------------- //
+    // Multi Level dropdowns
+    // ------------------------------------------------------ //
+    $("ul.dropdown-menu [data-toggle='dropdown']", this.$toolbar).on("click", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      $(this).siblings().toggleClass("show");
+
+
+      if (!$(this).next().hasClass('show')) {
+        $(this).parents('.dropdown-menu').first().find('.show').removeClass("show");
+      }
+      $(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function(e) {
+        $('.dropdown-submenu .show').removeClass("show");
+      });
+
+    });
+
     this.$tabContent.css({
       paddingTop: 50//this is the default height of the bootstrap navbar (it needs to be smaller to make it a toolbar)
     });
@@ -119,64 +138,74 @@ class EditorTab {
 
   BuildToolbarItem(item, $parent = null){
 
+    let ddid = EditorTab.dropdownId++;
+
     let topLevel = false;
     let $item;
 
-    if($parent == null)
+    if($parent == null){
       $parent = this.$toolbar; topLevel = true;
+    }
 
-      if (typeof item.type == 'undefined')
-        item.type = 'item';
+    if (typeof item.type == 'undefined')
+      item.type = 'item';
 
-      if (typeof item.name == 'undefined')
-        item.name = '';
+    if (typeof item.name == 'undefined')
+      item.name = '';
 
-      if (typeof item.icon != 'undefined')
-        item.type = 'icon';
+    if (typeof item.icon != 'undefined')
+      item.type = 'icon';
 
-      if (typeof item.glyphicon != 'undefined')
-        item.type = 'glyphicon';
+    if (typeof item.glyphicon != 'undefined')
+      item.type = 'glyphicon';
 
-      if (typeof item.color === 'undefined'){
-        item.color = 'white';
+    if (typeof item.color === 'undefined'){
+      item.color = 'white';
+    }
+
+    //Build Item
+    if(item.type === 'separator' || item.type === 'sep')
+      $item = $('<li role="separator" class="divider" />');
+    else if(item.type === 'title')
+      $item = $('<li class="title">'+item.name+'</li>');
+    else if(item.type === 'icon')
+      $item = $('<li><a href="#"><img src="'+item.icon+'" title="'+( item.name ? item.name : '' )+'" style="width: 20px; height: 20px;"/></a></li>');
+    else if(item.type === 'glyphicon')
+      $item = $('<li><a href="#" class="glyphicon '+item.glyphicon+'" style="color: '+item.color+';"></a></li>');
+    else
+      $item = $('<li><a href="#">'+item.name+'</a></li>');
+
+    $parent.append($item);
+
+    //Set onClick Event
+    $item.on('click', function(e){
+      e.preventDefault();
+      if(topLevel){
+        $('.dropdown-submenu .show', $item).removeClass("show");
       }
-
-      //Build Item
-      if(item.type === 'separator' || item.type === 'sep')
-        $item = $('<li role="separator" class="divider" />');
-      else if(item.type === 'title')
-        $item = $('<li class="title">'+item.name+'</li>');
-      else if(item.type === 'icon')
-        $item = $('<li><a href="#"><img src="'+item.icon+'" title="'+( item.name ? item.name : '' )+'" style="width: 20px; height: 20px;"/></a></li>');
-      else if(item.type === 'glyphicon')
-        $item = $('<li><a href="#" class="glyphicon '+item.glyphicon+'" style="color: '+item.color+';"></a></li>');
-      else
-        $item = $('<li><a href="#">'+item.name+'</a></li>');
-
-      $parent.append($item);
-
-      //Set onClick Event
-      if (typeof item.onClick !== 'undefined') {
-        $item.on('click', item.onClick);
-      }else{
-        $item.on('click', function(e){
-          e.preventDefault();
-        });
-      }
-
-      //If there are child items
-      if(typeof item.items !== 'undefined'){
-        if(item.items.length){
-          $parent = $('<ul class="dropdown-menu"/>');
-          $item.append($parent);
+      
+      if (typeof item.onClick == 'function')
+        item.onClick(e);
+    });
+    //If there are child items
+    if(item.items instanceof Array){
+      if(item.items.length){
+        console.log('topLevel', topLevel);
+        if(!topLevel){
+          $item.removeClass('dropdown-submenu').addClass('dropdown-submenu');
+        }else{
           $item.addClass('dropdown');
-          $('a', $item).addClass('dropdown-toggle').attr('data-toggle','dropdown').attr('role','button').attr('aria-haspopup','true').attr('aria-expanded','false');
         }
-
-        $.each(item.items, (i, cItem) => {
-          this.BuildToolbarItem(cItem, $parent)
-        });
+        
+        $parent = $('<ul class="dropdown-menu"/>');
+        $item.append($parent);
+        $('a', $item).addClass('dropdown-toggle').attr('data-toggle','dropdown').attr('role','button').attr('aria-haspopup','true').attr('aria-expanded','false');
       }
+
+      $.each(item.items, (i, cItem) => {
+        this.BuildToolbarItem(cItem, $parent)
+      });
+    }
 
   }
 
@@ -365,5 +394,6 @@ class EditorTab {
 }
 
 EditorTab.prototype.singleInstance = false;
+EditorTab.dropdownId = 0;
 
 module.exports = EditorTab;

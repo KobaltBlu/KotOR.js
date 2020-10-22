@@ -233,11 +233,11 @@ class ERFObject {
 
   exportRawResource(directory = null, resref = '', restype = 0x000F, onComplete = null) {
     if(directory != null){
-      let resource = this.getResourceByKey(restype, resref);
+      let resource = this.getResourceByKey(resref, restype);
       if(resource){
         if(this.inMemory){
-          let buffer = Buffer.from(this.buffer, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
-          fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
+          let buffer = Buffer.from(this.buffer, resource.OffsetToResource, resource.OffsetToResource + (resource.ResourceSize - 1));
+          fs.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer, (err) => {
             if (err) console.log(err);
 
             if(onComplete != null)
@@ -250,18 +250,26 @@ class ERFObject {
               console.log('ERF Read', status.message);
               return;
             }
-            let buffer = Buffer.alloc(resource.DataSize);
-            fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
-              console.log('ERF Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
-              fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
-                if (err) console.log(err);
+            try{
+            let buffer = Buffer.alloc(resource.ResourceSize);
+              fs.read(fd, buffer, 0, resource.ResourceSize, resource.OffsetToResource, function(err, num) {
+                console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
+                fs.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer, (err) => {
+                  if (err) console.log(err);
 
-                if(onComplete != null)
-                  onComplete(buffer);
+                  if(onComplete != null)
+                    onComplete(buffer);
+
+                });
 
               });
+            }catch(e){
+              console.log(resource);
+              console.error(e);
 
-            });
+              if(onComplete != null)
+                onComplete(undefined);
+            }
           });
         }
       }else{
