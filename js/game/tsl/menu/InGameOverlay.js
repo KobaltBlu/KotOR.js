@@ -743,17 +743,23 @@ class InGameOverlay extends GameMenu {
   }
 
   UpdateTargetUIIcon(index = 0){
+    let guiControl = this['LBL_TARGET'+index];
     if(this.targetSkills['target'+index].length){
       let action = this.targetSkills['target'+index][this['target'+index+'_idx']];
 
-      if(this['LBL_TARGET'+index].getFillTextureName() != action.icon){
+      if(guiControl.getFillTextureName() != action.icon){
+        guiControl.setFillTextureName(action.icon);
         TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
-          this['LBL_TARGET'+index].setFillTexture(texture);
+          guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
+          guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
+          guiControl.border.fill.material.transparent = true;
+          guiControl.highlight.fill.material.transparent = true;
         });
       }
       
     }else{
-      this['LBL_TARGET'+index].setFillTexture(null);
+      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
     }
   }
 
@@ -936,26 +942,6 @@ class InGameOverlay extends GameMenu {
 
   Update(delta = 0){
     super.Update(delta);
-
-    this.BTN_ACTIONDOWN0.widget.position.y = -20
-    this.BTN_ACTIONDOWN0.widget.rotation.z = Math.PI;
-    this.BTN_ACTIONDOWN1.widget.position.y = -20
-    this.BTN_ACTIONDOWN1.widget.rotation.z = Math.PI;
-    this.BTN_ACTIONDOWN2.widget.position.y = -20
-    this.BTN_ACTIONDOWN2.widget.rotation.z = Math.PI;
-    this.BTN_ACTIONDOWN3.widget.position.y = -20
-    this.BTN_ACTIONDOWN3.widget.rotation.z = Math.PI;
-    this.BTN_ACTIONDOWN4.widget.position.y = -20
-    this.BTN_ACTIONDOWN4.widget.rotation.z = Math.PI;
-    this.BTN_ACTIONDOWN5.widget.position.y = -20
-    this.BTN_ACTIONDOWN5.widget.rotation.z = Math.PI;
-
-    this.BTN_ACTIONUP0.widget.position.y = 20;
-    this.BTN_ACTIONUP1.widget.position.y = 20;
-    this.BTN_ACTIONUP2.widget.position.y = 20;
-    this.BTN_ACTIONUP3.widget.position.y = 20;
-    this.BTN_ACTIONUP4.widget.position.y = 20;
-    this.BTN_ACTIONUP5.widget.position.y = 20;
 
     this.UpdateTargetUI();
 
