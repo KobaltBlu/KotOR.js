@@ -330,9 +330,10 @@ class GUICheckBox extends GUIControl{
     this.selected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlightSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
 
-    this.selected.fill.material.uniforms.diffuse.value.setRGB(0, 0.658824, 0.980392);
-    this.highlightSelected.fill.material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.selected.fill.material.uniforms.diffuse.value.set(this.defaultColor);
+    this.highlightSelected.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
 
+    this.updateCBVisualState();
   }
 
   buildFill(){
@@ -340,7 +341,7 @@ class GUICheckBox extends GUIControl{
     let cbSize = this.extent.height;
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.border.fill.material.uniforms.diffuse.value.setRGB(0, 0.658824, 0.980392);
+    this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
   }
 
   buildHighlightFill(){
@@ -348,7 +349,7 @@ class GUICheckBox extends GUIControl{
     let cbSize = this.extent.height;
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.highlight.fill.material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
   }
 
   hideHighlight(){}
@@ -383,7 +384,7 @@ class GUICheckBox extends GUIControl{
     this.hover = false;
     this.pulsing = false;
 
-    this.text.material.uniforms.diffuse.value.setRGB(0, 0.658824, 0.980392);
+    this.text.material.uniforms.diffuse.value.set(this.defaultColor);
 
     if(typeof this.onMouseOut === 'function')
       this.onMouseOut();
@@ -399,7 +400,7 @@ class GUICheckBox extends GUIControl{
     this.hover = true;
     this.pulsing = true;
 
-    this.text.material.uniforms.diffuse.value.setRGB(1, 1, 0);
+    this.text.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
 
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();

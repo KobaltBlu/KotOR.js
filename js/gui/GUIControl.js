@@ -406,8 +406,10 @@ class GUIControl {
 
         if(border.HasField('COLOR')){
           let color = border.GetFieldByLabel('COLOR').GetVector();
-          if( (color.x * color.y * color.z) < 1 )
-            this.border.color.setRGB(color.x, color.y, color.z)
+          if( (color.x * color.y * color.z) < 1 ){
+            this.border.color.setRGB(color.x, color.y, color.z);
+            this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
+          }
         }
   
         if(typeof this.border.color === 'undefined'){
@@ -460,7 +462,10 @@ class GUIControl {
 
         if(highlight.HasField('COLOR')){
           let color = highlight.GetFieldByLabel('COLOR').GetVector();
-          this.highlight.color.setRGB(color.x, color.y, color.z);
+          if( (color.x * color.y * color.z) < 1 ){
+            this.highlight.color.setRGB(color.x, color.y, color.z);
+            this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
+          }
         }
   
         if(typeof this.highlight.color === 'undefined'){
@@ -528,8 +533,8 @@ class GUIControl {
     if(this.border.fill.texture != ''){
       this.border.fill.material.transparent = true;
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(texture == null){
-          this.border.fill.material.uniforms.opacity.value = 0.01;
+        if(!(texture instanceof THREE.Texture)){
+          this.border.fill.material.visible = false;
         }
       });
     }else{
@@ -567,8 +572,8 @@ class GUIControl {
     if(this.highlight.fill.texture != ''){
       this.highlight.fill.material.transparent = true;
       TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
-        if(texture == null){
-          this.highlight.fill.material.uniforms.opacity.value = 0.01;
+        if(!(texture instanceof THREE.Texture)){
+          this.highlight.fill.material.visible = false;
         }
       });
     }else{
@@ -1618,80 +1623,93 @@ class GUIControl {
 
     let maxLineWidth = this.getInnerSize().width;
 
+    let paragraphs = text.split('\n');
+    let pCount = paragraphs.length;
     let x = 0, y = 0;
     let space_code = 32;
-    let words = text.split(' ');
+    let words = [];
     let word, wordLength, wordWidth, char, ul, lr, w, h;
     let u0, v1, u1, v0;
-    for(let j = 0, len = words.length; j < len; j++){
+    for(let p = 0; p < pCount; p++){
+      let paragraph = paragraphs[p];
+      x = 0;
 
-      word = words[j];
-      wordLength = word.length;
-      wordWidth = 0;
-
-      //Calculate the length of the word to be printed
-      for(let i = 0; i < wordLength; i++){
-        char = word.charCodeAt(i);
-        ul = texture.txi.upperleftcoords[char];
-        lr = texture.txi.lowerrightcoords[char];
-        wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
-      }
-
-      //Wrap to new line if needed
-      if(x + wordWidth > (maxLineWidth - txi_height)){
+      if(p > 0){
         y -= txi_bsline;
-        x = 0;
-      }
-      
-      //If this isn't the first word of the line prepend a space to it
-      if(x){
-        word = ' '+word;
-        wordLength++;
       }
 
-      for(let i = 0; i < wordLength; i++){
-        char = word.charCodeAt(i);
+      words = paragraph.split(' ');
+      for(let j = 0, len = words.length; j < len; j++){
 
-        ul = texture.txi.upperleftcoords[char];
-        lr = texture.txi.lowerrightcoords[char];
+        word = words[j];
+        wordLength = word.length;
+        wordWidth = 0;
 
-        w = ((lr.x - ul.x) * texture.image.width) * scale;
-        h = ((lr.y - ul.y) * texture.image.height) * scale;
+        //Calculate the length of the word to be printed
+        for(let i = 0; i < wordLength; i++){
+          char = word.charCodeAt(i);
+          ul = texture.txi.upperleftcoords[char];
+          lr = texture.txi.lowerrightcoords[char];
+          wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
+        }
 
-        // BL
-        positions[posI++] = x
-        positions[posI++] = y
-        // TL
-        positions[posI++] = x
-        positions[posI++] = y + h
-        // TR
-        positions[posI++] = x + w
-        positions[posI++] = y + h
-        // BR
-        positions[posI++] = x + w
-        positions[posI++] = y
+        //Wrap to new line if needed
+        if( x + wordWidth > ( maxLineWidth - txi_height ) ){
+          y -= txi_bsline;
+          x = 0;
+        }
+        
+        //If this isn't the first word of the line prepend a space to it
+        if(x){
+          word = ' '+word;
+          wordLength++;
+        }
 
-        // top left position
-        u0 = ul.x;
-        v1 = ul.y;
-        u1 = lr.x;
-        v0 = lr.y;
+        for(let i = 0; i < wordLength; i++){
+          char = word.charCodeAt(i);
 
-        // BL
-        uvs[uvI++] = u0
-        uvs[uvI++] = v1
-        // TL
-        uvs[uvI++] = u0
-        uvs[uvI++] = v0
-        // TR
-        uvs[uvI++] = u1
-        uvs[uvI++] = v0
-        // BR
-        uvs[uvI++] = u1
-        uvs[uvI++] = v1
+          ul = texture.txi.upperleftcoords[char];
+          lr = texture.txi.lowerrightcoords[char];
 
-        //Advance the x position by the width of the current char
-        x += w;
+          w = ((lr.x - ul.x) * texture.image.width) * scale;
+          h = ((lr.y - ul.y) * texture.image.height) * scale;
+
+          // BL
+          positions[posI++] = x
+          positions[posI++] = y
+          // TL
+          positions[posI++] = x
+          positions[posI++] = y + h
+          // TR
+          positions[posI++] = x + w
+          positions[posI++] = y + h
+          // BR
+          positions[posI++] = x + w
+          positions[posI++] = y
+
+          // top left position
+          u0 = ul.x;
+          v1 = ul.y;
+          u1 = lr.x;
+          v0 = lr.y;
+
+          // BL
+          uvs[uvI++] = u0
+          uvs[uvI++] = v1
+          // TL
+          uvs[uvI++] = u0
+          uvs[uvI++] = v0
+          // TR
+          uvs[uvI++] = u1
+          uvs[uvI++] = v0
+          // BR
+          uvs[uvI++] = u1
+          uvs[uvI++] = v1
+
+          //Advance the x position by the width of the current char
+          x += w;
+        }
+
       }
 
     }
@@ -1751,7 +1769,7 @@ class GUIControl {
     return {width: $(window).innerWidth(), height: $(window).innerHeight()};
   }
 
-  setText(str='', renderOrder = 0){
+  setText(str='', renderOrder = 5){
 
     let oldText = this.text.text;
     this.text.text = (str).toString().replace(/\s*\{.*?\}\s*/gi, '');

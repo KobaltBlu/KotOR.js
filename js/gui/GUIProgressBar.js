@@ -88,7 +88,7 @@ class GUIProgressBar extends GUIControl {
     this.progress.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     this.progress.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
     this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
-    this.progress.fill.mesh.position.z = 1;
+    this.progress.fill.mesh.position.z = this.zOffset + 1;
 
     this.widget.progress.add( this.progress.fill.mesh );
 
