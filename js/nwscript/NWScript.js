@@ -1080,16 +1080,16 @@ NWScript.ByteCodes = {
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( this.var1%var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
-          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FI':
-          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'FF':
-          this.stack.push( this.var1%var2, NWScript.DATATYPE.FLOAT );
+          this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.FLOAT );
         break;
         case 'VF':
           this.stack.push( this.var1 % this.var2, NWScript.DATATYPE.FLOAT ); //Z
