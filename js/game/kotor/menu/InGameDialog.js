@@ -252,6 +252,17 @@ class MenuDialog extends GameMenu {
             //Bark
             this.EndConversation();
             Game.InGameBark.bark(entry);
+            let reply = this.replyList[entry.replies[0].index];
+            if(reply){
+              if(reply.script != ''){
+                NWScript.Load(reply.script).then( (script) => {
+                  if(script instanceof NWScriptInstance){
+                    script.name = entry.script;
+                    script.run(this.owner, 0);
+                  }
+                });
+              }
+            }
           }else{
             //console.log('startingEntry', this.startingEntry);
             if(this.startingEntry.cameraAngle == 6){
