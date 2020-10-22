@@ -234,16 +234,10 @@ class NWScriptInstance {
     script.listenPatternSpeaker = scope.listenPatternSpeaker;
     script.talent = scope.talent;
 
-    script.run(
-      args[1],
-      args[2],
-      (val) => {
-        
-        if(typeof onComplete == 'function')
-          onComplete(val);
-
-      }
-    )
+    script.run( args[1], args[2], (val) => {
+      if(typeof onComplete == 'function')
+        onComplete(val);
+    });
 
   }
 
