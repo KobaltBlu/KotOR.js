@@ -59,7 +59,7 @@ class ResourceLoader {
 
   static _searchLocal(resId = -1, resRef = '', onLoad = null, onError = null){
     if(typeof Global.Project != 'undefined'){
-      let projectFilePath = path.join(Global.Project.directory, resRef + '.' + ResourceTypes.getKeyByValue(resId));
+      let projectFilePath = path.join(Global.Project.directory, 'files', resRef + '.' + ResourceTypes.getKeyByValue(resId));
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists) => {
         //console.log('File Exists', exists, projectFilePath);
