@@ -110,12 +110,12 @@ class TemplateLoader {
       let projectFilePath = path.join(Global.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists) => {
-        //console.log('File Exists', exists, projectFilePath);
         if(exists){
-          new GFFObject(projectFilePath, (gff, rootNode) => {
-            //TemplateLoader.cache[args.ResType][args.ResRef] = gff;
-            if(args.onLoad != null)
-              args.onLoad(gff);
+          fs.readFile(projectFilePath, (err, buffer) => {
+            new GFFObject(buffer, (gff, rootNode) => {
+              if(args.onLoad != null)
+                args.onLoad(gff);
+            });
           });
         }else{
           if(args.onFail != null)
