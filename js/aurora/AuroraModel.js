@@ -500,11 +500,11 @@ class AuroraModel {
 
     node.bone_parts = [];//new Array(17);
 
-    for(let i = 0; i < 16; i++){
+    for(let i = 0; i <= 17; i++){
       node.bone_parts[i] = this.mdlReader.ReadUInt16();
     }
 
-    node.spare = this.mdlReader.ReadInt32();
+    //node.spare = this.mdlReader.ReadInt16();
 
     node.weights = [];//new Array(node.VerticiesCount*4);
     node.boneIdx = [];//new Array(node.VerticiesCount*4);
