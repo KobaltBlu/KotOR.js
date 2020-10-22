@@ -527,10 +527,8 @@ THREE.AuroraModel = function () {
             let boneNode = this.nodes.get(skinNode.bone_parts[j]);
 
             if(typeof boneNode != 'undefined'){
-              bones.push(boneNode);
-              inverses.push(
-                boneNode.matrixInverse
-              );
+              bones[j] = boneNode;
+              inverses[j] = boneNode.matrixInverse;
             }
           }
           skinNode.geometry.bones = bones;
@@ -1310,8 +1308,8 @@ THREE.AuroraModel = function () {
               material.skinning = true;
               mesh = new THREE.SkinnedMesh( geometry , material );
               mesh.bone_parts = bones;
-              mesh.bone_quat = _node.bone_quats;
-              mesh.bone_vec3 = _node.bone_vertex;
+              //mesh.bone_quat = _node.bone_quats;
+              //mesh.bone_vec3 = _node.bone_vertex;
               auroraModel.skins.push(mesh);
             }else if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
               let buffer = new THREE.BufferGeometry();
