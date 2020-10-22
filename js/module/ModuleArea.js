@@ -277,8 +277,10 @@ class ModuleArea extends ModuleObject {
     this.Version = this.are.GetFieldByLabel('Version').GetValue();
     this.WindPower = this.are.GetFieldByLabel('WindPower').GetValue();
 
+    this.fog = undefined;
+
     if(this.SunFogOn){
-      Game.scene.fog = new THREE.Fog(
+      this.fog = new THREE.Fog(
         this.SunFogColor,
         this.SunFogNear,
         this.SunFogFar
@@ -408,6 +410,7 @@ class ModuleArea extends ModuleObject {
       this.LoadVis( () => {
         this.LoadLayout( () => {
           this.LoadScripts( () => {
+            Game.scene.fog = this.fog;
             if(typeof onLoad == 'function')
               onLoad(this);
           });
