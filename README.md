@@ -9,14 +9,19 @@ There is also very early attempt at a Modding Suite called KotOR Forge packaged 
 
 The code is written in Javascript. It uses THREE.js for the rendering engine, Electron to package and run the code as an app.
 
-If you plan on attempting to run either game you will first have to purchase and or install them. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
+If you plan on attempting to run either game you will have to purchase them from an official retailer like GoG or Steam. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
 
 [Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
 
+## Supported Games
+
+- [x] [Star Wars: Knights of the Old Republic (PC)](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic)
+- [x] [Star Wars: Knights of the Old Republic II The Sith Lords (PC)](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords)
+
 ## Getting Started
 
-You will need to have installed [npm (Node Package Manager)](https://www.npmjs.com/get-npm), then download the repository. 
+You will need to have installed [npm (Node Package Manager)](https://www.npmjs.com/get-npm), then download the KotOR.js repository. 
 You can then follow the steps below to run the project.
 
 **Console/Shell**
