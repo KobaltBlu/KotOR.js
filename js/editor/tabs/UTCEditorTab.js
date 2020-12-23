@@ -630,11 +630,11 @@ class UTCEditorTab extends EditorTab {
                 let item = new ModuleItem(new GFFObject(data));
                 items.push(item);
                 pallete_map[item.getPalleteID()].items.push(item);
-                asyncLoop._Loop();
+                asyncLoop.next();
               });
             }
           });
-          loop.Begin(() => {
+          loop.iterate(() => {
             loader.Dismiss();
             
             let pallete_mapper = (pl) => {

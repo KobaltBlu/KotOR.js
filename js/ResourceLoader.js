@@ -113,7 +113,7 @@ class ResourceLoader {
                   onLoad(data);
               });
             }else{
-              asyncLoop._Loop();
+              asyncLoop.next();
             }
           }else if(archive instanceof ERFObject){
             let resKey = archive.getResourceByKey(resRef, resId);
@@ -123,15 +123,15 @@ class ResourceLoader {
                   onLoad(data);
               });
             }else{
-              asyncLoop._Loop();
+              asyncLoop.next();
             }
           }else{
-            asyncLoop._Loop();
+            asyncLoop.next();
           }
         
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         if(typeof onError === 'function')
           onError();
       });

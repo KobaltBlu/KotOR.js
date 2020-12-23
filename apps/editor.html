@@ -264,7 +264,7 @@
 
         }
       });
-      module_loop.Begin(() => {
+      module_loop.iterate(() => {
         if(typeof onComplete === 'function')
           onComplete();
       });

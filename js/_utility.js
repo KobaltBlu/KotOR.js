@@ -36,10 +36,12 @@ class AsyncLoop {
   constructor(args = {}){
 
     args = Object.assign({
-      array: [],
-      onLoop: null,
-      onComplete: null
+      array: [],        //The array to iterate over
+      onLoop: undefined,     //The callback to fire on each iteration
+      onComplete: undefined  //The callback to fire when all array elements have been iterated over
     }, args);
+
+    this.index = 0; //index tracks the position of the current array element that is being iterated over.
 
     this.array = args.array;
     this.onLoop = args.onLoop;
@@ -47,8 +49,7 @@ class AsyncLoop {
 
   }
 
-  _Loop(){
-
+  next(){
     if(this.index < this.array.length){
       let obj = this.array[this.index++];
 
@@ -58,15 +59,25 @@ class AsyncLoop {
     }else if(typeof this.onComplete === 'function'){
       this.onComplete();
     }
-
   }
 
-  Begin( onComplete = null ){
-
+  iterate( onComplete = undefined ){
+    //Set the array index variable to 0
     this.index = 0;
-    this.onComplete = onComplete;
-    this._Loop()
+    //Callback to fire once the array is exhausted
+    this.onComplete = onComplete || this.onComplete;
+    //Start the loop
+    this.next();
+  }
 
+  _Loop(){
+    //console.warn('AsyncLoop._Loop() is depricated. please use AsyncLoop.next() instead');
+    this.next();
+  }
+
+  Begin( onComplete = undefined ){
+    //console.warn('AsyncLoop.iterate() is depricated. please use AsyncLoop.iterate() instead');
+    this.iterate( onComplete );
   }
 
 }
@@ -78,10 +89,10 @@ class AsyncLoop {
     array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     onLoop: (obj, looper) => {
       console.log(obj);
-      looper._Loop();
+      looper.next();
       }
   });
-  _test.Begin( () => {
+  _test.iterate( () => {
     console.log('Done looping');
   });
 */

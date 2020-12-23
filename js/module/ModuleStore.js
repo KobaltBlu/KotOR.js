@@ -100,11 +100,11 @@ class ModuleStore extends ModuleObject {
           let moduleItem = new ModuleItem(GFFObject.FromStruct(item));
           this.inventory.push(moduleItem)
           moduleItem.Load( () => {
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         if(typeof onLoad == 'function')
           onLoad();
       });

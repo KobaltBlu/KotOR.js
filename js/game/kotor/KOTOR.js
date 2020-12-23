@@ -436,9 +436,9 @@ class Game extends Engine {
 
     //Game.renderPassAA.sampleLevel = 1;
 
-    Game.copyPass.renderToScreen = true;
-    Game.renderPassGUI.renderToScreen = true;
-    Game.renderPassCursor.renderToScreen = true;
+    Game.copyPass.renderToScreen = false;
+    Game.renderPassGUI.renderToScreen = false;
+    Game.renderPassCursor.renderToScreen = false;
 
     Game.renderPass.clear = true;
     Game.bloomPass.clear = false;
@@ -538,7 +538,8 @@ class Game extends Engine {
 
     // every time the camera or objects change position (or every frame)
     Game.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
-    Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
+    Game.currentCamera.matrixWorldInverse.copy(Game.currentCamera.matrixWorld).invert();
+    //Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
     Game.viewportProjectionMatrix.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse );
     Game.viewportFrustum.setFromProjectionMatrix( Game.viewportProjectionMatrix );
 
@@ -756,14 +757,14 @@ class Game extends Engine {
           onLoop: (menuName, asyncLoop) => {
             Game[menuName] = new window[menuName]({
               onLoad: () => {
-                asyncLoop._Loop();
+                asyncLoop.next();
               }
             });
   
           }
         });
         console.log('MenuLoader: Init');
-        menuLoader.Begin(() => {
+        menuLoader.iterate(() => {
           console.log('MenuLoader: Complete');
 
           Game.MenuJournal.childMenu = Game.MenuTop;

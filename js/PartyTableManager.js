@@ -60,11 +60,11 @@ class PartyTableManager {
               if(pm.length){
                 PartyManager.NPCS[id].template = new GFFObject(pm);
               }
-              asyncLoop._Loop();
+              asyncLoop.next();
             });
           }
         });
-        ptLoader.Begin( () => {
+        ptLoader.iterate( () => {
           if(typeof onLoad == 'function')
             onLoad();
         });

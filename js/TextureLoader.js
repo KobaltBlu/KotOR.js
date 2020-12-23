@@ -238,11 +238,11 @@ class TextureLoader {
         //console.log('loadTex', tex.name);
 
         TextureLoader.UpdateMaterial(tex);
-        asyncLoop._Loop();
+        asyncLoop.next();
 
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
 
       //let queue = TextureLoader.queue.slice(0);
       TextureLoader.queue = [];

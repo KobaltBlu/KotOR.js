@@ -243,10 +243,10 @@ class ModuleMGEnemy extends ModuleObject {
                   this.model.add(model);  
                   model.name = item.model;
 
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }catch(e){
                   console.error(e);
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }
               },
               context: this.context,
@@ -257,7 +257,7 @@ class ModuleMGEnemy extends ModuleObject {
         });
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad(this.model);
     });
@@ -276,10 +276,10 @@ class ModuleMGEnemy extends ModuleObject {
               onComplete: (model) => {
                 try{
                   this.model.getObjectByName('gunbank'+item.id).add(model) 
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }catch(e){
                   console.error(e);
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }
               },
               context: this.context,
@@ -290,7 +290,7 @@ class ModuleMGEnemy extends ModuleObject {
         });
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });
@@ -366,13 +366,13 @@ class ModuleMGEnemy extends ModuleObject {
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;
-          asyncLoop._Loop();
+          asyncLoop.next();
         }else{
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });

@@ -563,10 +563,10 @@ class ModuleMGPlayer extends ModuleObject {
                   if(model.name == this.camera.name)
                     model.visible = false;
 
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }catch(e){
                   console.error(e);
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }
               },
               context: this.context,
@@ -577,7 +577,7 @@ class ModuleMGPlayer extends ModuleObject {
         });
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad(this.model);
     });
@@ -606,24 +606,24 @@ class ModuleMGPlayer extends ModuleObject {
                       file: gunbank.bullet.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase(),
                       onLoad: (bullet_mdl) => {
                         gunbank.bullet.model = bullet_mdl;
-                        asyncLoop._Loop();
+                        asyncLoop.next();
                         /*THREE.AuroraModel.FromMDL(bullet_mdl, {
                           onComplete: (bullet_model) => {
                             
-                            asyncLoop._Loop();
+                            asyncLoop.next();
                           }
                         });*/
                       }
                     });
                   }else{
-                    asyncLoop._Loop();
+                    asyncLoop.next();
                   }
 
 
                   
                 }catch(e){
                   console.error(e);
-                  asyncLoop._Loop();
+                  asyncLoop.next();
                 }
               },
               context: this.context,
@@ -634,7 +634,7 @@ class ModuleMGPlayer extends ModuleObject {
         });
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });
@@ -710,13 +710,13 @@ class ModuleMGPlayer extends ModuleObject {
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;
-          asyncLoop._Loop();
+          asyncLoop.next();
         }else{
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });

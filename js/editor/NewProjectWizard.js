@@ -200,17 +200,17 @@ class NewProjectWizard extends Wizard {
                             onLoop: (resource, asyncLoopR) => {
                               if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
                                 archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR._Loop();
+                                  asyncLoopR.next();
                                 });
                               }else{
                                 archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR._Loop();
+                                  asyncLoopR.next();
                                 });
                               }
                             }
                           });
-                          resourceLoop.Begin(() => {
-                            asyncLoop._Loop();
+                          resourceLoop.iterate(() => {
+                            asyncLoop.next();
                           });
                         }else if(archive instanceof ERFObject){
                           //Loop though the resources inside the ERFObject and export them to the project directory
@@ -219,24 +219,24 @@ class NewProjectWizard extends Wizard {
                             onLoop: (resource, asyncLoopR) => {
                               if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
                                 archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR._Loop();
+                                  asyncLoopR.next();
                                 });
                               }else{
                                 archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR._Loop();
+                                  asyncLoopR.next();
                                 });
                               }
                             }
                           });
-                          resourceLoop.Begin(() => {
-                            asyncLoop._Loop();
+                          resourceLoop.iterate(() => {
+                            asyncLoop.next();
                           });
                         }else{
-                          asyncLoop._Loop();
+                          asyncLoop.next();
                         }
                       }
                     });
-                    archiveLoop.Begin(() => {
+                    archiveLoop.iterate(() => {
                       //Module.BuildFromProject(GameMaps[this.module_template].module.split('.')[0], () => {  });
                       fs.readFile(path.join(Global.Project.directory, 'module.ifo'), (err, ifo_data) => {
                         new GFFObject(ifo_data, (gff, rootNode) => {

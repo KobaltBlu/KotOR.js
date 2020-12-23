@@ -232,7 +232,8 @@ class ModuleEditorTab extends EditorTab {
 
     // every time the camera or objects change position (or every frame)
     this.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
-    this.currentCamera.matrixWorldInverse.getInverse( this.currentCamera.matrixWorld );
+    this.currentCamera.matrixWorldInverse.copy(this.currentCamera.matrixWorld).invert();
+    //this.currentCamera.matrixWorldInverse.getInverse( this.currentCamera.matrixWorld );
     this.viewportProjectionMatrix.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse );
     this.viewportFrustum.setFromProjectionMatrix( this.viewportProjectionMatrix );
 
@@ -1010,10 +1011,10 @@ class ModuleEditorTab extends EditorTab {
               this.group.doors.add( model );
             });
           });
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1049,10 +1050,10 @@ class ModuleEditorTab extends EditorTab {
               //});
             });
           });
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1074,13 +1075,13 @@ class ModuleEditorTab extends EditorTab {
               // wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
               // wpObj.mesh.moduleObject = waypnt;
               // this.group.waypoints.add(wpObj.mesh);
-              asyncLoop._Loop();
+              asyncLoop.next();
             //});
           });
 
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1097,7 +1098,7 @@ class ModuleEditorTab extends EditorTab {
           trig.context = this;
           trig.Load( () => {
             this.group.triggers.add(trig.mesh);
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
           //loader.SetMessage('Loading Trigger: '+(i+1)+'/'+this.triggers.length);
           /*trig.LoadTemplate( (template) => {
@@ -1144,7 +1145,7 @@ class ModuleEditorTab extends EditorTab {
 
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1173,13 +1174,13 @@ class ModuleEditorTab extends EditorTab {
               model.name = crt.getTag();
               //try{ model.buildSkeleton(); }catch(e){}
               this.group.creatures.add( model );
-              asyncLoop._Loop();
+              asyncLoop.next();
             });
           });
 
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1197,11 +1198,11 @@ class ModuleEditorTab extends EditorTab {
           room.load( (room) => {
             room.model.moduleObject = room;
             this.group.rooms.add(room.model);
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });
@@ -1219,13 +1220,13 @@ class ModuleEditorTab extends EditorTab {
             sound.LoadSound( () => {
               sound.LoadModel( (model) => {
                 this.group.sounds.add(model);
-                asyncLoop._Loop();
+                asyncLoop.next();
               });
             });
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
     });

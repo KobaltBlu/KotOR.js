@@ -872,12 +872,12 @@ class ModuleArea extends ModuleObject {
       
                 track.computeBoundingBox();
                 track.getCurrentRoom();
-                asyncLoop._Loop();
+                asyncLoop.next();
               });
             });
           }
         });
-        loop.Begin(() => {
+        loop.iterate(() => {
           resolve();
         });
       }else
@@ -906,7 +906,7 @@ class ModuleArea extends ModuleObject {
                     enemy.setTrack(track.model);
                     enemy.computeBoundingBox();
                     enemy.getCurrentRoom();
-                    asyncLoop._Loop();
+                    asyncLoop.next();
 
                   });
                 });
@@ -914,7 +914,7 @@ class ModuleArea extends ModuleObject {
             });
           }
         });
-        loop.Begin(() => {
+        loop.iterate(() => {
           resolve();
         });
       }else
@@ -932,11 +932,11 @@ class ModuleArea extends ModuleObject {
         array: PartyManager.CurrentMembers,
         onLoop: (currentMember, asyncLoop) => {
           PartyManager.LoadPartyMember(asyncLoop.index-1, () => {
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -972,11 +972,11 @@ class ModuleArea extends ModuleObject {
               
             }
             
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         for(let j = 0; j < this.rooms.length; j++){
           this.rooms[j].link_rooms(this.rooms);
         }
@@ -1010,7 +1010,7 @@ class ModuleArea extends ModuleObject {
                   //Game.scene.add(dwk.mesh);
                   Game.group.room_walkmeshes.add( dwk.mesh );
 
-                  dwk.mesh.position.copy(model.getWorldPosition());
+                  model.getWorldPosition(dwk.mesh.position);
                   //dwk.mesh.quaternion.copy(model.getWorldQuaternion());
     
                   if(door.openState){
@@ -1029,13 +1029,13 @@ class ModuleArea extends ModuleObject {
     
                 door.getCurrentRoom();
                 Game.group.doors.add( model );
-                asyncLoop._Loop();
+                asyncLoop.next();
               });
             });
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1083,7 +1083,7 @@ class ModuleArea extends ModuleObject {
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1124,11 +1124,11 @@ class ModuleArea extends ModuleObject {
             }
             wpObj.area = _currentRoom;
   
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1163,15 +1163,15 @@ class ModuleArea extends ModuleObject {
                 }
               }
               trig.mesh.area = _currentRoom;
-              asyncLoop._Loop();
+              asyncLoop.next();
             });
           }catch(e){
             console.error(e);
-            asyncLoop._Loop();
+            asyncLoop.next();
           }
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1205,13 +1205,13 @@ class ModuleArea extends ModuleObject {
     
                 crt.getCurrentRoom();
     
-                asyncLoop._Loop();
+                asyncLoop.next();
               });
             });
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1226,11 +1226,11 @@ class ModuleArea extends ModuleObject {
         array: this.stores,
         onLoop: (crt, asyncLoop) => {
           crt.Load( () => {
-            asyncLoop._Loop();
+            asyncLoop.next();
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1431,12 +1431,12 @@ class ModuleArea extends ModuleObject {
         onLoop: (sound, asyncLoop) => {
           sound.Load( () => {
             sound.LoadSound( () => {
-              asyncLoop._Loop();
+              asyncLoop.next();
             });
           });
         }
       });
-      loop.Begin(() => {
+      loop.iterate(() => {
         resolve();
       });
 
@@ -1494,13 +1494,13 @@ class ModuleArea extends ModuleObject {
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;
-          asyncLoop._Loop();
+          asyncLoop.next();
         }else{
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });

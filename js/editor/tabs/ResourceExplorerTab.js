@@ -61,10 +61,10 @@ class ResourceExplorerTab extends EditorTab {
           
         }
 
-        asyncLoop._Loop();
+        asyncLoop.next();
       }
     });
-    bifLoader.Begin(() => {
+    bifLoader.iterate(() => {
 
       this.loadFolderForFileBrowser('StreamWaves', () => {
 

@@ -690,13 +690,13 @@ class ModulePlaceable extends ModuleObject {
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;
-          asyncLoop._Loop();
+          asyncLoop.next();
         }else{
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onLoad === 'function')
         onLoad();
     });

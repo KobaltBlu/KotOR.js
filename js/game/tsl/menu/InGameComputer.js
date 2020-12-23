@@ -671,7 +671,7 @@ class InGameComputer extends GameMenu {
           script.run(this.owner, 0, (bSuccess) => {
             if((scriptObj.params.Not == 1 && !bSuccess) || (scriptObj.params.Not == 0 && bSuccess)){
               shouldPass = true;
-              asyncLoop._Loop();
+              asyncLoop.next();
             }else{
               shouldPass = false;
               if(typeof onComplete === 'function')
@@ -680,11 +680,11 @@ class InGameComputer extends GameMenu {
           });
         }else{
           shouldPass = true;
-          asyncLoop._Loop();
+          asyncLoop.next();
         }
       }
     });
-    loop.Begin(() => {
+    loop.iterate(() => {
       if(typeof onComplete === 'function')
         onComplete(shouldPass);
     });
