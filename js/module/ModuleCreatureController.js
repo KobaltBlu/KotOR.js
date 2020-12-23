@@ -1024,6 +1024,7 @@ class ModuleCreatureController extends ModuleObject {
     let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
     let randomPauseIdx = 0;
     let isSimple = this.isSimpleCreature();
+    let weaponType = this.getCombatAnimationWeaponType();
 
     let idleAnimations = ['pause1', 'pause1', 'pause1', 'pause2'];//, 'pause3', 'hturnl', 'hturnr'];
     let idleAnimationsS = ['cpause1', 'cpause1','cpause1','cpause2', 'cpause3'];
@@ -1052,61 +1053,9 @@ class ModuleCreatureController extends ModuleObject {
         case ModuleCreature.AnimState.IDLE:
             if(this.combatState){
               if(!isSimple){
-                if(hasHands && bothHands){
-                  switch(parseInt(rWeapon.getWeaponWield())){
-                    case 2:
-                      if(currentAnimation != 'g4r1'){
-                        this.getModel().playAnimation('g4r1', false);
-                      }
-                    break;
-                    case 4:
-                      if(currentAnimation != 'g5r1'){
-                        this.getModel().playAnimation('g5r1', false);
-                      }
-                    break;
-                    case 5:
-                      if(currentAnimation != 'g6r1'){
-                        this.getModel().playAnimation('g6r1', false);
-                      }
-                    break;
-                  }
-                }else{
-                  if(hasHands && rWeapon){
-                    switch(parseInt(rWeapon.getWeaponWield())){
-                      case 1:
-                        if(currentAnimation != 'g1r1'){
-                          this.getModel().playAnimation('g1r1', false);
-                        }
-                      break;
-                      case 2:
-                        if(currentAnimation != 'g2r1'){
-                          this.getModel().playAnimation('g2r1', false);
-                        }
-                      break;
-                      case 3:
-                        if(currentAnimation != 'g3r1'){
-                          this.getModel().playAnimation('g3r1', false);
-                        }
-                      break;
-                      case 4:
-                        if(currentAnimation != 'g5r1'){
-                          this.getModel().playAnimation('g5r1', false);
-                        }
-                      break;
-                      case 5:
-                        if(currentAnimation != 'g7r1'){
-                          this.getModel().playAnimation('g7r1', false);
-                        }
-                      break;
-                      case 6:
-                        if(currentAnimation != 'g6r1'){
-                          this.getModel().playAnimation('g6r1', false);
-                        }
-                      break;
-                    }
-                  }else{
-                    
-                  }
+                //weaponType
+                if(currentAnimation != 'g'+weaponType+'r1'){
+                  this.getModel().playAnimation('g'+weaponType+'r1', false);
                 }
               }else{
                 if(currentAnimation != 'creadyr'){
@@ -1798,10 +1747,32 @@ class ModuleCreatureController extends ModuleObject {
     this.combatState = false;
   }
 
-  getDamageAnimation(){
+  getDamageAnimation( attackAnim = undefined ){
+
+    let attackAnimIndex = -1;
+
     let modeltype = this.getAppearance().modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
+    
+    let anims = Global.kotor2DA.animations;
+    for(let i = 0; i < anims.RowCount; i++){
+      if(anims.rows[i].name == attackAnim){
+        attackAnimIndex = i;
+        break;
+      }
+    }
+
+    let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
+    console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
+    if(combatAnimation){
+      let damageAnimIndex = combatAnimation['damage'+weaponWield];
+      let damageAnim = anims.getByID(damageAnimIndex);
+      if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
+        console.log('damage anim', this.getName(), damageAnim.name)
+        return damageAnim.name;
+      }
+    }
 
     switch(modeltype){
       case 'S':
@@ -1812,10 +1783,42 @@ class ModuleCreatureController extends ModuleObject {
     }
   }
 
-  getDodgeAnimation(){
+  getDodgeAnimation( attackAnim = undefined ){
+
+    let attackAnimIndex = -1;
+
     let modeltype = this.getAppearance().modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
+    
+    let anims = Global.kotor2DA.animations;
+    for(let i = 0; i < anims.RowCount; i++){
+      if(anims.rows[i].name == attackAnim){
+        attackAnimIndex = i;
+        break;
+      }
+    }
+
+    console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
+
+    let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
+    if(combatAnimation){
+      if(combatAnimation.hits == 1 && [4, 2, 3].indexOf(weaponWield) >= 0){
+        let damageAnimIndex = combatAnimation['parry'+weaponWield];
+        let damageAnim = anims.getByID(damageAnimIndex);
+        if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
+          console.log('dodge/parry anim', this.getName(), damageAnim.name)
+          return damageAnim.name;
+        }
+      }
+      
+      let damageAnimIndex = combatAnimation['dodge'+weaponWield];
+      let damageAnim = anims.getByID(damageAnimIndex);
+      if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
+        console.log('dodge anim', this.getName(), damageAnim.name)
+        return damageAnim.name;
+      }
+    }
 
     switch(modeltype){
       case 'S':
@@ -1826,17 +1829,40 @@ class ModuleCreatureController extends ModuleObject {
     }
   }
 
-  getParryAnimation(){
+  getParryAnimation( attackAnim = undefined ){
+
+    let attackAnimIndex = -1;
+
     let modeltype = this.getAppearance().modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
+    
+    let anims = Global.kotor2DA.animations;
+    for(let i = 0; i < anims.RowCount; i++){
+      if(anims.rows[i].name == attackAnim){
+        attackAnimIndex = i;
+        break;
+      }
+    }
+
+    console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
+
+    let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
+    if(combatAnimation){
+      let damageAnimIndex = combatAnimation['parry'+weaponWield];
+      let damageAnim = anims.getByID(damageAnimIndex);
+      if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
+        console.log('parry anim', this.getName(), damageAnim.name)
+        return damageAnim.name;
+      }
+    }
 
     switch(modeltype){
       case 'S':
       case 'L':
         return 'cdodgeg';
       default:
-        return 'g'+weaponWield+'p1';
+        return 'g'+weaponWield+'g1';
     }
   }
 
@@ -1917,46 +1943,36 @@ class ModuleCreatureController extends ModuleObject {
       return 0;
     }
 
-    //if(this.isSimpleCreature())
-    //  return 0;
-
     if(lWeapon || rWeapon){
 
       if(bothHands){
         switch(parseInt(rWeapon.getWeaponWield())){
-          case 2:
+          case 1: //Stun Baton
+          case 2: //Single Blade Melee
             return 4;
-          case 4:
-            return 5;
-          case 5:
+          case 4: //Blaster
             return 6;
         }
       }else{
         switch(parseInt(rWeapon.getWeaponWield())){
-          case 1:
+          case 1: //Stun Baton
             return 1;
-          case 2:
+          case 2: //Single Blade Melee
             return 2;
-          case 3:
+          case 3: //Double Blade Melee
             return 3;
-          case 4:
+          case 4: //Blaster
             return 5;
-          case 5:
+          case 5: //Blaster Rifle
             return 7;
-          case 6:
-            return 6;
-          case 7:
-            return 7;
-          case 8:
-            return 8;
-          case 9:
+          case 6: //Heavy Carbine
             return 9;
         }
       }
-      return parseInt(rWeapon.getWeaponWield());
     }
 
-    return 0;
+    //If no weapons are equipped then use unarmed animations
+    return 8;
 
   }
 
