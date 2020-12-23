@@ -2,14 +2,13 @@
 
 **A remake of the Odyssey Game Engine that powered KotOR I &amp; II written in JavaScript**
 
-This project is still in it's early stages. Things like displaying Ingame Menus, Models, Sound, and Scripting are all some what working.
-There is still a long ways to go before it can play either game from beginning to end, which is a dream of mine :).
+This project is still in it's early stages. Things like displaying Ingame Menus, Models, Sound, Particle Effects, and Scripting are all in various stages of working. While some parts of the game are playable to some extent, there is still a long ways to go before it can play either game from beginning to end. My hope is that this project will eventually be able to play KotOR and TSL in full.
 
 There is also very early attempt at a Modding Suite called KotOR Forge packaged inside.
 
-The code is written in Javascript. It uses THREE.js for the rendering engine, Electron to package and run the code as an app.
+The code is written in Javascript. It uses THREE.js for the rendering engine, and Electron to package and run the code as an app.
 
-If you plan on attempting to run either game you will have to purchase them from an official retailer like GoG or Steam. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
+If you plan on trying to run either game you will have to already have them, or purchase them from an official retailer like GoG or Steam. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
 
 [Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
