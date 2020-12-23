@@ -366,7 +366,8 @@
 
       //
 
-      inverseMatrix.getInverse( matrixWorld );
+      inverseMatrix.copy(matrixWorld).invert();
+      //inverseMatrix.getInverse( matrixWorld );
       ray.copy( raycaster.ray ).applyMatrix4( inverseMatrix );
 
       // Check boundingBox before continuing

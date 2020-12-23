@@ -547,7 +547,8 @@ class Game extends Engine {
 
     // every time the camera or objects change position (or every frame)
     Game.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
-    Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
+    Game.currentCamera.matrixWorldInverse.copy(Game.currentCamera.matrixWorld).invert();
+    //Game.currentCamera.matrixWorldInverse.getInverse( Game.currentCamera.matrixWorld );
     Game.viewportProjectionMatrix.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse );
     Game.viewportFrustum.setFromProjectionMatrix( Game.viewportProjectionMatrix );
 

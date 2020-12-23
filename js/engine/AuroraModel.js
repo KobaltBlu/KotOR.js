@@ -511,12 +511,6 @@ THREE.AuroraModel = function () {
       this.oldAnim = this.animationManager.currentAnimation;
       this.animationManager.currentAnimation = undefined;
       this.pose();
-      let scale = new THREE.Vector3(1, 1, 1);
-
-      /*let model = this;
-      if(this.moduleObject && this == this.moduleObject.head){
-        model = this.moduleObject.model;
-      }*/
 
       for(let i = 0; i < this.skins.length; i++){
         let skinNode = this.skins[i];
@@ -525,8 +519,8 @@ THREE.AuroraModel = function () {
           let inverses = [];
           for(let j = 0; j < skinNode.bone_parts.length; j++){
             let boneNode = this.nodes.get(skinNode.bone_parts[j]);
-
             if(typeof boneNode != 'undefined'){
+              //boneNode.updateMatrixWorld(new THREE.Matrix4());
               bones[j] = boneNode;
               inverses[j] = boneNode.matrixInverse;
             }
@@ -548,23 +542,19 @@ THREE.AuroraModel = function () {
       this.bonesInitialized = false;
       try{
         node.controllers.forEach( (controller) => {
-        //for(let cIDX in node.controllers){
-          //let controller = node.controllers[cIDX];
-          //try{
-            if(controller.data.length){
-              switch(controller.type){
-                case AuroraModel.ControllerType.Position:
-                    node.position.set(controller.data[0].x, controller.data[0].y, controller.data[0].z);
-                break;
-                case AuroraModel.ControllerType.Orientation:
-                  node.quaternion.set(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
-                break;
-              }
+          if(controller.data.length){
+            switch(controller.type){
+              case AuroraModel.ControllerType.Position:
+                node.position.set(controller.data[0].x, controller.data[0].y, controller.data[0].z);
+              break;
+              case AuroraModel.ControllerType.Orientation:
+                node.quaternion.set(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
+              break;
+              case AuroraModel.ControllerType.Scale:
+                node.scale.set(controller.data[0].value, controller.data[0].value, controller.data[0].value);
+              break;
             }
-          //}catch(e){
-          //  console.error(e);
-          //}
-
+          }
         });
         //node.updateMatrix();
         node.updateMatrixWorld(new THREE.Matrix4());
@@ -1081,7 +1071,7 @@ THREE.AuroraModel = function () {
         //if(_node.FlagRender || node.isWalkmesh || auroraModel.name == 'plc_invis'){
         if(_node.faces.length || (_node.NodeType & AuroraModel.NODETYPE.Saber) ){
 
-          if(true){// (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
+          if(_node.FlagRender){// (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
 
             let geometry = new THREE.Geometry();
       
@@ -1566,7 +1556,8 @@ THREE.AuroraModel = function () {
     }
 
     node.matrixInverse = new THREE.Matrix4();
-    node.matrixInverse.getInverse( node.matrix.clone() );
+    node.matrixInverse.copy(node.matrix).invert();
+    //node.matrixInverse.getInverse( node.matrix.clone() );
   
     if(options.parseChildren){
       options.parent = node;

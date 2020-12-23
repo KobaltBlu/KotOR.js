@@ -15,7 +15,7 @@ class Engine {
 
     // every time the camera or objects change position (or every frame)
     Engine.currentCamera.updateMatrixWorld(); // make sure the camera matrix is updated
-    Engine.currentCamera.matrixWorldInverse.getInverse( Engine.currentCamera.matrixWorld );
+    Engine.currentCamera.matrixWorldInverse.copy(Engine.currentCamera.matrixWorld).invert();
     Engine.viewportProjectionMatrix.multiplyMatrices( Engine.currentCamera.projectionMatrix, Engine.currentCamera.matrixWorldInverse );
     Engine.viewportFrustum.setFromMatrix( Engine.viewportProjectionMatrix );
 
