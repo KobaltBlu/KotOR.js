@@ -102,6 +102,18 @@ const AppearanceLoader = require(path.join(app.getAppPath(), 'js/AppearanceLoade
 
 
 /* Aurora */
+
+const OdysseyController = require(path.join(app.getAppPath(), 'js/aurora/controllers/OdysseyController.js'));
+let odysseyControllers = fs.readdirSync(path.join(app.getAppPath(), 'js/aurora/controllers'));
+for(let i = 0; i < odysseyControllers.length; i++){
+  let controllerPath = path.parse(odysseyControllers[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/aurora/controllers', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
 const ResourceTypes = require(path.join(app.getAppPath(), 'js/ResourceTypes.js'));
 const ResourceTypeInfo = require(path.join(app.getAppPath(), 'js/ResourceTypeInfo.js'));
 const ResourceLoader = require(path.join(app.getAppPath(), 'js/ResourceLoader.js'));

@@ -516,7 +516,7 @@ class AuroraModel {
       node.weights[i] = [0, 0, 0, 0];
       for(let i2 = 0; i2 < 4; i2++){
         let float = this.mdxReader.ReadSingle();
-        node.weights[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
+        node.weights[i][i2] = (float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
       }
 
       this.mdxReader.position = (node._mdxNodeDataOffset + (i * node.MDXDataSize)) + node.MDXBoneIndexOffset;
@@ -524,7 +524,7 @@ class AuroraModel {
       node.boneIdx[i] = [0, 0, 0, 0];
       for(let i2 = 0; i2 < 4; i2++){
         let float = this.mdxReader.ReadSingle();
-        node.boneIdx[i][i2] = Math.abs(float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
+        node.boneIdx[i][i2] = (float);//(float == -1 ? 0 : float);//[i][i2] = float == -1 ? 0 : float;
       }
     }
 
@@ -882,10 +882,10 @@ class AuroraModel {
 
                 }else{
                   tmpQuat.set(
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0,
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0,
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0,
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 3] || 1.0
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 0],
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 1],
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 2],
+                    data[controller.dataValueIndex + (r * controller.columnCount) + 3]
                   );
 
                 }
@@ -1033,6 +1033,8 @@ class AuroraModel {
 
         if(controller.data.length)
           controller.data[controller.data.length-1].lastFrame = true;
+
+        controller = OdysseyController.From(controller);
 
         controllers.set(controller.type, controller);//controllers[controller.type] = controller;
         
@@ -1239,6 +1241,7 @@ AuroraModel.NODETYPE = {
   Header: 0x0001,
   Light: 0x0002,
   Emitter: 0x0004,
+  Camera: 0x0008,
   Reference: 0x0010,
   Mesh: 0x0020,
   Skin: 0x0040,
