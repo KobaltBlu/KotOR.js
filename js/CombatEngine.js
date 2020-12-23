@@ -114,7 +114,7 @@ class CombatEngine {
               }
             }
 
-            if(combatant.combatRoundTimer >= 1.5){
+            if(combatant.combatRoundTimer >= 3){
               //Get the index of the current combatant from the combatants list
               let index = CombatEngine.combatants.indexOf(combatant);
               //Remove the combatant from the combatants list
@@ -131,7 +131,7 @@ class CombatEngine {
             }
 
             //Break the loop now that a combatant in the group was updated
-            break;
+            //break;
           }
 
         }
@@ -299,9 +299,24 @@ class CombatEngine {
 
     if(combatAction.isCutsceneAttack){
 
+      creature.overlayAnimation = undefined;
       creature.getModel().playAnimation(combatAction.animation, false);
       //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
-      combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation();
+      console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getFirstName(), combatAction.target.getFirstName());
+
+      switch(combatAction.attackResult){
+        case 1:
+        case 2:
+        case 3:
+          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+        break;
+        case 8:
+          combatAction.target.overlayAnimation = combatAction.target.getParryAnimation( combatAction.animation );
+        break;
+        default:
+          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+        break;
+      }
 
       let painsound = THREE.Math.randInt(0, 1);
       switch(painsound){
@@ -324,8 +339,11 @@ class CombatEngine {
       //Roll to hit
       if(combatAction.hits){
         
+        creature.overlayAnimation = undefined;
         creature.getModel().playAnimation(combatAction.animation, false);
-        //combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation();
+        if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
+          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+        }
 
         let painsound = THREE.Math.randInt(0, 1);
         switch(painsound){
@@ -343,8 +361,11 @@ class CombatEngine {
         
       }else{
         combatAction.target.lastAttacker = this;
+        creature.overlayAnimation = undefined;
         creature.getModel().playAnimation(combatAction.animation, false);
-        combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation();
+        if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
+          combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );
+        }
         //combatAction.target.getModel().playAnimation(combatAction.target.getDodgeAnimation(), false);
       }
     }
