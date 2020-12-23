@@ -567,7 +567,7 @@ class TextureLoader {
       //DECAL
       if(texture.txi.decal || texture.txi.procedureType == 2){
         tex.material.side = THREE.DoubleSide;
-        tex.material.depthWrite = false;
+        //tex.material.depthWrite = false;
         //For Saber Blades
         tex.material.defines.IGNORE_LIGHTING = '';
       }
