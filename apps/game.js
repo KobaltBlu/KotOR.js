@@ -142,7 +142,7 @@ const FileLoader = require(path.join(app.getAppPath(), 'js/resource/FileLoader.j
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
 const GameInitializer = require(path.join(app.getAppPath(), 'js/GameInitializer.js'));
 const AppearanceLoader = require(path.join(app.getAppPath(), 'js/resource/AppearanceLoader.js'));
-//const UI3DRenderer = require(path.join(app.getAppPath(), 'js/UI3DRenderer.js'));
+//const UI3DRenderer = require(path.join(app.getAppPath(), 'js/editor/UI3DRenderer.js'));
 const PixelManager = require(path.join(app.getAppPath(), 'js/PixelManager.js'));
 
 /* Aurora */

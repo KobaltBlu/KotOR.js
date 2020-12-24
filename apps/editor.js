@@ -97,7 +97,7 @@ const VerticalTabs = require(path.join(app.getAppPath(), 'js/editor/VerticalTabs
 
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
 const GameInitializer = require(path.join(app.getAppPath(), 'js/GameInitializer.js'));
-const UI3DRenderer = require(path.join(app.getAppPath(), 'js/UI3DRenderer.js'));
+const UI3DRenderer = require(path.join(app.getAppPath(), 'js/editor/UI3DRenderer.js'));
 const AppearanceLoader = require(path.join(app.getAppPath(), 'js/resource/AppearanceLoader.js'));
 
 
