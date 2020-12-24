@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-const ResourceTypes = require("./ResourceTypes");
-
 /* @file
  * The PartyManager class.
  */

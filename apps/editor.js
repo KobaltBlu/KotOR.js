@@ -91,14 +91,14 @@ const ModelViewerControls = require(path.join(app.getAppPath(), 'js/editor/Model
 const EditorFile = require(path.join(app.getAppPath(), 'js/editor/EditorFile.js'));
 
 const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
-const FileTypeManager = require(path.join(app.getAppPath(), 'js/FileTypeManager.js'));
-const FileLoader = require(path.join(app.getAppPath(), 'js/FileLoader.js'));
+const FileTypeManager = require(path.join(app.getAppPath(), 'js/resource/FileTypeManager.js'));
+const FileLoader = require(path.join(app.getAppPath(), 'js/resource/FileLoader.js'));
 const VerticalTabs = require(path.join(app.getAppPath(), 'js/editor/VerticalTabs.js'));
 
 const MaterialCache = require(path.join(app.getAppPath(), 'js/MaterialCache.js'));
 const GameInitializer = require(path.join(app.getAppPath(), 'js/GameInitializer.js'));
 const UI3DRenderer = require(path.join(app.getAppPath(), 'js/UI3DRenderer.js'));
-const AppearanceLoader = require(path.join(app.getAppPath(), 'js/AppearanceLoader.js'));
+const AppearanceLoader = require(path.join(app.getAppPath(), 'js/resource/AppearanceLoader.js'));
 
 
 /* Aurora */
@@ -114,9 +114,9 @@ for(let i = 0; i < odysseyControllers.length; i++){
   }
 }
 
-const ResourceTypes = require(path.join(app.getAppPath(), 'js/ResourceTypes.js'));
-const ResourceTypeInfo = require(path.join(app.getAppPath(), 'js/ResourceTypeInfo.js'));
-const ResourceLoader = require(path.join(app.getAppPath(), 'js/ResourceLoader.js'));
+const ResourceTypes = require(path.join(app.getAppPath(), 'js/resource/ResourceTypes.js'));
+const ResourceTypeInfo = require(path.join(app.getAppPath(), 'js/resource/ResourceTypeInfo.js'));
+const ResourceLoader = require(path.join(app.getAppPath(), 'js/resource/ResourceLoader.js'));
 
 const AuroraFile = require(path.join(app.getAppPath(), 'js/aurora/AuroraFile.js'));
 const AuroraModel = require(path.join(app.getAppPath(), 'js/aurora/AuroraModel.js'));
@@ -142,39 +142,39 @@ for(let i = 0; i < _shaders.length; i++){
 
 const PixelManager = require(path.join(app.getAppPath(), 'js/PixelManager.js'));
 
-const TLKObject = require(path.join(app.getAppPath(), 'js/TLKObject.js'));
-const TLKString = require(path.join(app.getAppPath(), 'js/TLKString.js'));
-const GFFObject = require(path.join(app.getAppPath(), 'js/GFFObject.js')).GFFObject;
-const GFFDataTypes = require(path.join(app.getAppPath(), 'js/GFFObject.js')).GFFDataTypes;
-const Struct = require(path.join(app.getAppPath(), 'js/GFFObject.js')).Struct;
-const Field = require(path.join(app.getAppPath(), 'js/GFFObject.js')).Field;
-const CExoLocString = require(path.join(app.getAppPath(), 'js/GFFObject.js')).CExoLocString;
-const CExoLocSubString = require(path.join(app.getAppPath(), 'js/GFFObject.js')).CExoLocSubString;
-const KEYObject = require(path.join(app.getAppPath(), 'js/KEYObject.js'));
-const BIFObject = require(path.join(app.getAppPath(), 'js/BIFObject.js'));
-const ERFObject = require(path.join(app.getAppPath(), 'js/ERFObject.js'));
-const RIMObject = require(path.join(app.getAppPath(), 'js/RIMObject.js'));
-const LYTObject = require(path.join(app.getAppPath(), 'js/LYTObject.js'));
-const SSFObject = require(path.join(app.getAppPath(), 'js/SSFObject.js'));
-const LTRObject = require(path.join(app.getAppPath(), 'js/LTRObject.js'));
-const UTCObject = require(path.join(app.getAppPath(), 'js/UTCObject.js'));
-const UTDObject = require(path.join(app.getAppPath(), 'js/UTDObject.js'));
-const UTIObject = require(path.join(app.getAppPath(), 'js/UTIObject.js'));
-//const UTMObject = require(path.join(app.getAppPath(), 'js/UTMObject.js'));
-const UTPObject = require(path.join(app.getAppPath(), 'js/UTPObject.js'));
-const UTSObject = require(path.join(app.getAppPath(), 'js/UTSObject.js'));
-const UTTObject = require(path.join(app.getAppPath(), 'js/UTTObject.js'));
-const UTWObject = require(path.join(app.getAppPath(), 'js/UTWObject.js'));
-const VISObject = require(path.join(app.getAppPath(), 'js/VISObject.js'));
-const TPCObject = require(path.join(app.getAppPath(), 'js/TPCObject.js'));
-const TGAObject = require(path.join(app.getAppPath(), 'js/TGAObject.js'));
-const TwoDAObject = require(path.join(app.getAppPath(), 'js/TwoDAObject.js'));
-const LIPObject = require(path.join(app.getAppPath(), 'js/LIPObject.js'));
-const BIKObject = require(path.join(app.getAppPath(), 'js/BIKObject.js'));
+const TLKObject = require(path.join(app.getAppPath(), 'js/resource/TLKObject.js'));
+const TLKString = require(path.join(app.getAppPath(), 'js/resource/TLKString.js'));
+const GFFObject = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).GFFObject;
+const GFFDataTypes = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).GFFDataTypes;
+const Struct = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).Struct;
+const Field = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).Field;
+const CExoLocString = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).CExoLocString;
+const CExoLocSubString = require(path.join(app.getAppPath(), 'js/resource/GFFObject.js')).CExoLocSubString;
+const KEYObject = require(path.join(app.getAppPath(), 'js/resource/KEYObject.js'));
+const BIFObject = require(path.join(app.getAppPath(), 'js/resource/BIFObject.js'));
+const ERFObject = require(path.join(app.getAppPath(), 'js/resource/ERFObject.js'));
+const RIMObject = require(path.join(app.getAppPath(), 'js/resource/RIMObject.js'));
+const LYTObject = require(path.join(app.getAppPath(), 'js/resource/LYTObject.js'));
+const SSFObject = require(path.join(app.getAppPath(), 'js/resource/SSFObject.js'));
+const LTRObject = require(path.join(app.getAppPath(), 'js/resource/LTRObject.js'));
+const UTCObject = require(path.join(app.getAppPath(), 'js/resource/UTCObject.js'));
+const UTDObject = require(path.join(app.getAppPath(), 'js/resource/UTDObject.js'));
+const UTIObject = require(path.join(app.getAppPath(), 'js/resource/UTIObject.js'));
+//const UTMObject = require(path.join(app.getAppPath(), 'js/resource/UTMObject.js'));
+const UTPObject = require(path.join(app.getAppPath(), 'js/resource/UTPObject.js'));
+const UTSObject = require(path.join(app.getAppPath(), 'js/resource/UTSObject.js'));
+const UTTObject = require(path.join(app.getAppPath(), 'js/resource/UTTObject.js'));
+const UTWObject = require(path.join(app.getAppPath(), 'js/resource/UTWObject.js'));
+const VISObject = require(path.join(app.getAppPath(), 'js/resource/VISObject.js'));
+const TPCObject = require(path.join(app.getAppPath(), 'js/resource/TPCObject.js'));
+const TGAObject = require(path.join(app.getAppPath(), 'js/resource/TGAObject.js'));
+const TwoDAObject = require(path.join(app.getAppPath(), 'js/resource/TwoDAObject.js'));
+const LIPObject = require(path.join(app.getAppPath(), 'js/resource/LIPObject.js'));
+const BIKObject = require(path.join(app.getAppPath(), 'js/resource/BIKObject.js'));
 
 
 
-const TXI = require(path.join(app.getAppPath(), 'js/TXI.js'));
+const TXI = require(path.join(app.getAppPath(), 'js/resource/TXI.js'));
 const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.js'));
 const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
