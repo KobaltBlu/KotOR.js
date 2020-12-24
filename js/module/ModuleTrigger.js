@@ -115,7 +115,7 @@ class ModuleTrigger extends ModuleObject {
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTTObject.ResType,
+        ResType: ResourceTypes.utt,
         onLoad: (gff) => {
 
           this.template.Merge(gff);

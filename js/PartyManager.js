@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const ResourceTypes = require("./ResourceTypes");
+
 /* @file
  * The PartyManager class.
  */
@@ -159,7 +161,7 @@ class PartyManager {
 
       TemplateLoader.Load({
         ResRef: ResRef,
-        ResType: UTCObject.ResType,
+        ResType: ResourceTypes.utc,
         onLoad: (gff) => {
           PartyManager.NPCS[nID].available = true;
           PartyManager.NPCS[nID].canSelect = true;

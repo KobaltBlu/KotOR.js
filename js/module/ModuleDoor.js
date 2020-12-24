@@ -475,7 +475,7 @@ class ModuleDoor extends ModuleObject {
       //console.log('Door', this.template);
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTDObject.ResType,
+        ResType: ResourceTypes.utd,
         onLoad: (gff) => {
 
           this.template.Merge(gff);

@@ -990,7 +990,7 @@ class ModuleCreature extends ModuleCreatureController {
       //Load template and merge fields
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTCObject.ResType,
+        ResType: ResourceTypes.utc,
         onLoad: (gff) => {
           this.template.Merge(gff);
           this.InitProperties( () => {

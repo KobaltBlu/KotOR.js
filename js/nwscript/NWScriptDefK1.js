@@ -2510,7 +2510,7 @@ NWScriptDefK1.Actions = {
           case 1:
             TemplateLoader.Load({
               ResRef: args[1],
-              ResType: UTCObject.ResType,
+              ResType: ResourceTypes.utc,
               onLoad: (gff) => {
       
                 let creature = new ModuleCreature(gff)
@@ -2544,7 +2544,7 @@ NWScriptDefK1.Actions = {
           case 64: //Placeable
             TemplateLoader.Load({
               ResRef: args[1],
-              ResType: UTPObject.ResType,
+              ResType: ResourceTypes.utp,
               onLoad: (gff) => {
       
                 let plc = new ModulePlaceable(gff)

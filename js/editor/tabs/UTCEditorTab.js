@@ -795,7 +795,7 @@ class UTCEditorTab extends EditorTab {
     if($slot.data('equippedRes').length){
       TemplateLoader.Load({
         ResRef: $slot.data('equippedRes'),
-        ResType: UTIObject.ResType,
+        ResType: ResourceTypes.uti,
         onLoad: (gff) => {
           let uti = new UTIObject(gff)
           uti.getIcon((icon) => {

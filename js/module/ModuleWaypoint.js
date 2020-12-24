@@ -81,7 +81,7 @@ class ModuleWaypoint extends ModuleObject {
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTWObject.ResType,
+        ResType: ResourceTypes.utw,
         onLoad: (gff) => {
           this.template.Merge(gff);
           this.InitProperties();

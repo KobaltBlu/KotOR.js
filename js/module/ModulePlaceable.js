@@ -482,7 +482,7 @@ class ModulePlaceable extends ModuleObject {
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTPObject.ResType,
+        ResType: ResourceTypes.utp,
         onLoad: (gff) => {
           this.template.Merge(gff);
           this.InitProperties();

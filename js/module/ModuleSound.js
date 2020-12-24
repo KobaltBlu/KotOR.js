@@ -33,7 +33,7 @@ class ModuleSound extends ModuleObject {
       //console.log('ModuleSound.Load',this.getTemplateResRef())
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
-        ResType: UTSObject.ResType,
+        ResType: ResourceTypes.uts,
         onLoad: (gff) => {
 
           this.template.Merge(gff);
