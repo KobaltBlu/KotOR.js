@@ -175,6 +175,7 @@ class UTDEditorTab extends EditorTab {
   Reload( onLoad = null ){
     global.cancelAnimationFrame(this.requestId);
     this.door = new ModuleDoor(this.gff);
+    this.door.context = this.ui3DRenderer;
     this.door.InitProperties();
     this.door.LoadModel( (model) => {
       let scene = this.ui3DRenderer.ResetScene();
@@ -184,9 +185,9 @@ class UTDEditorTab extends EditorTab {
         let size = model.box.getSize();
         //Center the object to 0
         model.position.set(-center.x, -center.y, -center.z);
-        this.ui3DRenderer._camera.position.z = 0;
-        this.ui3DRenderer._camera.position.y = size.x + size.y;
-        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.position.z = 0;
+        this.ui3DRenderer.camera.position.y = size.x + size.y;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
         //Stand the object on the floor by adding half it's height back to it's position
         //model.position.z += model.box.getSize().z/2;
         this.onResize();
@@ -221,9 +222,9 @@ class UTDEditorTab extends EditorTab {
         this.door.model.box.getSize(size);
         //Center the object to 0
         this.door.model.position.set(-center.x, -center.y, -center.z);
-        this.ui3DRenderer._camera.position.z = 0;
-        this.ui3DRenderer._camera.position.y = size.x + size.y + size.z;
-        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.position.z = 0;
+        this.ui3DRenderer.camera.position.y = size.x + size.y + size.z;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
 
       }
       this.door.update(delta);

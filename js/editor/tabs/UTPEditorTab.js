@@ -188,6 +188,7 @@ class UTPEditorTab extends EditorTab {
   Reload( onLoad = null ){
     global.cancelAnimationFrame(this.requestId);
     this.placeable = new ModulePlaceable(this.gff);
+    this.placeable.context = this.ui3DRenderer;
     this.placeable.InitProperties();
     this.placeable.LoadModel( (model) => {
       let scene = this.ui3DRenderer.ResetScene();
@@ -197,9 +198,9 @@ class UTPEditorTab extends EditorTab {
         let size = model.box.getSize();
         //Center the object to 0
         model.position.set(-center.x, -center.y, -center.z);
-        this.ui3DRenderer._camera.position.z = 1.5;
-        this.ui3DRenderer._camera.position.y = size.x + size.y;
-        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.position.z = 1.5;
+        this.ui3DRenderer.camera.position.y = size.x + size.y;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
         //Stand the object on the floor by adding half it's height back to it's position
         //model.position.z += model.box.getSize().z/2;
         this.onResize();
@@ -233,9 +234,9 @@ class UTPEditorTab extends EditorTab {
         this.placeable.model.box.getSize(size);
         //Center the object to 0
         this.placeable.model.position.set(-center.x, -center.y, -center.z);
-        this.ui3DRenderer._camera.position.z = 1.5;
-        this.ui3DRenderer._camera.position.y = size.x + size.y + size.z;
-        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.position.z = 1.5;
+        this.ui3DRenderer.camera.position.y = size.x + size.y + size.z;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
 
       }
       this.placeable.update(delta);

@@ -271,8 +271,8 @@ const AudioEngine = require(path.join(app.getAppPath(), 'js/audio/AudioEngine.js
 const AudioEmitter = require(path.join(app.getAppPath(), 'js/audio/AudioEmitter.js'));
 const EAXPresets = require(path.join(app.getAppPath(), 'js/audio/EAXPresets.js'));
 
-const TextureLoader = require(path.join(app.getAppPath(), 'js/TextureLoader.js'));
-const TemplateLoader = require(path.join(app.getAppPath(), 'js/TemplateLoader.js'));
+const TextureLoader = require(path.join(app.getAppPath(), 'js/resource/TextureLoader.js'));
+const TemplateLoader = require(path.join(app.getAppPath(), 'js/resource/TemplateLoader.js'));
 const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
 
 

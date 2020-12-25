@@ -21,16 +21,21 @@ class UI3DRenderer {
       }
     }, args);
 
+    this.time = 0;
+    this.deltaTime = 0;
+
     this.clock = new THREE.Clock();
 
-    this._camera = new THREE.PerspectiveCamera( 50, this.args.width / this.args.height, this.args.camera.minView, this.args.camera.maxView );
-    this._camera.up = new THREE.Vector3( 0, 0, 1 );
-    this._camera.position.set( this.args.camera.position.x, this.args.camera.position.y, this.args.camera.position.z );              // offset the camera a bit
-    this._camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
-    this._camera.aspect = this.args.width / this.args.height;
-    this._camera.updateProjectionMatrix();
+    this.camera = new THREE.PerspectiveCamera( 50, this.args.width / this.args.height, this.args.camera.minView, this.args.camera.maxView );
+    this.camera.up = new THREE.Vector3( 0, 0, 1 );
+    this.camera.position.set( this.args.camera.position.x, this.args.camera.position.y, this.args.camera.position.z );              // offset the camera a bit
+    this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
+    this.camera.aspect = this.args.width / this.args.height;
+    this.camera.updateProjectionMatrix();
 
-    this._renderer = new THREE.WebGLRenderer({
+    this.currentCamera = this.camera;
+
+    this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       autoClear: false,
       depth: true,
@@ -38,17 +43,17 @@ class UI3DRenderer {
       logarithmicDepthBuffer: false
     });
 
-    this._renderer.autoClear = false;
-    this._renderer.setSize( this.args.width, this.args.height );
+    this.renderer.autoClear = false;
+    this.renderer.setSize( this.args.width, this.args.height );
 
-    this.canvas = this._renderer.domElement;
+    this.canvas = this.renderer.domElement;
     this.$canvas = $(this.canvas);
 
-    this._scene = new THREE.Scene();
+    this.scene = new THREE.Scene();
 
-    this._light = new THREE.AmbientLight();
+    this.light = new THREE.AmbientLight();
 
-    this._scene.add(this._light);
+    this.scene.add(this.light);
 
     this.onBeforeRender = null;
 
@@ -59,29 +64,29 @@ class UI3DRenderer {
     this.args.width = width;
     this.args.height = height;
 
-    this._renderer.setSize(width, height);  
+    this.renderer.setSize(width, height);  
 
-    this._camera.up = new THREE.Vector3( 0, 0, 1 );
-    //this._camera.position.set( this.args.camera.position.x, this.args.camera.position.y, this.args.camera.position.z );              // offset the camera a bit
-    //this._camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
-    this._camera.aspect = this.args.width / this.args.height;
-    this._camera.updateProjectionMatrix();
+    this.camera.up = new THREE.Vector3( 0, 0, 1 );
+    //this.camera.position.set( this.args.camera.position.x, this.args.camera.position.y, this.args.camera.position.z );              // offset the camera a bit
+    //this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
+    this.camera.aspect = this.args.width / this.args.height;
+    this.camera.updateProjectionMatrix();
 
   }
 
   ResetScene(){
-    this._scene = new THREE.Scene();
-    this._scene.add(this._light);
+    this.scene = new THREE.Scene();
+    this.scene.add(this.light);
 
-    return this._scene;
+    return this.scene;
   }
 
   GetScene(){
-    return this._scene;
+    return this.scene;
   }
 
   GetCamera(){
-    return this._camera;
+    return this.camera;
   }
 
   GetRenderedImage(){
@@ -89,21 +94,23 @@ class UI3DRenderer {
   }
 
   Render(){
-    this._renderer.clear();
+    this.renderer.clear();
 
     let delta = this.clock.getDelta();
+    this.time += delta;
+    this.deltaTime += delta;
 
     //Custom render logic can run here
     if(typeof this.onBeforeRender === 'function')
       this.onBeforeRender(this, delta);
 
-    this._renderer.render( this._scene, this._camera );
+    this.renderer.render( this.scene, this.camera );
   }
 
   Destroy(){
-    this._renderer = null;
-    this._camera = null;
-    this._scene = null;
+    this.renderer = null;
+    this.camera = null;
+    this.scene = null;
     this.canvas = null;
     this.$canvas = null;
     this.args = null;

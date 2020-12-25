@@ -281,11 +281,11 @@ THREE.AuroraModel = function () {
         
         if(this.animateFrame){
           //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-          if(PartyManager.party.indexOf(this.moduleObject) == -1 && Game.scene.fog){
-            if(this.moduleObject.distanceToCamera >= Game.scene.fog.far){
+          if(PartyManager.party.indexOf(this.moduleObject) == -1 && this.context.scene.fog){
+            if(this.moduleObject.distanceToCamera >= this.context.scene.fog.far){
               this.animateFrame = false;
               //If the object is past the near point, and the near point is greater than zero, animate every other frame
-            }else if(Game.scene.fog.near && this.moduleObject.distanceToCamera >= Game.scene.fog.near){
+            }else if(this.context.scene.fog.near && this.moduleObject.distanceToCamera >= this.context.scene.fog.near){
               this.animateFrame = this.oddFrame;
             }
           }
@@ -324,7 +324,7 @@ THREE.AuroraModel = function () {
       for(let i = 0; i < this.materials.length; i++){
         let material = this.materials[i];
         if(material.type == 'ShaderMaterial'){
-          material.uniforms.time.value = Game.deltaTime;
+          material.uniforms.time.value = this.context.deltaTime;
         }
       }
 
@@ -335,7 +335,7 @@ THREE.AuroraModel = function () {
             for(let j = 0; j < node.materials.length; j++){
               let material = node.materials[j];
               if(material.type == 'ShaderMaterial'){
-                material.uniforms.time.value = Game.deltaTime;
+                material.uniforms.time.value = this.context.deltaTime;
               }
             }
           }
@@ -1151,7 +1151,7 @@ THREE.AuroraModel = function () {
                 material.uniforms.tweakColor.value.setRGB(1, 1, 1);
                 material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//_node.Diffuse.r, _node.Diffuse.g, _node.Diffuse.b );
               }
-              material.uniforms.time.value = Game.time;
+              material.uniforms.time.value = options.context.time;
               material.defines = material.defines || {};
               material.defines.AURORA = "";
 

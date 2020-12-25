@@ -196,6 +196,7 @@ class UTCEditorTab extends EditorTab {
   Reload( onLoad = null ){
     global.cancelAnimationFrame(this.requestId);
     this.creature = new ModuleCreature(this.gff);
+    this.creature.context = this.ui3DRenderer;
     this.creature.InitProperties( () => {
       this.creature.LoadEquipment( () => {
         this.creature.LoadModel( (model) => {
@@ -206,9 +207,9 @@ class UTCEditorTab extends EditorTab {
             let size = model.box.getSize();
             //Center the object to 0
             model.position.set(-center.x, -center.y, -center.z);
-            this.ui3DRenderer._camera.position.z = 0;
-            this.ui3DRenderer._camera.position.y = size.x + size.y;
-            this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+            this.ui3DRenderer.camera.position.z = 0;
+            this.ui3DRenderer.camera.position.y = size.x + size.y;
+            this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
             //Stand the object on the floor by adding half it's height back to it's position
             //model.position.z += model.box.getSize().z/2;
             this.onResize();
@@ -246,9 +247,9 @@ class UTCEditorTab extends EditorTab {
         this.creature.model.box.getSize(size);
         //Center the object to 0
         this.creature.model.position.set(-center.x, -center.y, -center.z);
-        this.ui3DRenderer._camera.position.z = 0;
-        this.ui3DRenderer._camera.position.y = size.x + size.y + size.z;
-        this.ui3DRenderer._camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.position.z = 0;
+        this.ui3DRenderer.camera.position.y = size.x + size.y + size.z;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
 
       }
       this.creature.update(delta);
@@ -750,9 +751,9 @@ class UTCEditorTab extends EditorTab {
                     let size = model.box.getSize();
                     //Center the object to 0
                     model.position.set(-center.x, -center.y, -center.z);
-                    ui3DRenderer._camera.position.z = 0;
-                    ui3DRenderer._camera.position.y = size.x + size.y + size.z;
-                    ui3DRenderer._camera.lookAt(new THREE.Vector3);
+                    ui3DRenderer.camera.position.z = 0;
+                    ui3DRenderer.camera.position.y = size.x + size.y + size.z;
+                    ui3DRenderer.camera.lookAt(new THREE.Vector3);
 
                     ui3DRenderer.onBeforeRender = (renderer, delta) => {
                       model.rotation.z += delta;
