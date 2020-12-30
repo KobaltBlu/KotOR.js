@@ -342,7 +342,7 @@ class AuroraModel {
     mesh.Beaming = this.mdlReader.ReadByte() ? true : false;
     mesh.FlagRender = this.mdlReader.ReadByte() ? true : false;
 
-    if (this.engine = AuroraModel.ENGINE.K2){
+    if (this.engine == AuroraModel.ENGINE.K2){
       mesh.DirtEnabled = this.mdlReader.ReadByte();
       mesh.tslPadding1 = this.mdlReader.ReadByte();
       mesh.DirtTexture = this.mdlReader.ReadUInt16();
