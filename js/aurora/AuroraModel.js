@@ -35,8 +35,25 @@ class AuroraModel {
      * Geometry Header
      */
 
-    this.geometryHeader.Unknown1 = this.mdlReader.ReadUInt32(); //4Byte Function pointer
-    this.geometryHeader.Unknown2 = this.mdlReader.ReadUInt32(); //4Byte Function pointer
+    this.geometryHeader.FunctionPointer0 = this.mdlReader.ReadUInt32(); //4Byte Function pointer
+    this.geometryHeader.FunctionPointer1 = this.mdlReader.ReadUInt32(); //4Byte Function pointer
+
+    //Thanks bead-v :)
+    //Use FunctionPointer0 in the geometry header to determine the engine version the model was prepared for.
+    switch(this.geometryHeader.FunctionPointer0){
+      case 4273776: //K1
+        this.engine = AuroraModel.ENGINE.K1;
+      break;
+      case 4285200: //K2
+        this.engine = AuroraModel.ENGINE.K2;
+      break;
+      case 4254992: //K1_XBOX
+        this.engine = AuroraModel.ENGINE.K1_XBOX;
+      break;
+      case 4285872: //K2_XBOX
+        this.engine = AuroraModel.ENGINE.K2_XBOX;
+      break;
+    }
 
     this.geometryHeader.ModelName = this.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,'');
     this.geometryHeader.RootNodeOffset = this.mdlReader.ReadUInt32();
@@ -325,7 +342,7 @@ class AuroraModel {
     mesh.Beaming = this.mdlReader.ReadByte() ? true : false;
     mesh.FlagRender = this.mdlReader.ReadByte() ? true : false;
 
-    if (GameInitializer.currentGame == Games.TSL){
+    if (this.engine = AuroraModel.ENGINE.K2){
       mesh.DirtEnabled = this.mdlReader.ReadByte();
       mesh.tslPadding1 = this.mdlReader.ReadByte();
       mesh.DirtTexture = this.mdlReader.ReadUInt16();
@@ -1235,6 +1252,13 @@ const EMITTER_FLAGS = {
   2000          :  0x2000,
   3000          :  0x4000,
   4000          :  0x8000,
+};
+
+AuroraModel.ENGINE = {
+  K1:       0x0001,
+  K2:       0x0002,
+  K1_XBOX:  0x0004,
+  K2_XBOX:  0x0008
 };
 
 AuroraModel.NODETYPE = {
