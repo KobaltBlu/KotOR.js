@@ -168,10 +168,10 @@ class GFFObject {
   }
 
   ToJSON(){
-    return this._StructToJSON(this.RootNode);
+    return GFFObject._StructToJSON(this.RootNode);
   }
 
-  _StructToJSON(s = null){
+  static _StructToJSON(s = null){
     
     let struct = {
       type: s.GetType(),
@@ -180,14 +180,14 @@ class GFFObject {
 
     for(let i = 0; i < s.Fields.length; i++){
       let f = s.Fields[i];
-      struct.fields[f.Label] = this._FieldToJSON(f);
+      struct.fields[f.Label] = GFFObject._FieldToJSON(f);
     }
 
     return struct;
 
   }
 
-  _FieldToJSON(f = null){
+  static _FieldToJSON(f = null){
 
     let field = {
       type: f.GetType(),
@@ -212,7 +212,7 @@ class GFFObject {
 
     let children = f.GetChildStructs();
     for(let i = 0; i < children.length; i++){
-      field.structs[i] = this._StructToJSON(children[i]);
+      field.structs[i] = GFFObject._StructToJSON(children[i]);
     }
 
     return field;
@@ -916,6 +916,10 @@ class Struct {
     return false;
   }
 
+  ToJSON(){
+    return GFFObject._StructToJSON(this);
+  }
+
 }
 
 
@@ -1056,6 +1060,10 @@ class Field {
 
   SetChildStructs(strts){
     this.ChildStructs = strts;
+  }
+
+  ToJSON(){
+    return GFFObject._FieldToJSON(this);
   }
 
 }

@@ -84,10 +84,9 @@ class ModuleItem extends ModuleObject {
   }
 
   isDisguise(){
-    let propsList = this.getPropertiesList();
-    for(let i = 0; i < propsList.length; i++){
-      let prop = propsList[i];
-      if(prop.GetFieldByLabel('PropertyName').GetValue() == 59){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
         return true;
       }
     }
@@ -95,11 +94,10 @@ class ModuleItem extends ModuleObject {
   }
 
   getDisguiseAppearance(){
-    let propsList = this.getPropertiesList();
-    for(let i = 0; i < propsList.length; i++){
-      let prop = propsList[i];
-      if(prop.GetFieldByLabel('PropertyName').GetValue() == 59){
-        return prop.GetFieldByLabel('Subtype').GetValue();
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
+        return property.getValue();
       }
     }
     return 0;
@@ -190,6 +188,10 @@ class ModuleItem extends ModuleObject {
       }
     }
     return 0;
+  }
+
+  getDamageType(){
+    return this.getBaseItem().damageflags;
   }
 
   getSTRBonus(){
@@ -545,6 +547,25 @@ class ModuleItem extends ModuleObject {
     if(this.template.RootNode.HasField('PaletteID'))
       this.palleteID = this.template.RootNode.GetFieldByLabel('PaletteID').GetValue();
 
+  }
+
+  onEquip(oCreature = undefined){
+    console.log('ModuleItem.onEquip', oCreature, this);
+    if(oCreature instanceof ModuleCreature){
+      if(this.isDisguise()){
+        oCreature.RemoveEffectsByType( GameEffect.Type.EffectDisguise ); //EFFECT_DISGUISE
+        eDisguise = new EffectDisguise( this.getDisguiseAppearance() );
+        eDisguise.setCreator(this);
+        oCreature.AddEffect( eDisguise );
+      }
+    }
+  }
+
+  onUnEquip(oCreature = undefined){
+    console.log('ModuleItem.onUnEquip', oCreature, this);
+    if(oCreature instanceof ModuleCreature){
+      oCreature.RemoveEffectsByCreator(this);
+    }
   }
 
 

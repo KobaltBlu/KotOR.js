@@ -73,6 +73,14 @@ class NWScriptInstance {
     this.caller = obj;
   }
 
+  getSpellId(){
+    if(this.talent instanceof TalentObject){
+      return this.talent.id;
+    }else{
+      return -1;
+    }
+  }
+
   run(caller = null, scriptVar = 0, onComplete = null){
     this.caller = caller;
     this.scriptVar = scriptVar;

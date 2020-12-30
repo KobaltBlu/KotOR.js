@@ -54,6 +54,8 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastForcePowerUsed = undefined;
 
     this.appearance = 0;
+    this.pm_Appearance = 0;
+    this.pm_IsDisguised = 0;
     this.bodyBag = 0;
     this.bodyVariation = 0;
     this.cha = 0;
@@ -726,6 +728,20 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
+  getSpellSaveDC(){
+    return 10 + this.getSpellCasterLevel();
+  }
+
+  getSpellCasterLevel(){
+    let level = 0;
+    for(let i = 0; i < this.classes.length; i++){
+      if(this.classes[i].spellcaster == 1){
+        level += this.classes[i].level;
+      }
+    }
+    return level;
+  }
+
   getIsPC(){
     return this.isPC;
   }
@@ -756,8 +772,9 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getAppearance(){
-    if(this.GetEffect(62)){
-      return Global.kotor2DA["appearance"].rows[this.GetEffect(62).appearance];
+    let eDisguise = this.GetEffect(GameEffect.Type.EffectDisguise);
+    if(eDisguise){
+      return eDisguise.appearance;
     }else{
       return Global.kotor2DA["appearance"].rows[this.appearance] || Global.kotor2DA["appearance"].rows[0];
     }
@@ -1357,16 +1374,11 @@ class ModuleCreature extends ModuleCreatureController {
     this.unequipSlot(slot);
 
     if(item instanceof ModuleItem){
+      item.onEquip(this, slot);
       item.LoadModel( () => {
         switch(slot){
           case UTCObject.SLOT.ARMOR:
             this.equipment.ARMOR = item;
-
-            if(this.equipment.ARMOR.isDisguise()){
-              this.RemoveEffect(62); //EFFECT_DISGUISE
-              this.AddEffect( new EffectDisguise( this.equipment.ARMOR.getDisguiseAppearance() ) );
-            }
-
             this.LoadModel( () => {
               //this.getModel().buildSkeleton()
               if(typeof onLoad == 'function')
@@ -1434,9 +1446,7 @@ class ModuleCreature extends ModuleCreatureController {
         case UTCObject.SLOT.ARMOR:
 
           if(this.equipment.ARMOR instanceof ModuleItem){
-            if(this.equipment.ARMOR.isDisguise()){
-              this.RemoveEffect(62); //EFFECT_DISGUISE
-            }
+            this.equipment.ARMOR.onUnEquip(this, slot);
           }
 
           this.equipment.ARMOR = undefined;
@@ -1447,6 +1457,7 @@ class ModuleCreature extends ModuleCreatureController {
         case UTCObject.SLOT.RIGHTHAND:
           try{
             if(this.equipment.RIGHTHAND instanceof ModuleItem){
+              this.equipment.RIGHTHAND.onUnEquip(this, slot);
               this.model.rhand.remove(this.equipment.RIGHTHAND.model);
               this.equipment.RIGHTHAND.destroy();
               this.equipment.RIGHTHAND = undefined;
@@ -1458,6 +1469,7 @@ class ModuleCreature extends ModuleCreatureController {
         case UTCObject.SLOT.LEFTHAND:
           try{
             if(this.equipment.LEFTHAND instanceof ModuleItem){
+              this.equipment.LEFTHAND.onUnEquip(this, slot);
               this.model.lhand.remove(this.equipment.LEFTHAND.model);
               this.equipment.LEFTHAND.destroy();
               this.equipment.LEFTHAND = null;
@@ -1631,6 +1643,10 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   InitProperties( onLoad = null ){
+
+    this.classes = [];
+    this.feats = [];
+    this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
 
     if(this.template.RootNode.HasField('ObjectId'))
       this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
@@ -1845,6 +1861,15 @@ class ModuleCreature extends ModuleCreatureController {
 
     if(this.template.RootNode.HasField('ZOrientation'))
       this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+      
+    if(this.template.RootNode.HasField('FortSaveThrow'))
+      this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
+
+    if(this.template.RootNode.HasField('RefSaveThrow'))
+      this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
+
+    if(this.template.RootNode.HasField('WillSaveThrow'))
+      this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
 
 
     if(this.template.RootNode.HasField('SWVarTable')){
@@ -1861,6 +1886,23 @@ class ModuleCreature extends ModuleCreatureController {
       for(let i = 0; i < localNumbers.length; i++){
         let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
         this.setLocalNumber(i, data);
+      }
+    }
+
+    if(this.template.RootNode.HasField('PM_Appearance'))
+      this.pm_Appearance = this.template.RootNode.GetFieldByLabel('PM_Appearance').GetValue();
+
+    if(this.template.RootNode.HasField('PM_IsDisguised'))
+      this.pm_IsDisguised = this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
+
+    if(this.template.RootNode.HasField('EffectList')){
+      let effects = this.template.RootNode.GetFieldByLabel('EffectList').GetChildStructs() || [];
+      for(let i = 0; i < effects.length; i++){
+        let effect = GameEffect.EffectFromStruct(effects[i]);
+        if(effect instanceof GameEffect){
+          this.effects.push(effect);
+          //this.AddEffect(effect);
+        }
       }
     }
 

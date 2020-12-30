@@ -588,6 +588,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectAssuredHit();
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -843,6 +844,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectHeal(args[0]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -854,6 +856,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectDamage(args[0], args[1], args[2]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -865,6 +868,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectAbilityIncrease(args[0], args[1]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -876,6 +880,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectDamageResistance(args[0], args[1], args[2]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -887,6 +892,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectResurrection();
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -939,7 +945,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "effect"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature && typeof args[1] == 'object' && typeof args[1].type != 'undefined'){
-      args[0].RemoveEffect(args[1].type);
+      args[0].RemoveEffect(args[1]);
       }
     }
   },
@@ -1134,25 +1140,50 @@ NWScriptDefK1.Actions = {
     comment: "108: Do a Fortitude Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "FortitudeSave",
     type: 3,
-    args: ["object", "int", "int", "object"]
+    args: ["object", "int", "int", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject)
+        return args[0].fortitudeSave(args[1], args[2], args[3]);
+
+      return 0;
+    }
   },
   109:{
     comment: "109: Does a Reflex Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "ReflexSave",
     type: 3,
-    args: ["object", "int", "int", "object"]
+    args: ["object", "int", "int", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject)
+        return args[0].reflexSave(args[1], args[2], args[3]);
+
+      return 0;
+    }
   },
   110:{
     comment: "110: Does a Will Save check for the given DC\n- oCreature\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\nReturns: 0 if the saving throw roll failed\nReturns: 1 if the saving throw roll succeeded\nReturns: 2 if the target was immune to the save type specified\n",
     name: "WillSave",
     type: 3,
-    args: ["object", "int", "int", "object"]
+    args: ["object", "int", "int", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject)
+        return args[0].willSave(args[1], args[2], args[3]);
+
+      return 0;
+    }
   },
   111:{
     comment: "111: Get the DC to save against for a spell (10 + spell level + relevant ability\nbonus).  This can be called by a creature or by an Area of Effect object.\n",
     name: "GetSpellSaveDC",
     type: 3,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      if(this.caller instanceof ModuleCreature){
+        this.caller.getSpellSaveDC();
+      }
+
+      return 10;
+    }
   },
   112:{
     comment: "112: Set the subtype of eEffect to Magical and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
@@ -1176,13 +1207,28 @@ NWScriptDefK1.Actions = {
     comment: "115: Create an AC Increase effect\n- nValue: size of AC increase\n- nModifyType: AC_*_BONUS\n- nDamageType: DAMAGE_TYPE_*\n* Default value for nDamageType should only ever be used in this function prototype.\n",
     name: "EffectACIncrease",
     type: 16,
-    args: ["int", "int", "int"]
+    args: ["int", "int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectACIncrease(args[0], args[1], args[2]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   116:{
     comment: "116: If oObject is a creature, this will return that creature's armour class\nIf oObject is an item, door or placeable, this will return zero.\n- nForFutureUse: this parameter is not currently used\n* Return value if oObject is not a creature, item, door or placeable: -1\n",
     name: "GetAC",
     type: 3,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature)
+        return args[0].getAC();
+
+      if(args[0] instanceof ModuleItem || args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable)
+        return 0;
+
+      return -1;
+    }
   },
   117:{
     comment: "117: Create an AC Decrease effect\n- nSave: SAVING_THROW_* (not SAVING_THROW_TYPE_*)\n- nValue: size of AC decrease\n- nSaveType: SAVING_THROW_TYPE_*\n",
@@ -1206,7 +1252,13 @@ NWScriptDefK1.Actions = {
     comment: "120: Create a Damage Increase effect\n- nBonus: DAMAGE_BONUS_*\n- nDamageType: DAMAGE_TYPE_*\n",
     name: "EffectDamageIncrease",
     type: 16,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectDamageIncrease(args[0], args[1]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   121:{
     comment: "121: Convert nRounds into a number of seconds\nA round is always 6.0 seconds\n",
@@ -1350,6 +1402,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectDeath(args[0], args[1]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -1839,6 +1892,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectVisualEffect(args[0], args[1]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -1973,6 +2027,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectLink(args[0], args[1]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -2083,6 +2138,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectBeam(args[0], args[1], args[2], args[3]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -2645,11 +2701,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      if(this.talent instanceof TalentObject){
-        return this.talent.id;
-      }else{
-        return 0;
-      }
+      this.getSpellId();
     }
   },
   249:{
@@ -2872,6 +2924,7 @@ NWScriptDefK1.Actions = {
       effect.location = args[0];
       effect.ignoreCollision = args[1] ? true : false;
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -3151,7 +3204,10 @@ NWScriptDefK1.Actions = {
     comment: "305: Get the spell (SPELL_*) that applied eSpellEffect.\n* Returns -1 if eSpellEffect was applied outside a spell script.\n",
     name: "GetEffectSpellId",
     type: 3,
-    args: ["effect"]
+    args: ["effect"],
+    action: function(args, _instr, action){
+      return args[0].getSpellId();
+    }
   },
   306:{
     comment: "306: Determine whether oCreature has tTalent.\n",
@@ -3972,7 +4028,11 @@ NWScriptDefK1.Actions = {
     comment: "390: Tests a linked effect to see if the target is immune to it.\nIf the target is imune to any of the linked effect then he is immune to all of it\n",
     name: "GetIsLinkImmune",
     type: 3,
-    args: ["object", "effect"]
+    args: ["object", "effect"],
+    action: function(args, _instr, action){
+      //TODO
+      return 0;
+    }
   },
   391:{
     comment: "391: Stunn the droid\n",
@@ -3988,6 +4048,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectForcePushed(args[0]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -4501,7 +4562,13 @@ NWScriptDefK1.Actions = {
     comment: "448: Create a Damage Decrease effect.\n- nPenalty\n- nDamageType: DAMAGE_TYPE_*\n",
     name: "EffectDamageDecrease",
     type: 16,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectDamageDecrease(args[0], args[1]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   449:{
     comment: "449: Create a Damage Immunity Decrease effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
@@ -4513,7 +4580,13 @@ NWScriptDefK1.Actions = {
     comment: "450: Create an AC Decrease effect.\n- nValue\n- nModifyType: AC_*\n- nDamageType: DAMAGE_TYPE_*\n* Default value for nDamageType should only ever be used in this function prototype.\n",
     name: "EffectACDecrease",
     type: 16,
-    args: ["int", "int", "int"]
+    args: ["int", "int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectACDecrease(args[0], args[1], args[2]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   451:{
     comment: "451: Create a Movement Speed Decrease effect.\n- nPercentChange: This is expected to be a positive integer between 1 and 99 inclusive.\nIf a negative integer is supplied then a movement speed increase will result,\nand if a number >= 100 is supplied then the effect is deleted.\n",
@@ -4587,6 +4660,7 @@ NWScriptDefK1.Actions = {
         let vfx_id = forceshield.visualeffectdef;
         let effect = new EffectVisualEffect(vfx_id, false);
         effect.setCreator(this.caller);
+        effect.setSpellId(this.getSpellId());
         return effect.initialize();
       }else{
         return undefined;
@@ -4625,6 +4699,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let effect = new EffectDisguise(args[0]);
       effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },

@@ -37,10 +37,6 @@ class ModuleCreatureController extends ModuleObject {
         this.footstepEmitter.Stop();
       }
 
-      if(this.GetEffect(62)){ //EFFECT_DISGUISE
-        
-      }
-
       if(this.GetEffect(42)){ //EFFECT_DAMAGE
         let effect = this.GetEffect(42);
         this.subtractHP(effect.amount);

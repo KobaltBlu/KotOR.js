@@ -114,13 +114,13 @@ class TalentSpell extends TalentObject {
         file: this.casthandvisual,
         onLoad: (mdl) => {
           THREE.AuroraModel.FromMDL(mdl, {
-            context: this.object.context,
+            context: oCaster.context,
             onComplete: (model) => {
               this.casthandmodel = model;
 
-              if(this.object.model){
-                if(this.object.model.lhand){
-                  this.object.model.lhand.add(this.casthandmodel);
+              if(oCaster.model){
+                if(oCaster.model.lhand){
+                  oCaster.model.lhand.add(this.casthandmodel);
                   TextureLoader.LoadQueue();
                   this.casthandmodel.playAnimation('cast01', {}, () => {
                     //Clean up the impact effect

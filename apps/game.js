@@ -229,18 +229,15 @@ const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWSc
 
 /* Effects */
 const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));
-const EffectAbilityIncrease = require(path.join(app.getAppPath(), 'js/effects/EffectAbilityIncrease.js'));
-const EffectAssuredHit = require(path.join(app.getAppPath(), 'js/effects/EffectAssuredHit.js'));
-const EffectBeam = require(path.join(app.getAppPath(), 'js/effects/EffectBeam.js'));
-const EffectDamage = require(path.join(app.getAppPath(), 'js/effects/EffectDamage.js'));
-const EffectDamageResistance = require(path.join(app.getAppPath(), 'js/effects/EffectDamageResistance.js'));
-const EffectDeath = require(path.join(app.getAppPath(), 'js/effects/EffectDeath.js'));
-const EffectDisguise = require(path.join(app.getAppPath(), 'js/effects/EffectDisguise.js'));
-const EffectForcePushed = require(path.join(app.getAppPath(), 'js/effects/EffectForcePushed.js'));
-const EffectHeal = require(path.join(app.getAppPath(), 'js/effects/EffectHeal.js'));
-const EffectLink = require(path.join(app.getAppPath(), 'js/effects/EffectLink.js'));
-const EffectResurrection = require(path.join(app.getAppPath(), 'js/effects/EffectResurrection.js'));
-const EffectVisualEffect = require(path.join(app.getAppPath(), 'js/effects/EffectVisualEffect.js'));
+let odysseyGameEffects = fs.readdirSync(path.join(app.getAppPath(), 'js/effects'));
+for(let i = 0; i < odysseyGameEffects.length; i++){
+  let controllerPath = path.parse(odysseyGameEffects[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/effects', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
 
 /* Talents */
 const TalentObject = require(path.join(app.getAppPath(), 'js/talents/TalentObject.js'));
@@ -676,3 +673,39 @@ THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
   }
 
 }
+
+THREE.Box3.prototype.expandByObject = function expandByObject(object) {
+  // Computes the world-axis-aligned bounding box of an object (including its children),
+  // accounting for both the object's, and children's, world transforms
+  object.updateWorldMatrix(false, false);
+  var geometry = object.geometry;
+  var _box = new THREE.Box3;
+
+  if (geometry !== undefined) {
+    if (geometry.boundingBox === null) {
+      geometry.computeBoundingBox();
+    }
+
+    _box.copy(geometry.boundingBox);
+
+    _box.applyMatrix4(object.matrixWorld);
+
+    this.union(_box);
+  }else if(object instanceof THREE.AuroraLight){
+    var bb = new THREE.Box3(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0));
+    bb.expandByScalar(object.getRadius());
+    _box.copy(bb);
+
+    _box.applyMatrix4(object.matrixWorld);
+
+    this.union(_box);
+  }
+
+  var children = object.children;
+
+  for (var i = 0, l = children.length; i < l; i++) {
+    this.expandByObject(children[i]);
+  }
+
+  return this;
+};

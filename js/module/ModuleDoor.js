@@ -827,6 +827,17 @@ class ModuleDoor extends ModuleObject {
       }
     }
 
+    if(this.template.RootNode.HasField('EffectList')){
+      let effects = this.template.RootNode.GetFieldByLabel('EffectList').GetChildStructs() || [];
+      for(let i = 0; i < effects.length; i++){
+        let effect = GameEffect.EffectFromStruct(effects[i]);
+        if(effect instanceof GameEffect){
+          this.effects.push(effect);
+          //this.AddEffect(effect);
+        }
+      }
+    }
+
     if(this.template.RootNode.HasField('LinkedTo'))
       this.linkedTo = this.template.RootNode.GetFieldByLabel('LinkedTo').GetValue();
 

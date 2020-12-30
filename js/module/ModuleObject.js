@@ -115,6 +115,10 @@ class ModuleObject {
     this.v20 = new THREE.Vector2();
     this.v21 = new THREE.Vector2();
 
+    this.fortitudeSaveThrow = 0;
+    this.reflexSaveThrow = 0;
+    this.willSaveThrow = 0;
+
   }
 
   onRotationChange() {
@@ -432,6 +436,15 @@ class ModuleObject {
     if(this instanceof ModuleCreature){
       this.initPerceptionList();
       this.updateCollision();
+    }
+
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      let effect = this.effects[i];
+      if(effect instanceof GameEffect){
+        effect.initialize();
+        effect.setObject(this);
+        effect.onApply(this);
+      }
     }
 
   }
@@ -842,6 +855,51 @@ class ModuleObject {
     return 0;
   }*/
 
+  getFortitudeSave(){
+    return this.fortitudeSaveThrow;
+  }
+
+  getReflexSave(){
+    return this.reflexSaveThrow;
+  }
+
+  getWillSave(){
+    return this.willSaveThrow;
+  }
+
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let bonus = CombatEngine.GetMod(this.getCON());
+    
+    if((roll + this.getFortitudeSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
+  reflexSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let bonus = CombatEngine.GetMod(this.getDEX());
+    
+    if((roll + this.getReflexSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
+  willSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let bonus = CombatEngine.GetMod(this.getWIS());
+
+    if((roll + this.getWillSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
   AddEffect(effect, type = 0, duration = 0){
     console.log('Adding effect', effect, this);
     //effect.setDurationType(type);
@@ -861,6 +919,33 @@ class ModuleObject {
     return null;
   }
 
+  RemoveEffectsByCreator( oCreator = undefined ){
+    if(oCreator instanceof ModuleObject){
+      let eIndex = this.effects.length - 1;
+      let effect = this.effects[eIndex];
+      while(effect){
+        if(effect.getCreator() == oCreator){
+          let index = this.effects.indexOf(effect);
+          if(index >= 0){
+            this.effects.splice(index, 1)[0].onRemove();
+          }
+        }
+        effect = this.effects[--eIndex];
+      }
+    }
+  }
+
+  RemoveEffectsByType(type = -1){
+    let effect = this.GetEffect(type);
+    while(effect){
+      let index = this.effects.indexOf(effect);
+      if(index >= 0){
+        this.effects.splice(index, 1)[0].onRemove();
+      }
+      effect = this.GetEffect(type);
+    }
+  }
+
   RemoveEffect(type = -1){
     if(type instanceof GameEffect){
       let arrIdx = this.effects.indexOf(type);
@@ -868,13 +953,7 @@ class ModuleObject {
         this.effects.splice(arrIdx, 1)[0].onRemove();
       }
     }else{
-      let effect = this.GetEffect(type);
-      if(effect){
-        let arrIdx = this.effects.indexOf(effect);
-        if(arrIdx >= 0){
-          this.effects.splice(arrIdx, 1)[0].onRemove();
-        }
-      }
+      this.RemoveEffectsByType(type);
     }
   }
 
@@ -1555,6 +1634,15 @@ class ModuleObject {
 
     if(this.template.RootNode.HasField('ZOrientation'))
       this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+      
+    if(this.template.RootNode.HasField('FortSaveThrow'))
+      this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
+
+    if(this.template.RootNode.HasField('RefSaveThrow'))
+      this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
+
+    if(this.template.RootNode.HasField('WillSaveThrow'))
+      this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
       let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();

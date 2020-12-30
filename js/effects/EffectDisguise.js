@@ -1,8 +1,9 @@
 class EffectDisguise extends GameEffect {
-  constructor(appearanceId = 0){
+  constructor(nDisguiseAppearance = 0){
     super();
     this.type = GameEffect.Type.EffectDisguise;
-    this.appearanceId = appearanceId;
+    this.nDisguiseAppearance = nDisguiseAppearance;
+    this.appearance = Global.kotor2DA.appearance.rows[this.nDisguiseAppearance];
   }
 
   onApply(){
@@ -14,6 +15,13 @@ class EffectDisguise extends GameEffect {
 
         console.log('Disguise applied', this.object, this);
       });
+    }
+  }
+
+  onRemove(){
+    if(this.object.pm_IsDisguised){
+      this.object.appearance = this.object.pm_Appearance;
+      this.object.pm_IsDisguised = 0;
     }
   }
 
