@@ -1,7 +1,8 @@
-class EffectAssuredHit extends GameEffect {
-  constructor(){
+class EffectIcon extends GameEffect {
+  constructor(nIcon = 0){
     super();
-    this.type = GameEffect.Type.EffectAssuredHit;
+    this.type = GameEffect.Type.EffectIcon;
+    this.nIcon = nIcon;
   }
 
   onApply(){
@@ -17,4 +18,4 @@ class EffectAssuredHit extends GameEffect {
 
 }
 
-module.exports = EffectAssuredHit;
+module.exports = EffectIcon;

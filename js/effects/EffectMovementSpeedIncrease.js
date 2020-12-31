@@ -6,6 +6,11 @@ class EffectMovementSpeedIncrease extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     if(this.object instanceof ModuleObject){
       //
     }

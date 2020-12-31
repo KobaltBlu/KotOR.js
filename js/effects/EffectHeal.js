@@ -6,6 +6,11 @@ class EffectHeal extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     this.object.addHP(this.nHeal);
   }
 

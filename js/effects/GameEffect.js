@@ -3,16 +3,27 @@ class GameEffect {
     this.creator = undefined;
     this.durationType = 0;
     this.duration = 0;
+    this.expireDay = 0;
+    this.expireTime = 0;
     this.spellId = -1;
     this.subType = 0;
+    this.skipOnLoad = 0;
+
+    this.applied = false;
+    this.initialized = false;
+    this.durationEnded = false;
+
   }
 
   initialize(){
+    if(this.initialized)
+      return this;
 
     if(!isNaN(this.creator)){
       this.creator = ModuleObject.GetObjectById(this.creator);
     }
 
+    this.initialized = true;
     return this;
   }
 
@@ -22,6 +33,14 @@ class GameEffect {
 
   setDuration(duration = 0){
     this.duration = duration;
+  }
+
+  setExpireDay(expireDay = 0){
+    this.expireDay = expireDay;
+  }
+
+  setExpireTime(expireTime = 0){
+    this.expireTime = expireTime;
   }
 
   setObject(obj = undefined){
@@ -44,6 +63,22 @@ class GameEffect {
     return this.creator;
   }
 
+  getDuration(){
+    return this.duration;
+  }
+
+  getDurationType(){
+    return this.durationType;
+  }
+
+  getExpireDay(){
+    return this.expireDay;
+  }
+
+  getExpireTime(){
+    return this.expireTime;
+  }
+
   getSpellId(){
     return this.spellId || -1;
   }
@@ -52,7 +87,19 @@ class GameEffect {
     return this.subType;
   }
 
-  update(delta){}
+  setSkipOnLoad( bSkipOnLoad = true ){
+    this.skipOnLoad = bSkipOnLoad ? true : false;
+  }
+
+  update(delta){
+    if(this.durationType == GameEffect.DurationType.TEMPORARY){
+      if(this.duration <= 0){
+        this.onDurationEnd();
+        return;
+      }
+      this.duration -= delta;
+    }
+  }
 
   ///////////////
   // Effect Events
@@ -60,7 +107,10 @@ class GameEffect {
 
   //Called when the effect is applied ingame
   onApply(){
-    
+    if(this.applied)
+      return;
+
+    this.applied = true;
   }
 
   //When the effect is removed ingame
@@ -70,6 +120,7 @@ class GameEffect {
   
   //When the effect duration has expired
   onDurationEnd(){
+    this.durationEnded = true;
     if(this.object instanceof ModuleObject){
       this.object.RemoveEffect(this);
     }else{
@@ -85,13 +136,12 @@ class GameEffect {
       let eSubType = struct.GetFieldByLabel('SubType').GetValue();
       let eCreator = struct.GetFieldByLabel('CreatorId').GetValue();
       let eSpellId = struct.GetFieldByLabel('SpellId').GetValue();
-
       
       let eDuration = struct.GetFieldByLabel('Duration').GetValue();
       let eExpireDay = struct.GetFieldByLabel('ExpireDay').GetValue();
       let eExpireTime = struct.GetFieldByLabel('ExpireTime').GetValue();
 
-      let eSkipOnLoad = 0;//struct.GetFieldByLabel('SkipOnLoad').GetValue();
+      let eSkipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();
       if(!eSkipOnLoad){
         let intList = [];
         let floatList = [];
@@ -156,7 +206,7 @@ class GameEffect {
             effect = new EffectDisguise(intList[0]);
           break;
           case 67: //SetEffectIcon (???)
-            
+            effect = new EffectIcon(intList[0]);
           break;
           case 83: //BonusFeat
             effect = new EffectFeat(intList[0]);
@@ -164,10 +214,15 @@ class GameEffect {
           case 92: //BlasterDeflectionIncrease
             effect = new EffectBlasterDeflectionIncrease(intList[1]);
           break;
+          case 107: //ForceShield
+            effect = new EffectForceShield(intList[0]);
+          break;
         }
 
         if(typeof effect !== 'undefined'){
           effect.setDuration(eDuration);
+          effect.setExpireDay(eExpireDay);
+          effect.setExpireTime(eExpireTime);
           effect.setCreator(eCreator);
           effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
           effect.setSubType(eSubType);
@@ -175,7 +230,7 @@ class GameEffect {
           if(eDuration){
             effect.setDurationType(GameEffect.DurationType.TEMPORARY);
           }
-
+          console.log('Handled Effect', eType, struct.ToJSON());
         }else{
           console.log('Unhandled Effect', eType, struct.ToJSON());
         }
@@ -281,6 +336,7 @@ GameEffect.Type = {
   EffectLink:             99997,
   EffectDamage:           99996,
   EffectForceShield:      99995,
+  EffectIcon:             99994,
 };
 
 module.exports = GameEffect;

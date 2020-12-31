@@ -16,6 +16,11 @@ class EffectBeam extends GameEffect {
   }
 
   initialize(){
+    if(this.initialized)
+      return this;
+
+    super.initialize();
+
     return new Promise( ( resolve, reject) => {
       switch(this.visualEffect.progfx_duration){
         case 616:
@@ -84,7 +89,11 @@ class EffectBeam extends GameEffect {
   }
 
   onApply(){
-    //this.duration = duration;
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     if(this.model instanceof THREE.AuroraModel){
       if(this.caster.model instanceof THREE.AuroraModel){
         //Add the effect to the casters model
@@ -92,6 +101,14 @@ class EffectBeam extends GameEffect {
         //Set the target node of the BeamEffect emitter
         this.model.setEmitterTarget(this.object.model);
       }
+    }
+  }
+
+  update(delta = 0){
+    super.update(delta);
+
+    if(this.durationEnded && this.durationType == GameEffect.DurationType.TEMPORARY){
+      return;
     }
   }
 

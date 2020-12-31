@@ -6,9 +6,16 @@ class EffectSavingThrowIncrease extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+
+    super.onApply();
+    
     if(this.object instanceof ModuleObject){
       //
     }
+
+    this.applied = true;
   }
 
 }

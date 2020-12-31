@@ -7,23 +7,10 @@ class EffectLink extends GameEffect {
   }
 
   onApply(){
-    if(this.effect1 instanceof GameEffect){
-      this.effect1.setObject(this.object);
-      this.effect1.onApply(this.object)
-    }
-    if(this.effect2 instanceof GameEffect){
-      this.effect2.setObject(this.object);
-      this.effect2.onApply(this.object)
-    }
-  }
-
-  update(delta = 0){
-    if(this.effect1 instanceof GameEffect){
-      this.effect1.update(delta)
-    }
-    if(this.effect2 instanceof GameEffect){
-      this.effect2.update(delta)
-    }
+    if(this.applied)
+      return;
+      
+    super.onApply();
   }
 
 }

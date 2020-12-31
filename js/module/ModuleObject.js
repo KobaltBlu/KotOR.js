@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const EffectLink = require("../effects/EffectLink");
+
 /* @file
  * The ModuleObject class.
  */
@@ -901,13 +903,34 @@ class ModuleObject {
   }
 
   AddEffect(effect, type = 0, duration = 0){
-    console.log('Adding effect', effect, this);
-    //effect.setDurationType(type);
-    //effect.setDuration(duration);
-    effect.setObject(this);
-    effect.onApply(this);
-    this.effects.push(effect);
+    if(effect instanceof GameEffect){
+      if(effect instanceof EffectLink){
+        //EFFECT LEFT
+        console.log('AddEffect', 'LinkEffect->Left', effect.effect1, this);
+        if(effect.effect1 instanceof GameEffect){
+          effect.effect1.setDurationType(type);
+          effect.effect1.setDuration(duration);
+          this.AddEffect(effect.effect1, type, duration);
+        }
 
+        //EFFECT RIGHT
+        console.log('AddEffect', 'LinkEffect->Right', effect.effect2, this);
+        if(effect.effect2 instanceof GameEffect){
+          effect.effect2.setDurationType(type);
+          effect.effect2.setDuration(duration);
+          this.AddEffect(effect.effect2, type, duration);
+        }
+      }else{
+        console.log('AddEffect', 'GameEffect', effect, this);
+        //effect.setDurationType(type);
+        //effect.setDuration(duration);
+        effect.setObject(this);
+        effect.onApply(this);
+        this.effects.push(effect);
+      }
+    }else{
+      console.warn('AddEffect', 'Invalid GameEffect', effect)
+    }
   }
 
   GetEffect(type = -1){

@@ -8,6 +8,11 @@ class EffectDamage extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     if(this.object instanceof ModuleObject){
       this.object.subtractHP(this.nAmount);
     }

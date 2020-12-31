@@ -5321,7 +5321,15 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["effect", "int"],
     action: function(args, _instr, action){
-      return args[0];
+      let eIcon = new EffectIcon(args[1]);
+      eIcon.setCreator(this.caller);
+      eIcon.setSpellId(this.getSpellId());
+      eIcon.initialize();
+
+      let eLink = new EffectLink(args[0], eIcon);
+      eLink.setCreator(this.caller);
+      eLink.setSpellId(this.getSpellId());
+      return eLink.initialize();
     }
   },
   553:{

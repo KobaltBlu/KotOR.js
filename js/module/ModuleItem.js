@@ -416,7 +416,7 @@ class ModuleItem extends ModuleObject {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       //Activate Item
-      if(property.propertyName == 10){
+      if(property.propertyName == ModuleItem.PROPERTY.CastSpell){
         spells.push(new TalentSpell({id: property.subType}));
       }
     }

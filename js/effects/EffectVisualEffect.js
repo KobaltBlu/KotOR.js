@@ -8,6 +8,11 @@ class EffectVisualEffect extends GameEffect {
   }
 
   update(delta = 0){
+    super.update(delta);
+
+    if(this.durationEnded && this.durationType == GameEffect.DurationType.TEMPORARY){
+      return;
+    }
 
     if(this.impact_model){
       if(this.impactTimer == undefined){
@@ -41,48 +46,42 @@ class EffectVisualEffect extends GameEffect {
       this.impactRootTimer -= 1000 * delta;
     }
 
-    if(this.durationType == GameEffect.DurationType.TEMPORARY){
+    if(this.model){
 
-      if(this.duration <= 0){
-        this.onDurationEnd();
-        return;
+      this.model.animationManager.currentAnimation = undefined;
+
+      if(this.object.model && this.model){
+        for(let node of this.object.model.nodes){
+          let c_node = this.model.nodes.get(node[0]);
+          c_node.position.copy(node[1].position);
+          c_node.quaternion.copy(node[1].quaternion);
+          c_node.scale.copy(node[1].scale);
+        }
+      }
+      
+      if(this.object.head && this.model.headhook.head){
+        for(let node of this.object.head.nodes){
+          let c_node = this.model.headhook.head.nodes.get(node[0]);
+          c_node.position.copy(node[1].position);
+          c_node.quaternion.copy(node[1].quaternion);
+          c_node.scale.copy(node[1].scale);
+        }
       }
 
-      if(this.model){
+      this.model.position.copy(this.object.position);
+      this.model.rotation.copy(this.object.model.rotation);
 
-        this.model.animationManager.currentAnimation = undefined;
+      this.model.update(delta);
 
-        if(this.object.model){
-          for(let node of this.object.model.nodes){
-            let c_node = this.model.nodes.get(node[0]);
-            c_node.position.copy(node[1].position);
-            c_node.quaternion.copy(node[1].quaternion);
-            c_node.scale.copy(node[1].scale);
-          }
-        }
-        
-        if(this.object.head){
-          for(let node of this.object.head.nodes){
-            let c_node = this.model.headhook.head.nodes.get(node[0]);
-            c_node.position.copy(node[1].position);
-            c_node.quaternion.copy(node[1].quaternion);
-            c_node.scale.copy(node[1].scale);
-          }
-        }
-
-        this.model.position.copy(this.object.position);
-        this.model.rotation.copy(this.object.model.rotation);
-
-        this.model.update(delta);
-
-      }
-
-      this.duration -= delta;
     }
 
   }
 
   onApply(){
+    if(this.applied)
+      return;
+
+    super.onApply();
 
     //FireAndForget
     if(this.visualEffect.type_fd == 'F'){
@@ -102,6 +101,7 @@ class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.type_fd == 'B'){
     }
 
+    this.applied = true;
   }
 
   getImpactRootModel(){

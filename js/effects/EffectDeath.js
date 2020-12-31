@@ -6,6 +6,11 @@ class EffectDeath extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     this.object.setHP(-11);
     if(this.spectacularDeath){
       this.object.animState = ModuleCreature.AnimState.DEAD;

@@ -7,6 +7,11 @@ class EffectDisguise extends GameEffect {
   }
 
   onApply(){
+    if(this.applied)
+      return;
+      
+    super.onApply();
+    
     if(this.object instanceof ModuleCreature){
       this.object.LoadModel(() => {
         
