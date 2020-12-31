@@ -856,8 +856,14 @@ class ModuleCreatureController extends ModuleObject {
     if(this.lastAttemptedAttackTarget instanceof ModuleObject && this.lastAttemptedAttackTarget.isDead())
       this.lastAttemptedAttackTarget = undefined;
 
+    if(this.lastAttemptedSpellTarget instanceof ModuleObject && this.lastAttemptedSpellTarget.isDead())
+      this.lastAttemptedSpellTarget = undefined;
+
     if(this.lastDamager instanceof ModuleObject && this.lastDamager.isDead())
       this.lastDamager = undefined;
+
+    if(this.lastSpellAttacker instanceof ModuleObject && this.lastSpellAttacker.isDead())
+      this.lastSpellAttacker = undefined;
 
     if(this.isDead()){
       this.clearTarget();
