@@ -109,7 +109,7 @@ class EffectVisualEffect extends GameEffect {
   }
 
   getImpactRootModel(){
-    switch(this.object.getAppearance().sizecategory){
+    switch(parseInt(this.object.getAppearance().sizecategory)){
       case 1: //TINY
         return this.visualEffect.imp_root_s_node;
       case 2: //SMALL
@@ -178,7 +178,7 @@ class EffectVisualEffect extends GameEffect {
                 TextureLoader.LoadQueue();
                 
               }else{
-                this.impact_model.dispose();
+                this.impact_root_model.dispose();
               }
 
             }
@@ -195,7 +195,7 @@ class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
-      let fx_tex = 'fx_tex_' + pad(this.visualEffect.progfx_impact - 1400, 2);
+      let fx_tex = 'fx_tex_' + pad((this.visualEffect.progfx_impact - 1400) + 1, 2);
       
       if(this.object instanceof ModuleCreature){
         Game.ModelLoader.load({
@@ -249,7 +249,7 @@ class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
-      let fx_tex = 'fx_tex_' + pad(this.visualEffect.progfx_duration - 1400, 2);
+      let fx_tex = 'fx_tex_' + pad((this.visualEffect.progfx_duration - 1400) + 1, 2);
       
       if(this.object instanceof ModuleCreature){
         Game.ModelLoader.load({
@@ -299,6 +299,14 @@ class EffectVisualEffect extends GameEffect {
   onRemove(){
     if(this.model instanceof THREE.AuroraModel){
       this.model.dispose();
+    }
+
+    if(this.impact_model instanceof THREE.AuroraModel){
+      this.impact_model.dispose();
+    }
+
+    if(this.impact_root_model instanceof THREE.AuroraModel){
+      this.impact_root_model.dispose();
     }
   }
 
