@@ -37,7 +37,24 @@ npm start
 - Run install.bat (You only need to do this before the first run)
 - Run start.bat to launch the program
 
-## Screenshots & Videos
+## Screenshots
+
+**KotOR.js Launcher**
+![KotOR.js Launcher](/images/screenshots/KotOR-js-Launcher-001.jpg)
+
+**KotOR - Taris: Undercity**
+![KotOR - Taris: Undercity](/images/screenshots/K1-Screen-001.jpg)
+
+**KotOR - Dantooine**
+![KotOR - Dantooine](/images/screenshots/K1-Screen-003.jpg)
+
+**KotOR - TSL: Awaken Scene**
+![KotOR - TSL: Awaken Scene](/images/screenshots/K2-Screen-001.jpg)
+
+**KotOR - TSL: Awaken Scene 2**
+![KotOR - TSL: Awaken Scene 2](/images/screenshots/K2-Screen-002.jpg)
+
+## Videos
 
 [![KotOR.js - The Endar Spire](http://img.youtube.com/vi/y2UzOH5bcAQ/0.jpg)](http://www.youtube.com/watch?v=y2UzOH5bcAQ)
 [![KotOR.js : TSL - Gameplay Compilation](http://img.youtube.com/vi/IpP6BQJ5ZBQ/0.jpg)](http://www.youtube.com/watch?v=IpP6BQJ5ZBQ)
