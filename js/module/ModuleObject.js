@@ -941,7 +941,11 @@ class ModuleObject {
         return this.effects[i];
       }
     }
-    return null;
+    return undefined;
+  }
+
+  hasEffect(type = -1){
+    return this.GetEffect(type) ? true : false;
   }
 
   RemoveEffectsByCreator( oCreator = undefined ){
@@ -1679,7 +1683,7 @@ class ModuleObject {
         }
       }
     }
-    
+
     this.initialized = true;
 
   }

@@ -104,7 +104,7 @@ class CombatEngine {
           if(!combatant.isDead()){
             if(combatant.combatRoundTimer == 0){
               if(combatant.combatAction){
-                if(combatant.actionInRange(combatant.combatAction)){
+                if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatAction)){
                   combatant.combatAction.ready = true;
                   CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
                 }else{
@@ -336,6 +336,7 @@ class CombatEngine {
       }, attackAnimation.length * 500);
 
     }else{
+      
       //Roll to hit
       if(combatAction.hits){
         
@@ -355,6 +356,7 @@ class CombatEngine {
           break;
         }
 
+        combatAction.target.damage(combatAction.damage, this);
         /*setTimeout( () => {
           combatAction.target.damage(combatAction.damage, this);
         }, attackAnimation.length * 500)*/

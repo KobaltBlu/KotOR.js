@@ -388,6 +388,30 @@ class ModuleCreature extends ModuleCreatureController {
     return this.getHP() <= 0 && !this.min1HP;
   }
 
+  isPoisoned(){
+    return this.hasEffect(GameEffect.Type.EffectPoison);
+  }
+
+  isParalyzed(){
+    return this.hasEffect(GameEffect.Type.EffectParalyze);
+  }
+
+  isStunned(){
+    return this.hasEffect(GameEffect.Type.EffectStunned) || this.hasEffect(GameEffect.Type.EffectDroidStun);
+  }
+
+  isFrightened(){
+    return this.hasEffect(GameEffect.Type.EffectFrightened);
+  }
+
+  isChoking(){
+    return this.hasEffect(GameEffect.Type.EffectChoke);
+  }
+
+  isDebilitated(){
+    return this.isStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking();
+  }
+
   setCommadable(bCommandable = 0){
     this.isCommandable = bCommandable ? true : false;
   }

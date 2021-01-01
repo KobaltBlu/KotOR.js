@@ -1412,7 +1412,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: -1, };
+      //return {type: -1, };
     }
   },
   135:{
@@ -1524,7 +1524,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 27};
+      let effect = new EffectParalyze();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   149:{
@@ -1533,7 +1536,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 73};
+      // return {type: 73};
     }
   },
   150:{
@@ -1575,18 +1578,18 @@ NWScriptDefK1.Actions = {
     name: "EffectForceJump",
     type: 16,
     args: ["object", "int"],
-    action: function(args, _instr, action){
-      return {type: 77};
-    }
+    // action: function(args, _instr, action){
+    //   return {type: 77};
+    // }
   },
   154:{
     comment: "154: Create a Sleep effect\n",
     name: "EffectSleep",
     type: 16,
     args: [],
-    action: function(args, _instr, action){
-      return {type: 30};
-    }
+    // action: function(args, _instr, action){
+    //   return {type: 30};
+    // }
   },
   155:{
     comment: "155: Get the object which is in oCreature's specified inventory slot\n- nInventorySlot: INVENTORY_SLOT_*\n- oCreature\n* Returns OBJECT_INVALID if oCreature is not a valid creature or there is no\nitem in nInventorySlot.\n",
@@ -1674,9 +1677,9 @@ NWScriptDefK1.Actions = {
     name: "EffectTemporaryForcePoints",
     type: 16,
     args: ["int"],
-    action: function(args, _instr, action){
-      return {type: 10}; //?? 10 is commented out right after EFFECT_TYPE_TEMPORARY_HITPOINTS
-    }
+    // action: function(args, _instr, action){
+    //   return {type: 10}; //?? 10 is commented out right after EFFECT_TYPE_TEMPORARY_HITPOINTS
+    // }
   },
   157:{
     comment: "157: Create a Confuse effect\n",
@@ -1684,7 +1687,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 24};
+      let effect = new EffectConfused();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   158:{
@@ -1693,7 +1699,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 25};
+      let effect = new EffectFrightened();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   159:{
@@ -1702,7 +1711,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 1004};
+      let effect = new EffectChoke();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect;
     }
   },
   160:{
@@ -1721,7 +1733,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      return {type: 29};
+      let effect = new EffectStunned();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   162:{
@@ -1752,7 +1767,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "float"],
     action: function(args, _instr, action){
-      return {type: 3, amount: args[0], time: args[1]};
+      let effect = new EffectRegenerate(args[0], args[1]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   165:{
@@ -1761,7 +1779,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 48, speed: args[0]};
+      let effect = new EffectMovementSpeedIncrease(args[0]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   166:{
@@ -2714,7 +2735,13 @@ NWScriptDefK1.Actions = {
     comment: "250: Create a Poison effect.\n- nPoisonType: POISON_*\n",
     name: "EffectPoison",
     type: 16,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      let effect = new EffectPoison(args[0]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   251:{
     comment: "251: Returns whether this script is being run\nwhile a load game is in progress\n",
@@ -3892,7 +3919,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 422, amount: args[0]};
+      // return {type: 422, amount: args[0]};
     }
   },
   374:{
@@ -4594,7 +4621,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      return {type: 24, value: args[0] };
+      let effect = new EffectMovementSpeedDecrease(args[0]);
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   452:{
@@ -6755,6 +6785,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].isDebilitated();
+      }
       return 0;
     }
   },
@@ -6938,7 +6971,13 @@ NWScriptDefK1.Actions = {
     comment: "751: GetIsPoisoned\nReturns TRUE if the object specified is poisoned.\n",
     name: "GetIsPoisoned",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return args[0].isPoisoned();
+      }
+      return 0;
+    }
   },
   752:{
     comment: "752: GetSpellTarget\nReturns the object id of the spell target\n",

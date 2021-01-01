@@ -1010,6 +1010,12 @@ class InGameOverlay extends GameMenu {
       this['PB_VIT'+(id+1)].setProgress( Math.max( 1.0, partyMember.getHP() / partyMember.getMaxHP() ) * 100 );
       this['PB_FORCE'+(id+1)].setProgress( Math.max( 1.0, partyMember.getFP() / partyMember.getMaxFP() ) * 100 );
 
+      if(partyMember.isDebilitated()){
+        this['LBL_DEBILATATED'+(id+1)].show();
+      }else{
+        this['LBL_DEBILATATED'+(id+1)].hide();
+      }
+
     }
 
     if((Game.selectedObject && Game.selectedObject.isHostile()) || (Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){

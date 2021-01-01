@@ -168,6 +168,7 @@ class GameEffect {
           objectList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
         }
 
+        //(???) Means i haven't confirmed this type yet
         switch(eType){
           case 2: //DamageResistance
             effect = new EffectDamageResistance(intList[0], intList[1], intList[2]);
@@ -178,8 +179,14 @@ class GameEffect {
           case 10: //AttackIncrease
             effect = new EffectAttackIncrease(intList[0], intList[1]);
           break;
+          case 11: //AttackDecrease
+            effect = new EffectAttackDecrease(intList[0], intList[1]);
+          break;
           case 13: //DamageIncrease
             effect = new EffectDamageIncrease(intList[0], intList[1]);
+          break;
+          case 14: //DamageDecrease (???)
+            effect = new EffectDamageDecrease(intList[0], intList[1]);
           break;
           case 22: //Immunity
             effect = new EffectImmunity(intList[0]);
@@ -187,8 +194,14 @@ class GameEffect {
           case 26: //SavingThrowIncrease
             effect = new EffectSavingThrowIncrease(intList[0], intList[1]);
           break;
+          case 27: //SavingThrowDecrease (???)
+            effect = new EffectSavingThrowDecrease(intList[0], intList[1]);
+          break;
           case 28: //MovementSpeedIncrease
             effect = new EffectMovementSpeedIncrease(intList[0]);
+          break;
+          case 29: //MovementSpeedDecrease (???)
+            effect = new EffectMovementSpeedDecrease(intList[0]);
           break;
           case 30: //VisualEffect
             effect = new EffectVisualEffect(intList[0])
@@ -196,16 +209,22 @@ class GameEffect {
           case 36: //AbilityIncrease
             effect = new EffectAbilityIncrease(intList[0], intList[1]);
           break;
+          case 37: //AbilityDecrease (???)
+            effect = new EffectAbilityDecrease(intList[0], intList[1]);
+          break;
           case 48: //ACIncrease
             effect = new EffectACIncrease(intList[1], 0, intList[5]);
           break;
           case 55: //SkillIncrease
             effect = new EffectSkillIncrease(intList[0], intList[1]);
           break;
+          case 55: //SkillDecrease (???)
+            effect = new EffectSkillDecrease(intList[0], intList[1]);
+          break;
           case 62: //Disguise
             effect = new EffectDisguise(intList[0]);
           break;
-          case 67: //SetEffectIcon (???)
+          case 67: //SetEffectIcon
             effect = new EffectIcon(intList[0]);
           break;
           case 83: //BonusFeat
@@ -213,6 +232,9 @@ class GameEffect {
           break;
           case 92: //BlasterDeflectionIncrease
             effect = new EffectBlasterDeflectionIncrease(intList[1]);
+          break;
+          case 93: //BlasterDeflectionDecrease (???)
+            effect = new EffectBlasterDeflectionDecrease(intList[1]);
           break;
           case 107: //ForceShield
             effect = new EffectForceShield(intList[0]);
@@ -337,6 +359,8 @@ GameEffect.Type = {
   EffectDamage:           99996,
   EffectForceShield:      99995,
   EffectIcon:             99994,
+  EffectDroidStun:        99993,
+  EffectChoke:            99992,
 };
 
 module.exports = GameEffect;
