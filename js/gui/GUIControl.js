@@ -977,6 +977,14 @@ class GUIControl {
     material.visible = (texture instanceof THREE.Texture);
   }
 
+  flipY(flip = true){
+    let texture = this.border.fill.material.uniforms.map.value;
+    if(texture instanceof THREE.Texture){
+      texture.repeat.y = flip ? -1 : 1;
+      texture.updateMatrix();
+      texture.needsUpdate = true;
+    }
+  }
 
   calculatePosition(){
     if(!this.autoCalculatePosition)
