@@ -188,6 +188,14 @@ class EffectVisualEffect extends GameEffect {
     }
   }
 
+  getProgFXTexture(progFX = 1400){
+    if(progFX == 1426){
+      return 'fx_tex_stealth';
+    }else{
+      return 'fx_tex_' + pad((progFX - 1400) + 1, 2);
+    }
+  }
+
   progFX_Impact(){
 
     if(this.visualEffect.progfx_impact == '****')
@@ -195,7 +203,7 @@ class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
-      let fx_tex = 'fx_tex_' + pad((this.visualEffect.progfx_impact - 1400) + 1, 2);
+      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
       
       if(this.object instanceof ModuleCreature){
         Game.ModelLoader.load({
@@ -249,7 +257,7 @@ class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
-      let fx_tex = 'fx_tex_' + pad((this.visualEffect.progfx_duration - 1400) + 1, 2);
+      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
       
       if(this.object instanceof ModuleCreature){
         Game.ModelLoader.load({
