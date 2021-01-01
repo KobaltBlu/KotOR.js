@@ -397,7 +397,11 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   isStunned(){
-    return this.hasEffect(GameEffect.Type.EffectStunned) || this.hasEffect(GameEffect.Type.EffectDroidStun);
+    return this.hasEffect(GameEffect.Type.EffectStunned);
+  }
+
+  isDroidStunned(){
+    return this.hasEffect(GameEffect.Type.EffectDroidStun);
   }
 
   isFrightened(){
@@ -409,7 +413,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   isDebilitated(){
-    return this.isStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking();
+    return this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking();
   }
 
   setCommadable(bCommandable = 0){

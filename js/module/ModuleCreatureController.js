@@ -1120,6 +1120,10 @@ class ModuleCreatureController extends ModuleObject {
               if(currentAnimation != 'sleep'){
                 this.getModel().playAnimation('sleep', false);
               }
+            }else if(this.isDroidStunned()){
+              if(currentAnimation != 'disabled'){
+                this.getModel().playAnimation('disabled', false);
+              }
             }else if(this.isFrightened()){
               if(currentAnimation != 'horror'){
                 this.getModel().playAnimation('horror', false);
