@@ -100,7 +100,12 @@ class Module {
     }else{
       Game.globalLight.color.setHex('0x'+this.area.DynAmbientColor.toString(16));
     }
-    //Game.globalLight.color.setRGB(0.8, 0.8, 0.8);
+    
+    Game.globalLight.color.setRGB(
+      THREE.Math.clamp(Game.globalLight.color.r, 0.2, 1),
+      THREE.Math.clamp(Game.globalLight.color.g, 0.2, 1),
+      THREE.Math.clamp(Game.globalLight.color.b, 0.2, 1),
+    );
 
     Game.camera.position.setX(this['Mod_Entry_X']);
     Game.camera.position.setY(this['Mod_Entry_Y']);
