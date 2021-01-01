@@ -782,7 +782,6 @@ class Game extends Engine {
           onLoop: (menuName, asyncLoop) => {
             Game[menuName] = new window[menuName]({
               onLoad: () => {
-                console.log('menu', menuName);
                 asyncLoop.next();
               }
             });
@@ -1535,7 +1534,7 @@ class Game extends Engine {
           model = room.model || undefined;
           if(model != undefined && model.type === 'AuroraModel'){
             
-            if(model.box.containsPoint(pos)){
+            if(!room.hasVISObject || model.box.containsPoint(pos)){
               rooms.push(room);
             }
           }
@@ -1558,7 +1557,7 @@ class Game extends Engine {
         for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
           let room = Game.module.area.rooms[i];
           if(room.model instanceof THREE.AuroraModel){
-            if(room.model.box.containsPoint(player.position)){
+            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
               //Show the room, but don't recursively show it's children
               room.show(false);
             }

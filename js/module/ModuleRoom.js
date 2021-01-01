@@ -28,6 +28,7 @@ class ModuleRoom extends ModuleObject {
     this.model = args.model;
     this.walkmesh = args.walkmesh;
     this.linked_rooms = args.linked_rooms;
+    this.hasVISObject = false;
 
   }
 

@@ -68,7 +68,20 @@ class VISObject {
 
       this.rooms.push(currentRoom);
       currentRoom = this.resetRoom();
+
+      for(let i = 0; i < this.rooms.length; i++){
+        let visRoom = this.rooms[i];
+        for(let j = 0; j < Game.module.area.rooms.length; j++){
+          let room = Game.module.area.rooms[j];
+          if( room instanceof ModuleRoom && (room.roomName.toLowerCase() == visRoom.name.toLowerCase()) ){
+            room.hasVISObject = true;
+          }
+        }
+      }
+
     }
+
+
 
   }
 
