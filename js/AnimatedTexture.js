@@ -73,7 +73,7 @@ class AnimatedTexture {
       if(frameIndex == this.numberOfTiles - 1){
         this.currentDisplayTime = 0.0;
       }else{
-        this.currentDisplayTime += 0.1;//delta; //Setting this to a fixed value fixes jittering water bumpmaps
+        this.currentDisplayTime += delta; //Setting this to a fixed value fixes jittering water bumpmaps
       }
 
     }
