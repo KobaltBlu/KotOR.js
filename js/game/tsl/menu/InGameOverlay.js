@@ -374,7 +374,10 @@ class InGameOverlay extends GameMenu {
 
         }
 
-
+        //BTN_ACTION buttons alignment fix
+        this.BTN_ACTIONUP5.anchor = 'bl';
+        this.BTN_ACTIONDOWN5.anchor = 'bl';
+        this.RecalculatePosition();
 
         //this.lbl_combatbg2.visible = false;
 
@@ -1004,7 +1007,8 @@ class InGameOverlay extends GameMenu {
         });
       }
 
-      this['PB_VIT'+(id+1)].setProgress((partyMember.getHP() / partyMember.getMaxHP()) * 100);
+      this['PB_VIT'+(id+1)].setProgress( Math.max( 1.0, partyMember.getHP() / partyMember.getMaxHP() ) * 100 );
+      this['PB_FORCE'+(id+1)].setProgress( Math.max( 1.0, partyMember.getFP() / partyMember.getMaxFP() ) * 100 );
 
     }
 
