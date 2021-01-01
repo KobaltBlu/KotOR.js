@@ -1065,6 +1065,12 @@ class InGameOverlay extends GameMenu {
     Show(){
       super.Show();
       Game.MenuActive = false;
+
+      this.BTN_ACTIONDOWN0.flipY();
+      this.BTN_ACTIONDOWN1.flipY();
+      this.BTN_ACTIONDOWN2.flipY();
+      this.BTN_ACTIONDOWN3.flipY();
+
     }
 
     Resize(){
