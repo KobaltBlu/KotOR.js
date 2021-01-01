@@ -141,12 +141,12 @@ class MainMenu extends GameMenu {
               this.Remove();
             }
           }, (e) => {
-            throw 'Resource not found in BIF archive ';
             this.Remove();
+            throw 'Resource not found in BIF archive ';
           });
         }, (e) => {
-          throw 'Resource not found in BIF archive ';
           this.Remove();
+          throw 'Resource not found in BIF archive ';
         });
 
       }

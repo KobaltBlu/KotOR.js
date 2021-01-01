@@ -686,7 +686,7 @@ class Game extends Engine {
     }
 
     SaveGame.getSaveGames( () => {
-
+      
       CursorManager.init( () => {
 
         //MENU LOADER
@@ -776,22 +776,22 @@ class Game extends Engine {
           'CharGenCustomPanel',
           'CharGenName',*/
         ];
-
-        let menuLoader = (i = 0, onComplete) => {
-          if(i < menus.length){
-            let menuName = menus[i++];
+        
+        let menuLoader = new AsyncLoop({
+          array: menus,
+          onLoop: (menuName, asyncLoop) => {
             Game[menuName] = new window[menuName]({
               onLoad: () => {
-                menuLoader(i, onComplete);
+                console.log('menu', menuName);
+                asyncLoop.next();
               }
             });
-          }else{
-            if(typeof onComplete === 'function')
-              onComplete();
+  
           }
-        }
-
-        menuLoader(0, () => {
+        });
+        console.log('MenuLoader: Init');
+        menuLoader.iterate(() => {
+          console.log('MenuLoader: Complete');
 
           Game.MenuJournal.childMenu = Game.MenuTop;
           Game.MenuInventory.childMenu = Game.MenuTop;
@@ -823,7 +823,6 @@ class Game extends Engine {
             Game.Update();
             loader.Hide();
           });
-
         });
 
       });
