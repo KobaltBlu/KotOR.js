@@ -83,22 +83,26 @@ class EffectVisualEffect extends GameEffect {
 
     super.onApply();
 
-    //FireAndForget
-    if(this.visualEffect.type_fd == 'F'){
-      //Handle progfx_Impact
-      this.progFX_Impact();
-    }
+    if(this.object instanceof ModuleCreature){
 
-    this.impact();
+      //FireAndForget
+      if(this.visualEffect.type_fd == 'F'){
+        //Handle progfx_Impact
+        this.progFX_Impact();
+      }
 
-    //Duration
-    if(this.visualEffect.type_fd == 'D'){
-      //Handle progfx_Duration
-      this.progFX_Duration();
-    }
+      this.impact();
 
-    //Beam
-    if(this.visualEffect.type_fd == 'B'){
+      //Duration
+      if(this.visualEffect.type_fd == 'D'){
+        //Handle progfx_Duration
+        this.progFX_Duration();
+      }
+
+      //Beam
+      if(this.visualEffect.type_fd == 'B'){
+      }
+
     }
 
     this.applied = true;

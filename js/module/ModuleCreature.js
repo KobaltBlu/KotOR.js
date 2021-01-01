@@ -1019,6 +1019,8 @@ class ModuleCreature extends ModuleCreatureController {
         },
         onFail: () => {
           console.error('Failed to load character template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
     }else{
@@ -2099,6 +2101,8 @@ class ModuleCreature extends ModuleCreatureController {
 
       }
     }
+
+    this.initialized = true;
 
   }
 

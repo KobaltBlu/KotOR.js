@@ -7,7 +7,7 @@
 
 class ERFObject {
 
-  constructor(file = null, onComplete = null){
+  constructor(file = null, onComplete = undefined, onError = undefined){
     this.file = file;
     this.LocalizedStrings = [];
     this.KeyList = [];
@@ -93,7 +93,9 @@ class ERFObject {
       }else{
         fs.open(this.file, 'r', (e, fd) => {
           if (e) {
-            console.error('ERFObject', 'ERF Header Read', status.message);
+            console.error('ERFObject', 'ERF Header Read', e);
+            if(typeof onError == 'function')
+              onError(undefined);
             return;
           }
           let header = Buffer.alloc(this.HeaderSize);
@@ -154,7 +156,7 @@ class ERFObject {
 
               header = this.Reader = null;
 
-              fs.close(fd, function(e) {
+              fs.close(fd, (e) => {
 
                 if(typeof onComplete == 'function')
                   onComplete(this);
@@ -175,7 +177,7 @@ class ERFObject {
     }catch(e){
       console.error('ERFObject', 'ERF Open Error', e);
       if(typeof onComplete == 'function')
-        onComplete(this);
+        onComplete(undefined);
     }
 
   }

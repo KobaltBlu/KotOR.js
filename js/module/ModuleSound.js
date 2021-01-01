@@ -44,6 +44,8 @@ class ModuleSound extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load sound template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 
@@ -232,6 +234,8 @@ class ModuleSound extends ModuleObject {
         }
       }
     }
+    
+    this.initialized = true;
 
   }
 

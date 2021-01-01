@@ -14,59 +14,61 @@ class VISObject {
 
     this.rooms = [];
 
-    let decoder = new StringDecoder('utf8');
-    let text = decoder.write(data);
-    let lines = text.split('\n');
-    let lineCount = lines.length;
+    if(data){
+      let decoder = new StringDecoder('utf8');
+      let text = decoder.write(data);
+      let lines = text.split('\n');
+      let lineCount = lines.length;
 
-    let MODES = {
-      ROOM: 0,
-      CHILD_ROOMS: 1
-    };
+      let MODES = {
+        ROOM: 0,
+        CHILD_ROOMS: 1
+      };
 
-    let mode = MODES.ROOM;
-    let curRoomCount = 0;
-    let currentRoom = this.resetRoom();
+      let mode = MODES.ROOM;
+      let curRoomCount = 0;
+      let currentRoom = this.resetRoom();
 
-    for( let i = 0; i < lineCount; i++ ) {
-      let line = lines[i].trim();
+      for( let i = 0; i < lineCount; i++ ) {
+        let line = lines[i].trim();
 
-      if(line.length){
+        if(line.length){
 
-        if(lines[i].substring(0, 2) == '  '){
-          mode = MODES.CHILD_ROOMS;
-          //CHILD_ROOMS
-          currentRoom.rooms.push(line.toLowerCase());
-          curRoomCount++;
+          if(lines[i].substring(0, 2) == '  '){
+            mode = MODES.CHILD_ROOMS;
+            //CHILD_ROOMS
+            currentRoom.rooms.push(line.toLowerCase());
+            curRoomCount++;
 
-        }else{
-          //ROOM
+          }else{
+            //ROOM
 
-          //If we are still in CHILD_ROOMS mode and the current line is a room.
-          //Push the currentRoom to the rooms array and reset the current room var
-          if(mode == MODES.CHILD_ROOMS){
-            this.rooms.push(currentRoom);
-            currentRoom = this.resetRoom();
+            //If we are still in CHILD_ROOMS mode and the current line is a room.
+            //Push the currentRoom to the rooms array and reset the current room var
+            if(mode == MODES.CHILD_ROOMS){
+              this.rooms.push(currentRoom);
+              currentRoom = this.resetRoom();
+            }
+
+            mode = MODES.ROOM;
+
+            //console.log(line);
+            let args = line.split(' ');
+
+            //room_01 7 /-/ room_name number_of_child_rooms
+            currentRoom.name = args[0];
+            currentRoom.count = args[1];
+            curRoomCount = 0;
+
           }
-
-          mode = MODES.ROOM;
-
-          //console.log(line);
-          let args = line.split(' ');
-
-          //room_01 7 /-/ room_name number_of_child_rooms
-          currentRoom.name = args[0];
-          currentRoom.count = args[1];
-          curRoomCount = 0;
 
         }
 
       }
 
+      this.rooms.push(currentRoom);
+      currentRoom = this.resetRoom();
     }
-
-    this.rooms.push(currentRoom);
-    currentRoom = this.resetRoom();
 
   }
 

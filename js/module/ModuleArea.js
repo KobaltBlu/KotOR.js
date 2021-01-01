@@ -433,6 +433,10 @@ class ModuleArea extends ModuleObject {
       this.visObject = new VISObject(visData);
       if(typeof onLoad == 'function')
         onLoad(this);
+    }, () => {
+      this.visObject = new VISObject();
+      if(typeof onLoad == 'function')
+        onLoad(this);
     });
   }
 
@@ -481,6 +485,59 @@ class ModuleArea extends ModuleObject {
         onLoad(this);
 
     });
+  }
+
+  cleanupUninitializedObjects(){
+
+    let i = this.creatures.length
+    while (i--) {
+      if (!(this.creatures[i] instanceof ModuleCreature) || !this.creatures[i].initialized) { 
+        this.creatures.splice(i, 1);
+      } 
+    }
+
+    i = this.placeables.length
+    while (i--) {
+      if (!(this.placeables[i] instanceof ModulePlaceable) || !this.placeables[i].initialized) { 
+        this.placeables.splice(i, 1);
+      } 
+    }
+
+    i = this.doors.length
+    while (i--) {
+      if (!(this.doors[i] instanceof ModuleDoor) || !this.doors[i].initialized) { 
+        this.doors.splice(i, 1);
+      } 
+    }
+
+    i = this.sounds.length
+    while (i--) {
+      if (!(this.sounds[i] instanceof ModuleSound) || !this.sounds[i].initialized) { 
+        this.sounds.splice(i, 1);
+      } 
+    }
+
+    i = this.waypoints.length
+    while (i--) {
+      if (!(this.waypoints[i] instanceof ModuleWaypoint) || !this.waypoints[i].initialized) { 
+        this.waypoints.splice(i, 1);
+      } 
+    }
+
+    i = this.triggers.length
+    while (i--) {
+      if (!(this.triggers[i] instanceof ModuleTrigger) || !this.triggers[i].initialized) { 
+        this.triggers.splice(i, 1);
+      } 
+    }
+
+    i = this.stores.length
+    while (i--) {
+      if (!(this.stores[i] instanceof ModuleStore) || !this.stores[i].initialized) { 
+        this.stores.splice(i, 1);
+      } 
+    }
+
   }
 
   async loadScene( onLoad = null ){
@@ -567,6 +624,8 @@ class ModuleArea extends ModuleObject {
     }
 
     this.transWP = null;
+
+    this.cleanupUninitializedObjects();
 
     if(typeof onLoad === 'function')
       onLoad();
@@ -715,7 +774,13 @@ class ModuleArea extends ModuleObject {
         let player = this.MiniGame.Player;
         player.partyID = -1;
         PartyManager.party.push(player);
-        player.Load( () => {
+        player.Load( ( object ) => {
+          
+          if(typeof object == 'undefined'){
+            asyncLoop.next();
+            return;
+          }
+
           player.LoadScripts( () => {
             player.LoadCamera( () => {
               player.LoadModel( (model) => {
@@ -776,7 +841,13 @@ class ModuleArea extends ModuleObject {
         Game.player.force = 0;
         Game.player.animState = ModuleCreature.AnimState.IDLE;
 
-        Game.player.Load( () => {
+        Game.player.Load( ( object ) => {
+
+          if(typeof object == 'undefined'){
+            asyncLoop.next();
+            return;
+          }
+
           if(GameKey == 'TSL'){
             Game.player.appearance = 134;
             Game.player.gender = 1;
@@ -815,7 +886,13 @@ class ModuleArea extends ModuleObject {
           PartyManager.party.push(player);
 
         
-        player.Load( () => {
+        player.Load( ( object ) => {
+          
+          if(typeof object == 'undefined'){
+            asyncLoop.next();
+            return;
+          }
+
           if(GameKey == 'TSL'){
             player.appearance = 134;
             player.gender = 1;
@@ -861,7 +938,13 @@ class ModuleArea extends ModuleObject {
           array: this.tracks,
           onLoop: (track, asyncLoop) => {
             console.log('Loading MG Track', track);
-            track.Load( () => {
+            track.Load( ( object ) => {
+          
+              if(typeof object == 'undefined'){
+                asyncLoop.next();
+                return;
+              }
+    
               track.LoadModel( (model) => {
                 console.log(model);
                 model.moduleObject = track;
@@ -896,7 +979,13 @@ class ModuleArea extends ModuleObject {
           array: this.MiniGame.Enemies,
           onLoop: (enemy, asyncLoop) => {
             console.log('Loading MG Enemy', enemy);
-            enemy.Load( () => {
+            enemy.Load( ( object ) => {
+          
+              if(typeof object == 'undefined'){
+                asyncLoop.next();
+                return;
+              }
+    
               enemy.LoadScripts( () => {
                 enemy.LoadModel( (model) => {
                   enemy.LoadGunBanks( () => {
@@ -994,7 +1083,13 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.doors,
         onLoop: (door, asyncLoop) => {
-          door.Load( () => {
+          door.Load( ( object ) => {
+          
+            if(typeof object == 'undefined'){
+              asyncLoop.next();
+              return;
+            }
+  
             door.position.x = door.getX();
             door.position.y = door.getY();
             door.position.z = door.getZ();
@@ -1050,7 +1145,13 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.placeables,
         onLoop: (plc, asyncLoop) => {
-          plc.Load( () => {
+          plc.Load( ( object ) => {
+          
+            if(typeof object == 'undefined'){
+              asyncLoop.next();
+              return;
+            }
+  
             plc.position.set(plc.getX(), plc.getY(), plc.getZ());
             plc.rotation.set(0, 0, plc.getBearing());
             plc.LoadModel( (model) => {
@@ -1098,7 +1199,13 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.waypoints,
         onLoop: (waypnt, asyncLoop) => {
-          waypnt.Load( () => {
+          waypnt.Load( ( object ) => {
+          
+            if(typeof object == 'undefined'){
+              asyncLoop.next();
+              return;
+            }
+  
             let wpObj = new THREE.Object3D();
             wpObj.name = waypnt.getTag();
             wpObj.position.set(waypnt.getXPosition(), waypnt.getYPosition(), waypnt.getZPosition());
@@ -1145,7 +1252,13 @@ class ModuleArea extends ModuleObject {
         onLoop: (trig, asyncLoop) => {
           try{
             trig.InitProperties();
-            trig.Load( () => {
+            trig.Load( ( object ) => {
+          
+              if(typeof object == 'undefined'){
+                asyncLoop.next();
+                return;
+              }
+    
               let _distance = 1000000000;
               let _currentRoom = null;
               let roomCenter = new THREE.Vector3();
@@ -1186,7 +1299,13 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.creatures,
         onLoop: (crt, asyncLoop) => {
-          crt.Load( () => {
+          crt.Load( ( object ) => {
+          
+            if(typeof object == 'undefined'){
+              asyncLoop.next();
+              return;
+            }
+  
             crt.LoadScripts( () => {
               crt.LoadModel( (model) => {
                 
@@ -1225,7 +1344,13 @@ class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.stores,
         onLoop: (crt, asyncLoop) => {
-          crt.Load( () => {
+          crt.Load( ( object ) => {
+          
+            if(typeof object == 'undefined'){
+              asyncLoop.next();
+              return;
+            }
+  
             asyncLoop.next();
           });
         }

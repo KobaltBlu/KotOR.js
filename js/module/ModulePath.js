@@ -29,7 +29,9 @@ class ModulePath {
 
       },
       onFail: () => {
-        console.error('Failed to load door template');
+        console.error('Failed to load path template');
+        if(typeof onLoad === 'function')
+          onLoad(this);
       }
     });
   }
@@ -84,6 +86,9 @@ class ModulePath {
       this.setPathHelpersVisibility(false);
 
     }
+    
+    this.initialized = true;
+    
   }
 
   setPathHelpersVisibility(state = false){

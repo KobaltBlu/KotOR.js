@@ -238,46 +238,44 @@ class ResourceLoader {
 
   //Check the module RIM archive A
   static _searchRIMa(resId = -1, resRef = null, onLoad = null, onError = null){
-
-    if(!Game.module){
-      if(typeof onError === 'function')
-        onError();
-      return;
-    }
+    throw new Error('deprecated! ResourceLoader._searchRIMa');
+    // if(!Game.module){
+    //   if(typeof onError === 'function')
+    //     onError();
+    //   return;
+    // }
     
-    let resKey = Game.module.rim.getResourceByKey(resRef, resId);
-    if(resKey){
-      Game.module.rim.getRawResource(resRef, resId, (data) => {
-        if(typeof onLoad === 'function')
-          onLoad(data);
-      });
-    }else{
-      if(typeof onError === 'function')
-        onError();
-    }
-
+    // let resKey = Game.module.rim.getResourceByKey(resRef, resId);
+    // if(resKey){
+    //   Game.module.rim.getRawResource(resRef, resId, (data) => {
+    //     if(typeof onLoad === 'function')
+    //       onLoad(data);
+    //   });
+    // }else{
+    //   if(typeof onError === 'function')
+    //     onError();
+    // }
   }
 
   //Check the module RIM archive B
   static _searchRIMb(resId = -1, resRef = null, onLoad = null, onError = null){
+    throw new Error('deprecated! ResourceLoader._searchRIMb');
+    // if(!Game.module){
+    //   if(typeof onError === 'function')
+    //     onError();
+    //   return;
+    // }
 
-    if(!Game.module){
-      if(typeof onError === 'function')
-        onError();
-      return;
-    }
-
-    let resKey = Game.module.rim_s.getResourceByKey(resRef, resId);
-    if(resKey){
-      Game.module.rim_s.getRawResource(resRef, resId, (data) => {
-        if(typeof onLoad === 'function')
-          onLoad(data);
-      });
-    }else{
-      if(typeof onError === 'function')
-        onError();
-    }
-
+    // let resKey = Game.module.rim_s.getResourceByKey(resRef, resId);
+    // if(resKey){
+    //   Game.module.rim_s.getRawResource(resRef, resId, (data) => {
+    //     if(typeof onLoad === 'function')
+    //       onLoad(data);
+    //   });
+    // }else{
+    //   if(typeof onError === 'function')
+    //     onError();
+    // }
   }
 
   static _searchKeyTable(resId = -1, resRef = null, onLoad = null, onError = null){

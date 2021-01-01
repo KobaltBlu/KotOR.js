@@ -489,6 +489,8 @@ class ModuleDoor extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load door template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 
@@ -849,6 +851,8 @@ class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.HasField('TransitionDestin'))
       this.transitionDestin = this.template.RootNode.GetFieldByLabel('TransitionDestin').GetValue();
+
+    this.initialized = true
 
   }
 

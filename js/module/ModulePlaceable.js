@@ -496,6 +496,8 @@ class ModulePlaceable extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load placeable template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 
@@ -764,7 +766,6 @@ class ModulePlaceable extends ModuleObject {
   }
 
   InitProperties(){
-
     
     if(this.template.RootNode.HasField('ObjectId'))
       this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
@@ -923,6 +924,8 @@ class ModulePlaceable extends ModuleObject {
         }
       }
     }
+    
+    this.initialized = true;
 
   }
 

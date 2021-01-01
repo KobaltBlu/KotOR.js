@@ -50,6 +50,8 @@ class ModuleStore extends ModuleObject {
         },
         onFail: (e) => {
           console.error('Failed to load merchant template', this.getResRef());
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 
@@ -112,6 +114,8 @@ class ModuleStore extends ModuleObject {
       if(typeof onLoad == 'function')
         onLoad();
     }
+    
+    this.initialized = true;
 
   }
 

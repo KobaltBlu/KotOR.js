@@ -48,6 +48,8 @@ class ModuleCamera extends ModuleObject {
     if(this.template.RootNode.HasField('Position'))
       this.position.copy(this.template.GetFieldByLabel('Position').GetVector());
 
+    this.initialized = true;
+
   }
 
   toToolsetInstance(){

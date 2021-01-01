@@ -32,6 +32,11 @@ class ModuleItem extends ModuleObject {
 
   }
 
+  update(delta = 0){
+    if(this.model instanceof THREE.AuroraModel)
+      this.model.update(delta);
+  }
+
   getDescription(){
     return this.descIdentified;
   }
@@ -307,7 +312,7 @@ class ModuleItem extends ModuleObject {
         onFail: () => {
           console.error('Failed to load item template');
           if(onLoad != null)
-            onLoad(this);
+            onLoad(undefined);
         }
       });
 
@@ -546,6 +551,8 @@ class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.HasField('PaletteID'))
       this.palleteID = this.template.RootNode.GetFieldByLabel('PaletteID').GetValue();
+
+    this.initialized = true
 
   }
 

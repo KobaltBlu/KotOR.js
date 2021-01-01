@@ -90,6 +90,8 @@ class ModuleWaypoint extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load waypoint template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 

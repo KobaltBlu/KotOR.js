@@ -823,6 +823,9 @@ class ModuleMGPlayer extends ModuleObject {
 
         this.gunBanks.push(gbObject);
       }
+
+      this.initialized = true;
+      
     }
 
 

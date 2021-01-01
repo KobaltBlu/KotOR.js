@@ -456,7 +456,7 @@ class ModuleMGEnemy extends ModuleObject {
     if(this.template.RootNode.HasField('Maximum_Speed'))
       this.maximum_speed = this.template.GetFieldByLabel('Maximum_Speed').GetValue();*/
 
-
+    this.initialized = true;
 
   }
 

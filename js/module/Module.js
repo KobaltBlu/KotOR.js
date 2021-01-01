@@ -293,142 +293,149 @@ class Module {
     }
   }
 
-  static GetModuleRim(modName = '', onLoad = null){
-    
-    if(Game.SaveGame){
-      if(Game.SaveGame.IsModuleSaved(modName)){
-        Game.SaveGame.GetModuleRim(modName, (rim) => {
-          //console.log('HI2', rim);
-          if(typeof onLoad === 'function')
-            onLoad(rim);
-        });
-      }else{
-        new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim'), (rim) => {
-          if(typeof onLoad === 'function')
-            onLoad(rim);
-        });
-      }
-    }else{
-      new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim'), (rim) => {
-        if(typeof onLoad === 'function')
-          onLoad(rim);
-      });
-    }
-
-  }
-
-  static GetModuleArchives(modName = '', onLoad = null){
-    let archives = [];
-    Module.GetModuleRim(modName, (rim) => {
-      archives.push(rim);
-      let _rim_s = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim');
-      new RIMObject(_rim_s, (rim_s) => {
-        archives.push(rim_s);
-
-        //localization.mod
-        fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (dirExists) => {
-          if(dirExists){
-    
-            let mod_loc = new ERFObject( path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), () => {
-              archives.push(mod_loc);
-
-              fs.exists( path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
-                if(dirExists){
-                  let mod_loc2 = new ERFObject( path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), () => {
-                    archives.push(mod_loc2);
-                    if(GameKey == 'TSL'){
-                      let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
-                      let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
-                        archives.push(erf_dlg);
-                        if(typeof onLoad == 'function')
-                          onLoad(archives);
-                      });
-                    }else{
-                      if(typeof onLoad == 'function')
-                        onLoad(archives);
-                    }
-                  });
-                }else{
-                  if(GameKey == 'TSL'){
-                    let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
-                    let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
-                      archives.push(erf_dlg);
-                      if(typeof onLoad == 'function')
-                        onLoad(archives);
-                    });
-                  }else{
-                    if(typeof onLoad == 'function')
-                      onLoad(archives);
-                  }
-                }
-              });
-
-            });
-
-          } else {
-            fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
-              if(dirExists){
-                let mod_loc2 = new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), () => {
-                  archives.push(mod_loc2);
-                  if(GameKey == 'TSL'){
-                    let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
-                    let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
-                      archives.push(erf_dlg);
-                      if(typeof onLoad == 'function')
-                        onLoad(archives);
-                    });
-                  }else{
-                    if(typeof onLoad == 'function')
-                      onLoad(archives);
-                  }
-                });
-              }else{
-                if(GameKey == 'TSL'){
-                  let _erf_dlg = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
-                  let erf_dlg = new ERFObject(_erf_dlg, (dlg) => {
-                    archives.push(erf_dlg);
-                    if(typeof onLoad == 'function')
-                      onLoad(archives);
-                  });
-                }else{
-                  if(typeof onLoad == 'function')
-                    onLoad(archives);
-                }
-              }
-            });
-          }
-
-        });
-        
+  static async GetModuleMod(modName = ''){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.mod');
+      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.mod'), (mod) => {
+        console.log('Module.GetModuleMod success', resource_path);
+        resolve(mod);
+      }, () => {
+        console.error('Module.GetModuleMod failed', resource_path);
+        resolve(undefined);
       });
     });
   }
 
-  static GetLipArchives(modName = '', onLoad = null){
+  static async GetModuleRimA(modName = ''){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim');
+      new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim'), (rim) => {
+        resolve(rim);
+      }, () => {
+        console.error('Module.GetModuleRimA failed', resource_path);
+        resolve(undefined);
+      });
+    });
+  }
 
-    fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (dirExists) => {
-      if(dirExists){
+  static async GetModuleRimB(modName = ''){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim');
+      new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim'), (rim) => {
+        resolve(rim);
+      }, () => {
+        console.error('Module.GetModuleRimB failed', resource_path);
+        resolve(undefined);
+      });
+    });
+  }
 
-        let mod_loc = new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), () => {
-          archives.push(mod_loc);
+  static async GetModuleLipsLoc(){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod');
+      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (mod) => {
+        console.log('Module.GetModuleLipsLoc success', resource_path);
+        resolve(mod);
+      }, () => {
+        console.error('Module.GetModuleLipsLoc failed', resource_path);
+        resolve(undefined);
+      });
+    });
+  }
 
-          fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
-            if(dirExists){
+  static async GetModuleLips(modName = ''){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod');
+      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (mod) => {
+        resolve(mod);
+      }, () => {
+        console.error('Module.GetModuleLips failed', resource_path);
+        resolve(undefined);
+      });
+    });
+  }
 
-            }
-          });
+  static async GetModuleDLG(modName = ''){
+    return new Promise( (resolve, reject) => {
+      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+      new ERFObject(resource_path, (mod) => {
+        resolve(mod);
+      }, () => {
+        console.error('Module.GetModuleDLG failed', resource_path);
+        resolve(undefined);
+      });
+    });
+  }
 
-        });
+  static async GetModuleArchives(modName = '', onLoad = null){
+    return new Promise( async (resolve, reject) => {
+      let archives = [];
+      let archive = undefined;
 
-      }else{
-        fs.exists(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (dirExists) => {
-          if(dirExists){
+      let isModuleSaved = Game.SaveGame && Game.SaveGame.IsModuleSaved(modName);
 
+      try{
+        if(isModuleSaved){
+          archive = await Game.SaveGame.GetModuleRim(modName);
+          if(archive instanceof ERFObject){
+            archives.push(archive);
           }
-        });
-      }
-    })
 
+          //Locate the module's MOD file
+          archive = await Module.GetModuleMod(modName);
+          if(archive instanceof ERFObject){
+            archives.push(archive);
+          }
+
+          //Locate the module's RIM_S file
+          archive = await Module.GetModuleRimB(modName);
+          if(archive instanceof RIMObject){
+            archives.push(archive);
+          }
+        }else{
+          //Locate the module's MOD file
+          archive = await Module.GetModuleMod(modName);
+          if(archive instanceof ERFObject){
+            archives.push(archive);
+          }
+
+          //Locate the module's RIM file
+          archive = await Module.GetModuleRimA(modName);
+          if(archive instanceof RIMObject){
+            archives.push(archive);
+          }
+
+          //Locate the module's RIM_S file
+          archive = await Module.GetModuleRimB(modName);
+          if(archive instanceof RIMObject){
+            archives.push(archive);
+          }
+        }
+
+        //Locate the module's LIPs file
+        archive = await Module.GetModuleLips(modName);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
+
+        //Locate the global LIPs file
+        archive = await Module.GetModuleLipsLoc(modName);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
+
+        //Locate the module's dialog MOD file (TSL)
+        archive = await Module.GetModuleDLG(modName);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
+      }catch(e){
+        console.error(e);
+      }
+      
+      //Return the archive array
+      resolve(archives);
+    });
   }
 
   //ex: end_m01aa end_m01aa_s
@@ -440,7 +447,7 @@ class Module {
     Game.module = module;
     if(modName != null){
       try{
-        Module.GetModuleArchives(modName, (archives) => {
+        Module.GetModuleArchives(modName).then( (archives) => {
           Game.module.archives = archives;
 
           ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {

@@ -7,7 +7,7 @@
 
 class RIMObject {
 
-  constructor(file = null, onComplete = null){
+  constructor(file = null, onComplete = undefined, onError = undefined){
     this.file = file;
 
     this.Resources = [];
@@ -21,7 +21,10 @@ class RIMObject {
       if(typeof file == 'string'){
         fs.open(this.file, 'r', (err, fd) => {
           if (err) {
-            console.log('RIM Header Read', status.message);
+            console.log('RIM Header Read', err);
+            if(typeof onError === 'function')
+              onError();
+
             return;
           }
           let header = Buffer.alloc(this.HeaderSize);
@@ -62,7 +65,7 @@ class RIMObject {
   
               header = this.Reader = null;
   
-              if(onComplete != null)
+              if(typeof onComplete === 'function')
                 onComplete(this);
   
             });
@@ -115,8 +118,8 @@ class RIMObject {
       
     }catch(e){
       console.log('RIM Open Error', e);
-      if(onComplete != null)
-        onComplete();
+      if(typeof onError === 'function')
+        onError();
     }
 
   }

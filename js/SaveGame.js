@@ -309,21 +309,22 @@ class SaveGame {
     return false;
   }
 
-  GetModuleRim(name='', onLoad = null){
-    if(!this.isLoaded)
-      return false;
+  GetModuleRim(name=''){
+    // if(!this.isLoaded)
+    //   return false;
 
-    for(let i = 0; i < this.SAVEGAME.KeyList.length; i++){
-      if(this.SAVEGAME.KeyList[i].ResRef.toLowerCase() === name.toLowerCase()){
-        this.SAVEGAME.getRawResource(this.SAVEGAME.KeyList[i].ResRef, this.SAVEGAME.KeyList[i].ResType, (sav) => {
-          new ERFObject(sav, (rim) => {
-            console.log('SaveGame', 'GetModuleRum', rim);
-            if(typeof onLoad === 'function')
-              onLoad(rim);
+    return new Promise( (resolve, reject) => {
+      for(let i = 0; i < this.SAVEGAME.KeyList.length; i++){
+        if(this.SAVEGAME.KeyList[i].ResRef.toLowerCase() === name.toLowerCase()){
+          this.SAVEGAME.getRawResource(this.SAVEGAME.KeyList[i].ResRef, this.SAVEGAME.KeyList[i].ResType, (sav) => {
+            new ERFObject(sav, (rim) => {
+              console.log('SaveGame', 'GetModuleRum', rim);
+              resolve(rim);
+            });
           });
-        });
+        }
       }
-    }
+    });
   }
 
   Save( onSave = null ){

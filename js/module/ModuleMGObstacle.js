@@ -13,7 +13,7 @@ class ModuleMGObstacle extends ModuleObject {
 
 
   InitProperties(){
-    
+    this.initialized = true;
   }
 
 

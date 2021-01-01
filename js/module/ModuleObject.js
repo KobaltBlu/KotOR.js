@@ -19,6 +19,8 @@ class ModuleObject {
       this.id = ModuleObject.COUNT++;
     }
 
+    this.initialized = false;
+
     //this.moduleObject = null;
     this.AxisFront = new THREE.Vector3();
     this.position = new THREE.Vector3();
@@ -1677,6 +1679,8 @@ class ModuleObject {
         }
       }
     }
+    
+    this.initialized = true;
 
   }
 

@@ -130,6 +130,8 @@ class ModuleTrigger extends ModuleObject {
         },
         onFail: () => {
           console.error('Failed to load trigger template');
+          if(onLoad != null)
+            onLoad(undefined);
         }
       });
 
@@ -558,6 +560,8 @@ class ModuleTrigger extends ModuleObject {
         }
       }
     }
+    
+    this.initialized = true;
 
   }
 
