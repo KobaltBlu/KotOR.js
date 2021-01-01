@@ -904,23 +904,23 @@ class ModuleObject {
     return 0;
   }
 
-  AddEffect(effect, type = 0, duration = 0){
+  addEffect(effect, type = 0, duration = 0){
     if(effect instanceof GameEffect){
       if(effect instanceof EffectLink){
         //EFFECT LEFT
-        console.log('AddEffect', 'LinkEffect->Left', effect.effect1, this);
+        console.log('addEffect', 'LinkEffect->Left', effect.effect1, this);
         if(effect.effect1 instanceof GameEffect){
           effect.effect1.setDurationType(type);
           effect.effect1.setDuration(duration);
-          this.AddEffect(effect.effect1, type, duration);
+          this.addEffect(effect.effect1, type, duration);
         }
 
         //EFFECT RIGHT
-        console.log('AddEffect', 'LinkEffect->Right', effect.effect2, this);
+        console.log('addEffect', 'LinkEffect->Right', effect.effect2, this);
         if(effect.effect2 instanceof GameEffect){
           effect.effect2.setDurationType(type);
           effect.effect2.setDuration(duration);
-          this.AddEffect(effect.effect2, type, duration);
+          this.addEffect(effect.effect2, type, duration);
         }
       }else{
         console.log('AddEffect', 'GameEffect', effect, this);
@@ -935,7 +935,7 @@ class ModuleObject {
     }
   }
 
-  GetEffect(type = -1){
+  getEffect(type = -1){
     for(let i = 0; i < this.effects.length; i++){
       if(this.effects[i].type == type){
         return this.effects[i];
@@ -945,7 +945,7 @@ class ModuleObject {
   }
 
   hasEffect(type = -1){
-    return this.GetEffect(type) ? true : false;
+    return this.getEffect(type) ? true : false;
   }
 
   RemoveEffectsByCreator( oCreator = undefined ){
@@ -965,13 +965,13 @@ class ModuleObject {
   }
 
   RemoveEffectsByType(type = -1){
-    let effect = this.GetEffect(type);
+    let effect = this.getEffect(type);
     while(effect){
       let index = this.effects.indexOf(effect);
       if(index >= 0){
         this.effects.splice(index, 1)[0].onRemove();
       }
-      effect = this.GetEffect(type);
+      effect = this.getEffect(type);
     }
   }
 

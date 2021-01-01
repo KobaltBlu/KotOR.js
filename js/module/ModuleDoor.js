@@ -835,7 +835,7 @@ class ModuleDoor extends ModuleObject {
         let effect = GameEffect.EffectFromStruct(effects[i]);
         if(effect instanceof GameEffect){
           this.effects.push(effect);
-          //this.AddEffect(effect);
+          //this.addEffect(effect);
         }
       }
     }

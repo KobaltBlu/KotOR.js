@@ -563,7 +563,7 @@ class ModuleItem extends ModuleObject {
         oCreature.RemoveEffectsByType( GameEffect.Type.EffectDisguise ); //EFFECT_DISGUISE
         eDisguise = new EffectDisguise( this.getDisguiseAppearance() );
         eDisguise.setCreator(this);
-        oCreature.AddEffect( eDisguise );
+        oCreature.addEffect( eDisguise );
       }
     }
   }

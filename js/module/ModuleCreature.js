@@ -800,7 +800,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getAppearance(){
-    let eDisguise = this.GetEffect(GameEffect.Type.EffectDisguise);
+    let eDisguise = this.getEffect(GameEffect.Type.EffectDisguise);
     if(eDisguise){
       return eDisguise.appearance;
     }else{
@@ -1931,7 +1931,7 @@ class ModuleCreature extends ModuleCreatureController {
         let effect = GameEffect.EffectFromStruct(effects[i]);
         if(effect instanceof GameEffect){
           this.effects.push(effect);
-          //this.AddEffect(effect);
+          //this.addEffect(effect);
         }
       }
     }

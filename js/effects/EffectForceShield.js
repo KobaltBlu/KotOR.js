@@ -20,7 +20,7 @@ class EffectForceShield extends GameEffect {
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
     eVisualEffect.initialize();
-    this.object.AddEffect(eVisualEffect);
+    this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
     let eDamageResistEffect = new EffectDamageResistance(this.forceShield.damageflags, this.forceShield.resistance, this.forceShield.amount, this.forceShield.vulnerflags);
@@ -31,7 +31,7 @@ class EffectForceShield extends GameEffect {
     eDamageResistEffect.setExpireDay(this.expireDay);
     eDamageResistEffect.setExpireTime(this.expireTime);
     eDamageResistEffect.initialize();
-    this.object.AddEffect(eDamageResistEffect);
+    this.object.addEffect(eDamageResistEffect);
     eDamageResistEffect.setSkipOnLoad(true);
   }
 

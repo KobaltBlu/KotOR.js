@@ -17,7 +17,7 @@ class EffectStunned extends GameEffect {
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
     eVisualEffect.initialize();
-    this.object.AddEffect(eVisualEffect);
+    this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
     super.onApply();

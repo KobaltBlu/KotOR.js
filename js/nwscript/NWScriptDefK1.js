@@ -2297,7 +2297,7 @@ NWScriptDefK1.Actions = {
         if(args[1] instanceof GameEffect){
           args[1].setDurationType(args[0]);
           args[1].setDuration(args[3]);
-          args[2].AddEffect(args[1], args[0], args[3]);
+          args[2].addEffect(args[1], args[0], args[3]);
         }else{
           //console.log('ApplyEffectToObject'. args);
           console.error('ApplyEffectToObject', 'Expected a GameEffect');
