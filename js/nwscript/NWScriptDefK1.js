@@ -1870,9 +1870,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
-    args[0].setListening(
-      args[1] ? true : false
-      );
+      if(args[0] instanceof ModuleObject){
+        args[0].setListening( args[1] ? true : false );
+      }else{
+        console.log('SetListening', this.name, this.caller, args[0], args[1]);
+      }
     }
   },
   176:{
@@ -1881,10 +1883,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "string", "int"],
     action: function(args, _instr, action){
-    args[0].setListeningPattern(
-      args[1],
-      args[2]
-      );
+      if(args[0] instanceof ModuleObject){
+        args[0].setListeningPattern( args[1], args[2] );
+      }else{
+        console.log('SetListenPattern', this.name, this.caller, args[0], args[1], args[2]);
+      }
     }
   },
   177:{
