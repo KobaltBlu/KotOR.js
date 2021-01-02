@@ -1087,8 +1087,6 @@ class Game extends Engine {
                     Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
                   }
                 }
-                
-                Game.player.onSpawn(runSpawnScripts);
 
               }, 1000);                
               
