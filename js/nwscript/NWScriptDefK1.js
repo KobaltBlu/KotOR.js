@@ -4786,7 +4786,13 @@ NWScriptDefK1.Actions = {
     comment: "471: Make the creature horified. BOO!\n",
     name: "EffectHorrified",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectHorrified();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   472:{
     comment: "472: Create a Spell Level Absorption effect.\n- nMaxSpellLevelAbsorbed: maximum spell level that will be absorbed by the\neffect\n- nTotalSpellLevelsAbsorbed: maximum number of spell levels that will be\nabsorbed by the effect\n- nSpellSchool: SPELL_SCHOOL_*\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if:\nnMaxSpellLevelAbsorbed is not between -1 and 9 inclusive, or nSpellSchool\nis invalid.\n",

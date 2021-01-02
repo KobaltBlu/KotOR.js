@@ -1124,7 +1124,7 @@ class ModuleCreatureController extends ModuleObject {
               if(currentAnimation != 'disabled'){
                 this.getModel().playAnimation('disabled', false);
               }
-            }else if(this.isFrightened()){
+            }else if(this.isFrightened() || this.isHorrified()){
               if(currentAnimation != 'horror'){
                 this.getModel().playAnimation('horror', false);
               }

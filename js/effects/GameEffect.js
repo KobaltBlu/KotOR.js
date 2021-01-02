@@ -274,6 +274,11 @@ GameEffect.DurationType = {
 };
 
 GameEffect.Type = {
+
+  //---------------------------//
+  // nwscript.nss Effect Types
+  //---------------------------//
+  
   EffectInvalidEffect:		undefined,
   EffectDamageResistance:	1,
   //EFFECT_TYPE_ABILITY_BONUS:		2,
@@ -353,6 +358,9 @@ GameEffect.Type = {
   EffectForcePushed:      80,
   EffectFeat:             83,
   
+  //------------------------//
+  // Unknown Effect Numbers
+  //------------------------//
   EffectDeath:            99999,
   EffectHeal:             99998,
   EffectLink:             99997,
@@ -361,6 +369,7 @@ GameEffect.Type = {
   EffectIcon:             99994,
   EffectDroidStun:        99993,
   EffectChoke:            99992,
+  EffectHorrified:        99991
 };
 
 module.exports = GameEffect;
