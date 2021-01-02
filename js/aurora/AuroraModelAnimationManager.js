@@ -40,23 +40,20 @@ class AuroraModelAnimationManager {
     //World Model Animation Loops
     if(this.model.bonesInitialized && this.model.animLoops.length){
 
-      /*if(this.animLoop instanceof AuroraModelAnimation){
-        this.updateAnimation(this.animLoop, delta, () => {
-
-          let index = this.animLoops.indexOf(this.animLoop) + 1;
-          if(index >= this.animLoops.length ){
-            index = 0;
-          }
-          this.stopAnimationLoop();
-          this.animLoop = this.animLoops[index];
-        });
-      }else{
-        this.animLoop = this.animLoops[0];
-      }*/
+      // this.animLoop = (this.animLoop instanceof AuroraModelAnimation) ? this.animLoop : this.model.animLoops[0];
+      // if(this.animLoop instanceof AuroraModelAnimation){
+      //   let animComplete = this.updateAnimation(this.animLoop, delta);
+      //   if(animComplete){
+      //     let index = this.model.animLoops.indexOf(this.animLoop) + 1;
+      //     index = (index >= this.model.animLoops.length) ? 0 : index;
+      //     this.animLoop = this.model.animLoops[index];
+      //   }
+      // }
 
       for(let i = 0, len = this.model.animLoops.length; i < len; i++){
         this.updateAnimation(this.model.animLoops[i], delta);
       }
+
     }
 
     //MiniGame Animations
@@ -136,10 +133,9 @@ class AuroraModelAnimationManager {
       if(typeof onEnd == 'function')
         onEnd();
 
+      return true;
     }
-
-
-
+    return false;
   }
 
   updateAnimationEvents(anim){
@@ -242,6 +238,11 @@ class AuroraModelAnimationManager {
               fl = 1;
               next = controller.data[this.lastFrame];
               last = controller.data[this.lastFrame - 1] || controller.data[this.lastFrame];
+            }
+
+            //Make sure the last frame has already begun.
+            if(anim.data.elapsed < last.time){
+              fl = 0;
             }
             
             if(fl == Infinity)
