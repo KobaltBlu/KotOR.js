@@ -13,6 +13,7 @@ class ModulePlaceable extends ModuleObject {
 
     this.openState = false;
     this._state = ModulePlaceable.STATE.NONE;
+    this.lastUsedBy = undefined;
 
     this.animationState = 0;
     this.appearance = 0;
@@ -417,7 +418,9 @@ class ModulePlaceable extends ModuleObject {
     return this.model;
   }
 
-  use(object = null){
+  use(object = undefined){
+
+    this.lastUsedBy = object;
 
     if(this.model.getAnimationByName('close2open')){
       this.model.playAnimation('close2open', false);

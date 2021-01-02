@@ -11,11 +11,12 @@ class ModuleDoor extends ModuleObject {
     super(gff);
     this.template = gff;
     this.openState = false;
-    this.lastObjectEntered = null;
-    this.lastObjectExited = null;
-    this.lastObjectOpened = null;
-    this.lastObjectClosed = null;
-    this.model = null;
+    this.lastObjectEntered = undefined;
+    this.lastObjectExited = undefined;
+    this.lastObjectOpened = undefined;
+    this.lastObjectClosed = undefined;
+    this.lastUsedBy = undefined;
+    this.model = undefined;
 
     this.animationState = 0;
     this.appearance = 0;
@@ -177,6 +178,8 @@ class ModuleDoor extends ModuleObject {
   }
 
   use(object = undefined){
+
+    this.lastUsedBy = object;
 
     if(!this.openState){
       

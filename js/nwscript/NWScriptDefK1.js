@@ -3469,7 +3469,14 @@ NWScriptDefK1.Actions = {
     comment: "330: Get the last object that used the placeable object that is calling this function.\n* Returns OBJECT_INVALID if it is called by something other than a placeable or\na door.\n",
     name: "GetLastUsedBy",
     type: 6,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      if((this.caller instanceof ModulePlaceable) || (this.caller instanceof ModuleDoor)){
+        return this.caller.lastUsedBy || undefined;
+      }
+
+      return undefined;
+    }
   },
   331:{
     comment: "331: Returns the ability modifier for the specified ability\nGet oCreature's ability modifier for nAbility.\n- nAbility: ABILITY_*\n- oCreature\n",
