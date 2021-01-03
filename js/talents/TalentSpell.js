@@ -32,7 +32,7 @@ class TalentSpell extends TalentObject {
     //if(this.usertype == 1){
 
       if(this.hostilesetting == 1){
-        oCaster.combatState = true;
+        oCaster.resetExcitedDuration();
       }
       CombatEngine.AddCombatant(oCaster);
 

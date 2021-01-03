@@ -563,7 +563,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
         case ModuleCreature.ACTION.ATTACKOBJECT:
-          this.combatState = true;
+          this.resetExcitedDuration();
           if(!this.action.combatAction.isCutsceneAttack){
             if(this.action.object.isDead()){
               this.actionQueue.shift();
@@ -687,7 +687,7 @@ class ModuleCreatureController extends ModuleObject {
           if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
             if(PartyManager.party.indexOf(this) == -1){
               if(this.isHostile(creature)){
-                this.combatState = true;
+                this.resetExcitedDuration();
               }
             }
             
@@ -712,7 +712,7 @@ class ModuleCreatureController extends ModuleObject {
             if(PartyManager.party.indexOf(this) == -1){
 
               if(this.isHostile(creature)){
-                this.combatState = true;
+                this.resetExcitedDuration();
               }
 
               this.notifyPerceptionSeenObject(creature, true);
@@ -1655,7 +1655,6 @@ class ModuleCreatureController extends ModuleObject {
 
     this.resetExcitedDuration();
 
-    this.combatState = true;
     CombatEngine.AddCombatant(this);
 
     let attackKey = this.getCombatAnimationAttackType();
@@ -1783,12 +1782,8 @@ class ModuleCreatureController extends ModuleObject {
     if(target == undefined)
       return;
 
-    //if(!this.combatState)
-    //  this.combatState = true;
-
     this.resetExcitedDuration();
 
-    this.combatState = true;
     CombatEngine.AddCombatant(this);
 
     this.combatQueue.push({
