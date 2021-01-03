@@ -52,6 +52,8 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastCombatFeatUsed = undefined;
     //Last Force Power Used
     this.lastForcePowerUsed = undefined;
+    //Last Attack Result
+    this.lastAttackResult = undefined;
 
     this.appearance = 0;
     this.pm_Appearance = 0;
@@ -594,7 +596,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getHP(){
-    return this.currentHitPoints;
+    return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
   }
 
   getMaxHP(){
