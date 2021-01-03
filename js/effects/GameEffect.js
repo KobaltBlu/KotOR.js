@@ -141,105 +141,109 @@ class GameEffect {
       let eExpireDay = struct.GetFieldByLabel('ExpireDay').GetValue();
       let eExpireTime = struct.GetFieldByLabel('ExpireTime').GetValue();
 
+      let intList = [];
+      let floatList = [];
+      let stringList = [];
+      let objectList = [];
+
+      let tmpList = struct.GetFieldByLabel('IntList').GetChildStructs();
+      for(let i = 0, len = tmpList.length; i < len; i++){
+        intList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+      }
+
+      tmpList = struct.GetFieldByLabel('FloatList').GetChildStructs();
+      for(let i = 0, len = tmpList.length; i < len; i++){
+        floatList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+      }
+
+      tmpList = struct.GetFieldByLabel('StringList').GetChildStructs();
+      for(let i = 0, len = tmpList.length; i < len; i++){
+        stringList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+      }
+
+      tmpList = struct.GetFieldByLabel('ObjectList').GetChildStructs();
+      for(let i = 0, len = tmpList.length; i < len; i++){
+        objectList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+      }
+
+      //(???) Means i haven't confirmed this type yet
+      switch(eType){
+        case 2: //DamageResistance
+          effect = new EffectDamageResistance(intList[0], intList[1], intList[2]);
+        break;
+        case 7: //Regenerate
+          effect = new EffectRegenerate(intList[0], intList[1]);
+        break;
+        case 10: //AttackIncrease
+          effect = new EffectAttackIncrease(intList[0], intList[1]);
+        break;
+        case 11: //AttackDecrease
+          effect = new EffectAttackDecrease(intList[0], intList[1]);
+        break;
+        case 13: //DamageIncrease
+          effect = new EffectDamageIncrease(intList[0], intList[1]);
+        break;
+        case 14: //DamageDecrease (???)
+          effect = new EffectDamageDecrease(intList[0], intList[1]);
+        break;
+        case 22: //Immunity
+          effect = new EffectImmunity(intList[0]);
+        break;
+        case 26: //SavingThrowIncrease
+          effect = new EffectSavingThrowIncrease(intList[0], intList[1]);
+        break;
+        case 27: //SavingThrowDecrease (???)
+          effect = new EffectSavingThrowDecrease(intList[0], intList[1]);
+        break;
+        case 28: //MovementSpeedIncrease
+          effect = new EffectMovementSpeedIncrease(intList[0]);
+        break;
+        case 29: //MovementSpeedDecrease (???)
+          effect = new EffectMovementSpeedDecrease(intList[0]);
+        break;
+        case 30: //VisualEffect
+          effect = new EffectVisualEffect(intList[0]);
+        break;
+        case 35: //EffectPoison
+          effect = new EffectPoison(intList[0]);
+        break;
+        case 36: //AbilityIncrease
+          effect = new EffectAbilityIncrease(intList[0], intList[1]);
+        break;
+        case 37: //AbilityDecrease (???)
+          effect = new EffectAbilityDecrease(intList[0], intList[1]);
+        break;
+        case 48: //ACIncrease
+          effect = new EffectACIncrease(intList[1], 0, intList[5]);
+        break;
+        case 55: //SkillIncrease
+          effect = new EffectSkillIncrease(intList[0], intList[1]);
+        break;
+        case 55: //SkillDecrease (???)
+          effect = new EffectSkillDecrease(intList[0], intList[1]);
+        break;
+        case 62: //Disguise
+          effect = new EffectDisguise(intList[0]);
+        break;
+        case 67: //SetEffectIcon
+          effect = new EffectIcon(intList[0]);
+        break;
+        case 83: //BonusFeat
+          effect = new EffectFeat(intList[0]);
+        break;
+        case 92: //BlasterDeflectionIncrease
+          effect = new EffectBlasterDeflectionIncrease(intList[1]);
+        break;
+        case 93: //BlasterDeflectionDecrease (???)
+          effect = new EffectBlasterDeflectionDecrease(intList[1]);
+        break;
+        case 107: //ForceShield
+          effect = new EffectForceShield(intList[0]);
+        break;
+      }
+
       let eSkipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();
       if(!eSkipOnLoad){
-        let intList = [];
-        let floatList = [];
-        let stringList = [];
-        let objectList = [];
-
-        let tmpList = struct.GetFieldByLabel('IntList').GetChildStructs();
-        for(let i = 0, len = tmpList.length; i < len; i++){
-          intList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
-        }
-
-        tmpList = struct.GetFieldByLabel('FloatList').GetChildStructs();
-        for(let i = 0, len = tmpList.length; i < len; i++){
-          floatList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
-        }
-
-        tmpList = struct.GetFieldByLabel('StringList').GetChildStructs();
-        for(let i = 0, len = tmpList.length; i < len; i++){
-          stringList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
-        }
-
-        tmpList = struct.GetFieldByLabel('ObjectList').GetChildStructs();
-        for(let i = 0, len = tmpList.length; i < len; i++){
-          objectList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
-        }
-
-        //(???) Means i haven't confirmed this type yet
-        switch(eType){
-          case 2: //DamageResistance
-            effect = new EffectDamageResistance(intList[0], intList[1], intList[2]);
-          break;
-          case 7: //Regenerate
-            effect = new EffectRegenerate(intList[0], intList[1]);
-          break;
-          case 10: //AttackIncrease
-            effect = new EffectAttackIncrease(intList[0], intList[1]);
-          break;
-          case 11: //AttackDecrease
-            effect = new EffectAttackDecrease(intList[0], intList[1]);
-          break;
-          case 13: //DamageIncrease
-            effect = new EffectDamageIncrease(intList[0], intList[1]);
-          break;
-          case 14: //DamageDecrease (???)
-            effect = new EffectDamageDecrease(intList[0], intList[1]);
-          break;
-          case 22: //Immunity
-            effect = new EffectImmunity(intList[0]);
-          break;
-          case 26: //SavingThrowIncrease
-            effect = new EffectSavingThrowIncrease(intList[0], intList[1]);
-          break;
-          case 27: //SavingThrowDecrease (???)
-            effect = new EffectSavingThrowDecrease(intList[0], intList[1]);
-          break;
-          case 28: //MovementSpeedIncrease
-            effect = new EffectMovementSpeedIncrease(intList[0]);
-          break;
-          case 29: //MovementSpeedDecrease (???)
-            effect = new EffectMovementSpeedDecrease(intList[0]);
-          break;
-          case 30: //VisualEffect
-            effect = new EffectVisualEffect(intList[0])
-          break;
-          case 36: //AbilityIncrease
-            effect = new EffectAbilityIncrease(intList[0], intList[1]);
-          break;
-          case 37: //AbilityDecrease (???)
-            effect = new EffectAbilityDecrease(intList[0], intList[1]);
-          break;
-          case 48: //ACIncrease
-            effect = new EffectACIncrease(intList[1], 0, intList[5]);
-          break;
-          case 55: //SkillIncrease
-            effect = new EffectSkillIncrease(intList[0], intList[1]);
-          break;
-          case 55: //SkillDecrease (???)
-            effect = new EffectSkillDecrease(intList[0], intList[1]);
-          break;
-          case 62: //Disguise
-            effect = new EffectDisguise(intList[0]);
-          break;
-          case 67: //SetEffectIcon
-            effect = new EffectIcon(intList[0]);
-          break;
-          case 83: //BonusFeat
-            effect = new EffectFeat(intList[0]);
-          break;
-          case 92: //BlasterDeflectionIncrease
-            effect = new EffectBlasterDeflectionIncrease(intList[1]);
-          break;
-          case 93: //BlasterDeflectionDecrease (???)
-            effect = new EffectBlasterDeflectionDecrease(intList[1]);
-          break;
-          case 107: //ForceShield
-            effect = new EffectForceShield(intList[0]);
-          break;
-        }
 
         if(typeof effect !== 'undefined'){
           effect.setDuration(eDuration);
@@ -252,12 +256,16 @@ class GameEffect {
           if(eDuration){
             effect.setDurationType(GameEffect.DurationType.TEMPORARY);
           }
-          console.log('Handled Effect', eType, struct.ToJSON());
+          //console.log('Handled Effect', eType, struct.ToJSON());
         }else{
           console.log('Unhandled Effect', eType, struct.ToJSON());
         }
       }else{
-        console.log('Skipped Effect', eType, struct.ToJSON());
+        if(typeof effect !== 'undefined'){
+          //console.log('Skipped Effect', eType, struct.ToJSON());
+        }else{
+          console.log('Unhandled Skipped Effect', eType, struct.ToJSON());
+        }
       }
 
       return effect;
