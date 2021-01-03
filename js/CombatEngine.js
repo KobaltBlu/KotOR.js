@@ -26,6 +26,9 @@ class CombatEngine {
 
         if(!combatant.combatQueue.length && combatant.combatAction == undefined){
           //continue;
+          if(combatant.action && combatant.action.combatAction && combatant.action.combatAction.isCutsceneAttack){
+            combatant.combatAction = combatant.action.combatAction;
+          }
         }
 
         combatant.combatOrder = i;
@@ -102,6 +105,16 @@ class CombatEngine {
           //Get the first combatant of the group
           let combatant = combatGroups[i][j];
           if(!combatant.isDead()){
+
+            //Try to keep combatants in direct combat with each other in sync.
+            let nextCombatant = combatGroups[i][j-1] || combatGroups[i][jlen-1];
+            if(combatant.combatRoundTimer == 0 && nextCombatant.combatRoundTimer == 0){
+              if(combatant.combatAction && combatant.combatAction.target == nextCombatant){
+                combatant.combatAction.target.combatRoundTimer = 1.5;
+              }
+            }
+
+            //Combat action is ready
             if(combatant.combatRoundTimer == 0){
               if(combatant.combatAction){
                 if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatAction)){
@@ -109,11 +122,12 @@ class CombatEngine {
                   CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
                 }else{
                   //Continue to the next combatant in the group since this one can't act yet
-                  continue;
+                  //continue;
                 }
               }
             }
 
+            //Progress the combatant's combatRoundTimer
             if(combatant.combatRoundTimer >= 3){
               //Get the index of the current combatant from the combatants list
               let index = CombatEngine.combatants.indexOf(combatant);
@@ -177,7 +191,7 @@ class CombatEngine {
 
   static CalculateAttackDamage(combatAction = undefined, creature = undefined){
 
-    if(!combatAction || combatAction.damageCalculated)
+    if(!combatAction || (!combatAction.isCutsceneAttack && combatAction.damageCalculated))
       return;
 
     combatAction.damageCalculated = true;
@@ -298,34 +312,37 @@ class CombatEngine {
     }
 
     if(combatAction.isCutsceneAttack){
-
+      console.log('cutsceneAttack', creature, combatAction.target);
       creature.overlayAnimation = undefined;
       creature.getModel().playAnimation(combatAction.animation, false);
       //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
-      console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getFirstName(), combatAction.target.getFirstName());
+      console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
 
-      switch(combatAction.attackResult){
-        case 1:
-        case 2:
-        case 3:
-          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
-        break;
-        case 8:
-          combatAction.target.overlayAnimation = combatAction.target.getParryAnimation( combatAction.animation );
-        break;
-        default:
-          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
-        break;
-      }
+      if(combatAction.target instanceof ModuleCreature){
+        switch(combatAction.attackResult){
+          case 1:
+          case 2:
+          case 3:
+            combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+          break;
+          case 8:
+            combatAction.target.overlayAnimation = combatAction.target.getParryAnimation( combatAction.animation );
+          break;
+          default:
+            combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+          break;
+        }
+      
 
-      let painsound = THREE.Math.randInt(0, 1);
-      switch(painsound){
-        case 1:
-          combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
-        break;
-        default:
-          combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
-        break;
+        let painsound = THREE.Math.randInt(0, 1);
+        switch(painsound){
+          case 1:
+            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+          break;
+          default:
+            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+          break;
+        }
       }
 
       if(combatAction.damage)
@@ -339,11 +356,14 @@ class CombatEngine {
       
       //Roll to hit
       if(combatAction.hits){
-        
+        creature.lastAttackResult = 1;
+
         creature.overlayAnimation = undefined;
         creature.getModel().playAnimation(combatAction.animation, false);
-        if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
-          combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+        if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
+          if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
+            combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+          }
         }
 
         let painsound = THREE.Math.randInt(0, 1);
@@ -356,17 +376,21 @@ class CombatEngine {
           break;
         }
 
-        combatAction.target.damage(combatAction.damage, this);
+        combatAction.target.damage(combatAction.damage, creature);
         /*setTimeout( () => {
           combatAction.target.damage(combatAction.damage, this);
         }, attackAnimation.length * 500)*/
         
       }else{
+        creature.lastAttackResult = 0;
+
         combatAction.target.lastAttacker = this;
         creature.overlayAnimation = undefined;
         creature.getModel().playAnimation(combatAction.animation, false);
-        if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
-          combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );
+        if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
+          if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
+            combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );
+          }
         }
         //combatAction.target.getModel().playAnimation(combatAction.target.getDodgeAnimation(), false);
       }

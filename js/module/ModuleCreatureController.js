@@ -144,6 +144,7 @@ class ModuleCreatureController extends ModuleObject {
           this.clearAllActions();
           this.onDeath();
           this.PlaySoundSet(SSFObject.TYPES.DEAD);
+          this.overlayAnimation = undefined;
         }
       }
 
@@ -524,8 +525,8 @@ class ModuleCreatureController extends ModuleObject {
               if(this.scripts.onDialog instanceof NWScriptInstance){
                 this.heardStrings = [];
                 this.onDialog(this.action.object, -1, () => {
-                  this.actionQueue.shift();
                 });
+                this.actionQueue.shift();
               }else{
                 Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
                 this.actionQueue.shift();
@@ -1409,7 +1410,7 @@ class ModuleCreatureController extends ModuleObject {
     this.subtractHP(amount);
     this.lastDamager = oAttacker;
     this.lastAttacker = oAttacker;
-    
+
     if(this.lastAttackTarget == undefined || this.lastAttackTarget.isDead())
       this.lastAttackTarget = oAttacker;
 
@@ -1691,6 +1692,14 @@ class ModuleCreatureController extends ModuleObject {
     this.lastAttackAction = ModuleCreature.ACTION.ATTACKOBJECT;
     this.lastAttackTarget = target;
     this.lastAttemptedAttackTarget = target;
+
+    //Get random basic melee attack in combat with another melee creature that is targeting you
+    if(attackKey == 'm'){
+      if(this.lastAttackTarget?.lastAttackTarget == this && this.lastAttackTarget?.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1){
+        attackKey = 'c';
+        attackType = Math.round(Math.random()*4)+1;
+      }
+    }
     
     let animation = attackKey+weaponWield+'a'+attackType;
     if(isCutsceneAttack){
@@ -1841,7 +1850,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   getDamageAnimation( attackAnim = undefined ){
-
+    
     let attackAnimIndex = -1;
 
     let modeltype = this.getAppearance().modeltype;
@@ -1871,9 +1880,24 @@ class ModuleCreatureController extends ModuleObject {
       case 'S':
       case 'L':
         return 'cdamages';
-      default:
-        return 'g'+weaponWield+'d1';
     }
+    console.log(attackAnim);
+    
+    switch(attackAnim){
+      case 'c2a1':
+        return 'c2d1'
+      case 'c2a2':
+        return 'c2d2'
+      case 'c2a3':
+        return 'c2d3'
+      case 'c2a4':
+        return 'c2d4'
+      case 'c2a5':
+        return 'c2d5'
+    }
+
+    return 'g'+weaponWield+'d1';
+
   }
 
   getDodgeAnimation( attackAnim = undefined ){
@@ -1917,9 +1941,24 @@ class ModuleCreatureController extends ModuleObject {
       case 'S':
       case 'L':
         return 'cdodgeg';
-      default:
-        return 'g'+weaponWield+'g1';
     }
+    console.log(attackAnim);
+    
+    switch(attackAnim){
+      case 'c2a1':
+        return 'c2d1'
+      case 'c2a2':
+        return 'c2d2'
+      case 'c2a3':
+        return 'c2d3'
+      case 'c2a4':
+        return 'c2d4'
+      case 'c2a5':
+        return 'c2d5'
+    }
+
+    return 'g'+weaponWield+'g1';
+
   }
 
   getParryAnimation( attackAnim = undefined ){
@@ -1954,9 +1993,23 @@ class ModuleCreatureController extends ModuleObject {
       case 'S':
       case 'L':
         return 'cdodgeg';
-      default:
-        return 'g'+weaponWield+'g1';
     }
+    console.log(attackAnim);
+    switch(attackAnim){
+      case 'c2a1':
+        return 'c2p1'
+      case 'c2a2':
+        return 'c2p2'
+      case 'c2a3':
+        return 'c2p3'
+      case 'c2a4':
+        return 'c2p4'
+      case 'c2a5':
+        return 'c2p5'
+    }
+
+    return 'g'+weaponWield+'g1';
+    
   }
 
   getDeflectAnimation(){
@@ -1979,6 +2032,7 @@ class ModuleCreatureController extends ModuleObject {
           return 'b';
         case 1:
           return 'm';
+        break;
       }
 
     }else if(this.equipment.CLAW1){
@@ -2409,6 +2463,7 @@ class ModuleCreatureController extends ModuleObject {
 
 
     let sndIdx = Math.round(Math.random()*2);
+    let sndIdx2 = Math.round(Math.random()*1);
     switch(event){
       case 'snd_footstep':
         let sndTable = Global.kotor2DA["footstepsounds"].rows[appearance.footsteptype];
@@ -2473,6 +2528,16 @@ class ModuleCreatureController extends ModuleObject {
       case 'Swinglong':
         if(this.equipment.RIGHTHAND){
           this.audioEmitter.PlaySound(rhSounds['swinglong'+sndIdx]);
+        }
+      break;
+      case 'HitParry':
+        if(this.equipment.RIGHTHAND){
+          this.audioEmitter.PlaySound(rhSounds['parry'+sndIdx2]);
+        }
+      break;
+      case 'Contanct':
+        if(this.equipment.RIGHTHAND){
+          this.audioEmitter.PlaySound(rhSounds['clash'+sndIdx2]);
         }
       break;
       case 'Hit':
