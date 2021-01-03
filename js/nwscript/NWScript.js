@@ -1460,6 +1460,7 @@ NWScript.ByteCodes = {
       state.script.enteringObject = this.enteringObject;
       state.script.listenPatternNumber = this.listenPatternNumber;
       state.script.listenPatternSpeaker = this.listenPatternSpeaker;
+      state.script.scriptVar = this.scriptVar;
       this.state.push(state);
       state.script.state = this.state.slice();
 

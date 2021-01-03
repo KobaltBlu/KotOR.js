@@ -234,7 +234,7 @@ class NWScriptInstance {
   }
 
   executeScript(script, scope, args, onComplete){
-    
+    //console.log('executeScript', args);
     script.lastPerceived = scope.lastPerceived;
     script.debug = scope.debug;
     script.debugging = scope.debugging;

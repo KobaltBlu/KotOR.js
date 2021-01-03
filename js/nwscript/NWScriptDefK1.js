@@ -1389,7 +1389,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.error('Unhandled script action', _instr.address, action.name, action.args);
       return new NWScriptEvent({
-      name: 'EventUserDefined',
+        name: 'EventUserDefined',
         value: args[0]
       });
     }
@@ -2301,6 +2301,7 @@ NWScriptDefK1.Actions = {
           args[1].setDurationType(args[0]);
           args[1].setDuration(args[3]);
           args[2].addEffect(args[1], args[0], args[3]);
+          console.log('ApplyEffectToObject', args[2], this.caller);
         }else{
           //console.log('ApplyEffectToObject'. args);
           console.error('ApplyEffectToObject', 'Expected a GameEffect');
@@ -3141,8 +3142,8 @@ NWScriptDefK1.Actions = {
     args: ["action"],
     action: function(args, _instr, action){
       this.caller.doCommand(
-      args[0].script, //script
-      args[0], //action
+        args[0].script, //script
+        args[0], //action
         null, //instruction
       );
     }
@@ -4153,6 +4154,9 @@ NWScriptDefK1.Actions = {
       if(args[0] == undefined)
         args[0] = this.caller;
 
+      if(PartyManager.party.indexOf(args[0]) >= 0)
+        return;
+
       //console.log('ActionEquipMostDamagingMelee', args);
 
       if(args[0] instanceof ModuleCreature){
@@ -4791,6 +4795,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
+      console.log('EffectHorrified', this.caller);
       let effect = new EffectHorrified();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -5553,7 +5558,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return ( PartyManager.party.indexOf(args[0]) > -1 ? 1 : 0 );
+      return ( PartyManager.party.indexOf(args[0]) >= 0 ? 1 : 0 );
     }
   },
   577:{
@@ -6748,7 +6753,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return 1;
+      return args[0].lastAttackResult || 0;
     }
   },
   726:{
