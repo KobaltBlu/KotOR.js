@@ -17,7 +17,7 @@ THREE.TGALoader = function ( manager ) {
 
 };
 
-THREE.TGALoader.prototype.load = function ( url, onLoad = null ) {
+THREE.TGALoader.prototype.load = function ( url, onLoad = undefined, onError = undefined ) {
 
 	var scope = this;
 
@@ -41,29 +41,30 @@ THREE.TGALoader.prototype.load = function ( url, onLoad = null ) {
 				Global.kotorKEY.GetFileData(txiKey, (txiBuffer) => {
 					if ( typeof onLoad !== 'undefined' ) {
 						texture.txi = new TXI(txiBuffer);
-						onLoad( texture );
+						if(typeof onLoad == 'function')
+							onLoad( texture );
 					}
 				});
 			}else{
 				if ( typeof onLoad !== 'undefined' ) {
 					texture.txi = new TXI('');
-					onLoad( texture );
+					if(typeof onLoad == 'function')
+						onLoad( texture );
 				}
 			}
 
 		});
 	}else{
 		//console.log('Lightmap not found', url)
-		if ( onLoad !== undefined ) {
-			onLoad( null );
-		}
+		if(typeof onLoad == 'function')
+			onLoad( texture );
 	}
 
 	//return texture;
 
 };
 
-THREE.TGALoader.prototype.load_override = function ( name, onLoad = null ) {
+THREE.TGALoader.prototype.load_override = function ( name, onLoad = undefined, onError = undefined ) {
 
 	var dir = path.join(Config.options.Games.KOTOR.Location, 'Override');
 	
@@ -71,7 +72,12 @@ THREE.TGALoader.prototype.load_override = function ( name, onLoad = null ) {
 	var texture = new THREE.Texture();
 
 	fs.readFile(path.join(dir, name)+'.tga', (err, buffer) => {
-		if (err) throw err; // Fail if the file can't be read.
+		if(err){
+			if(typeof onError == 'function')
+				onError( err );
+
+			return;
+		}
 
 		texture.image = scope.parse( buffer );
 		texture.needsUpdate = true;
@@ -87,17 +93,20 @@ THREE.TGALoader.prototype.load_override = function ( name, onLoad = null ) {
 
 					if(tpcCheck){
 						texture.txi = tpcCheck.txi;
-						onLoad( texture );
+						if(typeof onLoad == 'function')
+							onLoad( texture );
 					}else{
 						texture.txi = new TXI('');
-						onLoad( texture );
+						if(typeof onLoad == 'function')
+							onLoad( texture );
 					}
 
 				});
 
 			}else{
 				texture.txi = new TXI(txiBuffer);
-				onLoad( texture );
+				if(typeof onLoad == 'function')
+					onLoad( texture );
 			}
 
 		});
@@ -106,14 +115,18 @@ THREE.TGALoader.prototype.load_override = function ( name, onLoad = null ) {
 
 };
 
-THREE.TGALoader.prototype.load_local = function ( name, onLoad = null ) {
+THREE.TGALoader.prototype.load_local = function ( name, onLoad = undefined, onError = undefined ) {
 	
 	var scope = this;
 	var texture = new THREE.Texture();
 
 	fs.readFile(name, (err, buffer) => {
-		if (err) throw err; // Fail if the file can't be read.
+		if(err){
+			if(typeof onError == 'function')
+				onError( err );
 
+			return;
+		}
 		texture.image = scope.parse( buffer );
 		texture.needsUpdate = true;
 		texture.name = name;
@@ -131,14 +144,16 @@ THREE.TGALoader.prototype.load_local = function ( name, onLoad = null ) {
 						onLoad( texture );
 					}else{*/
 						texture.txi = new TXI('');
-						onLoad( texture );
+						if(typeof onLoad == 'function')
+							onLoad( texture );
 					//}
 
 				});
 
 			/*}else{
 				texture.txi = new TXI(txiBuffer);
-				onLoad( texture );
+				if(typeof onLoad == 'function')
+					onLoad( texture );
 			}*/
 
 		//});
