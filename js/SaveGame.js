@@ -129,9 +129,28 @@ class SaveGame {
             onLoad(this.thumbnail);
           }
         },
-        null,
-        true
-      )
+        () => {
+          TextureLoader.Load('load_'+this.getLastModule(), (texture) => {
+            if(texture){
+              this.thumbnail = texture;
+              if(typeof onLoad === 'function'){
+                onLoad(this.thumbnail);
+              }
+            }else{
+              TextureLoader.Load('whitefill', (texture) => {
+                if(texture){
+                  this.thumbnail = texture;
+                  if(typeof onLoad === 'function'){
+                    onLoad(this.thumbnail);
+                  }
+                }else{
+                  
+                }
+              });
+            }
+          });
+        }
+      );
     }else{
       if(typeof onLoad === 'function'){
         onLoad(this.thumbnail);
