@@ -72,6 +72,7 @@ class ModuleObject {
     this.zOrientation = 0;
     this.bearing = 0;
     this.collisionTimer = 0;
+    this.perceptionTimer = 0;
 
     this.tweakColor = 0;
     this.useTweakColor = 0;
@@ -386,14 +387,14 @@ class ModuleObject {
 
   }
 
-  triggerUserDefinedEvent(caller = this, iValue = 0, onComplete = null ){
-
+  triggerUserDefinedEvent(caller = this, nValue = 0, onComplete = null ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
 
     if(this.scripts.onUserDefined instanceof NWScriptInstance){
-      this.scripts.onUserDefined.run(this, parseInt(iValue), onComplete);
+      let instance = this.scripts.onUserDefined.nwscript.newInstance();
+      instance.run(caller, parseInt(nValue));
     }
   }
 
@@ -1431,7 +1432,7 @@ class ModuleObject {
       }
 
       if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-        //console.log('notifyPerceptionSeenObject', seen, this, object);
+        //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
         let instance = this.scripts.onNotice.nwscript.newInstance();
         instance.lastPerceived = perceptionObject;
         instance.run(this);
