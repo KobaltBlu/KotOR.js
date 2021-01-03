@@ -153,6 +153,7 @@ class ModuleCreatureController extends ModuleObject {
         this.animState = ModuleCreature.AnimState.IDLE;
       }
 
+      this.updateExcitedDuration(delta);
       this.updateCombat(delta);
       this.updateCasting(delta);
       this.updateAnimationState();
@@ -1486,6 +1487,8 @@ class ModuleCreatureController extends ModuleObject {
     if(this.isDead())
       return true;
 
+    this.resetExcitedDuration();
+
     CombatEngine.AddCombatant(this);
     
     if(this.scripts.onDamaged instanceof NWScriptInstance){
@@ -1616,6 +1619,27 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
+  resetExcitedDuration(){
+    this.excitedDuration = 10000;
+  }
+
+  updateExcitedDuration(delta = 0){
+    if(this.isDead()){
+      this.excitedDuration = 0;
+      this.combatState = false;
+    }
+
+    if(this.excitedDuration > 0){
+      this.excitedDuration -= (1000 * delta);
+      this.combatState = true;
+    }
+
+    if(this.excitedDuration <= 0){
+      this.combatState = false;
+      this.excitedDuration = 0;
+    }
+  }
+
   attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null, attackResult = undefined){
 
     //console.log('attackCreature', this, target, feat);
@@ -1628,6 +1652,8 @@ class ModuleCreatureController extends ModuleObject {
 
     if(target.isDead())
       return;
+
+    this.resetExcitedDuration();
 
     this.combatState = true;
     CombatEngine.AddCombatant(this);
@@ -1759,6 +1785,8 @@ class ModuleCreatureController extends ModuleObject {
 
     //if(!this.combatState)
     //  this.combatState = true;
+
+    this.resetExcitedDuration();
 
     this.combatState = true;
     CombatEngine.AddCombatant(this);

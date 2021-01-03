@@ -55,6 +55,8 @@ class ModuleCreature extends ModuleCreatureController {
     //Last Attack Result
     this.lastAttackResult = undefined;
 
+    this.excitedDuration = 0;
+
     this.appearance = 0;
     this.pm_Appearance = 0;
     this.pm_IsDisguised = 0;
