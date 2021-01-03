@@ -954,7 +954,7 @@ class InGameOverlay extends GameMenu {
 
         mapTexture.offset.x = (pointX) + 0.125;
         mapTexture.offset.y = (pointY) + 0.350;
-
+        mapTexture.updateMatrix();
         //console.log(pointX, pointY);
       }
 
