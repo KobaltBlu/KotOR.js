@@ -61,7 +61,7 @@ class MenuSaveLoad extends GameMenu {
 
     this.LB_GAMES.clearItems();
     let saves = SaveGame.saves;
-    console.log('CREATEz');
+    
     for(let i = 0; i < saves.length; i++){
 
       if(!i){
