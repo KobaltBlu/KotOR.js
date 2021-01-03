@@ -263,10 +263,11 @@ class CharGenClass extends GameMenu {
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(portraitId);
       template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'FirstName') ).SetValue('New Player');
       template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'LastName') ).SetValue('');
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(25);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(20);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'ForcePoints') ).SetValue(15);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentForce') ).SetValue(10);
+      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'MaxHitPoints') ).SetValue(20);
+      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'ForcePoints') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentForce') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Gender') ).SetValue(nth < 3 ? 0 : 1);
       let equipment = template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Equip_ItemList') );
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptAttacked') ).SetValue('k_hen_attacked01');
