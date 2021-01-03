@@ -970,7 +970,7 @@ class InGameOverlay extends GameMenu {
             this.LBL_ARROW.widget.rotation.set(0, 0, PartyManager.party[0].facing - Math.PI/2);
           break;
       }
-
+      mapTexture.updateMatrix();
       //console.log(pointX, pointY);
     }
 
