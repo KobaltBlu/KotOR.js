@@ -409,6 +409,9 @@ class TextureLoader {
 
   static ParseTXI(texture, tex){
     //console.log('ParseTXI', texture.txi);
+    if(!texture.txi)
+      return;
+      
     try{
 
       //ENVMAP
