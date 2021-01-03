@@ -885,6 +885,7 @@ class Game extends Engine {
     ResourceLoader.clearCache();
 
     Game.scene.visible = false;
+    Game.inDialog = false;
     ModuleObject.COUNT = 0;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
     Game.AlphaTest = 0;

@@ -855,6 +855,7 @@ class Game extends Engine {
     MenuManager.ClearMenus();
     Game.deltaTime = 0;
     Game.scene.visible = false;
+    Game.inDialog = false;
     Game.initTimers();
     ResourceLoader.clearCache();
     
@@ -1051,7 +1052,7 @@ class Game extends Engine {
                   Game.FadeOverlay.FadeIn(1, 0, 0, 0);
                 
                 Game.module.readyToProcessEvents = true;
-
+                console.log('runSpawnScripts', runSpawnScripts);
                 for(let i = 0; i < Game.module.area.creatures.length; i++){
                   if(Game.module.area.creatures[i] instanceof ModuleObject){
                     Game.module.area.creatures[i].onSpawn(runSpawnScripts);
@@ -1277,6 +1278,7 @@ class Game extends Engine {
         Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
         Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
         Game.updateTime(delta);
+
         if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
           Game.module.tick(delta);
           CombatEngine.Update(delta);
