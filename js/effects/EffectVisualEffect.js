@@ -14,10 +14,15 @@ class EffectVisualEffect extends GameEffect {
       return;
     }
 
+    //Impact Node
     if(this.impact_model){
       if(this.impactTimer == undefined){
         this.impactTimer = 3000;
-        this.impact_model.playAnimation('impact');
+        if(this.visualEffect.type_fd == 'D'){
+          this.impact_model.playAnimation('duration', true);
+        }else if(this.visualEffect.type_fd == 'F'){
+          this.impact_model.playAnimation('impact');
+        }
       }
 
       if(this.impactTimer <= 0){
@@ -30,10 +35,15 @@ class EffectVisualEffect extends GameEffect {
       this.impactTimer -= 1000 * delta;
     }
 
+    //Root Node
     if(this.impact_root_model){
       if(this.impactRootTimer == undefined){
         this.impactRootTimer = 3000;
-        this.impact_root_model.playAnimation('impact');
+        if(this.visualEffect.type_fd == 'D'){
+          this.impact_root_model.playAnimation('duration', true);
+        }else if(this.visualEffect.type_fd == 'F'){
+          this.impact_root_model.playAnimation('impact');
+        }
       }
 
       if(this.impactRootTimer <= 0){
@@ -44,6 +54,27 @@ class EffectVisualEffect extends GameEffect {
       }
 
       this.impactRootTimer -= 1000 * delta;
+    }
+
+    //Head Conjure
+    if(this.impact_head_model){
+      if(this.impactHeadTimer == undefined){
+        this.impactHeadTimer = 3000;
+        if(this.visualEffect.type_fd == 'D'){
+          this.impact_head_model.playAnimation('duration', true);
+        }else if(this.visualEffect.type_fd == 'F'){
+          this.impact_head_model.playAnimation('impact');
+        }
+      }
+
+      if(this.impactHeadTimer <= 0){
+        //this.impact_head_model.dispose();
+        //this.impact_head_model = undefined;
+      }else{
+        this.impact_head_model.update(delta);
+      }
+
+      this.impactHeadTimer -= 1000 * delta;
     }
 
     if(this.model){
@@ -103,25 +134,31 @@ class EffectVisualEffect extends GameEffect {
       if(this.visualEffect.type_fd == 'B'){
       }
 
+    }else if(typeof this.object != 'undefined'){
+      this.impact();
     }
 
     this.applied = true;
   }
 
   getImpactRootModel(){
-    switch(parseInt(this.object.getAppearance().sizecategory)){
-      case 1: //TINY
-        return this.visualEffect.imp_root_s_node;
-      case 2: //SMALL
-        return this.visualEffect.imp_root_s_node;
-      case 3: //MEDIUM
-        return this.visualEffect.imp_root_m_node;
-      case 4: //LARGE
-        return this.visualEffect.imp_root_l_node;
-      case 5: //HUGE
-        return this.visualEffect.imp_root_h_node;
+    if(this.object instanceof ModuleCreature){
+      switch(parseInt(this.object.getAppearance().sizecategory)){
+        case 1: //TINY
+          return this.visualEffect.imp_root_s_node;
+        case 2: //SMALL
+          return this.visualEffect.imp_root_s_node;
+        case 3: //MEDIUM
+          return this.visualEffect.imp_root_m_node;
+        case 4: //LARGE
+          return this.visualEffect.imp_root_l_node;
+        case 5: //HUGE
+          return this.visualEffect.imp_root_h_node;
+      }
+      return '****';
+    }else{
+      return this.visualEffect.imp_root_m_node;
     }
-    return '****';
   }
 
   impact(){
@@ -133,29 +170,28 @@ class EffectVisualEffect extends GameEffect {
             context: this.object.context,
             onComplete: (model) => {
               this.impact_model = model;
-
               if(this.object.model){
                 if(this.object.model.impact){
-
                   this.object.model.impact.add(this.impact_model);
-
                   TextureLoader.LoadQueue();
                 }else{
-                  this.impact_model.dispose();
+                  this.object.model.add(this.impact_model);
+                  TextureLoader.LoadQueue();
                 }
               }else{
                 this.impact_model.dispose();
               }
-
             }
           });
         }
       });
     }
+
     this.impactRoot();
+    this.impactHead();
 
     if(this.visualEffect.soundimpact != '***'){
-      if(this.object instanceof ModuleCreature){
+      if(this.object instanceof ModuleCreature || this.object?.audioEmitter instanceof AudioEmitter){
         this.object.audioEmitter.PlaySound(this.visualEffect.soundimpact);
       }
     }
@@ -170,17 +206,37 @@ class EffectVisualEffect extends GameEffect {
             context: this.object.context,
             onComplete: (model) => {
               this.impact_root_model = model;
-
               if(this.object.model){
-
                 this.object.model.add(this.impact_root_model);
-
                 TextureLoader.LoadQueue();
-                
               }else{
                 this.impact_root_model.dispose();
               }
+            }
+          });
+        }
+      });
+    }
+  }
 
+  impactHead(){
+    if(this.visualEffect.imp_headcon_node != '****'){
+      Game.ModelLoader.load({
+        file: this.visualEffect.imp_headcon_node,
+        onLoad: (mdl) => {
+          THREE.AuroraModel.FromMDL(mdl, {
+            context: this.object.context,
+            onComplete: (model) => {
+              this.impact_head_model = model;
+              if(this.object.model.headconjure){
+                this.object.model.headconjure.add(this.impact_head_model);
+                TextureLoader.LoadQueue();
+              }else if(this.object.model.headhook){
+                this.object.model.headhook.add(this.impact_head_model);
+                TextureLoader.LoadQueue();
+              }else{
+                this.impact_root_model.dispose();
+              }
             }
           });
         }
@@ -315,6 +371,10 @@ class EffectVisualEffect extends GameEffect {
 
     if(this.impact_root_model instanceof THREE.AuroraModel){
       this.impact_root_model.dispose();
+    }
+
+    if(this.impact_head_model instanceof THREE.AuroraModel){
+      this.impact_head_model.dispose();
     }
   }
 

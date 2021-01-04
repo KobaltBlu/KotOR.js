@@ -250,6 +250,7 @@ class Game extends Engine {
       light_helpers: new THREE.Group(),
       shadow_lights: new THREE.Group(),
       emitters: new THREE.Group(),
+      effects: new THREE.Group(),
       stunt: new THREE.Group(),
       weather_effects: new THREE.Group(),
       room_walkmeshes: new THREE.Group(),
@@ -272,6 +273,7 @@ class Game extends Engine {
     Game.scene.add(Game.group.light_helpers);
     Game.scene.add(Game.group.shadow_lights);
     Game.scene.add(Game.group.emitters);
+    Game.scene.add(Game.group.effects);
 
     Game.scene.add(Game.group.party);
     Game.scene.add(Game.group.room_walkmeshes);
@@ -914,6 +916,14 @@ class Game extends Engine {
     while(Game.weather_effects.length){
       Game.weather_effects[0].dispose();
       Game.weather_effects.shift();
+    }
+    
+    //Remove all effects
+    if(Game.module){
+      while(Game.module.effects.length){
+        Game.module.effects[0].dispose();
+        Game.module.effects.shift();
+      }
     }
 
     //Cleanup texture cache ignoring GUI & LBL textures

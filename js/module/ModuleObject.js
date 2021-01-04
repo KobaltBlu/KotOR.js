@@ -949,7 +949,7 @@ class ModuleObject {
     return this.getEffect(type) ? true : false;
   }
 
-  RemoveEffectsByCreator( oCreator = undefined ){
+  removeEffectsByCreator( oCreator = undefined ){
     if(oCreator instanceof ModuleObject){
       let eIndex = this.effects.length - 1;
       let effect = this.effects[eIndex];
@@ -965,7 +965,7 @@ class ModuleObject {
     }
   }
 
-  RemoveEffectsByType(type = -1){
+  removeEffectsByType(type = -1){
     let effect = this.getEffect(type);
     while(effect){
       let index = this.effects.indexOf(effect);
@@ -976,14 +976,14 @@ class ModuleObject {
     }
   }
 
-  RemoveEffect(type = -1){
+  removeEffect(type = -1){
     if(type instanceof GameEffect){
       let arrIdx = this.effects.indexOf(type);
       if(arrIdx >= 0){
         this.effects.splice(arrIdx, 1)[0].onRemove();
       }
     }else{
-      this.RemoveEffectsByType(type);
+      this.removeEffectsByType(type);
     }
   }
 

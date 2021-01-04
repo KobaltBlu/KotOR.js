@@ -945,7 +945,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "effect"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature && typeof args[1] == 'object' && typeof args[1].type != 'undefined'){
-      args[0].RemoveEffect(args[1]);
+        args[0].removeEffect(args[1]);
       }
     }
   },
@@ -2257,7 +2257,12 @@ NWScriptDefK1.Actions = {
     comment: "216: Apply eEffect at lLocation.\n",
     name: "ApplyEffectAtLocation",
     type: 0,
-    args: ["int", "effect", "location", "float"]
+    args: ["int", "effect", "location", "float"],
+    action: function(args, _instr, action){
+      args[1].setDurationType(args[0]);
+      args[1].setDuration(args[3]);
+      Game.module.addEffect(args[1], args[2]);
+    }
   },
   217:{
     comment: "217: * Returns TRUE if oCreature is a Player Controlled character.\n",

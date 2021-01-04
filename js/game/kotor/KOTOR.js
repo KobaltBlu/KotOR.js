@@ -253,6 +253,7 @@ class Game extends Engine {
       light_helpers: new THREE.Group(),
       shadow_lights: new THREE.Group(),
       emitters: new THREE.Group(),
+      effects: new THREE.Group(),
       stunt: new THREE.Group(),
       weather_effects: new THREE.Group(),
       room_walkmeshes: new THREE.Group(),
@@ -275,6 +276,7 @@ class Game extends Engine {
     Game.scene.add(Game.group.light_helpers);
     Game.scene.add(Game.group.shadow_lights);
     Game.scene.add(Game.group.emitters);
+    Game.scene.add(Game.group.effects);
 
     Game.scene.add(Game.group.party);
     Game.scene.add(Game.group.room_walkmeshes);
@@ -890,6 +892,14 @@ class Game extends Engine {
       Game.weather_effects[0].dispose();
       Game.weather_effects.shift();
     }
+    
+    //Remove all effects
+    if(Game.module){
+      while(Game.module.effects.length){
+        Game.module.effects[0].dispose();
+        Game.module.effects.shift();
+      }
+    }
 
     //Cleanup texture cache ignoring GUI & LBL textures
     Object.keys(TextureLoader.textures).forEach( (key) => {
@@ -1270,6 +1280,8 @@ class Game extends Engine {
       Game.emitters[emitter].tick(delta);
     }
 
+    Game.scene_cursor_holder.visible = true;
+
     // if enough time has elapsed, draw the next frame
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
@@ -1380,9 +1392,14 @@ class Game extends Engine {
         for(let i = 0; i < partyCount; i++){
           PartyManager.party[i].controlled = false;
         }
-
+        
         if(Game.inDialog){
           //Game.InGameDialog.Update(delta);
+
+          if(!Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
+            Game.scene_cursor_holder.visible = false;
+          }
+
         }else if(Game.MenuCharacter.bVisible){
           //Game.MenuCharacter.Update(delta);
         }else if(Game.MenuGalaxyMap.bVisible){
@@ -1513,7 +1530,7 @@ class Game extends Engine {
           model = room.model || undefined;
           if(model != undefined && model.type === 'AuroraModel'){
             
-            if(!room.hasVISObject || model.box.containsPoint(pos)){
+            if(!room.hasVISObject || model.box.clone().expandByScalar(2).containsPoint(pos)){
               rooms.push(room);
             }
           }
@@ -1536,7 +1553,7 @@ class Game extends Engine {
         for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
           let room = Game.module.area.rooms[i];
           if(room.model instanceof THREE.AuroraModel){
-            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
+            if(!room.hasVISObject || room.model.box.clone().expandByScalar(2).containsPoint(player.position)){
               //Show the room, but don't recursively show it's children
               room.show(false);
             }

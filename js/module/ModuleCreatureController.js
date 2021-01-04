@@ -40,7 +40,7 @@ class ModuleCreatureController extends ModuleObject {
       if(this.getEffect(42)){ //EFFECT_DAMAGE
         let effect = this.getEffect(42);
         this.subtractHP(effect.amount);
-        this.RemoveEffect(42);
+        this.removeEffect(42);
       }
 
       if(!this.isReady){
@@ -179,7 +179,7 @@ class ModuleCreatureController extends ModuleObject {
 
       if(this.blocking != this.lastBlocking){
         this.lastBlocking = this.blocking;
-        console.log('blocking script', this.blocking);
+        //console.log('blocking script', this.blocking);
         this.onBlocked();
       }
 
@@ -357,7 +357,7 @@ class ModuleCreatureController extends ModuleObject {
         break;
         case ModuleCreature.ACTION.SCRIPT: //run a block of code from an NWScript file
           if(this == Game.player){
-            console.log(ModuleCreature.ACTION.SCRIPT, this.action);
+            //console.log(ModuleCreature.ACTION.SCRIPT, this.action);
           }
           //console.log('Action Script', this.action);
           //console.log(ModuleCreature.ACTION.SCRIPT, this.action);
@@ -507,7 +507,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
         case ModuleCreature.ACTION.DIALOGOBJECT:
-          console.log('DIALOGOBJECT', this.action);
+          //console.log('DIALOGOBJECT', this.action);
           if(!Game.inDialog){
             distance = Utility.Distance2D(this.position, this.action.object.position);
             if(distance > 4.5 && !this.action.ignoreStartRange){
@@ -521,7 +521,7 @@ class ModuleCreatureController extends ModuleObject {
               this.action.object._conversation = this.action.conversation;
               this._conversation = this.action.conversation;
 
-              console.log('_converstation', this.action.conversation);
+              //console.log('_converstation', this.action.conversation);
               
               if(this.scripts.onDialog instanceof NWScriptInstance){
                 this.heardStrings = [];
@@ -848,7 +848,7 @@ class ModuleCreatureController extends ModuleObject {
         }
 
         if(threatening instanceof ModuleCreature){
-          console.log(threatening.getName(), 'is threatening', this.getName());
+          //console.log(threatening.getName(), 'is threatening', this.getName());
 
           let dVector = threatening.position.clone().sub(this.position).normalize();
 
@@ -1626,7 +1626,7 @@ class ModuleCreatureController extends ModuleObject {
   updateExcitedDuration(delta = 0){
     if(this.isDead()){
       this.excitedDuration = 0;
-      this.combatState = false;
+      this.cancelCombat();
     }
 
     if(this.excitedDuration > 0){
@@ -1867,7 +1867,6 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   cancelCombat(){
-    console.log('cancelCombat');
     this.clearTarget();
     this.combatState = false;
   }
@@ -1889,12 +1888,12 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
-    console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
+    //console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
     if(combatAnimation){
       let damageAnimIndex = combatAnimation['damage'+weaponWield];
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
-        console.log('damage anim', this.getName(), damageAnim.name)
+        //console.log('damage anim', this.getName(), damageAnim.name)
         return damageAnim.name;
       }
     }
@@ -1904,7 +1903,7 @@ class ModuleCreatureController extends ModuleObject {
       case 'L':
         return 'cdamages';
     }
-    console.log(attackAnim);
+    //console.log(attackAnim);
     
     switch(attackAnim){
       case 'c2a1':
@@ -1939,7 +1938,7 @@ class ModuleCreatureController extends ModuleObject {
       }
     }
 
-    console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
+    //console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
 
     let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
     if(combatAnimation){
@@ -1947,7 +1946,7 @@ class ModuleCreatureController extends ModuleObject {
         let damageAnimIndex = combatAnimation['parry'+weaponWield];
         let damageAnim = anims.getByID(damageAnimIndex);
         if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
-          console.log('dodge/parry anim', this.getName(), damageAnim.name)
+          //console.log('dodge/parry anim', this.getName(), damageAnim.name)
           return damageAnim.name;
         }
       }
@@ -1955,7 +1954,7 @@ class ModuleCreatureController extends ModuleObject {
       let damageAnimIndex = combatAnimation['dodge'+weaponWield];
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
-        console.log('dodge anim', this.getName(), damageAnim.name)
+        //console.log('dodge anim', this.getName(), damageAnim.name)
         return damageAnim.name;
       }
     }
@@ -1965,7 +1964,7 @@ class ModuleCreatureController extends ModuleObject {
       case 'L':
         return 'cdodgeg';
     }
-    console.log(attackAnim);
+    //console.log(attackAnim);
     
     switch(attackAnim){
       case 'c2a1':
@@ -2000,14 +1999,14 @@ class ModuleCreatureController extends ModuleObject {
       }
     }
 
-    console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
+    //console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
 
     let combatAnimation = Global.kotor2DA.combatanimations.getByID(attackAnimIndex);
     if(combatAnimation){
       let damageAnimIndex = combatAnimation['parry'+weaponWield];
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
-        console.log('parry anim', this.getName(), damageAnim.name)
+        //console.log('parry anim', this.getName(), damageAnim.name)
         return damageAnim.name;
       }
     }
@@ -2017,7 +2016,7 @@ class ModuleCreatureController extends ModuleObject {
       case 'L':
         return 'cdodgeg';
     }
-    console.log(attackAnim);
+    //console.log(attackAnim);
     switch(attackAnim){
       case 'c2a1':
         return 'c2p1'

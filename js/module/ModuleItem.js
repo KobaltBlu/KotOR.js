@@ -560,7 +560,7 @@ class ModuleItem extends ModuleObject {
     console.log('ModuleItem.onEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       if(this.isDisguise()){
-        oCreature.RemoveEffectsByType( GameEffect.Type.EffectDisguise ); //EFFECT_DISGUISE
+        oCreature.removeEffectsByType( GameEffect.Type.EffectDisguise ); //EFFECT_DISGUISE
         eDisguise = new EffectDisguise( this.getDisguiseAppearance() );
         eDisguise.setCreator(this);
         oCreature.addEffect( eDisguise );
@@ -571,7 +571,7 @@ class ModuleItem extends ModuleObject {
   onUnEquip(oCreature = undefined){
     console.log('ModuleItem.onUnEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
-      oCreature.RemoveEffectsByCreator(this);
+      oCreature.removeEffectsByCreator(this);
     }
   }
 

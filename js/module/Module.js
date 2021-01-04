@@ -10,6 +10,7 @@ class Module {
   constructor(onLoad = null){
     this.scripts = {};
     this.archives = [];
+    this.effects = [];
     this.Init();
 
     this.customTokens = new Map();
@@ -51,9 +52,60 @@ class Module {
     });
     
     this.rooms = [];
+    this.effects = [];
   }
 
-  tick(delta = 0 ){
+  addEffect(effect = undefined, lLocation = undefined){
+    if(effect instanceof GameEffect){
+      let object = {
+        model: new THREE.Object3D(),
+        position: lLocation.position,
+        dispose: function(){
+          this.onRemove();
+          this.removeEffect(this);
+        },
+        removeEffect: function(effect){
+          let index = Game.module.effects.indexOf(effect);
+          if(index >= 0){
+            Game.module.effects.splice(index, 1);
+          }
+        }
+      };
+
+      object.audioEmitter = new AudioEmitter({
+        engine: Game.audioEngine,
+        props: object,
+        template: {
+          sounds: [],
+          isActive: true,
+          isLooping: false,
+          isRandom: false,
+          isRandomPosition: false,
+          interval: 0,
+          intervalVariation: 0,
+          maxDistance: 50,
+          volume: 127,
+          positional: 1
+        },
+        onLoad: () => {
+        },
+        onError: () => {
+        }
+      });
+      Game.audioEngine.AddEmitter(object.audioEmitter);
+      object.audioEmitter.SetPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
+
+      object.model.position.copy(lLocation.position);
+
+      effect.setObject(object);
+      effect.onApply(object);
+      this.effects.push(effect);
+
+      Game.group.effects.add(object.model);
+    }
+  }
+
+  tick(delta = 0){
 
     if(this.readyToProcessEvents){
 
@@ -78,6 +130,12 @@ class Module {
             this.eventQueue.splice(i, 1);
           }
         }
+      }
+
+      //Process EffectList
+      let elLen = this.effects.length - 1;
+      for(let i = elLen; i >= 0; i--){
+        this.effects[i].update(delta);
       }
 
     }

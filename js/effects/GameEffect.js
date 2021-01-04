@@ -122,7 +122,7 @@ class GameEffect {
   onDurationEnd(){
     this.durationEnded = true;
     if(this.object instanceof ModuleObject){
-      this.object.RemoveEffect(this);
+      this.object.removeEffect(this);
     }else{
       this.onRemove();
     }
