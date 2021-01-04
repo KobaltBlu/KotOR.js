@@ -14,7 +14,7 @@ class AlphaEndController extends OdysseyController {
 
   animate(manager = undefined, anim = undefined, controller = undefined, last = undefined, next = undefined, fl = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.opacity[0] = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.opacity[2] = ((next.value - last.value) * fl + last.value);
       manager.modelNode.emitter.material.uniforms.opacity.value.fromArray(manager.modelNode.emitter.opacity);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }

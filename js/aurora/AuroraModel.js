@@ -766,7 +766,7 @@ class AuroraModel {
 
       let NodeType = node.NodeType;
       if(this.nodes[node.name]){
-        NodeType = node.NodeType = this.nodes[node.name].NodeType;
+        controller.nodeType = NodeType = node.NodeType = this.nodes[node.name].NodeType;
       }
     
       if(controller.frameCount != -1){
