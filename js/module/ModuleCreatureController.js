@@ -2557,7 +2557,12 @@ class ModuleCreatureController extends ModuleObject {
           this.audioEmitter.PlaySound(rhSounds['parry'+sndIdx2]);
         }
       break;
-      case 'Contanct':
+      case 'Contact':
+        if(this.equipment.RIGHTHAND){
+          this.audioEmitter.PlaySound(rhSounds['clash'+sndIdx2]);
+        }
+      break;
+      case 'Clash':
         if(this.equipment.RIGHTHAND){
           this.audioEmitter.PlaySound(rhSounds['clash'+sndIdx2]);
         }
