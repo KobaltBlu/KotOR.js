@@ -1311,6 +1311,8 @@ class Game extends Engine {
       Game.emitters[emitter].tick(delta);
     }
 
+    Game.scene_cursor_holder.visible = true;
+
     // if enough time has elapsed, draw the next frame
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
@@ -1416,9 +1418,12 @@ class Game extends Engine {
             obj.visible = Game.Flags.WalkmeshVisible;
           }
         }
-
+        
         if(Game.inDialog){
           Game.InGameDialog.Update(delta);
+          if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
+            Game.scene_cursor_holder.visible = false;
+          }
         }/*else if(Game.MenuCharacter.bVisible){
           Game.MenuCharacter.Update(delta);
         }else if(Game.MenuGalaxyMap.bVisible){
