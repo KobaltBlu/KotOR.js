@@ -1395,11 +1395,9 @@ class Game extends Engine {
         
         if(Game.inDialog){
           //Game.InGameDialog.Update(delta);
-
-          if(!Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
+          if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
             Game.scene_cursor_holder.visible = false;
           }
-
         }else if(Game.MenuCharacter.bVisible){
           //Game.MenuCharacter.Update(delta);
         }else if(Game.MenuGalaxyMap.bVisible){
