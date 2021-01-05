@@ -608,7 +608,7 @@ class ModuleCreatureController extends ModuleObject {
         this.model.playAnimation('pause'+randomPauseIdx, false);
       }*/
 
-      if(this.isPartyMember() && this != Game.getCurrentPlayer()){
+      if(!this.combatState &&this.isPartyMember() && this != Game.getCurrentPlayer()){
         this.setFacing(
           Math.atan2(
             this.position.y - Game.getCurrentPlayer().position.y,
