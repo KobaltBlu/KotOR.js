@@ -73,11 +73,25 @@ class ModuleRoom extends ModuleObject {
     if(this.model){
       this.model.visible = true;
     }
+
     if(recurse){
-      for(let i = 0; i < this.linked_rooms.length; i++){
+      for(let i = 0, rLen = this.linked_rooms.length; i < rLen; i++){
         if(this.linked_rooms[i] instanceof ModuleRoom){
-          if(typeof this.linked_rooms[i] == 'object')
+          if(typeof this.linked_rooms[i].model == 'object')
             this.linked_rooms[i].model.visible = true;
+        }
+      }
+
+      //Look for all rooms that can see this room
+      for(let i = 0, rLen = Game.module.area.rooms.length; i < rLen; i++){
+        let room = Game.module.area.rooms[i];
+        if(room instanceof ModuleRoom){
+          for(let j = 0, rcLen = room.linked_rooms.length; j < rcLen; j++){
+            if(room.linked_rooms[j] == this){
+              room.show(false);
+              break;
+            }
+          }
         }
       }
     }
