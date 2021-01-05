@@ -622,7 +622,8 @@ class ModuleCreature extends ModuleCreatureController {
       case 1: //WOOKIE
       case 2: //BEAST
         return this.hitPoints + this.currentHitPoints;
-      
+      default:
+        return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
     }
   }
 
