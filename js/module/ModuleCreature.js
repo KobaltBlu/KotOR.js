@@ -579,26 +579,51 @@ class ModuleCreature extends ModuleCreatureController {
     return this.goodEvil;
   }
 
+  getSubraceIndex(){
+    return this.subraceIndex;
+  }
+
   setHP(nAmount = 0){
-    this.currentHitPoints = nAmount;
+    let bonus = this.maxHitPoints - this.hitPoints;
+    this.currentHitPoints = nAmount - bonus;
+
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
-  addHP(nAmount = 0){
-    this.currentHitPoints = (this.getHP() + nAmount);
+  addHP(nAmount = 0, ignoreMaxHitPoints = false){
+    if(ignoreMaxHitPoints){
+      this.currentHitPoints += nAmount;
+    }else{
+      let currentHP = this.getHP();
+      if(currentHP < this.getMaxHP()){
+        if(currentHP + nAmount > this.getMaxHP()){
+          this.currentHitPoints += nAmount + (this.getMaxHP() - (currentHP + nAmount));
+        }else{
+          this.currentHitPoints += nAmount;
+        }
+      }
+    }
+
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
   subtractHP(nAmount = 0){
-    this.setHP(this.getHP() - nAmount);
+    this.currentHitPoints -= nAmount;
     if(this.min1HP && this.getHP() < 1)
       this.setHP(1);
   }
 
   getHP(){
-    return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
+    switch(this.subraceIndex){
+      case 0: //NONE
+        return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
+      case 1: //WOOKIE
+      case 2: //BEAST
+        return this.hitPoints + this.currentHitPoints;
+      
+    }
   }
 
   getMaxHP(){
@@ -1908,6 +1933,9 @@ class ModuleCreature extends ModuleCreatureController {
 
     if(this.template.RootNode.HasField('WillSaveThrow'))
       this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
+
+      if(this.template.RootNode.HasField('SubraceIndex'))
+        this.subraceIndex = this.template.RootNode.GetFieldByLabel('SubraceIndex').GetValue();
 
 
     if(this.template.RootNode.HasField('SWVarTable')){

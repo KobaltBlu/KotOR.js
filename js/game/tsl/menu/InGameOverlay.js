@@ -801,7 +801,7 @@ class InGameOverlay extends GameMenu {
       }
 
       //if(Game.selectedObject instanceof ModuleObject){
-        let health = 100 * Game.selectedObject.getHP()/Game.selectedObject.getMaxHP();
+        let health = 100 * Math.min(Math.max(Game.selectedObject.getHP() / Game.selectedObject.getMaxHP(), 0.0), 1.0);
         if(health > 100)
           health = 100;
         this.PB_HEALTH.setProgress(health)
@@ -1007,8 +1007,8 @@ class InGameOverlay extends GameMenu {
         });
       }
 
-      this['PB_VIT'+(id+1)].setProgress( Math.max( 1.0, partyMember.getHP() / partyMember.getMaxHP() ) * 100 );
-      this['PB_FORCE'+(id+1)].setProgress( Math.max( 1.0, partyMember.getFP() / partyMember.getMaxFP() ) * 100 );
+      this['PB_VIT'+(id+1)].setProgress( Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0.0), 1.0) * 100 );
+      this['PB_FORCE'+(id+1)].setProgress( Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0.0), 1.0) * 100 );
 
       if(partyMember.isDebilitated()){
         this['LBL_DEBILATATED'+(id+1)].show();

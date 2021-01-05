@@ -3,9 +3,6 @@
 
 /* @file
  * The ModulePlayer class.
- * My research indicates that some things like health are handled differently between Players and Creatures
- * PartyMembers seems to work like creatures.
- * This class should only be used for the player
  */
 
 class ModulePlayer extends ModuleCreature {
@@ -16,48 +13,6 @@ class ModulePlayer extends ModuleCreature {
 
   update(delta){
     super.update(delta);
-  }
-
-  setHP(nAmount = 0){
-    this.currentHitPoints = nAmount;
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
-  }
-
-  addHP(nAmount = 0){
-    this.currentHitPoints += nAmount;
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
-  }
-
-  subtractHP(nAmount = 0){
-    this.currentHitPoints -= nAmount;
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
-  }
-
-  getHP(){
-    return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
-  }
-
-  getMaxHP(){
-    return this.maxHitPoints;
-  }
-
-  setMaxHP(nAmount = 0){
-    return this.maxHitPoints = nAmount;
-  }
-
-  setMinOneHP(bMinOneHP = false){
-    this.min1HP = bMinOneHP ? true : false;
-  }
-
-  getFP(){
-    return (this.maxForcePoints + this.currentForce) - this.forcePoints;
-  }
-
-  getMaxFP(){
-    return this.maxForcePoints;
   }
 
 }
