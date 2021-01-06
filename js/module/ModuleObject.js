@@ -84,6 +84,7 @@ class ModuleObject {
     this.actionQueue = [];
     this.effects = [];
     this.casting = [];
+    this.damageList = [];
 
     this._locals = {
       Booleans: [],
@@ -909,7 +910,7 @@ class ModuleObject {
     if(effect instanceof GameEffect){
       if(effect instanceof EffectLink){
         //EFFECT LEFT
-        console.log('addEffect', 'LinkEffect->Left', effect.effect1, this);
+        //console.log('addEffect', 'LinkEffect->Left', effect.effect1, this);
         if(effect.effect1 instanceof GameEffect){
           effect.effect1.setDurationType(type);
           effect.effect1.setDuration(duration);
@@ -917,14 +918,14 @@ class ModuleObject {
         }
 
         //EFFECT RIGHT
-        console.log('addEffect', 'LinkEffect->Right', effect.effect2, this);
+        //console.log('addEffect', 'LinkEffect->Right', effect.effect2, this);
         if(effect.effect2 instanceof GameEffect){
           effect.effect2.setDurationType(type);
           effect.effect2.setDuration(duration);
           this.addEffect(effect.effect2, type, duration);
         }
       }else{
-        console.log('AddEffect', 'GameEffect', effect, this);
+        //console.log('AddEffect', 'GameEffect', effect, this);
         //effect.setDurationType(type);
         //effect.setDuration(duration);
         effect.setObject(this);
@@ -932,7 +933,7 @@ class ModuleObject {
         this.effects.push(effect);
       }
     }else{
-      console.warn('AddEffect', 'Invalid GameEffect', effect)
+      console.warn('AddEffect', 'Invalid GameEffect', effect);
     }
   }
 
