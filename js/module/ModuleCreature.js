@@ -587,8 +587,8 @@ class ModuleCreature extends ModuleCreatureController {
     let bonus = this.maxHitPoints - this.hitPoints;
     this.currentHitPoints = nAmount - bonus;
 
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
+    //if(this.min1HP && this.getHP() < 1)
+    //  this.setHP(1);
   }
 
   addHP(nAmount = 0, ignoreMaxHitPoints = false){
@@ -2147,10 +2147,10 @@ class ModuleCreature extends ModuleCreatureController {
           case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
             seen = false; heard = true;
           break;
-          case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
+          case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silenced.
             seen = false; heard = false;
           break;
-          case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
+          case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silenced.
             seen = true; heard = false;
           break;
         }
