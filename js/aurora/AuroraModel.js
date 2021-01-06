@@ -1254,6 +1254,17 @@ const EMITTER_FLAGS = {
   4000          :  0x8000,
 };
 
+AuroraModel.CLASS = {
+  OTHER:      0x00,
+  EFFECT:     0x01,
+  TILE:       0x02,
+  CREATURE:   0x04,
+  DOOR:       0x08,
+  LIGHTSABER: 0x10,
+  PLACEABLE:  0x20,
+  FLYER:      0x40,
+};
+
 AuroraModel.ENGINE = {
   K1:       0x0001,
   K2:       0x0002,
