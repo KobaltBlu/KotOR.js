@@ -480,7 +480,8 @@ NWScriptDefK1.Actions = {
     args: ["int", "float", "float"],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        this.caller.actionQueue.push({ goal: ModuleCreature.ACTION.ANIMATE, animation: args[0], speed: args[1], time: args[2] });
+        this.caller.actionPlayAnimation(args[0], args[2], args[1]);
+        //this.caller.actionQueue.push({ goal: ModuleCreature.ACTION.ANIMATE, animation: args[0], speed: args[1], time: args[2] });
       }
     }
   },
@@ -2297,16 +2298,12 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["int", "effect", "object", "float"],
     action: function(args, _instr, action){
-      //if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'ApplyEffectToObject', args);
-      //}
-
       if(args[2] instanceof ModuleObject){
         if(args[1] instanceof GameEffect){
           args[1].setDurationType(args[0]);
           args[1].setDuration(args[3]);
           args[2].addEffect(args[1], args[0], args[3]);
-          console.log('ApplyEffectToObject', args[2], this.caller);
+          //console.log('ApplyEffectToObject', args[2], this.caller);
         }else{
           //console.log('ApplyEffectToObject'. args);
           console.error('ApplyEffectToObject', 'Expected a GameEffect');
