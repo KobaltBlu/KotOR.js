@@ -6,11 +6,11 @@ class TalentObject {
   }
 
   useTalentOnObject(oTarget, oCaster){
-    console.log('useTalentOnObject', oCaster, this, oTarget);
+    //console.log('useTalentOnObject', oCaster, this, oTarget);
   }
 
   talentCombatRoundEnd(oTarget, oCaster){
-    console.log('talentCombatRoundEnd', oCaster, this, oTarget);
+    //console.log('talentCombatRoundEnd', oCaster, this, oTarget);
   }
 
   update(oTarget, oCaster, combatAction, delta){
