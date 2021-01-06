@@ -106,13 +106,14 @@ class CombatEngine {
           let combatant = combatGroups[i][j];
           if(!combatant.isDead()){
 
-            //Try to keep combatants in direct combat with each other in sync.
-            let nextCombatant = combatGroups[i][j-1] || combatGroups[i][jlen-1];
-            if(combatant.combatRoundTimer == 0 && nextCombatant.combatRoundTimer == 0){
-              if(combatant.combatAction && combatant.combatAction.target == nextCombatant){
-                combatant.combatAction.target.combatRoundTimer = 1.5;
+            //BEGIN: DUELING SYNC
+            if(combatant.combatRoundTimer == 0){
+              //Check to see if the combatant is dueling it's target. If so make sure the target's combatRoundTimer is synced properly
+              if(combatant.isDueling() && combatant.combatAction){
+                combatant.combatAction.target.combatRoundTimer = 1.5 - delta;
               }
             }
+            //END: DUELING SYNC
 
             //Combat action is ready
             if(combatant.combatRoundTimer == 0){
@@ -206,7 +207,7 @@ class CombatEngine {
         if(creature.equipment.RIGHTHAND instanceof ModuleItem){
           //Roll to hit
           let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.RIGHTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
-          if(hits){
+          if(hits || creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
             combatAction.hits = true;
             //Roll damage
             combatAction.damage += creature.equipment.RIGHTHAND.getBaseDamage() + creature.equipment.RIGHTHAND.getDamageBonus();
@@ -221,7 +222,7 @@ class CombatEngine {
         if(creature.equipment.LEFTHAND instanceof ModuleItem){
           //Roll to hit
           let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.LEFTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
-          if(hits){
+          if(hits || creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
             combatAction.hits = true;
             //Roll damage
             combatAction.damage += creature.equipment.LEFTHAND.getBaseDamage() + creature.equipment.LEFTHAND.getDamageBonus();
@@ -241,7 +242,7 @@ class CombatEngine {
         if(creature.equipment.CLAW1 instanceof ModuleItem){
           //Roll to hit
           let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW1.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
-          if(hits){
+          if(hits || creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
             combatAction.hits = true;
             //Roll damage
             combatAction.damage += creature.equipment.CLAW1.getMonsterDamage() + creature.equipment.CLAW1.getDamageBonus();
@@ -256,7 +257,7 @@ class CombatEngine {
         if(creature.equipment.CLAW2 instanceof ModuleItem){
           //Roll to hit
           let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW2.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
-          if(hits){
+          if(hits || creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
             combatAction.hits = true;
             //Roll damage
             combatAction.damage += creature.equipment.CLAW2.getMonsterDamage() + creature.equipment.CLAW2.getDamageBonus();
@@ -271,7 +272,7 @@ class CombatEngine {
         if(creature.equipment.CLAW3 instanceof ModuleItem){
           //Roll to hit
           let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW3.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
-          if(hits){
+          if(hits || creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
             combatAction.hits = true;
             //Roll damage
             combatAction.damage += creature.equipment.CLAW3.getMonsterDamage() + creature.equipment.CLAW3.getDamageBonus();
@@ -289,6 +290,7 @@ class CombatEngine {
     }
 
     let attackAnimation = creature.model.getAnimationByName(combatAction.animation);
+    let attackDamageDelay = attackAnimation.getDamageDelay();
 
     creature.setFacing(
       Math.atan2(
@@ -312,11 +314,14 @@ class CombatEngine {
     }
 
     if(combatAction.isCutsceneAttack){
-      console.log('cutsceneAttack', creature, combatAction.target);
-      creature.overlayAnimation = undefined;
-      creature.getModel().playAnimation(combatAction.animation, false);
+      console.log('cutsceneAttack', creature, combatAction.target, combatAction);
+      creature.overlayAnimation = combatAction.animation;
       //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
       console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
+
+      if(creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
+        combatAction.attackResult = 1;
+      }
 
       if(combatAction.target instanceof ModuleCreature){
         switch(combatAction.attackResult){
@@ -332,25 +337,14 @@ class CombatEngine {
             combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
           break;
         }
-      
-
-        let painsound = THREE.Math.randInt(0, 1);
-        switch(painsound){
-          case 1:
-            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
-          break;
-          default:
-            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
-          break;
-        }
       }
 
       if(combatAction.damage)
-        combatAction.target.subtractHP(combatAction.damage);
+        combatAction.target.damage(combatAction.damage, undefined, attackDamageDelay);
 
       setTimeout( () => {
         creature.actionQueue.shift();
-      }, attackAnimation.length * 500);
+      }, attackAnimation.length * 1000);
 
     }else{
       
@@ -358,38 +352,27 @@ class CombatEngine {
       if(combatAction.hits){
         creature.lastAttackResult = 1;
 
-        creature.overlayAnimation = undefined;
-        creature.getModel().playAnimation(combatAction.animation, false);
+        creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
-            combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
+          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
+            if(!targetAnimation || (!targetAnimation.attack))
+              combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
           }
         }
 
-        let painsound = THREE.Math.randInt(0, 1);
-        switch(painsound){
-          case 1:
-            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_2);
-          break;
-          default:
-            combatAction.target.PlaySoundSet(SSFObject.TYPES.PAIN_1);
-          break;
-        }
-
-        combatAction.target.damage(combatAction.damage, creature);
-        /*setTimeout( () => {
-          combatAction.target.damage(combatAction.damage, this);
-        }, attackAnimation.length * 500)*/
+        combatAction.target.damage(combatAction.damage, creature, attackDamageDelay);
         
       }else{
         creature.lastAttackResult = 0;
 
         combatAction.target.lastAttacker = this;
-        creature.overlayAnimation = undefined;
-        creature.getModel().playAnimation(combatAction.animation, false);
+        creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          if(!combatAction.target.overlayAnimation || combatAction.target.lastAttackTarget == creature){
-            combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );
+          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
+            if(!targetAnimation || (!targetAnimation.attack))
+              combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );
           }
         }
         //combatAction.target.getModel().playAnimation(combatAction.target.getDodgeAnimation(), false);
