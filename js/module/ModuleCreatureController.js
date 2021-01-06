@@ -77,6 +77,27 @@ class ModuleCreatureController extends ModuleObject {
 
       if(!this.isDead()){
 
+        //Process DamageList
+        let elLen = this.damageList.length - 1;
+        for(let i = elLen; i >= 0; i--){
+          this.damageList[i].delay -= delta;
+          if(this.damageList[i].delay <= 0){
+            this.subtractHP(this.damageList[i].amount);
+
+            let painsound = THREE.Math.randInt(0, 1);
+            switch(painsound){
+              case 1:
+                this.PlaySoundSet(SSFObject.TYPES.PAIN_2);
+              break;
+              default:
+                this.PlaySoundSet(SSFObject.TYPES.PAIN_1);
+              break;
+            }
+      
+            this.damageList.splice(i, 1);
+          }
+        }
+
         this.deathStarted = false;
         
         if(this.animState != ModuleCreature.AnimState.DEAD){
@@ -102,9 +123,7 @@ class ModuleCreatureController extends ModuleObject {
                 let _newAnim = this.model.getAnimationByName(this.getAnimationNameById(this.dialogAnimation.animation));
                 if(_newAnim instanceof AuroraModelAnimation){
                   if(this.dialogAnimation.time == -1){
-                    this.model.playAnimation(_newAnim, true, () => {
-                      //this.actionQueue.shift()
-                    });
+                    this.model.playAnimation(_newAnim, true);
                   }else{
                     this.model.playAnimation(_newAnim, false, () => {
                       //Kill the dialogAnimation after the animation ends
@@ -129,6 +148,7 @@ class ModuleCreatureController extends ModuleObject {
         }
 
       }else{
+        this.damageList = [];
         this.getUpAnimationPlayed = false;
         if(this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING){
           this.animState = ModuleCreature.AnimState.DEAD;
@@ -291,50 +311,33 @@ class ModuleCreatureController extends ModuleObject {
               }
             }
 
-            if(this.model){
+            if(!this.action.started){
 
-              let _animShouldChange = false;
-              let _anim = this.getAnimationNameById(this.action.animation).toLowerCase();
+              if(this.model){
 
-              if(this.model.animationManager.currentAnimation instanceof AuroraModelAnimation){
-                if(this.model.animationManager.currentAnimation.name.toLowerCase() != _anim){
-                  _animShouldChange = true;
+                if(this.action.animation){
+                  this.animState = ModuleCreature.AnimState.ANIMATING;
                 }
-              }else{
-                _animShouldChange = true;
-              }
 
-              if(_anim){
-                this.animState = ModuleCreature.AnimState.ANIMATING;
-              }
-
-              if(_animShouldChange){
-                let _newAnim = this.model.getAnimationByName(_anim);
-                if(_newAnim instanceof AuroraModelAnimation){
+                if(this.action.animation instanceof AuroraModelAnimation){
                   if(this.action.time == -1){
-                    this.model.playAnimation(_newAnim, true, () => {
-                      //this.actionQueue.shift()
-                    });
-                    this.actionQueue.shift();
+                    this.model.playAnimation(this.action.animation.name, true);
+                    this.action.started = true;
                   }else{
-                    this.model.playAnimation(_newAnim, false, () => {
-                      //Kill the action after the animation ends
-                      //this.actionQueue.shift()
-                    })
+                    this.model.playAnimation(this.action.animation.name, false);
+                    this.action.started = true;
                   }
-                  this.actionQueue.shift();
+                  //this.actionQueue.shift();
                 }else{
                   //console.log('Animation Missing', this.action.animation)
                   //Kill the action if the animation isn't found
                   this.actionQueue.shift();
                 }
-              }else{
-                //this.actionQueue.shift();
-              }
 
-            }else{
-              //Kill the action if there is no model to animate?
-              this.actionQueue.shift()
+              }else{
+                //Kill the action if there is no model to animate?
+                this.actionQueue.shift()
+              }
             }
 
           }else{
@@ -660,6 +663,12 @@ class ModuleCreatureController extends ModuleObject {
 
     if(this.isDead())
       return true;
+
+    if(this.room instanceof ModuleRoom){
+      if(!this.room.model.visible){
+        return;
+      }
+    }
 
     if(this.perceptionTimer < 1){
       this.perceptionTimer += 1 * delta;
@@ -1401,15 +1410,20 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  damage(amount = 0, oAttacker = undefined){
-    this.subtractHP(amount);
+  damage(amount = 0, oAttacker = undefined, delayTime = 0){
+    if(delayTime){
+      this.damageList.push({amount: amount, delay: delayTime});
+    }else{
+      this.subtractHP(amount);
+    }
     this.lastDamager = oAttacker;
     this.lastAttacker = oAttacker;
 
-    if(this.lastAttackTarget == undefined || this.lastAttackTarget.isDead())
+    if(this.lastAttackTarget == undefined || (this.lastAttackTarget instanceof ModuleObject && this.lastAttackTarget.isDead()))
       this.lastAttackTarget = oAttacker;
 
-    this.onDamaged();
+    if(typeof oAttacker != 'undefined')
+      this.onDamaged();
   }
 
   onCombatRoundEnd(){
@@ -1621,6 +1635,7 @@ class ModuleCreatureController extends ModuleObject {
     if(this.isDead()){
       this.excitedDuration = 0;
       this.cancelCombat();
+      this.weaponPowered(false);
     }
 
     if(this.excitedDuration > 0){
@@ -1631,7 +1646,12 @@ class ModuleCreatureController extends ModuleObject {
     if(this.excitedDuration <= 0){
       this.combatState = false;
       this.excitedDuration = 0;
+      this.weaponPowered(false);
     }
+  }
+
+  isDueling(){
+    return (this.lastAttackTarget?.lastAttackTarget == this && this.lastAttackTarget?.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
   }
 
   attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null, attackResult = undefined){
@@ -1801,20 +1821,27 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   //Queue an animation to the actionQueue array
-  actionPlayAnimation(anim = '', loop = false){
-    this.actionQueue.push({ 
-      goal: ModuleCreature.ACTION.ANIMATE,
-      animation: anim,
-      speed: 1,
-      time: loop ? -1 : 0
-    });
+  actionPlayAnimation(anim = '', loop = false, speed = 1){
+    
+    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
+    let animation = this.model.getAnimationByName(_anim);
+    if(animation){
+      this.actionQueue.push({ 
+        goal: ModuleCreature.ACTION.ANIMATE,
+        animation: animation,
+        speed: speed || 1,
+        time: loop ? -1 : animation.length
+      });
+    }else{
+      console.warn('actionPlayAnimation', animation);
+    }
   }
 
-  dialogPlayAnimation(anim = '', loop = false){
+  dialogPlayAnimation(anim = '', loop = false, speed = 1){
     this.dialogAnimation = { 
       //goal: ModuleCreature.ACTION.ANIMATE,
       animation: anim,
-      speed: 1,
+      speed: speed || 1,
       time: loop ? -1 : 0
     };
     /*let currentAction = this.actionQueue[0];
@@ -2102,7 +2129,7 @@ class ModuleCreatureController extends ModuleObject {
     let cWeapon3 = this.equipment.CLAW3;
     let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
 
-    if(cWeapon1 || cWeapon2 || cWeapon3){
+    if(cWeapon1 || cWeapon2 || cWeapon3 || this.isSimpleCreature()){
       return 0;
     }
 
@@ -2610,44 +2637,32 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   flourish(){
-
-    let currentAnimation = this.model.getAnimationName();
-    let modeltype = this.getAppearance().modeltype;
-    
-    let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
-
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
+    this.resetExcitedDuration();
     let isSimple = this.isSimpleCreature();
-
     let weaponType = this.getCombatAnimationWeaponType();
     
     if(!isSimple){
-      
       if(weaponType){
         this.clearAllActions();
         this.actionPlayAnimation('g'+weaponType+'w1');
-        //this.actionPlayAnimation('g'+weaponType+'r1');
-        this.combatState = true;
         this.weaponPowered(true);
       }
-
     }
-
   }
 
   weaponPowered(on = false){
 
-    let modeltype = this.getAppearance().modeltype;
-    let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
+    let weaponType = this.getCombatAnimationWeaponType();
+    let isSimple = this.isSimpleCreature();
+    if(isSimple || !weaponType)
+      return;
+
+    //let modeltype = this.getAppearance().modeltype;
+    //let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
 
     let lWeapon = this.equipment.LEFTHAND;
     let rWeapon = this.equipment.RIGHTHAND;
-    let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
-    let isSimple = this.isSimpleCreature();
-
-    let weaponType = this.getCombatAnimationWeaponType();
+    //let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
     
     if(!isSimple){
 
