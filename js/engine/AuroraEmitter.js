@@ -177,6 +177,10 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
     let birthed = false;
 
+    let firstLink = undefined;
+    let lastLink = undefined;
+    let finalLink = undefined;
+
     for(let i = 0; i < spawnableParticleCount; i++){
 
       if(this.node.Render == 'Linked'){
@@ -185,10 +189,19 @@ THREE.AuroraEmitter = function ( auroraNode ) {
         let maxAge = this.props.getY(i * attrPerVertex) || this.lifeExp;
         let alive = this.props.getZ(i * attrPerVertex) == 1;
 
-        if(i < this.maxParticleCount){
+        if(i < spawnableParticleCount){
 
           if(alive){
+            lastLink = i;
+            if(!firstLink){
+              firstLink = i;
+            }
+
             if(age >= maxAge){
+              if(!finalLink){
+                finalLink = i;
+              }
+
               age = 0;
               //mark particle as alive
               this.props.setZ(i*attrPerVertex, 1);
@@ -314,6 +327,18 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
     }
 
+    
+
+    if(this.node.Render == 'Linked'){
+      for(let i = 0; i < this.maxParticleCount; i++){
+        if(i >= this.particleIndex){
+          this.offsets.setX(i, this.offsets.getX(this.particleIndex-1 || 0));
+          this.offsets.setY(i, this.offsets.getY(this.particleIndex-1 || 0));
+          this.offsets.setZ(i, this.offsets.getZ(this.particleIndex-1 || 0));
+        }
+      }
+    }
+
     if(this.node.Render == "Aligned_to_Particle_Dir"){
       this.material.uniforms.matrix.value.copy(this.parent.matrix);
       this.material.uniforms.matrix.value.setPosition(0, 0, 0);
@@ -342,6 +367,12 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
     this.sortParticles();
 
+  };
+
+  this.setReferenceNode = function( referenceNode = undefined ){
+    if(referenceNode instanceof THREE.Object3D){
+      this.referenceNode = referenceNode;
+    }
   };
 
   this.tickLightning = function(delta){
@@ -376,8 +407,8 @@ THREE.AuroraEmitter = function ( auroraNode ) {
       for(let iy = 0; iy < lightningZigZag; iy++){
         let percentage = iy/lightningZigZag;
         let x = start.x + ( (target.x - start.x) * percentage);
-        let y = start.y + ( (target.z - start.z) * percentage);
-        let z = start.z + ( (target.y - start.y) * percentage);
+        let y = start.y - ( (target.y - start.y) * percentage);
+        let z = start.z + ( (target.z - start.z) * percentage);
 
         if(iy){
           x = this.randomFloat(x, spread);
@@ -389,8 +420,21 @@ THREE.AuroraEmitter = function ( auroraNode ) {
           z = this.randomFloat(z, this.lightningRadius);
         }
 
-        for ( ix = 0; ix < 2; ix ++ ) {
+        /* 
+          //FORCE STORM like up and then spread
+          let t = (iy / lightningZigZag);
+          t = t*t*t;
 
+          if(iy == 0 || iy == 1){
+            if(iy == 1){
+              z += 0.5;
+            }
+          }else {
+            z += 1 * (1 - t);
+          }
+        */
+
+        for ( ix = 0; ix < 2; ix ++ ) {
 
           //let x = (ix * xStep) * scale - half_scale;
           let xO = scale/2;
@@ -420,21 +464,16 @@ THREE.AuroraEmitter = function ( auroraNode ) {
 
         // indices
         for(let iy = 0; iy < lightningZigZag-1; iy++){
-
           for ( ix = 0; ix < 1; ix ++ ) {
-
             let a = ix + gridX1 * iy;
             let b = ix + gridX1 * ( iy + 1 );
             let c = ( ix + 1 ) + gridX1 * ( iy + 1 );
             let d = ( ix + 1 ) + gridX1 * iy;
 
             // faces
-
             indices.push( a, b, d );
             indices.push( b, c, d );
-
           }
-
         }
 
         // build geometry
