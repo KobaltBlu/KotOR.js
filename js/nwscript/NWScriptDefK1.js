@@ -1821,7 +1821,10 @@ NWScriptDefK1.Actions = {
     comment: "169: Do a Force Resistance check between oSource and oTarget, returning TRUE if\nthe force was resisted.\n* Return value if oSource or oTarget is an invalid object: FALSE\n",
     name: "ResistForce",
     type: 3,
-    args: ["object", "object"]
+    args: ["object", "object"],
+    action: function(args, _instr, action){
+      return args[1].resistForce(args[0]);
+    }
   },
   170:{
     comment: "170: Get the effect type (EFFECT_TYPE_*) of eEffect.\n* Return value if eEffect is invalid: EFFECT_INVALIDEFFECT\n",
@@ -3879,7 +3882,10 @@ NWScriptDefK1.Actions = {
     comment: "366:  displays a feed back string for the object spicified and the constant\nrepersents the string to be displayed see:FeedBackText.2da\n",
     name: "DisplayFeedBackText",
     type: 0,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      //TODO
+    }
   },
   367:{
     comment: "367: Add a journal quest entry to the player.\n- szPlotID: the plot identifier used in the toolset's Journal Editor\n- nState: the state of the plot as seen in the toolset's Journal Editor\n- bAllowOverrideHigher: If this is TRUE, you can set the state to a lower\nnumber than the one it is currently on\n",
@@ -5341,9 +5347,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      //console.log('GetFirstPC', Game.player)
       this._pcIdx = 0;
-      return PartyManager.party[this._pcIdx];
+      //I believe GetFirstPC should only ever return the player, because partymember do not get added to the modules player list.
+      return Game.player;//PartyManager.party[this._pcIdx];
     }
   },
   549:{
@@ -5352,8 +5358,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      this._pcIdx++;
-      return PartyManager.party[this._pcIdx];
+      //this._pcIdx++;
+      //I believe GetNextPC should only ever return undefined, because partymember do not get added to the modules player list. And there is only one player
+      return undefined;//PartyManager.party[this._pcIdx];
     }
   },
   550:{

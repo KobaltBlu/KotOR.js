@@ -394,7 +394,7 @@ class ModuleCreature extends ModuleCreatureController {
     this.weaponPowered(false);
     if(this.scripts.onDeath instanceof NWScriptInstance){
       let instance = this.scripts.onDeath.nwscript.newInstance();
-      instance.onDeath.run(this);
+      instance.run(this);
     }
   }
 
@@ -498,6 +498,16 @@ class ModuleCreature extends ModuleCreatureController {
 
   isDebilitated(){
     return this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isHorrified();
+  }
+
+  resistForce(oCaster = undefined){
+    if(oCaster instanceof ModuleCreature){
+      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //1d20 + their level vs. a DC of your level plus 10
+      let roll = CombatEngine.Roll(1, 'd20', this.getTotalClassLevel());
+      return (roll > 10 + oCaster.getTotalClassLevel());
+    }
+    return 0;
   }
 
   setCommadable(bCommandable = 0){
