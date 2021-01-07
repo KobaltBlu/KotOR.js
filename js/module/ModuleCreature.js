@@ -69,7 +69,7 @@ class ModuleCreature extends ModuleCreatureController {
     this.con = 0;
     this.conversation = '';
     this.currentForce = 0;
-    this.currentHitPoints = 0;
+    this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.deity = '';
     this.description = '';
     this.dec = 0;
@@ -101,12 +101,12 @@ class ModuleCreature extends ModuleCreatureController {
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
-    this.hitPoints = 0;
+    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.    
     this.int = 0;
     this.interruptable = 1;
     this.isPC = 0;
     this.lastName = '';
-    this.maxHitPoints = 0;
+    this.maxHitPoints = 0; //Maximum Hit Points, after considering all bonuses and penalties.
     this.min1HP = 0;
     this.naturalAC = 0;
     this.noPermDeath = 0;
@@ -366,6 +366,82 @@ class ModuleCreature extends ModuleCreatureController {
     
   }
 
+  //---------------//
+  // SCRIPT EVENTS
+  //---------------//
+
+  onCombatRoundEnd(){
+    //Check to see if the current combatAction is running a TalentObject
+    if(this.combatAction && (this.combatAction.spell instanceof TalentObject)){
+      //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
+    }
+    
+    this.combatAction = undefined;
+
+    if(this.lastAttemptedAttackTarget instanceof ModuleObject && this.lastAttemptedAttackTarget.isDead())
+      this.lastAttemptedAttackTarget = undefined;
+
+    if(this.isDead() || !this.combatState)
+      return true;
+
+    if(this.scripts.onEndRound instanceof NWScriptInstance){
+      let instance = this.scripts.onEndRound.nwscript.newInstance();
+      instance.run(this);
+    }
+  }
+
+  onDeath(){
+    this.weaponPowered(false);
+    if(this.scripts.onDeath instanceof NWScriptInstance){
+      let instance = this.scripts.onDeath.nwscript.newInstance();
+      instance.onDeath.run(this);
+    }
+  }
+
+  onDialog(oSpeaker = undefined, listenPatternNumber = -1){
+    if(this.scripts.onDialog instanceof NWScriptInstance){
+      let instance = this.scripts.onDialog.nwscript.newInstance();
+      instance.listenPatternNumber = listenPatternNumber;
+      instance.listenPatternSpeaker = oSpeaker;
+      instance.run(this, 0);
+      return true;
+    }
+  }
+
+  onAttacked(){
+    CombatEngine.AddCombatant(this);
+    if(this.scripts.onAttacked instanceof NWScriptInstance){
+      let instance = this.scripts.onAttacked.nwscript.newInstance();
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
+      instance.run(this, script_num);
+    }
+  }
+
+  onDamaged(){
+    if(this.isDead())
+      return true;
+
+    this.resetExcitedDuration();
+    CombatEngine.AddCombatant(this);
+    
+    if(this.scripts.onDamaged instanceof NWScriptInstance){
+      let instance = this.scripts.onDamaged.nwscript.newInstance();
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+      instance.run(this, script_num);
+    }
+  }
+
+  onBlocked(){
+    if(this == Game.getCurrentPlayer())
+      return;
+
+    if(this.scripts.onBlocked instanceof NWScriptInstance){
+      let instance = this.scripts.onBlocked.nwscript.newInstance();
+      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
+      instance.run(this, script_num);
+    }
+  }
+
   
 
   use(object = null){
@@ -586,9 +662,6 @@ class ModuleCreature extends ModuleCreatureController {
   setHP(nAmount = 0){
     let bonus = this.maxHitPoints - this.hitPoints;
     this.currentHitPoints = nAmount - bonus;
-
-    //if(this.min1HP && this.getHP() < 1)
-    //  this.setHP(1);
   }
 
   addHP(nAmount = 0, ignoreMaxHitPoints = false){

@@ -1065,8 +1065,6 @@ class Game extends Engine {
 
               let runSpawnScripts = !Game.isLoadingSave;
               Game.isLoadingSave = false;
-
-              Game.player.scripts.onDialog.debug.action = true;
               
               AudioEngine.Unmute();
               //Game.InGameDialog.audioEmitter = undefined

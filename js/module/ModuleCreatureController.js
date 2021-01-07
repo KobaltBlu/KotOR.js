@@ -522,8 +522,7 @@ class ModuleCreatureController extends ModuleObject {
               
               if(this.scripts.onDialog instanceof NWScriptInstance){
                 this.heardStrings = [];
-                this.onDialog(this.action.object, -1, () => {
-                });
+                this.onDialog(this.action.object, -1);
                 this.actionQueue.shift();
               }else{
                 Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
@@ -649,11 +648,7 @@ class ModuleCreatureController extends ModuleObject {
           }
 
           this.heardStrings.shift();
-          this.onDialog(str.speaker, pattern, () => {
-            if(this == Game.player){
-              //console.log('Hearing: Done', str.speaker, pattern);
-            }
-          });
+          this.onDialog(str.speaker, pattern);
         }
       }
     }
@@ -1424,112 +1419,6 @@ class ModuleCreatureController extends ModuleObject {
 
     if(typeof oAttacker != 'undefined')
       this.onDamaged();
-  }
-
-  onCombatRoundEnd(){
-
-    //Check to see if the current combatAction is running a TalentObject
-    if(this.combatAction && (this.combatAction.spell instanceof TalentObject)){
-      //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
-    }
-    
-    this.combatAction = undefined;
-
-    if(this.lastAttemptedAttackTarget instanceof ModuleObject && this.lastAttemptedAttackTarget.isDead())
-      this.lastAttemptedAttackTarget = undefined;
-
-    if(this.isDead() || !this.combatState)
-      return true;
-
-    if(this.scripts.onEndRound instanceof NWScriptInstance){
-      let instance = this.scripts.onEndRound.nwscript.newInstance();
-      instance.run(this);
-    }
-
-  }
-
-  onDeath(){
-    this.weaponPowered(false);
-    if(this.scripts.onDeath instanceof NWScriptInstance){
-      this.scripts.onDeath.run(this);
-    }
-  }
-
-  onDialog(oSpeaker = undefined, listenPatternNumber = -1, callback = null){
-    if(this.scripts.onDialog instanceof NWScriptInstance){// && !this.scripts.onDialog.running){
-      let instance = this.scripts.onDialog.nwscript.newInstance();
-      //instance.running = true;
-      instance.listenPatternNumber = listenPatternNumber;
-      instance.listenPatternSpeaker = oSpeaker;
-      //instance.debug['action'] = false;
-      instance.run(this, 0, () => {
-        //this.scripts.onDialog.running = false;
-        if(typeof callback === 'function')
-          callback();
-      });
-      return true;
-    }else if(typeof callback === 'function'){
-      callback();
-      return false;
-    }
-  }
-
-  onAttacked(callback = null){
-    CombatEngine.AddCombatant(this);
-    if(this.scripts.onAttacked instanceof NWScriptInstance){
-      let instance = this.scripts.onAttacked.nwscript.newInstance();
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
-      //console.log('onAttacked');
-      instance.running = true;
-      instance.debug['action'] = false;
-      instance.run(this, script_num, () => {
-        if(typeof callback === 'function')
-          callback();
-      });
-    }else if(typeof callback === 'function'){
-      callback();
-    }
-  }
-
-  onDamaged(callback = null){
-    if(this.isDead())
-      return true;
-
-    this.resetExcitedDuration();
-
-    CombatEngine.AddCombatant(this);
-    
-    if(this.scripts.onDamaged instanceof NWScriptInstance){
-      let instance = this.scripts.onDamaged.nwscript.newInstance();
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
-      //console.log('onDamaged');
-      //this.scripts.onDamaged.running = true;
-      instance.debug['action'] = false;
-      instance.run(this, script_num, () => {
-        if(typeof callback === 'function')
-          callback();
-      });
-    }else if(typeof callback === 'function'){
-      callback();
-    }
-  }
-
-  onBlocked(callback = null){
-
-    if(this == Game.getCurrentPlayer())
-      return;
-
-    if(this.scripts.onBlocked instanceof NWScriptInstance && !this.scripts.onBlocked.running){
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
-      this.scripts.onBlocked.running = true;
-      this.scripts.onBlocked.run(this, script_num, () => {
-        this.scripts.onBlocked.running = false;
-        if(typeof callback === 'function')
-          callback();
-      });
-    }else if(typeof callback === 'function'){
-      callback();
-    }
   }
 
   canMove(){
