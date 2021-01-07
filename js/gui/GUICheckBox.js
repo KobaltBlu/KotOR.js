@@ -415,20 +415,22 @@ class GUICheckBox extends GUIControl{
 
   onINIPropertyAttached(){
     if(this.iniProperty)
-      this.setValue(this.iniProperty.value);
+      this.setValue(iniConfig.getProperty(this.iniProperty));
   }
 
   setValue(value = 0){
 
     this.value = value ? 1 : 0;
 
-    if(this.iniProperty)
-      this.iniProperty.value = this.value;
+    if(this.iniProperty){
+      iniConfig.setProperty(this.iniProperty, this.value);
+    }
     
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 
     this.updateCBVisualState();
+    
   }
 
 }

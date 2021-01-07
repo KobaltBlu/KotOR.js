@@ -1385,7 +1385,7 @@ class ModuleArea extends ModuleObject {
       side: THREE.DoubleSide,
       transparent: false,
       fog: true,
-      visible: iniConfig.getProperty('Graphics Options.Grass').value,
+      visible: iniConfig.getProperty('Graphics Options.Grass'),
       //blending: 5
     });
 

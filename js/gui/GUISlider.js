@@ -93,7 +93,7 @@ class GUISlider extends GUIControl{
 
   onINIPropertyAttached(){
     if(this.iniProperty)
-      this.setValue(this.iniProperty.value * .01);
+      this.setValue(iniConfig.getProperty(this.iniProperty) * .01);
   }
 
   mouseInside(){
@@ -118,8 +118,9 @@ class GUISlider extends GUIControl{
     let valueChanged = (scrollX != this.value);
     this.value = scrollX;
 
-    if(this.iniProperty)
-      this.iniProperty.value = parseInt(this.value * 100);
+    if(this.iniProperty){
+      iniConfig.setProperty(this.iniProperty, parseInt(this.value * 100));
+    }
 
     if(valueChanged && typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
@@ -134,8 +135,9 @@ class GUISlider extends GUIControl{
     let thumbX = (maxWidth * value) - threshold;
     this.thumb.mesh.position.x = thumbX;
 
-    if(this.iniProperty)
-      this.iniProperty.value = parseInt(this.value * 100);
+    if(this.iniProperty){
+      iniConfig.setProperty(this.iniProperty, parseInt(this.value * 100));
+    }
     
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);

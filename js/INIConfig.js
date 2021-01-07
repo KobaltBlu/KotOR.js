@@ -1,128 +1,103 @@
 class INIConfig {
 
-  constructor( ini_path = null ){
+  constructor( ini_path = null, defaults = {} ){
     this.ini_path = ini_path;
-    let ini_text = fs.readFileSync(this.ini_path).toString('utf8');
-    let lines = ini_text.split(/\r?\n/);
-
+    this.defaults = defaults;
+    this.options = {};
     this.nodes = [];
-    this.current_section = null;
+    try{
+      let ini_text = fs.readFileSync(this.ini_path).toString('utf8');
+      let lines = ini_text.split(/\r?\n/);
 
-    for(let i = 0, len = lines.length; i < len; i++){
-      let line = lines[i].trim();
-      if( !line.length ){
-        /*if(this.current_section){
-          this.current_section.nodes.push({
-            type: 'newline'
-          });
-          this.current_section = null;
+      this.current_section = null;
+
+      for(let i = 0, len = lines.length; i < len; i++){
+        let line = lines[i].trim();
+        if( !line.length ){
+
         }else{
-          this.nodes.push({
-            type: 'newline'
-          });
-        }*/
-      }else{
-        let section = line.match(/^\[(.*)\]$/);
-        let property = line.split('=');
-        if(section != null && section.length){
-          this.current_section = {
-            type: 'section', 
-            name: section[1], 
-            nodes: []
-          };
-          this.nodes.push(this.current_section);
-        }else if(property.length){
+          let section = line.match(/^\[(.*)\]$/);
+          let property = line.split('=');
+          if(section != null && section.length){
+            this.current_section = section[1];
+            this.options[section[1]] = {};
+          }else if(property.length){
 
-          let name = property.shift();
-          let value = property.join('=');
+            let name = property.shift();
+            let value = property.join('=');
 
-          try{
-            value = JSON.parse(value.toString());
-          }catch(e){
-            value = value.toString();
-          }
+            try{
+              value = JSON.parse(value.toString());
+            }catch(e){
+              value = value.toString();
+            }
 
-          if(this.current_section){
-            this.current_section.nodes.push({
-              type: 'property', 
-              name: name,
-              value: value
-            });
-          }else{
-            this.nodes.push({
-              type: 'property', 
-              name: name,
-              value: value
-            });
-          }
-        }
-      }
-    }
-
-  }
-
-  getProperty(key = ''){
-
-    let parts = key.split('.');
-    if(parts.length == 1){
-      for(let i = 0, len = this.nodes.length; i < len; i++){
-        let node = this.nodes[i];
-        if(node.type == 'property' && node.name === parts[0]){
-          return node;
-        }
-      }
-    }else if(parts.length == 2){
-      for(let i = 0, len = this.nodes.length; i < len; i++){
-        let section = this.nodes[i];
-        if(section.type == 'section' && section.name === parts[0]){
-          for(let j = 0, j_len = section.nodes.length; j < j_len; j++){
-            let node = section.nodes[j];
-            if(node.type == 'property' && node.name === parts[1]){
-              return node;
+            if(this.current_section){
+              this.options[this.current_section][name] = value;
+            }else{
+              this.options[name] = value;
             }
           }
         }
       }
+    }catch(e){
+
     }
 
-    return null;
+    this.options = Object.assign(this.defaults, this.options);
 
   }
 
-  setProperty(key = '', value = ''){
-    let property = this.getProperty(key);
-    if(property){
-      property.value = value.toString();
+  getProperty(key, value) {
+    //https://stackoverflow.com/a/20424385
+    var parts = key.split('.');
+    var o = this.options;
+    if (parts.length > 1) {
+      for (var i = 0; i < parts.length - 1; i++) {
+          if (!o[parts[i]])
+              o[parts[i]] = {};
+          o = o[parts[i]];
+      }
     }
+
+    return o[parts[parts.length - 1]];
+  }
+
+  setProperty(key, value) {
+    //https://stackoverflow.com/a/20424385
+    var parts = key.split('.');
+    var o = this.options;
+    if (parts.length > 1) {
+      for (var i = 0; i < parts.length - 1; i++) {
+          if (!o[parts[i]])
+              o[parts[i]] = {};
+          o = o[parts[i]];
+      }
+    }
+
+    o[parts[parts.length - 1]] = value;
   }
 
   toString(){
     let string = '';
-    for(let i = 0, len = this.nodes.length; i < len; i++){
-      string += this.toStringNodeWalker(this.nodes[i]);
+    let keys = Object.keys(this.options);
+    for(let i = 0, len = keys.length; i < len; i++){
+      string += this.toStringNodeWalker(keys[i], this.options[keys[i]]);
     }
     return '\r\n'+string;
   }
 
-  toStringNodeWalker(node = null){
-
-    if(typeof node == 'object' && typeof node.type === 'string'){
-      switch(node.type){
-        case 'newline':
-          return '\r\n';
-        case 'section':
-          let string = '['+node.name+']\r\n';
-          for(let i = 0, len = node.nodes.length; i < len; i++){
-            string += this.toStringNodeWalker(node.nodes[i]);
-          }
-          return string+'\r\n';
-        case 'property':
-          return node.name+'='+node.value+'\r\n';
+  toStringNodeWalker(key = '', value = ''){
+    if(typeof value == 'object'){
+      let string = '['+key+']\r\n';
+      let keys = Object.keys(value);
+      for(let i = 0, len = keys.length; i < len; i++){
+        string += this.toStringNodeWalker(keys[i], value[keys[i]]);
       }
+      return string+'\r\n';
+    }else{
+      return key+'='+value+'\r\n';
     }
-
-    return '';
-
   }
 
   save( onSave = null ){
@@ -136,7 +111,7 @@ class INIConfig {
       if(typeof onSave === 'function')
         onSave();
 
-    }); 
+    });
   }
 
 }

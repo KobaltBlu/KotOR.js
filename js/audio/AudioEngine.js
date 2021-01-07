@@ -71,7 +71,7 @@ class AudioEngine {
 
     let software_mode = false;
 
-    if(iniConfig.getProperty('Sound Options.Force Software').value == 1){
+    if(iniConfig.getProperty('Sound Options.Force Software') == 1){
       software_mode = true;
       console.warn('SetReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
     }

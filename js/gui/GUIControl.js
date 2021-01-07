@@ -2026,8 +2026,8 @@ class GUIControl {
     //Stub
   }
 
-  attachINIProperty(key=''){
-    let property = iniConfig.getProperty(key);
+  attachINIProperty(key = ''){
+    let property = key;
     if(property){
       this.iniProperty = property;
       this.onINIPropertyAttached();

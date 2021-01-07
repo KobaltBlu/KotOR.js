@@ -37,6 +37,7 @@ function pad(n, width, z) {
 }
 
 /* NodeJS Libraries */
+const isMac = process.platform === 'darwin';
 const remote = require('electron').remote;
 const app = remote.app;
 app.allowRendererProcessReuse = false;
@@ -338,7 +339,8 @@ if(GameKey == 'TSL'){
     global[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/tsl/menu/', menuPath.base)); 
   }
   
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
+  const configDefaults = require(path.join(app.getAppPath(), 'js/game/tsl/swkotor2-config.js'));
+  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'), configDefaults);
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
 
 }else{
@@ -349,18 +351,19 @@ if(GameKey == 'TSL'){
     global[menuPath.name] = require(path.join(app.getAppPath(), 'js/game/kotor/menu/', menuPath.base)); 
   }
 
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'))
+  const configDefaults = require(path.join(app.getAppPath(), 'js/game/kotor/swkotor-config.js'));
+  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'), configDefaults)
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
 
 }
 
-TextureLoader.Anisotropy = iniConfig.getProperty('Graphics Options.Anisotropy').value;
+TextureLoader.Anisotropy = iniConfig.getProperty('Graphics Options.Anisotropy');
 TextureLoader.onAnisotropyChanged();
 
-AudioEngine.GAIN_MUSIC = iniConfig.getProperty('Sound Options.Music Volume').value * .01;
-AudioEngine.GAIN_VO = iniConfig.getProperty('Sound Options.Voiceover Volume').value * .01;
-AudioEngine.GAIN_SFX = iniConfig.getProperty('Sound Options.Sound Effects Volume').value * .01;
-AudioEngine.GAIN_MOVIE = iniConfig.getProperty('Sound Options.Movie Volume').value * .01;
+AudioEngine.GAIN_MUSIC = iniConfig.getProperty('Sound Options.Music Volume') * .01;
+AudioEngine.GAIN_VO = iniConfig.getProperty('Sound Options.Voiceover Volume') * .01;
+AudioEngine.GAIN_SFX = iniConfig.getProperty('Sound Options.Sound Effects Volume') * .01;
+AudioEngine.GAIN_MOVIE = iniConfig.getProperty('Sound Options.Movie Volume') * .01;
 
 const ModelCache = { models:{} };
 

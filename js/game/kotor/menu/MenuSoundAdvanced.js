@@ -31,7 +31,7 @@ class MenuSoundAdvanced extends GameMenu {
         this.CB_FORCESOFTWARE.attachINIProperty('Sound Options.Force Software');
         this.CB_FORCESOFTWARE.onValueChanged = () => {
           console.log('CB_FORCESOFTWARE', 'onValueChanged');
-          if(iniConfig.getProperty('Sound Options.Force Software').value == 1){
+          if(iniConfig.getProperty('Sound Options.Force Software') == 1){
             Game.audioEngine.SetReverbState(false);
           }else{
             Game.audioEngine.SetReverbState(true);
