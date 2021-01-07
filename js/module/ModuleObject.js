@@ -236,6 +236,23 @@ class ModuleObject {
 
   }
 
+  //Queue an animation to the actionQueue array
+  actionPlayAnimation(anim = '', loop = false, speed = 1){
+    
+    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
+    let animation = this.model.getAnimationByName(_anim);
+    if(animation){
+      this.actionQueue.push({ 
+        goal: ModuleCreature.ACTION.ANIMATE,
+        animation: animation,
+        speed: speed || 1,
+        time: loop ? -1 : animation.length
+      });
+    }else{
+      console.warn('actionPlayAnimation', animation);
+    }
+  }
+
   getAnimationNameById(id=-1){
     if(typeof id === 'string'){
       return id;
