@@ -518,17 +518,30 @@ class ModuleCreatureController extends ModuleObject {
               this.action.object._conversation = this.action.conversation;
               this._conversation = this.action.conversation;
 
-              //console.log('_converstation', this.action.conversation);
-              
-              if(this.scripts.onDialog instanceof NWScriptInstance){
-                this.heardStrings = [];
-                this.onDialog(this.action.object, -1);
-                this.actionQueue.shift();
-              }else{
-                Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
-                this.actionQueue.shift();
+              let caller = this;
+              let target = this.action.object;
+
+              //If a partymember is trying to start the convo then swap to the player
+              if(this != Game.player && PartyManager.party.indexOf(this) >= 0){
+                let pPos = Game.player.position;
+                let cPos = this.position;
+                
+                Game.player.position.copy(cPos);
+                this.position.copy(pPos);
+                Game.player.updateCollision(delta);
+                this.updateCollision(delta);
+                caller = Game.player;
+                target = this;
               }
-              
+
+              this.heardStrings = [];
+              caller.heardStrings = [];
+              if(caller.scripts.onDialog instanceof NWScriptInstance){
+                caller.onDialog(target, -1);
+              }else{
+                Game.InGameDialog.StartConversation(this.action.conversation, target, caller);
+              }
+              this.actionQueue.shift();
             }
           }else{
             console.log('Already in dialog', this.action);
@@ -1520,6 +1533,10 @@ class ModuleCreatureController extends ModuleObject {
     this.excitedDuration = 10000;
   }
 
+  cancelExcitedDuration(){
+    this.excitedDuration = 0;
+  }
+
   updateExcitedDuration(delta = 0){
     if(this.isDead()){
       this.excitedDuration = 0;
@@ -1709,23 +1726,6 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  //Queue an animation to the actionQueue array
-  actionPlayAnimation(anim = '', loop = false, speed = 1){
-    
-    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
-    let animation = this.model.getAnimationByName(_anim);
-    if(animation){
-      this.actionQueue.push({ 
-        goal: ModuleCreature.ACTION.ANIMATE,
-        animation: animation,
-        speed: speed || 1,
-        time: loop ? -1 : animation.length
-      });
-    }else{
-      console.warn('actionPlayAnimation', animation);
-    }
-  }
-
   dialogPlayAnimation(anim = '', loop = false, speed = 1){
     this.dialogAnimation = { 
       //goal: ModuleCreature.ACTION.ANIMATE,
@@ -1779,6 +1779,7 @@ class ModuleCreatureController extends ModuleObject {
   cancelCombat(){
     this.clearTarget();
     this.combatState = false;
+    this.cancelExcitedDuration();
   }
 
   getDamageAnimation( attackAnim = undefined ){
