@@ -6888,16 +6888,15 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "int"],
     action: function(args, _instr, action){
-      //if(Game.Mode == Game.MODES.INGAME){
-        try{
-          //console.log('PlayRoomAnimation', args[0], args[1]);
-          Game.group.rooms.getObjectByName(
-            args[0].toLowerCase()
-          ).playAnimation(
-            'scriptloop'+pad(args[1], 2)
-          );
-        }catch(e){ console.error(e); }
-      //}
+      for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
+        let room = Game.module.area.rooms[i];
+        if(room.roomName.toLowerCase() == args[0].toLowerCase()){
+          if(room.model){
+            room.model.playAnimation( 'scriptloop'+pad(args[1], 2) );
+          }
+          break;
+        }
+      }
     }
   },
   739:{
