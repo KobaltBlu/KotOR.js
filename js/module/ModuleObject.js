@@ -603,7 +603,10 @@ class ModuleObject {
 
   getCurrentRoom(){
     this.room = undefined;
-    let smallest = Infinity;
+    let aabbFaces = [];
+    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+    let box = this.model.box.clone();
 
     this.rooms = [];
     for(let i = 0; i < Game.module.area.rooms.length; i++){
@@ -613,16 +616,45 @@ class ModuleObject {
         let pos = this.position.clone();
         if(model.box.containsPoint(pos)){
           this.rooms.push(i);
+        }
+      }
+    }
 
-          room.model.box.getSize(this.roomSize);
-          if(this.roomSize.length() < smallest){
-            this.room = room;
-            smallest = this.roomSize.length();
-          }
+    if(box){
+      for(let j = 0, jl = this.rooms.length; j < jl; j++){
+        let room = Game.module.area.rooms[this.rooms[j]];
+        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+          aabbFaces.push({
+            object: room, 
+            faces: room.walkmesh.getAABBCollisionFaces(box)
+          });
         }
       }
     }
     
+    let scratchVec3 = new THREE.Vector3(0, 0, 2);
+    let playerFeetRay = this.position.clone().add(scratchVec3);
+    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+    Game.raycaster.ray.direction.set(0, 0,-1);
+    
+    for(let j = 0, jl = aabbFaces.length; j < jl; j++){
+      let castableFaces = aabbFaces[j];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      
+      if(intersects.length){
+        if(this == Game.player){
+          //console.log(intersects);
+        }
+        if(intersects[0].object.moduleObject){
+          this.room = intersects[0].object.moduleObject;
+          return;
+        }
+      }
+    }
+    if(this.rooms.length){
+      this.room = Game.module.area.rooms[this.rooms[0]];
+      return;
+    }
   }
 
   getCameraHeight(){
