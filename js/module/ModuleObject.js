@@ -39,6 +39,7 @@ class ModuleObject {
     this.invalidateCollision = false;
     this.room = undefined;
     this.rooms = [];
+    this.roomSize = new THREE.Vector3();
     this.model = null;
     this.dialogAnimation = null;
     this.template = undefined;
@@ -253,15 +254,19 @@ class ModuleObject {
     }
   }
 
-  getAnimationNameById(id=-1){
+  isSimpleCreature(){
+    return false;
+  }
+
+  getAnimationNameById(id = -1){
     if(typeof id === 'string'){
       return id;
     }else{
       switch(id){
         case 0:  //PAUSE
-          return 'pause';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
         case 1:  //PAUSE2
-          return 'pause2';
+          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
         case 2:  //LISTEN
           return 'listen';
         case 3:  //MEDITATE
@@ -302,11 +307,11 @@ class ModuleObject {
         case 23: //PRONE
           return 'prone';
         case 24: //PAUSE3
-          return 'pause3';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
         case 25: //WELD
           return 'weld';
         case 26: //DEAD
-          return 'dead';
+          return (this.isSimpleCreature() ? 'cdead' : 'dead');
         case 27: //TALK_INJURED
           return 'talkinj';
         case 28: //LISTEN_INJURED
@@ -314,7 +319,7 @@ class ModuleObject {
         case 29: //TREAT_INJURED
           return 'treatinj';
         case 30: //DEAD_PRONE
-          return 'dead';
+          return (this.isSimpleCreature() ? 'cdead' : 'dead');
         //case 31: //KNEEL_TALK_ANGRY
         //case 32: //KNEEL_TALK_SAD
         case 35: //MEDITATE LOOP
@@ -324,9 +329,9 @@ class ModuleObject {
         case 101: //HEAD_TURN_RIGHT
           return 'hturnr';
         case 102: //PAUSE_SCRATCH_HEAD
-          return 'pause3';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
         case 103: //PAUSE_BORED
-          return 'pause2';
+          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
         case 104: //SALUTE
           return 'salute';
         case 105: //BOW
@@ -334,13 +339,13 @@ class ModuleObject {
         case 106: //GREETING
           return 'greeting';
         case 107: //TAUNT
-          return 'taunt';
+          return (this.isSimpleCreature() ? 'ctaunt' : 'taunt');
         case 108: //VICTORY1
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         case 109: //VICTORY2
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         case 110: //VICTORY3
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         //case 111: //READ
         //  return 'salute';
         case 112: //INJECT
@@ -380,7 +385,7 @@ class ModuleObject {
 
       }
       //console.error('Animation case missing', id);
-      return 'pause1';
+      return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
     }
   }
 
@@ -598,10 +603,7 @@ class ModuleObject {
 
   getCurrentRoom(){
     this.room = undefined;
-    let aabbFaces = [];
-    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
-    let box = this.model.box.clone();
+    let smallest = Infinity;
 
     this.rooms = [];
     for(let i = 0; i < Game.module.area.rooms.length; i++){
@@ -611,45 +613,16 @@ class ModuleObject {
         let pos = this.position.clone();
         if(model.box.containsPoint(pos)){
           this.rooms.push(i);
-        }
-      }
-    }
 
-    if(box){
-      for(let j = 0, jl = this.rooms.length; j < jl; j++){
-        let room = Game.module.area.rooms[this.rooms[j]];
-        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
-          aabbFaces.push({
-            object: room, 
-            faces: room.walkmesh.getAABBCollisionFaces(box)
-          });
+          room.model.box.getSize(this.roomSize);
+          if(this.roomSize.length() < smallest){
+            this.room = room;
+            smallest = this.roomSize.length();
+          }
         }
       }
     }
     
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add(scratchVec3);
-    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-    Game.raycaster.ray.direction.set(0, 0,-1);
-    
-    for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-      let castableFaces = aabbFaces[j];
-      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
-      
-      if(intersects.length){
-        if(this == Game.player){
-          //console.log(intersects);
-        }
-        if(intersects[0].object.moduleObject){
-          this.room = intersects[0].object.moduleObject;
-          return;
-        }
-      }
-    }
-    if(this.rooms.length){
-      this.room = Game.module.area.rooms[this.rooms[0]];
-      return;
-    }
   }
 
   getCameraHeight(){
