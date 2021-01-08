@@ -613,7 +613,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         if(PartyManager.party.indexOf(args[0]) >= 0){
           for(let i = 0, len = PartyManager.party.length; i < len; i++){
-            args[i].cancelCombat();
+            PartyManager.party[i].cancelCombat();
           }
         }else{
           args[0].cancelCombat();
