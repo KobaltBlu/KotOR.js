@@ -443,9 +443,9 @@ THREE.AuroraModel = function () {
             break;
           }
         }
-
+        return this.animationManager.currentAnimation;
       }
-
+      return undefined;
     }
   
     this.stopAnimation = function(){
@@ -1071,7 +1071,7 @@ THREE.AuroraModel = function () {
         //if(_node.FlagRender || node.isWalkmesh || auroraModel.name == 'plc_invis'){
         if(_node.faces.length || (_node.NodeType & AuroraModel.NODETYPE.Saber) ){
 
-          if(_node.FlagRender){// (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
+          if(_node.FlagRender || auroraModel.Classification == AuroraModel.CLASS.PLACEALBE){// (!_node.FlagRender && _node.TextureMap1 != 'NULL') || _node.FlagRender ){
 
             let geometry = new THREE.Geometry();
       
