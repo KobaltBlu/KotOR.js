@@ -2316,7 +2316,7 @@ class ModuleCreatureController extends ModuleObject {
 
     //If there is more than one collision this frame set the velocity to (0, 0, 0)
     if(world_collisions.length >= 2){
-      //this.AxisFront.set(0, 0, 0);
+      this.AxisFront.set(0, 0, 0);
     }
 
     //END: PLAYER WORLD COLLISION
