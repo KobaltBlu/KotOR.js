@@ -510,13 +510,6 @@ NWScript.ByteCodes = {
         this.stack.push( actionValue, action.type );
       }
 
-      /*if(actionValue != undefined){
-        this.stack.push((returnObject.value));
-      }else if(action.type != 'void' && action.type != 'vector'){
-        //console.log(action, args, this);
-        this.stack.push((0));
-        //console.error('Action '+action.name+' didn\'t return a value');
-      }*/
     }, 
     parse: function( instr, reader ){
       instr.action = reader.ReadUInt16();
