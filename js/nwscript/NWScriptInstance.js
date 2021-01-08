@@ -255,11 +255,11 @@ class NWScriptInstance {
 
   pushVectorToStack(vector){
     //Push Z to the stack
-    this.stack.push(vector.z, NWScript.DATATYPE.FLOAT);
+    this.stack.push(vector.z || 0.0, NWScript.DATATYPE.FLOAT);
     //Push Y to the stack
-    this.stack.push(vector.y, NWScript.DATATYPE.FLOAT);
+    this.stack.push(vector.y || 0.0, NWScript.DATATYPE.FLOAT);
     //Push X to the stack
-    this.stack.push(vector.x, NWScript.DATATYPE.FLOAT);
+    this.stack.push(vector.x || 0.0, NWScript.DATATYPE.FLOAT);
   }
 
   setScriptParam(idx = 1, value = 0){

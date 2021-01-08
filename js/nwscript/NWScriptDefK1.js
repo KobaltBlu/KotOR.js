@@ -321,9 +321,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        this.pushVectorToStack(args[0].position);
+        return args[0].position.clone();
       }else{
-        this.pushVectorToStack({x: 0, y: 0, z: 0});
+        return {x: 0.0, y: 0.0, z: 0.0};
       }
     }
   },
@@ -1434,8 +1434,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: ["vector"],
     action: function(args, _instr, action){
-      let vNorm = new THREE.Vector3(args[0].x, args[0].y, args[0].z).normalize();
-      this.pushVectorToStack(vNorm);  
+      return new THREE.Vector3(args[0].x, args[0].y, args[0].z).normalize();
     }
   },
   138:{
@@ -1481,7 +1480,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: ["float", "float", "float"],
     action: function(args, _instr, action){
-      this.pushVectorToStack({x: args[0], y: args[1], z: args[2]});
+      return {x: args[0], y: args[1], z: args[2]};
     }
   },
   143:{
@@ -2406,8 +2405,9 @@ NWScriptDefK1.Actions = {
     args: ["location"],
     action: function(args, _instr, action){
       if(args[0]){
-        this.pushVectorToStack(args[0].position);
+        return args[0].position;
       }
+      return {x: 0.0, y: 0.0, z: 0.0};
     }
   },
   224:{
@@ -5917,10 +5917,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-        this.pushVectorToStack(args[0].position);
-      }else{
-        this.pushVectorToStack({x: 0, y: 0, z: 0});
+        return args[0].position;
       }
+      return {x: 0, y: 0, z: 0};
     }
   },
   624:{
@@ -6031,7 +6030,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.position);
+      return Game.module.area.MiniGame.Player.position;
     }
   },
   642:{
@@ -6073,7 +6072,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.pos);
+      return Game.module.area.MiniGame.Player.tunnel.pos;
     }
   },
   647:{
@@ -6133,7 +6132,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.neg);
+      return Game.module.area.MiniGame.Player.tunnel.neg;
     }
   },
   654:{

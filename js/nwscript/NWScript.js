@@ -463,47 +463,20 @@ NWScript.ByteCodes = {
 
       let args = [];
 
-      for(let i = 0; i < action.args.length; i++){
+      for(let i = 0, len = action.args.length; i < len; i++){
         switch(action.args[i]){
           case 'object':
-            args.push(
-              this.stack.pop().value
-            )
-          break;
           case 'string':
-            args.push(
-              this.stack.pop().value
-            )
-          break;
           case 'int':
-            args.push(
-              this.stack.pop().value
-            )
-          break;
           case 'float':
-            args.push(
-              this.stack.pop().value
-            )
-          break;
           case 'effect':
-            args.push(
-              this.stack.pop().value
-            )
+          case 'event':
+          case 'location':
+          case 'talent':
+            args.push( this.stack.pop().value );
           break;
           case 'action':
-            args.push(
-              this.state.pop()
-            )
-          break;
-          case 'event':
-            args.push(
-              this.stack.pop().value
-            )
-          break;
-          case 'location':
-            args.push(
-              this.stack.pop().value
-            )
+            args.push( this.state.pop() );
           break;
           case 'vector':
             args.push({
@@ -512,15 +485,10 @@ NWScript.ByteCodes = {
               z: this.stack.pop().value
             })
           break;
-          case 'talent':
-            args.push(
-              this.stack.pop().value
-            );
-          break;
           default:
             //Pop the function variables off the stack after we are done with them
             args.push(this.stack.pop().value);
-            console.log('UKNOWN ARG', action, args);
+            console.warn('UKNOWN ARG', action, args);
           break;
         }
         
@@ -539,18 +507,6 @@ NWScript.ByteCodes = {
       }
 
       if(action.type != NWScript.DATATYPE.VOID && action.type != NWScript.DATATYPE.VECTOR){
-        /*if(actionValue == undefined && action.type != NWScript.DATATYPE.OBJECT){
-          //console.warn('undefined value', action, args, this.name, scope.instr);
-        }
-        if(actionValue === null){
-          console.warn('NWScript', this.name, 'Action '+action.name+' returned ', actionValue);
-        }
-
-        if(actionValue != undefined || ( action.type == NWScript.DATATYPE.OBJECT || action.type == NWScript.DATATYPE.TALENT || action.type == NWScript.DATATYPE.EFFECT )){
-          this.stack.push( actionValue, action.type );
-        }else{
-          console.warn('NWScript', this.name, 'Action '+action.name+' returned ', action.type, actionValue);         
-        }*/
         this.stack.push( actionValue, action.type );
       }
 
