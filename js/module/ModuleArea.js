@@ -848,11 +848,11 @@ class ModuleArea extends ModuleObject {
             return;
           }
 
-          if(GameKey == 'TSL'){
-            Game.player.appearance = 134;
-            Game.player.gender = 1;
-            Game.player.portrait = 10;
-          }
+          // if(GameKey == 'TSL'){
+          //   Game.player.appearance = 134;
+          //   Game.player.gender = 1;
+          //   Game.player.portrait = 10;
+          // }
           Game.player.LoadScripts( () => {
             Game.player.LoadModel( (model) => {
               Game.player.model = model;
@@ -893,11 +893,11 @@ class ModuleArea extends ModuleObject {
             return;
           }
 
-          if(GameKey == 'TSL'){
-            player.appearance = 134;
-            player.gender = 1;
-            player.portrait = 10;
-          }
+          // if(GameKey == 'TSL'){
+          //   player.appearance = 134;
+          //   player.gender = 1;
+          //   player.portrait = 10;
+          // }
           player.LoadScripts( () => {
             player.LoadModel( (model) => {
     
