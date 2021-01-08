@@ -676,39 +676,3 @@ THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
   }
 
 }
-
-THREE.Box3.prototype.expandByObject = function expandByObject(object) {
-  // Computes the world-axis-aligned bounding box of an object (including its children),
-  // accounting for both the object's, and children's, world transforms
-  object.updateWorldMatrix(false, false);
-  var geometry = object.geometry;
-  var _box = new THREE.Box3;
-
-  if (geometry !== undefined) {
-    if (geometry.boundingBox === null) {
-      geometry.computeBoundingBox();
-    }
-
-    _box.copy(geometry.boundingBox);
-
-    _box.applyMatrix4(object.matrixWorld);
-
-    this.union(_box);
-  }else if(object instanceof THREE.AuroraLight){
-    var bb = new THREE.Box3(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0));
-    bb.expandByScalar(object.getRadius());
-    _box.copy(bb);
-
-    _box.applyMatrix4(object.matrixWorld);
-
-    this.union(_box);
-  }
-
-  var children = object.children;
-
-  for (var i = 0, l = children.length; i < l; i++) {
-    this.expandByObject(children[i]);
-  }
-
-  return this;
-};
