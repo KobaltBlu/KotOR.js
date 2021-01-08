@@ -506,7 +506,7 @@ NWScript.ByteCodes = {
         console.warn('NWScript Action '+action.name+' not found', action);
       }
 
-      if(action.type != NWScript.DATATYPE.VOID && action.type != NWScript.DATATYPE.VECTOR){
+      if(action.type != NWScript.DATATYPE.VOID){
         this.stack.push( actionValue, action.type );
       }
 

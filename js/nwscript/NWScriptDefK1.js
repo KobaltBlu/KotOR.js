@@ -322,9 +322,8 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
         return args[0].position.clone();
-      }else{
-        return {x: 0.0, y: 0.0, z: 0.0};
       }
+      return {x: 0.0, y: 0.0, z: 0.0};
     }
   },
   28:{
@@ -612,7 +611,13 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        args[0].cancelCombat();
+        if(PartyManager.party.indexOf(args[0]) >= 0){
+          for(let i = 0, len = PartyManager.party.length; i < len; i++){
+            args[i].cancelCombat();
+          }
+        }else{
+          args[0].cancelCombat();
+        }
       }
     }
   },
@@ -2025,6 +2030,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+      console.log('ActionJumpToObject')
       if(args[0] instanceof ModuleObject){
         this.caller.jumpToObject( args[0] );
       }
@@ -2111,7 +2117,7 @@ NWScriptDefK1.Actions = {
         }
   
         if(this.caller instanceof ModuleObject){
-          //console.log('ActionStartConversation', args, this.caller);
+          console.log('ActionStartConversation', args, this.caller);
           args[0].actionQueue.push({
             object: this.caller,
             conversation: args[1],
@@ -4041,6 +4047,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+      console.log('JumpToObject', args);
       if(args[0] instanceof ModuleObject){
         this.caller.jumpToObject(args[0]);
       }
@@ -4890,7 +4897,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable){
-      args[0].setLocked(false);
+        args[0].setLocked(false);
       }
     }
   },
@@ -4898,7 +4905,12 @@ NWScriptDefK1.Actions = {
     comment: "484: The action subject will lock oTarget, which can be a door or a placeable\nobject.\n",
     name: "ActionLockObject",
     type: 0,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable){
+        args[0].setLocked(true);
+      }
+    }
   },
   485:{
     comment: "485: Create a Modify Attacks effect to add attacks.\n- nAttacks: maximum is 5, even with the effect stacked\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nAttacks > 5.\n",
