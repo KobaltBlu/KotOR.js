@@ -136,7 +136,8 @@ class GUIControl {
       fog: false,
       visible: true
     });
-    this.border.edge_material.defines.USE_MAP = '';
+    //this.border.edge_material.defines.USE_UV = '';
+    //this.border.edge_material.defines.USE_MAP = '';
     this.border.edge_material.uniforms.diffuse.value = this.border.color;
 
     this.border.corner_material = new THREE.ShaderMaterial({
@@ -149,6 +150,7 @@ class GUIControl {
       fog: false,
       visible: true
     });
+    //this.border.corner_material.defines.USE_UV = '';
     //this.border.corner_material.defines.USE_MAP = '';
     this.border.corner_material.uniforms.diffuse.value = this.border.color;
 
@@ -169,6 +171,7 @@ class GUIControl {
       fog: false,
       visible: true
     });
+    //this.border.fill.material.defines.USE_UV = '';
     //this.border.fill.material.defines.USE_MAP = '';
     this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     this.border.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
