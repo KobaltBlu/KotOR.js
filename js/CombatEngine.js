@@ -354,7 +354,7 @@ class CombatEngine {
 
         creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          let targetAnimation = AuroraModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
           if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
             if(!targetAnimation || (!targetAnimation.attack))
               combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
@@ -369,7 +369,7 @@ class CombatEngine {
         combatAction.target.lastAttacker = this;
         creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          let targetAnimation = AuroraModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
           if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
             if(!targetAnimation || (!targetAnimation.attack))
               combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );

@@ -78,10 +78,10 @@ class AuroraModelAnimation {
     return 0.5;
   }
 
-  static getAnimation2DA(name = ''){
-    for(let i = 0, len = Global.kotor2DA.animations.length; i < len; i++){
-      if(Global.kotor2DA.animations[i].name.toLowerCase() == name.toLowerCase()){
-        return Global.kotor2DA.animations[i];
+  static GetAnimation2DA(name = ''){
+    for(let i = 0, len = Global.kotor2DA.animations.RowCount; i < len; i++){
+      if(Global.kotor2DA.animations.rows[i].name.toLowerCase() == name.toLowerCase()){
+        return Global.kotor2DA.animations.rows[i];
       }
     }
     return undefined;
