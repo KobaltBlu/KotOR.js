@@ -441,9 +441,22 @@ SaveGame.directory = path.join(Config.options.Games[GameKey].Location, 'Saves');
 SaveGame.getSaveGames = function( onLoad = null ){
 
   fs.readdir(SaveGame.directory, (err, folders) => {
-    
+
+    if(err){
+      if(typeof onLoad === 'function')
+        onLoad();
+
+      //Make the default savegame directory
+      fs.mkdirSync(SaveGame.directory);
+
+      return;
+    }
+
+    //Loop through and detect the possible savegame paths
     for(let i = 0; i < folders.length; i++){
-      SaveGame.saves.push(new SaveGame(folders[i]));
+      if(fs.existsSync(path.join(SaveGame.directory, folders[i], 'SAVEGAME.sav'))){
+        SaveGame.saves.push(new SaveGame(folders[i]));
+      }
     }
 
     if(typeof onLoad === 'function')
