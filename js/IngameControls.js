@@ -523,12 +523,18 @@ class IngameControls {
             if(Game.InGameDialog.isListening){
               Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
             }
+          }else if(Game.mouse.leftClick){
+            if(Game.InGameDialog.isListening){
+              Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+            }
           }
         }
 
         if(this.keys['escape'].pressed){
           Game.InGameDialog.EndConversation(true);
         }
+
+        
 
       }else if(Game.InGameComputer.bVisible){
 
