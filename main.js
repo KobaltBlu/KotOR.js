@@ -12,7 +12,6 @@ console.log(process.argv);
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let winGame = null;
-let winEditor = null;
 let winLauncher = null;
 let tray = null;
 
@@ -25,6 +24,7 @@ function createWindowFromProfile( profile = {} ) {
     frame: !profile.launch.frameless,
     title: profile.name,
     backgroundColor: profile.launch.backgroundColor,
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
       nodeIntegrationInWorker: true,
@@ -41,13 +41,13 @@ function createWindowFromProfile( profile = {} ) {
     //winGame.webcontents.openDevTools();
   });
 
-  winGame.setMenuBarVisibility(false);
+  winGame.setMenuBarVisibility(true);
 
   winGame.on( 'devtools-closed', function ( event ) {
-    winGame.setMenuBarVisibility(false);
+    //winGame.setMenuBarVisibility(false);
   });
   winGame.on( 'devtools-opened', function ( event ) {
-    winGame.setMenuBarVisibility(true);
+    //winGame.setMenuBarVisibility(true);
   });
 
   // Emitted when the window is closed.
@@ -112,6 +112,14 @@ function createLauncherWindow() {
 
     return false;*/
   });
+  
+  winLauncher.on('show', () => {
+    //tray.setHighlightMode('always');
+  });
+
+  winLauncher.on('hide', () => {
+    //tray.setHighlightMode('never');
+  });
 
 }
 
@@ -139,14 +147,11 @@ app.on('ready', () => {
   createLauncherWindow();
 
   tray.on('click', () => {
-
-    winLauncher.isVisible() ? winLauncher.hide() : winLauncher.show()
-  });
-  winLauncher.on('show', () => {
-    //tray.setHighlightMode('always');
-  });
-  winLauncher.on('hide', () => {
-    //tray.setHighlightMode('never');
+    if(winLauncher instanceof BrowserWindow){
+      winLauncher.isVisible() ? winLauncher.hide() : winLauncher.show();
+    }else{
+      createLauncherWindow();
+    }
   });
 
 });
