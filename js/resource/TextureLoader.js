@@ -289,7 +289,13 @@ class TextureLoader {
             //I think this has to do with alphaTesting... Not sure...
             if(typeof texture.header === 'object'){
               if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                tex.material.transparent = true;
+                if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                  tex.material.transparent = true;
+                }
+                if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
+                  tex.material.alphaTest = 0;
+                }
+                //tex.material.alphaTest = texture.header.alphaTest;
               }
             }
 
@@ -329,7 +335,13 @@ class TextureLoader {
                 //I think this has to do with alphaTesting... Not sure...
                 if(typeof texture.header === 'object'){
                   if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                    tex.material.transparent = true;
+                    if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                      tex.material.transparent = true;
+                    }
+                    if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
+                      tex.material.alphaTest = 0;
+                    }
+                    //tex.material.alphaTest = texture.header.alphaTest;
                   }
                 }
 
@@ -570,7 +582,7 @@ class TextureLoader {
       //DECAL
       if(texture.txi.decal || texture.txi.procedureType == 2){
         tex.material.side = THREE.DoubleSide;
-        //tex.material.depthWrite = false;
+        tex.material.depthWrite = false;
         //For Saber Blades
         tex.material.defines.IGNORE_LIGHTING = '';
       }
@@ -580,13 +592,13 @@ class TextureLoader {
         case TXI.BLENDING.ADDITIVE:
           tex.material.transparent = true;
           tex.material.blending = THREE['AdditiveBlending'];
-          tex.material.alphaTest = Game.AlphaTest;//0.5;
+          tex.material.alphaTest = 0;//0.5;
           //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere
         break;
         case TXI.BLENDING.PUNCHTHROUGH:
-          tex.material.transparent = true;
+          tex.material.transparent = false;
           tex.material.blending = THREE['NormalBlending'];
-          tex.material.alphaTest = Game.AlphaTest;//0.5;
+          tex.material.alphaTest = texture.header.alphaTest || Game.AlphaTest;//0.5;
         break;
       }
 
