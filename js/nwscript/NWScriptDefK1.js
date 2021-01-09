@@ -2803,28 +2803,30 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('BeginConversation', this.caller, this.listenPatternSpeaker, args)
   
-      //if( !(args[1] instanceof ModuleObject) ){
-      args[1] = this.listenPatternSpeaker;
-      //}
+      if( !(args[1] instanceof ModuleObject) ){
+        args[1] = this.listenPatternSpeaker;
+      }
   
       if((args[1]) instanceof ModuleObject){
         if(args[0] != ''){
-          Game.InGameDialog.StartConversation(args[0], args[1], this.caller);
+          Game.InGameDialog.StartConversation(args[0], this.caller, args[1]);
           return 1;
-        }else if((args[1])._conversation){
-          Game.InGameDialog.StartConversation(this.caller._conversation, args[1], this.caller);
+        }else if(this.caller._conversation){
+          Game.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1]);
           (args[1])._conversation = '';
           return 1;
-        }else if((args[1]).conversation){
-          Game.InGameDialog.StartConversation(this.caller.conversation, args[1], this.caller);
+        }else if(this.caller.conversation){
+          Game.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1]);
           return 1;
         }else if(this.listenPatternSpeaker.conversation){
-          Game.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.listenPatternSpeaker, args[1]);
+          Game.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker);
           return 1;
         }else{
+          console.warn('BeginConversation', 'no dialog condition met');
           return 0;
         }
       }else{
+        console.warn('BeginConversation', 'args[1] is not an instanceof ModuleObject');
         return 0;
       }
     }

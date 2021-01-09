@@ -189,14 +189,14 @@ class ModulePlaceable extends ModuleObject {
 
     this.action = this.actionQueue[0];
 
-    if(this.action != null){
+    if(this.action != undefined){
             
       /*if(this.action.object instanceof ModuleObject){
         
       }else{*/
         switch(this.action.goal){
           case ModuleCreature.ACTION.DIALOGOBJECT:
-            Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this.action.object, this);
+            Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this, this.action.object);
             this.actionQueue.shift()
           break;
           case ModuleCreature.ACTION.WAIT:
@@ -206,7 +206,7 @@ class ModulePlaceable extends ModuleObject {
             }
           break;
           case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
-            //console.log('Action Script', this.action);
+            console.log('ModulePlaceable', 'ACTION.SCRIPT', this.action);
             if(this.action.script instanceof NWScriptInstance){
               this.action.action.script.caller = this;
               this.action.action.script.beginLoop({

@@ -521,23 +521,10 @@ class ModuleCreatureController extends ModuleObject {
               let caller = this;
               let target = this.action.object;
 
-              //If a partymember is trying to start the convo then swap to the player
-              if(this != Game.player && PartyManager.party.indexOf(this) >= 0){
-                let pPos = Game.player.position;
-                let cPos = this.position;
-                
-                Game.player.position.copy(cPos);
-                this.position.copy(pPos);
-                Game.player.updateCollision(delta);
-                this.updateCollision(delta);
-                caller = Game.player;
-                target = this;
-              }
-
               this.heardStrings = [];
               caller.heardStrings = [];
-              if(caller.scripts.onDialog instanceof NWScriptInstance){
-                caller.onDialog(target, -1);
+              if(target.scripts.onDialog instanceof NWScriptInstance){
+                target.onDialog(caller, -1);
               }else{
                 Game.InGameDialog.StartConversation(this.action.conversation, target, caller);
               }
@@ -550,14 +537,12 @@ class ModuleCreatureController extends ModuleObject {
         break;
         case ModuleCreature.ACTION.MOVETOPOINT:
           if(this.action.instant){
-            this.position.copy(
-              this.action.object.position.clone()
-            );
-            
+            //console.log('INSTANT MOVE', this.getName(), '--->', this.action.object.getName(), this.position.clone(), this.action.object.position.clone());
+            this.position.copy( this.action.object.position );
             this.setFacing(this.action.object.rotation.z, false);
             this.getCurrentRoom();
             this.updateCollision();
-            this.actionQueue.shift()
+            this.actionQueue.shift();
           }else{
             distance = Utility.Distance2D(this.position, this.action.object.position);
             if(distance > (this.action.distance || 0.1)){
@@ -1502,9 +1487,9 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   jumpToObject(target = undefined){
-
+    
     if(target instanceof ModuleObject){
-      this.actionQueue.push({
+      this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: false,
@@ -1518,7 +1503,7 @@ class ModuleCreatureController extends ModuleObject {
   jumpToLocation(target = undefined){
 
     if(typeof target === 'object'){
-      this.actionQueue.push({
+      this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: false,
@@ -2558,7 +2543,7 @@ class ModuleCreatureController extends ModuleObject {
 
       if(weaponType){
         
-        if(lWeapon){
+        if(lWeapon && lWeapon.model){
           let currentAnimL = this.equipment.LEFTHAND.model.animationManager.currentAnimation || this.equipment.LEFTHAND.model.getAnimationByName('off');
           if(currentAnimL){
             if(on){
@@ -2587,7 +2572,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         }
 
-        if(rWeapon){
+        if(rWeapon && rWeapon.model){
           let currentAnimR = this.equipment.RIGHTHAND.model.animationManager.currentAnimation || this.equipment.RIGHTHAND.model.getAnimationByName('off');
           if(currentAnimR){
             if(on){
