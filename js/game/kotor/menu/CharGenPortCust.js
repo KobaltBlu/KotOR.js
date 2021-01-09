@@ -124,7 +124,7 @@ class CharGenPortCust extends GameMenu {
         this.LBL_HEAD._3dView.visible = true;
         this.LBL_HEAD._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
         this.LBL_HEAD._3dView.camera.updateProjectionMatrix();
-        this.LBL_HEAD.getFill().material.uniforms.map.value = this.LBL_HEAD._3dView.texture.texture;
+        this.LBL_HEAD.setFillTexture(this.LBL_HEAD._3dView.texture.texture);
         this.LBL_HEAD.getFill().material.transparent = false;
 
         Game.ModelLoader.load({
@@ -174,7 +174,7 @@ class CharGenPortCust extends GameMenu {
     });
 
     control.getFill().material.uniforms.map.value = control._3dView.texture.texture;
-    control.getFill().material.transparent = true;
+    control.getFill().material.transparent = false;
     control.getFill().material.blending = 1;
 
   }

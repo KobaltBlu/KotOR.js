@@ -44,7 +44,7 @@ class CharGenMain extends GameMenu {
         this.MODEL_LBL._3dView.visible = true;
         this.MODEL_LBL._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
         this.MODEL_LBL._3dView.camera.updateProjectionMatrix();
-        this.MODEL_LBL.getFill().material.uniforms.map.value = this.MODEL_LBL._3dView.texture.texture;
+        this.MODEL_LBL.setFillTexture(this.MODEL_LBL._3dView.texture.texture);
         this.MODEL_LBL.getFill().material.transparent = false;
 
         Game.ModelLoader.load({
