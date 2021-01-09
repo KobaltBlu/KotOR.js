@@ -125,12 +125,7 @@ class IngameControls {
       
       let clickCaptured = false;
 
-      let customEvent = {
-        propagate: true,
-        stopPropagation: function(){
-          this.propagate = false;
-        }
-      }
+      let customEvent = GUIControl.generateEventObject();
 
       Game.mouse.downItem = null;
       Game.mouse.clickItem = null;
@@ -235,13 +230,8 @@ class IngameControls {
         Game.raycaster.setFromCamera( Mouse.Vector, Game.camera_gui );
         
         let clickCaptured = false;
-  
-        let customEvent = {
-          propagate: true,
-          stopPropagation: function(){
-            this.propagate = false;
-          }
-        }
+
+        let customEvent = GUIControl.generateEventObject();
   
         //Game.selected = undefined;
 

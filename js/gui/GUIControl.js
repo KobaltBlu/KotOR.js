@@ -516,6 +516,10 @@ class GUIControl {
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
       });
     }else{
       this.border.edge_material.visible = false;
@@ -528,6 +532,10 @@ class GUIControl {
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
       });
     }else{
       this.border.corner_material.visible = false;
@@ -538,6 +546,11 @@ class GUIControl {
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!(texture instanceof THREE.Texture)){
           this.border.fill.material.visible = false;
+        }else{
+          texture.anisotropy = 1;
+          texture.minFilter = THREE.NearestFilter;
+          texture.magFilter = THREE.NearestFilter;
+          texture.needsUpdate = true;
         }
       });
     }else{
@@ -555,6 +568,10 @@ class GUIControl {
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
       });
     }else{
       this.highlight.edge_material.visible = false;
@@ -567,6 +584,10 @@ class GUIControl {
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
       });
     }else{
       this.highlight.corner_material.visible = false;
@@ -577,6 +598,11 @@ class GUIControl {
       TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!(texture instanceof THREE.Texture)){
           this.highlight.fill.material.visible = false;
+        }else{
+          texture.anisotropy = 1;
+          texture.minFilter = THREE.NearestFilter;
+          texture.magFilter = THREE.NearestFilter;
+          texture.needsUpdate = true;
         }
       });
     }else{
@@ -596,6 +622,10 @@ class GUIControl {
           this.text.texture = texture;
           this.text.material.uniforms.map.value = texture;
           this.text.material.needsUpdate = true;
+          texture.anisotropy = 1;
+          texture.minFilter = THREE.NearestFilter;
+          texture.magFilter = THREE.NearestFilter;
+          texture.needsUpdate = true;
           this.onFontTextureLoaded();
         }
       });
@@ -1563,8 +1593,10 @@ class GUIControl {
     
     let texture = this.text.texture;
     texture.flipY = false;
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = 1;
+    texture.minFilter = THREE.NearestFilter;
+    texture.magFilter = THREE.NearestFilter;
+    texture.needsUpdate = true;
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof Global.kotorTLK.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.text.text : Global.kotorTLK.TLKStrings[this.text.strref].Value);
@@ -2013,6 +2045,10 @@ class GUIControl {
   //Process an event listener
   processEventListener(name = '', args = []){
     let processed = false;
+
+    if(!args.length)
+      args = [GUIControl.generateEventObject()];
+
     if(this.eventListeners.hasOwnProperty(name)){
       let len = this.eventListeners[name].length;
       for(let i = 0; i < len; i++){
@@ -2023,6 +2059,19 @@ class GUIControl {
       }
     }
     return processed;
+  }
+
+  static generateEventObject(){
+    return {
+      propagate: true,
+      stopPropagation: function(){
+        this.propagate = false;
+      }
+    };
+  }
+
+  click(){
+    this.processEventListener('click');
   }
 
   onINIPropertyAttached(){
