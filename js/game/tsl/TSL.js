@@ -332,6 +332,8 @@ class Game extends Engine {
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
     $('#renderer-container').append(Game.$canvas).append(Game.stats.dom);
+    if(!Config.get('Game.debug.show_fps'))
+      Game.stats.showPanel(false);
 
     /* Fade Geometry */
     Game.FadeOverlay = {
@@ -1280,7 +1282,7 @@ class Game extends Engine {
       return;
     }*/
 
-    if(!Config.options.Game.debug.show_fps){
+    if(!Config.get('Game.debug.show_fps')){
       Game.stats.showPanel(false);
     }
 
@@ -1502,7 +1504,7 @@ class Game extends Engine {
     }
 
     if(Game.Mode == Game.MODES.INGAME){
-      if(Config.options.Game.debug.show_collision_meshes){
+      if(Config.get('Game.debug.show_collision_meshes')){
         for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
           let obj = Game.octree_walkmesh.objects[i];
           if(obj.type === 'Mesh'){

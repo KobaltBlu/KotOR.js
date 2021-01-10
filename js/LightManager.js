@@ -13,6 +13,8 @@ class LightManager {
     LightManager.spawned = 0;
     LightManager.light_pool = [];
     LightManager.clearLights();
+
+    LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
   }
 
   static clearLights(){
@@ -383,6 +385,7 @@ class LightManager {
 
           if(lightNode.intensity < 0 || !lightNode.light.isOnScreen(Game.viewportFrustum)){
             lightNode.intensity = 0;
+            lightNode.reclaimed = true;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)

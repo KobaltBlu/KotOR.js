@@ -690,14 +690,14 @@ const template = [
       { role: 'hideothers' },
       { role: 'unhide' },
       { type: 'separator' },
-      { label: 'Close', click: () => { window.close(); } }
+      { label: 'Close', role: 'close' }
     ]
   }] : []),
   // { role: 'fileMenu' }
   {
     label: 'File',
     submenu: [
-      isMac ? { role: 'close' } : { role: 'quit' }
+      isMac ? { role: 'close' } : { role: 'close' }
     ]
   },
   // { role: 'editMenu' }
@@ -723,6 +723,7 @@ const template = [
       ]},
       { label: 'Light Helpers', type: 'checkbox', checked: Config.get('Game.debug.light_helpers'), 'accelerator': 'Alt+l', click: () => {
         Config.set('Game.debug.light_helpers', !Config.get('Game.debug.light_helpers'));
+        LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
       }},
       { label: 'Show FPS', type: 'checkbox', checked: Config.get('Game.debug.show_fps'), 'accelerator': 'Alt+F', click: () => {
         Config.set('Game.debug.show_fps', !Config.get('Game.debug.show_fps'));

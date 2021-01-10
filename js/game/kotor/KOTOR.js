@@ -1,6 +1,8 @@
 /* KotOR.js - A remake of the Odyssey Game Engine that powered KotOR I & II written in JavaScript
  */
 
+const ConfigManager = require("../../ConfigManager");
+
 /* @file
  * The main engine file that runs KotOR I.
  * It extends Engine.js which holds shared methods for both games.
@@ -336,6 +338,8 @@ class Game extends Engine {
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
     $('#renderer-container').append(Game.stats.dom);
+    if(!Config.get('Game.debug.show_fps'))
+      Game.stats.showPanel(false);
 
     /* Fade Geometry */
     Game.FadeOverlay = {
@@ -438,6 +442,7 @@ class Game extends Engine {
 
     //Game.renderPassAA.sampleLevel = 1;
 
+    Game.renderPass.renderToScreen = true;
     Game.copyPass.renderToScreen = false;
     Game.renderPassGUI.renderToScreen = false;
     Game.renderPassCursor.renderToScreen = false;
@@ -1251,6 +1256,10 @@ class Game extends Engine {
       return;
     }*/
 
+    if(!Config.get('Game.debug.show_fps')){
+      Game.stats.showPanel(false);
+    }
+
     let delta = Game.clock.getDelta();
     Game.limiter.now = Date.now();
     Game.limiter.elapsed = Game.limiter.now - Game.limiter.then;
@@ -1468,10 +1477,19 @@ class Game extends Engine {
       Game.FadeOverlay.Update(delta);
     }
 
+    if(Game.Mode == Game.MODES.INGAME){
+      if(Config.get('Game.debug.show_collision_meshes')){
+        for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
+          let obj = Game.octree_walkmesh.objects[i];
+          if(obj.type === 'Mesh'){
+            obj.visible = true;
+          }
+        }
+      }
+    }
+
     Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
-
     Game.controls.Update(delta);
-
     Game.camera_shake.beforeRender();
     Game.camera_shake.update(delta);
 
@@ -1510,7 +1528,6 @@ class Game extends Engine {
 
     Game.stats.update();
     
-    //requestAnimationFrame( Game.Update );
   }
 
   static UpdateVisibleRooms(){
