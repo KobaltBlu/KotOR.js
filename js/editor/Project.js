@@ -57,7 +57,7 @@ class Project {
 
         //Append this project to the beginning of the list
         Config.options.recent_projects.unshift(this.directory);
-        Config.Save(null, true); //Save the configuration silently
+        Config.save(null, true); //Save the configuration silently
 
         this.GetFiles(()=>{
 

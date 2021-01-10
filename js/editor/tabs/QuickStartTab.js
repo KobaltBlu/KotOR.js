@@ -17,7 +17,7 @@ class QuickStartTab extends EditorTab {
       this.$newProject = $('#btn-new-project', this.$tabContent);
       this.$openProject = $('#btn-open-project', this.$tabContent);
 
-      $.each(Config.GetRecentProjects(), (i, dir) => {
+      $.each(Config.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
@@ -38,7 +38,7 @@ class QuickStartTab extends EditorTab {
         }catch(e){}
       });
 
-      $.each(Config.GetRecentFiles(), (i, file) => {
+      $.each(Config.getRecentFiles(), (i, file) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 
@@ -83,7 +83,7 @@ class QuickStartTab extends EditorTab {
     super.Show();
     try{
       this.$recentProjectsList.html('');
-      $.each(Config.GetRecentProjects(), (i, dir) => {
+      $.each(Config.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
@@ -105,7 +105,7 @@ class QuickStartTab extends EditorTab {
       });
 
       this.$recentFilesList.html('');
-      $.each(Config.GetRecentFiles(), (i, file) => {
+      $.each(Config.getRecentFiles(), (i, file) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 

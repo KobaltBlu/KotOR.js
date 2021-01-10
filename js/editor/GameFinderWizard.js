@@ -63,7 +63,7 @@ class GameFinderWizard extends Wizard {
         Config.options.Games.TSL.Location = this.tsl_path;
         Config.options.first_run = false;
 
-        Config.Save();
+        Config.save();
         this.Close();
 
         if(typeof args.onUpdate === 'function')

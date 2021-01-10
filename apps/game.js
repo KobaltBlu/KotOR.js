@@ -676,3 +676,116 @@ THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
   }
 
 }
+
+const template = [
+  // { role: 'appMenu' }
+  ...(isMac ? [{
+    label: app.name,
+    submenu: [
+      { role: 'about' },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideothers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { label: 'Close', click: () => { window.close(); } }
+    ]
+  }] : []),
+  // { role: 'fileMenu' }
+  {
+    label: 'File',
+    submenu: [
+      isMac ? { role: 'close' } : { role: 'quit' }
+    ]
+  },
+  // { role: 'editMenu' }
+  {
+    label: 'Debug',
+    submenu: [
+      { label: 'Collision', submenu: [
+        { label: 'Creature Collision', type: 'checkbox', checked: Config.get('Game.debug.creature_collision'), 'accelerator': 'Alt+1', click: () => {
+          Config.set('Game.debug.creature_collision', !Config.get('Game.debug.creature_collision'));
+        }},
+        { label: 'Door Collision', type: 'checkbox', checked: Config.get('Game.debug.door_collision'), 'accelerator': 'Alt+2', click: () => {
+          Config.set('Game.debug.door_collision', !Config.get('Game.debug.door_collision'));
+        }},
+        { label: 'Placeable Collision', type: 'checkbox', checked: Config.get('Game.debug.placeable_collision'), 'accelerator': 'Alt+3', click: () => {
+          Config.set('Game.debug.placeable_collision', !Config.get('Game.debug.placeable_collision'));
+        }},
+        { label: 'World Collision', type: 'checkbox', checked: Config.get('Game.debug.world_collision'), 'accelerator': 'Alt+4', click: () => {
+          Config.set('Game.debug.world_collision', !Config.get('Game.debug.world_collision'));
+        }},
+        { label: 'Show Collision Meshes', type: 'checkbox', checked: Config.get('Game.debug.show_collision_meshes'), 'accelerator': 'Alt+0', click: () => {
+          Config.set('Game.debug.show_collision_meshes', !Config.get('Game.debug.show_collision_meshes'));
+        }},
+      ]},
+      { label: 'Light Helpers', type: 'checkbox', checked: Config.get('Game.debug.light_helpers'), 'accelerator': 'Alt+l', click: () => {
+        Config.set('Game.debug.light_helpers', !Config.get('Game.debug.light_helpers'));
+      }},
+      { label: 'Show FPS', type: 'checkbox', checked: Config.get('Game.debug.show_fps'), 'accelerator': 'Alt+F', click: () => {
+        Config.set('Game.debug.show_fps', !Config.get('Game.debug.show_fps'));
+
+        if(!Config.options.Game.debug.show_fps){
+          Game.stats.showPanel(false);
+        }else{
+          Game.stats.showPanel(0);
+        }
+
+      }},
+    ]
+  },
+  // { role: 'viewMenu' }
+  {
+    label: 'View',
+    submenu: [
+      { role: 'reload' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
+      { type: 'separator' },
+      { role: 'toggleFullscreen' },
+      { label: 'Toggle Menu', type: 'checkbox', checked: Config.get('Game.show_application_menu'), 'accelerator': process.platform === 'darwin' ? 'Alt+D' : 'Alt+D', click: () => {
+        Config.set('Game.show_application_menu', !Config.get('Game.show_application_menu'));
+        remote.getCurrentWindow().setMenuBarVisibility(Config.get('Game.show_application_menu'));
+      } }
+    ]
+  },
+  // { role: 'windowMenu' }
+  {
+    label: 'Window',
+    submenu: [
+      { role: 'minimize' },
+      { role: 'zoom' },
+      ...(isMac ? [
+        { type: 'separator' },
+        { role: 'front' },
+        { type: 'separator' },
+        { role: 'window' }
+      ] : [
+        { role: 'close' }
+      ])
+    ]
+  },
+  {
+    role: 'help',
+    submenu: [
+      {
+        label: 'Learn More',
+        click: async () => {
+          const { shell } = require('electron')
+          await shell.openExternal('https://electronjs.org')
+        }
+      }
+    ]
+  }
+]
+
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
+
+remote.getCurrentWindow().setMenuBarVisibility(Config.options.Game.show_application_menu);

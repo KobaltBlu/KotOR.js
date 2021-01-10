@@ -1280,6 +1280,10 @@ class Game extends Engine {
       return;
     }*/
 
+    if(!Config.options.Game.debug.show_fps){
+      Game.stats.showPanel(false);
+    }
+
     requestAnimationFrame( Game.Update );
 
     let delta = Game.clock.getDelta();
@@ -1497,12 +1501,20 @@ class Game extends Engine {
       Game.InGameOverlay.Hide();
     }
 
+    if(Game.Mode == Game.MODES.INGAME){
+      if(Config.options.Game.debug.show_collision_meshes){
+        for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
+          let obj = Game.octree_walkmesh.objects[i];
+          if(obj.type === 'Mesh'){
+            obj.visible = true;
+          }
+        }
+      }
+    }
+
     Game.updateCursor();
-
     Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
-
     Game.controls.Update(delta);
-
     Game.camera_shake.beforeRender();
     Game.camera_shake.update(delta);
 

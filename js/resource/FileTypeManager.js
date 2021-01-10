@@ -22,7 +22,7 @@ class FileTypeManager {
       ext = ResourceTypes.getKeyByValue(res.reskey);
     }
 
-    let recent_files = Config.GetRecentFiles();
+    let recent_files = Config.getRecentFiles();
 
     //Check to see if the EditorFile has the path variable set.
     //If not it's because the file was created in memory and hasn't been saved to the HDD yet
@@ -34,7 +34,7 @@ class FileTypeManager {
 
       //Append this file to the beginning of the list
       recent_files.unshift(res.path);
-      Config.Save(null, true); //Save the configuration silently
+      Config.save(null, true); //Save the configuration silently
     }else if(res.archive_path){
       let tmp_path = res.archive_path + '?' + res.resref + '.' + res.ext;
       let pjIndex = recent_files.indexOf(tmp_path);
@@ -44,7 +44,7 @@ class FileTypeManager {
 
       //Append this file to the beginning of the list
       recent_files.unshift(tmp_path);
-      Config.Save(null, true); //Save the configuration silently
+      Config.save(null, true); //Save the configuration silently
     }
 
     console.log(res, ext);

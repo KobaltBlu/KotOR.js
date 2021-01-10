@@ -90,7 +90,7 @@
               console.log(result.filePaths);
               if(result.filePaths.length && !result.canceled){
                 Config.options.Games[GameKey].Location = result.filePaths[0];
-                Config.Save( () => {
+                Config.save( () => {
                   window.location.reload();
                 }, true);
               }else{

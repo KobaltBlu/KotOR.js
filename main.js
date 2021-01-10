@@ -11,20 +11,26 @@ console.log(process.argv);
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let winGame = null;
+let profileWindows = [];
 let winLauncher = null;
 let tray = null;
 
+ipcMain.on('config-changed', (event, data) => {
+  for(let i = 0, len = profileWindows.length; i < len; i++){
+    profileWindows[i].webContents.send('config-changed', data);
+  }
+});
+
 function createWindowFromProfile( profile = {} ) {
   // Create the browser window.
-  winGame = new BrowserWindow({
+  let _window = new BrowserWindow({
     width: 1200, 
     height: 600,
     fullscreen: profile.launch.fullscreen,
     frame: !profile.launch.frameless,
     title: profile.name,
     backgroundColor: profile.launch.backgroundColor,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: true,
       nodeIntegrationInWorker: true,
@@ -32,32 +38,24 @@ function createWindowFromProfile( profile = {} ) {
     }
   });
 
-  winGame.state = profile;
+  _window.state = profile;
 
   // and load the index.html of the app.
-  winGame.loadURL(`file://${__dirname}/apps/${profile.launch.path}`);
-  //winGame.openDevTools();
-  winGame.on('ready', () => {
-    //winGame.webcontents.openDevTools();
-  });
-
-  winGame.setMenuBarVisibility(true);
-
-  winGame.on( 'devtools-closed', function ( event ) {
-    //winGame.setMenuBarVisibility(false);
-  });
-  winGame.on( 'devtools-opened', function ( event ) {
-    //winGame.setMenuBarVisibility(true);
-  });
+  _window.loadURL(`file://${__dirname}/apps/${profile.launch.path}`);
+  _window.setMenuBarVisibility(false);
 
   // Emitted when the window is closed.
-  winGame.on('closed', (event) => {
+  _window.on('closed', (event) => {
     event.preventDefault();
     createLauncherWindow();
-    winGame = null;
+    let index = profileWindows.indexOf(_window);
+    if(index >= 0){
+      profileWindows.splice(index, 1);
+    }
   });
 
   winLauncher.hide();
+  profileWindows.push(_window);
 
 }
 

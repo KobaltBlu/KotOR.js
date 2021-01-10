@@ -84,7 +84,7 @@
           Config.options.Panes.right.open = true;
         break;
       }
-      Config.Save(null, true);
+      Config.save(null, true);
     },
     'onclose': (pane) => {
       switch(pane){
@@ -95,7 +95,7 @@
           Config.options.Panes.right.open = false;
         break;
       }
-      Config.Save(null, true);
+      Config.save(null, true);
     },
     'onresize_end': (pane) => {
       //Make sure the ModuleEditorTab canvas is updated on resize
