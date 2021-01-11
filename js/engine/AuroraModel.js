@@ -1339,7 +1339,7 @@ THREE.AuroraModel = function () {
 
             if(node.isWalkmesh){
               auroraModel.walkmesh = mesh;
-              mesh.visible = false;
+              mesh.material.visible = false;
             }
             
             //RenderOrder

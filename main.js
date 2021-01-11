@@ -34,7 +34,9 @@ function createWindowFromProfile( profile = {} ) {
     webPreferences: {
       nodeIntegration: true,
       nodeIntegrationInWorker: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
+      worldSafeExecuteJavaScript: false,
+      //contextIsolation: false,
     }
   });
 
@@ -79,7 +81,9 @@ function createLauncherWindow() {
     webPreferences: {
       webviewTag: true,
       nodeIntegration: true,
-      enableRemoteModule: true
+      enableRemoteModule: true,
+      worldSafeExecuteJavaScript: true,
+      //contextIsolation: true,
     }
   });
   // and load the index.html of the app.

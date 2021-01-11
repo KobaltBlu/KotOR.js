@@ -762,8 +762,13 @@ class ModulePlaceable extends ModuleObject {
       });
 
     }else{
+      console.warn('ModulePlaceable', 'PWK Missing', ResRef);
+      this.walkmesh = new AuroraWalkMesh();
+      this.walkmesh.name = ResRef;
+      this.walkmesh.moduleObject = this;
+
       if(typeof onLoad === 'function')
-        onLoad(null);
+        onLoad(this.walkmesh);
     }
 
   }

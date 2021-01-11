@@ -279,9 +279,10 @@ class ModuleDoor extends ModuleObject {
       console.log('opening1');
       setTimeout( () => {
         if(this.walkmesh && this.walkmesh.mesh){
-          if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == this.walkmesh.mesh){
-            Game.octree_walkmesh.remove(this.walkmesh.mesh)
-          }
+          this.walkmesh.mesh.remove(this.walkmesh.mesh.parent);
+          // if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == this.walkmesh.mesh){
+          //   Game.octree_walkmesh.remove(this.walkmesh.mesh)
+          // }
         }
         //this.model.poseAnimation('opened1');
       }, 100);
@@ -311,9 +312,10 @@ class ModuleDoor extends ModuleObject {
     }
 
     if(this.walkmesh && this.walkmesh.mesh){
-      if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == undefined){
-        Game.octree_walkmesh.add(this.walkmesh.mesh)
-      }
+      Game.group.room_walkmeshes.add( this.walkmesh.mesh );
+      // if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == undefined){
+      //   Game.octree_walkmesh.add(this.walkmesh.mesh)
+      // }
     }
 
     this.model.playAnimation('closing1', false, () => {
@@ -674,11 +676,8 @@ class ModuleDoor extends ModuleObject {
       Global.kotorKEY.GetFileData(wokKey, (buffer) => {
 
         this.walkmesh = new AuroraWalkMesh(new BinaryReader(buffer));
-        this.walkmesh.name = ResRef;
-        this.walkmesh.moduleObject = this;
-        if(this.walkmesh.mesh){
-          this.walkmesh.mesh.quaternion.setFromEuler(this.rotation);
-        }
+        this.walkmesh.mesh.name = this.walkmesh.name = ResRef;
+        this.walkmesh.mesh.moduleObject = this.walkmesh.moduleObject = this;
 
         if(typeof onLoad === 'function')
           onLoad(this.walkmesh);

@@ -45,27 +45,6 @@ class ModuleRoom extends ModuleObject {
   update(delta){
     if(this.model instanceof THREE.AuroraModel){
       this.model.update(delta);
-
-      //LightManager.MAXLIGHTS
-      for(let i = 0, len = this.model.materials.length; i < len; i++){
-        let mat = this.model.materials[i];
-        if(mat instanceof THREE.ShaderMaterial){
-
-          /*if(!mat.uniforms.pointLights.value.length)
-            return;
-
-          mat.uniforms.pointLights.value[0].animated = LightManager.light_pool[0].animated;
-          mat.uniforms.pointLights.value[1].animated = LightManager.light_pool[1].animated;
-          mat.uniforms.pointLights.value[2].animated = LightManager.light_pool[2].animated;
-          mat.uniforms.pointLights.value[3].animated = LightManager.light_pool[3].animated;
-          mat.uniforms.pointLights.value[4].animated = LightManager.light_pool[4].animated;
-          mat.uniforms.pointLights.value[5].animated = LightManager.light_pool[5].animated;
-          mat.uniforms.pointLights.value[6].animated = LightManager.light_pool[6].animated;
-          mat.uniforms.pointLights.value[7].animated = LightManager.light_pool[7].animated;*/
-
-        }
-      }
-
     }
   }
 
@@ -95,6 +74,14 @@ class ModuleRoom extends ModuleObject {
         }
       }
     }
+
+    //Add the walkmesh back to the scene
+    if(this.walkmesh && !this.walkmesh.mesh.parent){
+      Game.group.room_walkmeshes.add(this.walkmesh.mesh);
+    }else if(this.walkmesh && this.walkmesh.mesh.parent){
+      this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
+      Game.group.room_walkmeshes.add(this.walkmesh.mesh);
+    }
   }
 
   hide(){
@@ -106,24 +93,21 @@ class ModuleRoom extends ModuleObject {
       if(typeof this.linked_rooms[i] == 'object')
         this.linked_rooms[i].model.visible = false;
     }
+    
+    //Remove the walkmesh back to the scene
+    if(this.walkmesh && this.walkmesh.mesh.parent){
+      this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
+    }
   }
 
   link_rooms(rooms = []){
-
     for(let i = 0; i < this.linked_rooms.length; i++){
-
       for(let j = 0; j < rooms.length; j++){
-
         if(this.linked_rooms[i] == rooms[j].roomName.toLowerCase()){
-
           this.linked_rooms[i] = rooms[j];
-
         }
-
       }
-
     }
-
   }
 
   load( onComplete = null ){

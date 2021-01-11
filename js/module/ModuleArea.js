@@ -1041,12 +1041,10 @@ class ModuleArea extends ModuleObject {
         onLoop: (room, asyncLoop) => {
           room.load( (room) => {
             if(room.model instanceof THREE.AuroraModel){
+              
               if(room.walkmesh instanceof AuroraWalkMesh){
-                
                 Game.walkmeshList.push( room.walkmesh.mesh );
-                Game.octree_walkmesh.add( room.walkmesh.mesh, {useFaces: true} );
                 Game.group.room_walkmeshes.add( room.walkmesh.mesh );
-    
               }
     
               if(typeof room.model.walkmesh != 'undefined'){
@@ -1102,28 +1100,26 @@ class ModuleArea extends ModuleObject {
                   door.walkmesh = dwk;
                   Game.walkmeshList.push( dwk.mesh );
     
-                  //Game.scene.add(dwk.mesh);
-                  Game.group.room_walkmeshes.add( dwk.mesh );
-
-                  model.getWorldPosition(dwk.mesh.position);
-                  //dwk.mesh.quaternion.copy(model.getWorldQuaternion());
+                  if(dwk.mesh instanceof THREE.Object3D){
+                    dwk.mat4 = new THREE.Matrix4();
+                    dwk.mat4.makeRotationFromEuler(door.rotation);
+                    dwk.mesh.geometry.applyMatrix4(dwk.mat4);
+                    dwk.mesh.position.copy(door.position);
+                    if(!door.openState){
+                      Game.group.room_walkmeshes.add( dwk.mesh );
+                    }
+                  }
     
                   if(door.openState){
-                    if(door.walkmesh && door.walkmesh.mesh){
-                      if(Game.octree_walkmesh.objectsMap[door.walkmesh.mesh.uuid] == door.walkmesh.mesh){
-                        Game.octree_walkmesh.remove(door.walkmesh.mesh)
-                      }
-                    }
                     door.model.playAnimation('opened1', true);
-                  }else{
-                    Game.octree_walkmesh.add( dwk.mesh, {useFaces: true} );
                   }
                 }catch(e){
-                  console.error('Failed to add dwk', model.name, pwk);
+                  console.error('Failed to add dwk', model.name, dwk, e);
                 }
     
                 door.getCurrentRoom();
                 Game.group.doors.add( model );
+
                 asyncLoop.next();
               });
             });
@@ -1156,24 +1152,17 @@ class ModuleArea extends ModuleObject {
             plc.rotation.set(0, 0, plc.getBearing());
             plc.LoadModel( (model) => {
               plc.LoadWalkmesh(model.name, (pwk) => {
-                //console.log('loaded', modelName);
               
+                Game.walkmeshList.push( pwk.mesh );
                 Game.group.placeables.add( model );
-    
                 plc.computeBoundingBox();
-    
-                try{
-                  if(pwk.mesh instanceof THREE.Object3D){
-                    Game.group.room_walkmeshes.add( pwk.mesh );
-                    //model.add(pwk.model);
-                  }
-                    
-                  model.walkmesh = pwk;
-                  Game.walkmeshList.push(pwk.mesh);
-                  Game.octree_walkmesh.add( pwk.mesh, {useFaces: true} );
-                  Game.octree_walkmesh.rebuild();
-                }catch(e){
-                  console.error('Failed to add pwk', model.name, pwk);
+
+                if(pwk.mesh instanceof THREE.Object3D){
+                  pwk.mat4 = new THREE.Matrix4();
+                  pwk.mat4.makeRotationFromEuler(plc.rotation);
+                  pwk.mesh.geometry.applyMatrix4(pwk.mat4);
+                  pwk.mesh.position.copy(plc.position);
+                  Game.group.room_walkmeshes.add( pwk.mesh );
                 }
     
                 plc.getCurrentRoom();

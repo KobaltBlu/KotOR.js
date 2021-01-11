@@ -13,8 +13,6 @@ class LightManager {
     LightManager.spawned = 0;
     LightManager.light_pool = [];
     LightManager.clearLights();
-
-    LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
   }
 
   static clearLights(){
@@ -691,6 +689,10 @@ class LightManager {
   //Toggle the visbility of the light helpers ingame
   static toggleLightHelpers(){
     Game.group.light_helpers.visible = !Game.group.light_helpers.visible;
+  }
+
+  static setLightHelpersVisible(on = false){
+    Game.group.light_helpers.visible = on ? true : false;
   }
 
 }

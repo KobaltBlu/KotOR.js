@@ -1055,22 +1055,32 @@ class ModuleCreatureController extends ModuleObject {
 
     let currentAnimation = this.model.getAnimationName();
 
-    if(this.overlayAnimation){
-
-      if(currentAnimation != this.overlayAnimation){
-        this.model.playAnimation(this.overlayAnimation, false, () => {
-          //console.log('Overlay animation completed');
+    if(this.overlayAnimation && !this.isDead()){
+      let overlayAnimationData = AuroraModelAnimation.GetAnimation2DA(this.overlayAnimation);
+      if(overlayAnimationData){
+        if( (this.animState != ModuleCreature.AnimState.WALKING && this.animState != ModuleCreature.AnimState.RUNNING) || overlayAnimationData.overlay == 1){
+          if(currentAnimation != this.overlayAnimation){
+            this.dialogAnimation = undefined;
+            this.model.playAnimation(this.overlayAnimation, false, () => {
+              //console.log('Overlay animation completed');
+              this.overlayAnimation = undefined;
+            });
+          }
+          return;
+        }else{
           this.overlayAnimation = undefined;
-        });
+        }
+      }else{
+        this.overlayAnimation = undefined;
       }
-
-      return;
+    }else{
+      this.overlayAnimation = undefined;
     }
 
     if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
       return;
 
-    if(Game.inDialog && this.dialogAnimation && !this.force)
+    if(Game.inDialog && this.dialogAnimation && !this.force && !this.isDead())
       return;
 
     
@@ -2123,16 +2133,16 @@ class ModuleCreatureController extends ModuleObject {
     Game.raycaster.ray.direction.set(0, 0,-1);
 
     let aabbFaces = [];
-    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+    let intersects = [];
+    let obj = undefined;
 
     if(Config.options.Game.debug.world_collision){
       for(let j = 0, jl = this.rooms.length; j < jl; j++){
-        let room = Game.module.area.rooms[this.rooms[j]];
-        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+        obj = Game.module.area.rooms[this.rooms[j]];
+        if(obj && obj.walkmesh && obj.walkmesh.aabbNodes.length){
           aabbFaces.push({
-            object: room, 
-            faces: room.walkmesh.getAABBCollisionFaces(box)
+            object: obj, 
+            faces: obj.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
@@ -2140,12 +2150,12 @@ class ModuleCreatureController extends ModuleObject {
 
     if(Config.options.Game.debug.placeable_collision){
       for(let j = 0, jl = Game.module.area.placeables.length; j < jl; j++){
-        let plc = Game.module.area.placeables[j];
-        if(plc && plc.walkmesh){
-          if(plc.box.intersectsBox(box) || plc.box.containsBox(box)){
+        obj = Game.module.area.placeables[j];
+        if(obj && obj.walkmesh && obj.model & obj.model.visible){
+          if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
             aabbFaces.push({
-              object: plc, 
-              faces: plc.walkmesh.getAABBCollisionFaces(box)
+              object: obj, 
+              faces: obj.walkmesh.faces
             });
           }
         }
@@ -2154,12 +2164,13 @@ class ModuleCreatureController extends ModuleObject {
 
     if(Config.options.Game.debug.door_collision){
       for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
-        let door = Game.module.area.doors[j];
-        if(door && door.walkmesh && !door.isOpen()){
-          if(door.box.intersectsBox(box) || door.box.containsBox(box)){
+        obj = Game.module.area.doors[j];
+        if(obj && obj.walkmesh && !obj.isOpen()){
+          //Doing distance checking instead of BB checking for now. BB checking is preferred.
+          if(obj.position.distanceTo(this.position) <= 10){
             aabbFaces.push({
-              object: door,
-              faces: door.walkmesh.getAABBCollisionFaces(box)
+              object: obj,
+              faces: obj.walkmesh.faces
             });
           }
         }
@@ -2252,6 +2263,7 @@ class ModuleCreatureController extends ModuleObject {
         //if(worldCollide)
         //  break;
         let castableFaces = aabbFaces[k];
+        castableFaces.object.walkmesh.mesh.visible = true;
         intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
         if (intersects && intersects.length > 0 ) {
           for(let j = 0; j < intersects.length; j++){
@@ -2304,8 +2316,6 @@ class ModuleCreatureController extends ModuleObject {
           }
         }
       }
-      //meshesSearch = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-      //intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
     }
 
     //If there is more than one collision this frame set the velocity to (0, 0, 0)

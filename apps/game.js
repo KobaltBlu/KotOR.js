@@ -40,7 +40,7 @@ function pad(n, width, z) {
 const isMac = process.platform === 'darwin';
 const remote = require('electron').remote;
 const app = remote.app;
-app.allowRendererProcessReuse = false;
+app.allowRendererProcessReuse = false; //is required for loading modules like dxt because it isn't context aware
 const {BrowserWindow} = require('electron').remote;
 const {ipcRenderer} = require('electron');
 const {Menu, MenuItem} = remote;
@@ -721,9 +721,14 @@ const template = [
           Config.set('Game.debug.show_collision_meshes', !Config.get('Game.debug.show_collision_meshes'));
         }},
       ]},
+      { label: 'Module Objects', submenu: [
+        { label: 'Tiggers: Show ', type: 'checkbox', checked: Config.get('Game.debug.trigger_geometry_show'), click: () => {
+          Config.set('Game.debug.trigger_geometry_show', !Config.get('Game.debug.trigger_geometry_show'));
+        }}
+      ]},
       { label: 'Light Helpers', type: 'checkbox', checked: Config.get('Game.debug.light_helpers'), 'accelerator': 'Alt+l', click: () => {
         Config.set('Game.debug.light_helpers', !Config.get('Game.debug.light_helpers'));
-        LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
+        LightManager.setLightHelpersVisible(Config.get('Game.debug.light_helpers') ? true : false);
       }},
       { label: 'Show FPS', type: 'checkbox', checked: Config.get('Game.debug.show_fps'), 'accelerator': 'Alt+F', click: () => {
         Config.set('Game.debug.show_fps', !Config.get('Game.debug.show_fps'));
@@ -734,6 +739,9 @@ const template = [
           Game.stats.showPanel(0);
         }
 
+      }},
+      { label: 'Shipping Build', type: 'checkbox', checked: Config.get('Game.debug.is_shipping_build'), click: () => {
+        Config.set('Game.debug.is_shipping_build', !Config.get('Game.debug.is_shipping_build'));
       }},
     ]
   },
@@ -776,10 +784,10 @@ const template = [
     role: 'help',
     submenu: [
       {
-        label: 'Learn More',
+        label: 'KotOR.js - Github',
         click: async () => {
           const { shell } = require('electron')
-          await shell.openExternal('https://electronjs.org')
+          await shell.openExternal('https://github.com/KobaltBlu/KotOR.js')
         }
       }
     ]

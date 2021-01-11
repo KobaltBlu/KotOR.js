@@ -21,7 +21,7 @@ class ConfigManager{
     }catch(e){ console.error('ConfigManager', e); }
 
 
-    this.options = $.extend(defaults, _settings);
+    this.options = this._mergeDeep(defaults, _settings);
     this.cache();
 
     if(_settings == {}){
@@ -119,6 +119,38 @@ class ConfigManager{
     // Otherwise, return true
     return true;
   
+  }
+
+  /**
+   * Simple object check.
+   * @param item
+   * @returns {boolean}
+   */
+  _isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+  }
+
+  /**
+   * Deep merge two objects.
+   * @param target
+   * @param ...sources
+   */
+  _mergeDeep(target, ...sources) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+
+    if (this._isObject(target) && this._isObject(source)) {
+      for (const key in source) {
+        if (this._isObject(source[key])) {
+          if (!target[key]) Object.assign(target, { [key]: {} });
+          this._mergeDeep(target[key], source[key]);
+        } else {
+          Object.assign(target, { [key]: source[key] });
+        }
+      }
+    }
+
+    return this._mergeDeep(target, ...sources);
   }
 
   get(path = ''){
@@ -300,6 +332,10 @@ const defaults = {
       placeable_collision: true,
       world_collision: true,
       camera_collision: true,
+      encounter_geometry_show: false,
+      trigger_geometry_show: false,
+      waypoint_geometry_show: false,
+      is_shipping_build: true,
     }
   },
   Theme: {

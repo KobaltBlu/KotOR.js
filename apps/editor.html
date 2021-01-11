@@ -171,6 +171,8 @@
         GameInitializer.Init({
           game: Games[GameKey],
           onLoad: () => {
+            AuroraWalkMesh.Init();
+            LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
             
             resourceExplorerTab.initialize( () => {
 

@@ -2662,8 +2662,6 @@ NWScriptDefK1.Actions = {
                           
                         model.walkmesh = pwk;
                         Game.walkmeshList.push(pwk.mesh);
-                        Game.octree_walkmesh.add( pwk.mesh, {useFaces: true} );
-                        Game.octree_walkmesh.rebuild();
                       }catch(e){
                         console.error('Failed to add pwk', model.name, pwk);
                       }
@@ -7093,7 +7091,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return true;//!this.debug.build; //Hardcode this value so the game doesn't enter debug mode
+      return Config.get('Game.debug.is_shipping_build') ? true : false;
     }
   },
   762:{
