@@ -590,8 +590,10 @@ class IngameControls {
         }
       }
   
-      if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
+      if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME) && MenuManager.GetCurrentMenu() == Game.InGameOverlay){
         Game.State = ( Game.State == Game.STATES.PAUSED ? Game.STATES.RUNNING : Game.STATES.PAUSED );
+      }else if(this.keys['space'].pressed && MenuManager.GetCurrentMenu() == Game.InGameConfirm){
+        Game.InGameConfirm.Close();
       }
 
       if(this.keys['z'].pressed){
@@ -623,10 +625,6 @@ class IngameControls {
       if(!Game.inDialog && MenuManager.GetCurrentMenu() != Game.InGameConfirm && MenuManager.GetCurrentMenu() != Game.MenuContainer){
 
         let followee = PartyManager.party[0];
-
-        if(this.keys['ctrl'].pressed){
-          Game.autoRun = !Game.autoRun;
-        }
 
         if(followee.canMove()){
 
@@ -701,6 +699,12 @@ class IngameControls {
           this.camDir = -1;
         }
 
+      }
+      
+      if(MenuManager.GetCurrentMenu() == Game.InGameConfirm){
+        if(this.keys['space'].down){
+          Game.InGameConfirm.Close();
+        }
       }
 
     }else if(Game.State == Game.STATES.PAUSED && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
