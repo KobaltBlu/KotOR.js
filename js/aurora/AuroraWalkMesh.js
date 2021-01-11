@@ -10,7 +10,7 @@
   constructor( wokReader = null, onLoad = null, onError = null ){
 
     this.header = {
-      walkMeshType: AuroraWalkMesh.TYPE.DYNAMIC
+      walkMeshType: AuroraWalkMesh.TYPE.NONE
     };
 
     this.walkableFaces = [];
@@ -241,7 +241,7 @@
 
   getAABBCollisionFaces(box = new THREE.Box3, node = undefined, collisions = []){
 
-    if(this.header.walkMeshType == AuroraWalkMesh.TYPE.STATIC){
+    if(this.header.walkMeshType == AuroraWalkMesh.TYPE.AABB){
 
       if(!this.aabbRoot){
         return this.faces;
@@ -295,7 +295,7 @@
 
   raycast(raycaster, faces = []) {
 
-    if(this.header.walkMeshType == AuroraWalkMesh.TYPE.DYNAMIC){
+    if(this.header.walkMeshType == AuroraWalkMesh.TYPE.NONE){
       let intersects = [];
       this.mesh.raycast(raycaster, intersects);
       return intersects;
@@ -439,8 +439,8 @@
 
   
 AuroraWalkMesh.TYPE = {
-  DYNAMIC:  0,
-  STATIC:   1
+  NONE:   0,
+  AABB:   1
 };
 
 module.exports = AuroraWalkMesh;
