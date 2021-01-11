@@ -49,7 +49,7 @@ THREE.TGALoader.prototype.load = function ( url, onLoad = undefined, onError = u
 				if ( typeof onLoad !== 'undefined' ) {
 					texture.txi = new TXI('');
 					if(typeof onLoad == 'function')
-						onLoad( texture );
+						onLoad( undefined );
 				}
 			}
 
@@ -57,7 +57,7 @@ THREE.TGALoader.prototype.load = function ( url, onLoad = undefined, onError = u
 	}else{
 		//console.log('Lightmap not found', url)
 		if(typeof onLoad == 'function')
-			onLoad( texture );
+			onLoad( undefined );
 	}
 
 	//return texture;
