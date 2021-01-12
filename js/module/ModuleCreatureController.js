@@ -490,18 +490,24 @@ class ModuleCreatureController extends ModuleObject {
               false
             );
 
-            if(this.action.animComplete){
+            if(this.action.timer == undefined){
+              this.action.timer = 1.5;
+              this.action.object.audioEmitter.PlaySound('gui_lockpick');
+            }
+
+            if(!this.isSimpleCreature()){
+              if(this.action.object instanceof ModuleDoor){
+                this.overlayAnimation = 'unlockdr';
+              }else{
+                this.overlayAnimation = 'unlockcntr';
+              }
+            }
+
+            this.action.timer -= delta;
+
+            if(this.action.timer <= 0){
               this.action.object.attemptUnlock(this);
               this.actionQueue.shift();
-            }else{
-              this.action.animComplete = true;
-              this.actionQueue.unshift({ 
-                goal: ModuleCreature.ACTION.ANIMATE,
-                animation: 'unlockdr',
-                speed: 1,
-                time: 0
-              });
-              this.action.object.audioEmitter.PlaySound('gui_lockpick');
             }
             
           }
