@@ -72,7 +72,7 @@ class AuroraModelAnimation {
   getDamageDelay(){
     for(let i = 0, len = this.events.length; i < len; i++){
       if(this.events[i].name == 'Hit'){
-        return this.events.length;
+        return this.events[i].length;
       }
     }
     return 0.5;

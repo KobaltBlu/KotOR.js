@@ -314,10 +314,10 @@ class CombatEngine {
     }
 
     if(combatAction.isCutsceneAttack){
-      console.log('cutsceneAttack', creature, combatAction.target, combatAction);
+      //console.log('cutsceneAttack', creature, combatAction.target, combatAction);
       creature.overlayAnimation = combatAction.animation;
       //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
-      console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
+      //console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
 
       if(creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
         combatAction.attackResult = 1;
@@ -339,12 +339,12 @@ class CombatEngine {
         }
       }
 
-      if(combatAction.damage)
+      if(combatAction.damage){
+        //console.log('CutsceneAttack', 'Damage', creature.getTag(), '-->', combatAction.target.getTag(), combatAction.damage, attackDamageDelay);
         combatAction.target.damage(combatAction.damage, undefined, attackDamageDelay);
+      }
 
-      setTimeout( () => {
-        creature.actionQueue.shift();
-      }, attackAnimation.length * 1000);
+      creature.actionQueue.shift();
 
     }else{
       
