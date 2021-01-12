@@ -227,6 +227,48 @@
 
   }
 
+  sign(p1, p2, p3){
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+  }
+
+  pointInFace2d(pt, face){
+    let v1 = this.vertices[face.a];
+    let v2 = this.vertices[face.a];
+    let v3 = this.vertices[face.a];
+
+    let d1 = this.sign(pt, v1, v2);
+    let d2 = this.sign(pt, v2, v3);
+    let d3 = this.sign(pt, v3, v1);
+
+    let has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    let has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+    return !(has_neg && has_pos);
+  }
+
+  isPointWalkable(point){
+    for(let i = 0, len = this.walkableFaces.length; i < len; i++){
+      if(this.pointInFace2d(point, this.walkableFaces[i])){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getNearestWalkablePoint(point){
+    let nearest = Infinity;
+    let nearest_point = undefined;
+    let distance = 0;
+    for(let i = 0, len = this.walkableFaces.length; i < len; i++){
+      distance = point.distanceTo(this.walkableFaces[i].centroid);
+      if(distance < nearest){
+        nearest_point = this.walkableFaces[i].centroid;
+        nearest = distance;
+      }
+    }
+    return nearest_point;
+  }
+
   //BSP Tree?
   //https://www.gamasutra.com/view/feature/131508/bsp_collision_detection_as_used_in_.php?print=1
 

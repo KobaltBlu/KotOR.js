@@ -1041,7 +1041,7 @@ class ModuleArea extends ModuleObject {
         onLoop: (room, asyncLoop) => {
           room.load( (room) => {
             if(room.model instanceof THREE.AuroraModel){
-              
+
               if(room.walkmesh instanceof AuroraWalkMesh){
                 Game.walkmeshList.push( room.walkmesh.mesh );
                 Game.group.room_walkmeshes.add( room.walkmesh.mesh );
@@ -1618,6 +1618,34 @@ class ModuleArea extends ModuleObject {
       if(typeof onLoad === 'function')
         onLoad();
     });
+  }
+
+  isPointWalkable(point){
+    for(let i = 0, len = this.rooms.length; i < len; i++){
+      if(this.rooms[i].walkmesh && this.rooms[i].walkmesh.isPointWalkable(point)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getNearestWalkablePoint(point){
+    let nearest = Infinity;
+    let nearest_point = undefined;
+
+    let p = undefined;
+    let p_dist = 0;
+    for(let i = 0, len = this.rooms.length; i < len; i++){
+      if(this.rooms[i].walkmesh){
+        p = this.rooms[i].walkmesh.getNearestWalkablePoint(point);
+        p_dist = p.distanceTo(point);
+        if(p_dist < nearest){
+          nearest_point = p;
+          nearest = p_dist;
+        }
+      }
+    }
+    return nearest_point;
   }
 
   toolsetExportARE(){

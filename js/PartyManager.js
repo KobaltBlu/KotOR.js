@@ -390,7 +390,7 @@ class PartyManager {
         0
       )
     );
-    return targetPos;
+    return Game.module.area.getNearestWalkablePoint(targetPos);
   }
 
 }
