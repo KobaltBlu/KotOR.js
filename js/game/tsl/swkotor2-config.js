@@ -24,8 +24,8 @@ module.exports = {
 	},
 	"Graphics Options": {
 		"RefreshRate": "60",
-		"Height": "960",
-		"Width": "1280",
+		"Height": "600",
+		"Width": "800",
 		"V-Sync": "0",
 		"Anisotropy": "8",
 		"Frame Buffer": "1",
