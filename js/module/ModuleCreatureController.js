@@ -285,6 +285,9 @@ class ModuleCreatureController extends ModuleObject {
       this.updateItems(delta);
     }
 
+    this.collisionTimer -= delta;
+    if(this.collisionTimer < 0)
+      this.collisionTimer = 0;
 
   }
 
@@ -764,7 +767,7 @@ class ModuleCreatureController extends ModuleObject {
     this.invalidateCollision = true;
     let point = this.action.path[0];
 
-    if(this.blockingTimer >= 5){
+    if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
       point = this.action.path[this.action.path.length - 1];
       this.action.path = [point];
       
@@ -774,6 +777,7 @@ class ModuleCreatureController extends ModuleObject {
       this.position.copy(point);
 
       this.blockingTimer = 0;
+      this.collisionTimer = 0;
     }
 
     if(point == undefined)
@@ -1775,6 +1779,7 @@ class ModuleCreatureController extends ModuleObject {
     this.clearTarget();
     this.combatState = false;
     this.cancelExcitedDuration();
+    this.overlayAnimation = undefined;
   }
 
   getDamageAnimation( attackAnim = undefined ){
@@ -2309,6 +2314,7 @@ class ModuleCreatureController extends ModuleObject {
                   //console.log(this.position, intersects[j].point, this.position.clone().reflect(intersects[j].face.normal));
                   this.AxisFront.set(point3.y*0.05, point3.x*0.05, 0);
                 }
+                worldCollide = true;
               }else{
                 //console.log(intersects[j].face.walkIndex);
               }
@@ -2362,7 +2368,7 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     if(worldCollide){
-      this.collisionTimer += delta;
+      this.collisionTimer += delta*2;
     }
 
     //Hack
