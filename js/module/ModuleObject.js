@@ -793,12 +793,18 @@ class ModuleObject {
     }
   }
 
-  SetPosition(x = 0, y = 0, z = 0){
+  setPosition(x = 0, y = 0, z = 0){
+
+    if(x instanceof THREE.Vector3){
+      z = x.z;
+      y = x.y;
+      x = x.x;
+    }
+
     try{
       if(this.model instanceof THREE.AuroraModel){
         this.model.position.set(x, y, z);
-        this.model.box.setFromObject(this.model);
-        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
+        this.computeBoundingBox();
       }
 
       this.position.set(x, y, z);
@@ -806,11 +812,11 @@ class ModuleObject {
       if(this instanceof ModuleCreature)
         this.updateCollision();
     }catch(e){
-      console.error('ModuleObject.SetPosition failed ');
+      console.error('ModuleObject.setPosition failed ');
     }
   }
 
-  GetPosition(){
+  getPosition(){
     try{
       return this.position.clone();
     }catch(e){
@@ -869,19 +875,6 @@ class ModuleObject {
 
     return '';
   }
-
-  /*GetPosition(){
-    try{
-      return this.model.position.clone();
-    }catch(e){
-      console.error('ModuleObject', e);
-      return new THREE.Vector3(0);
-    }
-  }*/
-
-  /*GetFacing(){
-    return 0;
-  }*/
 
   getFortitudeSave(){
     return this.fortitudeSaveThrow;
@@ -1015,8 +1008,7 @@ class ModuleObject {
     if(typeof lLocation === 'object'){
       if(this.model instanceof THREE.AuroraModel){
         this.model.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-        this.model.box.setFromObject(this.model);
-        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
+        this.computeBoundingBox();
       }
 
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
@@ -1186,11 +1178,12 @@ class ModuleObject {
 
   }
 
-
-
-
   computeBoundingBox(){
     if(this.model){
+      if(!this.model.box){
+        this.model.box = new THREE.Box3();
+      }
+
       this.model.box = this.box.setFromObject(this.model);
       this.model.sphere = this.box.getBoundingSphere(this.model.sphere);
     }

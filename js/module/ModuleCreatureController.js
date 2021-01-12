@@ -207,7 +207,7 @@ class ModuleCreatureController extends ModuleObject {
 
       //If a non controlled party member is stuck, warp them to their follow position
       if(this.partyID != undefined && this != Game.getCurrentPlayer() && this.collisionTimer >= 1){
-        this.position.copy(PartyManager.GetFollowPosition(this));
+        this.setPosition(PartyManager.GetFollowPosition(this));
         this.collisionTimer = 0;
       }
 
@@ -541,7 +541,7 @@ class ModuleCreatureController extends ModuleObject {
         case ModuleCreature.ACTION.MOVETOPOINT:
           if(this.action.instant){
             //console.log('INSTANT MOVE', this.getName(), '--->', this.action.object.getName(), this.position.clone(), this.action.object.position.clone());
-            this.position.copy( this.action.object.position );
+            this.setPosition(this.action.object.position);
             this.setFacing(this.action.object.rotation.z, false);
             this.getCurrentRoom();
             this.updateCollision();
@@ -774,7 +774,7 @@ class ModuleCreatureController extends ModuleObject {
       if(!(point instanceof THREE.Vector3))
         point = point.vector;
 
-      this.position.copy(point);
+      this.setPosition(point);
 
       this.blockingTimer = 0;
       this.collisionTimer = 0;

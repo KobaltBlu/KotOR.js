@@ -331,7 +331,7 @@ class ModuleCreature extends ModuleCreatureController {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  GetPosition(){
+  getPosition(){
     return this.position.clone();
   }
 

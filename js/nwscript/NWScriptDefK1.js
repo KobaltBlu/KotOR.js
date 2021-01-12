@@ -490,7 +490,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: ["object"],
     action: function(args, _instr, action){
-      return this.caller.GetPosition().distanceTo( args[0].GetPosition() );
+      return this.caller.getPosition().distanceTo( args[0].getPosition() );
     }
   },
   42:{
@@ -1561,9 +1561,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
-        return args[0].GetPosition().distanceTo(
-          args[1].GetPosition()
-          );
+        return args[0].getPosition().distanceTo( args[1].getPosition() );
       }else{
         return 0.00;
       }
@@ -2224,7 +2222,7 @@ NWScriptDefK1.Actions = {
       //console.log('NWScript: '+this.name, 'GetLocation', args);
       if(args[0] instanceof ModuleObject){
         return {
-          position: args[0].GetPosition(),
+          position: args[0].getPosition(),
           area: Game.module.area,
           facing: THREE.Math.radToDeg(args[0].rotation.z)
         };
