@@ -1638,10 +1638,12 @@ class ModuleArea extends ModuleObject {
     for(let i = 0, len = this.rooms.length; i < len; i++){
       if(this.rooms[i].walkmesh){
         p = this.rooms[i].walkmesh.getNearestWalkablePoint(point);
-        p_dist = p.distanceTo(point);
-        if(p_dist < nearest){
-          nearest_point = p;
-          nearest = p_dist;
+        if(p){
+          p_dist = p.distanceTo(point);
+          if(p_dist < nearest){
+            nearest_point = p;
+            nearest = p_dist;
+          }
         }
       }
     }
