@@ -1196,7 +1196,7 @@ class ModuleObject {
       }
     }
 
-    if(Game.scene.fog){
+    if(Game.scene.fog && !(this instanceof ModuleDoor)){
       if(this.distanceToCamera >= Game.scene.fog.far){
         return false;
       }
