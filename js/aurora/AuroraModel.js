@@ -266,6 +266,7 @@ class AuroraModel {
     mesh.indexArray = [];
     mesh.uvs = [];
     mesh.faces = [];
+    mesh.indicies = [];
 
     let _faceArrDef = AuroraModel.ReadArrayDefinition(this.mdlReader);
 
@@ -376,6 +377,42 @@ class AuroraModel {
       //mesh.tvectors[t].length = mesh.VerticiesCount;
     }
 
+    //Tangent1
+    if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
+      mesh.tangent1 = {
+        tangents: [],
+        bitangents: [],
+        normals: []
+      }
+    }
+
+    //Tangent2
+    if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2){
+      mesh.tangent2 = {
+        tangents: [],
+        bitangents: [],
+        normals: []
+      }
+    }
+
+    //Tangent3
+    if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3){
+      mesh.tangent3 = {
+        tangents: [],
+        bitangents: [],
+        normals: []
+      }
+    }
+
+    //Tangent4
+    if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4){
+      mesh.tangent4 = {
+        tangents: [],
+        bitangents: [],
+        normals: []
+      }
+    }
+
     for (let i = 0; i < mesh.VerticiesCount; i++) {
       // Base Position Offset
       let basePosition = (MDXNodeDataOffset + (i * mesh.MDXDataSize));
@@ -417,37 +454,33 @@ class AuroraModel {
       //Tangent1
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
         this.mdxReader.position = basePosition + OffsetToMdxTangent1;
-        mesh.tangents[0][i] = [];
-        for(let j= 0; j < 3; j++){
-          mesh.tangents[0][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-        }
+        mesh.tangent1.tangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent1.bitangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent1.normals.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
       }
 
       //Tangent2
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT2){
-        this.mdxReader.position = basePosition + OffsetToMdxTangent2;
-        mesh.tangents[1][i] = [];
-        for(let j= 0; j < 3; j++){
-          mesh.tangents[1][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-        }
+        this.mdxReader.position = basePosition + OffsetToMdxTangent1;
+        mesh.tangent2.tangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent2.bitangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent2.normals.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
       }
 
-      //Tangent1
+      //Tangent3
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT3){
-        this.mdxReader.position = basePosition + OffsetToMdxTangent3;
-        mesh.tangents[2][i] = [];
-        for(let j= 0; j < 3; j++){
-          mesh.tangents[2][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-        }
+        this.mdxReader.position = basePosition + OffsetToMdxTangent1;
+        mesh.tangent3.tangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent3.bitangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent3.normals.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
       }
 
-      //Tangent1
+      //Tangent4
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT4){
-        this.mdxReader.position = basePosition + OffsetToMdxTangent4;
-        mesh.tangents[3][i] = [];
-        for(let j= 0; j < 3; j++){
-          mesh.tangents[3][i][j] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
-        }
+        this.mdxReader.position = basePosition + OffsetToMdxTangent1;
+        mesh.tangent4.tangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent4.bitangents.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.tangent4.normals.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
       }
 
     }
