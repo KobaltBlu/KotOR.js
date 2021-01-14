@@ -497,11 +497,15 @@ class TextureLoader {
                 tex.material.uniforms.normalMap.value = bumpMap;
                 tex.material.defines.USE_NORMALMAP = '';
                 tex.material.uniformsNeedUpdate = true;
+                tex.material.vertexTangents = true;
+                tex.material.normalMapType = THREE.TangentSpaceNormalMap;
+                tex.material.defines['TANGENTSPACE_NORMALMAP'] = '';
               }else{
                 tex.material.normalMap = bumpMap;
+                tex.material.normalMapType = THREE.ObjectSpaceNormalMap;
+                tex.material.defines['OBJECTSPACE_NORMALMAP'] = '';
               }
 
-              tex.material.normalMapType = THREE.ObjectSpaceNormalMap;
               tex.material.transparent = false;
 
             }else{
@@ -533,8 +537,8 @@ class TextureLoader {
               tex.material.uniforms.bumpMap.value.generateMipmaps = false;
 
               tex.material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling * 0.1;
-              tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
-              tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
+              //tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
+              //tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
               tex.material.uniforms.reflectivity.value = 1;
               tex.material.transparent = true;
               tex.material.premultipliedAlpha = false;
