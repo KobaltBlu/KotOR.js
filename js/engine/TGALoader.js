@@ -29,7 +29,7 @@ THREE.TGALoader.prototype.load = function ( url, onLoad = undefined, onError = u
 	let tgaKey = Global.kotorKEY.GetFileKey(url, ResourceTypes['tga']);
 	if(tgaKey){
 		Global.kotorKEY.GetFileData(tgaKey, (buffer) => {
-			texture.image = scope.parse( buffer );
+			texture.image = scope.parse( buffer, url );
 			texture.needsUpdate = true;
 			texture.name = url;
 			texture.bumpMapType = 'BUMP';
@@ -79,7 +79,7 @@ THREE.TGALoader.prototype.load_override = function ( name, onLoad = undefined, o
 			return;
 		}
 
-		texture.image = scope.parse( buffer );
+		texture.image = scope.parse( buffer, name );
 		texture.needsUpdate = true;
 		texture.name = name;
 		texture.bumpMapType = 'BUMP';
@@ -127,7 +127,7 @@ THREE.TGALoader.prototype.load_local = function ( name, onLoad = undefined, onEr
 
 			return;
 		}
-		texture.image = scope.parse( buffer );
+		texture.image = scope.parse( buffer, name );
 		texture.needsUpdate = true;
 		texture.name = name;
 		texture.bumpMapType = 'BUMP';
@@ -163,7 +163,7 @@ THREE.TGALoader.prototype.load_local = function ( name, onLoad = undefined, onEr
 };
 
 // reference from vthibault, https://github.com/vthibault/roBrowser/blob/master/src/Loaders/Targa.js
-THREE.TGALoader.prototype.parse = function ( buffer ) {
+THREE.TGALoader.prototype.parse = function ( buffer, name ) {
 
 	// TGA Constants
 	var TGA_TYPE_NO_DATA = 0,
@@ -307,7 +307,7 @@ THREE.TGALoader.prototype.parse = function ( buffer ) {
 	}
 
 	// Parse tga image buffer
-	function tgaParse( use_rle, use_pal, header, offset, data ) {
+	function tgaParse( use_rle, use_pal, header, offset, data, face = 0 ) {
 
 		var pixel_data,
 			pixel_size,
@@ -316,6 +316,8 @@ THREE.TGALoader.prototype.parse = function ( buffer ) {
 
 		pixel_size = header.pixel_size >> 3;
 		pixel_total = header.width * header.height * pixel_size;
+
+		offset += (pixel_total * face);
 
 		 // Read palettes
 		 if ( use_pal ) {
@@ -620,18 +622,63 @@ THREE.TGALoader.prototype.parse = function ( buffer ) {
 
 	}
 
-	var canvas = document.createElement( 'canvas' );
-	canvas.width = header.width;
-	canvas.height = header.height;
+	var canvas = undefined;
+	var faces = (header.height / header.width) == 6 ? 6 : 1;
 
-	var context = canvas.getContext( '2d' );
-	var imageData = context.createImageData( header.width, header.height );
+	if(faces == 1){
+		var canvas = document.createElement( 'canvas' );
+		canvas.width = header.width;
+		canvas.height = header.height;
 
-	var result = tgaParse( use_rle, use_pal, header, offset, content );
-	var rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
+		var context = canvas.getContext( '2d' );
+		var imageData = context.createImageData( header.width, header.height );
 
-	context.putImageData( imageData, 0, 0 );
+		var result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
+		var rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
-	return canvas;
+		context.putImageData( imageData, 0, 0 );
+		return canvas;
+	}
+
+	let canvases = [];
+	for(var i = 0; i < faces; i++){
+		let canvas = document.createElement( 'canvas' );
+		canvas.width = header.width;
+		canvas.height = header.width;
+		header.height = header.width;
+
+		var context = canvas.getContext( '2d' );
+		var imageData = context.createImageData( header.width, header.width );
+		var result = tgaParse( use_rle, use_pal, header, offset, content, i );
+		var rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
+
+		context.putImageData( imageData, 0, 0 );
+
+		/*switch(i){
+			case 0:
+				canvases[0] = canvas;
+			break;
+			case 1:
+				canvases[1] = canvas;
+			break;
+			case 2:
+				canvases[2] = canvas;
+			break;
+			case 3:
+				canvases[3] = canvas;
+			break;
+			case 4:
+				canvases[4] = canvas;
+			break;
+			case 5:
+				canvases[5] = canvas;
+			break;
+		}*/
+
+		//offset += ( (header.width + header.width) * 5 );
+		canvases.push(canvas);
+	}
+
+	return canvases;
 
 };
