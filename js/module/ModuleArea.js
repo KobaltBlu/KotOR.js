@@ -1370,7 +1370,7 @@ class ModuleArea extends ModuleObject {
       ]),
       vertexShader: Shaders['grass'].getVertex(),
       fragmentShader: Shaders['grass'].getFragment(),
-      color: new THREE.Color( 1, 1, 1 ),
+      //color: new THREE.Color( 1, 1, 1 ),
       side: THREE.DoubleSide,
       transparent: false,
       fog: true,
