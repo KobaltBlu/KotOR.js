@@ -370,12 +370,14 @@ class AuroraModel {
       mesh.TextureCount = 2;
     }
 
-    mesh.vertices.length = mesh.VerticiesCount;
+    //mesh.vertices.length = mesh.VerticiesCount;
     mesh.normals.length = mesh.VerticiesCount;
 
     for (let t = 0; t < mesh.TextureCount; t++) {
       //mesh.tvectors[t].length = mesh.VerticiesCount;
     }
+
+    mesh.indicies = [];
 
     //Tangent1
     if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
@@ -420,7 +422,7 @@ class AuroraModel {
       // Vertex
       if(mesh.MDXDataBitmap & AuroraModel.MDXFLAG.VERTEX){
         this.mdxReader.position = basePosition + MDXVertexOffset;
-        mesh.vertices[i] = new THREE.Vector3(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
+        mesh.vertices.push(this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle(), this.mdxReader.ReadSingle());
       }
 
       // Normal
@@ -516,9 +518,9 @@ class AuroraModel {
     if(mesh.TextureCount){
       this.mdlReader.position = this.fileHeader.ModelDataOffset + mesh.FaceArrayOffset;
       for (let i = 0; i < mesh.FaceArrayCount; i++) {
-        mesh.faces[i].normalX = this.mdlReader.ReadSingle();
-        mesh.faces[i].normalY = this.mdlReader.ReadSingle();
-        mesh.faces[i].normalZ = this.mdlReader.ReadSingle();
+        mesh.faces[i].normal.x = this.mdlReader.ReadSingle();
+        mesh.faces[i].normal.y = this.mdlReader.ReadSingle();
+        mesh.faces[i].normal.z = this.mdlReader.ReadSingle();
         mesh.faces[i].distance = this.mdlReader.ReadSingle();
         mesh.faces[i].materialId = this.mdlReader.ReadUInt32();
         mesh.faces[i].nAdjacentFaces1 = this.mdlReader.ReadUInt16();
@@ -527,6 +529,7 @@ class AuroraModel {
         mesh.faces[i].indexVertex1 = this.mdlReader.ReadUInt16();
         mesh.faces[i].indexVertex2 = this.mdlReader.ReadUInt16();
         mesh.faces[i].indexVertex3 = this.mdlReader.ReadUInt16();
+        mesh.indicies.push(mesh.faces[i].indexVertex1, mesh.faces[i].indexVertex2, mesh.faces[i].indexVertex3);
       }
     }
 
