@@ -59,11 +59,11 @@
     //Non static objects in room meshes are children of the node that is the name of the model plus a
     //like: MODELNAMEa or m02ac_02ba
 
-    if(parent){
+    if(this.parent){
       if(this.name == (this.auroraModel.geometryHeader.ModelName.trim()+'a').toLowerCase()){
         this.roomStatic = false;
       }else{
-        this.roomStatic = parent.roomStatic;
+        this.roomStatic = this.parent.roomStatic;
       }
     }
 

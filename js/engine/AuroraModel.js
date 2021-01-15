@@ -17,7 +17,7 @@ THREE.AuroraLight = function () {
   this.getIntensity = function(){
     if(this._node)
       //return this._node.multiplier;
-      return (this._node.multiplier > 1 && (Number(this._node.multiplier) === this._node.multiplier && this._node.multiplier % 1 === 0) ? this._node.multiplier : this._node.multiplier);
+      return 0.5;//(this._node.multiplier > 1 && (Number(this._node.multiplier) === this._node.multiplier && this._node.multiplier % 1 === 0) ? this._node.multiplier : this._node.multiplier);
     else
       return 0;
   }
@@ -1165,7 +1165,7 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         //-------------------------//
 
         let geometry = undefined;
-
+        
         //-------------------//
         // BUFFERED GEOMETRY
         //-------------------//
@@ -1228,7 +1228,7 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         //----------------//
         // BASIC GEOMETRY
         //----------------//
-        if(!geometry){
+        if(typeof geometry == 'undefined'){
           geometry = new THREE.Geometry();
           geometry.boundingBox = new THREE.Box3(_node.boundingBox.min, _node.boundingBox.max);
     
@@ -1252,6 +1252,11 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2){
             geometry.faceUvs[1] = _node.tvectors[1];
             geometry.faceVertexUvs[1] = _node.texCords[1];
+          }
+
+          //Colors
+          if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.COLOR){
+            geometry.colors = _node.colors;
           }
           
           //if(auroraModel.modelHeader.Smoothing)
@@ -1294,8 +1299,12 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         //------------//
         // BASIC MESH
         //------------//
-        if(!mesh)
+        if(!mesh && geometry && material)
           mesh = new THREE.Mesh( geometry , material );
+
+        if(!mesh){
+          console.error('THREE.AuroraModel', 'Failed to generate mesh node', _node);
+        }
 
         node.mesh = mesh;
 
@@ -1317,8 +1326,9 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         //----------------//
         // MERGE GEOMETRY
         //----------------//
-        if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && mesh.geometry.faces.length){
-
+        //console.log('THREE.AuroraModel', auroraModel.name, _node.name, !node.isWalkmesh, !_node.BackgroundGeometry, options.mergeStatic, _node.roomStatic, geometry.faces?.length, _node)
+        if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && geometry.faces.length){
+          
           mesh.position.copy(node.getWorldPosition(new THREE.Vector3));
           mesh.quaternion.copy(node.getWorldQuaternion(new THREE.Quaternion));
           mesh.updateMatrix(); // as needed
@@ -1381,14 +1391,14 @@ THREE.AuroraModel.NodeMaterialBuilder = function(auroraModel, node, options){
   if((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB){
     material = new THREE.MeshBasicMaterial({
       fog: false,
-      side:THREE.FrontSide,
+      side: THREE.FrontSide,
     });
   }else{
     material = new THREE.ShaderMaterial({
       fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
       vertexShader: THREE.ShaderLib.aurora.vertexShader,
       uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
-      side:THREE.FrontSide,
+      side: THREE.FrontSide,
       lights: true,
       fog: auroraModel.affectedByFog,
     });
