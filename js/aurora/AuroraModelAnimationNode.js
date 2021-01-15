@@ -5,19 +5,16 @@
  * The AuroraModelAnimationNode holds the values for an animation node
  */
 
- class AuroraModelAnimationNode {
+ class AuroraModelAnimationNode extends AuroraModelNode {
 
-  constructor(){
-    this.type = 'AuroraModelAnimationNode';
+  constructor(parent = undefined){
+    super(parent);
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.controllers = new Map();
     this.children = [];
     this.name = '';
-
     this.modelNodeCache = {};
-
-
   }
 
   getNode(node, model){
@@ -37,6 +34,11 @@
 
     }
 
+  }
+
+  readBinary(auroraModel = undefined){
+    super.readBinary(auroraModel);
+    this.auroraModel = undefined;
   }
 
 }

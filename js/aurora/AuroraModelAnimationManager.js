@@ -208,6 +208,11 @@ class AuroraModelAnimationManager {
           controller.setFrame(this, anim, controller, controller.data[0]);
           continue;
         }
+
+        if(controller.data.length != controller.frameCount){
+          console.log('Missing Controller Data', controller, this);
+          continue;
+        }
           
         if( (!anim.data.elapsed) /*&& !shouldBlend*/ ){
           controller.setFrame(this, anim, controller, controller.data[0]);
