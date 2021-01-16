@@ -153,7 +153,7 @@ class ConfigManager{
     return this._mergeDeep(target, ...sources);
   }
 
-  get(path = ''){
+  get(path = '', defaultValue = null){
     if(Array.isArray(path))
       path = path.join('.');
 
@@ -168,6 +168,9 @@ class ConfigManager{
     }
 
     if(property != this.options){
+      if(property == null || property == 'null')
+        return defaultValue;
+
       return property;
     }
 
