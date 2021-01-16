@@ -11,7 +11,7 @@
   "steam_id" : 208580,
   "executable": {
     "win": "swkotor2.exe",
-    "mac": "swkotor2.app"
+    "mac": "KOTORII.app"
   },
   "launch": {
     "type": "electron",
