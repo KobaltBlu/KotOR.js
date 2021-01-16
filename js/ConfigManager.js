@@ -13,11 +13,11 @@ class ConfigManager{
     this.listeners = {};
 
     try{
-      console.log('ConfigManager', json_path);
+      //console.log('ConfigManager', json_path);
       try{
         _settings = JSON.parse(fs.readFileSync(json_path));
       }catch(e){ console.error('ConfigManager', e); }
-      console.log('ConfigManager', json_path, _settings);
+      //console.log('ConfigManager', json_path, _settings);
     }catch(e){ console.error('ConfigManager', e); }
 
 
@@ -285,7 +285,7 @@ class ConfigManager{
   save(onSave = null, silent = false){
     //NotificationManager.Notify(NotificationManager.Types.INFO, 'Saving Configuration');
     //Write out the settings to the settings.json file in the home directory
-    console.log('ConfigManager.save');
+    //console.log('ConfigManager.save');
 
     try{
       fs.writeFile('settings.json',
@@ -305,7 +305,7 @@ class ConfigManager{
       console.error('ConfigManager.save', e);
     }
 
-    console.log('ConfigManager.save', 'Updating other processes.');
+    //console.log('ConfigManager.save', 'Updating other processes.');
     ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
 
   }
