@@ -11,7 +11,7 @@ const path = require('path');
 //exec & execFile are used for launching the original games from the launcher
 const { execFile } = require('child_process');
 const { exec } = require('child_process');
-
+const http = require('https');
 const fs = require('fs');
 
 console.log(process.argv);
@@ -172,11 +172,13 @@ ipcMain.on('launch_executable', (event, exe_path) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 
-app.on('ready', () => {
+app.on('ready', async () => {
   // console.log(__dirname);
   if(!fs.existsSync(path.join(__dirname, 'icon.png'))){
     fs.copyFileSync(path.join(app.getAppPath(), 'icon.png'), path.join(__dirname, 'icon.png'));
   }
+
+  await updateThreeJS();
 
   try{
     tray = new Tray('icon.png');
@@ -223,3 +225,23 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+
+function updateThreeJS(){
+  return new Promise( (resolve, reject, ) => {
+
+    let file_path = path.join(app.getAppPath(), 'js', 'engine', 'three.js');
+    if(!fs.existsSync(file_path)){
+      console.log('Downloading: THREE.js...');
+      const file = fs.createWriteStream(file_path);
+      const request = http.get("https://raw.githubusercontent.com/KobaltBlu/kotor.three.js/master/build/three.js", function(response) {
+        response.pipe(file);
+        console.log('Download: Complete');
+        resolve();
+      });
+    }else{
+      resolve();
+    }
+
+  });
+}

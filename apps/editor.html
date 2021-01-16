@@ -10,7 +10,7 @@
   <script type="text/javascript" src="../js/libs/md5.min.js"></script>
   <script type="text/javascript" src="../js/_utility.js"></script>
   <script>
-    const THREE = require('three');
+    const THREE = require(require('path').join(require('electron').remote.app.getAppPath(), 'js', 'engine', 'three.js'));
   </script>
   <script type="text/javascript" src="../js/engine/TPCLoader.js"></script>
   <script type="text/javascript" src="../js/engine/TGALoader.js"></script>

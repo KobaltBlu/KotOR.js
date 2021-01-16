@@ -10,7 +10,7 @@
     <div class="console"><input type="text"></div>
     <script type="text/javascript" src="../js/_utility.js"></script>
     <script>
-      const THREE = require('three');
+      const THREE = require(require('path').join(require('electron').remote.app.getAppPath(), 'js', 'engine', 'three.js'));
     </script>
     <!--script type="text/javascript" src="../js/engine/Three.js"></script-->
     <script type="text/javascript" src="../js/engine/EffectComposer.js"></script>
