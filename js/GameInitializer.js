@@ -113,14 +113,11 @@ class GameInitializer {
   }
 
   static LoadBIFs(onSuccess = null){
-    let data_dir = path.join(app_profile.directory, 'Data');
-    //let bifs = ["2da", "items", "scripts", "templates" ];
-    let loaded = 0;
 
     loader.SetMessage('Loading: BIF Archives');
 
     let bifs = Array.prototype.map.call(Global.kotorKEY.bifs, function(obj) {
-      let args = obj.filename.split('\\').pop().split('.');
+      let args = obj.filename.split(path.sep).pop().split('.');
       if(args[1] == "bif")
         return args[0];
     });

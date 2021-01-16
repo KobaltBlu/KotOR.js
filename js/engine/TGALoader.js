@@ -66,7 +66,7 @@ THREE.TGALoader.prototype.load = function ( url, onLoad = undefined, onError = u
 
 THREE.TGALoader.prototype.load_override = function ( name, onLoad = undefined, onError = undefined ) {
 
-	var dir = path.join(Config.options.Games.KOTOR.Location, 'Override');
+	var dir = path.join(app_profile.directory, 'Override');
 	
 	var scope = this;
 	var texture = new THREE.Texture();
