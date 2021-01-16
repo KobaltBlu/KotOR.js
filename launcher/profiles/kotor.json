@@ -11,7 +11,7 @@
   "steam_id" : 32370,
   "executable": {
     "win": "swkotor.exe",
-    "mac": "swkotor.app"
+    "mac": "KOTOR.app"
   },
   "launch": {
     "type": "electron",
