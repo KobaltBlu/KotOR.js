@@ -517,10 +517,14 @@ li.tab-btn.nav-logo img {
   margin-left: 10px;
 }
 
-a.btn-launch {
+.launch-btns {
   position: absolute;
   bottom: 25px;
   left: 25px;
+}
+
+a.btn-launch, a.btn-launch-executable {
+  position: relative;
   width: 200px;
   height: 50px;
   background: linear-gradient(#bf8211 0%, #694d0e 100%);
@@ -533,14 +537,8 @@ a.btn-launch {
   text-align: center;
   border-radius: 3px;
   box-shadow: 0 0 10px rgb(0, 0, 0);
-}
-
-a.btn-launch:after {
-  content: "Launch";
-}
-
-a.btn-launch.locate:after {
-  content: "Locate Directory";
+  margin-right: 10px;
+  display: inline-block;
 }
 
 .horizontal-scroller {

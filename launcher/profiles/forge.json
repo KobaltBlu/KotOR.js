@@ -6,6 +6,7 @@
   "background": "../launcher/images/kotor_forge.jpg",
   "category": "tools",
   "directory": null,
+  "locate_required": false,
   "launch": {
     "type": "electron",
     "path": "editor.html",

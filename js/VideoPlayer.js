@@ -49,7 +49,7 @@ class VideoPlayer {
     VideoPlayer.onEnded = onEnded;
     VideoPlayer.$video.show();
     VideoPlayer.$video.attr('src', 
-      path.join(Config.options.Games[GameKey].Location, 'Movies', sName+'.m4v')  
+      path.join(app_profile.directory, 'Movies', sName+'.m4v')  
     );
     VideoPlayer.$video.currentTime = 0;
     VideoPlayer.Play();

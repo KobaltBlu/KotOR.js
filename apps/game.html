@@ -39,35 +39,16 @@
     <script type="text/javascript" src="../js/engine/Lensflare.js"></script>
     <script type="text/javascript" src="game.js"></script>
     <script>
-      console.log(_Game);
 
-      function gamePathVerify () {
-        let verified = { KOTOR: false, TSL: false };
-
-        if(Config.options.Games.KOTOR.Location != null){
-          try {
-            fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
-            verified.KOTOR = true;
-          } catch (e) { }
-        }
-
-        if(Config.options.Games.TSL.Location != null){
-          try {
-            fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
-            verified.TSL = true;
-          } catch (e) { }
-        }
-
-        return verified;
-
+      if(!app_profile){
+        alert('Fatal Error: Window Profile Corrupted');
+        window.close();
       }
-
-      let verifiedPaths = gamePathVerify();
 
       function initialize(){
 
         verifyGame({
-          game: GameKey,
+          directory: app_profile.directory,
           onVerify: () => {
             loader.Show();
             GameInitializer.Init({
@@ -86,14 +67,12 @@
             console.log('Failed to verify the path for', GameKey);
             //loader.Dismiss();
             
-            dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]}).then(result => {
+            dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory',]}).then(result => {
               console.log(result.canceled);
               console.log(result.filePaths);
               if(result.filePaths.length && !result.canceled){
-                Config.options.Games[GameKey].Location = result.filePaths[0];
-                Config.save( () => {
-                  window.location.reload();
-                }, true);
+                Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
+                window.location.reload();
               }else{
                 alert('Can\'t continue without locating the game directory');
                 window.close();
@@ -112,19 +91,25 @@
       function verifyGame(args = {}){
 
         args = $.extend({
-          game: _Game,
+          directory: null,
           onVerify: null,
           onError: null
         }, args);
 
-        let verifiedPaths = gamePathVerify();
-
-        if(verifiedPaths[args.game]){
-          if(args.onVerify != null)
-            args.onVerify();
+        if(args.directory != null){
+          try {
+            fs.accessSync(args.directory, fs.F_OK);
+            if(typeof args.onVerify == 'function')
+              args.onVerify();
+          } catch (e) {
+            Config.set(['Profiles', app_profile.key, 'directory'], null);
+            if(typeof args.onError == 'function')
+              args.onError();
+          }
         }else{
-          if(args.onError != null)
-            args.onError();
+          Config.set(['Profiles', app_profile.key, 'directory'], null);
+          if(typeof args.onError == 'function')
+              args.onError();
         }
 
       }

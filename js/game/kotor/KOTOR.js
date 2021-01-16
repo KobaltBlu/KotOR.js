@@ -50,7 +50,7 @@ class Game extends Engine {
     });
 
     Game.renderer.autoClear = false;
-    Game.renderer.setSize( $(window).innerWidth(), $(window).innerHeight() );
+    Game.renderer.setSize( window.innerWidth, window.innerHeight );
     Game.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
@@ -92,7 +92,7 @@ class Game extends Engine {
     Game.scene_gui = new THREE.Scene();
     Game.scene_cursor = new THREE.Scene();
     Game.frustumMat4 = new THREE.Matrix4();
-    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.01, 15000 );
+    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
 
     Game.camera_shake = {
       position: new THREE.Vector3(0, 0, 0),
@@ -183,19 +183,19 @@ class Game extends Engine {
       }
     };
 
-    Game.camera_dialog = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.01, 15000 );
+    Game.camera_dialog = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
     Game.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    Game.camera_animated = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.01, 15000 );
+    Game.camera_animated = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
     Game.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     Game.camera.up = new THREE.Vector3( 0, 0, 1 );
     Game.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     Game.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
     Game.camera_gui = new THREE.OrthographicCamera(
-      $(window).innerWidth() / -2,
-      $(window).innerWidth() / 2,
-      $(window).innerHeight() / 2,
-      $(window).innerHeight() / -2,
+      window.innerWidth / -2,
+      window.innerWidth / 2,
+      window.innerHeight / 2,
+      window.innerHeight / -2,
       1, 1000
     );
     Game.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -486,10 +486,10 @@ class Game extends Engine {
     Game.renderPassGUI.needsSwap = false;
     Game.renderPassCursor.needsSwap = false;
 
-    $( window ).resize(() => {
+    window.addEventListener('resize', () => {
 
-      let width = $(window).innerWidth();
-      let height = $(window).innerHeight();
+      let width = window.innerWidth;
+      let height = window.innerHeight;
 
       Game.composer.setSize(width * Game.rendererUpscaleFactor, height * Game.rendererUpscaleFactor);
 

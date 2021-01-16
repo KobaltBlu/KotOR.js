@@ -437,7 +437,7 @@ class SaveGame {
 }
 
 SaveGame.saves = [];
-SaveGame.directory = path.join(Config.options.Games[GameKey].Location, 'Saves');
+SaveGame.directory = path.join(app_profile.directory, 'Saves');
 SaveGame.getSaveGames = function( onLoad = null ){
 
   fs.readdir(SaveGame.directory, (err, folders) => {

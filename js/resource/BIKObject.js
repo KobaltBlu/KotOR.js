@@ -156,7 +156,7 @@ class BIKObject {
 
     this.file = file;
 
-    let _path = this.abs_path ? this.file : path.join(Config.options.Games[GameKey].Location, 'Movies', this.file);
+    let _path = this.abs_path ? this.file : path.join(app_profile.directory, 'Movies', this.file);
 
     this.audioCtx = Game.audioEngine.audioCtx;
     this.stop();

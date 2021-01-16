@@ -64,7 +64,7 @@ class AudioLoader {
 
   static LoadStreamSound (ResRef = null, onLoad = null, onError = null) {
 
-    let file = path.join(Config.options.Games[GameKey].Location, 'streamsounds', ResRef+'.wav');
+    let file = path.join(app_profile.directory, 'streamsounds', ResRef+'.wav');
 
     //console.log('LoadStreamSound', ResRef, file);
 
@@ -89,7 +89,7 @@ class AudioLoader {
 
   static LoadStreamWave (ResRef = null, onLoad = null, onError = null) {
 
-    //let file = path.join(Config.options.Games[GameKey].Location, 'streamwaves', ResRef+'.wav');
+    //let file = path.join(app_profile.directory, 'streamwaves', ResRef+'.wav');
 
     let snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
     if(snd){
@@ -124,7 +124,7 @@ class AudioLoader {
 
   static LoadAmbientSound (ResRef = null, onLoad = null, onError = null) {
 
-    let file = path.join(Config.options.Games[GameKey].Location, 'streammusic', ResRef+'.wav');
+    let file = path.join(app_profile.directory, 'streammusic', ResRef+'.wav');
     fs.readFile(file, (err, buffer) => {
       if (err) {
         console.log('AudioLoader.LoadAmbientSound : read', err);

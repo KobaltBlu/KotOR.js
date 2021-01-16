@@ -154,6 +154,9 @@ class ConfigManager{
   }
 
   get(path = ''){
+    if(Array.isArray(path))
+      path = path.join('.');
+
     let parts = path.split('.');
     let property = this.options;
     for(let i = 0, len = parts.length; i < len; i++){
@@ -172,7 +175,10 @@ class ConfigManager{
   }
 
   set(path = '', value = ''){
-    if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || Array.isArray(value)){
+    if(Array.isArray(path))
+      path = path.join('.');
+
+    if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
       let parts = path.split('.');
       let scope = this.options;
       let i = 0, len = Math.max(parts.length-1, 0);
@@ -189,6 +195,10 @@ class ConfigManager{
 
       if(scope[parts[i]] == this.options){
         return undefined;
+      }
+
+      if(typeof scope[parts[len]] == 'undefined'){
+        scope[parts[len]] = {};
       }
 
       if(typeof scope[parts[len]] != 'undefined'){
@@ -321,6 +331,14 @@ const defaults = {
       recent_projects: []
     }
   },
+  Launcher: {
+    selected_profile: null,
+    width: 1200,
+    height: 600
+  },
+  Profiles: {
+
+  },
   Game: {
     show_application_menu: false,
     debug: {
@@ -372,6 +390,7 @@ const defaults = {
   },
   look_in_override: false,
   Editor: {
+    profile: null,
     Module: {
       Helpers: {
         creature: {

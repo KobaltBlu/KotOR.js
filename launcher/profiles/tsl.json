@@ -6,8 +6,13 @@
   "background": "https://img.wallpapersafari.com/desktop/1920/1080/64/6/vqMNET.jpg",
   "category": "game",
   "directory": null,
+  "locate_required": true,
   "isForgeCompatible": true,
   "steam_id" : 208580,
+  "executable": {
+    "win": "swkotor2.exe",
+    "mac": "swkotor2.app"
+  },
   "launch": {
     "type": "electron",
     "path": "game.html",
@@ -26,7 +31,7 @@
     "fullscreen": {
       "name": "Fullscreen at launch?",
       "type": "boolean",
-      "defaultValue": false
+      "defaultValue": true
     },
     "devtools": {
       "name": "Open Devtools at launch?",

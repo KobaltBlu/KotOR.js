@@ -63,17 +63,29 @@ const isRunningInAsar = function(){
   return false;
 };//require('electron-is-running-in-asar');
 
+const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+let Config = new ConfigManager('settings.json');
+
+const app_profile = (() => {
+  let app_profile = remote.getCurrentWindow().state;
+  if(typeof app_profile != 'object' || !app_profile.key){
+    alert('Fatal Error: Window Profile Missing');
+    window.close();
+  }
+  return Config.get(['Profiles', app_profile.key]);
+})();
+
 const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
 const loader = new LoadingScreen();
-loader.SetLogo(remote.getCurrentWindow().state.logo);
-loader.SetBackgroundImage(remote.getCurrentWindow().state.background);
+loader.SetLogo(app_profile.logo);
+loader.SetBackgroundImage(app_profile.background);
 $( function(){
   loader.Show();
 })
 
 let gamepads = {};
 let currentGamepad = -1;
-let gpMenu = new MenuItem(    {
+let gpMenu = new MenuItem({
   label: 'GamePads',
   submenu: [
     new MenuItem(    {
@@ -109,7 +121,7 @@ const Games = {
   TSL: 2
 }
 
-switch(remote.getCurrentWindow().state.launch.args.gameChoice){
+switch(app_profile.launch.args.gameChoice){
   case 2:
     global._Game = Games.TSL;
     global.GameKey = 'TSL';
@@ -136,7 +148,6 @@ const BinaryReader = require(path.join(app.getAppPath(), 'js/BinaryReader.js'));
 const BinaryWriter = require(path.join(app.getAppPath(), 'js/BinaryWriter.js'));
 const INIConfig = require(path.join(app.getAppPath(), 'js/INIConfig.js'));
 
-const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const TemplateEngine = require(path.join(app.getAppPath(), 'js/TemplateEngine.js'));
 const FileTypeManager = require(path.join(app.getAppPath(), 'js/resource/FileTypeManager.js'));
 const FileLoader = require(path.join(app.getAppPath(), 'js/resource/FileLoader.js'));
@@ -299,7 +310,6 @@ const IngameControls = require(path.join(app.getAppPath(), 'js/IngameControls.js
 const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
 const JournalManager = require(path.join(app.getAppPath(), 'js/JournalManager.js'));
 
-let Config = new ConfigManager('settings.json');
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
 let Global = {};
 let Clipboard = null;
@@ -340,7 +350,7 @@ if(GameKey == 'TSL'){
   }
   
   const configDefaults = require(path.join(app.getAppPath(), 'js/game/tsl/swkotor2-config.js'));
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'), configDefaults);
+  global.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor2.ini'), configDefaults);
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
 
 }else{
@@ -352,7 +362,7 @@ if(GameKey == 'TSL'){
   }
 
   const configDefaults = require(path.join(app.getAppPath(), 'js/game/kotor/swkotor-config.js'));
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'), configDefaults)
+  global.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor.ini'), configDefaults)
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
 
 }
@@ -798,3 +808,10 @@ const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 
 remote.getCurrentWindow().setMenuBarVisibility(Config.options.Game.show_application_menu);
+
+remote.getCurrentWindow().addListener('enter-full-screen', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], true);
+});
+remote.getCurrentWindow().addListener('leave-full-screen', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], false);
+});

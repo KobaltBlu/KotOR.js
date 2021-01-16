@@ -30,6 +30,8 @@ const isRunningInAsar = function(){
   return false;
 };//const isRunningInAsar = require('electron-is-running-in-asar');
 
+
+
 const APP_MODE = 'FORGE';
 
 const Games = {
@@ -37,23 +39,96 @@ const Games = {
   TSL: 2
 }
 
+const isProfileSupported = function(profile = undefined){
+  if(profile){
+    switch(profile.launch.args.gameChoice){
+      case 2:
+        return true;
+      case 1:
+        return true;
+    }
+  }
+  return false;
+}
+
+const getProfileGameKey = function(profile = undefined){
+  if(profile){
+    switch(profile.launch.args.gameChoice){
+      case 2:
+        return 'TSL';
+      default:
+        return 'KOTOR';
+    }
+  }
+  return undefined;
+}
+
+const getProfileGameEnum = function(profile = undefined){
+  if(profile){
+    switch(profile.launch.args.gameChoice){
+      case 2:
+        return Games.TSL;
+      default:
+        return Games.KOTOR;
+    }
+  }
+  return undefined;
+}
+
+const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+const Config = new ConfigManager('settings.json');
+let profile_key = Config.get(['Editor', 'profile']);
+const compatible_profiles = [];
+
+let app_profile = ( () => {
+  let all_profiles = (Config.get(['Profiles']) || {});
+  let all_profile_keys = Object.keys(all_profiles);
+  
+  for(let i = 0, len = all_profile_keys.length; i < len; i++){
+    console.log(all_profile_keys[i])
+    let profile = all_profiles[all_profile_keys[i]];
+    if(profile.isForgeCompatible){
+      compatible_profiles.push(profile);
+    }
+  }
+  
+  if(!profile_key){
+    let profile_choice = dialog.showMessageBoxSync(remote.getCurrentWindow(), {
+      type: "info",
+      buttons: compatible_profiles.map( (p) => p.name ),
+      defaultId: 0,
+      title: "Game Select",
+      message:"Select a game to target",
+      cancelId: -1,
+    });
+
+    if(profile_choice == -1){
+      window.close();
+    }
+
+    if(compatible_profiles[profile_choice]){
+      profile_key = compatible_profiles[profile_choice].key;
+      Config.set(['Editor', 'profile'], profile_key);
+      return compatible_profiles[profile_choice];
+    }
+  }else{
+    return Config.get(['Profiles', profile_key]);
+  }
+})();
+
+if(!app_profile){
+  window.close();
+}
+
+let _Game = getProfileGameEnum(app_profile);
+let GameKey = getProfileGameKey(app_profile);
+
 const IMAGE_TYPE = {
   TPC: 0,
   TGA: 1,
   PNG: 2,
   JPG: 3
 }
-
-let _Game = Games.KOTOR;
-let GameKey = 'KOTOR';
-
-//Self executing anonymous function
-(() => {
-  let _gameKey = localStorage.getItem('gameKey');
-  if(_gameKey){
-    GameKey = _gameKey.toUpperCase();
-  }
-})();
 
 /* Library Includes */
 const Utility = require(path.join(app.getAppPath(), 'js/Utility.js'));
@@ -64,10 +139,6 @@ const BinaryWriter = require(path.join(app.getAppPath(), 'js/BinaryWriter.js'));
 const INIConfig = require(path.join(app.getAppPath(), 'js/INIConfig.js'));
 //const ffmpeg = require("ffmpeg.js");
 
-
-
-
-const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const TemplateEngine = require(path.join(app.getAppPath(), 'js/TemplateEngine.js'));
 const NotificationManager = require(path.join(app.getAppPath(), 'js/editor/NotificationManager.js'));
 
@@ -311,7 +382,6 @@ let inlineAudioPlayer =  new InlineAudioPlayer();
 
 LightManager.init();
 
-let Config = new ConfigManager('settings.json');
 let Global = {};
 let Clipboard = null;
 
@@ -424,25 +494,25 @@ if (typeof global.TopMenu == 'undefined') {
             type: 'info',
             title: 'Switch Game?',
             message: 'Choose which game you would like to switch to.',
-            buttons: ['KotOR', 'TSL', 'Cancel']
+            buttons: compatible_profiles.map( (p) => p.name ),
+            defaultId: 0,
+            cancelId: -1,
           });
 
-          console.log(game_choice);
+          let profile = compatible_profiles[game_choice.response];
 
-          switch(game_choice.response){
-            case 0: //KotOR
-              if(GameKey != 'KOTOR'){
-                GameKey = 'KOTOR';
-                initialize();
-              }
-            break;
-            case 1: //TSL
-              if(GameKey != 'TSL'){
-                GameKey = 'TSL';
-                initialize();
-              }
-            break;
+          if(isProfileSupported(profile)){
+
+            if(GameKey != getProfileGameKey(profile)){
+              GameKey = getProfileGameKey(profile);
+              app_profile = Config.get(['Profiles', profile.key]);
+              Config.set(['Editor', 'profile'], profile.key);
+              initialize();
+            }
+
           }
+
+          console.log(game_choice.response);
 
         }},
         {type: 'separator'},
@@ -465,7 +535,7 @@ if (typeof global.TopMenu == 'undefined') {
             {
               title: 'Open File',
               filters: [
-                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim']},
+                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
                 {name: 'TPC Image', extensions: ['tpc']},
                 {name: 'TGA Image', extensions: ['tga']},
                 {name: 'GFF', extensions: ['gff']},
@@ -482,6 +552,12 @@ if (typeof global.TopMenu == 'undefined') {
                 {name: 'MOD File', extensions: ['mod']},
                 {name: 'ERF File', extensions: ['erf']},
                 {name: 'RIM File', extensions: ['rim']},
+                {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
+                {name: 'Module File', extensions: ['git', 'ifo']},
+                {name: 'Area File', extensions: ['are']},
+                {name: 'Path File', extensions: ['pth']},
+                {name: 'VIS File', extensions: ['vis']},
+                {name: 'Layout File', extensions: ['lyt']},
                 {name: 'All Formats', extensions: ['*']},
               ]
             }

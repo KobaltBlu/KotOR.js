@@ -7,6 +7,10 @@ const {app} = electron;
 const {BrowserWindow, Tray, Menu} = electron;
 const {dialog} = electron;
 
+const path = require('path');
+//exec is used for launching the original games from the launcher
+const { execFile } = require('child_process');
+
 console.log(process.argv);
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -19,6 +23,9 @@ ipcMain.on('config-changed', (event, data) => {
   for(let i = 0, len = profileWindows.length; i < len; i++){
     profileWindows[i].webContents.send('config-changed', data);
   }
+  if(winLauncher instanceof BrowserWindow){
+    winLauncher.webContents.send('config-changed', data);
+  }
 });
 
 function createWindowFromProfile( profile = {} ) {
@@ -26,7 +33,7 @@ function createWindowFromProfile( profile = {} ) {
   let _window = new BrowserWindow({
     width: 1200, 
     height: 600,
-    fullscreen: profile.launch.fullscreen,
+    fullscreen: profile.settings?.fullscreen.value ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
     frame: !profile.launch.frameless,
     title: profile.name,
     backgroundColor: profile.launch.backgroundColor,
@@ -129,6 +136,15 @@ ipcMain.on('launch_profile', (event, profile) => {
   createWindowFromProfile(profile);
 });
 
+ipcMain.on('launch_executable', (event, exe_path) => {
+  winLauncher.hide();
+  let cwd = path.parse(exe_path);
+  console.log('Launching', exe_path, 'in', cwd.dir);
+  execFile(exe_path, [], {cwd:cwd.dir}, (error, stdout, stderr) => {
+    console.log(error, stdout, stderr);
+    createLauncherWindow();
+  });
+});
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

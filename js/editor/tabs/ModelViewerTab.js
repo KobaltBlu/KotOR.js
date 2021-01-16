@@ -13,6 +13,8 @@ class ModelViewerTab extends EditorTab {
     this.renderer.autoClear = false;
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
 
+    this.referenceNode = new THREE.Object3D();
+
     this.clock = new THREE.Clock();
     this.stats = new Stats();
 
@@ -23,6 +25,7 @@ class ModelViewerTab extends EditorTab {
 
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
+    this.scene.add(this.referenceNode);
 
     this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.01, 15000 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );

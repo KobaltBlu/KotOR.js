@@ -38,7 +38,7 @@ class Game extends Engine {
 
     Game.renderer.autoClear = false;
     
-    Game.renderer.setSize( $(window).innerWidth(), $(window).innerHeight() );
+    Game.renderer.setSize( window.innerWidth, window.innerHeight );
     Game.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
@@ -82,7 +82,7 @@ class Game extends Engine {
     Game.scene_gui = new THREE.Scene();
     Game.scene_cursor = new THREE.Scene();
     Game.frustumMat4 = new THREE.Matrix4();
-    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     
     Game.camera_shake = {
       position: new THREE.Vector3(0, 0, 0),
@@ -173,19 +173,19 @@ class Game extends Engine {
       }
     };
 
-    Game.camera_dialog = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera_dialog = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     Game.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    Game.camera_animated = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera_animated = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     Game.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     Game.camera.up = new THREE.Vector3( 0, 0, 1 );
     Game.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     Game.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
     Game.camera_gui = new THREE.OrthographicCamera(
-      $(window).innerWidth() / -2,
-      $(window).innerWidth() / 2,
-      $(window).innerHeight() / 2,
-      $(window).innerHeight() / -2,
+      window.innerWidth / -2,
+      window.innerWidth / 2,
+      window.innerHeight / 2,
+      window.innerHeight / -2,
       1, 1000
     );
     Game.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -216,10 +216,9 @@ class Game extends Engine {
     Game.viewportFrustum = new THREE.Frustum();
     Game.viewportProjectionMatrix = new THREE.Matrix4();
 
-    //Game.canvas = Game.renderer.domElement;
     Game.$canvas = $(Game.canvas);
-
-    Game.$canvas.addClass('noselect').attr('tabindex', 1);
+    Game.canvas.classList.add('noselect');
+    Game.canvas.setAttribute('tabindex', 1);
 
     //0x60534A
     Game.globalLight = new THREE.AmbientLight(0xFFFFFF);
@@ -331,7 +330,9 @@ class Game extends Engine {
 
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
-    $('#renderer-container').append(Game.$canvas).append(Game.stats.dom);
+    let rendererContainer = document.getElementById('renderer-container');
+    rendererContainer.appendChild(Game.canvas);
+    rendererContainer.appendChild(Game.stats.dom);
 
     /* Fade Geometry */
     Game.FadeOverlay = {
@@ -490,10 +491,9 @@ class Game extends Engine {
 
     //END: PostProcessing
 
-    $( window ).resize(() => {
-
-      let width = $(window).innerWidth();
-      let height = $(window).innerHeight();
+    window.addEventListener('resize', () => {
+      let width = window.innerWidth;
+      let height = window.innerHeight;
 
       Game.composer.setSize(width, height);
 
@@ -538,11 +538,9 @@ class Game extends Engine {
       MenuManager.Resize();
 
       Game.depthTarget.setSize(window.innerWidth, window.innerHeight);
-      
     });
 
     Game.Start();
-
   }
 
   static updateFrustumObjects(object){

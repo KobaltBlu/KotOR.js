@@ -358,8 +358,8 @@ class Module {
 
   static async GetModuleMod(modName = ''){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.mod');
-      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.mod'), (mod) => {
+      let resource_path = path.join(app_profile.directory, 'modules', modName+'.mod');
+      new ERFObject(path.join(app_profile.directory, 'modules', modName+'.mod'), (mod) => {
         console.log('Module.GetModuleMod success', resource_path);
         resolve(mod);
       }, () => {
@@ -371,8 +371,8 @@ class Module {
 
   static async GetModuleRimA(modName = ''){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim');
-      new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'.rim'), (rim) => {
+      let resource_path = path.join(app_profile.directory, 'modules', modName+'.rim');
+      new RIMObject(path.join(app_profile.directory, 'modules', modName+'.rim'), (rim) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimA failed', resource_path);
@@ -383,8 +383,8 @@ class Module {
 
   static async GetModuleRimB(modName = ''){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim');
-      new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_s.rim'), (rim) => {
+      let resource_path = path.join(app_profile.directory, 'modules', modName+'_s.rim');
+      new RIMObject(path.join(app_profile.directory, 'modules', modName+'_s.rim'), (rim) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimB failed', resource_path);
@@ -395,8 +395,8 @@ class Module {
 
   static async GetModuleLipsLoc(){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod');
-      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', 'localization.mod'), (mod) => {
+      let resource_path = path.join(app_profile.directory, 'lips', 'localization.mod');
+      new ERFObject(path.join(app_profile.directory, 'lips', 'localization.mod'), (mod) => {
         console.log('Module.GetModuleLipsLoc success', resource_path);
         resolve(mod);
       }, () => {
@@ -408,8 +408,8 @@ class Module {
 
   static async GetModuleLips(modName = ''){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod');
-      new ERFObject(path.join(Config.options.Games[GameKey].Location, 'lips', modName+'_loc.mod'), (mod) => {
+      let resource_path = path.join(app_profile.directory, 'lips', modName+'_loc.mod');
+      new ERFObject(path.join(app_profile.directory, 'lips', modName+'_loc.mod'), (mod) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleLips failed', resource_path);
@@ -420,7 +420,7 @@ class Module {
 
   static async GetModuleDLG(modName = ''){
     return new Promise( (resolve, reject) => {
-      let resource_path = path.join(Config.options.Games[GameKey].Location, 'modules', modName+'_dlg.erf');
+      let resource_path = path.join(app_profile.directory, 'modules', modName+'_dlg.erf');
       new ERFObject(resource_path, (mod) => {
         resolve(mod);
       }, () => {
