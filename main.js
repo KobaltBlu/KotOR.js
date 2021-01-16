@@ -36,7 +36,7 @@ function createWindowFromProfile( profile = {} ) {
   let _window = new BrowserWindow({
     width: 1200, 
     height: 600,
-    fullscreen: profile.settings?.fullscreen.value ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
+    fullscreen: profile.settings?.fullscreen.value != undefined ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
     frame: !profile.launch.frameless,
     title: profile.name,
     backgroundColor: profile.launch.backgroundColor,
