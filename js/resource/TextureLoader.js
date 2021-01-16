@@ -71,7 +71,7 @@ class TextureLoader {
 
   static LoadOverride(name, onLoad = null, onError = null, noCache = false){
 
-    let dir = path.join(Config.options.Games[GameKey].Location, 'Override');
+    let dir = path.join(app_profile.directory, 'Override');
 
     if(Game.Flags.EnableOverride){
 
