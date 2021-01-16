@@ -12,6 +12,8 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { exec } = require('child_process');
 
+const fs = require('fs');
+
 console.log(process.argv);
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -171,27 +173,35 @@ ipcMain.on('launch_executable', (event, exe_path) => {
 // Some APIs can only be used after this event occurs.
 
 app.on('ready', () => {
+  // console.log(__dirname);
+  if(!fs.existsSync(path.join(__dirname, 'icon.png'))){
+    fs.copyFileSync(path.join(app.getAppPath(), 'icon.png'), path.join(__dirname, 'icon.png'));
+  }
 
-  tray = new Tray('icon.png');
-  const contextMenu = Menu.buildFromTemplate([{
-    label: 'Exit', 
-    type: 'normal', 
-    click: (menuItem, browserWindow, event) => {
-      app.quit();
-    }
-  }]);
-  tray.setToolTip('KotOR Launcher');
-  tray.setContextMenu(contextMenu);
+  try{
+    tray = new Tray('icon.png');
+    const contextMenu = Menu.buildFromTemplate([{
+      label: 'Exit', 
+      type: 'normal', 
+      click: (menuItem, browserWindow, event) => {
+        app.quit();
+      }
+    }]);
+    tray.setToolTip('KotOR Launcher');
+    tray.setContextMenu(contextMenu);
 
-  createLauncherWindow();
+    createLauncherWindow();
 
-  tray.on('click', () => {
-    if(winLauncher instanceof BrowserWindow){
-      winLauncher.isVisible() ? winLauncher.hide() : winLauncher.show();
-    }else{
-      createLauncherWindow();
-    }
-  });
+    tray.on('click', () => {
+      if(winLauncher instanceof BrowserWindow){
+        winLauncher.isVisible() ? winLauncher.hide() : winLauncher.show();
+      }else{
+        createLauncherWindow();
+      }
+    });
+  }catch(e){
+    createLauncherWindow();
+  }
 
 });
 

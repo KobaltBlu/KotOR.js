@@ -17,8 +17,8 @@ const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js')
 const Config = new ConfigManager('settings.json');
 
 const profile_categories = {
-  game: { name: 'Games', $list: undefined },
-  tools: { name: 'Modding Tools', $list: undefined }
+  game: { name: 'Games', $list: null },
+  tools: { name: 'Modding Tools', $list: null }
 };
 
 //Load in the launcher profiles
@@ -43,19 +43,6 @@ function initProfiles(){
   }
   profiles = Config.get('Profiles');
 }
-
-window.addEventListener('focus', () => {
-  console.log('refocus');
-  initProfiles();
-  let keys = Object.keys(profiles);
-  for(let i = 0, len = keys.length; i < len; i++){
-    console.log('Rebuilding', keys[i]);
-    buildProfileElement(profiles[keys[i]]);
-  }
-  setLauncherOption(Config.get(['Launcher', 'selected_profile']));
-});
-
-console.log('Profiles', profiles);
 
 function elementParser(element){
 
@@ -181,7 +168,6 @@ function initGalleryPromoElement($gallery){
 function initWebviewPromoElement($webview_wrapper){
 
   let webview = $('webview', $webview_wrapper)[0];
-  console.log(webview);
   if(webview){
     webview.getWebContents().on('will-navigate', (event, url) => {
       event.preventDefault();
@@ -232,8 +218,6 @@ function buildProfileElement(profile = {}){
     },
     elements: [],
   }, profile);
-
-  console.log('profile', profile);
 
   let tpl_listItem = `
 <li class="launcher-option ${profile.key}" data-sort="${profile.sort}">
@@ -384,8 +368,6 @@ function buildProfileElement(profile = {}){
     let $btn = $(this);
     if($btn.hasClass('locate') && !profile.directory){
       dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]}).then(result => {
-        console.log(result.canceled);
-        console.log(result.filePaths);
         if(result.filePaths.length && !result.canceled){
           if(result.filePaths[0]){
             Config.set('Profiles.'+profile.key+'.directory', result.filePaths[0]);
@@ -460,15 +442,19 @@ function buildProfileElement(profile = {}){
   }
 
   if(needsDomInsert){
-    profile_categories[profile.category].$list.append($listItem);
-    //$('.launcher-options ul').append($listItem);
-    $('.launcher-contents').append($launcherEle);
+    let profile_category = profile_categories[profile.category];
+    if(profile_category){
+      profile_category.$list.append($listItem);
+      //$('.launcher-options ul').append($listItem);
+      $('.launcher-contents').append($launcherEle);
+    }else{
+      console.error('profile_category', profile.category, profile);
+    }
   }
 
 }
 
 function setLauncherOption(id = 'kotor'){
-  console.log('setLauncherOption', `.launcher-option.${id}`);
   $(`.launcher-option.${id} a`).click();
 }
 
@@ -488,14 +474,15 @@ document.onwebkitfullscreenchange = function ( event ) {
 }; 
 
 $( function() {
+  
+  initProfiles();
 
+  $('.launcher-options').html('');
   for(let key in profile_categories){
     let category = profile_categories[key];
-
     category.$list = $(`<ul class="${key}"></ul>`);
     $('.launcher-options').append(`<h3>${category.name}</h3>`);
     $('.launcher-options').append(category.$list);
-
   }
 
   for(let key in profiles){
@@ -511,7 +498,7 @@ $( function() {
   $('.tab-btn a').on('click', function(e) {
     e.preventDefault();
     let id = $(this).attr('href');
-    console.log(id, $(id));
+    //console.log(id, $(id));
     $('.tab').removeClass('selected');
    $(id).addClass('selected');
 
@@ -537,9 +524,6 @@ $( function() {
     e.preventDefault();
     window.close();
   });
-
-  setLauncherOption(Config.get(['Launcher', 'selected_profile']));
-  $('body').fadeIn(1500);
 
   $('.lightbox').each( function() {
     let $lightbox = $(this);
@@ -569,5 +553,23 @@ $( function() {
     });
 
   });
+
+  initProfiles();
+
+  window.addEventListener('focus', function(){
+    if(window.app_loaded){
+      initProfiles();
+      let keys = Object.keys(profiles);
+      for(let i = 0, len = keys.length; i < len; i++){
+        buildProfileElement(profiles[keys[i]]);
+      }
+      setLauncherOption(Config.get(['Launcher', 'selected_profile'], 'kotor'));
+    }
+  });
+
+  setLauncherOption(Config.get(['Launcher', 'selected_profile'], 'kotor'));
+  $('body').fadeIn(1500);
+
+  window.app_loaded = true;
 
 });
