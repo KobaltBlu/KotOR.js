@@ -8,8 +8,9 @@ const {BrowserWindow, Tray, Menu} = electron;
 const {dialog} = electron;
 
 const path = require('path');
-//exec is used for launching the original games from the launcher
+//exec & execFile are used for launching the original games from the launcher
 const { execFile } = require('child_process');
+const { exec } = require('child_process');
 
 console.log(process.argv);
 
@@ -139,11 +140,31 @@ ipcMain.on('launch_profile', (event, profile) => {
 ipcMain.on('launch_executable', (event, exe_path) => {
   winLauncher.hide();
   let cwd = path.parse(exe_path);
-  console.log('Launching', exe_path, 'in', cwd.dir);
-  execFile(exe_path, [], {cwd:cwd.dir}, (error, stdout, stderr) => {
-    console.log(error, stdout, stderr);
-    createLauncherWindow();
-  });
+  if(process.platform == 'linux'){
+    //Attempt to find wine so we can run the exe
+    exec(`which wine`, (error) => {
+      if(error){
+        dialog.showMessageBoxSync({
+          type: 'error',
+          title: 'Error',
+          message: 'Wine not found!',
+          buttons: ['Ok']
+        });
+        createLauncherWindow();
+      }else{
+        //Attempt to launch with wine
+        exec(`cd ${cwd.dir} && wine ./${cwd.base}`, (error, stdout, stderr) => {
+          createLauncherWindow();
+        });
+      }
+    });
+  }else{
+    console.log('Launching', exe_path, 'in', cwd.dir);
+    execFile(exe_path, [], {cwd:cwd.dir}, (error, stdout, stderr) => {
+      console.log(error, stdout, stderr);
+      createLauncherWindow();
+    });
+  }
 });
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
