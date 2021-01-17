@@ -153,7 +153,7 @@ class GameInitializer {
           return;
 
         let rims = Array.prototype.map.call(filenames, function(obj) {
-          let args = obj.split('\\').pop().split('.');
+          let args = obj.split(path.sep).pop().split('.');
           if(args[1] == "rim")
             return args[0];
         });
@@ -189,7 +189,7 @@ class GameInitializer {
         return;
 
       let rims = Array.prototype.map.call(filenames, function(obj) {
-        let filename = obj.split('\\').pop();
+        let filename = obj.split(path.sep).pop();
         let args = filename.split('.');
         if(args[1] == "rim" && args[0].indexOf('_s') >= 0)
           return args[0];
@@ -252,7 +252,7 @@ class GameInitializer {
         return;
 
       let erfs = Array.prototype.map.call(filenames, function(obj) {
-        let args = obj.split('\\').pop().split('.');
+        let args = obj.split(path.sep).pop().split('.');
         if(args[1] == "erf")
           return args[0];
       });

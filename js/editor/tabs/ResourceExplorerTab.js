@@ -26,7 +26,7 @@ class ResourceExplorerTab extends EditorTab {
     let bifLoader = new AsyncLoop({
       array: bifs,
       onLoop: (bif, asyncLoop) => {
-        let name = bif.file.split('\\').pop().split('.')[0];
+        let name = bif.file.split(path.sep).pop().split('.')[0];
         let subTypes = {};
 
         let node = {

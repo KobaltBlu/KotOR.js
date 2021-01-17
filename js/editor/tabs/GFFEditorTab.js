@@ -119,7 +119,7 @@ class GFFEditorTab extends EditorTab {
       //sessionStorage.setItem(KEY_FILE, JSON.stringify(file));
       this.tabLoader.Show();
       this.tabLoader.SetMessage("Loading GFF File");
-      this.$tabName.text(file.path.split('\\').pop());
+      this.$tabName.text(file.path.split(path.sep).pop());
       this.gff = new GFFObject(file.path, () => {
         this.tabLoader.SetMessage("Building Editor Tree");
         //Fade out the loading screen because the app is ready
