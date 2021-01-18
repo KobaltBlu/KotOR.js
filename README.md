@@ -27,6 +27,8 @@ You can then follow the steps below to run the project.
 ```bash
 # Install dependencies
 npm install
+# Rebuild compiled dependencies
+npm run rebuild
 # Run the app
 npm start
 ```

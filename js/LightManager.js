@@ -383,6 +383,7 @@ class LightManager {
 
           if(lightNode.intensity < 0 || !lightNode.light.isOnScreen(Game.viewportFrustum)){
             lightNode.intensity = 0;
+            lightNode.reclaimed = true;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
@@ -688,6 +689,10 @@ class LightManager {
   //Toggle the visbility of the light helpers ingame
   static toggleLightHelpers(){
     Game.group.light_helpers.visible = !Game.group.light_helpers.visible;
+  }
+
+  static setLightHelpersVisible(on = false){
+    Game.group.light_helpers.visible = on ? true : false;
   }
 
 }

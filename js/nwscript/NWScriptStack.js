@@ -38,7 +38,23 @@ class NWScriptStack {
       if(type === undefined)
         console.warn('NWScriptStack', data, type);
 
-      this.stack.push( new NWScriptStackVariable({ value: data, type: type }) );
+      if(type == NWScript.DATATYPE.VECTOR){
+        if(typeof data == 'object'){
+          this.stack.push( new NWScriptStackVariable({ value: data.z || 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: data.y || 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: data.x || 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          //Increase the pointer by 8 to account for Y and X
+          this.pointer += 8;
+        }else{
+          this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScript.DATATYPE.FLOAT }) );
+          //Increase the pointer by 8 to account for Y and X
+          this.pointer += 8;
+        }
+      }else{
+        this.stack.push( new NWScriptStackVariable({ value: data, type: type }) );
+      }
     }
     this.pointer += 4;
   }

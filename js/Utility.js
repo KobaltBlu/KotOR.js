@@ -53,7 +53,7 @@ class Utility {
 
   static BuildModulesList(onComplete = null){
 
-    fs.readdir(path.join(Config.options.Games['KOTOR'].Location, 'modules'), (err, files) => {
+    fs.readdir(path.join(app_profile.directory, 'modules'), (err, files) => {
 
       let modules = [];
       for(let i = 0; i!=files.length; i++){
@@ -68,7 +68,7 @@ class Utility {
       let i = 0;
       let readModule = () => {
         let module = modules[i];
-        let rim = new RIMObject(path.join(Config.options.Games['KOTOR'].Location, 'modules', module), (rim) => {
+        let rim = new RIMObject(path.join(app_profile.directory, 'modules', module), (rim) => {
 
           $.each(rim.Resources, (k, res) => {
             switch(res.ResType){

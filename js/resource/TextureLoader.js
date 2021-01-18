@@ -71,7 +71,7 @@ class TextureLoader {
 
   static LoadOverride(name, onLoad = null, onError = null, noCache = false){
 
-    let dir = path.join(Config.options.Games[GameKey].Location, 'Override');
+    let dir = path.join(app_profile.directory, 'Override');
 
     if(Game.Flags.EnableOverride){
 
@@ -289,7 +289,13 @@ class TextureLoader {
             //I think this has to do with alphaTesting... Not sure...
             if(typeof texture.header === 'object'){
               if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                tex.material.transparent = true;
+                if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                  tex.material.transparent = true;
+                }
+                if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
+                  tex.material.alphaTest = 0;
+                }
+                //tex.material.alphaTest = texture.header.alphaTest;
               }
             }
 
@@ -329,7 +335,13 @@ class TextureLoader {
                 //I think this has to do with alphaTesting... Not sure...
                 if(typeof texture.header === 'object'){
                   if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                    tex.material.transparent = true;
+                    if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                      tex.material.transparent = true;
+                    }
+                    if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
+                      tex.material.alphaTest = 0;
+                    }
+                    //tex.material.alphaTest = texture.header.alphaTest;
                   }
                 }
 
@@ -485,11 +497,15 @@ class TextureLoader {
                 tex.material.uniforms.normalMap.value = bumpMap;
                 tex.material.defines.USE_NORMALMAP = '';
                 tex.material.uniformsNeedUpdate = true;
+                tex.material.vertexTangents = true;
+                tex.material.normalMapType = THREE.TangentSpaceNormalMap;
+                tex.material.defines['TANGENTSPACE_NORMALMAP'] = '';
               }else{
                 tex.material.normalMap = bumpMap;
+                tex.material.normalMapType = THREE.ObjectSpaceNormalMap;
+                tex.material.defines['OBJECTSPACE_NORMALMAP'] = '';
               }
 
-              tex.material.normalMapType = THREE.ObjectSpaceNormalMap;
               tex.material.transparent = false;
 
             }else{
@@ -521,8 +537,8 @@ class TextureLoader {
               tex.material.uniforms.bumpMap.value.generateMipmaps = false;
 
               tex.material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling * 0.1;
-              tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
-              tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
+              //tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
+              //tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
               tex.material.uniforms.reflectivity.value = 1;
               tex.material.transparent = true;
               tex.material.premultipliedAlpha = false;
@@ -570,7 +586,7 @@ class TextureLoader {
       //DECAL
       if(texture.txi.decal || texture.txi.procedureType == 2){
         tex.material.side = THREE.DoubleSide;
-        //tex.material.depthWrite = false;
+        tex.material.depthWrite = false;
         //For Saber Blades
         tex.material.defines.IGNORE_LIGHTING = '';
       }
@@ -580,13 +596,13 @@ class TextureLoader {
         case TXI.BLENDING.ADDITIVE:
           tex.material.transparent = true;
           tex.material.blending = THREE['AdditiveBlending'];
-          tex.material.alphaTest = Game.AlphaTest;//0.5;
+          tex.material.alphaTest = 0;//0.5;
           //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere
         break;
         case TXI.BLENDING.PUNCHTHROUGH:
-          tex.material.transparent = true;
+          tex.material.transparent = false;
           tex.material.blending = THREE['NormalBlending'];
-          tex.material.alphaTest = Game.AlphaTest;//0.5;
+          tex.material.alphaTest = texture.header.alphaTest || Game.AlphaTest;//0.5;
         break;
       }
 

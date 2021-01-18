@@ -54,13 +54,6 @@ class MenuDialog extends GameMenu {
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
-        this.LBL_MESSAGE.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if(this.isListening){
-            this.PlayerSkipEntry(this.currentEntry);
-          }
-        });
-
         this._resetLetterBox();
 
         this.tGuiPanel.widget.add(this.topBar);
@@ -1675,7 +1668,7 @@ class MenuDialog extends GameMenu {
         if(this.listener.model && this.listener.model.camerahook){
           this.listener.model.camerahook.getWorldPosition(look_at);
         }else{
-          look_at.copy(this.listener.GetPosition()).add({x:0, y:0, z: 1.6});
+          look_at.copy(this.listener.getPosition()).add({x:0, y:0, z: 1.6});
         }
 
         position.copy(look_at).sub(
@@ -1698,7 +1691,7 @@ class MenuDialog extends GameMenu {
       if(this.listener.model && this.listener.model.camerahook){
         this.listener.model.camerahook.getWorldPosition(look_at);
       }else{
-        look_at.copy(this.listener.GetPosition()).add({x:0, y:0, z: 1.6});
+        look_at.copy(this.listener.getPosition()).add({x:0, y:0, z: 1.6});
       }
 
       position.copy(look_at).sub(

@@ -32,7 +32,7 @@ class KEYObject {
 
         let _pos = this.reader.position;
         this.reader.Seek(this.bifs[i].FilenameOffset);
-        this.bifs[i].filename = this.reader.ReadChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'')
+        this.bifs[i].filename = this.reader.ReadChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
 
         this.reader.Seek(_pos);
 

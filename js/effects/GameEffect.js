@@ -101,6 +101,10 @@ class GameEffect {
     }
   }
 
+  dispose(){
+    
+  }
+
   ///////////////
   // Effect Events
   ///////////////

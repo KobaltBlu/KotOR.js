@@ -10,11 +10,12 @@
   <script type="text/javascript" src="../js/libs/md5.min.js"></script>
   <script type="text/javascript" src="../js/_utility.js"></script>
   <script>
-    const THREE = require('three');
+    const THREE = require(require('path').join(require('electron').remote.app.getAppPath(), 'js', 'engine', 'three.js'));
   </script>
   <script type="text/javascript" src="../js/engine/TPCLoader.js"></script>
   <script type="text/javascript" src="../js/engine/TGALoader.js"></script>
   <script type="text/javascript" src="../js/engine/MDLLoader.js"></script>
+  <script type="text/javascript" src="../js/engine/BufferGeometryUtils.js"></script>
   <script type="text/javascript" src="../js/engine/AuroraEmitter.js"></script>
   <script type="text/javascript" src="../js/engine/AuroraModel.js"></script>
   <script type="text/javascript" src="../js/engine/stats.min.js"></script>
@@ -57,7 +58,6 @@
   <!-- Classes -->
   <script type="text/javascript" src="editor.js"></script>
   <script>
-
   'use strict';
   
   const explorerTabManager = new EditorTabManager();
@@ -84,7 +84,7 @@
           Config.options.Panes.right.open = true;
         break;
       }
-      Config.Save(null, true);
+      Config.save(null, true);
     },
     'onclose': (pane) => {
       switch(pane){
@@ -95,7 +95,7 @@
           Config.options.Panes.right.open = false;
         break;
       }
-      Config.Save(null, true);
+      Config.save(null, true);
     },
     'onresize_end': (pane) => {
       //Make sure the ModuleEditorTab canvas is updated on resize
@@ -122,107 +122,85 @@
   if(!Config.options.Panes.right.open)
     $('#container').layout().close('east');
 
-  function gamePathVerify () {
-    let verified = { KOTOR: false, TSL: false };
-
-    if(Config.options.Games.KOTOR.Location != null){
-      try {
-        fs.accessSync(Config.options.Games.KOTOR.Location, fs.F_OK);
-        verified.KOTOR = true;
-      } catch (e) { }
-    }
-
-    if(Config.options.Games.TSL.Location != null){
-      try {
-        fs.accessSync(Config.options.Games.TSL.Location, fs.F_OK);
-        verified.TSL = true;
-      } catch (e) { }
-    }
-
-    return verified;
-
-  }
-
-  let verifiedPaths = gamePathVerify();
-
-  if(Config.options.first_run || (!verifiedPaths.KOTOR && !verifiedPaths.TSL) ){
-    loader.Dismiss();
-    let gameFinderWizard = new GameFinderWizard({
-      onUpdate: () => {
-        initialize();
-      },
-      onCancel: () => {
-        window.canUnload = true;
-        ipcRenderer.send('CloseMain', true);
-      }
-    });
-  }else{
-    initialize();
+  if(!app_profile){
+    alert('Fatal Error: Window Profile Corrupted');
+    window.close();
   }
 
   function initialize(){
-
     verifyGame({
-      game: GameKey,
+      directory: app_profile.directory,
       onVerify: () => {
-        localStorage.setItem('gameKey', GameKey);
-        $('body').removeClass('KOTOR').removeClass('TSL').addClass(GameKey);
-        loader.Show();
-        GameInitializer.Init({
-          game: Games[GameKey],
-          onLoad: () => {
-            
-            resourceExplorerTab.initialize( () => {
-
-              loadMaps( () => {
-
-                if(GameKey == 'TSL'){
-                  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'));
-                }else{
-                  window.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'));
-                }
-
-                loader.Hide();
-                tabManager.AddTab(new QuickStartTab());
-                tabManager.AttachTo($('#renderer-container #tabs-container'));
-
-                let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
-                Game.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
-                Game.depthTarget.texture.generateMipmaps = false;
-                Game.depthTarget.stencilBuffer = false;
-                Game.depthTarget.depthBuffer = true;
-                Game.depthTarget.depthTexture = new THREE.DepthTexture();
-                Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
-                
-
-              });
-
-            });
-
-          }
-        });
+        initializeProfile();
       },
       onError: () => {
         console.log('Failed to verify the path for', GameKey);
-        loader.Hide();
-        let gameFinderWizard = new GameFinderWizard({
-          onUpdate: () => {
-            initialize();
-          },
-          onCancel: () => {
-            window.canUnload = true;
-            ipcRenderer.send('CloseMain', true);
+        dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory',]}).then(result => {
+          console.log(result.canceled);
+          console.log(result.filePaths);
+          if(result.filePaths.length && !result.canceled){
+            Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
+            app_profile = Config.get(['Profiles', app_profile.key]);
+            initializeProfile();
+          }else{
+            alert('Can\'t continue without locating the game directory');
+            window.close();
           }
+
+        }).catch(err => {
+          alert(err);
+          window.close();
         });
+
       }
     });
+  }
 
+  function initializeProfile(){
+    localStorage.setItem('gameKey', GameKey);
+    $('body').removeClass('KOTOR').removeClass('TSL').addClass(GameKey);
+    loader.Show();
+    GameInitializer.Init({
+      game: Games[GameKey],
+      onLoad: () => {
+        AuroraWalkMesh.Init();
+        LightManager.toggleLightHelpers(Config.get('Game.debug.light_helpers') ? true : false);
+        
+        resourceExplorerTab.initialize( () => {
+
+          loadMaps( () => {
+
+            if(GameKey == 'TSL'){
+              window.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor2.ini'));
+            }else{
+              window.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor.ini'));
+            }
+
+            loader.Hide();
+            tabManager.AddTab(new QuickStartTab());
+            tabManager.AttachTo($('#renderer-container #tabs-container'));
+
+            let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+            Game.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+            Game.depthTarget.texture.generateMipmaps = false;
+            Game.depthTarget.stencilBuffer = false;
+            Game.depthTarget.depthBuffer = true;
+            Game.depthTarget.depthTexture = new THREE.DepthTexture();
+            Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+            
+
+          });
+
+        });
+
+      }
+    });
   }
 
   function loadMaps( onComplete = null ){
     loader.SetMessage('Loading Maps...');
     window.GameMaps = [];
-    fs.readdir(path.join(Config.options.Games[GameKey].Location, 'modules'), (err, files) => {
+    fs.readdir(path.join(app_profile.directory, 'modules'), (err, files) => {
 
       if(err){
         if(typeof onComplete === 'function')
@@ -239,7 +217,7 @@
           
           if(ext == 'rim'){
 
-            new RIMObject(path.join(Config.options.Games[GameKey].Location, 'modules', file), (module_rim) => {
+            new RIMObject(path.join(app_profile.directory, 'modules', file), (module_rim) => {
               
               module_rim.getRawResource('module', ResourceTypes['ifo'], (ifo) => {
                 let area_name = new GFFObject(ifo).GetFieldByLabel('Mod_Entry_Area').GetValue();
@@ -274,22 +252,30 @@
   function verifyGame(args = {}){
 
     args = $.extend({
-      game: _Game,
+      directory: null,
       onVerify: null,
       onError: null
     }, args);
 
-    let verifiedPaths = gamePathVerify();
-
-    if(verifiedPaths[args.game]){
-      if(args.onVerify != null)
-        args.onVerify();
+    if(args.directory != null){
+      try {
+        fs.accessSync(args.directory, fs.F_OK);
+        if(typeof args.onVerify == 'function')
+          args.onVerify();
+      } catch (e) {
+        Config.set(['Profiles', app_profile.key, 'directory'], null);
+        if(typeof args.onError == 'function')
+          args.onError();
+      }
     }else{
-      if(args.onError != null)
-        args.onError();
+      Config.set(['Profiles', app_profile.key, 'directory'], null);
+      if(typeof args.onError == 'function')
+          args.onError();
     }
 
   }
+
+  initialize();
 
   window.canUnload = false;
 

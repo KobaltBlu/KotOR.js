@@ -1,3 +1,4 @@
+const isMac = process.platform === 'darwin';
 const remote = require('electron').remote;
 const app = remote.app;
 app.allowRendererProcessReuse = false;
@@ -8,18 +9,39 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
+const isRunningInAsar = function(){
+  return false;
+};//require('electron-is-running-in-asar');
+
+const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+const Config = new ConfigManager('settings.json');
+
 const profile_categories = {
-  game: { name: 'Games', $list: undefined },
-  tools: { name: 'Modding Tools', $list: undefined }
+  game: { name: 'Games', $list: null },
+  tools: { name: 'Modding Tools', $list: null }
 };
 
 //Load in the launcher profiles
-const profiles = {};
-let _profiles = fs.readdirSync(path.join(app.getAppPath(), 'launcher/profiles'));
-for(let i = 0; i < _profiles.length; i++){
-  let _profilePath = path.parse(_profiles[i]);
-  profiles[_profilePath.name] = require(path.join(app.getAppPath(), 'launcher/profiles', _profilePath.base));
-  profiles[_profilePath.name].key = _profilePath.name;
+let profiles = Config.get('Profiles');
+
+function initProfiles(){
+  let _profiles = fs.readdirSync(path.join(app.getAppPath(), 'launcher/profiles'));
+  for(let i = 0; i < _profiles.length; i++){
+    let _profilePath = path.parse(_profiles[i]);
+    let cached_profile = Config.get(['Profiles', _profilePath.name]);
+    if(typeof cached_profile == 'undefined'){
+      cached_profile = require(path.join(app.getAppPath(), 'launcher/profiles', _profilePath.base));
+      cached_profile.key = _profilePath.name;
+      cached_profile.sort = i;
+      Config.set(['Profiles', _profilePath.name], cached_profile);
+    }else{
+      cached_profile = Object.assign(require(path.join(app.getAppPath(), 'launcher/profiles', _profilePath.base)), cached_profile);
+      cached_profile.key = _profilePath.name;
+      cached_profile.sort = i;
+      Config.set(['Profiles', _profilePath.name], cached_profile);
+    }
+  }
+  profiles = Config.get('Profiles');
 }
 
 function elementParser(element){
@@ -146,7 +168,6 @@ function initGalleryPromoElement($gallery){
 function initWebviewPromoElement($webview_wrapper){
 
   let webview = $('webview', $webview_wrapper)[0];
-  console.log(webview);
   if(webview){
     webview.getWebContents().on('will-navigate', (event, url) => {
       event.preventDefault();
@@ -176,7 +197,11 @@ function initPromoElements($wrapper){
   $('.promo-element', $wrapper).each( initPromoElement );
 }
 
+const profile_doms = { };
+
 function buildProfileElement(profile = {}){
+
+  profile = Config.get(['Profiles', profile.key]);
 
   profile = Object.assign({
     name: '',
@@ -185,6 +210,7 @@ function buildProfileElement(profile = {}){
     icon: '',
     steam_id: null,
     directory: null,
+    executable: null,
     launch: {
       type: "electron",
       path: "game.html",
@@ -194,10 +220,19 @@ function buildProfileElement(profile = {}){
   }, profile);
 
   let tpl_listItem = `
-<li class="launcher-option ${profile.key}">
+<li class="launcher-option ${profile.key}" data-sort="${profile.sort}">
   <span class="icon" style="background-image: url(${profile.icon});"></span>
   <a href="#${profile.key}" data-background="${profile.background}" data-icon="${profile.icon}">${profile.name}</a>
 </li>`;
+
+  let executable_btn = '';
+  if(profile.executable){
+    executable_btn = `<a href="#" class="btn-launch-executable" data-executable="${ isMac ? profile.executable.mac : profile.executable.win }" title="Click here to launch the original game.">Launch Original</a>`;
+  }
+
+  let tpl_launch_locate = `<a href="#" class="btn-launch locate">Locate</a>`;
+
+  let tpl_launch_buttons = `<a href="#" class="btn-launch">Launch</a> ${ executable_btn }`;
 
   let tpl_launcherTab = `
 <div id="${profile.key}" class="launcher-content">
@@ -211,13 +246,24 @@ function buildProfileElement(profile = {}){
     </div>
     <div class="promo-elements-right"><i class="fas fa-chevron-right"></i></div>
   </div>
-  <a href="#" class="btn-launch${ profile.directory ? '' : '' }"></a>
+  <div class="launch-btns">
+    ${ !profile.directory && profile.locate_required ? tpl_launch_locate : tpl_launch_buttons }
+  </div>
 </div>`;
 
   let $listItem = $(tpl_listItem);
   let $launcherEle = $(tpl_launcherTab);
+  let needsDomInsert = true;
 
-  profile.nodes = {
+  //Reset the profiles DOM elements if it was already created
+  if(typeof profile_doms[profile.key] == 'object'){
+    profile_doms[profile.key].$listItem.replaceWith($listItem);
+    profile_doms[profile.key].$launcherEle.replaceWith($launcherEle);
+    needsDomInsert = false;
+  }
+
+  //Reset the profile dom cache
+  let profile_dom = profile_doms[profile.key] = {
     $listItem:      $listItem,
     $launcherEle:   $launcherEle,
     $logoWrapper:   $('.logo-wrapper', $launcherEle),
@@ -229,34 +275,34 @@ function buildProfileElement(profile = {}){
   };
 
   let offset = 0;
-  let max = $('.launcher-contents').width() - profile.nodes.$promoElements.width();
+  let max = $('.launcher-contents').width() - profile_dom.$promoElements.width();
   let canScroll = false;
 
-  profile.nodes.$promoElements.css({'margin-left': 0, position: 'absolute'});
+  profile_dom.$promoElements.css({'margin-left': 0, position: 'absolute'});
 
   let updateScroll = function(){
-    max = $('.launcher-contents').width() - profile.nodes.$promoElements.width();
+    max = $('.launcher-contents').width() - profile_dom.$promoElements.width();
 
     if(max > 0){
       canScroll = false;
       offset = 0;
-      profile.nodes.$promoElements.css({ marginLeft: offset, position: 'absolute' });
+      profile_dom.$promoElements.css({ marginLeft: offset, position: 'absolute' });
     }else{
       canScroll = true;
     }
   }
 
   let updateScrollButtons = function(){
-    profile.nodes.$promoElementsWrapper.removeClass('scroll-left').removeClass('scroll-right');
-    max = $('.launcher-contents').width() - profile.nodes.$promoElements.width();
-    let marginLeft = parseInt(profile.nodes.$promoElements.css('margin-left'));
+    profile_dom.$promoElementsWrapper.removeClass('scroll-left').removeClass('scroll-right');
+    max = $('.launcher-contents').width() - profile_dom.$promoElements.width();
+    let marginLeft = parseInt(profile_dom.$promoElements.css('margin-left'));
     if(canScroll){
       if(marginLeft < 0){
-        profile.nodes.$promoElementsWrapper.addClass('scroll-left');
+        profile_dom.$promoElementsWrapper.addClass('scroll-left');
       }
 
       if(marginLeft > max){
-        profile.nodes.$promoElementsWrapper.addClass('scroll-right');
+        profile_dom.$promoElementsWrapper.addClass('scroll-right');
       }
     }
   }
@@ -266,7 +312,7 @@ function buildProfileElement(profile = {}){
     updateScrollButtons();
   });
 
-  profile.nodes.$promoLeft.on('click', function(e){
+  profile_dom.$promoLeft.on('click', function(e){
     if(!canScroll)
       return;
 
@@ -275,23 +321,23 @@ function buildProfileElement(profile = {}){
     if(offset >= 0)
       offset = 0;
 
-    profile.nodes.$promoElements.css({ marginLeft: offset, position: 'absolute' });
+    profile_dom.$promoElements.css({ marginLeft: offset, position: 'absolute' });
 
     updateScrollButtons();
   });
 
-  profile.nodes.$promoRight.on('click', function(e){
+  profile_dom.$promoRight.on('click', function(e){
     if(!canScroll)
       return;
 
     offset -= 320;
 
-    let max = $('.launcher-contents').width() - profile.nodes.$promoElements.width();
+    let max = $('.launcher-contents').width() - profile_dom.$promoElements.width();
 
     if(Math.abs(offset) >= max)
       offset = max;
 
-    profile.nodes.$promoElements.css({ marginLeft: offset, position: 'absolute' });
+    profile_dom.$promoElements.css({ marginLeft: offset, position: 'absolute' });
 
     updateScrollButtons();
   });
@@ -314,6 +360,7 @@ function buildProfileElement(profile = {}){
     updateScroll();
     updateScrollButtons();
 
+    Config.set(['Launcher', 'selected_profile'], profile.key);
   });
 
   $('a.btn-launch', $launcherEle).on('click', function(e){
@@ -321,21 +368,25 @@ function buildProfileElement(profile = {}){
     let $btn = $(this);
     if($btn.hasClass('locate') && !profile.directory){
       dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]}).then(result => {
-        console.log(result.canceled);
-        console.log(result.filePaths);
         if(result.filePaths.length && !result.canceled){
-          profile.directory = result.filePaths[0];
-          $btn.removeClass('locate');
+          if(result.filePaths[0]){
+            Config.set('Profiles.'+profile.key+'.directory', result.filePaths[0]);
+          }
+          buildProfileElement(Config.get('Profiles.'+profile.key));
+          setLauncherOption(profile.key);
         }
       }).catch(err => {
         alert(err);
       });
     }else{
       let clean_profle = Object.assign({}, profile);
-      delete clean_profle.nodes;
-      console.log(clean_profle);
       ipcRenderer.send('launch_profile', clean_profle);
     }
+  });
+
+  $('a.btn-launch-executable', $launcherEle).on('click', function(e){
+    e.preventDefault();
+    ipcRenderer.send('launch_executable', path.join(profile.directory, $(this).attr('data-executable')) );
   });
 
   //Attempt to fetch steam data
@@ -355,7 +406,7 @@ function buildProfileElement(profile = {}){
         let app_data = data[profile.steam_id].data;
         if(app_data){
 
-          profile.nodes.$logo.attr('src', `https://steamcdn-a.akamaihd.net/steam/apps/${profile.steam_id}/logo.png?t=1437496165`);
+          profile_dom.$logo.attr('src', `https://steamcdn-a.akamaihd.net/steam/apps/${profile.steam_id}/logo.png?t=1437496165`);
 
           if(app_data.screenshots && app_data.screenshots.length){
 
@@ -364,7 +415,7 @@ function buildProfileElement(profile = {}){
               type: 'gallery', 
               images: app_data.screenshots 
             }));
-            profile.nodes.$promoElements.append($promoElement);
+            profile_dom.$promoElements.append($promoElement);
             $promoElement.hide().fadeIn('slow');
             //Initialize the new element
             initPromoElement.call( $promoElement, $promoElement );
@@ -374,7 +425,7 @@ function buildProfileElement(profile = {}){
               type: 'webview', 
               url: `https://store.steampowered.com/widget/${profile.steam_id}/` 
             }));
-            profile.nodes.$promoElements.append($promoElement2);
+            profile_dom.$promoElements.append($promoElement2);
             $promoElement2.hide().fadeIn('slow');
             //Initialize the new element
             initPromoElement.call( $promoElement2, $promoElement2 );*/
@@ -390,14 +441,20 @@ function buildProfileElement(profile = {}){
     });
   }
 
-  profile_categories[profile.category].$list.append($listItem);
-  //$('.launcher-options ul').append($listItem);
-  $('.launcher-contents').append($launcherEle);
+  if(needsDomInsert){
+    let profile_category = profile_categories[profile.category];
+    if(profile_category){
+      profile_category.$list.append($listItem);
+      //$('.launcher-options ul').append($listItem);
+      $('.launcher-contents').append($launcherEle);
+    }else{
+      console.error('profile_category', profile.category, profile);
+    }
+  }
 
 }
 
 function setLauncherOption(id = 'kotor'){
-  console.log('setLauncherOption', `.launcher-option.${id}`);
   $(`.launcher-option.${id} a`).click();
 }
 
@@ -417,14 +474,15 @@ document.onwebkitfullscreenchange = function ( event ) {
 }; 
 
 $( function() {
+  
+  initProfiles();
 
+  $('.launcher-options').html('');
   for(let key in profile_categories){
     let category = profile_categories[key];
-
     category.$list = $(`<ul class="${key}"></ul>`);
     $('.launcher-options').append(`<h3>${category.name}</h3>`);
     $('.launcher-options').append(category.$list);
-
   }
 
   for(let key in profiles){
@@ -440,7 +498,7 @@ $( function() {
   $('.tab-btn a').on('click', function(e) {
     e.preventDefault();
     let id = $(this).attr('href');
-    console.log(id, $(id));
+    //console.log(id, $(id));
     $('.tab').removeClass('selected');
    $(id).addClass('selected');
 
@@ -466,9 +524,6 @@ $( function() {
     e.preventDefault();
     window.close();
   });
-
-  setLauncherOption('kotor');
-  $('body').fadeIn(1500);
 
   $('.lightbox').each( function() {
     let $lightbox = $(this);
@@ -498,5 +553,23 @@ $( function() {
     });
 
   });
+
+  initProfiles();
+
+  window.addEventListener('focus', function(){
+    if(window.app_loaded){
+      initProfiles();
+      let keys = Object.keys(profiles);
+      for(let i = 0, len = keys.length; i < len; i++){
+        buildProfileElement(profiles[keys[i]]);
+      }
+      setLauncherOption(Config.get(['Launcher', 'selected_profile'], 'kotor'));
+    }
+  });
+
+  setLauncherOption(Config.get(['Launcher', 'selected_profile'], 'kotor'));
+  $('body').fadeIn(1500);
+
+  window.app_loaded = true;
 
 });

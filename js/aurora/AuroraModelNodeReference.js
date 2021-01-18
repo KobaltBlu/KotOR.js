@@ -2,13 +2,22 @@
  */
 
 /* @file
- * The AuroraModelNode Reference is unused
+ * The AuroraModelNodeReference
  */
 
  class AuroraModelNodeReference extends AuroraModelNode {
 
-  constructor(){
-    super();
+  constructor(parent = undefined){
+    super(parent);
+    this.type |= AuroraModel.NODETYPE.Reference;
+
+  }
+
+  readBinary(auroraModel = undefined){
+    super.readBinary(auroraModel);
+
+    this.modelName = this.auroraModel.mdlReader.ReadChars(32);
+    this.reattachable = this.auroraModel.mdlReader.ReadInt32();
 
   }
 

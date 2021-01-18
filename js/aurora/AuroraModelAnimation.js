@@ -72,16 +72,16 @@ class AuroraModelAnimation {
   getDamageDelay(){
     for(let i = 0, len = this.events.length; i < len; i++){
       if(this.events[i].name == 'Hit'){
-        return this.events.length;
+        return this.events[i].length;
       }
     }
     return 0.5;
   }
 
-  static getAnimation2DA(name = ''){
-    for(let i = 0, len = Global.kotor2DA.animations.length; i < len; i++){
-      if(Global.kotor2DA.animations[i].name.toLowerCase() == name.toLowerCase()){
-        return Global.kotor2DA.animations[i];
+  static GetAnimation2DA(name = ''){
+    for(let i = 0, len = Global.kotor2DA.animations.RowCount; i < len; i++){
+      if(Global.kotor2DA.animations.rows[i].name.toLowerCase() == name.toLowerCase()){
+        return Global.kotor2DA.animations.rows[i];
       }
     }
     return undefined;

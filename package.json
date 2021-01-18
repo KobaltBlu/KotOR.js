@@ -30,7 +30,6 @@
     "signals": "^1.0.0",
     "soundbank-reverb": "^1.1.2",
     "string_decoder": "^1.2.0",
-    "three": "github:KobaltBlu/kotor.three.js#master",
     "v8-compile-cache": "^2.1.1"
   }
 }

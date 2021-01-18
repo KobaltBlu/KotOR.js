@@ -40,7 +40,7 @@ function pad(n, width, z) {
 const isMac = process.platform === 'darwin';
 const remote = require('electron').remote;
 const app = remote.app;
-app.allowRendererProcessReuse = false;
+app.allowRendererProcessReuse = false; //is required for loading modules like dxt because it isn't context aware
 const {BrowserWindow} = require('electron').remote;
 const {ipcRenderer} = require('electron');
 const {Menu, MenuItem} = remote;
@@ -63,17 +63,29 @@ const isRunningInAsar = function(){
   return false;
 };//require('electron-is-running-in-asar');
 
+const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+let Config = new ConfigManager('settings.json');
+
+const app_profile = (() => {
+  let app_profile = remote.getCurrentWindow().state;
+  if(typeof app_profile != 'object' || !app_profile.key){
+    alert('Fatal Error: Window Profile Missing');
+    window.close();
+  }
+  return Config.get(['Profiles', app_profile.key]);
+})();
+
 const LoadingScreen = require(path.join(app.getAppPath(), 'js/LoadingScreen.js'));
 const loader = new LoadingScreen();
-loader.SetLogo(remote.getCurrentWindow().state.logo);
-loader.SetBackgroundImage(remote.getCurrentWindow().state.background);
+loader.SetLogo(app_profile.logo);
+loader.SetBackgroundImage(app_profile.background);
 $( function(){
   loader.Show();
 })
 
 let gamepads = {};
 let currentGamepad = -1;
-let gpMenu = new MenuItem(    {
+let gpMenu = new MenuItem({
   label: 'GamePads',
   submenu: [
     new MenuItem(    {
@@ -109,7 +121,7 @@ const Games = {
   TSL: 2
 }
 
-switch(remote.getCurrentWindow().state.launch.args.gameChoice){
+switch(app_profile.launch.args.gameChoice){
   case 2:
     global._Game = Games.TSL;
     global.GameKey = 'TSL';
@@ -136,7 +148,6 @@ const BinaryReader = require(path.join(app.getAppPath(), 'js/BinaryReader.js'));
 const BinaryWriter = require(path.join(app.getAppPath(), 'js/BinaryWriter.js'));
 const INIConfig = require(path.join(app.getAppPath(), 'js/INIConfig.js'));
 
-const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const TemplateEngine = require(path.join(app.getAppPath(), 'js/TemplateEngine.js'));
 const FileTypeManager = require(path.join(app.getAppPath(), 'js/resource/FileTypeManager.js'));
 const FileLoader = require(path.join(app.getAppPath(), 'js/resource/FileLoader.js'));
@@ -165,11 +176,11 @@ const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.
 const AuroraFile = require(path.join(app.getAppPath(), 'js/aurora/AuroraFile.js'));
 const AuroraModel = require(path.join(app.getAppPath(), 'js/aurora/AuroraModel.js'));
 const AuroraModelNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNode.js'));
+const AuroraModelNodeMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeMesh.js'));
 const AuroraModelNodeAABB = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeAABB.js'));
 const AuroraModelNodeDangly = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeDangly.js'));
 const AuroraModelNodeEmitter = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeEmitter.js'));
 const AuroraModelNodeLight = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeLight.js'));
-const AuroraModelNodeMesh = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeMesh.js'));
 const AuroraModelNodeReference = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeReference.js'));
 const AuroraModelNodeSkin = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSkin.js'));
 const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimation.js'));
@@ -299,7 +310,6 @@ const IngameControls = require(path.join(app.getAppPath(), 'js/IngameControls.js
 const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
 const JournalManager = require(path.join(app.getAppPath(), 'js/JournalManager.js'));
 
-let Config = new ConfigManager('settings.json');
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
 let Global = {};
 let Clipboard = null;
@@ -340,7 +350,7 @@ if(GameKey == 'TSL'){
   }
   
   const configDefaults = require(path.join(app.getAppPath(), 'js/game/tsl/swkotor2-config.js'));
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor2.ini'), configDefaults);
+  global.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor2.ini'), configDefaults);
   Game = require(path.join(app.getAppPath(), 'js/game/tsl/'+GameKey+'.js')); 
 
 }else{
@@ -352,7 +362,7 @@ if(GameKey == 'TSL'){
   }
 
   const configDefaults = require(path.join(app.getAppPath(), 'js/game/kotor/swkotor-config.js'));
-  global.iniConfig = new INIConfig(path.join(Config.options.Games[GameKey].Location, 'swkotor.ini'), configDefaults)
+  global.iniConfig = new INIConfig(path.join(app_profile.directory, 'swkotor.ini'), configDefaults)
   Game = require(path.join(app.getAppPath(), 'js/game/kotor/'+GameKey+'.js')); 
 
 }
@@ -677,38 +687,131 @@ THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
 
 }
 
-THREE.Box3.prototype.expandByObject = function expandByObject(object) {
-  // Computes the world-axis-aligned bounding box of an object (including its children),
-  // accounting for both the object's, and children's, world transforms
-  object.updateWorldMatrix(false, false);
-  var geometry = object.geometry;
-  var _box = new THREE.Box3;
+const template = [
+  // { role: 'appMenu' }
+  ...(isMac ? [{
+    label: app.name,
+    submenu: [
+      { role: 'about' },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideothers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { label: 'Close', role: 'close' }
+    ]
+  }] : []),
+  // { role: 'fileMenu' }
+  {
+    label: 'File',
+    submenu: [
+      isMac ? { role: 'close' } : { role: 'close' }
+    ]
+  },
+  // { role: 'editMenu' }
+  {
+    label: 'Debug',
+    submenu: [
+      { label: 'Collision', submenu: [
+        { label: 'Creature Collision', type: 'checkbox', checked: Config.get('Game.debug.creature_collision'), 'accelerator': 'Alt+1', click: () => {
+          Config.set('Game.debug.creature_collision', !Config.get('Game.debug.creature_collision'));
+        }},
+        { label: 'Door Collision', type: 'checkbox', checked: Config.get('Game.debug.door_collision'), 'accelerator': 'Alt+2', click: () => {
+          Config.set('Game.debug.door_collision', !Config.get('Game.debug.door_collision'));
+        }},
+        { label: 'Placeable Collision', type: 'checkbox', checked: Config.get('Game.debug.placeable_collision'), 'accelerator': 'Alt+3', click: () => {
+          Config.set('Game.debug.placeable_collision', !Config.get('Game.debug.placeable_collision'));
+        }},
+        { label: 'World Collision', type: 'checkbox', checked: Config.get('Game.debug.world_collision'), 'accelerator': 'Alt+4', click: () => {
+          Config.set('Game.debug.world_collision', !Config.get('Game.debug.world_collision'));
+        }},
+        { label: 'Show Collision Meshes', type: 'checkbox', checked: Config.get('Game.debug.show_collision_meshes'), 'accelerator': 'Alt+0', click: () => {
+          Config.set('Game.debug.show_collision_meshes', !Config.get('Game.debug.show_collision_meshes'));
+        }},
+      ]},
+      { label: 'Module Objects', submenu: [
+        { label: 'Tiggers: Show ', type: 'checkbox', checked: Config.get('Game.debug.trigger_geometry_show'), click: () => {
+          Config.set('Game.debug.trigger_geometry_show', !Config.get('Game.debug.trigger_geometry_show'));
+        }}
+      ]},
+      { label: 'Light Helpers', type: 'checkbox', checked: Config.get('Game.debug.light_helpers'), 'accelerator': 'Alt+l', click: () => {
+        Config.set('Game.debug.light_helpers', !Config.get('Game.debug.light_helpers'));
+        LightManager.setLightHelpersVisible(Config.get('Game.debug.light_helpers') ? true : false);
+      }},
+      { label: 'Show FPS', type: 'checkbox', checked: Config.get('Game.debug.show_fps'), 'accelerator': 'Alt+F', click: () => {
+        Config.set('Game.debug.show_fps', !Config.get('Game.debug.show_fps'));
 
-  if (geometry !== undefined) {
-    if (geometry.boundingBox === null) {
-      geometry.computeBoundingBox();
-    }
+        if(!Config.options.Game.debug.show_fps){
+          Game.stats.showPanel(false);
+        }else{
+          Game.stats.showPanel(0);
+        }
 
-    _box.copy(geometry.boundingBox);
-
-    _box.applyMatrix4(object.matrixWorld);
-
-    this.union(_box);
-  }else if(object instanceof THREE.AuroraLight){
-    var bb = new THREE.Box3(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0));
-    bb.expandByScalar(object.getRadius());
-    _box.copy(bb);
-
-    _box.applyMatrix4(object.matrixWorld);
-
-    this.union(_box);
+      }},
+      { label: 'Shipping Build', type: 'checkbox', checked: Config.get('Game.debug.is_shipping_build'), click: () => {
+        Config.set('Game.debug.is_shipping_build', !Config.get('Game.debug.is_shipping_build'));
+      }},
+    ]
+  },
+  // { role: 'viewMenu' }
+  {
+    label: 'View',
+    submenu: [
+      { role: 'reload' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
+      { type: 'separator' },
+      { role: 'toggleFullscreen' },
+      { label: 'Toggle Menu', type: 'checkbox', checked: Config.get('Game.show_application_menu'), 'accelerator': process.platform === 'darwin' ? 'Alt+D' : 'Alt+D', click: () => {
+        Config.set('Game.show_application_menu', !Config.get('Game.show_application_menu'));
+        remote.getCurrentWindow().setMenuBarVisibility(Config.get('Game.show_application_menu'));
+      } }
+    ]
+  },
+  // { role: 'windowMenu' }
+  {
+    label: 'Window',
+    submenu: [
+      { role: 'minimize' },
+      { role: 'zoom' },
+      ...(isMac ? [
+        { type: 'separator' },
+        { role: 'front' },
+        { type: 'separator' },
+        { role: 'window' }
+      ] : [
+        { role: 'close' }
+      ])
+    ]
+  },
+  {
+    role: 'help',
+    submenu: [
+      {
+        label: 'KotOR.js - Github',
+        click: async () => {
+          const { shell } = require('electron')
+          await shell.openExternal('https://github.com/KobaltBlu/KotOR.js')
+        }
+      }
+    ]
   }
+]
 
-  var children = object.children;
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
 
-  for (var i = 0, l = children.length; i < l; i++) {
-    this.expandByObject(children[i]);
-  }
+remote.getCurrentWindow().setMenuBarVisibility(Config.options.Game.show_application_menu);
 
-  return this;
-};
+remote.getCurrentWindow().addListener('enter-full-screen', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], true);
+});
+remote.getCurrentWindow().addListener('leave-full-screen', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], false);
+});

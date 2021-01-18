@@ -26,7 +26,7 @@ class ResourceExplorerTab extends EditorTab {
     let bifLoader = new AsyncLoop({
       array: bifs,
       onLoop: (bif, asyncLoop) => {
-        let name = bif.file.split('\\').pop().split('.')[0];
+        let name = bif.file.split(path.sep).pop().split('.')[0];
         let subTypes = {};
 
         let node = {
@@ -143,7 +143,7 @@ class ResourceExplorerTab extends EditorTab {
 
   loadFolderForFileBrowser(folder_name = '', onComplete = null ){
     //Load StreamWaves
-    recursive(path.join(Config.options.Games[GameKey].Location, folder_name), (err, files) => {
+    recursive(path.join(app_profile.directory, folder_name), (err, files) => {
 
       if(err){
         if(typeof onComplete === 'function')
@@ -153,7 +153,7 @@ class ResourceExplorerTab extends EditorTab {
 
       let folder = {name: folder_name, type: 'group', nodeList: []};
       folder.nodeList._indexes = {};
-      let substr_len = (path.join(Config.options.Games[GameKey].Location, folder_name)+path.sep).length;
+      let substr_len = (path.join(app_profile.directory, folder_name)+path.sep).length;
 
       for(let i = 0; i < files.length; i++){
         let file = files[i].substr(substr_len);

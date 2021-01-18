@@ -52,14 +52,6 @@ class MenuDialog extends GameMenu {
         this.topBar = new THREE.Mesh( geometry, material );
         this.bottomBar = new THREE.Mesh( geometry, material );
 
-        this.LBL_MESSAGE.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.audioEmitter.Stop();
-          if(this.isListening){
-            this.PlayerSkipEntry(this.currentEntry);
-          }
-        });
-
         this._resetLetterBox();
 
         this.tGuiPanel.widget.add(this.topBar);

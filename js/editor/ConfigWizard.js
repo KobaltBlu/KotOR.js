@@ -56,7 +56,7 @@ class ConfigWizard extends Wizard {
 
       $('#modal-config-save', this.$wizard).on('click', (e) => {
         e.preventDefault();
-        Config.Save();
+        Config.save();
       });
 
 

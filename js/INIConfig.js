@@ -5,6 +5,7 @@ class INIConfig {
     this.defaults = defaults;
     this.options = {};
     this.nodes = [];
+    
     try{
       let ini_text = fs.readFileSync(this.ini_path).toString('utf8');
       let lines = ini_text.split(/\r?\n/);
@@ -44,9 +45,46 @@ class INIConfig {
 
     }
 
-    this.options = Object.assign(this.defaults, this.options);
+    this.options = this._mergeDeep(this.defaults, this.options);
 
   }
+
+  /**
+   * Simple object check.
+   * @param item
+   * @returns {boolean}
+   */
+  _isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+  }
+
+  /**
+   * Deep merge two objects.
+   * @param target
+   * @param ...sources
+   */
+  _mergeDeep(target, ...sources) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+
+    if (this._isObject(target) && this._isObject(source)) {
+      for (const key in source) {
+        if (this._isObject(source[key])) {
+          if (!target[key]) Object.assign(target, { [key]: {} });
+          this._mergeDeep(target[key], source[key]);
+        } else {
+          Object.assign(target, { [key]: source[key] });
+        }
+      }
+    }
+
+    return this._mergeDeep(target, ...sources);
+  }
+
+  // Code copied from linked Stack Overflow question
+  // https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+  // Answer by Salakar:
+  // https://stackoverflow.com/users/2938161/salakar
 
   getProperty(key, value) {
     //https://stackoverflow.com/a/20424385

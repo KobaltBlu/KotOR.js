@@ -749,7 +749,7 @@ class ModuleEditorTab extends EditorTab {
         //Config.options.Editor.Module.Helpers.sound.visible = this.group.sounds.visible;
       break;
     }
-    Config.Save(null, true);
+    Config.save(null, true);
   }
 
   addNewDoor() {

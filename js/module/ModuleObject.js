@@ -39,6 +39,7 @@ class ModuleObject {
     this.invalidateCollision = false;
     this.room = undefined;
     this.rooms = [];
+    this.roomSize = new THREE.Vector3();
     this.model = null;
     this.dialogAnimation = null;
     this.template = undefined;
@@ -236,15 +237,36 @@ class ModuleObject {
 
   }
 
-  getAnimationNameById(id=-1){
+  //Queue an animation to the actionQueue array
+  actionPlayAnimation(anim = '', loop = false, speed = 1){
+    
+    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
+    let animation = this.model.getAnimationByName(_anim);
+    if(animation){
+      this.actionQueue.push({ 
+        goal: ModuleCreature.ACTION.ANIMATE,
+        animation: animation,
+        speed: speed || 1,
+        time: loop ? -1 : animation.length
+      });
+    }else{
+      console.warn('actionPlayAnimation', animation);
+    }
+  }
+
+  isSimpleCreature(){
+    return false;
+  }
+
+  getAnimationNameById(id = -1){
     if(typeof id === 'string'){
       return id;
     }else{
       switch(id){
         case 0:  //PAUSE
-          return 'pause';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
         case 1:  //PAUSE2
-          return 'pause2';
+          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
         case 2:  //LISTEN
           return 'listen';
         case 3:  //MEDITATE
@@ -285,11 +307,11 @@ class ModuleObject {
         case 23: //PRONE
           return 'prone';
         case 24: //PAUSE3
-          return 'pause3';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
         case 25: //WELD
           return 'weld';
         case 26: //DEAD
-          return 'dead';
+          return (this.isSimpleCreature() ? 'cdead' : 'dead');
         case 27: //TALK_INJURED
           return 'talkinj';
         case 28: //LISTEN_INJURED
@@ -297,7 +319,7 @@ class ModuleObject {
         case 29: //TREAT_INJURED
           return 'treatinj';
         case 30: //DEAD_PRONE
-          return 'dead';
+          return (this.isSimpleCreature() ? 'cdead' : 'dead');
         //case 31: //KNEEL_TALK_ANGRY
         //case 32: //KNEEL_TALK_SAD
         case 35: //MEDITATE LOOP
@@ -307,9 +329,9 @@ class ModuleObject {
         case 101: //HEAD_TURN_RIGHT
           return 'hturnr';
         case 102: //PAUSE_SCRATCH_HEAD
-          return 'pause3';
+          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
         case 103: //PAUSE_BORED
-          return 'pause2';
+          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
         case 104: //SALUTE
           return 'salute';
         case 105: //BOW
@@ -317,13 +339,13 @@ class ModuleObject {
         case 106: //GREETING
           return 'greeting';
         case 107: //TAUNT
-          return 'taunt';
+          return (this.isSimpleCreature() ? 'ctaunt' : 'taunt');
         case 108: //VICTORY1
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         case 109: //VICTORY2
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         case 110: //VICTORY3
-          return 'victory';
+          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
         //case 111: //READ
         //  return 'salute';
         case 112: //INJECT
@@ -363,7 +385,7 @@ class ModuleObject {
 
       }
       //console.error('Animation case missing', id);
-      return 'pause1';
+      return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
     }
   }
 
@@ -771,12 +793,18 @@ class ModuleObject {
     }
   }
 
-  SetPosition(x = 0, y = 0, z = 0){
+  setPosition(x = 0, y = 0, z = 0){
+
+    if(x instanceof THREE.Vector3){
+      z = x.z;
+      y = x.y;
+      x = x.x;
+    }
+
     try{
       if(this.model instanceof THREE.AuroraModel){
         this.model.position.set(x, y, z);
-        this.model.box.setFromObject(this.model);
-        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
+        this.computeBoundingBox();
       }
 
       this.position.set(x, y, z);
@@ -784,11 +812,11 @@ class ModuleObject {
       if(this instanceof ModuleCreature)
         this.updateCollision();
     }catch(e){
-      console.error('ModuleObject.SetPosition failed ');
+      console.error('ModuleObject.setPosition failed ');
     }
   }
 
-  GetPosition(){
+  getPosition(){
     try{
       return this.position.clone();
     }catch(e){
@@ -847,19 +875,6 @@ class ModuleObject {
 
     return '';
   }
-
-  /*GetPosition(){
-    try{
-      return this.model.position.clone();
-    }catch(e){
-      console.error('ModuleObject', e);
-      return new THREE.Vector3(0);
-    }
-  }*/
-
-  /*GetFacing(){
-    return 0;
-  }*/
 
   getFortitudeSave(){
     return this.fortitudeSaveThrow;
@@ -993,8 +1008,7 @@ class ModuleObject {
     if(typeof lLocation === 'object'){
       if(this.model instanceof THREE.AuroraModel){
         this.model.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-        this.model.box.setFromObject(this.model);
-        this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
+        this.computeBoundingBox();
       }
 
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
@@ -1164,11 +1178,12 @@ class ModuleObject {
 
   }
 
-
-
-
   computeBoundingBox(){
     if(this.model){
+      if(!this.model.box){
+        this.model.box = new THREE.Box3();
+      }
+
       this.model.box = this.box.setFromObject(this.model);
       this.model.sphere = this.box.getBoundingSphere(this.model.sphere);
     }
@@ -1181,7 +1196,7 @@ class ModuleObject {
       }
     }
 
-    if(Game.scene.fog){
+    if(Game.scene.fog && !(this instanceof ModuleDoor)){
       if(this.distanceToCamera >= Game.scene.fog.far){
         return false;
       }

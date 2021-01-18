@@ -168,7 +168,7 @@ THREE.TPCLoader.prototype.loadTexture = function(texName, onLoad = null, onProgr
 
 THREE.TPCLoader.prototype.fetch_override = function ( name = '', onLoad = null, onProgress = null, onError = null ) {
   
-  let dir = path.join(Config.options.Games.KOTOR.Location, 'Override');
+  let dir = path.join(app_profile.directory, 'Override');
 
 	fs.readFile(path.join(dir, name)+'.tpc', (err, buffer) => {
 		if (err) throw err; // Fail if the file can't be read.

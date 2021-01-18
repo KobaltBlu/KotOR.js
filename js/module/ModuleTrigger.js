@@ -355,6 +355,9 @@ class ModuleTrigger extends ModuleObject {
         }
       }
     }
+
+    this.mesh.visible = Config.get('Game.debug.trigger_geometry_show') ? true : false;
+
   }
 
   onEnter(object = undefined){

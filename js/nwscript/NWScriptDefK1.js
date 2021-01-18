@@ -321,10 +321,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        this.pushVectorToStack(args[0].position);
-      }else{
-        this.pushVectorToStack({x: 0, y: 0, z: 0});
+        return args[0].position.clone();
       }
+      return {x: 0.0, y: 0.0, z: 0.0};
     }
   },
   28:{
@@ -491,7 +490,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: ["object"],
     action: function(args, _instr, action){
-      return this.caller.GetPosition().distanceTo( args[0].GetPosition() );
+      return this.caller.getPosition().distanceTo( args[0].getPosition() );
     }
   },
   42:{
@@ -612,7 +611,13 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        args[0].cancelCombat();
+        if(PartyManager.party.indexOf(args[0]) >= 0){
+          for(let i = 0, len = PartyManager.party.length; i < len; i++){
+            PartyManager.party[i].cancelCombat();
+          }
+        }else{
+          args[0].cancelCombat();
+        }
       }
     }
   },
@@ -1434,8 +1439,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: ["vector"],
     action: function(args, _instr, action){
-      let vNorm = new THREE.Vector3(args[0].x, args[0].y, args[0].z).normalize();
-      this.pushVectorToStack(vNorm);  
+      return new THREE.Vector3(args[0].x, args[0].y, args[0].z).normalize();
     }
   },
   138:{
@@ -1481,7 +1485,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: ["float", "float", "float"],
     action: function(args, _instr, action){
-      this.pushVectorToStack({x: args[0], y: args[1], z: args[2]});
+      return {x: args[0], y: args[1], z: args[2]};
     }
   },
   143:{
@@ -1557,9 +1561,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
-        return args[0].GetPosition().distanceTo(
-          args[1].GetPosition()
-          );
+        return args[0].getPosition().distanceTo( args[1].getPosition() );
       }else{
         return 0.00;
       }
@@ -1821,7 +1823,10 @@ NWScriptDefK1.Actions = {
     comment: "169: Do a Force Resistance check between oSource and oTarget, returning TRUE if\nthe force was resisted.\n* Return value if oSource or oTarget is an invalid object: FALSE\n",
     name: "ResistForce",
     type: 3,
-    args: ["object", "object"]
+    args: ["object", "object"],
+    action: function(args, _instr, action){
+      return args[1].resistForce(args[0]);
+    }
   },
   170:{
     comment: "170: Get the effect type (EFFECT_TYPE_*) of eEffect.\n* Return value if eEffect is invalid: EFFECT_INVALIDEFFECT\n",
@@ -2023,6 +2028,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+      console.log('ActionJumpToObject')
       if(args[0] instanceof ModuleObject){
         this.caller.jumpToObject( args[0] );
       }
@@ -2109,7 +2115,7 @@ NWScriptDefK1.Actions = {
         }
   
         if(this.caller instanceof ModuleObject){
-          //console.log('ActionStartConversation', args, this.caller);
+          console.log('ActionStartConversation', args, this.caller);
           args[0].actionQueue.push({
             object: this.caller,
             conversation: args[1],
@@ -2216,7 +2222,7 @@ NWScriptDefK1.Actions = {
       //console.log('NWScript: '+this.name, 'GetLocation', args);
       if(args[0] instanceof ModuleObject){
         return {
-          position: args[0].GetPosition(),
+          position: args[0].getPosition(),
           area: Game.module.area,
           facing: THREE.Math.radToDeg(args[0].rotation.z)
         };
@@ -2403,8 +2409,9 @@ NWScriptDefK1.Actions = {
     args: ["location"],
     action: function(args, _instr, action){
       if(args[0]){
-        this.pushVectorToStack(args[0].position);
+        return args[0].position;
       }
+      return {x: 0.0, y: 0.0, z: 0.0};
     }
   },
   224:{
@@ -2653,8 +2660,6 @@ NWScriptDefK1.Actions = {
                           
                         model.walkmesh = pwk;
                         Game.walkmeshList.push(pwk.mesh);
-                        Game.octree_walkmesh.add( pwk.mesh, {useFaces: true} );
-                        Game.octree_walkmesh.rebuild();
                       }catch(e){
                         console.error('Failed to add pwk', model.name, pwk);
                       }
@@ -2794,28 +2799,30 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('BeginConversation', this.caller, this.listenPatternSpeaker, args)
   
-      //if( !(args[1] instanceof ModuleObject) ){
-      args[1] = this.listenPatternSpeaker;
-      //}
+      if( !(args[1] instanceof ModuleObject) ){
+        args[1] = this.listenPatternSpeaker;
+      }
   
       if((args[1]) instanceof ModuleObject){
         if(args[0] != ''){
-          Game.InGameDialog.StartConversation(args[0], args[1], this.caller);
+          Game.InGameDialog.StartConversation(args[0], this.caller, args[1]);
           return 1;
-        }else if((args[1])._conversation){
-          Game.InGameDialog.StartConversation(this.caller._conversation, args[1], this.caller);
+        }else if(this.caller._conversation){
+          Game.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1]);
           (args[1])._conversation = '';
           return 1;
-        }else if((args[1]).conversation){
-          Game.InGameDialog.StartConversation(this.caller.conversation, args[1], this.caller);
+        }else if(this.caller.conversation){
+          Game.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1]);
           return 1;
         }else if(this.listenPatternSpeaker.conversation){
-          Game.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.listenPatternSpeaker, args[1]);
+          Game.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker);
           return 1;
         }else{
+          console.warn('BeginConversation', 'no dialog condition met');
           return 0;
         }
       }else{
+        console.warn('BeginConversation', 'args[1] is not an instanceof ModuleObject');
         return 0;
       }
     }
@@ -3879,7 +3886,10 @@ NWScriptDefK1.Actions = {
     comment: "366:  displays a feed back string for the object spicified and the constant\nrepersents the string to be displayed see:FeedBackText.2da\n",
     name: "DisplayFeedBackText",
     type: 0,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      //TODO
+    }
   },
   367:{
     comment: "367: Add a journal quest entry to the player.\n- szPlotID: the plot identifier used in the toolset's Journal Editor\n- nState: the state of the plot as seen in the toolset's Journal Editor\n- bAllowOverrideHigher: If this is TRUE, you can set the state to a lower\nnumber than the one it is currently on\n",
@@ -4035,6 +4045,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
+      console.log('JumpToObject', args);
       if(args[0] instanceof ModuleObject){
         this.caller.jumpToObject(args[0]);
       }
@@ -4884,7 +4895,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable){
-      args[0].setLocked(false);
+        args[0].setLocked(false);
       }
     }
   },
@@ -4892,7 +4903,12 @@ NWScriptDefK1.Actions = {
     comment: "484: The action subject will lock oTarget, which can be a door or a placeable\nobject.\n",
     name: "ActionLockObject",
     type: 0,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleDoor || args[0] instanceof ModulePlaceable){
+        args[0].setLocked(true);
+      }
+    }
   },
   485:{
     comment: "485: Create a Modify Attacks effect to add attacks.\n- nAttacks: maximum is 5, even with the effect stacked\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nAttacks > 5.\n",
@@ -5341,9 +5357,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      //console.log('GetFirstPC', Game.player)
       this._pcIdx = 0;
-      return PartyManager.party[this._pcIdx];
+      //I believe GetFirstPC should only ever return the player, because partymember do not get added to the modules player list.
+      return Game.player;//PartyManager.party[this._pcIdx];
     }
   },
   549:{
@@ -5352,8 +5368,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      this._pcIdx++;
-      return PartyManager.party[this._pcIdx];
+      //this._pcIdx++;
+      //I believe GetNextPC should only ever return undefined, because partymember do not get added to the modules player list. And there is only one player
+      return undefined;//PartyManager.party[this._pcIdx];
     }
   },
   550:{
@@ -5910,10 +5927,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-        this.pushVectorToStack(args[0].position);
-      }else{
-        this.pushVectorToStack({x: 0, y: 0, z: 0});
+        return args[0].position;
       }
+      return {x: 0, y: 0, z: 0};
     }
   },
   624:{
@@ -6024,7 +6040,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.position);
+      return Game.module.area.MiniGame.Player.position;
     }
   },
   642:{
@@ -6066,7 +6082,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.pos);
+      return Game.module.area.MiniGame.Player.tunnel.pos;
     }
   },
   647:{
@@ -6126,7 +6142,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      this.pushVectorToStack(Game.module.area.MiniGame.Player.tunnel.neg);
+      return Game.module.area.MiniGame.Player.tunnel.neg;
     }
   },
   654:{
@@ -6870,16 +6886,15 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "int"],
     action: function(args, _instr, action){
-      //if(Game.Mode == Game.MODES.INGAME){
-        try{
-          //console.log('PlayRoomAnimation', args[0], args[1]);
-          Game.group.rooms.getObjectByName(
-            args[0].toLowerCase()
-          ).playAnimation(
-            'scriptloop'+pad(args[1], 2)
-          );
-        }catch(e){ console.error(e); }
-      //}
+      for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
+        let room = Game.module.area.rooms[i];
+        if(room.roomName.toLowerCase() == args[0].toLowerCase()){
+          if(room.model){
+            room.model.playAnimation( 'scriptloop'+pad(args[1], 2) );
+          }
+          break;
+        }
+      }
     }
   },
   739:{
@@ -7074,7 +7089,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return true;//!this.debug.build; //Hardcode this value so the game doesn't enter debug mode
+      return Config.get('Game.debug.is_shipping_build') ? true : false;
     }
   },
   762:{

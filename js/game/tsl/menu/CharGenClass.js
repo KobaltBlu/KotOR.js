@@ -104,7 +104,7 @@ class CharGenClass extends GameMenu {
             control._3dView.visible = true;
             control._3dView.camera.aspect = control.extent.width / control.extent.height;
             control._3dView.camera.updateProjectionMatrix();
-            control.getFill().material.uniforms.map.value = control._3dView.texture.texture;
+            control.setFillTexture(control._3dView.texture.texture);
             control.getFill().material.transparent = false;
           }
 

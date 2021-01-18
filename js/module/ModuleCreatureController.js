@@ -207,7 +207,7 @@ class ModuleCreatureController extends ModuleObject {
 
       //If a non controlled party member is stuck, warp them to their follow position
       if(this.partyID != undefined && this != Game.getCurrentPlayer() && this.collisionTimer >= 1){
-        this.position.copy(PartyManager.GetFollowPosition(this));
+        this.setPosition(PartyManager.GetFollowPosition(this));
         this.collisionTimer = 0;
       }
 
@@ -285,6 +285,9 @@ class ModuleCreatureController extends ModuleObject {
       this.updateItems(delta);
     }
 
+    this.collisionTimer -= delta;
+    if(this.collisionTimer < 0)
+      this.collisionTimer = 0;
 
   }
 
@@ -487,18 +490,24 @@ class ModuleCreatureController extends ModuleObject {
               false
             );
 
-            if(this.action.animComplete){
+            if(this.action.timer == undefined){
+              this.action.timer = 1.5;
+              this.action.object.audioEmitter.PlaySound('gui_lockpick');
+            }
+
+            if(!this.isSimpleCreature()){
+              if(this.action.object instanceof ModuleDoor){
+                this.overlayAnimation = 'unlockdr';
+              }else{
+                this.overlayAnimation = 'unlockcntr';
+              }
+            }
+
+            this.action.timer -= delta;
+
+            if(this.action.timer <= 0){
               this.action.object.attemptUnlock(this);
               this.actionQueue.shift();
-            }else{
-              this.action.animComplete = true;
-              this.actionQueue.unshift({ 
-                goal: ModuleCreature.ACTION.ANIMATE,
-                animation: 'unlockdr',
-                speed: 1,
-                time: 0
-              });
-              this.action.object.audioEmitter.PlaySound('gui_lockpick');
             }
             
           }
@@ -518,17 +527,17 @@ class ModuleCreatureController extends ModuleObject {
               this.action.object._conversation = this.action.conversation;
               this._conversation = this.action.conversation;
 
-              //console.log('_converstation', this.action.conversation);
-              
-              if(this.scripts.onDialog instanceof NWScriptInstance){
-                this.heardStrings = [];
-                this.onDialog(this.action.object, -1);
-                this.actionQueue.shift();
+              let caller = this;
+              let target = this.action.object;
+
+              this.heardStrings = [];
+              caller.heardStrings = [];
+              if(target.scripts.onDialog instanceof NWScriptInstance){
+                target.onDialog(caller, -1);
               }else{
-                Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
-                this.actionQueue.shift();
+                Game.InGameDialog.StartConversation(this.action.conversation, target, caller);
               }
-              
+              this.actionQueue.shift();
             }
           }else{
             console.log('Already in dialog', this.action);
@@ -537,14 +546,12 @@ class ModuleCreatureController extends ModuleObject {
         break;
         case ModuleCreature.ACTION.MOVETOPOINT:
           if(this.action.instant){
-            this.position.copy(
-              this.action.object.position.clone()
-            );
-            
+            //console.log('INSTANT MOVE', this.getName(), '--->', this.action.object.getName(), this.position.clone(), this.action.object.position.clone());
+            this.setPosition(this.action.object.position);
             this.setFacing(this.action.object.rotation.z, false);
             this.getCurrentRoom();
             this.updateCollision();
-            this.actionQueue.shift()
+            this.actionQueue.shift();
           }else{
             distance = Utility.Distance2D(this.position, this.action.object.position);
             if(distance > (this.action.distance || 0.1)){
@@ -766,16 +773,17 @@ class ModuleCreatureController extends ModuleObject {
     this.invalidateCollision = true;
     let point = this.action.path[0];
 
-    if(this.blockingTimer >= 5){
+    if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
       point = this.action.path[this.action.path.length - 1];
       this.action.path = [point];
       
       if(!(point instanceof THREE.Vector3))
         point = point.vector;
 
-      this.position.copy(point);
+      this.setPosition(point);
 
       this.blockingTimer = 0;
+      this.collisionTimer = 0;
     }
 
     if(point == undefined)
@@ -1057,22 +1065,32 @@ class ModuleCreatureController extends ModuleObject {
 
     let currentAnimation = this.model.getAnimationName();
 
-    if(this.overlayAnimation){
-
-      if(currentAnimation != this.overlayAnimation){
-        this.model.playAnimation(this.overlayAnimation, false, () => {
-          //console.log('Overlay animation completed');
+    if(this.overlayAnimation && !this.isDead()){
+      let overlayAnimationData = AuroraModelAnimation.GetAnimation2DA(this.overlayAnimation);
+      if(overlayAnimationData){
+        if( (this.animState != ModuleCreature.AnimState.WALKING && this.animState != ModuleCreature.AnimState.RUNNING) || overlayAnimationData.overlay == 1){
+          if(currentAnimation != this.overlayAnimation){
+            this.dialogAnimation = undefined;
+            this.model.playAnimation(this.overlayAnimation, false, () => {
+              //console.log('Overlay animation completed');
+              this.overlayAnimation = undefined;
+            });
+          }
+          return;
+        }else{
           this.overlayAnimation = undefined;
-        });
+        }
+      }else{
+        this.overlayAnimation = undefined;
       }
-
-      return;
+    }else{
+      this.overlayAnimation = undefined;
     }
 
     if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
       return;
 
-    if(Game.inDialog && this.dialogAnimation && !this.force)
+    if(Game.inDialog && this.dialogAnimation && !this.force && !this.isDead())
       return;
 
     
@@ -1489,9 +1507,9 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   jumpToObject(target = undefined){
-
+    
     if(target instanceof ModuleObject){
-      this.actionQueue.push({
+      this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: false,
@@ -1505,7 +1523,7 @@ class ModuleCreatureController extends ModuleObject {
   jumpToLocation(target = undefined){
 
     if(typeof target === 'object'){
-      this.actionQueue.push({
+      this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
         run: false,
@@ -1518,6 +1536,10 @@ class ModuleCreatureController extends ModuleObject {
 
   resetExcitedDuration(){
     this.excitedDuration = 10000;
+  }
+
+  cancelExcitedDuration(){
+    this.excitedDuration = 0;
   }
 
   updateExcitedDuration(delta = 0){
@@ -1709,23 +1731,6 @@ class ModuleCreatureController extends ModuleObject {
 
   }
 
-  //Queue an animation to the actionQueue array
-  actionPlayAnimation(anim = '', loop = false, speed = 1){
-    
-    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
-    let animation = this.model.getAnimationByName(_anim);
-    if(animation){
-      this.actionQueue.push({ 
-        goal: ModuleCreature.ACTION.ANIMATE,
-        animation: animation,
-        speed: speed || 1,
-        time: loop ? -1 : animation.length
-      });
-    }else{
-      console.warn('actionPlayAnimation', animation);
-    }
-  }
-
   dialogPlayAnimation(anim = '', loop = false, speed = 1){
     this.dialogAnimation = { 
       //goal: ModuleCreature.ACTION.ANIMATE,
@@ -1779,6 +1784,8 @@ class ModuleCreatureController extends ModuleObject {
   cancelCombat(){
     this.clearTarget();
     this.combatState = false;
+    this.cancelExcitedDuration();
+    this.overlayAnimation = undefined;
   }
 
   getDamageAnimation( attackAnim = undefined ){
@@ -2137,39 +2144,46 @@ class ModuleCreatureController extends ModuleObject {
     Game.raycaster.ray.direction.set(0, 0,-1);
 
     let aabbFaces = [];
-    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+    let intersects = [];
+    let obj = undefined;
 
-    for(let j = 0, jl = this.rooms.length; j < jl; j++){
-      let room = Game.module.area.rooms[this.rooms[j]];
-      if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
-        aabbFaces.push({
-          object: room, 
-          faces: room.walkmesh.getAABBCollisionFaces(box)
-        });
-      }
-    }
-
-    for(let j = 0, jl = Game.module.area.placeables.length; j < jl; j++){
-      let plc = Game.module.area.placeables[j];
-      if(plc && plc.walkmesh){
-        if(plc.box.intersectsBox(box) || plc.box.containsBox(box)){
+    if(Config.options.Game.debug.world_collision){
+      for(let j = 0, jl = this.rooms.length; j < jl; j++){
+        obj = Game.module.area.rooms[this.rooms[j]];
+        if(obj && obj.walkmesh && obj.walkmesh.aabbNodes.length){
           aabbFaces.push({
-            object: plc, 
-            faces: plc.walkmesh.getAABBCollisionFaces(box)
+            object: obj, 
+            faces: obj.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
     }
 
-    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
-      let door = Game.module.area.doors[j];
-      if(door && door.walkmesh && !door.isOpen()){
-        if(door.box.intersectsBox(box) || door.box.containsBox(box)){
-          aabbFaces.push({
-            object: door,
-            faces: door.walkmesh.getAABBCollisionFaces(box)
-          });
+    if(Config.options.Game.debug.placeable_collision){
+      for(let j = 0, jl = Game.module.area.placeables.length; j < jl; j++){
+        obj = Game.module.area.placeables[j];
+        if(obj && obj.walkmesh && obj.model & obj.model.visible){
+          if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
+            aabbFaces.push({
+              object: obj, 
+              faces: obj.walkmesh.faces
+            });
+          }
+        }
+      }
+    }
+
+    if(Config.options.Game.debug.door_collision){
+      for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+        obj = Game.module.area.doors[j];
+        if(obj && obj.walkmesh && !obj.isOpen()){
+          //Doing distance checking instead of BB checking for now. BB checking is preferred.
+          if(obj.position.distanceTo(this.position) <= 10){
+            aabbFaces.push({
+              object: obj,
+              faces: obj.walkmesh.faces
+            });
+          }
         }
       }
     }
@@ -2177,56 +2191,27 @@ class ModuleCreatureController extends ModuleObject {
     //START: PLAYER CREATURE COLLISION
     
     //Check creature collision
-    for(let i = 0; i < Game.module.area.creatures.length; i++){
-      let creature = Game.module.area.creatures[i];
-      let position = this.position.clone().add(this.AxisFront);
-      
-      if(creature === this || creature.isDead())
-        continue;
+    if(Config.options.Game.debug.creature_collision){
+      for(let i = 0; i < Game.module.area.creatures.length; i++){
+        let creature = Game.module.area.creatures[i];
+        let position = this.position.clone().add(this.AxisFront);
+        
+        if(creature === this || creature.isDead())
+          continue;
 
-      if(!creature.getAppearance())
-        continue;
+        if(!creature.getAppearance())
+          continue;
 
-      let hitDistance = +creature.getAppearance().hitdist;
-      let distance = position.distanceTo(creature.position);
-      if( distance < hitDistance ){
-        let pDistance = hitDistance - distance;
-        scratchVec3.set(
-          pDistance * Math.cos(this.rotation.z + Math.PI/2),
-          pDistance * Math.sin(this.rotation.z + Math.PI/2),
-          0 
-        );
-        position.sub(scratchVec3);
-        if(this.AxisFront.clone().normalize().length() > 0){
-          let ahead = position.clone().add(this.AxisFront.clone().normalize());
-          let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
-          avoidance_force.z = 0;
-          this.AxisFront.copy(avoidance_force);
-        }
-        break;
-      }
-    }
-    
-
-    //Check party collision
-    for(let i = 0; i < PartyManager.party.length; i++){
-      let creature = PartyManager.party[i];
-      let position = this.position.clone().add(this.AxisFront);
-
-      if(creature === this || creature.isDead())
-        continue;
-
-      try{
         let hitDistance = +creature.getAppearance().hitdist;
         let distance = position.distanceTo(creature.position);
-        if(distance < hitDistance){
+        if( distance < hitDistance ){
           let pDistance = hitDistance - distance;
           scratchVec3.set(
-            pDistance * Math.cos(this.rotation.z + Math.PI/2), 
-            pDistance * Math.sin(this.rotation.z + Math.PI/2), 
+            pDistance * Math.cos(this.rotation.z + Math.PI/2),
+            pDistance * Math.sin(this.rotation.z + Math.PI/2),
             0 
           );
-          this.position.sub(scratchVec3);
+          position.sub(scratchVec3);
           if(this.AxisFront.clone().normalize().length() > 0){
             let ahead = position.clone().add(this.AxisFront.clone().normalize());
             let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
@@ -2235,7 +2220,39 @@ class ModuleCreatureController extends ModuleObject {
           }
           break;
         }
-      }catch(e){}
+      }
+    }
+
+    //Check party collision
+    if(Config.options.Game.debug.creature_collision){
+      for(let i = 0; i < PartyManager.party.length; i++){
+        let creature = PartyManager.party[i];
+        let position = this.position.clone().add(this.AxisFront);
+
+        if(creature === this || creature.isDead())
+          continue;
+
+        try{
+          let hitDistance = +creature.getAppearance().hitdist;
+          let distance = position.distanceTo(creature.position);
+          if(distance < hitDistance){
+            let pDistance = hitDistance - distance;
+            scratchVec3.set(
+              pDistance * Math.cos(this.rotation.z + Math.PI/2), 
+              pDistance * Math.sin(this.rotation.z + Math.PI/2), 
+              0 
+            );
+            this.position.sub(scratchVec3);
+            if(this.AxisFront.clone().normalize().length() > 0){
+              let ahead = position.clone().add(this.AxisFront.clone().normalize());
+              let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
+              avoidance_force.z = 0;
+              this.AxisFront.copy(avoidance_force);
+            }
+            break;
+          }
+        }catch(e){}
+      }
     }
 
     //END: PLAYER CREATURE COLLISION
@@ -2257,6 +2274,7 @@ class ModuleCreatureController extends ModuleObject {
         //if(worldCollide)
         //  break;
         let castableFaces = aabbFaces[k];
+        castableFaces.object.walkmesh.mesh.visible = true;
         intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
         if (intersects && intersects.length > 0 ) {
           for(let j = 0; j < intersects.length; j++){
@@ -2302,6 +2320,7 @@ class ModuleCreatureController extends ModuleObject {
                   //console.log(this.position, intersects[j].point, this.position.clone().reflect(intersects[j].face.normal));
                   this.AxisFront.set(point3.y*0.05, point3.x*0.05, 0);
                 }
+                worldCollide = true;
               }else{
                 //console.log(intersects[j].face.walkIndex);
               }
@@ -2309,13 +2328,11 @@ class ModuleCreatureController extends ModuleObject {
           }
         }
       }
-      //meshesSearch = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-      //intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
     }
 
     //If there is more than one collision this frame set the velocity to (0, 0, 0)
     if(world_collisions.length >= 2){
-      //this.AxisFront.set(0, 0, 0);
+      this.AxisFront.set(0, 0, 0);
     }
 
     //END: PLAYER WORLD COLLISION
@@ -2357,7 +2374,7 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     if(worldCollide){
-      this.collisionTimer += delta;
+      this.collisionTimer += delta*2;
     }
 
     //Hack
@@ -2557,7 +2574,7 @@ class ModuleCreatureController extends ModuleObject {
 
       if(weaponType){
         
-        if(lWeapon){
+        if(lWeapon && lWeapon.model){
           let currentAnimL = this.equipment.LEFTHAND.model.animationManager.currentAnimation || this.equipment.LEFTHAND.model.getAnimationByName('off');
           if(currentAnimL){
             if(on){
@@ -2586,7 +2603,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         }
 
-        if(rWeapon){
+        if(rWeapon && rWeapon.model){
           let currentAnimR = this.equipment.RIGHTHAND.model.animationManager.currentAnimation || this.equipment.RIGHTHAND.model.getAnimationByName('off');
           if(currentAnimR){
             if(on){

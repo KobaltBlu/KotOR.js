@@ -20,7 +20,7 @@ class GameInitializer {
       GameInitializer.currentGame = props.game;
 
       loader.SetMessage("Loading Keys");
-      Global.kotorKEY = new KEYObject(path.join(Config.options.Games[GameKey].Location, 'chitin.key'), () => {
+      Global.kotorKEY = new KEYObject(path.join(app_profile.directory, 'chitin.key'), () => {
 
         Global.kotorBIF = {};
         Global.kotorRIM = {};
@@ -29,7 +29,7 @@ class GameInitializer {
 
           //Load the TLK File
           loader.SetMessage("Loading TLK File");
-          Global.kotorTLK = new TLKObject(path.join(Config.options.Games[GameKey].Location, 'dialog.tlk'), () => {
+          Global.kotorTLK = new TLKObject(path.join(app_profile.directory, 'dialog.tlk'), () => {
             if(props.onLoad != null)
               props.onLoad();
           }, function(num, total){
@@ -113,22 +113,19 @@ class GameInitializer {
   }
 
   static LoadBIFs(onSuccess = null){
-    let data_dir = path.join(Config.options.Games[GameKey].Location, 'Data');
-    //let bifs = ["2da", "items", "scripts", "templates" ];
-    let loaded = 0;
 
     loader.SetMessage('Loading: BIF Archives');
 
     let bifs = Array.prototype.map.call(Global.kotorKEY.bifs, function(obj) {
-      let args = obj.filename.split('\\').pop().split('.');
+      let args = obj.filename.split(path.sep).pop().split('.');
       if(args[1] == "bif")
         return args[0];
     });
     //console.log(bifs);
     let i = 0;
     let loadBif = () => {
-      //console.log(path.join(Config.options.Games[GameKey].Location, Global.kotorKEY.bifs[i].filename));
-      Global.kotorBIF[bifs[i]] = new BIFObject(path.join(Config.options.Games[GameKey].Location, ...Global.kotorKEY.bifs[i].filename.split('\\')), () => {
+      //console.log(path.join(app_profile.directory, Global.kotorKEY.bifs[i].filename));
+      Global.kotorBIF[bifs[i]] = new BIFObject(path.join(app_profile.directory, Global.kotorKEY.bifs[i].filename), () => {
         i++
         if(i == Global.kotorKEY.BIFCount){
 
@@ -145,7 +142,7 @@ class GameInitializer {
 
   static LoadRIMs(onSuccess = null){
     if(GameKey != 'TSL'){
-      let data_dir = path.join(Config.options.Games[GameKey].Location, 'rims');
+      let data_dir = path.join(app_profile.directory, 'rims');
       //let bifs = ["2da", "items", "scripts", "templates" ];
       let loaded = 0;
 
@@ -156,7 +153,7 @@ class GameInitializer {
           return;
 
         let rims = Array.prototype.map.call(filenames, function(obj) {
-          let args = obj.split('\\').pop().split('.');
+          let args = obj.split(path.sep).pop().split('.');
           if(args[1] == "rim")
             return args[0];
         });
@@ -184,7 +181,7 @@ class GameInitializer {
   }
 
   static LoadModules(onSuccess = null){
-    let data_dir = path.join(Config.options.Games[GameKey].Location, 'modules');
+    let data_dir = path.join(app_profile.directory, 'modules');
     loader.SetMessage('Loading: Module Archives');
 
     fs.readdir(data_dir, (err, filenames) => {
@@ -192,7 +189,7 @@ class GameInitializer {
         return;
 
       let rims = Array.prototype.map.call(filenames, function(obj) {
-        let filename = obj.split('\\').pop();
+        let filename = obj.split(path.sep).pop();
         let args = filename.split('.');
         if(args[1] == "rim" && args[0].indexOf('_s') >= 0)
           return args[0];
@@ -247,7 +244,7 @@ class GameInitializer {
   }
 
   static LoadTexturePacks(onSuccess = null){
-    let data_dir = path.join(Config.options.Games[GameKey].Location, 'TexturePacks');
+    let data_dir = path.join(app_profile.directory, 'TexturePacks');
     //let bifs = ["2da", "items", "scripts", "templates" ];
     let loaded = 0;
     fs.readdir(data_dir, (err, filenames) => {
@@ -255,7 +252,7 @@ class GameInitializer {
         return;
 
       let erfs = Array.prototype.map.call(filenames, function(obj) {
-        let args = obj.split('\\').pop().split('.');
+        let args = obj.split(path.sep).pop().split('.');
         if(args[1] == "erf")
           return args[0];
       });
@@ -286,7 +283,7 @@ class GameInitializer {
     }, args);
 
     //console.log('Searching For Audio Files', args);
-    let root = path.join(Config.options.Games[GameKey].Location, args.folder);
+    let root = path.join(app_profile.directory, args.folder);
     let dir = {name: args.folder, dirs: [], files: []};
 
     recursive(root, (err, files) => {

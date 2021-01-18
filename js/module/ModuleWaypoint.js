@@ -29,20 +29,6 @@ class ModuleWaypoint extends ModuleObject {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  /*GetPosition(){
-    return new THREE.Vector3(this.getXPosition(), this.getYPosition(), this.getZPosition());
-  }
-
-  GetFacing(){
-
-    if(this.template.model != THREE.AuroraModel){
-      this.template.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.getXOrientation(), this.getYOrientation()));
-      return this.template.model.rotation.z
-    }
-
-    return 0;
-  }*/
-
   getXPosition(){
     return this.position.x;
   }

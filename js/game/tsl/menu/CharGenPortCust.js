@@ -120,8 +120,7 @@ class CharGenPortCust extends GameMenu {
         this.LBL_HEAD._3dView.visible = true;
         this.LBL_HEAD._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
         this.LBL_HEAD._3dView.camera.updateProjectionMatrix();
-        this.LBL_HEAD.getFill().material.uniforms.map.value = this.LBL_HEAD._3dView.texture.texture;
-        this.LBL_HEAD.getFill().material.transparent = false;
+        this.LBL_HEAD.setFillTexture(this.LBL_HEAD._3dView.texture.texture);
 
         Game.ModelLoader.load({
           file: 'cghead_light',
@@ -182,6 +181,7 @@ class CharGenPortCust extends GameMenu {
       Game.player.update(delta);
       modelControl._3dView.render(delta);
       modelControl.getFill().material.needsUpdate = true;
+      modelControl.getFill().material.transparent = false;
     }catch(e){
       console.error(e);
     }

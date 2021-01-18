@@ -38,7 +38,7 @@ class Game extends Engine {
 
     Game.renderer.autoClear = false;
     
-    Game.renderer.setSize( $(window).innerWidth(), $(window).innerHeight() );
+    Game.renderer.setSize( window.innerWidth, window.innerHeight );
     Game.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
@@ -82,7 +82,7 @@ class Game extends Engine {
     Game.scene_gui = new THREE.Scene();
     Game.scene_cursor = new THREE.Scene();
     Game.frustumMat4 = new THREE.Matrix4();
-    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     
     Game.camera_shake = {
       position: new THREE.Vector3(0, 0, 0),
@@ -173,19 +173,19 @@ class Game extends Engine {
       }
     };
 
-    Game.camera_dialog = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera_dialog = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     Game.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    Game.camera_animated = new THREE.PerspectiveCamera( 55, $(window).innerWidth() / $(window).innerHeight(), 0.1, 15000 );
+    Game.camera_animated = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     Game.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     Game.camera.up = new THREE.Vector3( 0, 0, 1 );
     Game.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     Game.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
     Game.camera_gui = new THREE.OrthographicCamera(
-      $(window).innerWidth() / -2,
-      $(window).innerWidth() / 2,
-      $(window).innerHeight() / 2,
-      $(window).innerHeight() / -2,
+      window.innerWidth / -2,
+      window.innerWidth / 2,
+      window.innerHeight / 2,
+      window.innerHeight / -2,
       1, 1000
     );
     Game.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -216,10 +216,9 @@ class Game extends Engine {
     Game.viewportFrustum = new THREE.Frustum();
     Game.viewportProjectionMatrix = new THREE.Matrix4();
 
-    //Game.canvas = Game.renderer.domElement;
     Game.$canvas = $(Game.canvas);
-
-    Game.$canvas.addClass('noselect').attr('tabindex', 1);
+    Game.canvas.classList.add('noselect');
+    Game.canvas.setAttribute('tabindex', 1);
 
     //0x60534A
     Game.globalLight = new THREE.AmbientLight(0xFFFFFF);
@@ -331,7 +330,9 @@ class Game extends Engine {
 
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
-    $('#renderer-container').append(Game.$canvas).append(Game.stats.dom);
+    let rendererContainer = document.getElementById('renderer-container');
+    rendererContainer.appendChild(Game.canvas);
+    rendererContainer.appendChild(Game.stats.dom);
 
     /* Fade Geometry */
     Game.FadeOverlay = {
@@ -490,10 +491,9 @@ class Game extends Engine {
 
     //END: PostProcessing
 
-    $( window ).resize(() => {
-
-      let width = $(window).innerWidth();
-      let height = $(window).innerHeight();
+    window.addEventListener('resize', () => {
+      let width = window.innerWidth;
+      let height = window.innerHeight;
 
       Game.composer.setSize(width, height);
 
@@ -538,11 +538,9 @@ class Game extends Engine {
       MenuManager.Resize();
 
       Game.depthTarget.setSize(window.innerWidth, window.innerHeight);
-      
     });
 
     Game.Start();
-
   }
 
   static updateFrustumObjects(object){
@@ -561,16 +559,16 @@ class Game extends Engine {
   static onMouseHitInteractive( onSuccess = null ){
 
     //Before picking hide all placeables onscreen that are not interactable
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
+    for(let i = 0, len = Game.module.area.placeables.length; i < len; i++){
       let plc = Game.module.area.placeables[i];
-      if(plc.model instanceof THREE.AuroraModel){
+      if(plc.model.type === 'AuroraModel'){
         plc.wasVisible = plc.model.visible;
         if(!plc.isUseable()){
           plc.model.visible = false;
         }
       }
     }
-
+    
     //Remove the currently controlled PC from the SceneGraph, so it will be ignored during the next check
     Game.group.party.remove(Game.getCurrentPlayer().model);
 
@@ -580,48 +578,34 @@ class Game extends Engine {
     //Add the currently controlled PC back to the SceneGraph
     Game.group.party.add(Game.getCurrentPlayer().model);
 
+    //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
     if(intersects.length){
       let intersection = intersects[0],
         obj = intersection.object;
 
-      obj.traverseAncestors( (obj) => {
-        if(obj instanceof THREE.AuroraModel){
+      if(obj.moduleObject){
+        if(obj.moduleObject.model.type === 'AuroraModel'){
+          if(typeof onSuccess === 'function')
+            onSuccess(obj.moduleObject.model);
+        }
+      }else if(typeof obj.auroraModel !== 'undefined'){
+        obj = obj.auroraModel;
+        if(obj.type === 'AuroraModel'){
           if(obj != Game.getCurrentPlayer().getModel()){
             if(typeof onSuccess === 'function')
               onSuccess(obj, intersection.object);
-
-            return;
-          }else{
-            if(intersects.length >=2){
-              intersection = intersects[1],
-              obj = intersection.object;
-              obj.traverseAncestors( (obj) => {
-                if(obj instanceof THREE.AuroraModel){
-
-                  if(typeof onSuccess === 'function')
-                    onSuccess(obj, intersection.object);
-
-                  //After picking is done reshow all placeables that we hid
-                  /*for(let i = 0; i < Game.module.area.placeables.length; i++){
-                    let plc = Game.module.area.placeables[i];
-                    if(plc.model instanceof THREE.AuroraModel){
-                      plc.model.visible = plc.wasVisible;
-                    }
-                  }*/
-
-                  return;
-                }
-              });
-            }
           }
-          
         }
-      });
+      }
     }
 
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
+    //After picking is done reshow all placeables that we hid
+    for(let i = 0, len = Game.module.area.placeables.length; i < len; i++){
       let plc = Game.module.area.placeables[i];
-      if(plc.model instanceof THREE.AuroraModel){
+      if(!plc.model)
+        continue;
+
+      if(plc.model.type === 'AuroraModel'){
         plc.model.visible = plc.wasVisible;
       }
     }
@@ -631,6 +615,7 @@ class Game extends Engine {
   static Start(){
 
     Game.TutorialWindowTracker = [];
+    LightManager.setLightHelpersVisible(Config.get('Game.debug.light_helpers') ? true : false);
 
     Game.audioEngine = new AudioEngine();
     Game.initGUIAudio();
@@ -1144,13 +1129,6 @@ class Game extends Engine {
   }
 
   static UpdateFollowerCamera(delta = 0) {
-    
-    for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
-      let obj = Game.octree_walkmesh.objects[i];
-      if(obj instanceof THREE.Mesh){
-        obj.visible = true;
-      }
-    }
 
     let followee = Game.getCurrentPlayer();
 
@@ -1175,27 +1153,54 @@ class Game extends Engine {
     Game.raycaster.far = 10;
     
     Game.raycaster.ray.direction.set(Math.cos(Game.followerCamera.facing), Math.sin(Game.followerCamera.facing), 0).normalize();
-    Game.raycaster.ray.origin.set(followee.position.x,followee.position.y,followee.position.z + camHeight);
+    Game.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
 
-    let octreeResults = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction )
-    let intersects = Game.raycaster.intersectOctreeObjects( octreeResults );
-    if ( intersects.length > 0 ) {
-      for(let i = 0; i < intersects.length; i++){
-        if(intersects[i].distance < distance){
-          distance = intersects[i].distance * .75;
-          //detect = true
+    let aabbFaces = [];
+    let intersects;
+
+    if(typeof this.cameraBoundingBox == 'undefined'){
+      this.cameraBoundingBox = new THREE.Box3(Game.raycaster.ray.origin.clone(), Game.raycaster.ray.origin.clone());
+    }
+
+    this.cameraBoundingBox.min.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.max.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.expandByScalar(distance * 1.5);
+    
+    for(let j = 0, jl = Game.module.area.rooms.length; j < jl; j++){
+      let room = Game.module.area.rooms[j];
+      if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+        aabbFaces.push({
+          object: room, 
+          faces: room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
+        });
+      }
+    }
+
+    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+      let door = Game.module.area.doors[j];
+      if(door && door.walkmesh && !door.isOpen()){
+        if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
+          aabbFaces.push({
+            object: door,
+            faces: door.walkmesh.faces
+          });
+        }
+      }
+    }
+    
+    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+      let castableFaces = aabbFaces[k];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      if ( intersects.length > 0 ) {
+        for(let i = 0; i < intersects.length; i++){
+          if(intersects[i].distance < distance){
+            distance = intersects[i].distance * .75;
+          }
         }
       }
     }
 
     Game.raycaster.far = Infinity;
-
-    for(let i = 0; i < Game.octree_walkmesh.objects.length; i++){
-      let obj = Game.octree_walkmesh.objects[i];
-      if(obj instanceof THREE.Mesh){
-        obj.visible = false;
-      }
-    }
 
     if(Game.Mode == Game.MODES.MINIGAME){
 
@@ -1402,31 +1407,13 @@ class Game extends Engine {
         }
 
         Game.UpdateVisibleRooms();
-
-        for(let i = 0; i < Game.walkmeshList.length; i++){
-          let obj = Game.walkmeshList[i];
-          if(obj instanceof THREE.Mesh){
-            obj.visible = Game.Flags.WalkmeshVisible;
-          }
-        }
-    
-        for(let i = 0; i < Game.collisionList.length; i++){
-          let obj = Game.collisionList[i];
-          if(obj instanceof THREE.Mesh){
-            obj.visible = Game.Flags.WalkmeshVisible;
-          }
-        }
         
         if(Game.inDialog){
           Game.InGameDialog.Update(delta);
           if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
             Game.scene_cursor_holder.visible = false;
           }
-        }/*else if(Game.MenuCharacter.bVisible){
-          Game.MenuCharacter.Update(delta);
-        }else if(Game.MenuGalaxyMap.bVisible){
-          Game.MenuGalaxyMap.Update(delta);
-        }*/
+        }
 
 
         for(let i = 0; i < Game.weather_effects.length; i++){
@@ -1496,13 +1483,35 @@ class Game extends Engine {
       LightManager.update(delta);
       Game.InGameOverlay.Hide();
     }
-
+    
     Game.updateCursor();
 
+    if(Game.Mode == Game.MODES.INGAME){
+      let obj = undefined;
+      for(let i = 0, len = Game.group.room_walkmeshes.children.length; i < len; i++){
+        obj = Game.group.room_walkmeshes.children[i];
+        if(obj.type === 'Mesh'){
+          obj.material.visible = Config.get('Game.debug.show_collision_meshes');
+        }
+      }
+
+      for(let i = 0, len = Game.walkmeshList.length; i < len; i++){
+        obj = Game.walkmeshList[i];
+        if(obj.type === 'Mesh'){
+          obj.material.visible = Config.get('Game.debug.show_collision_meshes');
+        }
+      }
+  
+      for(let i = 0, len = Game.collisionList.length; i < len; i++){
+        obj = Game.collisionList[i];
+        if(obj.type === 'Mesh'){
+          obj.material.visible = false;
+        }
+      }
+    }
+
     Game.audioEngine.Update(Game.currentCamera.position, Game.currentCamera.rotation);
-
     Game.controls.Update(delta);
-
     Game.camera_shake.beforeRender();
     Game.camera_shake.update(delta);
 

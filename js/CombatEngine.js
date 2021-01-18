@@ -314,10 +314,10 @@ class CombatEngine {
     }
 
     if(combatAction.isCutsceneAttack){
-      console.log('cutsceneAttack', creature, combatAction.target, combatAction);
+      //console.log('cutsceneAttack', creature, combatAction.target, combatAction);
       creature.overlayAnimation = combatAction.animation;
       //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
-      console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
+      //console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
 
       if(creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
         combatAction.attackResult = 1;
@@ -339,12 +339,12 @@ class CombatEngine {
         }
       }
 
-      if(combatAction.damage)
+      if(combatAction.damage){
+        //console.log('CutsceneAttack', 'Damage', creature.getTag(), '-->', combatAction.target.getTag(), combatAction.damage, attackDamageDelay);
         combatAction.target.damage(combatAction.damage, undefined, attackDamageDelay);
+      }
 
-      setTimeout( () => {
-        creature.actionQueue.shift();
-      }, attackAnimation.length * 1000);
+      creature.actionQueue.shift();
 
     }else{
       
@@ -354,7 +354,7 @@ class CombatEngine {
 
         creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          let targetAnimation = AuroraModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
           if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
             if(!targetAnimation || (!targetAnimation.attack))
               combatAction.target.overlayAnimation = combatAction.target.getDamageAnimation( combatAction.animation );
@@ -369,7 +369,7 @@ class CombatEngine {
         combatAction.target.lastAttacker = this;
         creature.overlayAnimation = combatAction.animation;
         if(combatAction.target.animState == ModuleCreature.AnimState.IDLE){
-          let targetAnimation = AuroraModelAnimation.getAnimation2DA(combatAction.target.overlayAnimation);
+          let targetAnimation = AuroraModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
           if(!targetAnimation || combatAction.target.lastAttackTarget == creature){
             if(!targetAnimation || (!targetAnimation.attack))
               combatAction.target.overlayAnimation = combatAction.target.getDodgeAnimation( combatAction.animation );

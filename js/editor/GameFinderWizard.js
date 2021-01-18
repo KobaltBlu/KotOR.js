@@ -9,7 +9,7 @@ class GameFinderWizard extends Wizard {
       onClose: null
     }, args);
 
-    this.kotor_path = Config.options.Games[GameKey].Location;
+    this.kotor_path = app_profile.directory;
     this.tsl_path = Config.options.Games.TSL.Location;
 
     console.log(Config.options.Games.TSL.Location);
@@ -59,11 +59,11 @@ class GameFinderWizard extends Wizard {
       $('#modal-game-finder-save', this.$wizard).on('click', (e) => {
         e.preventDefault();
 
-        Config.options.Games[GameKey].Location = this.kotor_path;
+        app_profile.directory = this.kotor_path;
         Config.options.Games.TSL.Location = this.tsl_path;
         Config.options.first_run = false;
 
-        Config.Save();
+        Config.save();
         this.Close();
 
         if(typeof args.onUpdate === 'function')

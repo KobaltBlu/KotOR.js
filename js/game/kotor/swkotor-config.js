@@ -37,8 +37,8 @@ module.exports = {
   },
   "Graphics Options": {
     "RefreshRate": "60",
-    "Height": "1440",
-    "Width": "3440",
+    "Height": "600",
+    "Width": "800",
     "Disable Intro Movies": "1",
     "Disable Vertex Buffer Objects": "1",
     "EnableHardwareMouse": "1",
