@@ -26,43 +26,43 @@ class SaveGame {
 
   InitSaveNFO(){
     this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo) => {
-      
+
       if(savenfo.RootNode.HasField('AREANAME')){
         this.AREANAME = savenfo.GetFieldByLabel('AREANAME').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('CHEATUSED')){
         this.CHEATUSED = savenfo.GetFieldByLabel('CHEATUSED').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('GAMEPLAYHINT')){
         this.GAMEPLAYHINT = savenfo.GetFieldByLabel('GAMEPLAYHINT').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LASTMODULE')){
         this.LASTMODULE = savenfo.GetFieldByLabel('LASTMODULE').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE1')){
         this.LIVE1 = savenfo.GetFieldByLabel('LIVE1').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE2')){
         this.LIVE2 = savenfo.GetFieldByLabel('LIVE2').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE3')){
         this.LIVE3 = savenfo.GetFieldByLabel('LIVE3').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE4')){
         this.LIVE4 = savenfo.GetFieldByLabel('LIVE4').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE5')){
         this.LIVE5 = savenfo.GetFieldByLabel('LIVE5').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('LIVE6')){
         this.LIVE6 = savenfo.GetFieldByLabel('LIVE6').GetValue()
       }
@@ -70,31 +70,31 @@ class SaveGame {
       if(savenfo.RootNode.HasField('LIVECONTENT')){
         this.LIVECONTENT = savenfo.GetFieldByLabel('LIVECONTENT').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('PORTRAIT0')){
         this.PORTRAIT0 = savenfo.GetFieldByLabel('PORTRAIT0').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('PORTRAIT1')){
         this.PORTRAIT1 = savenfo.GetFieldByLabel('PORTRAIT1').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('PORTRAIT2')){
         this.PORTRAIT2 = savenfo.GetFieldByLabel('PORTRAIT2').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('SAVEGAMENAME')){
         this.SAVEGAMENAME = savenfo.GetFieldByLabel('SAVEGAMENAME').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('STORYHINT')){
         this.STORYHINT = savenfo.GetFieldByLabel('STORYHINT').GetValue()
       }
-      
+
       if(savenfo.RootNode.HasField('TIMEPLAYED')){
         this.TIMEPLAYED = savenfo.GetFieldByLabel('TIMEPLAYED').GetValue()
       }
-      
+
     });
   }
 
@@ -144,7 +144,7 @@ class SaveGame {
                     onLoad(this.thumbnail);
                   }
                 }else{
-                  
+
                 }
               });
             }
@@ -194,11 +194,11 @@ class SaveGame {
       Game.player.destroy();
       Game.player = undefined;
     }
-    
+
     //Init SAVEGAME.sav
     this.InitSaveGameResourceLoader( ()=> {
       //Load GlobalVars
-      this.GlobalVARSLoader( () => {  
+      this.GlobalVARSLoader( () => {
         //Load Inventory
         this.InventoryLoader( () => {
           //Load PartyTable
@@ -249,7 +249,7 @@ class SaveGame {
         for(let j = 0; j < 8; j++){
           let index = (i * 8) + j;
           let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
-          
+
           let node = globalVars.json.fields.CatBoolean.structs[index];
           if(node){
             Game.Globals.Boolean[node.fields.Name.value.toLowerCase()] = bit;
@@ -279,7 +279,7 @@ class SaveGame {
       });
     }catch(e){
       console.error(e);
-    }  
+    }
   }
 
   InventoryLoader(onLoad = null){
@@ -418,7 +418,7 @@ class SaveGame {
 
             this.globalVars.FileType = 'GVT ';
             this.globalVars.Export(path.join(this.directory, 'GLOBALVARS.res'), () => {
-              
+
               //Save screenshot
               //let base64 = Game.canvas.toDataURL('image/png');
               //base64 = base64.substr(22);
@@ -441,10 +441,14 @@ SaveGame.directory = path.join(Config.options.Games[GameKey].Location, 'Saves');
 SaveGame.getSaveGames = function( onLoad = null ){
 
   fs.readdir(SaveGame.directory, (err, folders) => {
-    
-    for(let i = 0; i < folders.length; i++){
-      SaveGame.saves.push(new SaveGame(folders[i]));
+
+    console.log(folders);
+    if(folders) {
+      for(let i = 0; i < folders.length; i++){
+        SaveGame.saves.push(new SaveGame(folders[i]));
+      }
     }
+
 
     if(typeof onLoad === 'function')
       onLoad();
