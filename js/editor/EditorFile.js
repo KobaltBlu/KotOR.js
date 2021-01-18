@@ -99,7 +99,7 @@ class EditorFile {
                   });
                 }
               }
-              
+
             });
           break;
           case 'erf':
@@ -123,7 +123,7 @@ class EditorFile {
         }else{
           //Load the MDL file
           fs.readFile(this.path, (err, buffer) => {
-          
+
             if(err) throw err;
 
             let root_dir = path.parse(this.path).dir;
@@ -140,7 +140,7 @@ class EditorFile {
               }
 
             });
-      
+
           });
 
         }
@@ -156,36 +156,48 @@ class EditorFile {
 
         if(this.archive_path){
           let archive_path = path.parse(this.archive_path);
+          console.log(archive_path.ext.slice(1))
           switch(archive_path.ext.slice(1)){
             case 'bif':
               new BIFObject(this.archive_path, (archive) => {
-  
+
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer) => {
                   this.buffer = buffer;
                   if(typeof onLoad === 'function'){
                     onLoad(this.buffer);
                   }
                 });
-                
+
               });
             break;
             case 'erf':
             case 'mod':
-  
+            case 'rim':
+              new RIMObject(this.archive_path, (archive) => {
+
+                archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer) => {
+                  this.buffer = buffer;
+                  if(typeof onLoad === 'function'){
+                    onLoad(this.buffer);
+                  }
+                });
+
+              })
+
             break;
           }
         }else{
           if(typeof this.path === 'string'){
             fs.readFile(this.path, (err, buffer) => {
-          
+
               if(err) throw err;
 
               this.buffer = buffer;
-        
+
               if(typeof onLoad === 'function'){
                 onLoad(this.buffer);
               }
-        
+
             });
           }else{
             this.buffer = Buffer.alloc(0);
@@ -194,7 +206,7 @@ class EditorFile {
             }
           }
         }
-        
+
       }
     }
 

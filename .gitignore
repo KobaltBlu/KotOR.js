@@ -6,3 +6,6 @@ npm-debug.log
 package-lock.json
 *.gypi
 backup/
+
+.ds_store
+projects/
