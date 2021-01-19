@@ -104,7 +104,96 @@ class EditorFile {
           break;
           case 'erf':
           case 'mod':
+            new ERFObject(this.archive_path, (archive) => {
 
+              if(!(this.buffer instanceof Buffer)){
+                archive.getRawResource(this.resref, this.reskey, (buffer) => {
+                  this.buffer = buffer;
+                  let mdl_mdx_key = ResourceTypes.mdx;
+                  if(this.reskey == ResourceTypes.mdx){
+                    mdl_mdx_key = ResourceTypes.mdl;
+                    archive.getRawResource(this.resref, mdl_mdx_key, (buffer) => {
+                      this.buffer2 = buffer;
+                      if(typeof onLoad === 'function'){
+                        onLoad(buffer, this.buffer);
+                      }
+                    });
+                  }else{
+                    archive.getRawResource(this.resref, mdl_mdx_key, (buffer) => {
+                      this.buffer2 = buffer;
+                      if(typeof onLoad === 'function'){
+                        onLoad(this.buffer, buffer);
+                      }
+                    });
+                  }
+                });
+              }else{
+                let mdl_mdx_key = ResourceTypes.mdx;
+                if(this.reskey == ResourceTypes.mdx){
+                  mdl_mdx_key = ResourceTypes.mdl;
+                  archive.getRawResource(this.resref, mdl_mdx_key, (buffer) => {
+                    this.buffer2 = buffer;
+                    if(typeof onLoad === 'function'){
+                      onLoad(buffer, this.buffer);
+                    }
+                  });
+                }else{
+                  archive.getRawResource(this.resref, mdl_mdx_key, (buffer) => {
+                    this.buffer2 = buffer;
+                    if(typeof onLoad === 'function'){
+                      onLoad(this.buffer, buffer);
+                    }
+                  });
+                }
+              }
+
+            });
+          break;
+          case 'rim':
+            new RIMObject(this.archive_path, (archive) => {
+
+              if(!(this.buffer instanceof Buffer)){
+                archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer) => {
+                  this.buffer = buffer;
+                  let mdl_mdx_key = ResourceTypes.mdx;
+                  if(this.reskey == ResourceTypes.mdx){
+                    mdl_mdx_key = ResourceTypes.mdl;
+                    archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer) => {
+                      this.buffer2 = buffer;
+                      if(typeof onLoad === 'function'){
+                        onLoad(buffer, this.buffer);
+                      }
+                    });
+                  }else{
+                    archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer) => {
+                      this.buffer2 = buffer;
+                      if(typeof onLoad === 'function'){
+                        onLoad(this.buffer, buffer);
+                      }
+                    });
+                  }
+                });
+              }else{
+                let mdl_mdx_key = ResourceTypes.mdx;
+                if(this.reskey == ResourceTypes.mdx){
+                  mdl_mdx_key = ResourceTypes.mdl;
+                  archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer) => {
+                    this.buffer2 = buffer;
+                    if(typeof onLoad === 'function'){
+                      onLoad(buffer, this.buffer);
+                    }
+                  });
+                }else{
+                  archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer) => {
+                    this.buffer2 = buffer;
+                    if(typeof onLoad === 'function'){
+                      onLoad(this.buffer, buffer);
+                    }
+                  });
+                }
+              }
+
+            });
           break;
         }
       }else{
@@ -172,6 +261,17 @@ class EditorFile {
             break;
             case 'erf':
             case 'mod':
+              new ERFObject(this.archive_path, (archive) => {
+
+                archive.getRawResource(this.resref, this.reskey, (buffer) => {
+                  this.buffer = buffer;
+                  if(typeof onLoad === 'function'){
+                    onLoad(this.buffer);
+                  }
+                });
+
+              })
+            break;
             case 'rim':
               new RIMObject(this.archive_path, (archive) => {
 
@@ -183,7 +283,6 @@ class EditorFile {
                 });
 
               })
-
             break;
           }
         }else{

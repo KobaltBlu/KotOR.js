@@ -86,45 +86,45 @@ class ResourceExplorerTab extends EditorTab {
 		});
 		bifLoader.iterate(() => {
       this.loadRims(() => {
-        this.loadFolderForFileBrowser('StreamWaves', () => {
-          this.loadFolderForFileBrowser('StreamSounds', () => {
-            this.loadFolderForFileBrowser('StreamMusic', () => {
-              this.loadFolderForFileBrowser('StreamVoice', () => {
-                this.$treeView.html(
-                  this.buildNodeList(this.nodeList, false)
-                );
+				this.loadModules(() => {
+					this.loadFolderForFileBrowser('StreamWaves', () => {
+						this.loadFolderForFileBrowser('StreamSounds', () => {
+							this.loadFolderForFileBrowser('StreamMusic', () => {
+								this.loadFolderForFileBrowser('StreamVoice', () => {
+									this.$treeView.html(
+										this.buildNodeList(this.nodeList, false)
+									);
 
-                $('li.link', this.$treeView).on('click', (e) => {
-                  e.preventDefault();
+									$('li.link', this.$treeView).on('click', (e) => {
+										e.preventDefault();
 
-                  let resref = e.target.dataset.resref;
-                  let reskey = parseInt(e.target.dataset.resid);
-                  let type = e.target.dataset.type;
-                  let archive = e.target.dataset.archive;
+										let resref = e.target.dataset.resref;
+										let reskey = parseInt(e.target.dataset.resid);
+										let type = e.target.dataset.type;
+										let archive = e.target.dataset.archive;
 
-                  FileTypeManager.onOpenResource(
-                    new EditorFile({
-                      path: e.target.dataset.path,
-                    })
-                  );
-                });
+										FileTypeManager.onOpenResource(
+											new EditorFile({
+												path: e.target.dataset.path,
+											})
+										);
+									});
 
-                if (typeof onComplete === 'function') onComplete();
-              });
-            });
-          });
-        });
+									if (typeof onComplete === 'function') onComplete();
+								});
+							});
+						});
+					});
+				});
       });
 		});
   }
 
-
   loadRims(onComplete = null) {
     let rims = [];
 
-
 		for (let rim in Global.kotorRIM) {
-			if (Global.kotorRIM.hasOwnProperty(rim))
+			if (Global.kotorRIM.hasOwnProperty(rim) && Global.kotorRIM[rim].group == "RIMs")
 				rims.push(Global.kotorRIM[rim]);
     }
     console.log(rims);
@@ -154,6 +154,95 @@ class ResourceExplorerTab extends EditorTab {
 
 				for (let i = 0; i < rim.Resources.length; i++) {
 					let resource = rim.Resources[i];
+					let resref = resource.ResRef;
+
+					if (subTypes[resource.ResType] == undefined) {
+						subTypes[resource.ResType] = {
+							name: ResourceTypes.getKeyByValue(resource.ResType),
+							type: 'group',
+							nodeList: [],
+						};
+						node.nodeList.push(subTypes[resource.ResType]);
+					}
+
+					subTypes[resource.ResType].nodeList.push({
+						name:
+							resref +
+							'.' +
+							ResourceTypes.getKeyByValue(resource.ResType),
+						type: 'resource',
+						data: {
+							path:
+								rim.file +
+								'?' +
+								resref +
+								'.' +
+								ResourceTypes.getKeyByValue(resource.ResType),
+						},
+						nodeList: [],
+					});
+				}
+
+				asyncLoop.next();
+			},
+		});
+		rimLoader.iterate(() => {
+      if(onComplete) {
+				if (typeof onComplete === 'function') onComplete();
+      }
+    });
+	}
+	
+  loadModules(onComplete = null) {
+    let modules = [];
+
+		for (let rim in Global.kotorRIM) {
+			if (Global.kotorRIM.hasOwnProperty(rim) && Global.kotorRIM[rim].group == "Module")
+				modules.push(Global.kotorRIM[rim]);
+		}
+		
+		for (let mod in Global.kotorMOD) {
+			if (Global.kotorMOD.hasOwnProperty(mod) && Global.kotorMOD[mod].group == "Module")
+				modules.push(Global.kotorMOD[mod]);
+		}
+		
+		//Sort the array by filename
+		modules = modules.sort( (a, b) => {
+			let nameA = a.file.split(path.sep).pop();
+			let nameB = b.file.split(path.sep).pop();
+			
+			if (nameA < nameB) { return -1; }
+			if (nameA > nameB) { return 1; }
+			return 0;
+		});
+
+    const rimList = {
+      name: 'Modules',
+      type: 'group',
+      nodeList: [],
+			canOrphan: false,
+    };
+    this.nodeList.push(rimList);
+
+		let rimLoader = new AsyncLoop({
+			array: modules,
+			onLoop: (rim, asyncLoop) => {
+        let name = rim.file.split(path.sep).pop();
+				let subTypes = {};
+
+				let node = {
+					name: name,
+					type: 'group',
+					nodeList: [],
+					canOrphan: false,
+				};
+
+				rimList.nodeList.push(node);
+
+				let files = rim instanceof RIMObject ? rim.Resources : rim.KeyList;
+
+				for (let i = 0; i < files.length; i++) {
+					let resource = files[i];
 					let resref = resource.ResRef;
 
 					if (subTypes[resource.ResType] == undefined) {

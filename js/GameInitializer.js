@@ -53,6 +53,7 @@ class GameInitializer {
     Global.kotorBIF = {};
     Global.kotorERF = {};
     Global.kotorRIM = {};
+    Global.kotorMOD = {};
 
     loader.SetMessage("Loading BIF's");
     GameInitializer.LoadBIFs( () => {
@@ -113,66 +114,66 @@ class GameInitializer {
   }
 
   static LoadBIFs(onSuccess = null){
-
     loader.SetMessage('Loading: BIF Archives');
 
-    let bifs = Array.prototype.map.call(Global.kotorKEY.bifs, function(obj) {
+    let bifs = Global.kotorKEY.bifs.map(function(obj) {
       let args = obj.filename.split(path.sep).pop().split('.');
-      if(args[1] == "bif")
-        return args[0];
+      return {ext: args[1].toLowerCase(), name: args[0], filename: obj.filename};
+    }).filter(function(file_obj){
+      return file_obj.ext == 'bif';
     });
-    //console.log(bifs);
-    let i = 0;
-    let loadBif = () => {
-      //console.log(path.join(app_profile.directory, Global.kotorKEY.bifs[i].filename));
-      Global.kotorBIF[bifs[i]] = new BIFObject(path.join(app_profile.directory, Global.kotorKEY.bifs[i].filename), () => {
-        i++
-        if(i == Global.kotorKEY.BIFCount){
 
-          if(onSuccess != null)
-            onSuccess();
-
-        }else{
-          loadBif();
-        }
-      });
-    };
-    loadBif();
+    let loop = new AsyncLoop({
+      array: bifs,
+      onLoop: (bif_object, asyncLoop) => {
+        new BIFObject(path.join(app_profile.directory, bif_object.filename), (bif) => {
+          if(bif instanceof BIFObject){
+            bif.group = 'BIFs';
+            Global.kotorBIF[bif_object.name] = bif;
+          }
+          asyncLoop.next();
+        });
+      }
+    });
+    loop.iterate(() => {
+      if(typeof onSuccess === 'function')
+        onSuccess();
+    });
   }
 
   static LoadRIMs(onSuccess = null){
     if(GameKey != 'TSL'){
       let data_dir = path.join(app_profile.directory, 'rims');
-      //let bifs = ["2da", "items", "scripts", "templates" ];
-      let loaded = 0;
-
       loader.SetMessage('Loading: RIM Archives');
 
       fs.readdir(data_dir, (err, filenames) => {
         if (err)
           return;
 
-        let rims = Array.prototype.map.call(filenames, function(obj) {
-          let args = obj.split(path.sep).pop().split('.');
-          if(args[1] == "rim")
-            return args[0];
+        let rims = filenames.map(function(file) {
+          let filename = file.split(path.sep).pop();
+          let args = filename.split('.');
+          return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+        }).filter(function(file_obj){
+          return file_obj.ext == 'rim';
         });
-        let i = 0;
-        let loadRim = () => {
-          //console.log(path.join(data_dir, filenames[i]));
-          Global.kotorRIM[rims[i]] = new RIMObject(path.join(data_dir, filenames[i]), () => {
-            i++
-            if(i == rims.length){
 
-              if(onSuccess != null)
-                onSuccess();
-
-            }else{
-              loadRim();
-            }
-          });
-        };
-        loadRim();
+        let loop = new AsyncLoop({
+          array: rims,
+          onLoop: (rim_obj, asyncLoop) => {
+            new RIMObject(path.join(data_dir, rim_obj.filename), (rim) => {
+              if(rim instanceof RIMObject){
+                rim.group = 'RIMs';
+                Global.kotorRIM[rim_obj.name] = rim;
+              }
+              asyncLoop.next();
+            });
+          }
+        });
+        loop.iterate(() => {
+          if(typeof onSuccess === 'function')
+            onSuccess();
+        });
       });
     }else{
       if(onSuccess != null)
@@ -183,32 +184,52 @@ class GameInitializer {
   static LoadModules(onSuccess = null){
     let data_dir = path.join(app_profile.directory, 'modules');
     loader.SetMessage('Loading: Module Archives');
-
+    
     fs.readdir(data_dir, (err, filenames) => {
       if (err)
         return;
 
-      let rims = Array.prototype.map.call(filenames, function(obj) {
-        let filename = obj.split(path.sep).pop();
+      let modules = filenames.map(function(file) {
+        let filename = file.split(path.sep).pop();
         let args = filename.split('.');
-        if(args[1] == "rim" && args[0].indexOf('_s') >= 0)
-          return args[0];
+        return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+      }).filter(function(file_obj){
+        return file_obj.ext == 'rim' || file_obj.ext == 'mod';
       });
-      let i = 0;
-      let loadModule = () => {
-        Global.kotorRIM[rims[i]] = new RIMObject(path.join(data_dir, filenames[i]), () => {
-          i++
-          if(i == rims.length){
 
-            if(onSuccess != null)
-              onSuccess();
-
-          }else{
-            loadModule();
+      let loop = new AsyncLoop({
+        array: modules,
+        onLoop: (module_obj, asyncLoop) => {
+          switch(module_obj.ext){
+            case 'rim':
+              new RIMObject(path.join(data_dir, module_obj.filename), (rim) => {
+                if(rim instanceof RIMObject){
+                  rim.group = 'Module';
+                  Global.kotorRIM[module_obj.name] = rim;
+                }
+                asyncLoop.next();
+              });
+            break;
+            case 'mod':
+              new ERFObject(path.join(data_dir, module_obj.filename), (mod) => {
+                if(mod instanceof ERFObject){
+                  mod.group = 'Module';
+                  Global.kotorMOD[module_obj.name] = mod;
+                }
+                asyncLoop.next();
+              });
+            break;
+            default:
+              console.warn('GameInitializer.LoadModules', 'Encountered incorrect filetype', module_obj);
+              asyncLoop.next();
+            break;
           }
-        });
-      };
-      loadModule();
+        }
+      });
+      loop.iterate(() => {
+        if(typeof onSuccess === 'function')
+          onSuccess();
+      });
     });
   }
 
