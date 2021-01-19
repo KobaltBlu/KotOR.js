@@ -9,10 +9,6 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
-const isRunningInAsar = function(){
-  return false;
-};//require('electron-is-running-in-asar');
-
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
 
@@ -211,6 +207,8 @@ function buildProfileElement(profile = {}){
     steam_id: null,
     directory: null,
     executable: null,
+    width: 1200,
+    height: 600,
     launch: {
       type: "electron",
       path: "game.html",
@@ -573,3 +571,20 @@ $( function() {
   window.app_loaded = true;
 
 });
+
+//Window Resize Event: Update Config
+( function(){
+  let _resizeTimer = undefined;
+  function resizeConfigManager(){
+    _resizeTimer = setTimeout(function(){
+      if(!remote.getCurrentWindow().isFullScreen()){
+        Config.set(['Launcher', 'width'], window.outerWidth);
+        Config.set(['Launcher', 'height'], window.outerHeight);
+      }
+    }, 500);
+  }
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    resizeConfigManager();
+  });
+})();

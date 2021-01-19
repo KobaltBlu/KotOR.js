@@ -1,6 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const app = require('electron').app || require('electron').remote.app;
+const path = require('path');
+const fs = require('fs');
+
 /* @file
  * The ConfigManager class.
  */
@@ -28,13 +32,23 @@ class ConfigManager{
       this.Save(null, true);
     }
 
-    ipcRenderer.on('config-changed', (event, data) => {
-      this.options = data;
-      let diffs = this.diff(this.options, this._cache);
-      for(let i = 0, len = diffs.length; i < len; i++){
-        this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
-      }
-    });
+    if(typeof ipcRenderer != 'undefined'){
+      ipcRenderer.on('config-changed', (event, data) => {
+        this.options = data;
+        let diffs = this.diff(this.options, this._cache);
+        for(let i = 0, len = diffs.length; i < len; i++){
+          this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+        }
+      });
+    }else if(typeof ipcMain != 'undefined'){
+      ipcMain.on('config-changed', (event, data) => {
+        this.options = data;
+        let diffs = this.diff(this.options, this._cache);
+        for(let i = 0, len = diffs.length; i < len; i++){
+          this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+        }
+      });
+    }
 
   }
 
@@ -311,11 +325,11 @@ class ConfigManager{
   }
 
   static GetAppDirectory(){
-    if(isRunningInAsar()){
-      return path.dirname(app.getPath('exe'));
-    }else{
+    //if(isRunningInAsar()){
+    //  return path.dirname(app.getPath('exe'));
+    //}else{
       return app.getAppPath();
-    }
+    //}
   }
 
 }

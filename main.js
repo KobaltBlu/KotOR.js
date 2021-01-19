@@ -4,7 +4,7 @@ const {ipcMain} = require('electron');
 // Module to control application life.
 const {app} = electron;
 // Module to create native browser window.
-const {BrowserWindow, Tray, Menu} = electron;
+const {BrowserWindow, Tray, Menu, globalShortcut} = electron;
 const {dialog} = electron;
 
 const path = require('path');
@@ -13,6 +13,9 @@ const { execFile } = require('child_process');
 const { exec } = require('child_process');
 const http = require('https');
 const fs = require('fs');
+
+const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+const Config = new ConfigManager('settings.json');
 
 console.log(process.argv);
 
@@ -34,8 +37,8 @@ ipcMain.on('config-changed', (event, data) => {
 function createWindowFromProfile( profile = {} ) {
   // Create the browser window.
   let _window = new BrowserWindow({
-    width: 1200, 
-    height: 600,
+    width: profile.width ? profile.width : 1200, 
+    height: profile.height ? profile.height : 600,
     fullscreen: profile.settings?.fullscreen.value != undefined ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
     frame: !profile.launch.frameless,
     title: profile.name,
@@ -78,11 +81,11 @@ function createLauncherWindow() {
     winLauncher.focus();
     return;
   }
-
+  console.log(Config.get(['Launcher', 'width']), Config.get(['Launcher', 'height']))
   // Create the browser window.
   winLauncher = new BrowserWindow({
-    width: 1200, 
-    height: 600, 
+    width: Config.get(['Launcher', 'width']), 
+    height: Config.get(['Launcher', 'height']), 
     minHeight: 600,
     minWidth: 1000,
     frame: false,
@@ -204,6 +207,10 @@ app.on('ready', async () => {
   }catch(e){
     createLauncherWindow();
   }
+
+  globalShortcut.register('Alt+`', () => {
+    createLauncherWindow();
+  });
 
 });
 

@@ -26,10 +26,6 @@ const BitBuffer = require('bit-buffer');
 //const beamcoder = require('beamcoder');
 const dxt = require('dxt');
 
-const isRunningInAsar = function(){
-  return false;
-};//const isRunningInAsar = require('electron-is-running-in-asar');
-
 
 
 const APP_MODE = 'FORGE';
@@ -77,9 +73,21 @@ const getProfileGameEnum = function(profile = undefined){
 
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
+
+//window_profile is the editors profile
+const window_profile = (() => {
+  let window_profile = remote.getCurrentWindow().state;
+  if(typeof window_profile != 'object' || !window_profile.key){
+    alert('Fatal Error: Window Profile Missing');
+    window.close();
+  }
+  return Config.get(['Profiles', window_profile.key]);
+})();
+
 let profile_key = Config.get(['Editor', 'profile']);
 const compatible_profiles = [];
 
+//app_profile is the selected game's profile
 let app_profile = ( () => {
   let all_profiles = (Config.get(['Profiles']) || {});
   let all_profile_keys = Object.keys(all_profiles);
@@ -930,3 +938,34 @@ THREE.Object3D.prototype.traverseIgnore = function( ignoreName = '', callback ){
   }
 
 }
+
+//Devtools at launch
+if(Config.get(['Profiles', window_profile.key, 'settings', 'devtools', 'value'], false)){
+  remote.getCurrentWindow().openDevTools();
+}
+
+//Devtools Events
+remote.getCurrentWebContents().on('devtools-opened', () => {
+  Config.set(['Profiles', window_profile.key, 'settings', 'devtools', 'value'], true);
+});
+
+remote.getCurrentWebContents().on('devtools-closed', () => {
+  Config.set(['Profiles', window_profile.key, 'settings', 'devtools', 'value'], false);
+});
+
+//Window Resize Event: Update Config
+( function(){
+  let _resizeTimer = undefined;
+  function resizeConfigManager(){
+    _resizeTimer = setTimeout(function(){
+      if(!remote.getCurrentWindow().isFullScreen()){
+        Config.set(['Profiles', window_profile.key, 'width'], window.outerWidth);
+        Config.set(['Profiles', window_profile.key, 'height'], window.outerHeight);
+      }
+    }, 500);
+  }
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    resizeConfigManager();
+  });
+})();

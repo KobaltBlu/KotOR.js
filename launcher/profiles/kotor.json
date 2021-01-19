@@ -9,6 +9,8 @@
   "locate_required": true,
   "isForgeCompatible": true,
   "steam_id" : 32370,
+  "width": 1200,
+  "height": 600,
   "executable": {
     "win": "swkotor.exe",
     "mac": "KOTOR.app"

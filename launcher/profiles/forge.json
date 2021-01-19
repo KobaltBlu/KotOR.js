@@ -7,6 +7,8 @@
   "category": "tools",
   "directory": null,
   "locate_required": false,
+  "width": 1200,
+  "height": 600,
   "launch": {
     "type": "electron",
     "path": "editor.html",

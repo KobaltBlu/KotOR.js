@@ -59,13 +59,10 @@ const BitBuffer = require('bit-buffer');
 //const beamcoder = require('beamcoder');
 const dxt = require('dxt');
 
-const isRunningInAsar = function(){
-  return false;
-};//require('electron-is-running-in-asar');
-
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 let Config = new ConfigManager('settings.json');
 
+//app_profile is the selected game's profile
 const app_profile = (() => {
   let app_profile = remote.getCurrentWindow().state;
   if(typeof app_profile != 'object' || !app_profile.key){
@@ -809,9 +806,42 @@ Menu.setApplicationMenu(menu);
 
 remote.getCurrentWindow().setMenuBarVisibility(Config.get(['Game','show_application_menu'], false));
 
+//Fullccreen Events
 remote.getCurrentWindow().addListener('enter-full-screen', () => {
   Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], true);
 });
+
 remote.getCurrentWindow().addListener('leave-full-screen', () => {
   Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], false);
 });
+
+//Devtools at launch
+if(Config.get(['Profiles', app_profile.key, 'settings', 'devtools', 'value'], false)){
+  remote.getCurrentWindow().openDevTools();
+}
+
+//Devtools Events
+remote.getCurrentWebContents().on('devtools-opened', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'devtools', 'value'], true);
+});
+
+remote.getCurrentWebContents().on('devtools-closed', () => {
+  Config.set(['Profiles', app_profile.key, 'settings', 'devtools', 'value'], false);
+});
+
+//Window Resize Event: Update Config
+( function(){
+  let _resizeTimer = undefined;
+  function resizeConfigManager(){
+    _resizeTimer = setTimeout(function(){
+      if(!remote.getCurrentWindow().isFullScreen()){
+        Config.set(['Profiles', app_profile.key, 'width'], window.outerWidth);
+        Config.set(['Profiles', app_profile.key, 'height'], window.outerHeight);
+      }
+    }, 500);
+  }
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    resizeConfigManager();
+  });
+})();
