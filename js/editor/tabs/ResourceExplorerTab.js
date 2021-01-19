@@ -320,17 +320,18 @@ class ResourceExplorerTab extends EditorTab {
 				for (let i = 0; i < files.length; i++) {
 					let resource = files[i];
 					let resref = resource.ResRef;
+					let letter = resref[0].toLowerCase();
 
-					if (subTypes[resource.ResType] == undefined) {
-						subTypes[resource.ResType] = {
-							name: ResourceTypes.getKeyByValue(resource.ResType),
+					if (subTypes[letter] == undefined) {
+						subTypes[letter] = {
+							name: letter.toUpperCase(),
 							type: 'group',
 							nodeList: [],
 						};
-						node.nodeList.push(subTypes[resource.ResType]);
+						node.nodeList.push(subTypes[letter]);
 					}
 
-					subTypes[resource.ResType].nodeList.push({
+					subTypes[letter].nodeList.push({
 						name:
 							resref +
 							'.' +
