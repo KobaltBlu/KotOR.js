@@ -80,7 +80,7 @@ class GameInitializer {
                           folder: 'streamwaves',
                           name: 'StreamWaves',
                           onSuccess: () => {
-                            
+
                             if(onSuccess != null)
                               onSuccess();
                           }
@@ -90,7 +90,7 @@ class GameInitializer {
                           folder: 'streamvoice',
                           name: 'StreamSounds',
                           onSuccess: () => {
-                            
+
                             if(onSuccess != null)
                               onSuccess();
                           }
@@ -294,7 +294,7 @@ class GameInitializer {
         let _parsed = path.parse(f);
 
         let ext = _parsed.ext.substr(1,  _parsed.ext.length);
-        
+
         if(typeof ResourceTypes[ext] != 'undefined'){
           //console.log(ext);
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
