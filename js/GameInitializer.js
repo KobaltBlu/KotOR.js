@@ -54,6 +54,7 @@ class GameInitializer {
     Global.kotorERF = {};
     Global.kotorRIM = {};
     Global.kotorMOD = {};
+    Global.kotor2DA = {};
 
     loader.SetMessage("Loading BIF's");
     GameInitializer.LoadBIFs( () => {
@@ -147,8 +148,13 @@ class GameInitializer {
       loader.SetMessage('Loading: RIM Archives');
 
       fs.readdir(data_dir, (err, filenames) => {
-        if (err)
+        if (err){
+          console.warn('GameInitializer.LoadRIMs', err);
+          if(typeof onSuccess === 'function')
+            onSuccess();
+            
           return;
+        }
 
         let rims = filenames.map(function(file) {
           let filename = file.split(path.sep).pop();
@@ -186,8 +192,13 @@ class GameInitializer {
     loader.SetMessage('Loading: Module Archives');
     
     fs.readdir(data_dir, (err, filenames) => {
-      if (err)
+      if (err){
+        console.warn('GameInitializer.LoadModules', err);
+        if(typeof onSuccess === 'function')
+          onSuccess();
+          
         return;
+      }
 
       let modules = filenames.map(function(file) {
         let filename = file.split(path.sep).pop();
@@ -235,63 +246,62 @@ class GameInitializer {
 
   static Load2DAs(onSuccess = null){
     loader.SetMessage('Loading: 2DA\'s');
-    Global.kotor2DA = {};
-    let loaded = 0;
-    let resourceCount = Global.kotorBIF['2da'].resources.length;
-    for(let i = 0; i != resourceCount; i++){
-      let res = Global.kotorBIF['2da'].resources[i];
-      let ResKey = Global.kotorKEY.GetFileKeyByRes(res);
-
-      //Load 2da's with the resource loader to it can pick up ones in the override folder
-      ResourceLoader.loadResource(ResourceTypes['2da'], ResKey.ResRef, (d) => {
-        Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
-          loaded++;
-          if(loaded == resourceCount)
-            if(onSuccess != null)
-              onSuccess();
+    
+    let ResKey = undefined;
+    let loop = new AsyncLoop({
+      array: Global.kotorBIF['2da'].resources,
+      onLoop: (twoDA_res, asyncLoop) => {
+        ResKey = Global.kotorKEY.GetFileKeyByRes(twoDA_res);
+        //Load 2da's with the resource loader to it can pick up ones in the override folder
+        ResourceLoader.loadResource(ResourceTypes['2da'], ResKey.ResRef, (d) => {
+          Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
+            asyncLoop.next();
+          });
         });
-      });
-
-      /*Global.kotorBIF["2da"].GetResourceData(Global.kotorBIF["2da"].GetResourceByLabel(ResKey.ResRef, ResourceTypes['2da']), (d) => {
-        Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
-          loaded++;
-          if(loaded == resourceCount)
-            if(onSuccess != null)
-              onSuccess();
-        });
-      });*/
-    }
-
+      }
+    });
+    loop.iterate(() => {
+      if(typeof onSuccess === 'function')
+        onSuccess();
+    });
   }
 
   static LoadTexturePacks(onSuccess = null){
     let data_dir = path.join(app_profile.directory, 'TexturePacks');
-    //let bifs = ["2da", "items", "scripts", "templates" ];
-    let loaded = 0;
-    fs.readdir(data_dir, (err, filenames) => {
-      if (err)
-        return;
 
-      let erfs = Array.prototype.map.call(filenames, function(obj) {
-        let args = obj.split(path.sep).pop().split('.');
-        if(args[1] == "erf")
-          return args[0];
+    fs.readdir(data_dir, (err, filenames) => {
+      if (err){
+        console.warn('GameInitializer.LoadTexturePacks', err);
+        if(typeof onSuccess === 'function')
+          onSuccess();
+
+        return;
+      }
+
+      let erfs = filenames.map(function(file) {
+        let filename = file.split(path.sep).pop();
+        let args = filename.split('.');
+        return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+      }).filter(function(file_obj){
+        return file_obj.ext == 'erf';
       });
-      let i = 0;
-      let loadERF = () => {
-        loader.SetMessage('Loading: '+erfs[i]+'.erf');
-        //console.log(path.join(data_dir, filenames[i]));
-        Global.kotorERF[erfs[i]] = new ERFObject(path.join(data_dir, filenames[i]), () => {
-          i++
-          if(i == erfs.length){
-            if(onSuccess != null)
-              onSuccess();
-          }else{
-            loadERF();
-          }
-        });
-      };
-      loadERF();
+
+      let loop = new AsyncLoop({
+        array: erfs,
+        onLoop: (erf_obj, asyncLoop) => {
+          new ERFObject(path.join(data_dir, erf_obj.filename), (erf) => {
+            if(erf instanceof ERFObject){
+              erf.group = 'Textures';
+              Global.kotorERF[erf_obj.name] = erf;
+            }
+            asyncLoop.next();
+          });
+        }
+      });
+      loop.iterate(() => {
+        if(typeof onSuccess === 'function')
+          onSuccess();
+      });
     });
   }
 

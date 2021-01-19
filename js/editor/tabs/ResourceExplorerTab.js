@@ -87,30 +87,32 @@ class ResourceExplorerTab extends EditorTab {
 		bifLoader.iterate(() => {
       this.loadRims(() => {
 				this.loadModules(() => {
-					this.loadFolderForFileBrowser('StreamWaves', () => {
-						this.loadFolderForFileBrowser('StreamSounds', () => {
-							this.loadFolderForFileBrowser('StreamMusic', () => {
-								this.loadFolderForFileBrowser('StreamVoice', () => {
-									this.$treeView.html(
-										this.buildNodeList(this.nodeList, false)
-									);
-
-									$('li.link', this.$treeView).on('click', (e) => {
-										e.preventDefault();
-
-										let resref = e.target.dataset.resref;
-										let reskey = parseInt(e.target.dataset.resid);
-										let type = e.target.dataset.type;
-										let archive = e.target.dataset.archive;
-
-										FileTypeManager.onOpenResource(
-											new EditorFile({
-												path: e.target.dataset.path,
-											})
+					this.loadTextures(() => {
+						this.loadFolderForFileBrowser('StreamWaves', () => {
+							this.loadFolderForFileBrowser('StreamSounds', () => {
+								this.loadFolderForFileBrowser('StreamMusic', () => {
+									this.loadFolderForFileBrowser('StreamVoice', () => {
+										this.$treeView.html(
+											this.buildNodeList(this.nodeList, false)
 										);
-									});
 
-									if (typeof onComplete === 'function') onComplete();
+										$('li.link', this.$treeView).on('click', (e) => {
+											e.preventDefault();
+
+											let resref = e.target.dataset.resref;
+											let reskey = parseInt(e.target.dataset.resid);
+											let type = e.target.dataset.type;
+											let archive = e.target.dataset.archive;
+
+											FileTypeManager.onOpenResource(
+												new EditorFile({
+													path: e.target.dataset.path,
+												})
+											);
+										});
+
+										if (typeof onComplete === 'function') onComplete();
+									});
 								});
 							});
 						});
@@ -276,6 +278,80 @@ class ResourceExplorerTab extends EditorTab {
 			},
 		});
 		rimLoader.iterate(() => {
+      if(onComplete) {
+				if (typeof onComplete === 'function') onComplete();
+      }
+    });
+  }
+	
+  loadTextures(onComplete = null) {
+    let texture_packs = [];
+		
+		for (let erf in Global.kotorERF) {
+			if (Global.kotorERF.hasOwnProperty(erf) && Global.kotorERF[erf].group == "Textures")
+				texture_packs.push(Global.kotorERF[erf]);
+		}
+
+    const erfList = {
+      name: 'Texture Packs',
+      type: 'group',
+      nodeList: [],
+			canOrphan: false,
+    };
+    this.nodeList.push(erfList);
+
+		let erfLoader = new AsyncLoop({
+			array: texture_packs,
+			onLoop: (erf, asyncLoop) => {
+        let name = erf.file.split(path.sep).pop();
+				let subTypes = {};
+
+				let node = {
+					name: name,
+					type: 'group',
+					nodeList: [],
+					canOrphan: false,
+				};
+
+				erfList.nodeList.push(node);
+
+				let files = erf.KeyList;
+
+				for (let i = 0; i < files.length; i++) {
+					let resource = files[i];
+					let resref = resource.ResRef;
+
+					if (subTypes[resource.ResType] == undefined) {
+						subTypes[resource.ResType] = {
+							name: ResourceTypes.getKeyByValue(resource.ResType),
+							type: 'group',
+							nodeList: [],
+						};
+						node.nodeList.push(subTypes[resource.ResType]);
+					}
+
+					subTypes[resource.ResType].nodeList.push({
+						name:
+							resref +
+							'.' +
+							ResourceTypes.getKeyByValue(resource.ResType),
+						type: 'resource',
+						data: {
+							path:
+								erf.file +
+								'?' +
+								resref +
+								'.' +
+								ResourceTypes.getKeyByValue(resource.ResType),
+						},
+						nodeList: [],
+					});
+				}
+
+				asyncLoop.next();
+			},
+		});
+		erfLoader.iterate(() => {
       if(onComplete) {
 				if (typeof onComplete === 'function') onComplete();
       }
