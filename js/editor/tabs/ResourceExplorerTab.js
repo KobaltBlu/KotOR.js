@@ -27,6 +27,14 @@ class ResourceExplorerTab extends EditorTab {
 				bifs.push(Global.kotorBIF[bif]);
 		}
 
+		const bifList = {
+      name: 'BIFs',
+      type: 'group',
+      nodeList: [],
+			canOrphan: false,
+    };
+    this.nodeList.push(bifList);
+
 		let bifLoader = new AsyncLoop({
 			array: bifs,
 			onLoop: (bif, asyncLoop) => {
@@ -37,9 +45,10 @@ class ResourceExplorerTab extends EditorTab {
 					name: name,
 					type: 'group',
 					nodeList: [],
+					canOrphan: false,
 				};
 
-				this.nodeList.push(node);
+				bifList.nodeList.push(node);
 
 				for (let i = 0; i < bif.resources.length; i++) {
 					let resource = bif.resources[i];
@@ -82,7 +91,7 @@ class ResourceExplorerTab extends EditorTab {
             this.loadFolderForFileBrowser('StreamMusic', () => {
               this.loadFolderForFileBrowser('StreamVoice', () => {
                 this.$treeView.html(
-                  this.buildNodeList(this.nodeList)
+                  this.buildNodeList(this.nodeList, false)
                 );
 
                 $('li.link', this.$treeView).on('click', (e) => {
@@ -124,6 +133,7 @@ class ResourceExplorerTab extends EditorTab {
       name: 'RIMs',
       type: 'group',
       nodeList: [],
+			canOrphan: false,
     };
     this.nodeList.push(rimList);
 
@@ -137,6 +147,7 @@ class ResourceExplorerTab extends EditorTab {
 					name: name,
 					type: 'group',
 					nodeList: [],
+					canOrphan: false,
 				};
 
 				rimList.nodeList.push(node);
@@ -205,7 +216,7 @@ class ResourceExplorerTab extends EditorTab {
 						node.name +
 						'</label><span></span><ul>';
 					for (let i = 0; i < node.nodeList.length; i++) {
-						str += this.buildNodeList(node.nodeList[i], true);
+						str += this.buildNodeList(node.nodeList[i], typeof node.canOrphan != 'undefined' ? node.canOrphan : true);
 					}
 					str += '</ul></li>';
 				}
