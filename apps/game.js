@@ -743,7 +743,7 @@ const template = [
       { label: 'Show FPS', type: 'checkbox', checked: Config.get('Game.debug.show_fps'), 'accelerator': 'Alt+F', click: () => {
         Config.set('Game.debug.show_fps', !Config.get('Game.debug.show_fps'));
 
-        if(!Config.options.Game.debug.show_fps){
+        if(!Config.get(['Game','debug','show_fps'], false)){
           Game.stats.showPanel(false);
         }else{
           Game.stats.showPanel(0);
@@ -807,7 +807,7 @@ const template = [
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 
-remote.getCurrentWindow().setMenuBarVisibility(Config.options.Game.show_application_menu);
+remote.getCurrentWindow().setMenuBarVisibility(Config.get(['Game','show_application_menu'], false));
 
 remote.getCurrentWindow().addListener('enter-full-screen', () => {
   Config.set(['Profiles', app_profile.key, 'settings', 'fullscreen', 'value'], true);

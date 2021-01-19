@@ -173,13 +173,13 @@ class ModuleEditorTab extends EditorTab {
     this.emitters = {};
     this._emitters = {};
 
-    this.group.creatures.visible = Config.options.Editor.Module.Helpers.creature.visible;
-    this.group.doors.visible = Config.options.Editor.Module.Helpers.door.visible;
-    this.group.placeables.visible = Config.options.Editor.Module.Helpers.placeable.visible;
-    //this.group.rooms.visible = Config.options.Editor.Module.Helpers.room.visible;
-    this.group.sounds.visible = Config.options.Editor.Module.Helpers.sound.visible;
-    this.group.triggers.visible = Config.options.Editor.Module.Helpers.trigger.visible;
-    this.group.waypoints.visible = Config.options.Editor.Module.Helpers.waypoint.visible;
+    this.group.creatures.visible = Config.get(['Editor', 'Module', 'Helpers', 'creature', 'visible']);
+    this.group.doors.visible = Config.get(['Editor', 'Module', 'Helpers', 'door', 'visible']);
+    this.group.placeables.visible = Config.get(['Editor', 'Module', 'Helpers', 'placeable', 'visible']);
+    //this.group.rooms.visible = Config.get(['Editor', 'Module', 'Helpers', 'room', 'visible']);
+    this.group.sounds.visible = Config.get(['Editor', 'Module', 'Helpers', 'sound', 'visible']);
+    this.group.triggers.visible = Config.get(['Editor', 'Module', 'Helpers', 'trigger', 'visible']);
+    this.group.waypoints.visible = Config.get(['Editor', 'Module', 'Helpers', 'waypoint', 'visible']);
     this.group.player.visible = false;
 
     this.signals = {
@@ -710,27 +710,27 @@ class ModuleEditorTab extends EditorTab {
       break;
       case ModuleEditorTab.NODES.CREATURE:
         this.group.creatures.visible = !this.group.creatures.visible;
-        Config.options.Editor.Module.Helpers.creature.visible = this.group.creatures.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'creature', 'visible'], this.group.creatures.visible);
       break;
       case ModuleEditorTab.NODES.PLACEABLE:
         this.group.placeables.visible = !this.group.placeables.visible;
-        Config.options.Editor.Module.Helpers.placeable.visible = this.group.placeables.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'placeable', 'visible'], this.group.placeables.visible);
       break;
       case ModuleEditorTab.NODES.DOOR:
         this.group.doors.visible = !this.group.doors.visible;
-        Config.options.Editor.Module.Helpers.door.visible = this.group.doors.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'door', 'visible'], this.group.doors.visible);
       break;
       case ModuleEditorTab.NODES.WAYPOINT:
         this.group.waypoints.visible = !this.group.waypoints.visible;
-        Config.options.Editor.Module.Helpers.waypoint.visible = this.group.waypoints.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'waypoint', 'visible'], this.group.waypoints.visible);
       break;
       case ModuleEditorTab.NODES.TRIGGER:
         this.group.triggers.visible = !this.group.triggers.visible;
-        Config.options.Editor.Module.Helpers.trigger.visible = this.group.triggers.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'trigger', 'visible'], this.group.triggers.visible);
       break;
       case ModuleEditorTab.NODES.SOUND:
         this.group.sounds.visible = !this.group.sounds.visible;
-        Config.options.Editor.Module.Helpers.sound.visible = this.group.sounds.visible;
+        Config.set(['Editor', 'Module', 'Helpers', 'sound', 'visible'], this.group.sounds.visible);
       break;
       case ModuleEditorTab.NODES.WALKMESH:
         console.log('Toggle walkmeshVisibility', this.group.rooms)
@@ -746,7 +746,6 @@ class ModuleEditorTab extends EditorTab {
           }
         });
 
-        //Config.options.Editor.Module.Helpers.sound.visible = this.group.sounds.visible;
       break;
     }
     Config.save(null, true);
