@@ -118,7 +118,7 @@ class NewProjectWizard extends Wizard {
                     this.Hide();
                     Global.Project = new Project(this.project_location);
                     Global.Project.Open(() => {
-                      Global.Project.module = new Module(this.project_location);
+                      Global.Project.module = new Module();
                       Global.Project.module.Save();
 
                       loader.SetMessage("Project Loaded");
@@ -130,7 +130,7 @@ class NewProjectWizard extends Wizard {
                     this.Hide();
                     Global.Project = new Project(this.project_location);
                     Global.Project.Open(() => {
-                      Global.Project.module = new Module(this.project_location);
+                      Global.Project.module = new Module();
                       Global.Project.module.Save();
 
                       loader.SetMessage("Project Loaded");
@@ -254,6 +254,18 @@ class NewProjectWizard extends Wizard {
                   });
 
                 }else{
+                  Game.module = new Module();
+                  Game.module.Mod_Entry_Area = 'area_001';
+                  Game.module.area._name = 'area_001';
+
+                  let ifo = Game.module.toolsetExportIFO();
+                  let are = Game.module.area.toolsetExportARE();
+                  let git = Game.module.area.toolsetExportGIT();
+
+                  ifo.Save( path.join(Global.Project.directory, 'module.ifo') );
+                  are.Save( path.join(Global.Project.directory, Game.module.area._name+'.are') );
+                  git.Save( path.join(Global.Project.directory, Game.module.area._name+'.git') );
+
                   Global.Project.Open(() => {
                     Global.Project.InitializeProject( () => {
                       //When everything is done
@@ -350,7 +362,6 @@ class NewProjectWizard extends Wizard {
     ));
     this.$project_location.trigger('change');
   }
-
 
 }
 

@@ -7,7 +7,10 @@
 
 class LYTObject {
 
-  constructor(data){
+  constructor( data = undefined ){
+
+    if(typeof data == 'undefined')
+      data = Buffer.alloc(0);
 
     this.rooms = [];
     this.doorhooks = [];

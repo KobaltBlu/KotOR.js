@@ -942,7 +942,8 @@ class Field {
           this.Value = '';
       break;
       case GFFDataTypes.CEXOLOCSTRING:
-        this.CExoLocString = new CExoLocString();
+        this.Value = 0;
+        this.CExoLocString = (Value instanceof CExoLocString) ? Value : new CExoLocString();
       break;
     }
 
@@ -1008,6 +1009,7 @@ class Field {
 
   SetData(data){
     this.Data = data;
+    return this;
   }
 
   SetValue(val){
@@ -1024,31 +1026,38 @@ class Field {
         this.Value = val;
       break;
     }
+    return this;
 
   }
 
   SetType(type){
     this.Type = type;
+    return this;
   }
 
   SetLabel(label){
     this.Label = label;
+    return this;
   }
 
   SetCExoLocString(val){
     this.CExoLocString = val;
+    return this;
   }
 
   SetVector(v){
     this.Vector = v;
+    return this;
   }
 
   SetOrientation(v){
     this.Orientation = v;
+    return this;
   }
 
   AddChildStruct(strt){
     this.ChildStructs.push(strt);
+    return this;
   }
 
   RemoveChildStruct(strt){
@@ -1056,10 +1065,12 @@ class Field {
     if(index >= 0){
       this.ChildStructs.splice(index, 1);
     }
+    return this;
   }
 
   SetChildStructs(strts){
     this.ChildStructs = strts;
+    return this;
   }
 
   ToJSON(){

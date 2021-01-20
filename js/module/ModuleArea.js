@@ -421,6 +421,7 @@ class ModuleArea extends ModuleObject {
   }
 
   loadPath(onLoad = null){
+    console.log('ModuleArea.loadPath');
     this.path = new ModulePath(this._name);
     this.path.Load( () => {
       if(typeof onLoad == 'function')
@@ -429,6 +430,7 @@ class ModuleArea extends ModuleObject {
   }
 
   LoadVis(onLoad = null){
+    console.log('ModuleArea.LoadVis');
     ResourceLoader.loadResource(ResourceTypes['vis'], this._name, (visData) => {
       this.visObject = new VISObject(visData);
       if(typeof onLoad == 'function')
@@ -441,11 +443,12 @@ class ModuleArea extends ModuleObject {
   }
 
   LoadLayout(onLoad = null){
+    console.log('ModuleArea.LoadLayout');
     ResourceLoader.loadResource(ResourceTypes['lyt'], this._name, (data) => {
-      let lyt = new LYTObject(data);
+      this.layout = new LYTObject(data);
 
-      for(let i = 0; i != lyt.rooms.length; i++){
-        let roomLYT = lyt.rooms[i];
+      for(let i = 0; i != this.layout.rooms.length; i++){
+        let roomLYT = this.layout.rooms[i];
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
           if(room.roomName.toLowerCase() == roomLYT['name'].toLowerCase()){
@@ -458,17 +461,17 @@ class ModuleArea extends ModuleObject {
         }
       }
 
-      for(let i = 0; i != lyt.doorhooks.length; i++){
-        let _doorHook = lyt.doorhooks[i];
+      for(let i = 0; i != this.layout.doorhooks.length; i++){
+        let _doorHook = this.layout.doorhooks[i];
         this.doorhooks.push(_doorHook);
       }
 
-      for(let i = 0; i != lyt.tracks.length; i++){
-        this.tracks.push(new ModuleMGTrack(lyt.tracks[i]));
+      for(let i = 0; i != this.layout.tracks.length; i++){
+        this.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
       }
 
-      for(let i = 0; i != lyt.obstacles.length; i++){
-        let _obstacle = lyt.obstacles[i];
+      for(let i = 0; i != this.layout.obstacles.length; i++){
+        let _obstacle = this.layout.obstacles[i];
         this.obstacles.push(_obstacle);
       }
 
@@ -482,8 +485,12 @@ class ModuleArea extends ModuleObject {
       }
 
       if(typeof onLoad == 'function')
-        onLoad(this);
+        onLoad();
 
+    }, (error) => {
+      this.layout = new LYTObject();
+      if(typeof onLoad == 'function')
+        onLoad();
     });
   }
 
@@ -1599,6 +1606,7 @@ class ModuleArea extends ModuleObject {
   }
 
   LoadScripts(onLoad = null){
+    console.log('ModuleArea.LoadScripts');
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
