@@ -7,7 +7,6 @@ class NewProjectWizard extends Wizard {
     this.project_name = 'New Project';
     this.parent_directory = Config.get('Projects_Directory');
     this.project_location = '';
-    this.project_game = Games.KOTOR;
     this.project_type = Project.Types.MODULE;
     this.module_template = -1;
 
@@ -22,11 +21,7 @@ class NewProjectWizard extends Wizard {
       this.$project_directory = $('#modal-new-project-directory', this.$wizard);
       this.$project_directory_browse = $('#modal-new-project-directory-browse', this.$wizard);
       this.$project_location = $('#modal-new-project-location', this.$wizard);
-      this.$project_game = $('#modal-new-project-game', this.$wizard);
       this.$project_type = $('#modal-new-project-type', this.$wizard);
-
-      this.$game_kotor = $('#modal-new-project-kotor', this.$wizard);
-      this.$game_tsl = $('#modal-new-project-tsl', this.$wizard).addClass('gray');
 
       this.$module_template = $('#modal-new-project-template', this.$wizard);
 
@@ -34,22 +29,12 @@ class NewProjectWizard extends Wizard {
 
       this.$project_name.parent().parent().prepend(this.$alert);
 
-
-      this.$game_kotor.on('click', (e) => {
-        this.$project_game.val(1).trigger('change');
-      });
-
-      this.$game_tsl.on('click', (e) => {
-        this.$project_game.val(2).trigger('change');
-      });
-
-
       this.$project_name.keypress(function (e) {
           let regex = new RegExp("^[a-zA-Z0-9\-\_\s]+$");
           let keyCode = e.charCode ? e.which : e.charCode;
           let str = String.fromCharCode(keyCode);
           if (regex.test(str) || keyCode == 32) {
-              return true;
+            return true;
           }
 
           e.preventDefault();
@@ -90,24 +75,6 @@ class NewProjectWizard extends Wizard {
       this.$project_location.on('change', () => {
         console.log('Input Changed');
         this.project_location = this.$project_location.val();
-      });
-
-      this.$project_game.on('change', () => {
-        let id = parseInt(this.$project_game.val());
-        this.project_game = id;
-
-        switch(id){
-          case 1:
-            this.$game_kotor.removeClass('gray');
-            this.$game_tsl.removeClass('gray').addClass('gray');
-          break;
-          case 2:
-            this.$game_tsl.removeClass('gray');
-            this.$game_kotor.removeClass('gray').addClass('gray');
-          break;
-        }
-
-
       });
 
       this.$project_type.on('change', () => {
@@ -188,8 +155,7 @@ class NewProjectWizard extends Wizard {
                   console.log('Creating Project and Exporting Files', GameMaps[this.module_template], module_name);
 
                   Game.module = new Module();
-                  Module.GetModuleArchives(module_name, (archives) => {
-
+                  Module.GetModuleProjectArchives(module_name).then( (archives) => {
                     let archiveLoop = new AsyncLoop({
                       array: archives,
                       onLoop: (archive, asyncLoop) => {
@@ -339,11 +305,11 @@ class NewProjectWizard extends Wizard {
         this.project_location,
         'files'
       ));
-    }catch(e){ console.log(e); }
+    }catch(e){ console.error('NewProjectWizard.CreateProject', e); }
 
     let project_data = {
-      "Name": this.project_name,
-      game: this.project_game,
+      Name: this.project_name,
+      game: app_profile.launch.args.gameChoice,
       type: this.project_type
     };
 

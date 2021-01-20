@@ -430,7 +430,7 @@ class Module {
     });
   }
 
-  static async GetModuleArchives(modName = '', onLoad = null){
+  static async GetModuleArchives(modName = ''){
     return new Promise( async (resolve, reject) => {
       let archives = [];
       let archive = undefined;
@@ -484,6 +484,38 @@ class Module {
         //Locate the global LIPs file
         archive = await Module.GetModuleLipsLoc(modName);
         if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
+
+        //Locate the module's dialog MOD file (TSL)
+        archive = await Module.GetModuleDLG(modName);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
+      }catch(e){
+        console.error(e);
+      }
+      
+      //Return the archive array
+      resolve(archives);
+    });
+  }
+
+  static async GetModuleProjectArchives(modName = ''){
+    return new Promise( async (resolve, reject) => {
+      let archives = [];
+      let archive = undefined;
+
+      try{
+        //Locate the module's RIM file
+        archive = await Module.GetModuleRimA(modName);
+        if(archive instanceof RIMObject){
+          archives.push(archive);
+        }
+
+        //Locate the module's RIM_S file
+        archive = await Module.GetModuleRimB(modName);
+        if(archive instanceof RIMObject){
           archives.push(archive);
         }
 
