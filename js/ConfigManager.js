@@ -24,7 +24,6 @@ class ConfigManager{
       //console.log('ConfigManager', json_path, _settings);
     }catch(e){ console.error('ConfigManager', e); }
 
-
     this.options = this._mergeDeep(defaults, _settings);
     this.cache();
 
@@ -48,6 +47,15 @@ class ConfigManager{
           this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
         }
       });
+    }
+
+    //Attempt to create the projects directory if it doesn't exist
+    if (!fs.existsSync(this.get('Projects_Directory'))) {
+      try{
+        fs.mkdirSync(this.get('Projects_Directory'));
+      }catch(e){
+        console.warn('ConfigManager', 'Failed to create the projects directory: "'+this.get('Projects_Directory')+'"', e);
+      }
     }
 
   }
@@ -443,7 +451,7 @@ const defaults = {
     top: {open: false},
     bottom: {open: false}
   },
-  Projects_Directory: path.join(ConfigManager.GetAppDirectory(), 'projects'),
+  Projects_Directory: path.join(app.getAppPath(), 'projects'),
   recent_projects: [],
   recent_files: []
 };

@@ -5,7 +5,7 @@ class NewProjectWizard extends Wizard {
 
     //Variables
     this.project_name = 'New Project';
-    this.parent_directory = (typeof Config.options.Projects_Directory !== 'undefined' && Config.options.Projects_Directory != null) ? Config.options.Projects_Directory : '';
+    this.parent_directory = Config.get('Projects_Directory');
     this.project_location = '';
     this.project_game = Games.KOTOR;
     this.project_type = Project.Types.MODULE;
@@ -312,8 +312,8 @@ class NewProjectWizard extends Wizard {
       //Add the new wizard to the DOM
       $('body').append(this.$wizard);
       this.$wizard.filter('.modal').modal({
-          backdrop: 'static',
-          keyboard: false
+        backdrop: 'static',
+        keyboard: false
       });
 
     });
