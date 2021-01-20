@@ -470,7 +470,7 @@ if (typeof global.TopMenu == 'undefined') {
       {name: 'File', items: [
         {name: 'Open Project', onClick: async () => {
           let payload = await dialog.showOpenDialog({
-            properties: ['openFile'],
+            properties: ['openFile', 'createDirectory'],
             filters: [
               {name: 'KForge Project', extensions: ['json']}
           ]});
@@ -567,7 +567,8 @@ if (typeof global.TopMenu == 'undefined') {
                 {name: 'VIS File', extensions: ['vis']},
                 {name: 'Layout File', extensions: ['lyt']},
                 {name: 'All Formats', extensions: ['*']},
-              ]
+              ],
+              properties: ['createDirectory'],
             }
           ).then(result => {
             if(!result.canceled){

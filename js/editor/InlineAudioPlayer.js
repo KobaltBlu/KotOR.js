@@ -51,6 +51,7 @@ class InlineAudioPlayer {
       let payload = await dialog.showSaveDialog({
         title: 'Export Audio File',
         defaultPath: this.audioFile.filename,
+        properties: ['createDirectory'],
         filters: [
           {name: 'Wave File', extensions: ['wav']},
           {name: 'MP3 File', extensions: ['mp3']}

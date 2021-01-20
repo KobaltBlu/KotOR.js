@@ -333,6 +333,7 @@ class ImageViewerTab extends EditorTab {
     let payload = await dialog.showSaveDialog({
       title: 'Export Image',
       defaultPath: this.filename,
+      properties: ['createDirectory'],
       filters: [
         {name: 'TGA', extensions: ['tga']}
       ]

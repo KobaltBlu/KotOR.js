@@ -481,6 +481,7 @@ class UTPEditorTab extends EditorTab {
       let payload = await dialog.showSaveDialog({
         title: 'Save File As',
         defaultPath: this.file.getLocalPath() ? this.file.getLocalPath() : this.file.getFilename(),
+        properties: ['createDirectory'],
         filters: [
           {name: this.file.ext.toUpperCase(), extensions: [this.file.ext]}
         ]

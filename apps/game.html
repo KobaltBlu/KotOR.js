@@ -67,7 +67,7 @@
             console.log('Failed to verify the path for', GameKey);
             //loader.Dismiss();
             
-            dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory',]}).then(result => {
+            dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory', 'createDirectory']}).then(result => {
               console.log(result.canceled);
               console.log(result.filePaths);
               if(result.filePaths.length && !result.canceled){

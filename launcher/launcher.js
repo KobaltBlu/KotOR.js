@@ -365,7 +365,7 @@ function buildProfileElement(profile = {}){
     e.preventDefault();
     let $btn = $(this);
     if($btn.hasClass('locate') && !profile.directory){
-      dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory',]}).then(result => {
+      dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {
         if(result.filePaths.length && !result.canceled){
           if(result.filePaths[0]){
             Config.set('Profiles.'+profile.key+'.directory', result.filePaths[0]);

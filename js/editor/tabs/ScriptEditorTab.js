@@ -75,6 +75,7 @@ class ScriptEditorTab extends EditorTab {
     let payload = await dialog.showSaveDialog({
       title: 'Export File',
       defaultPath: this.file,
+      properties: ['createDirectory'],
       filters: [
         {name: 'NSS File', extensions: ['nss']},
         {name: 'NCS File', extensions: ['ncs']}
@@ -128,7 +129,8 @@ class ScriptEditorTab extends EditorTab {
       filters: [
         {name: 'NSS File', extensions: ['nss']},
         {name: 'NCS File', extensions: ['ncs']}
-      ]
+      ],
+      properties: ['createDirectory'],
     });
 
     if(!payload.canceled && payload.filePaths.length){

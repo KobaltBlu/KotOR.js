@@ -254,7 +254,8 @@ class ModelViewerTab extends EditorTab {
         filters: [
           {name: 'TPC Image', extensions: ['tpc']},
           {name: 'TGA Image', extensions: ['tga']}
-        ]
+        ],
+        properties: ['createDirectory'],
       });
 
       if(!payload.canceled && payload.filePaths.length){

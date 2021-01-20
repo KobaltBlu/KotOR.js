@@ -487,7 +487,9 @@ class LIPEditorTab extends EditorTab {
           title: 'Open Audio File',
           filters: [
             {name: 'Audio File', extensions: ['wav', 'mp3']}
-        ]}, 
+          ],
+          properties: ['createDirectory'],
+        }, 
         (paths) => {
           if(paths.length){
             let filename = paths[0].split(path.sep).pop();
@@ -570,7 +572,9 @@ class LIPEditorTab extends EditorTab {
         title: 'Open PHN File',
         filters: [
           {name: 'PHN File', extensions: ['phn']}
-      ]}, 
+        ],
+        properties: ['createDirectory'],
+      }, 
       (paths) => {
         if(paths.length){
           let filename = paths[0].split(path.sep).pop();

@@ -267,6 +267,7 @@ class LIPObject {
     let payload = await dialog.showSaveDialog({
       title: 'Export LIP',
       defaultPath: this.file,
+      properties: ['createDirectory'],
       filters: [
         {name: 'LIP', extensions: ['lip']}
       ]

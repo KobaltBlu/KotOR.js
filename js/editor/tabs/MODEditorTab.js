@@ -34,6 +34,7 @@ class MODEditorTab extends EditorTab {
           let payload = await dialog.showSaveDialog({
             title: 'Export File',
             defaultPath: resref+'.'+ext,
+            properties: ['createDirectory'],
             filters: [
               {name: ext.toUpperCase()+' file', extensions: [ext]}
             ]

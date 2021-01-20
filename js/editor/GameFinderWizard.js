@@ -32,7 +32,7 @@ class GameFinderWizard extends Wizard {
 
       this.$kotor_directory_browse.on('click', async (e) => {
         e.preventDefault();
-        let payload = await dialog.showOpenDialog({properties: ['openDirectory']});
+        let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
 
         if(!payload.canceled && payload.filePaths.length){
           console.log(payload.filePaths[0]);
@@ -47,7 +47,7 @@ class GameFinderWizard extends Wizard {
 
       this.$tsl_directory_browse.on('click', async (e) => {
         e.preventDefault();
-        let payload = await dialog.showOpenDialog({properties: ['openDirectory']});
+        let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
 
         if(!payload.canceled && payload.filePaths.length){
           console.log(payload.filePaths[0]);

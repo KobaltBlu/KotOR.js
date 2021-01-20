@@ -63,7 +63,9 @@ class QuickStartTab extends EditorTab {
           properties: ['openFile'],
           filters: [
             {name: 'KMS Project', extensions: ['json']}
-        ]});
+          ],
+          properties: ['createDirectory'],
+        });
         if(!payload.canceled && payload.filePaths.length){
           Global.Project = new Project(path.dirname(payload.filePaths[0]));
           Global.Project.Open(() => {
