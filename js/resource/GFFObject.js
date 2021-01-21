@@ -945,6 +945,22 @@ class Field {
         this.Value = 0;
         this.CExoLocString = (Value instanceof CExoLocString) ? Value : new CExoLocString();
       break;
+      case GFFDataTypes.ORIENTATION:
+        this.Value = 0;
+        if(typeof Value == 'object' && typeof Value.x == 'number' && typeof Value.y == 'number' && typeof Value.z == 'number' && typeof Value.w == 'number'){
+          this.Orientation = Value;
+        }else{
+          this.Orientation = {x: 0, y: 0, z: 0, w: 1};
+        }
+      break;
+      case GFFDataTypes.VECTOR:
+        this.Value = 0;
+        if(typeof Value == 'object' && typeof Value.x == 'number' && typeof Value.y == 'number' && typeof Value.z == 'number'){
+          this.Vector = Value;
+        }else{
+          this.Vector = {x: 0, y: 0, z: 0};
+        }
+      break;
     }
 
   }
