@@ -1185,8 +1185,8 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           const uv1 = new Float32Array( _node.tvectors[0].length * 2 ); //Works with indicies
           geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyVector2sArray( _node.tvectors[0].flat() ) ); //Works with indicies
           
-          const uv2 = new Float32Array( _node.tvectors[0].length * 2 ); //Works with indicies
-          geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyVector2sArray( _node.tvectors[0].flat() ) ); //Works with indicies
+          const uv2 = new Float32Array( _node.tvectors[1].length * 2 ); //Works with indicies
+          geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyVector2sArray( _node.tvectors[1].flat() ) ); //Works with indicies
           
           //--------------------------//
           // SKIN GEOMETRY ATTRIBUTES
@@ -1203,14 +1203,8 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           // DANGLY GEOMETRY ATTRIBUTES
           //----------------------------//
           if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly){
-            let newConstraints = [];
-
-            for(let i = 0; i < _node.faces.length; i++){
-              newConstraints.push(_node.danglyVec4[_node.faces[i].a], _node.danglyVec4[_node.faces[i].b], _node.danglyVec4[_node.faces[i].c]);
-            }
-
-            let constraints = new Float32Array( newConstraints.length * 4 );
-            geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( newConstraints ) );
+            const constraints = new Float32Array( _node.danglyVec4.length * 4 ); //Works with indicies
+            geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( _node.danglyVec4 ) ); //Works with indicies
           }
           
           //Compute Geometry Tangents

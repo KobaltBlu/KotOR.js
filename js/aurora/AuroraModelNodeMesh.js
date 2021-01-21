@@ -145,7 +145,8 @@
       this.tangent1 = {
         tangents: [],
         bitangents: [],
-        normals: []
+        normals: [],
+        computed: []
       }
     }
 
@@ -154,7 +155,8 @@
       this.tangent2 = {
         tangents: [],
         bitangents: [],
-        normals: []
+        normals: [],
+        computed: []
       }
     }
 
@@ -163,7 +165,8 @@
       this.tangent3 = {
         tangents: [],
         bitangents: [],
-        normals: []
+        normals: [],
+        computed: []
       }
     }
 
@@ -172,7 +175,8 @@
       this.tangent4 = {
         tangents: [],
         bitangents: [],
-        normals: []
+        normals: [],
+        computed: []
       }
     }
 
@@ -202,6 +206,7 @@
       if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1){
         this.auroraModel.mdxReader.position = basePosition + MDXUVOffset1;
         this.tvectors[0][i] = (new THREE.Vector2(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle()));
+        this.tvectors[1][i] = this.tvectors[0][i];
       }
 
       // TexCoords2
@@ -226,6 +231,7 @@
         this.tangent1.tangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent1.bitangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent1.normals.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
+        //this.computeTangent(this.tangent1, i);
       }
 
       //Tangent2
@@ -234,6 +240,7 @@
         this.tangent2.tangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent2.bitangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent2.normals.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
+        //this.computeTangent(this.tangent2, i);
       }
 
       //Tangent3
@@ -242,6 +249,7 @@
         this.tangent3.tangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent3.bitangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent3.normals.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
+        //this.computeTangent(this.tangent3, i);
       }
 
       //Tangent4
@@ -250,6 +258,7 @@
         this.tangent4.tangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent4.bitangents.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
         this.tangent4.normals.push(this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle(), this.auroraModel.mdxReader.ReadSingle());
+        //this.computeTangent(this.tangent4, i);
       }
 
     }
@@ -302,6 +311,32 @@
 
     this.auroraModel.mdlReader.position = endPos;
 
+  }
+
+  computeTangent(tangentObject, index){
+    let n = new THREE.Vector3().fromArray(tangentObject.normals, index * 3);
+    let n2 = n.clone();
+
+    let t = new THREE.Vector3().fromArray(tangentObject.tangents, index * 3);
+    let t2 = new THREE.Vector3().fromArray(tangentObject.bitangents, index * 3);
+    let tmp = new THREE.Vector3();
+    let tmp2 = new THREE.Vector3();
+
+    // Gram-Schmidt orthogonalize
+
+    tmp.copy( t );
+    tmp.sub( n.multiplyScalar( n.dot( t ) ) ).normalize();
+
+    // Calculate handedness
+
+    tmp2.crossVectors( n2, t );
+    let test = tmp2.dot( t2 );
+    let w = ( test < 0.0 ) ? - 1.0 : 1.0;
+
+    tangentObject.computed[(index * 4) + 0] = tmp.x;
+    tangentObject.computed[(index * 4) + 1] = tmp.y;
+    tangentObject.computed[(index * 4) + 2] = tmp.z;
+    tangentObject.computed[(index * 4) + 3] = w;
   }
 
 }
