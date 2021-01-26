@@ -363,21 +363,22 @@ NWScriptDefK1.Actions = {
     name: "CreateItemOnObject",
     type: 6,
     args: ["string", "object", "int"],
-    action: function(args, _instr, action){
-      //console.log('CreateItemOnObject', this.name, args);
-      /*ModuleItem.FromResRef(args[0], (item) => {
-        item.setStackSize(args[2]);
-        if(PartyManager.party.indexOf(args[1]) > -1){
-          InventoryManager.addItem(item, () => {
-            
-          });
-        }else{
-        args[1].addItem(item, () => {
-            
-          });
-        }
-      })*/
-      return undefined;
+    action: async function(args, _instr, action){
+      return new Promise( (resolve, reject) => {
+        ModuleItem.FromResRef(args[0], (item) => {
+          if(item instanceof ModuleItem){
+            item.setStackSize(args[2]);
+            if(PartyManager.party.indexOf(args[1]) > -1){
+              InventoryManager.addItem(item);
+            }else{
+              args[1].addItem(item);
+            }
+            resolve(item);
+          }else{
+            resolve(undefined);
+          }
+        });
+      });
     }
   },
   32:{

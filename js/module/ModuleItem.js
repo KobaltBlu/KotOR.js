@@ -374,14 +374,15 @@ class ModuleItem extends ModuleObject {
       ResRef: sResRef.toLowerCase(),
       ResType: ResourceTypes.uti,
       onLoad: (gff) => {
-        //console.log('ModuleItem', 'Template Loaded')
         let item = new ModuleItem(gff);
         item.InitProperties();
         if(typeof onLoad === 'function')
           onLoad(item);
       },
       onFail: () => {
-        console.error('Failed to load item template');
+        console.error('ModuleItem.FromResRef', 'Failed to load item template', sResRef);
+        if(typeof onLoad === 'function')
+          onLoad(undefined);
       }
     });
 
