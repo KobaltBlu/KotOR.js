@@ -672,7 +672,7 @@ class ModuleCreatureController extends ModuleObject {
       }
     }
 
-    if(this.perceptionTimer < 1){
+    if(this.perceptionTimer < 3){
       this.perceptionTimer += 1 * delta;
       return;
     }
