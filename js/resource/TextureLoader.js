@@ -289,13 +289,15 @@ class TextureLoader {
             //I think this has to do with alphaTesting... Not sure...
             if(typeof texture.header === 'object'){
               if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                if(texture.txi.blending && texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
                   tex.material.transparent = true;
                 }
                 if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
                   tex.material.alphaTest = 0;
                 }
-                //tex.material.alphaTest = texture.header.alphaTest;
+
+                if(!texture.txi.blending)
+                  tex.material.alphaTest = texture.header.alphaTest;
               }
             }
 
