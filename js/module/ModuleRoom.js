@@ -161,15 +161,19 @@ class ModuleRoom extends ModuleObject {
                   
                   this.walkmesh = wok;
                   this.buildGrass();
-
-                  if(typeof onComplete == 'function')
-                    onComplete(this);
+                  
+                  TextureLoader.LoadQueue( () => {
+                    if(typeof onComplete == 'function')
+                      onComplete(this);
+                  });
     
                 });
 
               }else{
-                if(typeof onComplete == 'function')
-                  onComplete(this);
+                TextureLoader.LoadQueue( () => {
+                  if(typeof onComplete == 'function')
+                    onComplete(this);
+                });
               }
 
               //Disable matrix update for static objects
