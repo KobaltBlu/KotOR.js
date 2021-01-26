@@ -154,7 +154,6 @@ const NotificationManager = require(path.join(app.getAppPath(), 'js/editor/Notif
 const Wizard = require(path.join(app.getAppPath(), 'js/editor/Wizard.js'));
 const Modal = require(path.join(app.getAppPath(), 'js/editor/Modal.js'));
 const Project = require(path.join(app.getAppPath(), 'js/editor/Project.js'));
-const GameFinderWizard = require(path.join(app.getAppPath(), 'js/editor/GameFinderWizard.js'));
 const NewProjectWizard = require(path.join(app.getAppPath(), 'js/editor/NewProjectWizard.js'));
 const LevelSelectWizard = require(path.join(app.getAppPath(), 'js/editor/LevelSelectWizard.js'));
 const ObjectPropertiesWizard = require(path.join(app.getAppPath(), 'js/editor/ObjectPropertiesWizard.js'));
