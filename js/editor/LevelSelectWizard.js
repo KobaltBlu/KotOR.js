@@ -1,65 +1,52 @@
 class LevelSelectWizard extends Wizard {
 
   constructor(selected = -1, onSelect = null){
-    super();
+    super({
+      title: 'Level Select',
+      buttons: [
+        {
+          name: 'Choose Level',
+          onClick: () => {
+            //e.preventDefault();
 
-    //Variables
-    this.levels = GameMaps;
-    this.levels[-1] = {module: 'None', name: 'None', nameref: -1};
-    this.selected = selected;
-    this.onSelect = onSelect;
-
-    //Load the HTML from the template file
-    TemplateEngine.GetTemplateAsync('templates/modal-level-select.html', null, (tpl) => {
-      this.$wizard = $(tpl);
-
-      console.log('Level Select Wizard', this);
-
-      //DOM Elements
-      this.$list = $('#modal-level-list', this.$wizard);
-      this.$choose = $('#modal-level-choose', this.$wizard);
-
-      for(let i = -1; i!=this.levels.length; i++){
-        let level = this.levels[i];
-
-        let $item = $('<li class="list-group-item" data-index="'+i+'">'+level.module+' - '+level.name+'</li>');
-
-        if(this.selected == i)
-          $item.addClass('selected');
-
-        this.$list.append($item);
-        $item.click( (e) => {
-          e.preventDefault();
-
-          $('li.selected', this.$list).removeClass('selected');
-          $item.addClass('selected');
-          this.selected = parseInt($item.attr('data-index'));
-
-        });
-
-      }
-
-      this.$choose.on('click', (e) => {
-        e.preventDefault();
-
-        console.log(typeof this.onSelect, typeof this.onSelect == 'function');
-
-        if(typeof this.onSelect == 'function')
-          this.onSelect(this.selected, this.levels[this.selected]);
-
-        this.Hide();
-      });
-
-      $('body').append(this.$wizard);
-      this.$wizard.filter('.modal').modal({
-          backdrop: 'static',
-          keyboard: false
-      });
-
-      this.Show();
-
+            console.log(typeof this.onSelect, typeof this.onSelect == 'function');
+    
+            if(typeof this.onSelect == 'function')
+              this.onSelect(this.data.selected, this.data.levels[this.data.selected]);
+    
+            this.Hide();
+          }
+        }
+      ]
     });
 
+    //Variables
+    this.data = {
+      levels: GameMaps,
+      selected: selected
+    };
+    
+    this.onSelect = onSelect;
+
+    this.ractive = Ractive({
+      target: this.$body[0],
+      template: `
+<ul id="modal-level-list" class="list-group my-list-group" style="max-height: calc(100vh - 280px); overflow-y: scroll;">
+  <li class="list-group-item {{#if selected == -1}}selected{{/if}}" data-index="{{i}}" on-click="levelSelect">None - None</li>
+  {{#each levels: i}}
+    <li class="list-group-item {{#if selected == i}}selected{{/if}}" data-index="{{i}}" on-click="levelSelect">{{module}} - {{name}}</li>
+  {{/each}}
+</ul>
+      `,
+      data: this.data,
+      on: {
+        levelSelect(ctx){
+          this.set('selected', ctx.node.dataset.index);
+        }
+      }
+    });
+
+    this.Show();
 
   }
 
