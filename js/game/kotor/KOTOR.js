@@ -40,7 +40,7 @@ class Game extends Engine {
     Game.canvas.style = { width: 0, height: 0};
     Game.context = Game.canvas.getContext( 'webgl' );
 
-    Game.rendererUpscaleFactor = 2;
+    Game.rendererUpscaleFactor = 1;
     Game.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: Game.canvas,
