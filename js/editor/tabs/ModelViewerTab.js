@@ -2,6 +2,7 @@ class ModelViewerTab extends EditorTab {
   constructor(file, isLocal = false){
     super();
     this.animLoop = false;
+    this.deltaTime = 0;
     console.log('Model Viewer');
     $('a', this.$tab).text('Model Viewer');
 
@@ -451,6 +452,7 @@ class ModelViewerTab extends EditorTab {
 
     let delta = this.clock.getDelta();
     this.controls.Update(delta);
+    this.deltaTime += delta;
     for(let i = 0; i < this.selectable.children.length; i++){
       let obj = this.selectable.children[i];
       if(obj instanceof THREE.AuroraModel){

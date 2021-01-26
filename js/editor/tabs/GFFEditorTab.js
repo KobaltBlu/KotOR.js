@@ -129,7 +129,7 @@ class GFFEditorTab extends EditorTab {
         let $rootUL = $('<ul class="gff-struct gff-root-struct" />');
         this.$gffContainer.append($scrollContainer);
         $scrollContainer.append($rootUL);
-        this.$gffContainer.perfectScrollbar();
+        this.$gffContainer.css({'overflow': 'auto'});
         this.parseStruct(this.gff.RootNode, $rootUL, true);
         this.tabLoader.SetMessage("Loading Complete");
         this.tabLoader.Dismiss();

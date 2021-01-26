@@ -25,7 +25,7 @@ class ModuleCamera extends ModuleObject {
     
   }
 
-  InitProperties( onLoad = null ){
+  InitProperties( onLoad = undefined ){
 
     if(this.template.RootNode.HasField('CameraID'))
       this.cameraID = this.template.GetFieldByLabel('CameraID').GetValue();
@@ -50,6 +50,9 @@ class ModuleCamera extends ModuleObject {
 
     this.initialized = true;
 
+    if(typeof onLoad == 'function')
+      onLoad();
+
   }
 
   toToolsetInstance(){
@@ -73,16 +76,16 @@ class ModuleCamera extends ModuleObject {
     );
     
     instance.AddField(
-      new Field(GFFDataTypes.ORIENTATION, 'Orientation')
-    ).SetOrientation(this.orientation);
+      new Field(GFFDataTypes.ORIENTATION, 'Orientation', this.orientation)
+    )
     
     instance.AddField(
       new Field(GFFDataTypes.FLOAT, 'Pitch', this.position.z)
     );
     
     instance.AddField(
-      new Field(GFFDataTypes.VECTOR, 'Position')
-    ).SetVector(this.position);
+      new Field(GFFDataTypes.VECTOR, 'Position', this.position)
+    );
 
     return instance;
 

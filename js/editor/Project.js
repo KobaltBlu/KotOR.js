@@ -1,3 +1,6 @@
+
+const DeepObject = require(path.join(app.getAppPath(), 'js/DeepObject.js'));
+
 class Project {
 
   constructor(directory){
@@ -22,14 +25,38 @@ class Project {
   }
 
   Load(onLoad = null){
-    try{
-      this.settings = require(path.join(this.directory, 'project.json'));
-      if(onLoad != null)
-        onLoad();
-    }catch(e){
-      console.error(e);
-      alert('Project Open Failed');
-      if(onLoad != null)
+
+    if (fs.existsSync(path.join(this.directory, 'project.json'))) {
+      try{
+        this.settings = require(path.join(this.directory, 'project.json'));
+
+        if(typeof this.settings != 'object'){
+          console.warn('Project.Load', 'Malformed project.json file data', this.settings);
+          this.settings = {};
+        }
+
+        this.settings = DeepObject.Merge(defaults, this.settings);
+
+        //Name Key Case Fix
+        if(this.settings.hasOwnProperty('Name')){
+          this.settings.name = this.settings.Name;
+          delete this.settings.Name;
+        }
+
+        if(typeof onLoad == 'function')
+          onLoad();
+      }catch(e){
+        console.error('Project.Load', e);
+        alert('Project.Load: Failed');
+        this.settings = DeepObject.Merge(defaults, {});
+        if(typeof onLoad == 'function')
+          onLoad();
+      }
+    }else{
+      alert('Project.Load: project.json not found!');
+      console.warn('Project.Load', 'project.json not found!');
+      this.settings = DeepObject.Merge(defaults, {});
+      if(typeof onLoad == 'function')
         onLoad();
     }
   }
@@ -71,11 +98,11 @@ class Project {
                 project.InitializeProject( () => {
                   loader.SetMessage("Loading Complete");
                   //When everything is done
-                  if(onSuccess != null)
+                  if(typeof onSuccess == 'function')
                     onSuccess();
                 });
               }else{
-                if(onSuccess != null)
+                if(typeof onSuccess == 'function')
                   onSuccess();
               }
             }
@@ -88,7 +115,7 @@ class Project {
       }catch(e){
         console.log(e);
         alert('Project Open Failed');
-        if(onSuccess != null)
+        if(typeof onSuccess == 'function')
           onSuccess();
       }
     });
@@ -99,20 +126,27 @@ class Project {
     switch(this.settings.type){
       case Project.Types.MODULE:
         //Initialize the Map Editor
-        this.InitEditor();
+        if(this.settings.module_editor.open)
+          this.InitEditor();
 
         //All done??? ok Complete
-        if(onComplete != null)
+        if(typeof onComplete == 'function')
           onComplete();
       break;
       case Project.Types.OTHER:
 
         //All done??? ok Complete
-        if(onComplete != null)
+        if(typeof onComplete == 'function')
           onComplete();
       break;
     }
     console.log('Project Init');
+
+    //Reopen files
+    for(let i = 0, len = this.settings.open_files.length; i < len; i++){
+      FileTypeManager.onOpenResource(this.settings.open_files[i]);
+    }
+
   }
 
   //Exports the finished project to a .mod file
@@ -126,7 +160,7 @@ class Project {
 
     projectExplorerTab.initialize();
       
-    if(onSuccess != null)
+    if(typeof onSuccess == 'function')
       onSuccess(this.files);
 
   }
@@ -174,6 +208,15 @@ class Project {
     //this.moduleEditor.Init();
   }
 
+  openModuleEditor(){
+    if(this.moduleEditor instanceof ModuleEditorTab){
+      tabManager.AddTab(this.moduleEditor);
+      this.moduleEditor.Show();
+    }else{
+      this.InitEditor();
+    }
+  }
+
   GetTemplatesByType ( restype = '' ) {
     let files = [];
 
@@ -185,11 +228,69 @@ class Project {
     return files;
   }
 
+  addToOpenFileList(editor_file = undefined){
+    if(editor_file instanceof EditorFile){
+      if(editor_file.getPath()){
+        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        if(index == -1){
+          this.settings.open_files.push(editor_file.getPath());
+          this.saveSettings();
+        }
+      }else{
+        //TODO Handle In Memory EditorFiles
+      }
+    }
+  }
+
+  removeFromOpenFileList(editor_file = undefined){
+    if(editor_file instanceof EditorFile){
+      if(editor_file.getPath()){
+        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        if(index >= 0){
+          this.settings.open_files.splice(index, 1);
+          this.saveSettings();
+        }
+      }else{
+        //TODO Handle In Memory EditorFiles
+      }
+    }
+  }
+
+  saveSettings(onSave = undefined){
+    try{
+      fs.writeFile(path.join(this.directory, 'project.json'),
+        JSON.stringify(this.settings, null, "\t"),
+        (err) => {
+          if(err){
+            console.error('Project.saveSettings', e);
+            return;
+          }
+
+          if(typeof onSave === 'function'){
+            onSave();
+          }
+        }
+      );
+    }catch(e){
+      console.error('Project.saveSettings', e);
+    }
+  }
+
 }
 
 Project.Types = {
   MODULE: 1,
   OTHER: 2
+}
+
+const defaults = {
+  name: '',
+  game: 1,
+  type: 1,
+  module_editor: {
+    open: false
+  },
+  open_files: [],
 }
 
 module.exports = Project;

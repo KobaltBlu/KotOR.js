@@ -615,6 +615,15 @@ if (typeof global.TopMenu == 'undefined') {
           window.close();
         }}
       ]},
+      {name: 'Project', items: [
+        {name: 'Open Module Editor', onClick: () => {
+          if(Global.Project instanceof Project){
+            Global.Project.openModuleEditor();
+          }else{
+            alert('Open or start a new project to use this feature');
+          }
+        }}
+      ]},
       {name: 'View', items: [
         {name: 'Left Pane Toggle', onClick: () => {
           $('#container').layout().toggle('west');

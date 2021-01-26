@@ -5,6 +5,8 @@ const app = require('electron').app || require('electron').remote.app;
 const path = require('path');
 const fs = require('fs');
 
+const DeepObject = require(path.join(app.getAppPath(), 'js/DeepObject.js'));
+
 /* @file
  * The ConfigManager class.
  */
@@ -24,7 +26,7 @@ class ConfigManager{
       //console.log('ConfigManager', json_path, _settings);
     }catch(e){ console.error('ConfigManager', e); }
 
-    this.options = this._mergeDeep(defaults, _settings);
+    this.options = DeepObject.Merge(defaults, _settings);
     this.cache();
 
     if(_settings == {}){
@@ -141,38 +143,6 @@ class ConfigManager{
     // Otherwise, return true
     return true;
   
-  }
-
-  /**
-   * Simple object check.
-   * @param item
-   * @returns {boolean}
-   */
-  _isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
-  }
-
-  /**
-   * Deep merge two objects.
-   * @param target
-   * @param ...sources
-   */
-  _mergeDeep(target, ...sources) {
-    if (!sources.length) return target;
-    const source = sources.shift();
-
-    if (this._isObject(target) && this._isObject(source)) {
-      for (const key in source) {
-        if (this._isObject(source[key])) {
-          if (!target[key]) Object.assign(target, { [key]: {} });
-          this._mergeDeep(target[key], source[key]);
-        } else {
-          Object.assign(target, { [key]: source[key] });
-        }
-      }
-    }
-
-    return this._mergeDeep(target, ...sources);
   }
 
   get(path = '', defaultValue = null){
@@ -330,14 +300,6 @@ class ConfigManager{
     //console.log('ConfigManager.save', 'Updating other processes.');
     ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
 
-  }
-
-  static GetAppDirectory(){
-    //if(isRunningInAsar()){
-    //  return path.dirname(app.getPath('exe'));
-    //}else{
-      return app.getAppPath();
-    //}
   }
 
 }

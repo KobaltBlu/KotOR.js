@@ -696,10 +696,8 @@ class Module {
 
               ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data) => {
                 new GFFObject(data, (git, rootNode) => {
-                  Game.module.git = git;
                   ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data) => {
                     new GFFObject(data, (are, rootNode) => {
-                      Game.module.are = are;
                       module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                       module.Mod_Area_list = [module.area];
                       module.area.module = module;
@@ -860,20 +858,20 @@ class Module {
     ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_IsSaveGame', 0) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_MinPerHour', this.Mod_MinPerHour) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_Name'), this.Mod_Name );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnAcquirItem', this.onAcquirItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnActvtItem', this.onActvItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientEntr', this.onClientEntr) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientLeav', this.onClientLeav) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnHeartbeat', this.onHeartbeat) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModLoad', this.onModLoad) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModStart', this.onModStart) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDeath', this.onPlrDeath) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDying', this.onPlrDying) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrLvlUp', this.onPlrLvlUp) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrRest', this.onPlrRest) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnSpawnBtnDn', this.onSpawnBtnDn) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUnAqreItem', this.onUnAqreItem) );
-    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUsrDefined', this.onUsrDefined) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnAcquirItem', this.scripts.onAcquirItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnActvtItem', this.scripts.onActvItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientEntr', this.scripts.onClientEntr) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientLeav', this.scripts.onClientLeav) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnHeartbeat', this.scripts.onHeartbeat) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModLoad', this.scripts.onModLoad) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModStart', this.scripts.onModStart) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDeath', this.scripts.onPlrDeath) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDying', this.scripts.onPlrDying) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrLvlUp', this.scripts.onPlrLvlUp) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrRest', this.scripts.onPlrRest) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnSpawnBtnDn', this.scripts.onSpawnBtnDn) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUnAqreItem', this.scripts.onUnAqreItem) );
+    ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUsrDefined', this.scripts.onUsrDefined) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartDay', this.Mod_StartDay) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartHour', this.Mod_StartHour) );
     ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartMonth', this.Mod_StartMonth) );

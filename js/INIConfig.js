@@ -1,3 +1,6 @@
+
+const DeepObject = require(path.join(app.getAppPath(), 'js/DeepObject.js'));
+
 class INIConfig {
 
   constructor( ini_path = null, defaults = {} ){
@@ -45,40 +48,8 @@ class INIConfig {
 
     }
 
-    this.options = this._mergeDeep(this.defaults, this.options);
+    this.options = DeepObject.Merge(this.defaults, this.options);
 
-  }
-
-  /**
-   * Simple object check.
-   * @param item
-   * @returns {boolean}
-   */
-  _isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
-  }
-
-  /**
-   * Deep merge two objects.
-   * @param target
-   * @param ...sources
-   */
-  _mergeDeep(target, ...sources) {
-    if (!sources.length) return target;
-    const source = sources.shift();
-
-    if (this._isObject(target) && this._isObject(source)) {
-      for (const key in source) {
-        if (this._isObject(source[key])) {
-          if (!target[key]) Object.assign(target, { [key]: {} });
-          this._mergeDeep(target[key], source[key]);
-        } else {
-          Object.assign(target, { [key]: source[key] });
-        }
-      }
-    }
-
-    return this._mergeDeep(target, ...sources);
   }
 
   // Code copied from linked Stack Overflow question

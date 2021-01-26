@@ -657,6 +657,13 @@ button, .btn-default {
     border-color: #2196F3;
 }
 
+.btn-forge-block {
+    display: block;
+    width: 100%;
+    padding: 5px 9px;
+    margin: 0;
+}
+
 #tabs-container {
 	height: 100%;
 }
@@ -1115,6 +1122,21 @@ table.twoda > tbody > tr > td:nth-child(1) {
     background: #212121;
     position: sticky;
     left: 0;
+}
+
+table.twoda > tbody > tr > td:nth-child(1):before {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 1px;
+    position: absolute;
+    top: 0;
+    left: -1px;
+    background: #192631;
+}
+
+table.twoda > tbody > tr.focus > td:nth-child(1):before {
+    background: #337ab7;
 }
 
 table.twoda > tbody > tr.focus > td {

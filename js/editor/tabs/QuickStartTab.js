@@ -20,7 +20,7 @@ class QuickStartTab extends EditorTab {
       $.each(Config.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
-          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
+          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
 
           $('a', $recentProject).on('click', (e) => {
             e.preventDefault();
@@ -62,7 +62,7 @@ class QuickStartTab extends EditorTab {
         let payload = await dialog.showOpenDialog({
           properties: ['openFile'],
           filters: [
-            {name: 'KMS Project', extensions: ['json']}
+            {name: 'Forge Project', extensions: ['json']}
           ],
           properties: ['createDirectory'],
         });
@@ -88,7 +88,7 @@ class QuickStartTab extends EditorTab {
       $.each(Config.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
-          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.Name+'</a></span></li>');
+          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
 
           $('a', $recentProject).on('click', (e) => {
             e.preventDefault();

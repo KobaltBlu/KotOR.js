@@ -24,35 +24,30 @@ class FileTypeManager {
 
     let recent_files = Config.getRecentFiles();
 
-    //Check to see if the EditorFile has the path variable set.
-    //If not it's because the file was created in memory and hasn't been saved to the HDD yet
-    if(res.path && !res.archive_path){
-      let pjIndex = recent_files.indexOf(res.path);
-      if (pjIndex > -1) {
-        recent_files.splice(pjIndex, 1);
+    //Update the opened files list
+    if(res.getPath()){
+      let index = recent_files.indexOf(res.getPath());
+      if (index >= 0) {
+        recent_files.splice(index, 1);
       }
 
       //Append this file to the beginning of the list
-      recent_files.unshift(res.path);
+      recent_files.unshift(res.getPath());
       Config.save(null, true); //Save the configuration silently
-    }else if(res.archive_path){
-      let tmp_path = res.archive_path + '?' + res.resref + '.' + res.ext;
-      let pjIndex = recent_files.indexOf(tmp_path);
-      if (pjIndex > -1) {
-        recent_files.splice(pjIndex, 1);
-      }
 
-      //Append this file to the beginning of the list
-      recent_files.unshift(tmp_path);
-      Config.save(null, true); //Save the configuration silently
+      //Notify the project we have opened a new file
+      if(Global.Project instanceof Project){
+        Global.Project.addToOpenFileList(res);
+      }
     }
 
-    console.log(res, ext);
+    console.log('FileTypeManager.onOpenResource', res, ext);
 
     switch(ext){
       case 'lyt':
       case 'vis':
       case 'txi':
+      case 'txt':
         let textTab = tabManager.AddTab(new TextEditorTab(res));
       break;
       case '2da':
@@ -60,7 +55,6 @@ class FileTypeManager {
       break;
       case 'dlg':
         let newDLGTab = tabManager.AddTab(new DLGEditorTab(res));
-      //  newUTCTab.OpenFile(file);
       break;
       case 'lip':
         let lipTab = tabManager.AddTab(new LIPEditorTab(res));
@@ -81,8 +75,6 @@ class FileTypeManager {
         let ncsTab = tabManager.AddTab(new ScriptEditorTab(res));
       break;
       case 'tpc':
-        let tpcTab = tabManager.AddTab(new ImageViewerTab(res));
-      break;
       case 'tga':
         let tgaTab = tabManager.AddTab(new ImageViewerTab(res));
       break;
@@ -101,10 +93,18 @@ class FileTypeManager {
       case 'wav':
       case 'mp3':
         inlineAudioPlayer.OpenAudio(res);
+
+        if(Global.Project instanceof Project){
+          Global.Project.removeFromOpenFileList(res);
+        }
       break;
       default:
-        NotificationManager.Notify(NotificationManager.Types.WARNING, "File Type: ("+ext+") not yet supported");
-        console.log('Unknown', res, ext);
+        NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
+        console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
+        
+        if(Global.Project instanceof Project){
+          Global.Project.removeFromOpenFileList(res);
+        }
       break;
     }
 

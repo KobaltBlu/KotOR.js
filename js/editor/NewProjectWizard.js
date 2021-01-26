@@ -1,366 +1,497 @@
 class NewProjectWizard extends Wizard {
 
   constructor(){
-    super();
-
-    //Variables
-    this.project_name = 'New Project';
-    this.parent_directory = Config.get('Projects_Directory');
-    this.project_location = '';
-    this.project_type = Project.Types.MODULE;
-    this.module_template = -1;
-
-    //Load the HTML from the template file
-    TemplateEngine.GetTemplateAsync('templates/modal-new-project.html', null, (tpl) => {
-      this.$wizard = $(tpl);
-
-      console.log('New Project Wizard', this);
-
-      //DOM Elements
-      this.$project_name = $('#modal-new-project-name', this.$wizard).val(this.project_name);
-      this.$project_directory = $('#modal-new-project-directory', this.$wizard);
-      this.$project_directory_browse = $('#modal-new-project-directory-browse', this.$wizard);
-      this.$project_location = $('#modal-new-project-location', this.$wizard);
-      this.$project_type = $('#modal-new-project-type', this.$wizard);
-
-      this.$module_template = $('#modal-new-project-template', this.$wizard);
-
-      this.$alert = $('<div class="alert-holder" />');
-
-      this.$project_name.parent().parent().prepend(this.$alert);
-
-      this.$project_name.keypress(function (e) {
-          let regex = new RegExp("^[a-zA-Z0-9\-\_\s]+$");
-          let keyCode = e.charCode ? e.which : e.charCode;
-          let str = String.fromCharCode(keyCode);
-          if (regex.test(str) || keyCode == 32) {
-            return true;
+    super({
+      'title': 'New Project Wizard',
+      buttons: [
+        {
+          name: 'Create Project',
+          onClick: () => {
+            console.log(this);
+            this.onCreateProject();
           }
-
-          e.preventDefault();
-          return false;
-      }).on('input', (e) => {
-        this.project_name = this.$project_name.val().trim();
-        this.UpdateProjectLocation();
-      });
-
-      this.$project_directory.keypress(function (e) {
-          let regex = new RegExp('^[a-zA-Z0-9\-\_\s\\\\/\]+$');
-          let keyCode = e.charCode ? e.which : e.charCode;
-          let str = String.fromCharCode(keyCode);
-          if (regex.test(str) || keyCode == 32) {
-            return true;
-          }
-
-          e.preventDefault();
-          return false;
-      }).on('input', (e) => {
-        this.parent_directory = path.normalize(this.$project_directory.val());
-        this.$project_directory.val(this.parent_directory);
-        this.UpdateProjectLocation();
-      }).val(this.parent_directory);
-      this.UpdateProjectLocation();
-
-      this.$project_directory_browse.on('click', async (e) => {
-        e.preventDefault();
-        let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
-        if(!payload.canceled && payload.filePaths.length){
-          console.log(payload.filePaths[0]);
-          this.parent_directory = payload.filePaths[0];
-          this.$project_directory.val(this.parent_directory);
         }
-        this.UpdateProjectLocation();
-      });
+      ]
+    });
 
-      this.$project_location.on('change', () => {
-        console.log('Input Changed');
-        this.project_location = this.$project_location.val();
-      });
+    this.data = {
+      name: 'New Project',
+      project_directory: Config.get('Projects_Directory'),
+      project_location: '',
+      project_type: Project.Types.MODULE,
+      template_id: -1,
+      template_name: 'None',
+      module_name: 'mm01aa',
+      export_types: {
+        ifo: true,
+        are: true,
+        git: true,
+     //------------//
+        pth: true,
+        vis: true,
+        lyt: true,
+        dlg: true,
+        fac: true,
+        ncs: true,
+        nss: true,
+        utc: true,
+        utd: true,
+        ute: true,
+        utm: true,
+        utp: true,
+        uts: true,
+        utt: true,
+        utw: true,
+        other: true
+      },
+      alert: '',
+    };
 
-      this.$project_type.on('change', () => {
-        this.project_type = parseInt(this.$project_type.val());
-      });
+    this.ractive = Ractive({
+      target: this.$body[0],
+      template: `
+{{#if alert}}
+  <div class="alert alert-warning alert-dismissible shake" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close" on-click="dismissAlert"><span aria-hidden="true">&times;</span></button>
+    <span id="alert-msg">{{alert}}</span>
+  </div>
+{{/if}}
+<div class="row">
+  <div class="col-xs-12">
+    <div class="form-group">
+      <label for="modal-new-project-name">Project Name</label>
+      <input id="modal-new-project-name" type="text" value="{{name}}" on-blur-input-change-keydown="inputNameValidator" />
+    </div>
 
-      this.UpdateProjectLocation();
+    <div class="form-group">
+      <label for="modal-new-project-location">Project Location</label>
+      <input id="modal-new-project-location" type="text" value="{{project_location}}" disabled />
+    </div>
 
-      this.$module_template.on('click', (e) => {
-        e.preventDefault();
+    <div class="form-group">
+      <label for="modal-new-project-directory">Projects Directory</label>
+      <div class="input-group">
+        <input id="modal-new-project-directory" type="text" value="{{project_directory}}" />
+        <span class="input-group-btn">
+          <button id="modal-new-project-directory-browse" class="btn btn-default" type="button" on-click="btnProjectDirectoryBrowse">Browse</button>
+        </span>
+      </div>
+    </div>
 
-        let levelSelectWizard = new LevelSelectWizard(this.module_template, (id, level) => {
-          console.log('Level Selected', id, level, this);
-          this.module_template = id;
-          this.$module_template.val('Template: '+level.module);
-        });
+    <div class="form-group">
+      <label for="modal-new-project-type">Project Type</label>
+      <select id="modal-new-project-type" value="{{project_type}}">
+        <option value="1">Module</option>
+        <option value="2">Generic</option>
+      </select>
+    </div>
+    
+    <br>
+    {{#if project_type == 1}}
+      <h4>Module Options</h4>
+      <hr />
+      <div class="row">
+        <div class="col-xs-6">
+          <label>Area Name</label>
+          <input id="modal-new-project-area-name" type="text" on-input-change-click-blur="inputResRefValidator" data-key="module_name" value="{{module_name}}" />
+        </div>
+        <div class="col-xs-6">
+          <label>Module Template</label>
+          <input id="modal-new-project-template" class="btn btn-default btn-forge-block" type="button" on-click="levelSelect" value="Template: {{template_name}}" />
+        </div>
+      </div>
+      {{#if template_id >= 0}}
+      <br>
+      <label>Export: File Types </label>
+      <div class="row text-center">
+        <div class="col-xs-2">
+          <label>.pth</label>
+          <input type="checkbox" checked="{{export_types.pth}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.vis</label>
+          <input type="checkbox" checked="{{export_types.vis}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.lyt</label>
+          <input type="checkbox" checked="{{export_types.lyt}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.dlg</label>
+          <input type="checkbox" checked="{{export_types.dlg}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.ncs</label>
+          <input type="checkbox" checked="{{export_types.ncs}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.nss</label>
+          <input type="checkbox" checked="{{export_types.nss}}" />
+        </div>
+        <!-- Blueprints -->
+        <div class="col-xs-2">
+          <label>.utc</label>
+          <input type="checkbox" checked="{{export_types.utc}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.utd</label>
+          <input type="checkbox" checked="{{export_types.utd}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.ute</label>
+          <input type="checkbox" checked="{{export_types.ute}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.utm</label>
+          <input type="checkbox" checked="{{export_types.utm}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.utp</label>
+          <input type="checkbox" checked="{{export_types.utp}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.uts</label>
+          <input type="checkbox" checked="{{export_types.uts}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.utt</label>
+          <input type="checkbox" checked="{{export_types.utt}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.utw</label>
+          <input type="checkbox" checked="{{export_types.utw}}" />
+        </div>
+        <div class="col-xs-2">
+          <label>.fac</label>
+          <input type="checkbox" checked="{{export_types.fac}}" />
+        </div>
+        <div class="col-xs-6 text-left">
+          <label>Other Files</label>
+          <input type="checkbox" checked="{{export_types.other}}" />
+        </div>
+      </div>
+      {{/if}}
+    {{elseif project_type == 2}}
+    {{/if}}
 
-      });
+  </div>
+</div>`,
+      data: this.data,
+      on: {
+        dismissAlert(ctx){
+          this.set('alert', '');
+        },
+        inputNameValidator(ctx){
+          let e = ctx.event;
+          let regex = new RegExp("^[a-zA-Z0-9\-\_\s]+$");
+          let keyCode = !e.charCode ? e.which : e.charCode;
+          if(keyCode){
+            let str = String.fromCharCode(keyCode);
+            let validKeys = [8, 27, 32, 37, 38, 39, 40, 46]
+            if (regex.test(str) || validKeys.indexOf(keyCode) >= 0) {
+              return true;
+            }
 
-      $('#modal-new-project-create', this.$wizard).on('click', (e) => {
-        e.preventDefault();
-        if(this.project_name != ""){
+            e.preventDefault();
+            return false;
+          }else{
+            this.set('name', this.get('name').replace(/([^a-zA-Z0-9\-\_\s]+)/gi, ''));
+            if(e instanceof FocusEvent){
+              this.set('name', this.get('name').trim());
+            }
+          }
+        },
+        inputResRefValidator(ctx){
+          if(ctx.node.dataset.key){
+            this.set(ctx.node.dataset.key, this.get(ctx.node.dataset.key).replace(/([^a-zA-Z0-9\_]+)/gi, '').trim().substr(0, 16));
+          }
+        },
+        levelSelect(ctx){
+          new LevelSelectWizard(this.data.template_id, (id, level) => {
+            this.set('template_id', id);
+            this.set('template_name', level.module);
+          });
+        },
+        async btnProjectDirectoryBrowse(ctx){
+          let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
+          if(!payload.canceled && payload.filePaths.length){
+            this.set('project_directory', payload.filePaths[0]);
+          }
+        }
+      },
+      observe: {
+        show ( value ) {
+          //console.log( `show changed to '${value}'` )
+        },
+        'name project_directory': {
+          handler ( value, old, pth, idx ) {
+            this.set('project_location', path.join(
+              this.get('project_directory'), this.get('name').replace(/\s+/g, '-').toLowerCase()
+            ));
+          },
+          init: true,
+          strict: true
+        }
+      }
+    });
 
-          if(this.DirectoryExists(this.parent_directory)){
+    // console.log(this.data);
+    // console.log(this);
 
-            if (this.DirectoryExists(this.project_location)) {
-              //The project directory already exists: Check to see if it already
-              //contains a project.json
-              if(this.FileExists(path.join(
-                this.project_location,
-                'project.json'
-              ))){
-                this.Alert('A project already exists in this directory');
+  }
+
+  canExportFileType(res){
+    let export_types = Object.keys(this.data.export_types);
+    for(let i = 0, len = export_types.length; i < len; i++){
+      let export_res_key = export_types[i];
+      if(ResourceTypes[export_res_key] == res.ResType){
+        return this.data.export_types[export_res_key] ? true : false;
+      }
+    }
+
+    return this.data.export_types['other'] ? true : false;
+  }
+
+  onCreateProject(){
+    if(this.data.name.trim().length){
+
+      if(this.directoryExists(this.data.project_directory)){
+
+        if (this.directoryExists(this.data.project_location)) {
+          //The project directory already exists: Check to see if it already
+          //contains a project.json
+          if(this.fileExists(path.join(
+            this.data.project_location,
+            'project.json'
+          ))){
+            this.showAlertMessage('A project already exists in this directory');
+          }else{
+            this.createProject(()=>{
+
+              console.log('Template', this.data.template_id, this);
+
+              if(this.data.template_id != -1){
+                console.log('From Template')
+                this.Hide();
+                Global.Project = new Project(this.data.project_location);
+                Global.Project.Open(() => {
+                  Global.Project.module = new Module();
+                  Global.Project.module.Save();
+
+                  loader.SetMessage("Project Loaded");
+                  loader.Dismiss();
+                });
+
               }else{
-                this.CreateProject(()=>{
+                console.log('Not From Template')
+                this.Hide();
+                Global.Project = new Project(this.data.project_location);
+                Global.Project.Open(() => {
+                  Global.Project.module = new Module();
+                  Global.Project.module.Save();
 
-                  console.log('Template', this.module_template, this);
-
-                  if(this.module_template != -1){
-                    console.log('From Template')
-                    this.Hide();
-                    Global.Project = new Project(this.project_location);
-                    Global.Project.Open(() => {
-                      Global.Project.module = new Module();
-                      Global.Project.module.Save();
-
-                      loader.SetMessage("Project Loaded");
-                      loader.Dismiss();
-                    });
-
-                  }else{
-                    console.log('Not From Template')
-                    this.Hide();
-                    Global.Project = new Project(this.project_location);
-                    Global.Project.Open(() => {
-                      Global.Project.module = new Module();
-                      Global.Project.module.Save();
-
-                      loader.SetMessage("Project Loaded");
-                      loader.Dismiss();
-                    });
-                  }
-
+                  loader.SetMessage("Project Loaded");
+                  loader.Dismiss();
                 });
               }
 
-            }else{
-              //Create the new project directory
-              fs.mkdirSync(this.project_location);
+            });
+          }
 
-              this.CreateProject(()=>{
-                this.Hide();
-                Global.Project = new Project(this.project_location);
+        }else{
+          //Create the new project directory
+          fs.mkdirSync(this.data.project_location);
 
-                //Load the project so that the template builder can access the projects variables
-                if(this.module_template != -1){
-                  let module_name = GameMaps[this.module_template].module.split('.')[0];
-                  console.log('Creating Project and Exporting Files', GameMaps[this.module_template], module_name);
+          this.createProject(()=>{
+            this.Hide();
+            Global.Project = new Project(this.data.project_location);
 
-                  Game.module = new Module();
-                  Module.GetModuleProjectArchives(module_name).then( (archives) => {
-                    let archiveLoop = new AsyncLoop({
-                      array: archives,
-                      onLoop: (archive, asyncLoop) => {
-                        if(archive instanceof RIMObject){
-                          //Loop though the resources inside the RIMObject and export them to the project directory
-                          let resourceLoop = new AsyncLoop({
-                            array: archive.Resources,
-                            onLoop: (resource, asyncLoopR) => {
-                              if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
-                                archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR.next();
-                                });
-                              }else{
-                                archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR.next();
-                                });
-                              }
+            //Load the project so that the template builder can access the projects variables
+            if(this.data.template_id != -1){
+              let module_name = GameMaps[this.data.template_id].module.split('.')[0];
+              console.log('Creating Project and Exporting Files', GameMaps[this.data.template_id], module_name);
+
+              Game.module = new Module();
+              Module.GetModuleProjectArchives(module_name).then( (archives) => {
+                let archiveLoop = new AsyncLoop({
+                  array: archives,
+                  onLoop: (archive, asyncLoop) => {
+                    if(archive instanceof RIMObject){
+                      //Loop though the resources inside the RIMObject and export them to the project directory
+                      let resourceLoop = new AsyncLoop({
+                        array: archive.Resources,
+                        onLoop: (resource, asyncLoopR) => {
+                          if(this.canExportFileType(resource)){
+                            if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
+                              archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
+                                asyncLoopR.next();
+                              });
+                            }else{
+                              archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
+                                asyncLoopR.next();
+                              });
                             }
-                          });
-                          resourceLoop.iterate(() => {
-                            asyncLoop.next();
-                          });
-                        }else if(archive instanceof ERFObject){
-                          //Loop though the resources inside the ERFObject and export them to the project directory
-                          let resourceLoop = new AsyncLoop({
-                            array: archive.KeyList,
-                            onLoop: (resource, asyncLoopR) => {
-                              if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
-                                archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR.next();
-                                });
-                              }else{
-                                archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
-                                  asyncLoopR.next();
-                                });
-                              }
-                            }
-                          });
-                          resourceLoop.iterate(() => {
-                            asyncLoop.next();
-                          });
-                        }else{
-                          asyncLoop.next();
+                          }
                         }
-                      }
-                    });
-                    archiveLoop.iterate(() => {
-                      //Module.BuildFromProject(GameMaps[this.module_template].module.split('.')[0], () => {  });
-                      fs.readFile(path.join(Global.Project.directory, 'module.ifo'), (err, ifo_data) => {
-                        new GFFObject(ifo_data, (gff, rootNode) => {
+                      });
+                      resourceLoop.iterate(() => {
+                        asyncLoop.next();
+                      });
+                    }else if(archive instanceof ERFObject){
+                      //Loop though the resources inside the ERFObject and export them to the project directory
+                      let resourceLoop = new AsyncLoop({
+                        array: archive.KeyList,
+                        onLoop: (resource, asyncLoopR) => {
+                          if(this.canExportFileType(resource)){
+                            if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
+                              archive.exportRawResource(Global.Project.directory, resource.ResRef, resource.ResType, () => {
+                                asyncLoopR.next();
+                              });
+                            }else{
+                              archive.exportRawResource(path.join(Global.Project.directory, 'files'), resource.ResRef, resource.ResType, () => {
+                                asyncLoopR.next();
+                              });
+                            }
+                          }
+                        }
+                      });
+                      resourceLoop.iterate(() => {
+                        asyncLoop.next();
+                      });
+                    }else{
+                      asyncLoop.next();
+                    }
+                  }
+                });
+                archiveLoop.iterate(() => {
+                  //Module.BuildFromProject(GameMaps[this.data.template_id].module.split('.')[0], () => {  });
+                  fs.readFile(path.join(Global.Project.directory, 'module.ifo'), (err, ifo_data) => {
+                    new GFFObject(ifo_data, (ifo, rootNode) => {
 
-                          let originalAreaName = gff.GetFieldByLabel('Mod_Entry_Area').GetValue();
+                      let originalAreaName = ifo.GetFieldByLabel('Mod_Entry_Area').GetValue();
 
-                          let Mod_Area_list = gff.GetFieldByLabel('Mod_Area_list');
-                          Mod_Area_list.ChildStructs = [];
+                      let Mod_Area_list = ifo.GetFieldByLabel('Mod_Area_list');
+                      Mod_Area_list.ChildStructs = [];
 
-                          let areaStruct = new Struct();
-                          areaStruct.AddField( new Field(GFFDataTypes.RESREF, 'Area_Name') ).SetValue('area_001');
-                          Mod_Area_list.AddChildStruct(areaStruct);
+                      let areaStruct = new Struct();
+                      areaStruct.AddField( new Field(GFFDataTypes.RESREF, 'Area_Name') ).SetValue(this.data.module_name);
+                      Mod_Area_list.AddChildStruct(areaStruct);
 
-                          gff.GetFieldByLabel('Mod_Entry_Area').SetValue('area_001');
-                          gff.path = Global.Project.directory;
-                          gff.Save(path.join(Global.Project.directory, 'module.ifo'), () => {
-                            //Rename the Extracted ARE file
-                            fs.rename(path.join(Global.Project.directory, originalAreaName+'.are'), path.join(Global.Project.directory, 'area_001.are'), function(err) {
-                              //Rename the Extracted GIT file
-                              fs.rename(path.join(Global.Project.directory, originalAreaName+'.git'), path.join(Global.Project.directory, 'area_001.git'), function(err) {
-                                //Rename the Extracted PTH file
-                                fs.rename(path.join(Global.Project.directory, 'files/'+originalAreaName+'.pth'), path.join(Global.Project.directory, 'files/area_001.pth'), function(err) {
-                                  //Extract and rename the original VIS file
-                                  ResourceLoader.loadResource(ResourceTypes['vis'], originalAreaName, (visData) => {
-                                    fs.writeFile(path.join(Global.Project.directory, 'files/area_001.vis'), visData, (err) => {
-                                      //Extract and rename the original LYT file
-                                      ResourceLoader.loadResource(ResourceTypes['lyt'], originalAreaName, (visData) => {
-                                        fs.writeFile(path.join(Global.Project.directory, 'files/area_001.lyt'), visData, (err) => {
-                                          Global.Project.Open(() => {
-                                            //Update the project to update the module variables
-                                            Global.Project.InitializeProject( () => {
-                                              //When everything is done
-                                              loader.SetMessage("Project Loaded");
-                                              loader.Dismiss();
-                                            });
-                                          });
-                                        })
+                      ifo.GetFieldByLabel('Mod_Entry_Area').SetValue(this.data.module_name);
+                      ifo.path = Global.Project.directory;
+                      ifo.Save(path.join(Global.Project.directory, 'module.ifo'), () => {
+                        //Rename the Extracted ARE file
+                        fs.rename(path.join(Global.Project.directory, originalAreaName+'.are'), path.join(Global.Project.directory, `${this.data.module_name}.are`), (err) => {
+                          //Rename the Extracted GIT file
+                          fs.rename(path.join(Global.Project.directory, originalAreaName+'.git'), path.join(Global.Project.directory, `${this.data.module_name}.git`), (err) => {
+                            //Rename the Extracted PTH file
+                            fs.rename(path.join(Global.Project.directory, 'files', originalAreaName+'.pth'), path.join(Global.Project.directory, 'files', `${this.data.module_name}.pth`), (err) => {
+                              //Extract and rename the original VIS file
+                              ResourceLoader.loadResource(ResourceTypes['vis'], originalAreaName, (visData) => {
+                                fs.writeFile(path.join(Global.Project.directory, 'files', `${this.data.module_name}.vis`), visData, (err) => {
+                                  //Extract and rename the original LYT file
+                                  ResourceLoader.loadResource(ResourceTypes['lyt'], originalAreaName, (visData) => {
+                                    fs.writeFile(path.join(Global.Project.directory, 'files', `${this.data.module_name}.lyt`), visData, (err) => {
+                                      Global.Project.Open(() => {
+                                        //Update the project to update the module variables
+                                        Global.Project.InitializeProject( () => {
+                                          //When everything is done
+                                          loader.SetMessage("Project Loaded");
+                                          loader.Dismiss();
+                                        });
                                       });
                                     })
                                   });
-                                });
+                                })
                               });
                             });
                           });
                         });
                       });
-                      
                     });
                   });
+                  
+                });
+              });
 
-                }else{
-                  Game.module = new Module();
-                  Game.module.Mod_Entry_Area = 'area_001';
-                  Game.module.area._name = 'area_001';
+            }else{
+              Game.module = new Module();
+              Game.module.Mod_Entry_Area = this.data.module_name;
+              Game.module.area._name = this.data.module_name;
 
-                  let ifo = Game.module.toolsetExportIFO();
-                  let are = Game.module.area.toolsetExportARE();
-                  let git = Game.module.area.toolsetExportGIT();
+              let ifo = Game.module.toolsetExportIFO();
+              let are = Game.module.area.toolsetExportARE();
+              let git = Game.module.area.toolsetExportGIT();
 
-                  ifo.Save( path.join(Global.Project.directory, 'module.ifo') );
-                  are.Save( path.join(Global.Project.directory, Game.module.area._name+'.are') );
-                  git.Save( path.join(Global.Project.directory, Game.module.area._name+'.git') );
+              ifo.Save( path.join(Global.Project.directory, 'module.ifo') );
+              are.Save( path.join(Global.Project.directory, Game.module.area._name+'.are') );
+              git.Save( path.join(Global.Project.directory, Game.module.area._name+'.git') );
 
-                  Global.Project.Open(() => {
-                    Global.Project.InitializeProject( () => {
-                      //When everything is done
-                      loader.SetMessage("Project Loaded");
-                      loader.Dismiss();
-                    });
-                  });
-                }
-              }, true);
+              Global.Project.Open(() => {
+                Global.Project.InitializeProject( () => {
+                  //When everything is done
+                  loader.SetMessage("Project Loaded");
+                  loader.Dismiss();
+                });
+              });
             }
-
-          }else{
-            this.Alert('You have selected an incorrect path for the parent directory');
-          }
-
-        }else{
-          this.Alert('Your project name is blank');
+          }, true);
         }
 
-      });
+      }else{
+        this.showAlertMessage('You have selected an incorrect path for the parent directory');
+      }
 
-      //Add the new wizard to the DOM
-      $('body').append(this.$wizard);
-      this.$wizard.filter('.modal').modal({
-        backdrop: 'static',
-        keyboard: false
-      });
-
-    });
-
+    }else{
+      this.showAlertMessage('Your project name cannot be blank');
+    }
   }
 
-  Alert(msg = ""){
-    let $newAlert = $('<div class="alert alert-warning alert-dismissible shake" role="alert">'+
-  '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>'+
-  '<span id="alert-msg">'+msg+'</span>'+
-'</div>');
-    this.$alert.html('').append($newAlert);
-
-    //this.$alert_msg = $('#alert-msg', this.$alert);)
-    //this.$alert_msg.text(msg);
-    this.$alert.show();
+  showAlertMessage(message = ""){
+    this.ractive.set('alert', '');
+    this.ractive.set('alert', message);
   }
 
-  CreateProject(onComplete = null){
+  createProject(onComplete = null){
     //Try to create the files directory
     try{
       fs.mkdirSync(path.join(
-        this.project_location,
+        this.data.project_location,
         'files'
       ));
-    }catch(e){ console.error('NewProjectWizard.CreateProject', e); }
+    }catch(e){ console.error('NewProjectWizard.createProject', e); }
 
     let project_data = {
-      Name: this.project_name,
+      Name: this.data.name,
       game: app_profile.launch.args.gameChoice,
-      type: this.project_type
+      type: this.data.project_type
     };
 
     //Create project.json
     fs.writeFile(path.join(
-      this.project_location,
+      this.data.project_location,
       'project.json'
-    ), JSON.stringify(project_data), function(err) {
-        if(err) {
-            return console.log('save project', err);
-        }
+    ), JSON.stringify(project_data), (err) => {
+      if(err)
+        return console.log('save project', err);
 
-        if(onComplete)
-          onComplete();
-
+      if(typeof onComplete == 'function')
+        onComplete();
     });
   }
 
-  DirectoryExists(dir){
+  directoryExists(dir){
     console.log('Checking Directory', dir);
     try{
       return fs.lstatSync(dir).isDirectory();
     }catch(e){ return false; }
   }
 
-  FileExists(file){
+  fileExists(file){
     console.log('Checking File', file);
     try{
       return fs.lstatSync(file).isFile();
     }catch(e){ return false; }
-  }
-
-  UpdateProjectLocation(){
-
-    this.$project_location.val(path.join(
-        this.parent_directory,
-        this.project_name.replace(/\s+/g, '-').toLowerCase()
-    ));
-    this.$project_location.trigger('change');
   }
 
 }

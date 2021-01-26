@@ -49,6 +49,17 @@ class EditorFile {
 
   }
 
+  getPath(){
+    //Check to see if the EditorFile has the path variable set.
+    //If not it's because the file was created in memory and hasn't been saved to the HDD yet
+    if(this.path && !this.archive_path){
+      return this.path;
+    }else if(this.archive_path){
+      return this.archive_path + '?' + this.resref + '.' + this.ext;
+    }
+    return undefined;
+  }
+
   readFile( onLoad = null ){
 
     if(this.reskey == ResourceTypes.mdl || this.reskey == ResourceTypes.mdx){

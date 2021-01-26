@@ -26,7 +26,7 @@ class VerticalTabs {
       });
 
 
-      this.$tabs.perfectScrollbar().hide();
+      this.$tabs.css({'overflow': 'auto'}).hide();
       this.$tabBtns.first().click();
 
     }

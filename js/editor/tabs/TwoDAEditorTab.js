@@ -47,7 +47,7 @@ class TwoDAEditorTab extends EditorTab {
     this.$table.append(this.$tableHeader).append(this.$tableBody);
     this.$tabContent.append(this.$table);
 
-    this.$tabContent.perfectScrollbar();
+    this.$tabContent.css({'overflow': 'auto'});
 
     $('tr', this.$tableBody).off('click').on('click', (e) => {
       $('tr', this.$tableBody).removeClass('focus').removeClass('focus-before').removeClass('focus-after');

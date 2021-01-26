@@ -133,8 +133,10 @@ class ModuleEditorTab extends EditorTab {
 
     this.walkmeshVisibility = false;
     this.isDestroyed = false;
+    this.moduleInitialized = false;
 
     /* RENDERER Global variables */
+    this.deltaTime = 0;
     this.canvas = null;
     this.engine = null;
     this.audio = null;
@@ -241,13 +243,32 @@ class ModuleEditorTab extends EditorTab {
     //frustum.intersectsObject( object )
   }
 
+  Show(){
+    super.Show();
+    this.Render();
+
+    if(Global.Project instanceof Project){
+      Global.Project.settings.module_editor.open = true;
+      Global.Project.saveSettings();
+    }
+  }
+
+  Remove(){
+    super.Remove();
+
+    if(Global.Project instanceof Project){
+      Global.Project.settings.module_editor.open = false;
+      Global.Project.saveSettings();
+    }
+  }
+
   Render(){
     if(this.isDestroyed)
       return;
 
     requestAnimationFrame(  () => { this.Render(); }  );
 
-    if(!this.visible)
+    if(!this.visible || !this.moduleInitialized)
       return;
 
     this.axes.enabled = this.axes.visible;
@@ -255,6 +276,7 @@ class ModuleEditorTab extends EditorTab {
     let delta = this.clock.getDelta();
     //this.axes.update();
     this.controls.Update(delta);
+    this.deltaTime += delta;
 
     try{
       //editor3d.selectionBox.update();
@@ -325,7 +347,9 @@ class ModuleEditorTab extends EditorTab {
       }
     }
 
-    this.audio.Update(this.currentCamera.position, this.currentCamera.rotation);
+    try{
+      this.audio.Update(this.currentCamera.position, this.currentCamera.rotation);
+    }catch(e){ }
 
     this.cam_controls.update();
 
@@ -523,7 +547,8 @@ class ModuleEditorTab extends EditorTab {
 
           this.buildSceneTree();
           loader.Dismiss();
-          this.Render();
+          //this.Render();
+          this.moduleInitialized = true;
   
           this.updateInfoBox();
           this.cam_controls.target.set(Game.module.Mod_Entry_X, Game.module.Mod_Entry_Y, Game.module.Mod_Entry_Z);
@@ -1236,13 +1261,13 @@ class ModuleEditorTab extends EditorTab {
 
     return new Promise( (resolve, reject) => {
 
-      let ambientDay = Global.kotor2DA['ambientsound'].rows[editor3d.module.audio.AmbientSndDay].resource;
+      let ambientDay = Global.kotor2DA['ambientsound'].rows[editor3d.module.area.audio.AmbientSndDay].resource;
 
       AudioLoader.LoadAmbientSound(ambientDay, (data) => {
         console.log('Loaded Ambient Sound', ambientDay);
         this.audio.SetAmbientSound(data);
 
-        let bgMusic = Global.kotor2DA['ambientmusic'].rows[editor3d.module.audio.MusicDay].resource;
+        let bgMusic = Global.kotor2DA['ambientmusic'].rows[editor3d.module.area.audio.MusicDay].resource;
 
         AudioLoader.LoadMusic(bgMusic, (data) => {
           console.log('Loaded Background Music', bgMusic);

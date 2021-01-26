@@ -39,21 +39,34 @@ class EditorTab {
       'padding-top': 'calc(50% - 50px)',
     });
 
-    this.$tab.on('click', (e) => {
-      e.preventDefault();
-      this.Show();
-      this.visible = true;
-    });
-
-    this.$tabClose.on('click', (e) => {
-      e.preventDefault();
-      this.Remove();
-    });
+    this.InitDOMEvents();
 
     this.toolbar = options.toolbar;
     if(typeof this.toolbar != 'undefined' && typeof this.toolbar == 'object'){
       this.BuildToolbar();
     }
+
+  }
+
+  InitDOMEvents(){
+
+    if(typeof this._tabClickEvent != 'function'){
+      this._tabClickEvent = (e) => {
+        e.preventDefault();
+        this.Show();
+        this.visible = true;
+      };
+    }
+
+    if(typeof this._tabCloseClickEvent != 'function'){
+      this._tabCloseClickEvent = (e) => {
+        e.preventDefault();
+        this.Remove();
+      };
+    }
+
+    this.$tab.off('click', this._tabClickEvent).on('click', this._tabClickEvent);
+    this.$tabClose.off('click', this._tabCloseClickEvent).on('click', this._tabCloseClickEvent);
 
   }
 
@@ -89,10 +102,20 @@ class EditorTab {
 
   Attach(tabManager){
     this.tabManager = tabManager;
+    this.isDestroyed = false;
+
+    try{
+      this.tabManager.$tabs.remove(this.$tab);
+      this.tabManager.$tabsContainer.remove(this.$tabContent);
+    }catch(e){ }
+
     this.tabManager.$tabs.append(this.$tab);
     this.tabManager.$tabsContainer.append(this.$tabContent);
+    
     $('a', this.$tab).attr('href', '#tab-'+this.id);
     this.$tabContent.attr('id', 'tab-'+this.id);
+
+    this.InitDOMEvents();
   }
 
 
@@ -218,6 +241,9 @@ class EditorTab {
   }
 
   onRemove(){
+    if(Global.Project instanceof Project){
+      Global.Project.removeFromOpenFileList(this.file);
+    }
     this.onDestroy();
   }
 
