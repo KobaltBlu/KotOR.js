@@ -32,7 +32,7 @@ class LevelSelectWizard extends Wizard {
       target: this.$body[0],
       template: `
 <ul id="modal-level-list" class="list-group my-list-group" style="max-height: calc(100vh - 280px); overflow-y: scroll;">
-  <li class="list-group-item {{#if selected == -1}}selected{{/if}}" data-index="{{i}}" on-click="levelSelect">None - None</li>
+  <li class="list-group-item {{#if selected == -1}}selected{{/if}}" data-index="-1" on-click="levelSelect">None - None</li>
   {{#each levels: i}}
     <li class="list-group-item {{#if selected == i}}selected{{/if}}" data-index="{{i}}" on-click="levelSelect">{{module}} - {{name}}</li>
   {{/each}}
