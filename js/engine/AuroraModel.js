@@ -835,22 +835,45 @@ THREE.AuroraModel.FromMDL = function(model, options = {}) {
     auroraModel._animQuaternion = new THREE.Quaternion();
 
     if(options.mergeStatic){
-      auroraModel.mergedGeometry = new THREE.Geometry();
-      auroraModel.mergedGeometry.faceVertexUvs = [[],[]];
-      //auroraModel.mergedMaterial = new THREE.MeshPhongMaterial({color: 0xFF0000});
+      auroraModel.mergedGeometries = [];
+      auroraModel.mergedDanglyGeometries = [];
       auroraModel.mergedMaterials = [];
+      auroraModel.mergedDanglyMaterials = [];
     }
 
     auroraModel.add(THREE.AuroraModel.NodeParser(auroraModel, model.rootNode, options));
 
     if(options.mergeStatic){
-      let bufferGeometry = new THREE.BufferGeometry();
-      bufferGeometry.fromGeometry(auroraModel.mergedGeometry);
-      auroraModel.mergedGeometry.dispose();
-      auroraModel.mergedMesh = new THREE.Mesh(bufferGeometry, auroraModel.mergedMaterials);
-      auroraModel.mergedMesh.receiveShadow = true;
-      auroraModel.add(auroraModel.mergedMesh);
-      auroraModel.mergedGeometry = undefined;
+      
+      //Merge Basic Geometries
+      if(auroraModel.mergedGeometries.length){
+
+        auroraModel.mergedBufferGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(auroraModel.mergedGeometries, true);
+        auroraModel.mergedMesh = new THREE.Mesh(auroraModel.mergedBufferGeometry, auroraModel.mergedMaterials);
+        auroraModel.mergedMesh.receiveShadow = true;
+        auroraModel.add(auroraModel.mergedMesh);
+
+        for(let i = 0, len = auroraModel.mergedGeometries.length; i < len; i++){
+          auroraModel.mergedGeometries[i].dispose();
+        }
+        auroraModel.mergedGeometries = [];
+
+      }
+      
+      //Merge Dangly Geometries
+      if(auroraModel.mergedDanglyGeometries.length){
+
+        auroraModel.mergedBufferDanglyGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(auroraModel.mergedDanglyGeometries, true);
+        auroraModel.mergedDanglyMesh = new THREE.Mesh(auroraModel.mergedBufferDanglyGeometry, auroraModel.mergedDanglyMaterials);
+        //auroraModel.mergedDanglyMesh.receiveShadow = true;
+        auroraModel.add(auroraModel.mergedDanglyMesh);
+
+        for(let i = 0, len = auroraModel.mergedDanglyGeometries.length; i < len; i++){
+          auroraModel.mergedDanglyGeometries[i].dispose();
+        }
+        auroraModel.mergedDanglyGeometries = [];
+
+      }
 
       //Prune all the empty nodes 
       let pruneList = [];
@@ -1015,16 +1038,16 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
     isChildrenDynamic: false
   }, options);
 
-  //Skip over LightMap Omnilight references because they are blank nodes
+  //Skip over LightMap Omnilight and Spotlight references because they are blank nodes
   //Don't know if this will have any side effects yet
-  if(_node.name.toLowerCase().indexOf('lmomnilight') >= 0){
+  if(_node.name.toLowerCase().indexOf('lmomnilight') >= 0 || _node.name.toLowerCase().indexOf('lmspotlight') >= 0){
     return;
   }
 
   let node = new THREE.Group();
   node._node = _node;
   node.NodeType = _node.NodeType;
-  node.isWalkmesh = ((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB);
+  node.isWalkmesh = false;//((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB);
 
   if(node.isWalkmesh){
     auroraModel.aabb = _node.rootAABB;
@@ -1057,13 +1080,16 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
     return this.controllers.get(type);
   }
 
+  //-----------//
+  // MESH NODE
+  //-----------//
   if ((_node.NodeType & AuroraModel.NODETYPE.Mesh) == AuroraModel.NODETYPE.Mesh) {
     THREE.AuroraModel.NodeMeshBuilder(auroraModel, node, options);  
   }
 
-  //-------------------//
+  //------------//
   // LIGHT NODE
-  //-------------------//
+  //------------//
   if ((_node.NodeType & AuroraModel.NODETYPE.Light) == AuroraModel.NODETYPE.Light) {
     THREE.AuroraModel.NodeLightBuilder(auroraModel, node, options);      
   }
@@ -1083,8 +1109,6 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
       options.parent.emitter.referenceNode = node;
     }
   }
-
-  //node.visible = !node.isWalkmesh;
 
   switch(node.name){
     case 'headhook':
@@ -1158,7 +1182,7 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
       //Optimization: Only create a mesh if it is actually rendered. Ignore this for placeable models
       //This breaks shadows because the original game uses the bones of the model to cast shadows. 
       //This can possibly be remedied by setting skin meshes to cast shadows.
-      if(_node.FlagRender || auroraModel.Classification == AuroraModel.CLASS.PLACEALBE){
+      if(_node.FlagRender || (auroraModel.modelHeader.Classification == AuroraModel.CLASS.PLACEABLE)){
 
         //-------------------------//
         // BEGIN: GEOMETRY BUILDER
@@ -1169,22 +1193,27 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         //-------------------//
         // BUFFERED GEOMETRY
         //-------------------//
-        if ((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin ||
-            (_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
+        if ((_node.NodeType & AuroraModel.NODETYPE.AABB) != AuroraModel.NODETYPE.AABB) {
 
           geometry = new THREE.BufferGeometry();
           geometry.setIndex(_node.indicies); //Works with indicies
 
+          //Positions
           geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( _node.vertices, 3 ) ); //Works with indicies
+
+          //Normals
           const normals = new Float32Array( _node.normals.length * 3 ); //Works with indicies
           geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).copyVector3sArray( _node.normals ) ); //Works with indicies
 
-          const color = new Float32Array( _node.vertices.length * 3 ); //Works with indicies
-          geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(_node.vertices.length * 3).fill(1, 0, _node.vertices.length * 3) ) ); //Works with indicies
+          //Color
+          const color = new Float32Array( _node.vertices.length ); //Works with indicies
+          geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(_node.vertices.length).fill(1, 0, _node.vertices.length) ) ); //Works with indicies
           
+          //UV1
           const uv1 = new Float32Array( _node.tvectors[0].length * 2 ); //Works with indicies
           geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyVector2sArray( _node.tvectors[0].flat() ) ); //Works with indicies
           
+          //UV2
           const uv2 = new Float32Array( _node.tvectors[1].length * 2 ); //Works with indicies
           geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyVector2sArray( _node.tvectors[1].flat() ) ); //Works with indicies
           
@@ -1192,9 +1221,11 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           // SKIN GEOMETRY ATTRIBUTES
           //--------------------------//
           if((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin){
+            //Skin Index
             const boneIdx = new Float32Array( _node.boneIdx.length * 4 ); //Works with indicies
             geometry.setAttribute( 'skinIndex', new THREE.BufferAttribute( boneIdx, 4 ).copyArray( _node.boneIdx.flat() ) ); //Works with indicies
 
+            //Skin Weight
             const weights = new Float32Array( _node.weights.length * 4 ); //Works with indicies
             geometry.setAttribute( 'skinWeight', new THREE.BufferAttribute( weights, 4 ).copyArray( _node.weights.flat() ) ); //Works with indicies
           }
@@ -1203,6 +1234,7 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           // DANGLY GEOMETRY ATTRIBUTES
           //----------------------------//
           if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly){
+            //Contstraint
             const constraints = new Float32Array( _node.danglyVec4.length * 4 ); //Works with indicies
             geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( _node.danglyVec4 ) ); //Works with indicies
           }
@@ -1211,7 +1243,7 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           THREE.BufferGeometryUtils.computeTangents(geometry);
           
           //Don't let this node get merged as a static geometry
-          _node.roomStatic = false;
+          //_node.roomStatic = false;
         }
 
         /*
@@ -1321,19 +1353,28 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         // MERGE GEOMETRY
         //----------------//
         //console.log('THREE.AuroraModel', auroraModel.name, _node.name, !node.isWalkmesh, !_node.BackgroundGeometry, options.mergeStatic, _node.roomStatic, geometry.faces?.length, _node)
-        if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && geometry.faces.length){
-          
-          mesh.position.copy(node.getWorldPosition(new THREE.Vector3));
-          mesh.quaternion.copy(node.getWorldQuaternion(new THREE.Quaternion));
-          mesh.updateMatrix(); // as needed
-          //mesh.updateMatrixWorld(); // as needed
+        if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && _node.faces.length){
 
-          auroraModel.mergedMaterials.push(material);
-          THREE.AuroraModel.MergeGeometry(auroraModel.mergedGeometry, mesh.geometry, mesh.matrix, auroraModel.mergedMaterials.length-1)
-          //auroraModel.mergedGeometry.merge(mesh.geometry, mesh.matrix);
-          mesh.geometry.dispose();
-          mesh.geometry = undefined;
-          
+          node.getWorldPosition( mesh.position );
+          node.getWorldQuaternion( mesh.quaternion );
+          mesh.updateMatrix(); // as needed
+
+          //apply matrix to positions
+          geometry.getAttribute('position').applyMatrix4( mesh.matrix );
+
+          //apply matrix to normals
+          let normalMatrix = new THREE.Matrix3().getNormalMatrix( mesh.matrix );
+          geometry.getAttribute('normal').applyMatrix3( normalMatrix );
+          geometry.normalizeNormals();
+
+          if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly){
+            auroraModel.mergedDanglyGeometries.push(geometry);
+            auroraModel.mergedDanglyMaterials.push(material);
+          }else{
+            auroraModel.mergedGeometries.push(geometry);
+            auroraModel.mergedMaterials.push(material);
+          }
+
           //Unset the mesh variable so it can't be added to the node
           mesh = undefined;
           
@@ -1503,12 +1544,7 @@ THREE.AuroraModel.NodeMaterialBuilder = function(auroraModel, node, options){
     });
 
     if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
-      TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, (texture, tex) => {
-        if(material.type != tex.material.type){
-          material = tex.material;
-          console.log('Material mismatch', tex.material);
-        }
-      }, fallbackTexture);
+      TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, undefined, fallbackTexture);
     }
 
     material.needsUpdate = true;
@@ -1614,152 +1650,3 @@ THREE.AuroraModel.NodeLightBuilder = function(auroraModel, node, options){
     LightManager.addLight(_node.light);
   }
 };
-
-//This method is copied from the THREE.Geometry class and modified to work with lightmap UVs
-THREE.AuroraModel.MergeGeometry = function (geometry1, geometry2, matrix, materialIndexOffset ) {
-
-  if ( ! ( geometry2 && geometry2.isGeometry ) ) {
-
-    console.error( 'THREE.Geometry.merge(): geometry not an instance of THREE.Geometry.', geometry2 );
-    return;
-
-  }
-
-  let normalMatrix,
-    vertexOffset = geometry1.vertices.length,
-    vertices1 = geometry1.vertices,
-    vertices2 = geometry2.vertices,
-    faces1 = geometry1.faces,
-    faces2 = geometry2.faces,
-    uvs1 = geometry1.faceVertexUvs[0],
-    uvs2 = geometry2.faceVertexUvs[0],
-    //BEGIN Lightmap UVs
-    uvs21 = geometry1.faceVertexUvs[1],
-    uvs22 = geometry2.faceVertexUvs[1],
-    //END Lightmap UVs
-    colors1 = geometry1.colors,
-    colors2 = geometry2.colors;
-
-  if ( materialIndexOffset === undefined ) materialIndexOffset = 0;
-
-  if ( matrix !== undefined ) {
-
-    normalMatrix = new THREE.Matrix3().getNormalMatrix( matrix );
-
-  }
-
-  // vertices
-
-  for ( let i = 0, il = vertices2.length; i < il; i ++ ) {
-
-    let vertex = vertices2[ i ];
-
-    let vertexCopy = vertex.clone();
-
-    if ( matrix !== undefined ) vertexCopy.applyMatrix4( matrix );
-
-    vertices1.push( vertexCopy );
-
-  }
-
-  // colors
-
-  for ( let i = 0, il = colors2.length; i < il; i ++ ) {
-
-    colors1.push( colors2[ i ].clone() );
-
-  }
-
-  // faces
-
-  for ( i = 0, il = faces2.length; i < il; i ++ ) {
-
-    let face = faces2[ i ], faceCopy, normal, color,
-      faceVertexNormals = face.vertexNormals,
-      faceVertexColors = face.vertexColors;
-
-    faceCopy = new THREE.Face3( face.a + vertexOffset, face.b + vertexOffset, face.c + vertexOffset );
-    faceCopy.normal.copy( face.normal );
-
-    if ( normalMatrix !== undefined ) {
-
-      faceCopy.normal.applyMatrix3( normalMatrix ).normalize();
-
-    }
-
-    for ( let j = 0, jl = faceVertexNormals.length; j < jl; j ++ ) {
-
-      normal = faceVertexNormals[ j ].clone();
-
-      if ( normalMatrix !== undefined ) {
-
-        normal.applyMatrix3( normalMatrix ).normalize();
-
-      }
-
-      faceCopy.vertexNormals.push( normal );
-
-    }
-
-    faceCopy.color.copy( face.color );
-
-    for ( let j = 0, jl = faceVertexColors.length; j < jl; j ++ ) {
-
-      color = faceVertexColors[ j ];
-      faceCopy.vertexColors.push( color.clone() );
-
-    }
-
-    faceCopy.materialIndex = face.materialIndex + materialIndexOffset;
-
-    faces1.push( faceCopy );
-
-  }
-
-  // uvs1
-  for ( i = 0, il = uvs2.length; i < il; i ++ ) {
-
-    let uv = uvs2[ i ], uvCopy = [];
-
-    if ( uv === undefined ) {
-
-      continue;
-
-    }
-
-    for ( let j = 0, jl = uv.length; j < jl; j ++ ) {
-
-      uvCopy.push( uv[ j ].clone() );
-
-    }
-
-    uvs1.push( uvCopy );
-
-  }
-
-  // uvs2
-  for ( i = 0, il = uvs22.length; i < il; i ++ ) {
-
-    let uv = uvs22[ i ], uvCopy = [];
-
-    if ( uv === undefined ) {
-
-      continue;
-
-    }
-
-    for ( let j = 0, jl = uv.length; j < jl; j ++ ) {
-
-      uvCopy.push( uv[ j ].clone() );
-
-    }
-
-    uvs21.push( uvCopy );
-
-  }
-
-};
-
-  
-  
-
