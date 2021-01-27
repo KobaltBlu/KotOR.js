@@ -29,10 +29,8 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
     this.tvectors[1] = [];
     this.indicies = [];
 
-    console.log('SABER', this.offsetToSaberVerts, this.offsetToSaberUVs, this.offsetToSaberNormals, this.invCount1, this.invCount2);
-
     for(let i = 0; i < 176; i++){
-      //SABER Verticies
+      //SABER Vertices
       this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberVerts + ((4 * 3) * i);
       this.vertices.push(this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle());
 
@@ -46,13 +44,43 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
       this.tvectors[1][i] = this.tvectors[0][i];
     }
 
+/* 
+ *    SABER MESH VERTEX INDICES
+ *
+ *  - Incompelete implementation.
+ *  - 8-87 should be part of the right sides core that is stretched while swinging
+ *  - 96-176 should be part of the left side of the core that is stretched while swinging
+ *  
+ * 
+ *  95-----91---3-----7
+ *   |      |   |     |
+ *  94-----90---2-----6
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *   |      |   |     |
+ *  93-----89---1-----5
+ *   |      |   |     |
+ *  92-----88---0-----4
+ * 
+ * 
+ */
+
     this.indicies = [
-      0, 1, 4, 1, 4, 5,
-      1, 2, 5, 5, 2, 6,
+      //RIGHT SIDE
+      0, 1, 4, 1, 5, 4,
+      1, 2, 5, 2, 6, 5,
       2, 7, 6, 2, 3, 7,
-      92,93,0, 93,1, 0,
-      93,94,1, 94,2, 1,
-      94,95,2, 95,3, 2
+
+      //LEFT SIDE
+      92,93,88,93,89,88,
+      93,94,89,94,90,89,
+      94,95,90,95,91,90
     ];
 
   }
