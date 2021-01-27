@@ -27,7 +27,7 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
     this.normals = [];
     this.tvectors[0] = [];
     this.tvectors[1] = [];
-    this.indicies = [];
+    this.indices = [];
 
     for(let i = 0; i < 176; i++){
       //SABER Vertices
@@ -47,35 +47,36 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
 /* 
  *  SABER MESH VERTEX INDICES
  * 
- *  95-----91---3-----7
- *   |      |   |     |
- *  94-----90---2-----6
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *   |      |   |     |
- *  93-----89---1-----5
- *   |      |   |     |
- *  92-----88---0-----4
+ *  95-----91-----<<<-----11-----7
+ *   |      |              |     |
+ *  94-----90-----<<<-----10-----6
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *   |      |              |     |
+ *  93-----89-----<<<------9-----5
+ *   |      |              |     |
+ *  92-----88-----<<<------8-----4
  * 
  */
 
-    this.indicies = [];
+    this.indices = [];
 
     let order = [                      //--\\
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
     ];
 
+    //Build the face indices
     for(let i = 0, len = order.length-1; i < len; i++){
       let f1 = (order[i    ] * 4);
       let f2 = (order[i + 1] * 4);
 
-      this.indicies.push(
+      this.indices.push(
         f1 + 0, f1 + 1, f2 + 0,
         f1 + 1, f2 + 1, f2 + 0,
         f1 + 1, f1 + 2, f2 + 1,
@@ -85,7 +86,7 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
       );
     }
 
-    /*this.indicies = [
+    /*this.indices = [
       //RIGHT SIDE
       0, 1, 4, 1, 5, 4,
       1, 2, 5, 2, 6, 5,

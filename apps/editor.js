@@ -206,6 +206,7 @@ const AuroraModelNodeEmitter = require(path.join(app.getAppPath(), 'js/aurora/Au
 const AuroraModelNodeLight = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeLight.js'));
 const AuroraModelNodeReference = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeReference.js'));
 const AuroraModelNodeSkin = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSkin.js'));
+const AuroraModelNodeSaber = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelNodeSaber.js'));
 const AuroraModelAnimation = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimation.js'));
 const AuroraModelAnimationNode = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationNode.js'));
 const AuroraModelAnimationManager = require(path.join(app.getAppPath(), 'js/aurora/AuroraModelAnimationManager.js'));

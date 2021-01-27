@@ -1196,38 +1196,38 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         if ((_node.NodeType & AuroraModel.NODETYPE.AABB) != AuroraModel.NODETYPE.AABB) {
 
           geometry = new THREE.BufferGeometry();
-          geometry.setIndex(_node.indicies); //Works with indicies
+          geometry.setIndex(_node.indices); //Works with indices
 
           //Positions
-          geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( _node.vertices, 3 ) ); //Works with indicies
+          geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( _node.vertices, 3 ) ); //Works with indices
 
           //Normals
-          const normals = new Float32Array( _node.normals.length * 3 ); //Works with indicies
-          geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).copyVector3sArray( _node.normals ) ); //Works with indicies
+          const normals = new Float32Array( _node.normals.length * 3 ); //Works with indices
+          geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).copyVector3sArray( _node.normals ) ); //Works with indices
 
           //Color
-          const color = new Float32Array( _node.vertices.length ); //Works with indicies
-          geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(_node.vertices.length).fill(1, 0, _node.vertices.length) ) ); //Works with indicies
+          const color = new Float32Array( _node.vertices.length ); //Works with indices
+          geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(_node.vertices.length).fill(1, 0, _node.vertices.length) ) ); //Works with indices
           
           //UV1
-          const uv1 = new Float32Array( _node.tvectors[0].length * 2 ); //Works with indicies
-          geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyVector2sArray( _node.tvectors[0].flat() ) ); //Works with indicies
+          const uv1 = new Float32Array( _node.tvectors[0].length * 2 ); //Works with indices
+          geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyVector2sArray( _node.tvectors[0].flat() ) ); //Works with indices
           
           //UV2
-          const uv2 = new Float32Array( _node.tvectors[1].length * 2 ); //Works with indicies
-          geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyVector2sArray( _node.tvectors[1].flat() ) ); //Works with indicies
+          const uv2 = new Float32Array( _node.tvectors[1].length * 2 ); //Works with indices
+          geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyVector2sArray( _node.tvectors[1].flat() ) ); //Works with indices
           
           //--------------------------//
           // SKIN GEOMETRY ATTRIBUTES
           //--------------------------//
           if((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin){
             //Skin Index
-            const boneIdx = new Float32Array( _node.boneIdx.length * 4 ); //Works with indicies
-            geometry.setAttribute( 'skinIndex', new THREE.BufferAttribute( boneIdx, 4 ).copyArray( _node.boneIdx.flat() ) ); //Works with indicies
+            const boneIdx = new Float32Array( _node.boneIdx.length * 4 ); //Works with indices
+            geometry.setAttribute( 'skinIndex', new THREE.BufferAttribute( boneIdx, 4 ).copyArray( _node.boneIdx.flat() ) ); //Works with indices
 
             //Skin Weight
-            const weights = new Float32Array( _node.weights.length * 4 ); //Works with indicies
-            geometry.setAttribute( 'skinWeight', new THREE.BufferAttribute( weights, 4 ).copyArray( _node.weights.flat() ) ); //Works with indicies
+            const weights = new Float32Array( _node.weights.length * 4 ); //Works with indices
+            geometry.setAttribute( 'skinWeight', new THREE.BufferAttribute( weights, 4 ).copyArray( _node.weights.flat() ) ); //Works with indices
           }
 
           //----------------------------//
@@ -1235,21 +1235,20 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
           //----------------------------//
           if((_node.NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly){
             //Contstraint
-            const constraints = new Float32Array( _node.danglyVec4.length * 4 ); //Works with indicies
-            geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( _node.danglyVec4 ) ); //Works with indicies
+            const constraints = new Float32Array( _node.danglyVec4.length * 4 ); //Works with indices
+            geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyVector4sArray( _node.danglyVec4 ) ); //Works with indices
           }
           
           //Compute Geometry Tangents
-          THREE.BufferGeometryUtils.computeTangents(geometry);
+          if((_node.NodeType & AuroraModel.NODETYPE.Saber) != AuroraModel.NODETYPE.Saber){
+            THREE.BufferGeometryUtils.computeTangents(geometry);
+          }
           
-          //Don't let this node get merged as a static geometry
-          //_node.roomStatic = false;
         }
 
         /*
-          * The project is moving away from using THREE.Geometry. The only geometry that should be using THREE.Geometry are WalkMeshes
-          * Everything else should be using THREE.BufferedGeometry. To achieve this we need a new geometry merging method that supports THREE.BufferedGeometry
-          */
+         * The project is moving away from using THREE.Geometry. The only geometry that should be using THREE.Geometry are WalkMeshes for now.
+         */
         
         //----------------//
         // BASIC GEOMETRY

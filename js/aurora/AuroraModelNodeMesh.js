@@ -27,7 +27,7 @@
     this.indexArray = [];
     this.uvs = [];
     this.faces = [];
-    this.indicies = [];
+    this.indices = [];
 
     let _faceArrDef = AuroraModel.ReadArrayDefinition(this.auroraModel.mdlReader);
 
@@ -138,7 +138,7 @@
       //this.tvectors[t].length = this.VerticiesCount;
     }
 
-    this.indicies = [];
+    this.indices = [];
 
     //Tangent1
     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
@@ -307,7 +307,7 @@
         this.faces[i].a = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].b = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].c = this.auroraModel.mdlReader.ReadUInt16();
-        this.indicies.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
+        this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 
         if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
           this.texCords[0][i] = ([this.tvectors[0][this.faces[i].a], this.tvectors[0][this.faces[i].b], this.tvectors[0][this.faces[i].c]]);
