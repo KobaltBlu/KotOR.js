@@ -122,7 +122,7 @@
 
     this._mdxNodeDataOffset = MDXNodeDataOffset;
 
-    if ((this.VertexLocArrayDef.count < 1) || (this.VerticiesCount == 0) || (this.FaceArrayCount == 0))
+    if ((this.VerticiesCount == 0) || (this.FaceArrayCount == 0))
       return null;
 
     let endPos = this.auroraModel.mdlReader.position;
@@ -263,37 +263,39 @@
 
     }
 
-    this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.VertexLocArrayDef.offset;
-    let offVerts = this.auroraModel.mdlReader.ReadUInt32();
-
-    this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + offVerts;
-
-    if(this.TextureCount) {
-      this.faces.length = this.FaceArrayCount;
-      this.texCords[0].length = this.FaceArrayCount;
-      this.texCords[1].length = this.FaceArrayCount;
-      for (let i = 0; i < this.FaceArrayCount; i++) {
-        let index1 = this.auroraModel.mdlReader.ReadUInt16();
-        let index2 = this.auroraModel.mdlReader.ReadUInt16();
-        let index3 = this.auroraModel.mdlReader.ReadUInt16();
-        let normal = [
-          this.normals[index1],
-          this.normals[index2],
-          this.normals[index3]
-        ];
-        this.faces[i] = new THREE.Face3(index1, index2, index3, normal);
-
-        if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
-          this.texCords[0][i] = ([this.tvectors[0][index1], this.tvectors[0][index2], this.tvectors[0][index3]]);
-        
-        if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV2)
-          this.texCords[1][i] = ([this.tvectors[1][index1], this.tvectors[1][index2], this.tvectors[1][index3]]);
-      }
+    if(this.VertexLocArrayDef.count){
+      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.VertexLocArrayDef.offset;
+      let offVerts = this.auroraModel.mdlReader.ReadUInt32();
+      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + offVerts;
     }
 
-    if(this.TextureCount){
+    // if(this.TextureCount) {
+    //   this.faces.length = this.FaceArrayCount;
+    //   this.texCords[0].length = this.FaceArrayCount;
+    //   this.texCords[1].length = this.FaceArrayCount;
+    //   for (let i = 0; i < this.FaceArrayCount; i++) {
+    //     let index1 = this.auroraModel.mdlReader.ReadUInt16();
+    //     let index2 = this.auroraModel.mdlReader.ReadUInt16();
+    //     let index3 = this.auroraModel.mdlReader.ReadUInt16();
+    //     let normal = [
+    //       this.normals[index1],
+    //       this.normals[index2],
+    //       this.normals[index3]
+    //     ];
+    //     this.faces[i] = new THREE.Face3(index1, index2, index3, normal);
+
+    //     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
+    //       this.texCords[0][i] = ([this.tvectors[0][index1], this.tvectors[0][index2], this.tvectors[0][index3]]);
+        
+    //     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV2)
+    //       this.texCords[1][i] = ([this.tvectors[1][index1], this.tvectors[1][index2], this.tvectors[1][index3]]);
+    //   }
+    // }
+
+    if(this.FaceArrayCount){
       this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.FaceArrayOffset;
       for (let i = 0; i < this.FaceArrayCount; i++) {
+        this.faces[i] = new THREE.Face3(0, 0, 0);
         this.faces[i].normal.x = this.auroraModel.mdlReader.ReadSingle();
         this.faces[i].normal.y = this.auroraModel.mdlReader.ReadSingle();
         this.faces[i].normal.z = this.auroraModel.mdlReader.ReadSingle();
@@ -302,10 +304,17 @@
         this.faces[i].nAdjacentFaces1 = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].nAdjacentFaces2 = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].nAdjacentFaces3 = this.auroraModel.mdlReader.ReadUInt16();
-        this.faces[i].indexVertex1 = this.auroraModel.mdlReader.ReadUInt16();
-        this.faces[i].indexVertex2 = this.auroraModel.mdlReader.ReadUInt16();
-        this.faces[i].indexVertex3 = this.auroraModel.mdlReader.ReadUInt16();
-        this.indicies.push(this.faces[i].indexVertex1, this.faces[i].indexVertex2, this.faces[i].indexVertex3);
+        this.faces[i].a = this.auroraModel.mdlReader.ReadUInt16();
+        this.faces[i].b = this.auroraModel.mdlReader.ReadUInt16();
+        this.faces[i].c = this.auroraModel.mdlReader.ReadUInt16();
+        this.indicies.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
+
+        if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
+          this.texCords[0][i] = ([this.tvectors[0][this.faces[i].a], this.tvectors[0][this.faces[i].b], this.tvectors[0][this.faces[i].c]]);
+        
+        if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV2)
+          this.texCords[1][i] = ([this.tvectors[1][this.faces[i].a], this.tvectors[1][this.faces[i].b], this.tvectors[1][this.faces[i].c]]);
+
       }
     }
 

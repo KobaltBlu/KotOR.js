@@ -175,6 +175,8 @@ class AuroraModel {
       node = new AuroraModelNodeSkin(parent);
     }else if ((NodeType & AuroraModel.NODETYPE.Dangly) == AuroraModel.NODETYPE.Dangly) {
       node = new AuroraModelNodeDangly(parent);
+    }else if ((NodeType & AuroraModel.NODETYPE.Saber) == AuroraModel.NODETYPE.Saber) {
+      node = new AuroraModelNodeSaber(parent);
     }else if ((NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB) {
       node = new AuroraModelNodeAABB(parent);
     }else if ((NodeType & AuroraModel.NODETYPE.Anim) == AuroraModel.NODETYPE.Anim) {
