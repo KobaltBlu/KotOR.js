@@ -45,12 +45,7 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
     }
 
 /* 
- *    SABER MESH VERTEX INDICES
- *
- *  - Incompelete implementation.
- *  - 8-87 should be part of the right sides core that is stretched while swinging
- *  - 96-176 should be part of the left side of the core that is stretched while swinging
- *  
+ *  SABER MESH VERTEX INDICES
  * 
  *  95-----91---3-----7
  *   |      |   |     |
@@ -68,10 +63,29 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
  *   |      |   |     |
  *  92-----88---0-----4
  * 
- * 
  */
 
-    this.indicies = [
+    this.indicies = [];
+
+    let order = [                      //--\\
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+    ];
+
+    for(let i = 0, len = order.length-1; i < len; i++){
+      let f1 = (order[i    ] * 4);
+      let f2 = (order[i + 1] * 4);
+
+      this.indicies.push(
+        f1 + 0, f1 + 1, f2 + 0,
+        f1 + 1, f2 + 1, f2 + 0,
+        f1 + 1, f1 + 2, f2 + 1,
+        f1 + 2, f2 + 2, f2 + 1,
+        f1 + 2, f2 + 3, f2 + 2, 
+        f1 + 2, f1 + 3, f2 + 3
+      );
+    }
+
+    /*this.indicies = [
       //RIGHT SIDE
       0, 1, 4, 1, 5, 4,
       1, 2, 5, 2, 6, 5,
@@ -81,7 +95,7 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
       92,93,88,93,89,88,
       93,94,89,94,90,89,
       94,95,90,95,91,90
-    ];
+    ];*/
 
   }
 
