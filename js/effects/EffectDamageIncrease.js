@@ -1,9 +1,12 @@
 class EffectDamageIncrease extends GameEffect {
-  constructor(nBonus = 0, nDamageType = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectDamageIncrease;
-    this.nBonus = nBonus;
-    this.nDamageType = nDamageType;
+
+    //intList[0] : nBonus
+    //intList[1] : DamageType
+    //intList[2] : racialtypes.2da rowcount
+
   }
 
   onApply(){

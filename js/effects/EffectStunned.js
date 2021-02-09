@@ -10,12 +10,13 @@ class EffectStunned extends GameEffect {
       
     //Stun Effect
     let eVisualEffect = new EffectVisualEffect(2002);
-    eVisualEffect.setCreator(this.object);
+    eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
-    eVisualEffect.setDurationType(this.durationType);
+    eVisualEffect.setSubType(this.getSubType());
     eVisualEffect.setDuration(this.duration);
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
+    eVisualEffect.setInt(0, 2002);
     eVisualEffect.initialize();
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);

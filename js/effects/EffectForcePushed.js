@@ -11,7 +11,7 @@ class EffectForcePushed extends GameEffect {
   update(delta){
     super.update(delta);
 
-    if(this.durationEnded && this.durationType == GameEffect.DurationType.TEMPORARY){
+    if(this.durationEnded && this.hasSubType(GameEffect.DurationType.TEMPORARY)){
       return;
     }
   }

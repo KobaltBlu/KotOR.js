@@ -1,9 +1,18 @@
 class EffectForceShield extends GameEffect {
-  constructor(nShield = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectForceShield;
-    this.nShield = nShield;
-    this.forceShield = Global.kotor2DA.forceshields.rows[nShield];
+
+    //intList[0] : ForceShield 2da id
+    
+  }
+
+  initialize(){
+    super.initialize();
+
+    this.forceShield = Global.kotor2DA.forceshields.rows[this.getInt(0)];
+
+    return this;
   }
 
   onApply(){
@@ -12,27 +21,29 @@ class EffectForceShield extends GameEffect {
 
     super.onApply();
     
-    let eVisualEffect = new EffectVisualEffect(this.forceShield.visualeffectdef);
-    eVisualEffect.setCreator(this.object);
+    let eVisualEffect = new EffectVisualEffect();
+    eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
-    eVisualEffect.setDurationType(this.durationType);
+    eVisualEffect.setSubType(this.getSubType());
     eVisualEffect.setDuration(this.duration);
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
+    eVisualEffect.setInt(0, this.forceShield.visualeffectdef);
     eVisualEffect.initialize();
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
     let eDamageResistEffect = new EffectDamageResistance(this.forceShield.damageflags, this.forceShield.resistance, this.forceShield.amount, this.forceShield.vulnerflags);
-    eDamageResistEffect.setCreator(this.object);
+    eDamageResistEffect.setCreator(this.getCreator());
     eDamageResistEffect.setSpellId(this.getSpellId());
-    eDamageResistEffect.setDurationType(this.durationType);
+    eDamageResistEffect.setSubType(this.getSubType());
     eDamageResistEffect.setDuration(this.duration);
     eDamageResistEffect.setExpireDay(this.expireDay);
     eDamageResistEffect.setExpireTime(this.expireTime);
     eDamageResistEffect.initialize();
     this.object.addEffect(eDamageResistEffect);
     eDamageResistEffect.setSkipOnLoad(true);
+
   }
 
 }

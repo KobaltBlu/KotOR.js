@@ -1,8 +1,13 @@
 class EffectSavingThrowDecrease extends GameEffect {
-  constructor(nPercentChange = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectSavingThrowDecrease;
-    this.nPercentChange = nPercentChange;
+    
+    //intList[0] : amount
+    //intList[1] : SAVING_THROW_*
+    //intList[2] : SAVING_THROW_TYPE_*
+    //intList[3] : racialtypes.2da rowcount
+
   }
 
   onApply(){

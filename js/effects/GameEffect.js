@@ -1,7 +1,6 @@
 class GameEffect {
   constructor(){
     this.creator = undefined;
-    this.durationType = 0;
     this.duration = 0;
     this.expireDay = 0;
     this.expireTime = 0;
@@ -12,6 +11,12 @@ class GameEffect {
     this.applied = false;
     this.initialized = false;
     this.durationEnded = false;
+
+    this.numIntegers = 8;
+    this.intList = [];
+    this.floatList = [];
+    this.stringList = [];
+    this.objectList = [];
 
   }
 
@@ -27,12 +32,20 @@ class GameEffect {
     return this;
   }
 
-  setDurationType(durationType = 0){
-    this.durationType = durationType;
+  hasSubType( durationType = -1 ){
+    return ((this.subType & durationType) == durationType);
+  }
+
+  setCreator(oCreator = undefined){
+    this.creator = oCreator;
   }
 
   setDuration(duration = 0){
     this.duration = duration;
+  }
+
+  setDurationType(durationType = 0){
+    this.subType = this.subType | durationType;
   }
 
   setExpireDay(expireDay = 0){
@@ -43,12 +56,17 @@ class GameEffect {
     this.expireTime = expireTime;
   }
 
-  setObject(obj = undefined){
-    this.object = obj;
+  setNumIntegers( num = 8 ){
+    this.intList = new Array(num);
+    this.intList.fill(0);
   }
 
-  setCreator(oCreator = undefined){
-    this.creator = oCreator;
+  setSkipOnLoad( bSkipOnLoad = true ){
+    this.skipOnLoad = bSkipOnLoad ? true : false;
+  }
+
+  setObject(obj = undefined){
+    this.object = obj;
   }
 
   setSpellId(nSpellId = -1){
@@ -57,6 +75,46 @@ class GameEffect {
 
   setSubType(nSubType = 0){
     this.subType = nSubType;
+  }
+
+  setIntList(intList = []){
+    if(Array.isArray(intList)){
+      this.intList = intList;
+    }
+  }
+
+  setInt(nOffset = 0, nValue = 0){
+    this.intList[nOffset] = nValue;
+  }
+
+  setFloatList(floatList = []){
+    if(Array.isArray(floatList)){
+      this.floatList = floatList;
+    }
+  }
+
+  setFloat(nOffset = 0, nValue = 0){
+    this.floatList[nOffset] = nValue;
+  }
+
+  setStringList(stringList = []){
+    if(Array.isArray(stringList)){
+      this.stringList = stringList;
+    }
+  }
+
+  setString(nOffset = 0, nValue = ''){
+    this.stringList[nOffset] = nValue;
+  }
+
+  setObjectList(objectList = []){
+    if(Array.isArray(objectList)){
+      this.objectList = objectList;
+    }
+  }
+
+  setObject(nOffset = 0, nValue = ''){
+    this.objectList[nOffset] = nValue;
   }
 
   getCreator(){
@@ -68,7 +126,7 @@ class GameEffect {
   }
 
   getDurationType(){
-    return this.durationType;
+    return this.subType;
   }
 
   getExpireDay(){
@@ -87,12 +145,24 @@ class GameEffect {
     return this.subType;
   }
 
-  setSkipOnLoad( bSkipOnLoad = true ){
-    this.skipOnLoad = bSkipOnLoad ? true : false;
+  getInt(nOffset = 0){
+    return this.intList[nOffset];
+  }
+
+  getFloat(nOffset = 0){
+    return this.floatList[nOffset];
+  }
+
+  getString(nOffset = 0){
+    return this.stringList[nOffset];
+  }
+
+  getObject(nOffset = 0){
+    return this.objectList[nOffset];
   }
 
   update(delta){
-    if(this.durationType == GameEffect.DurationType.TEMPORARY){
+    if(this.hasSubType(GameEffect.DurationType.TEMPORARY)){
       if(this.duration <= 0){
         this.onDurationEnd();
         return;
@@ -144,6 +214,7 @@ class GameEffect {
       let eDuration = struct.GetFieldByLabel('Duration').GetValue();
       let eExpireDay = struct.GetFieldByLabel('ExpireDay').GetValue();
       let eExpireTime = struct.GetFieldByLabel('ExpireTime').GetValue();
+      let eNumIntegers = struct.GetFieldByLabel('NumIntegers').GetValue();
 
       let intList = [];
       let floatList = [];
@@ -172,77 +243,161 @@ class GameEffect {
 
       //(???) Means i haven't confirmed this type yet
       switch(eType){
+        case 1: //Haste
+
+        break;
         case 2: //DamageResistance
-          effect = new EffectDamageResistance(intList[0], intList[1], intList[2]);
+          effect = new EffectDamageResistance();
+        break;
+        case 3: //Slow
+
+        break;
+        case 4: //Resurrection
+
+        break;
+        case 5: //Disease
+
         break;
         case 7: //Regenerate
-          effect = new EffectRegenerate(intList[0], intList[1]);
+          effect = new EffectRegenerate();
         break;
         case 10: //AttackIncrease
-          effect = new EffectAttackIncrease(intList[0], intList[1]);
+          effect = new EffectAttackIncrease();
         break;
         case 11: //AttackDecrease
-          effect = new EffectAttackDecrease(intList[0], intList[1]);
+          effect = new EffectAttackDecrease();
+        break;
+        case 12: //DamageReduction
+
         break;
         case 13: //DamageIncrease
-          effect = new EffectDamageIncrease(intList[0], intList[1]);
+          effect = new EffectDamageIncrease();
         break;
-        case 14: //DamageDecrease (???)
-          effect = new EffectDamageDecrease(intList[0], intList[1]);
+        case 14: //DamageDecrease
+          effect = new EffectDamageDecrease();
+        break;
+        case 15: //TemporaryHitpoints
+
+        break;
+        case 16: //DamageImmunityIncrease
+
+        break;
+        case 17: //DamageImmunityDecrease
+
+        break;
+        case 18: //Entangle
+
+        break;
+        case 19: //Death
+
+        break;
+        case 20: //Knockdown
+
+        break;
+        case 21: //Deaf
+
         break;
         case 22: //Immunity
-          effect = new EffectImmunity(intList[0]);
+          effect = new EffectImmunity();
+        break;
+        case 24: //EnemyAttackBonus
+
         break;
         case 26: //SavingThrowIncrease
-          effect = new EffectSavingThrowIncrease(intList[0], intList[1]);
+          effect = new EffectSavingThrowIncrease();
         break;
-        case 27: //SavingThrowDecrease (???)
-          effect = new EffectSavingThrowDecrease(intList[0], intList[1]);
+        case 27: //SavingThrowDecrease
+          effect = new EffectSavingThrowDecrease();
         break;
         case 28: //MovementSpeedIncrease
-          effect = new EffectMovementSpeedIncrease(intList[0]);
+          effect = new EffectMovementSpeedIncrease();
         break;
-        case 29: //MovementSpeedDecrease (???)
-          effect = new EffectMovementSpeedDecrease(intList[0]);
+        case 29: //MovementSpeedDecrease
+          effect = new EffectMovementSpeedDecrease();
         break;
         case 30: //VisualEffect
-          effect = new EffectVisualEffect(intList[0]);
+          effect = new EffectVisualEffect();
         break;
-        case 35: //EffectPoison
-          effect = new EffectPoison(intList[0]);
+        case 31: //AreaOfEffect
+
+        break;
+        case 32: //Beam
+          effect = new EffectBeam();
+        break;
+        case 33: //ForceResistanceIncrease
+
+        break;
+        case 34: //ForceResistanceDecrease
+
+        break;
+        case 35: //Poison
+          effect = new EffectPoison();
         break;
         case 36: //AbilityIncrease
-          effect = new EffectAbilityIncrease(intList[0], intList[1]);
+          effect = new EffectAbilityIncrease();
         break;
-        case 37: //AbilityDecrease (???)
-          effect = new EffectAbilityDecrease(intList[0], intList[1]);
+        case 37: //AbilityDecrease
+          effect = new EffectAbilityDecrease();
+        break;
+        case 38: //Damage
+          effect = new EffectDamage();
+        break;
+        case 39: //Heal
+
+        break;
+        case 40: //Link
+
         break;
         case 48: //ACIncrease
-          effect = new EffectACIncrease(intList[1], 0, intList[5]);
+          effect = new EffectACIncrease();
+        break;
+        case 49: //ACDecrease
+          effect = new EffectACDecrease();
+        break;
+        case 50: //SpellImmunity
+
         break;
         case 55: //SkillIncrease
-          effect = new EffectSkillIncrease(intList[0], intList[1]);
+          effect = new EffectSkillIncrease();
         break;
-        case 55: //SkillDecrease (???)
-          effect = new EffectSkillDecrease(intList[0], intList[1]);
+        case 56: //SkillDecrease
+          effect = new EffectSkillDecrease();
+        break;
+        case 57: //HitPointChangeWhenDying
+
+        break;
+        case 59: //LimitMovementSpeed
+
+        break;
+        case 60: //ForcePushed
+
+        break;
+        case 61: //DamageShield
+
         break;
         case 62: //Disguise
-          effect = new EffectDisguise(intList[0]);
+          effect = new EffectDisguise();
+        break;
+        case 65: //SpellLevelAbsorption
+
         break;
         case 67: //SetEffectIcon
-          effect = new EffectIcon(intList[0]);
+          effect = new EffectIcon();
+        break;
+        case 68: //RacialType
+
         break;
         case 83: //BonusFeat
-          effect = new EffectFeat(intList[0]);
+          effect = new EffectFeat();
         break;
         case 92: //BlasterDeflectionIncrease
-          effect = new EffectBlasterDeflectionIncrease(intList[1]);
+          effect = new EffectBlasterDeflectionIncrease();
         break;
-        case 93: //BlasterDeflectionDecrease (???)
-          effect = new EffectBlasterDeflectionDecrease(intList[1]);
+        case 93: //BlasterDeflectionDecrease
+          effect = new EffectBlasterDeflectionDecrease();
         break;
         case 107: //ForceShield
-          effect = new EffectForceShield(intList[0]);
+          effect = new EffectForceShield();
         break;
       }
 
@@ -257,10 +412,13 @@ class GameEffect {
           effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
           effect.setSubType(eSubType);
 
-          if(eDuration){
-            effect.setDurationType(GameEffect.DurationType.TEMPORARY);
-          }
+          effect.setNumIntegers(eNumIntegers);
+          effect.setIntList(intList);
+          effect.setFloatList(floatList);
+          effect.setStringList(stringList);
+          effect.setObjectList(objectList);
           //console.log('Handled Effect', eType, struct.ToJSON());
+          effect.initialize();
         }else{
           console.log('Unhandled Effect', eType, struct.ToJSON());
         }
@@ -283,6 +441,8 @@ GameEffect.DurationType = {
   INSTANT:   0,
   TEMPORARY: 1,
   PERMANENT: 2,
+  EQUIPPED:  3,
+  INNATE:    4
 };
 
 GameEffect.Type = {

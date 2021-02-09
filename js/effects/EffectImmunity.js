@@ -1,8 +1,10 @@
 class EffectImmunity extends GameEffect {
-  constructor(nImmunityType = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectImmunity;
-    this.nImmunityType = nImmunityType;
+    
+    //intList[0] : immunityType
+
   }
 
   onApply(){

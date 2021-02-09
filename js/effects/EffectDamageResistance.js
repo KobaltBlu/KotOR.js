@@ -1,11 +1,13 @@
 class EffectDamageResistance extends GameEffect {
-  constructor(nDamageType = 0, nAmount = 0, nDamageLimit = 0, nVulnerabilityFlags = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectDamageResistance;
-    this.nAmount = nAmount;
-    this.nDamageType = nDamageType;
-    this.nDamageLimit = nDamageLimit;
-    this.nVulnerabilityFlags = nVulnerabilityFlags;
+    
+    //intList[0] : nDamageType
+    //intList[1] : nDamageLimit
+    //intList[2] : nDamageLimit
+    //intList[3] : nVulnerabilityFlags ???
+
   }
 
   onApply(){

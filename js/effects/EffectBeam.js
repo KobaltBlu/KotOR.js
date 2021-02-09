@@ -1,14 +1,14 @@
 class EffectBeam extends GameEffect {
 
-  constructor(vfxId = 0, caster = undefined, bodyPart = '', miss = false){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectBeam;
-    this.vfxId = vfxId;
-    this.caster = caster;
-    this.bodyPart = bodyPart;
-    this.miss = miss;
 
-    this.visualEffect = Global.kotor2DA.visualeffects.getByID(this.vfxId);
+    //intList[0] : visualeffects.2da id
+    //intList[1] : bodypart constant
+    //intList[2] : hit or miss
+
+    //objectList[0] : caster
 
     this.modelName = undefined;
     this.model = undefined;
@@ -18,6 +18,8 @@ class EffectBeam extends GameEffect {
   initialize(){
     if(this.initialized)
       return this;
+
+    this.visualEffect = Global.kotor2DA.visualeffects.getByID(this.getInt(0));
 
     super.initialize();
 
@@ -95,9 +97,9 @@ class EffectBeam extends GameEffect {
     super.onApply();
     
     if(this.model instanceof THREE.AuroraModel){
-      if(this.caster.model instanceof THREE.AuroraModel){
+      if(this.getCaster().model instanceof THREE.AuroraModel){
         //Add the effect to the casters model
-        this.caster.model.add(this.model);
+        this.getCaster().model.add(this.model);
         //Set the target node of the BeamEffect emitter
         this.model.setEmitterTarget(this.object.model);
       }
@@ -107,9 +109,13 @@ class EffectBeam extends GameEffect {
   update(delta = 0){
     super.update(delta);
 
-    if(this.durationEnded && this.durationType == GameEffect.DurationType.TEMPORARY){
+    if(this.durationEnded && this.hasSubType(GameEffect.DurationType.TEMPORARY)){
       return;
     }
+  }
+
+  getCaster(){
+    return this.getObject(0);
   }
 
 }

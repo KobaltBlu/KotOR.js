@@ -1,9 +1,11 @@
 class EffectAttackIncrease extends GameEffect {
-  constructor(nBonus = 0, nDamageType = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectAttackIncrease;
-    this.nBonus = nBonus;
-    this.nDamageType = nDamageType;
+
+    //intList[0] : nBonus
+    //intList[1] : nDamageType
+
   }
 
   onApply(){

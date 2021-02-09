@@ -1,10 +1,13 @@
 class EffectACIncrease extends GameEffect {
-  constructor(nValue = 0, nModifyType = 0, nDamageType = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectACIncrease;
-    this.nValue = nValue;
-    this.nModifyType = nModifyType;
-    this.nDamageType = nDamageType;
+
+    //intList[0] : Modify Type
+    //intList[1] : Amount
+    //intList[2] : racialtypes.2da rowcount
+    //intList[5] : Damage Type
+
   }
 
   onApply(){

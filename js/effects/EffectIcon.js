@@ -1,8 +1,10 @@
 class EffectIcon extends GameEffect {
-  constructor(nIcon = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectIcon;
-    this.nIcon = nIcon;
+    
+    //intList[0] : icon id
+
   }
 
   onApply(){

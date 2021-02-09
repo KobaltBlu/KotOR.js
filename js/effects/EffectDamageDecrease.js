@@ -1,9 +1,12 @@
 class EffectDamageDecrease extends GameEffect {
-  constructor(nPenalty = 0, nDamageType = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectDamageDecrease;
-    this.nPenalty = nPenalty;
-    this.nDamageType = nDamageType;
+
+    //intList[0] : nPenalty
+    //intList[1] : DamageType
+    //intList[2] : racialtypes.2da rowcount
+
   }
 
   onApply(){

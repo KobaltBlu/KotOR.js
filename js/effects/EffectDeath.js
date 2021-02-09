@@ -1,8 +1,10 @@
 class EffectDeath extends GameEffect {
-  constructor(spectacularDeath = false){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectDeath;
-    this.spectacularDeath = spectacularDeath;
+    
+    //intList[0] : isSpectacularDeath
+
   }
 
   onApply(){
@@ -12,11 +14,15 @@ class EffectDeath extends GameEffect {
     super.onApply();
     
     this.object.setHP(-11);
-    if(this.spectacularDeath){
+    if(this.isSpeactacular()){
       this.object.animState = ModuleCreature.AnimState.DEAD;
     }else{
       this.object.animState = ModuleCreature.AnimState.DEAD;
     }
+  }
+
+  isSpeactacular(){
+    return this.getInt(0);
   }
 
 }

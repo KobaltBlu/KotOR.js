@@ -1,9 +1,11 @@
 class EffectRegenerate extends GameEffect {
-  constructor(nAmount = 0, fIntervalSeconds){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectRegenerate;
-    this.nAmount = nAmount;
-    this.fIntervalSeconds = fIntervalSeconds;
+
+    //intList[0] : nAmount
+    //intList[1] : fIntervalSeconds
+
   }
 
   onApply(){

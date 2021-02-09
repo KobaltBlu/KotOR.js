@@ -849,9 +849,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      let effect = new EffectHeal(args[0]);
+      let effect = new EffectHeal();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
       return effect.initialize();
     }
   },
@@ -861,9 +862,18 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectDamage(args[0], args[1], args[2]);
+      let effect = new EffectDamage();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+
+      let damageTypeIndex = Math.log2(args[1]);
+      effect.setInt( damageTypeIndex , args[0]);
+
+      effect.setInt(14, args[0]);
+      effect.setInt(16, 1000);
+      effect.setInt(17, args[1]);
+      effect.setInt(18, args[2]);
+
       return effect.initialize();
     }
   },
@@ -873,9 +883,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectAbilityIncrease(args[0], args[1]);
+      let effect = new EffectAbilityIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
       return effect.initialize();
     }
   },
@@ -885,9 +897,12 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectDamageResistance(args[0], args[1], args[2]);
+      let effect = new EffectDamageResistance();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, args[2]);
       return effect.initialize();
     }
   },
@@ -972,9 +987,9 @@ NWScriptDefK1.Actions = {
     args: ["effect"],
     action: function(args, _instr, action){
       if(args[0] instanceof GameEffect){
-        return args[0].durationType;
+        return args[0].getSubType() & 7;
       }
-      return 0;
+      return -1;
     }
   },
   90:{
@@ -983,6 +998,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
+      if(args[0] instanceof GameEffect){
+        return args[0].getSubType() & 24;
+      }
       return 0;
     }
   },
@@ -1216,9 +1234,13 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectACIncrease(args[0], args[1], args[2]);
+      let effect = new EffectACIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setInt(1, args[0]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+      effect.setInt(5, args[2]);
       return effect.initialize();
     }
   },
@@ -1241,7 +1263,17 @@ NWScriptDefK1.Actions = {
     comment: "117: Create an AC Decrease effect\n- nSave: SAVING_THROW_* (not SAVING_THROW_TYPE_*)\n- nValue: size of AC decrease\n- nSaveType: SAVING_THROW_TYPE_*\n",
     name: "EffectSavingThrowIncrease",
     type: 16,
-    args: ["int", "int", "int"]
+    args: ["int", "int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectSavingThrowIncrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setInt(1, args[0]);
+      effect.setInt(2, args[2]);
+      effect.setInt(3, Global.kotor2DA.racialtypes.RowCount);
+      return effect.initialize();
+    }
   },
   118:{
     comment: "118: Create an Attack Increase effect\n- nBonus: size of attack bonus\n- nModifierType: ATTACK_BONUS_*\n",
@@ -1261,9 +1293,12 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectDamageIncrease(args[0], args[1]);
+      let effect = new EffectDamageIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
       return effect.initialize();
     }
   },
@@ -1407,9 +1442,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectDeath(args[0], args[1]);
+      let effect = new EffectDeath();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
       return effect.initialize();
     }
   },
@@ -1771,9 +1808,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "float"],
     action: function(args, _instr, action){
-      let effect = new EffectRegenerate(args[0], args[1]);
+      let effect = new EffectRegenerate();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, Math.floor(args[1] * 1000));
       return effect.initialize();
     }
   },
@@ -1783,9 +1822,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      let effect = new EffectMovementSpeedIncrease(args[0]);
+      let effect = new EffectMovementSpeedIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
       return effect.initialize();
     }
   },
@@ -1837,9 +1877,9 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(typeof args[0] != 'undefined'){
         //console.log('GetEffectType', args[0]);
-        return args[0].type || -1;
+        return args[0].type || GameEffect.Type.EffectInvalidEffect;
       }else{
-        return -1;
+        return GameEffect.Type.EffectInvalidEffect;
       }
     }
   },
@@ -1921,9 +1961,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectVisualEffect(args[0], args[1]);
+      let effect = new EffectVisualEffect();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(2, args[1] ? 1 : 0);
       return effect.initialize();
     }
   },
@@ -2168,9 +2210,13 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "object", "int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectBeam(args[0], args[1], args[2], args[3]);
+      let effect = new EffectBeam();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[2]);
+      effect.setInt(2, args[3]);
+      effect.setObject(0, args[1]);
       return effect.initialize();
     }
   },
@@ -2749,9 +2795,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      let effect = new EffectPoison(args[0]);
+      let effect = new EffectPoison();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
       return effect.initialize();
     }
   },
@@ -2966,6 +3013,11 @@ NWScriptDefK1.Actions = {
       effect.ignoreCollision = args[1] ? true : false;
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 1);
+      effect.setInt(1, args[1]);
+      effect.setFloat(0, args[0].position.x);
+      effect.setFloat(1, args[0].position.y);
+      effect.setFloat(2, args[0].position.z);
       return effect.initialize();
     }
   },
@@ -3773,7 +3825,16 @@ NWScriptDefK1.Actions = {
     comment: "351: Create a Skill Increase effect.\n- nSkill: SKILL_*\n- nValue\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nSkill is invalid.\n",
     name: "EffectSkillIncrease",
     type: 16,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectSkillIncrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+      return effect.initialize();
+    }
   },
   352:{
     comment: "352: Get the type of disturbance (INVENTORY_DISTURB_*) that caused the caller's\nOnInventoryDisturbed script to fire.  This will only work for creatures and\nplaceables.\n",
@@ -4098,7 +4159,7 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectForcePushed(args[0]);
+      let effect = new EffectForcePushed();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -4619,9 +4680,12 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectDamageDecrease(args[0], args[1]);
+      let effect = new EffectDamageDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
       return effect.initialize();
     }
   },
@@ -4637,9 +4701,13 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int", "int", "int"],
     action: function(args, _instr, action){
-      let effect = new EffectACDecrease(args[0], args[1], args[2]);
+      let effect = new EffectACDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setInt(1, args[0]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+      effect.setInt(5, args[2]);
       return effect.initialize();
     }
   },
@@ -4649,9 +4717,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      let effect = new EffectMovementSpeedDecrease(args[0]);
+      let effect = new EffectMovementSpeedDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
       return effect.initialize();
     }
   },
@@ -4659,13 +4728,32 @@ NWScriptDefK1.Actions = {
     comment: "452: Create a Saving Throw Decrease effect.\n- nSave\n- nValue\n- nSaveType: SAVING_THROW_TYPE_*\n",
     name: "EffectSavingThrowDecrease",
     type: 16,
-    args: ["int", "int", "int"]
+    args: ["int", "int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectSavingThrowDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setInt(1, args[0]);
+      effect.setInt(2, args[2]);
+      effect.setInt(3, Global.kotor2DA.racialtypes.RowCount);
+      return effect.initialize();
+    }
   },
   453:{
     comment: "453: Create a Skill Decrease effect.\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nSkill is invalid.\n",
     name: "EffectSkillDecrease",
     type: 16,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      let effect = new EffectSkillDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+      return effect.initialize();
+    }
   },
   454:{
     comment: "454: Create a Force Resistance Decrease effect.\n",
@@ -4715,10 +4803,10 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       let forceshield = Global.kotor2DA.forceshields.rows[args[0]];
       if(forceshield){
-        let vfx_id = forceshield.visualeffectdef;
-        let effect = new EffectVisualEffect(vfx_id, false);
+        let effect = new EffectForceShield();
         effect.setCreator(this.caller);
         effect.setSpellId(this.getSpellId());
+        effect.setInt(0, args[0]);
         return effect.initialize();
       }else{
         return undefined;
@@ -4755,9 +4843,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      let effect = new EffectDisguise(args[0]);
+      let effect = new EffectDisguise();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
       return effect.initialize();
     }
   },
@@ -4795,13 +4884,27 @@ NWScriptDefK1.Actions = {
     comment: "469: Increase the blaster deflection rate, i think...\n",
     name: "EffectBlasterDeflectionIncrease",
     type: 16,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      let effect = new EffectBlasterDeflectionIncrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   470:{
     comment: "470:decrease the blaster deflection rate\n",
     name: "EffectBlasterDeflectionDecrease",
     type: 16,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      let effect = new EffectBlasterDeflectionDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   471:{
     comment: "471: Make the creature horified. BOO!\n",
@@ -5392,9 +5495,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["effect", "int"],
     action: function(args, _instr, action){
-      let eIcon = new EffectIcon(args[1]);
+      let eIcon = new EffectIcon();
       eIcon.setCreator(this.caller);
       eIcon.setSpellId(this.getSpellId());
+      eIcon.setInt(0, args[1]);
       eIcon.initialize();
 
       let eLink = new EffectLink(args[0], eIcon);

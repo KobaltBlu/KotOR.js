@@ -1,9 +1,18 @@
 class EffectDisguise extends GameEffect {
-  constructor(nDisguiseAppearance = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectDisguise;
-    this.nDisguiseAppearance = nDisguiseAppearance;
-    this.appearance = Global.kotor2DA.appearance.rows[this.nDisguiseAppearance];
+
+    //intList[0] : appearance.2da id / disguise id
+    
+  }
+
+  initialize(){
+    super.initialize();
+
+    this.appearance = Global.kotor2DA.appearance.rows[this.getInt(0)];
+
+    return this;
   }
 
   onApply(){

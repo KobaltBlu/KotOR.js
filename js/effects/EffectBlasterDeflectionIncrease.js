@@ -1,8 +1,11 @@
 class EffectBlasterDeflectionIncrease extends GameEffect {
-  constructor(nChange = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectBlasterDeflectionIncrease;
-    this.nChange = nChange;
+
+    //intList[0] : nChange
+    //intList[1] : ???
+
   }
 
   onApply(){

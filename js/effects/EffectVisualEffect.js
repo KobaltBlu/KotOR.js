@@ -1,16 +1,25 @@
 class EffectVisualEffect extends GameEffect {
 
-  constructor(eId = 0, miss = false){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectVisualEffect;
-    this.visualEffect = Global.kotor2DA.visualeffects.getByID(eId);
 
+    //intList[0] : VisualEffect.2da Id
+
+  }
+
+  initialize(){
+    super.initialize();
+    
+    this.visualEffect = Global.kotor2DA.visualeffects.getByID(this.getInt(0));
+
+    return this;
   }
 
   update(delta = 0){
     super.update(delta);
 
-    if(this.durationEnded && this.durationType == GameEffect.DurationType.TEMPORARY){
+    if(this.durationEnded && this.hasSubType(GameEffect.DurationType.TEMPORARY)){
       return;
     }
 
@@ -245,10 +254,16 @@ class EffectVisualEffect extends GameEffect {
   }
 
   getProgFXTexture(progFX = 1400){
-    if(progFX == 1426){
-      return 'fx_tex_stealth';
-    }else{
-      return 'fx_tex_' + pad((progFX - 1400) + 1, 2);
+    let fxNumber = progFX - 1400;
+    switch(fxNumber){
+      case 26:
+        return 'fx_tex_stealth';
+      default:
+        //Skips 13 for some reason
+        if(fxNumber >= 13)
+          fxNumber += 1;
+
+        return 'fx_tex_' + pad(fxNumber, 2);
     }
   }
 

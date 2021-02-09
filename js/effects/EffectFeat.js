@@ -1,8 +1,10 @@
 class EffectFeat extends GameEffect {
-  constructor(nFeat = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectFeat;
-    this.nFeat = nFeat;
+    
+    //intList[0] : feat.2da id
+    
   }
 
   onApply(){

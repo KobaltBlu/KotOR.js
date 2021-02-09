@@ -1,8 +1,10 @@
 class EffectHeal extends GameEffect {
-  constructor(nHeal = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectHeal;
-    this.nHeal = nHeal;
+    
+    //intList[0] : heal amount
+
   }
 
   onApply(){
@@ -11,7 +13,11 @@ class EffectHeal extends GameEffect {
       
     super.onApply();
     
-    this.object.addHP(this.nHeal);
+    this.object.addHP(this.getAmount());
+  }
+
+  getAmount(){
+    return this.getInt(0);
   }
 
 }

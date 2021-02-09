@@ -1,8 +1,10 @@
 class EffectMovementSpeedIncrease extends GameEffect {
-  constructor(nPercentChange = 0){
+  constructor(){
     super();
     this.type = GameEffect.Type.EffectMovementSpeedIncrease;
-    this.nPercentChange = nPercentChange;
+    
+    //intList[0] : nPercentChange
+
   }
 
   onApply(){
