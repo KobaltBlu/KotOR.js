@@ -10,7 +10,6 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Saber;
-
   }
 
   readBinary(auroraModel = undefined){
@@ -29,17 +28,21 @@ class AuroraModelNodeSaber extends AuroraModelNodeMesh {
     this.tvectors[1] = [];
     this.indices = [];
 
+    let vertexDataSize = 12;
+    let normalDataSize = 12;
+    let uvDataSize = 8;
+
     for(let i = 0; i < 176; i++){
       //SABER Vertices
-      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberVerts + ((4 * 3) * i);
+      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberVerts + (vertexDataSize * i);
       this.vertices.push(this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle());
 
       //SABER Normals
-      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberNormals + ((4 * 3) * i);
+      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
       this.normals[i] = new THREE.Vector3(this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle());
 
       //SABER UVs
-      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberUVs + ((4 * 2) * i);
+      this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
       this.tvectors[0][i] = (new THREE.Vector2(this.auroraModel.mdlReader.ReadSingle(), this.auroraModel.mdlReader.ReadSingle()));
       this.tvectors[1][i] = this.tvectors[0][i];
     }
