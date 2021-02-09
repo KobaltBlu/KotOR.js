@@ -10,12 +10,6 @@ class AuroraModelNodeAABB extends AuroraModelNodeMesh {
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.AABB;
-
-    this.box = new THREE.Box3();
-    this.leftNode = undefined;
-    this.rightNode = undefined;
-    this.faceIndex = -1;
-
   }
 
   //----------------//
