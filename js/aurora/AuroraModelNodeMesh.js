@@ -10,13 +10,10 @@
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Mesh;
-
   }
 
   readBinary(auroraModel = undefined){
     super.readBinary(auroraModel);
-
-    this.auroraModel.mdlReader.position += 8;
 
     this.vertices = [];
     this.normals = [];
@@ -28,6 +25,9 @@
     this.uvs = [];
     this.faces = [];
     this.indices = [];
+
+    this.functionPointer0 = this.auroraModel.mdlReader.ReadUInt32();
+    this.functionPointer1 = this.auroraModel.mdlReader.ReadUInt32();
 
     let _faceArrDef = AuroraModel.ReadArrayDefinition(this.auroraModel.mdlReader);
 
@@ -125,20 +125,7 @@
     if ((this.VerticiesCount == 0) || (this.FaceArrayCount == 0))
       return null;
 
-    let endPos = this.auroraModel.mdlReader.position;
-
-    if (this.TextureCount > 2){
-      this.TextureCount = 2;
-    }
-
-    //this.vertices.length = this.VerticiesCount;
-    this.normals.length = this.VerticiesCount;
-
-    for (let t = 0; t < this.TextureCount; t++) {
-      //this.tvectors[t].length = this.VerticiesCount;
-    }
-
-    this.indices = [];
+    let cachedPosition = this.auroraModel.mdlReader.position;
 
     //Tangent1
     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.TANGENT1){
@@ -147,7 +134,7 @@
         bitangents: [],
         normals: [],
         computed: []
-      }
+      };
     }
 
     //Tangent2
@@ -157,7 +144,7 @@
         bitangents: [],
         normals: [],
         computed: []
-      }
+      };
     }
 
     //Tangent3
@@ -167,7 +154,7 @@
         bitangents: [],
         normals: [],
         computed: []
-      }
+      };
     }
 
     //Tangent4
@@ -177,7 +164,7 @@
         bitangents: [],
         normals: [],
         computed: []
-      }
+      };
     }
 
     for (let i = 0; i < this.VerticiesCount; i++) {
@@ -269,32 +256,10 @@
       this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + offVerts;
     }
 
-    // if(this.TextureCount) {
-    //   this.faces.length = this.FaceArrayCount;
-    //   this.texCords[0].length = this.FaceArrayCount;
-    //   this.texCords[1].length = this.FaceArrayCount;
-    //   for (let i = 0; i < this.FaceArrayCount; i++) {
-    //     let index1 = this.auroraModel.mdlReader.ReadUInt16();
-    //     let index2 = this.auroraModel.mdlReader.ReadUInt16();
-    //     let index3 = this.auroraModel.mdlReader.ReadUInt16();
-    //     let normal = [
-    //       this.normals[index1],
-    //       this.normals[index2],
-    //       this.normals[index3]
-    //     ];
-    //     this.faces[i] = new THREE.Face3(index1, index2, index3, normal);
-
-    //     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
-    //       this.texCords[0][i] = ([this.tvectors[0][index1], this.tvectors[0][index2], this.tvectors[0][index3]]);
-        
-    //     if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV2)
-    //       this.texCords[1][i] = ([this.tvectors[1][index1], this.tvectors[1][index2], this.tvectors[1][index3]]);
-    //   }
-    // }
-
     if(this.FaceArrayCount){
       this.auroraModel.mdlReader.position = this.auroraModel.fileHeader.ModelDataOffset + this.FaceArrayOffset;
       for (let i = 0; i < this.FaceArrayCount; i++) {
+
         this.faces[i] = new THREE.Face3(0, 0, 0);
         this.faces[i].normal.x = this.auroraModel.mdlReader.ReadSingle();
         this.faces[i].normal.y = this.auroraModel.mdlReader.ReadSingle();
@@ -307,6 +272,7 @@
         this.faces[i].a = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].b = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].c = this.auroraModel.mdlReader.ReadUInt16();
+
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 
         if(this.MDXDataBitmap & AuroraModel.MDXFLAG.UV1)
@@ -318,7 +284,7 @@
       }
     }
 
-    this.auroraModel.mdlReader.position = endPos;
+    this.auroraModel.mdlReader.position = cachedPosition;
 
   }
 

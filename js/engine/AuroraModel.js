@@ -1262,20 +1262,16 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
             geometry.vertices.push(new THREE.Vector3(_node.vertices[i], _node.vertices[i+1], _node.vertices[i+2]));
           }
           geometry.faces = _node.faces || [];
-          geometry.faceUvs = [[],[]];
           geometry.faceVertexUvs = [[],[]];
           
           //Base Texture UVs
           if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV1){
-            geometry.faceUvs[0] = _node.tvectors[0];
-            geometry.faceUvs[1] = _node.tvectors[0];
             geometry.faceVertexUvs[0] = _node.texCords[0];
-            geometry.faceVertexUvs[1] = geometry.faceVertexUvs[0];
+            geometry.faceVertexUvs[1] = _node.texCords[0];
           }
 
           //Lightmap UVs
           if(_node.MDXDataBitmap & AuroraModel.MDXFLAG.UV2){
-            geometry.faceUvs[1] = _node.tvectors[1];
             geometry.faceVertexUvs[1] = _node.texCords[1];
           }
 
@@ -1342,16 +1338,15 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         }
         
         //RenderOrder
-        if(_node.BackgroundGeometry){
-          mesh.renderOrder = 1000;
-        }else if(options.isChildrenDynamic){
-          mesh.renderOrder = 5000;
-        }
+        // if(_node.BackgroundGeometry){
+        //   mesh.renderOrder = 1000;
+        // }else if(options.isChildrenDynamic){
+        //   mesh.renderOrder = 5000;
+        // }
 
         //----------------//
         // MERGE GEOMETRY
         //----------------//
-        //console.log('THREE.AuroraModel', auroraModel.name, _node.name, !node.isWalkmesh, !_node.BackgroundGeometry, options.mergeStatic, _node.roomStatic, geometry.faces?.length, _node)
         if(!node.isWalkmesh && !_node.BackgroundGeometry && options.mergeStatic && _node.roomStatic && _node.faces.length){
 
           node.getWorldPosition( mesh.position );

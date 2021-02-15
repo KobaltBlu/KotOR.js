@@ -10,7 +10,6 @@ class AuroraModelNodeLight extends AuroraModelNode {
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Light;
-
   }
 
   readBinary(auroraModel = undefined){

@@ -10,7 +10,6 @@
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Skin;
-
   }
 
   readBinary(auroraModel = undefined){

@@ -10,7 +10,6 @@
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Reference;
-
   }
 
   readBinary(auroraModel = undefined){

@@ -10,7 +10,6 @@ class AuroraModelNodeEmitter extends AuroraModelNode {
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.Emitter;
-
   }
 
   readBinary(auroraModel = undefined){
