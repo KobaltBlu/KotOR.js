@@ -25,17 +25,21 @@
     this.facePlaneCoefficients = [];
     this.aabbNodes = [];
     this.walkableFacesEdgesAdjacencyMatrix = [];
+    this.edges = {};
+    this.perimeters = [];
 
 
     this.wokReader = wokReader;
     this.readBinary();
     this.wokReader = undefined;
 
+    this.walkableFaces
+
     //Build Face Colors
     for (let i = 0, len = this.faces.length; i < len; i++){
       let face = this.faces[i];
       face.walkIndex = this.walkTypes[i];
-      face.color = AuroraWalkMesh.TILECOLORS[this.walkTypes[i]];
+      face.color = (AuroraWalkMesh.TILECOLORS[this.walkTypes[i]] || AuroraWalkMesh.TILECOLORS[0]).clone();
       face.surfacemat = AuroraWalkMesh.SURFACEMATERIALS[face.walkIndex];
 
       if(face.surfacemat == undefined){
@@ -47,10 +51,28 @@
 
       //Is this face walkable
       if(face.surfacemat.walk == 1){
-        let walkIdx = this.walkableFaces.push(face);
-        face.adjacentWalkableFaces.a = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[0]];
-        face.adjacentWalkableFaces.b = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[1]];
-        face.adjacentWalkableFaces.c = this.faces[(this.walkableFacesEdgesAdjacencyMatrix[walkIdx] || [] )[2]];
+        let walkIdx = this.walkableFaces.push(face) - 1;
+        face.adjacent = this.walkableFacesEdgesAdjacencyMatrix[walkIdx];
+        face.adjacentDiff = this.walkableFacesEdgesAdjacencyMatrixDiff[walkIdx];
+        face.adjacentWalkableFaces.a = this.faces[(face.adjacent || [] )[0]];
+        face.adjacentWalkableFaces.b = this.faces[(face.adjacent || [] )[1]];
+        face.adjacentWalkableFaces.c = this.faces[(face.adjacent || [] )[2]];
+      }
+
+      let edge1 = (i * 3) + 0;
+      let edge2 = (i * 3) + 1;
+      let edge3 = (i * 3) + 2;
+
+      if(!face.adjacentWalkableFaces.a && typeof this.edges[edge1] != 'undefined'){
+        face.adjacentWalkableFaces.a = this.edges[edge1];
+      }
+
+      if(!face.adjacentWalkableFaces.b && typeof this.edges[edge2] != 'undefined'){
+        face.adjacentWalkableFaces.b = this.edges[edge2];
+      }
+
+      if(!face.adjacentWalkableFaces.c && typeof this.edges[edge3] != 'undefined'){
+        face.adjacentWalkableFaces.c = this.edges[edge3];
       }
       
       //Is this face grassy
@@ -154,17 +176,51 @@
 
 
       this.wokReader.Seek(this.header.offsetToWalkableFacesEdgesAdjacencyMatrix);
+      this.walkableFacesEdgesAdjacencyMatrix = [];
+      this.walkableFacesEdgesAdjacencyMatrixDiff = [];
       for (let i = 0; i < this.header.walkableFacesEdgesAdjacencyMatrixCount; i++){
-        //Every array of 3 uint32's references the 3 walkable faces adjacent to it.
-        //If the value is -1 then the adjacent face on that side is not walkable.
-        //If it is greater or equal to zero then it is an index into the this.faces array.
-        //This is most likely used for pathfinding and or collision
-        this.walkableFacesEdgesAdjacencyMatrix.push([
-          this.wokReader.ReadInt32(),
-          this.wokReader.ReadInt32(),
-          this.wokReader.ReadInt32()
-        ]);
+        //Every array of 3 Int32's references the 3 walkable faces adjacent to it.
+        //If the value is -1 then the adjacent face on that side is not walkable, and has a corresponding edge in the edge array.
+        //If it is greater or equal to zero then it is an index into the this.faces array, after it is divided by 3 and floored.
+
+        let adj1 = this.wokReader.ReadInt32();
+        let adj2 = this.wokReader.ReadInt32();
+        let adj3 = this.wokReader.ReadInt32();
+                    
+        let adj = [-1, -1, -1];
+        let diff = [-1, -1, -1];
+
+        if(adj1 >= 0){
+          adj[0] = Math.floor(adj1/3);
+          diff[0] = (adj1 - adj[0]);
+        }
+
+        if(adj2 >= 0){
+          adj[1] = Math.floor(adj2/3);
+          diff[1] = (adj1 - adj[1]);
+        }
+
+        if(adj3 >= 0){
+          adj[2] = Math.floor(adj3/3);
+          diff[2] = (adj1 - adj[2]);
+        }
+
+        this.walkableFacesEdgesAdjacencyMatrix.push(adj);
+        this.walkableFacesEdgesAdjacencyMatrixDiff.push(diff);
       }
+
+      this.wokReader.Seek(this.header.offsetToEdges);
+      for (let i = 0; i < this.header.edgesCount; i++){
+        this.edges[this.wokReader.ReadInt32()] = new WalkmeshEdge(this.wokReader.ReadInt32());
+      }
+
+      this.wokReader.Seek(this.header.offsetToPerimeters);
+      for (let i = 0; i < this.header.perimetersCount; i++){
+        this.perimeters.push({
+          edge: this.wokReader.ReadInt32()
+        });
+      }
+
     }
   }
 
@@ -219,8 +275,8 @@
       unknownEntry: this.wokReader.ReadUInt32(),
       walkableFacesEdgesAdjacencyMatrixCount: this.wokReader.ReadUInt32(),
       offsetToWalkableFacesEdgesAdjacencyMatrix: this.wokReader.ReadUInt32(),
-      perimetricEdgesCount: this.wokReader.ReadUInt32(),
-      offsetToPerimetricEdges: this.wokReader.ReadUInt32(),
+      edgesCount: this.wokReader.ReadUInt32(),
+      offsetToEdges: this.wokReader.ReadUInt32(),
       perimetersCount: this.wokReader.ReadUInt32(),
       offsetToPerimeters: this.wokReader.ReadUInt32()
     }
@@ -477,6 +533,12 @@
     }
   }
 
+}
+
+class WalkmeshEdge {
+  constructor(transition = -1){
+    this.transition = transition;
+  }
 }
 
   
