@@ -240,7 +240,7 @@ class Module {
 
       object.model.position.copy(lLocation.position);
 
-      effect.setObject(object);
+      effect.setCreator(object);
       effect.onApply(object);
       this.effects.push(effect);
 

@@ -25,7 +25,7 @@ class GameEffect {
       return this;
 
     if(!isNaN(this.creator)){
-      this.creator = ModuleObject.GetObjectById(this.creator);
+      this.creator = this.object = ModuleObject.GetObjectById(this.creator);
     }
 
     this.initialized = true;
@@ -37,7 +37,7 @@ class GameEffect {
   }
 
   setCreator(oCreator = undefined){
-    this.creator = oCreator;
+    this.creator = this.object = oCreator;
   }
 
   setDuration(duration = 0){
@@ -418,7 +418,7 @@ class GameEffect {
           effect.setStringList(stringList);
           effect.setObjectList(objectList);
           //console.log('Handled Effect', eType, struct.ToJSON());
-          effect.initialize();
+          //effect.initialize();
         }else{
           console.log('Unhandled Effect', eType, struct.ToJSON());
         }

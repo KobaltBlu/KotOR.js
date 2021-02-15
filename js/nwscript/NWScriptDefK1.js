@@ -2216,7 +2216,7 @@ NWScriptDefK1.Actions = {
       effect.setInt(0, args[0]);
       effect.setInt(1, args[2]);
       effect.setInt(2, args[3]);
-      effect.setObject(0, args[1]);
+      effect.setCreator(0, args[1]);
       return effect.initialize();
     }
   },

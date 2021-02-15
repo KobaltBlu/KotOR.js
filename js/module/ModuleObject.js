@@ -470,7 +470,7 @@ class ModuleObject {
       let effect = this.effects[i];
       if(effect instanceof GameEffect){
         effect.initialize();
-        effect.setObject(this);
+        effect.setCreator(this);
         effect.onApply(this);
       }
     }
@@ -943,7 +943,7 @@ class ModuleObject {
         //console.log('AddEffect', 'GameEffect', effect, this);
         //effect.setDurationType(type);
         //effect.setDuration(duration);
-        effect.setObject(this);
+        effect.setCreator(this);
         effect.onApply(this);
         this.effects.push(effect);
       }
