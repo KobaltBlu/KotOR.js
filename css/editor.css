@@ -381,6 +381,9 @@ legend {
     color: #ccc;
     border-bottom: none;
     margin-bottom: 0;
+    display: inline-block;
+    width: auto;
+    padding: 0 10px;
 }
 
 ul.tree {
@@ -1560,6 +1563,19 @@ li.list-group-item:hover {
 
 .windowpane-content select {
     width: 100%;
+}
+
+.windowpane-content .section-header {
+    background: #1f1f25;
+    display: block;
+    padding: 5px 10px;
+    margin: 10px -5px;
+    margin-bottom: 5px;
+    font-size: larger;
+}
+
+.windowpane-content .section-header.first {
+    margin-top: -5px;
 }
 
 .keyframe-bar {

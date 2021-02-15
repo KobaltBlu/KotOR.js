@@ -68,6 +68,11 @@ class FileTypeManager {
       case 'mdx':
         let modelTab = tabManager.AddTab(new ModelViewerTab(res));
       break;
+      case 'dwk':
+      case 'pwk':
+      case 'wok':
+        let walkmeshTab = tabManager.AddTab(new WalkmeshViewerTab(res));
+      break;
       case 'nss':
         let nssTab = tabManager.AddTab(new ScriptEditorTab(res));
       break;

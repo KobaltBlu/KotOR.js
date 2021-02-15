@@ -303,6 +303,7 @@ const QuickStartTab = require(path.join(app.getAppPath(), 'js/editor/tabs/QuickS
 const TwoDAEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/TwoDAEditorTab.js'));
 const ImageViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ImageViewerTab.js'));
 const ModelViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/ModelViewerTab.js'));
+const WalkmeshViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/WalkmeshViewerTab.js'));
 const MovieViewerTab = require(path.join(app.getAppPath(), 'js/editor/tabs/MovieViewerTab.js'));
 const LIPEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/LIPEditorTab.js'));
 const MODEditorTab = require(path.join(app.getAppPath(), 'js/editor/tabs/MODEditorTab.js'));

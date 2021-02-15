@@ -77,7 +77,7 @@ class ModelViewerControls {
         this.keys['f'] = false;
     }).mousedown((event) => {
       if(event.target == this.element){
-        console.log('Valid Mouse Target');
+        //console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
         let parentOffset = this.editor.$canvas.offset();
@@ -101,19 +101,22 @@ class ModelViewerControls {
             this.editor.selectionBox.update();
             this.editor.selected = null;
 
-            this.editor.$ui_selected.$selected_object.hide();
+            if(this.editor.$ui_selected.$selected_object)
+              this.editor.$ui_selected.$selected_object.hide();
 
             if(intersects.length){
 
               let intersection = intersects[ 0 ],
-                  obj = intersection.object;
+                obj = intersection.object;
 
               if(obj instanceof THREE.Mesh){
-                this.editor.select(obj);
+                if(typeof this.editor.select === 'function')
+                  this.editor.select(obj);
               }else{
                 obj.traverseAncestors( (obj) => {
                   if(obj instanceof THREE.Mesh){
-                    this.editor.select(obj);
+                    if(typeof this.editor.select === 'function')
+                      this.editor.select(obj);
                     return;
                   }
                 });
@@ -126,7 +129,7 @@ class ModelViewerControls {
           this.element.requestPointerLock();
         }
       }else{
-        console.log('Invalid Mouse Target', this.element);
+        //console.log('Invalid Mouse Target', this.element);
       }
 
     }).mousemove((event) => {
@@ -269,7 +272,7 @@ class ModelViewerControls {
       document.body.addEventListener("mousemove", this.plMoveEvent = (e) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;
     } else {
-      console.log('The pointer lock status is now unlocked');
+      //console.log('The pointer lock status is now unlocked');
       document.body.removeEventListener("mousemove", this.plMoveEvent, true);
       //this.plMoveEvent = undefined;
       Mouse.Dragging = false;
