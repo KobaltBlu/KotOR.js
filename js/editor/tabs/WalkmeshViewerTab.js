@@ -211,7 +211,8 @@ class WalkmeshViewerTab extends EditorTab {
             let center = this.model.box.getCenter();
             if(!isNaN(center.length())){
               //Center the object to 0
-              //this.model.mesh.position.set(-center.x, -center.y, this.model.box.getSize().z/2);
+              this.model.mesh.position.set(-center.x, -center.y, 0);
+              this.wireframe.position.set(-center.x, -center.y, 0);
               //Stand the object on the floor by adding half it's height back to it's position
               //model.position.z += model.box.getSize().z/2;
             }else{
@@ -300,10 +301,13 @@ class WalkmeshViewerTab extends EditorTab {
 
   BuildGround(){
     // Geometry
-    let cbgeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
-    let mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-    let wireframe = new THREE.LineSegments( cbgeometry, mat );
-    this.unselectable.add( wireframe );
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
+    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
+    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.unselectable.add( this.groundMesh );
+
+    this.renderer.setClearColor(0x222222);
   }
 
 }

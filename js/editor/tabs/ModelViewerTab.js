@@ -522,33 +522,14 @@ class ModelViewerTab extends EditorTab {
   }
 
   BuildGround(){
-
     // Geometry
-    let cbgeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
-    // Materials
-    /*let cbmaterials = [];
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
+    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
+    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.unselectable.add( this.groundMesh );
 
-    cbmaterials.push( new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide }) );
-    cbmaterials.push( new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.DoubleSide }) );
-
-    let l = cbgeometry.faces.length / 2; // <-- Right here. This should still be 8x8 (64)
-
-    console.log("This should be 64: " + l);// Just for debugging puporses, make sure this is 64
-
-    for( let i = 0; i < l; i ++ ) {
-        let j = i * 2; // <-- Added this back so we can do every other 'face'
-        cbgeometry.faces[ j ].materialIndex = ((i + Math.floor(i/8)) % 2); // The code here is changed, replacing all 'i's with 'j's. KEEP THE 8
-        cbgeometry.faces[ j + 1 ].materialIndex = ((i + Math.floor(i/8)) % 2); // Add this line in, the material index should stay the same, we're just doing the other half of the same face
-    }*/
-
-    //let geo = new THREE.EdgesGeometry( new THREE.CylinderGeometry( 6, 1, 12, 4) ); // or WireframeGeometry( geometry )
-    let mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-    let wireframe = new THREE.LineSegments( cbgeometry, mat );
-
-    // Mesh
-    //let cb = new THREE.Mesh( cbgeometry, new THREE.MeshFaceMaterial( cbmaterials ) );
-    this.unselectable.add( wireframe );
-
+    this.renderer.setClearColor(0x222222);
   }
 
 }
