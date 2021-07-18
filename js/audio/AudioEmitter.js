@@ -269,6 +269,10 @@ class AudioEmitter {
 
   SetPosition(x = 0, y = 0, z = 0){
 
+    x = isNaN(x) ? this.pos.x : x;
+    y = isNaN(y) ? this.pos.y : y;
+    z = isNaN(z) ? this.pos.z : z;
+
     // We need to cache the values below because setPosition stores the floats in a higher precision than THREE.Vector3
     // which could keep them from matching when compared
     if(this.pos.x != x || this.pos.y != y || this.pos.z != z){
@@ -317,18 +321,20 @@ class AudioEmitter {
       if(typeof this.currentSound.buffer.onEnd === 'function')
         this.currentSound.buffer.onEnd();
       
-      this.currentTimeout = global.setTimeout( () => {
-        //console.log('AudioEmitter', 'PlayNextSound', 'Timeout')
-        if(this.isRandom){
-          this.index = Math.floor(Math.random() * this.sounds.length);
-        }else{
-          this.index++;
-          if(this.index >= this.sounds.length)
-            this.index = 0;
-        }
-        if(this.isActive)
-          this.PlayNextSound();
-      }, delay );
+      if(!this.currentSound.loop){
+        this.currentTimeout = global.setTimeout( () => {
+          //console.log('AudioEmitter', 'PlayNextSound', 'Timeout')
+          if(this.isRandom){
+            this.index = Math.floor(Math.random() * this.sounds.length);
+          }else{
+            this.index++;
+            if(this.index >= this.sounds.length)
+              this.index = 0;
+          }
+          if(this.isActive)
+            this.PlayNextSound();
+        }, delay );
+      }
     };
 
   }
