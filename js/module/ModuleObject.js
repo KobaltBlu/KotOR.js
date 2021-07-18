@@ -26,6 +26,8 @@ class ModuleObject {
     this.position = new THREE.Vector3();
     this.rotation = new THREE.Euler();
     this.quaternion = new THREE.Quaternion();
+    this._triangle = new THREE.Triangle();
+    this.wm_c_point = new THREE.Vector3();
 
     this.rotation._onChange( () => { this.onRotationChange } );
 	  this.quaternion._onChange( () => { this.onQuaternionChange } );
@@ -452,6 +454,18 @@ class ModuleObject {
     }
   }
 
+  initEffects(){
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      let effect = this.effects[i];
+      if(effect instanceof GameEffect){
+          effect.initialize();
+        //effect.setCreator(this);
+        effect.setAttachedObject(this);
+        effect.onApply(this);
+      }
+    }
+  }
+
   onSpawn(runScript = true){
     if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
       this.scripts.onSpawn.run(this, 0, () => {
@@ -465,15 +479,11 @@ class ModuleObject {
       this.initPerceptionList();
       this.updateCollision();
     }
+    
+    this.initEffects();
 
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      let effect = this.effects[i];
-      if(effect instanceof GameEffect){
-        effect.initialize();
-        effect.setCreator(this);
-        effect.onApply(this);
-      }
-    }
+    if(this.model instanceof THREE.Object3D)
+      this.box.setFromObject(this.model);
 
   }
 
@@ -943,7 +953,8 @@ class ModuleObject {
         //console.log('AddEffect', 'GameEffect', effect, this);
         //effect.setDurationType(type);
         //effect.setDuration(duration);
-        effect.setCreator(this);
+        //effect.setCreator(this); //Setting creator here causes Item effects to reference the wrong object
+        effect.setAttachedObject(this);
         effect.onApply(this);
         this.effects.push(effect);
       }

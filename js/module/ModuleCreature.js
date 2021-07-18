@@ -919,7 +919,7 @@ class ModuleCreature extends ModuleCreatureController {
   getAppearance(){
     let eDisguise = this.getEffect(GameEffect.Type.EffectDisguise);
     if(eDisguise){
-      return eDisguise.appearance;
+      return Global.kotor2DA["appearance"].rows[eDisguise.getInt(0)];
     }else{
       return Global.kotor2DA["appearance"].rows[this.appearance] || Global.kotor2DA["appearance"].rows[0];
     }
@@ -2050,6 +2050,8 @@ class ModuleCreature extends ModuleCreatureController {
       for(let i = 0; i < effects.length; i++){
         let effect = GameEffect.EffectFromStruct(effects[i]);
         if(effect instanceof GameEffect){
+          effect.setAttachedObject(this);
+          //console.log('attached');
           this.effects.push(effect);
           //this.addEffect(effect);
         }

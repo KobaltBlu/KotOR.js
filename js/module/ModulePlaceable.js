@@ -927,6 +927,7 @@ class ModulePlaceable extends ModuleObject {
       for(let i = 0; i < effects.length; i++){
         let effect = GameEffect.EffectFromStruct(effects[i]);
         if(effect instanceof GameEffect){
+          effect.setAttachedObject(this);
           this.effects.push(effect);
           //this.addEffect(effect);
         }

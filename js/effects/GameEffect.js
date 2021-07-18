@@ -25,7 +25,7 @@ class GameEffect {
       return this;
 
     if(!isNaN(this.creator)){
-      this.creator = this.object = ModuleObject.GetObjectById(this.creator);
+      this.creator = ModuleObject.GetObjectById(this.creator);
     }
 
     this.initialized = true;
@@ -37,7 +37,7 @@ class GameEffect {
   }
 
   setCreator(oCreator = undefined){
-    this.creator = this.object = oCreator;
+    this.creator = oCreator;
   }
 
   setDuration(duration = 0){
@@ -63,10 +63,6 @@ class GameEffect {
 
   setSkipOnLoad( bSkipOnLoad = true ){
     this.skipOnLoad = bSkipOnLoad ? true : false;
-  }
-
-  setObject(obj = undefined){
-    this.object = obj;
   }
 
   setSpellId(nSpellId = -1){
@@ -117,6 +113,10 @@ class GameEffect {
     this.objectList[nOffset] = nValue;
   }
 
+  setAttachedObject( oObject = undefined){
+    this.object = oObject;
+  }
+
   getCreator(){
     return this.creator;
   }
@@ -162,7 +162,7 @@ class GameEffect {
   }
 
   update(delta){
-    if(this.hasSubType(GameEffect.DurationType.TEMPORARY)){
+    if(this.hasSubType(GameEffect.DurationType.TEMPORARY) && (this.expireDay || this.expireTime)){
       if(this.duration <= 0){
         this.onDurationEnd();
         return;

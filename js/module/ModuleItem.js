@@ -108,6 +108,16 @@ class ModuleItem extends ModuleObject {
     return 0;
   }
 
+  getDisguiseAppearanceId(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
+        return property.subType;
+      }
+    }
+    return -1;
+  }
+
   getName(){
     return this.getLocalizedName();
   }
@@ -562,10 +572,16 @@ class ModuleItem extends ModuleObject {
     if(oCreature instanceof ModuleCreature){
       if(this.isDisguise()){
         oCreature.removeEffectsByType( GameEffect.Type.EffectDisguise ); //EFFECT_DISGUISE
-        eDisguise = new EffectDisguise( this.getDisguiseAppearance() );
+        let eDisguise = new EffectDisguise( this.getDisguiseAppearanceId() );
         eDisguise.setCreator(this);
+        eDisguise.setAttachedObject(oCreature);
         oCreature.addEffect( eDisguise );
       }
+    }
+    if(PartyManager.party.indexOf(oCreature) >= 0){
+      InventoryManager.removeItem(this);
+    }else{
+      //oCreature.inventory.push(this);
     }
   }
 
@@ -573,6 +589,11 @@ class ModuleItem extends ModuleObject {
     console.log('ModuleItem.onUnEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       oCreature.removeEffectsByCreator(this);
+    }
+    if(PartyManager.party.indexOf(oCreature) >= 0){
+      InventoryManager.addItem(this);
+    }else{
+      //oCreature.inventory.push(this);
     }
   }
 

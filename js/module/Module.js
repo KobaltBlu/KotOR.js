@@ -241,6 +241,7 @@ class Module {
       object.model.position.copy(lLocation.position);
 
       effect.setCreator(object);
+      effect.setAttachedObject(this);
       effect.onApply(object);
       this.effects.push(effect);
 
