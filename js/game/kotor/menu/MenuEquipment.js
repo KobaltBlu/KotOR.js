@@ -11,7 +11,9 @@ class MenuEquipment extends GameMenu {
     super(args);
 
     this.background = '1600x1200back';
+    this.voidFill = true;
     this.slot = null;
+
 
     this.LoadMenu({
       name: 'equip',
@@ -145,8 +147,10 @@ class MenuEquipment extends GameMenu {
             currentPC.equipItem(this.slot, this.selectedItem, () => {
               this.UpdateSlotIcons();
             });
+            this.equipmentSelectionActive = false;
             this.UpdateSelected(null);
             this.UpdateSlotIcons();
+            this.UpdateList();
           }
         });
 
@@ -193,6 +197,7 @@ class MenuEquipment extends GameMenu {
       this.LBL_SELECTTITLE.setText('');
     }else{
       this.BTN_EQUIP.show();
+      this.BTN_EQUIP.setText(Global.kotorTLK.GetStringById(31387));
       this.BTN_EXIT.setText(Global.kotorTLK.GetStringById(1581));
       this.LB_DESC.show();
 

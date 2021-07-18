@@ -11,6 +11,7 @@ class MenuEquipment extends GameMenu {
     super(args);
 
     this.background = 'blackfill';
+    this.voidFill = true;
     this.slot = null;
 
     this.LoadMenu({
@@ -112,6 +113,7 @@ class MenuEquipment extends GameMenu {
             currentPC.equipItem(this.slot, this.selectedItem, () => {
               this.UpdateSlotIcons();
             });
+            this.equipmentSelectionActive = false;
             this.UpdateSelected(null);
             this.UpdateSlotIcons();
           }

@@ -165,15 +165,34 @@ class InventoryManager {
 
   }
 
-  static removeItem(resRef = '', nCount = 1){
+  static removeItemByResRef(resref = '', nCoutn = 1){
     let item = InventoryManager.getItem(resRef);
-    let idx = InventoryManager.inventory.indexOf(item);
     if(item){
+      let idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
-        item.setStackSize(item.getStackSize() - nCount);
+        item.setStackSize( (item.getStackSize() - nCount) || 1 );
       }else{
         InventoryManager.inventory.splice(idx, 1);
       }
+    }
+  }
+
+  static removeItem(item = undefined, nCount = 1){
+    if(typeof item === 'string'){
+      InventoryManager.removeItemByResRef(resref, nCount);
+    }else if(item instanceof ModuleObject){
+      let idx = InventoryManager.inventory.indexOf(item);
+      if(idx >= 0){
+        if(nCount >= item.getStackSize()){
+          InventoryManager.inventory.splice(idx, 1);
+        }else{
+          item.setStackSize( (item.getStackSize() - nCount) || 1 );
+        }
+      }else{
+        //Item not in inventory
+      }
+    }else{
+      console.warn('InventoryManager.removeItem() unknown item', item, nCount);
     }
   }
 
