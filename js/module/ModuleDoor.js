@@ -288,6 +288,10 @@ class ModuleDoor extends ModuleObject {
       }, 100);
     });
 
+    if(this.walkmesh && this.walkmesh.mesh && this.walkmesh.mesh.parent){
+      Game.group.room_walkmeshes.remove( this.walkmesh.mesh );
+    }
+
     //Notice all creatures within range that someone opened this door
     if(object instanceof ModuleCreature){
       for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
@@ -312,10 +316,10 @@ class ModuleDoor extends ModuleObject {
     }
 
     if(this.walkmesh && this.walkmesh.mesh){
+      if(this.walkmesh.mesh.parent){
+        this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
+      }
       Game.group.room_walkmeshes.add( this.walkmesh.mesh );
-      // if(Game.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == undefined){
-      //   Game.octree_walkmesh.add(this.walkmesh.mesh)
-      // }
     }
 
     this.model.playAnimation('closing1', false, () => {
@@ -323,6 +327,7 @@ class ModuleDoor extends ModuleObject {
       this.openState = false;
       this.model.playAnimation('closed', true);
     });
+
   }
 
   //Some modules have exit triggers that are placed in the same location that the player spawns into
