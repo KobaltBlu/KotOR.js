@@ -88,6 +88,9 @@
         face.centroid.add( this.vertices[ face.c ] );
         face.centroid.divideScalar( 3 );
       }
+
+      this.detectFacePerimiterLines(face);
+
     }
 
     this.matrixWorld = new THREE.Matrix4();
@@ -153,6 +156,7 @@
           b: undefined,
           c: undefined
         }
+        this.faces[i].walkmesh = this;
       }
 
       //READ Walk Types
@@ -222,6 +226,54 @@
       }
 
     }
+  }
+
+  detectFacePerimiterLines( face ){
+
+    face.perimiterLines = [];
+
+    let aEdge = true;
+    let bEdge = true;
+    let cEdge = true;
+
+    for(let i = 0; i < this.faces.length; i++){
+      let adjFace = this.faces[i];
+      if(adjFace == face)
+        continue;
+      
+      for(let j = 0; j < 3; j++){
+        if(j == 0 && aEdge){
+          if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
+            (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
+            (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
+            aEdge = false;
+          }
+        }else if(j == 1 && bEdge){
+          if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
+            (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
+            (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
+            bEdge = false;
+          }
+        }else if(j == 2 && cEdge){
+          if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
+            (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
+            (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
+            cEdge = false;
+          }
+        }
+      }
+
+    }
+
+    if(aEdge)
+      face.perimiterLines.push( new THREE.Line3( this.vertices[face.a].clone(), this.vertices[face.b].clone() ) );
+
+    if(bEdge)
+      face.perimiterLines.push( new THREE.Line3( this.vertices[face.b].clone(), this.vertices[face.c].clone() ) );
+
+    if(cEdge)
+      face.perimiterLines.push( new THREE.Line3( this.vertices[face.c].clone(), this.vertices[face.a].clone() ) );
+    
   }
 
   dispose(){
