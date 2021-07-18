@@ -160,6 +160,7 @@ class ModuleRoom extends ModuleObject {
                 this.loadWalkmesh(this.roomName, (wok) => {
                   
                   this.walkmesh = wok;
+                  this.walkmesh.mesh.position.z += 0.001;
                   this.buildGrass();
                   
                   TextureLoader.LoadQueue( () => {
