@@ -225,6 +225,9 @@ const UTTObject = require(path.join(app.getAppPath(), 'js/resource/UTTObject.js'
 const UTWObject = require(path.join(app.getAppPath(), 'js/resource/UTWObject.js')); //Obsolete
 const VISObject = require(path.join(app.getAppPath(), 'js/resource/VISObject.js'));
 
+const DLGObject = require(path.join(app.getAppPath(), 'js/resource/DLGObject.js'));
+const DLGNode = require(path.join(app.getAppPath(), 'js/resource/DLGNode.js'));
+
 /* NWScript */
 
 const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
