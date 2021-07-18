@@ -1023,6 +1023,8 @@ class ModuleObject {
       }
 
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+      this.groundFace = undefined;
+      this.lastGroundFace = undefined;
 
       if(this instanceof ModuleCreature)
         this.updateCollision();
