@@ -113,6 +113,7 @@ class MenuEquipment extends GameMenu {
             currentPC.equipItem(this.slot, this.selectedItem, () => {
               this.UpdateSlotIcons();
             });
+            this.slot = null;
             this.equipmentSelectionActive = false;
             this.UpdateSelected(null);
             this.UpdateSlotIcons();
