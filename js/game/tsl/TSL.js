@@ -580,20 +580,33 @@ class Game extends Engine {
 
     //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
     if(intersects.length){
-      let intersection = intersects[0],
-        obj = intersection.object;
+      for(let i =0; i < intersects.length; i++){
+        let intersection = intersects[i],
+          obj = intersection.object;
 
-      if(obj.moduleObject){
-        if(obj.moduleObject.model.type === 'AuroraModel'){
-          if(typeof onSuccess === 'function')
-            onSuccess(obj.moduleObject.model);
-        }
-      }else if(typeof obj.auroraModel !== 'undefined'){
-        obj = obj.auroraModel;
-        if(obj.type === 'AuroraModel'){
-          if(obj != Game.getCurrentPlayer().getModel()){
+        if(obj.moduleObject){
+          if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
+              continue;
+          }
+          if(obj.moduleObject.model.type === 'AuroraModel'){
             if(typeof onSuccess === 'function')
-              onSuccess(obj, intersection.object);
+              onSuccess(obj.moduleObject.model);
+
+              break;
+          }
+        }else if(typeof obj.auroraModel !== 'undefined'){
+          obj = obj.auroraModel;
+          if(obj.type === 'AuroraModel'){
+            if(obj != Game.getCurrentPlayer().getModel()){
+              if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
+                  continue;
+              }
+                
+              if(typeof onSuccess === 'function')
+                onSuccess(obj, intersection.object);
+              
+              break;
+            }
           }
         }
       }
@@ -1288,6 +1301,9 @@ class Game extends Engine {
     requestAnimationFrame( Game.Update );
 
     let delta = Game.clock.getDelta();
+    Game.delta = delta;
+    Game.clampedDelta = Math.max(0, Math.min(delta, 0.016666666666666666 * 5));
+
     Game.limiter.now = Date.now();
     Game.limiter.elapsed = Game.limiter.now - Game.limiter.then;
 
