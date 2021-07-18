@@ -11,6 +11,7 @@ class MainOptions extends GameMenu {
     super(args);
 
     this.background = '';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'optionsmain_p',

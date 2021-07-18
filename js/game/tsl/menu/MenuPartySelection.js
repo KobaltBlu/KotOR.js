@@ -33,6 +33,7 @@ class MenuPartySelection extends GameMenu {
       this.selectedNPC = 0;
 
       this.background = 'blackfill';
+      this.voidFill = true;
   
       this.LoadMenu({
         name: 'partyselect_p',

@@ -11,6 +11,7 @@ class MenuMap extends GameMenu {
     super(args);
 
     this.background = 'blackfill';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'map_p',

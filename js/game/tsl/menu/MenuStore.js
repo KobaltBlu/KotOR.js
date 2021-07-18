@@ -11,6 +11,7 @@ class MenuStore extends GameMenu {
     super(args);
 
     this.background = '';
+    this.voidFill = true;
 
     this.sellMode = false;
 

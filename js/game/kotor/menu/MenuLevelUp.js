@@ -11,6 +11,7 @@ class MenuLevelUp extends GameMenu {
     super(args);
 
     this.background = '1600x1200back';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'leveluppnl',

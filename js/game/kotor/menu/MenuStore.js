@@ -11,6 +11,7 @@ class MenuStore extends GameMenu {
     super(args);
 
     this.background = '1600x1200store';
+    this.voidFill = true;
 
     this.sellMode = false;
 

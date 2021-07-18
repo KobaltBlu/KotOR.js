@@ -52,6 +52,10 @@ class GameMenu {
 
         let panelControl = this.tGuiPanel.createControl();
 
+        if(this.voidFill){
+          this.tGuiPanel.widget.add(this.backgroundVoidSprite);
+        }
+
         this.tGuiPanel.widget.add(this.backgroundSprite);
         
         panelControl.position.x = 0;//tGuiPanel.extent.left - ( ($(window).innerWidth() - tGuiPanel.extent.width) / 2 );
@@ -85,14 +89,17 @@ class GameMenu {
   }
 
   LoadBackground( onLoad = null ){
+    if(this.voidFill){
+      let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
+      this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
+      this.backgroundVoidSprite.position.z = -6;
+      this.backgroundVoidSprite.renderOrder = -6;
+    }
+
+
     if(this.background){
       TextureLoader.tpcLoader.fetch(this.background, (texture) => {
-        //Game.scene_gui.background = texture;
-
-        /*this.backgroundMaterial = new THREE.SpriteMaterial( { map: texture, color: new THREE.Color(0xFFFFFF) } );
-        this.backgroundSprite = new THREE.Sprite( this.backgroundMaterial );
-        this.backgroundSprite.scale.set( 1600, 1200, 1.0 );
-        this.backgroundSprite.position.z = -1;*/
 
         let geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
         this.backgroundMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: texture, side: THREE.DoubleSide} );
@@ -102,7 +109,6 @@ class GameMenu {
 
         if(typeof onLoad === 'function')
           onLoad();
-
 
       });
     }else{
@@ -164,6 +170,10 @@ class GameMenu {
     //Only update if the Menu is visible
     if(!this.bVisible)
       return;
+
+    if(this.voidFill){
+      this.backgroundVoidSprite.scale.set(window.innerWidth, window.innerHeight, 1);
+    }
 
     if(this.tGuiPanel && this.tGuiPanel.children){
       let len = this.tGuiPanel.children.length;

@@ -11,6 +11,7 @@ class MenuCharacter extends GameMenu {
     super(args);
 
     this.background = 'blackfill';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'character_p',

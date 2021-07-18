@@ -15,6 +15,7 @@ class MenuGalaxyMap extends GameMenu {
     }, this.args);
 
     this.background = '1600x1200map';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'galaxymap',

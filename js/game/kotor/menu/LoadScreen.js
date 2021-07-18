@@ -15,6 +15,7 @@ class LoadScreen extends GameMenu {
     }, this.args);
 
     this.background = '1600x1200load';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'loadscreen',

@@ -13,6 +13,7 @@ class MenuSaveLoad extends GameMenu {
     this.mode = 'load';
 
     this.background = 'blackfill';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'saveload_p',

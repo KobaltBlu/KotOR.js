@@ -11,6 +11,7 @@ class MenuInventory extends GameMenu {
     super(args);
 
     this.background = 'blackfill';
+    this.voidFill = true;
 
     this.LoadMenu({
       name: 'inventory_p',
