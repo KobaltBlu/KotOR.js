@@ -447,6 +447,8 @@ class ModuleArea extends ModuleObject {
     ResourceLoader.loadResource(ResourceTypes['lyt'], this._name, (data) => {
       this.layout = new LYTObject(data);
 
+      //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
+      let sortedRooms = [];
       for(let i = 0; i != this.layout.rooms.length; i++){
         let roomLYT = this.layout.rooms[i];
         for(let r = 0; r != this.rooms.length; r++ ){
@@ -457,9 +459,12 @@ class ModuleArea extends ModuleObject {
               parseFloat(roomLYT.y),
               parseFloat(roomLYT.z)
             );
+            sortedRooms.push(room);
           }
         }
       }
+
+      this.rooms = sortedRooms;
 
       for(let i = 0; i != this.layout.doorhooks.length; i++){
         let _doorHook = this.layout.doorhooks[i];
@@ -847,7 +852,8 @@ class ModuleArea extends ModuleObject {
         Game.player.clearAllActions();
         Game.player.force = 0;
         Game.player.animState = ModuleCreature.AnimState.IDLE;
-
+        Game.player.groundFace = undefined;
+        Game.player.lastGroundFace = undefined;
         Game.player.Load( ( object ) => {
 
           if(typeof object == 'undefined'){
@@ -1110,8 +1116,9 @@ class ModuleArea extends ModuleObject {
                   if(dwk.mesh instanceof THREE.Object3D){
                     dwk.mat4 = new THREE.Matrix4();
                     dwk.mat4.makeRotationFromEuler(door.rotation);
+                    dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
                     dwk.mesh.geometry.applyMatrix4(dwk.mat4);
-                    dwk.mesh.position.copy(door.position);
+                    //dwk.mesh.position.copy(door.position);
                     if(!door.openState){
                       Game.group.room_walkmeshes.add( dwk.mesh );
                     }
@@ -1167,8 +1174,9 @@ class ModuleArea extends ModuleObject {
                 if(pwk.mesh instanceof THREE.Object3D){
                   pwk.mat4 = new THREE.Matrix4();
                   pwk.mat4.makeRotationFromEuler(plc.rotation);
+                  pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
                   pwk.mesh.geometry.applyMatrix4(pwk.mat4);
-                  pwk.mesh.position.copy(plc.position);
+                  //pwk.mesh.position.copy(plc.position);
                   Game.group.room_walkmeshes.add( pwk.mesh );
                 }
     
