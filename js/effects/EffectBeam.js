@@ -109,7 +109,7 @@ class EffectBeam extends GameEffect {
   update(delta = 0){
     super.update(delta);
 
-    if(this.durationEnded && this.hasSubType(GameEffect.DurationType.TEMPORARY)){
+    if(this.durationEnded && this.getDurationType() == GameEffect.DurationType.TEMPORARY){
       return;
     }
   }

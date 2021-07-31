@@ -508,45 +508,49 @@ class GFFObject {
   }
 
   Export(file = null, onExport = null, onError = null){
+    return new Promise( (resolve, reject) => {
+      let savePath = file ? file : this.file;
 
-    let savePath = file ? file : this.file;
-
-    if(!savePath){
-      console.error('Export GFF: Missing Export Path');
-      return;
-    }
-
-    console.log('Export GFF', savePath, this);
-    let fileInfo = path.parse(savePath);
-
-    //Update the TemplateResRef field if it exists
-    let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
-    if(templateResRef instanceof Field){
-      fileInfo.name = templateResRef.Value = fileInfo.name.substr(0, 16);
-      //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
-      fileInfo.base = fileInfo.name + fileInfo.ext;
-    }
-
-    let buffer = this.GetExportBuffer();
-
-    console.log('Export GFF', fileInfo, this);
-
-    fs.writeFile( path.join(fileInfo.dir, fileInfo.base), buffer, (err) => {
-      if (err){
-        if(typeof onError === 'function')
-          onError(err);
-      }else{
-        if(typeof onExport === 'function')
-          onExport(err);
+      if(!savePath){
+        console.error('Export GFF: Missing Export Path');
+        return;
       }
+
+      console.log('Export GFF', savePath, this);
+      let fileInfo = path.parse(savePath);
+
+      //Update the TemplateResRef field if it exists
+      let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
+      if(templateResRef instanceof Field){
+        fileInfo.name = templateResRef.Value = fileInfo.name.substr(0, 16);
+        //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
+        fileInfo.base = fileInfo.name + fileInfo.ext;
+      }
+
+      let buffer = this.GetExportBuffer();
+
+      console.log('Export GFF', fileInfo, this);
+
+      fs.writeFile( path.join(fileInfo.dir, fileInfo.base), buffer, (err) => {
+        if (err){
+          if(typeof onError === 'function')
+            onError(err);
+          reject(err);
+        }else{
+          if(typeof onExport === 'function')
+            onExport(err);
+          resolve(this);
+        }
+      });
+
+      this.signals.onSaved.dispatch( this );
+      this.signals.onUpdated.dispatch( this );
     });
-
-    this.signals.onSaved.dispatch( this );
-    this.signals.onUpdated.dispatch( this );
-
   }
 
   GetExportBuffer(){
+
+    console.log('GetExportBuffer', this);
 
     this.BWStructs = new BinaryWriter();
     this.BWFields = new BinaryWriter();
@@ -556,6 +560,8 @@ class GFFObject {
     this.BWListIndicies = new BinaryWriter();
 
     this.exportedLabels = [];
+    this.exportedStructs = [];
+    this.exportedFields = [];
 
     this.StructCount = 0;
     this.FieldCount = 0;
@@ -563,7 +569,24 @@ class GFFObject {
 
     let bw = new BinaryWriter();
 
-    this.ExportStruct(this.RootNode);
+    this.WalkStruct(this.RootNode);
+
+    for(let i = 0; i < this.exportedStructs.length; i++){
+      this.ExportStruct(this.exportedStructs[i]);
+    }
+    this.StructCount = this.exportedStructs.length;
+
+    for(let i = 0; i < this.exportedFields.length; i++){
+      this.ExportField(this.exportedFields[i]);
+    }
+    this.FieldCount = this.exportedFields.length;
+
+    for(let i = 0; i < this.exportedLabels.length; i++){
+      this.ExportLabel(this.exportedLabels[i]);
+    }
+    this.LabelCount = this.exportedLabels.length;
+
+    //this.ExportStruct(this.RootNode);
 
     let StructsLength = this.BWStructs.length;
     let FieldsLength = this.BWFields.length;
@@ -648,198 +671,174 @@ class GFFObject {
     return bw.buffer;
   }
 
-  ExportStruct(strt = null){
-    //console.log('Export Struct');
-    let structIndex = this.StructCount;
-    this.StructCount += 1;
-    let fieldArray = [];
+  WalkStruct(struct = undefined){
 
-    let fieldIndieciesPos = this.BWFieldIndicies.position;
-    //console.log(strt.GetType());
-    this.BWStructs.WriteUInt32(strt.GetType() == -1 ? 0xFFFFFFFF : strt.GetType() );
-    let offset = this.BWStructs.position;
-    this.BWStructs.position += 4;
-    this.BWStructs.WriteUInt32(strt.GetFields().length);
+    if(struct instanceof Struct){
+      struct.index = this.StructCount;
+      this.exportedStructs[struct.index] = struct;
+      this.StructCount++;
 
-    //BWFieldIndicies.position += 4 * strt.GetFields().Count);
-    $.each(strt.GetFields(), (i, f) => {
-      //Export the Field and add its index to the fieldArray
-      fieldArray.push(this.ExportField(f));
-    });
+      struct.fieldCount = struct.GetFields().length;
+      for(let i = 0; i < struct.fieldCount; i++){
+        let field = struct.Fields[i];
+        field.index = this.FieldCount;
+        this.exportedFields[field.index] = field;
+        this.FieldCount++;
 
-    let DataOrDataOffset = 0;
+        let labelSearchIndex = this.exportedLabels.indexOf(field.GetLabel());
+        field.labelIndex = labelSearchIndex >= 0 ? labelSearchIndex : this.exportedLabels.push(field.GetLabel()) - 1;   
 
-    //If there is more than one index in the fieldArray then create an entry in the fieldIndiciesArray
-    if (fieldArray.length == 1){
-      let cached = this.BWStructs.position;
-      DataOrDataOffset = fieldArray[0];
-
-      this.BWStructs.position = offset;
-      this.BWStructs.WriteUInt32(DataOrDataOffset);
-
-      //Return the pointer to the previous position
-      this.BWStructs.position = cached;
-    } else {
-      let returnTo = this.BWStructs.position;
-      DataOrDataOffset = this.BWFieldIndicies.position;
-
-      this.BWStructs.position = offset;
-      this.BWStructs.WriteUInt32(DataOrDataOffset);
-
-      //Return the pointer to the previous position
-      this.BWStructs.position = returnTo;
-
-      //console.log("Struct ID: " + strt.GetType());
-      $.each(fieldArray, (i, index) => {
-        this.BWFieldIndicies.WriteUInt32(index);
-        //console.log("Field Indicie: " + index);
-      });
+        let childStructs = field.GetChildStructs() || [];
+        let childStructCount = childStructs.length;
+        for(let j = 0; j < childStructCount; j++){
+          this.WalkStruct(childStructs[j]);
+        }
+      }
     }
 
-    return structIndex;
+  }
+
+  ExportStruct(struct = null){
+    if(struct instanceof Struct){
+      //console.log('Export Struct', struct);
+      this.BWStructs.WriteUInt32(struct.GetType() == -1 ? 0xFFFFFFFF : struct.GetType() );
+      if(struct.GetFields().length == 1){
+        this.BWStructs.WriteUInt32( struct.GetFields()[0].index );
+      }else if(struct.GetFields().length){
+        this.BWStructs.WriteUInt32( this.BWFieldIndicies.position );
+        for(let i = 0; i < struct.GetFields().length; i++){
+          this.BWFieldIndicies.WriteUInt32( struct.GetFields()[i].index );
+        }
+      }else{
+        this.BWStructs.WriteUInt32( 0 );
+      }
+
+      this.BWStructs.WriteUInt32(struct.GetFields().length);
+    }
   }
 
   //The method returns the exported fields index in the FieldsArray
   ExportField(field = null){
-    //console.log('Export Field');
-    let fieldIndex = this.FieldCount;
-    //console.log("Field Index: " + fieldIndex);
-    this.FieldCount += 1;
-    //console.log("Field Offset: " + this.BWFields.position);
-    //console.log(field.GetLabel(), field.GetType())
-    this.BWFields.WriteUInt32(field.GetType());
-    this.BWFields.WriteUInt32(this.ExportLabel(field.GetLabel()));
-    let cached = this.BWFields.position;//Cache the position where we are going to write the placeholder value
-    //BWFields.Write((uint)'\0');
-    switch (field.GetType()) {
-      case GFFDataTypes.BYTE:
-        this.BWFields.WriteUInt32(field.Value);
-        break;
-      case GFFDataTypes.CEXOLOCSTRING:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        //Figure out the total length of the CExoLocString structure
-        let CExoLocStringTotalSize = 8;//the size of two DWORDS
-        $.each(field.GetCExoLocString().GetStrings(), (i, sub) => {
-          //the size of two DWORDS plus the string length
-          CExoLocStringTotalSize += (8 + sub.getString().length);
-        });
+    if(field instanceof Field){
+      this.BWFields.WriteUInt32(field.GetType());
+      this.BWFields.WriteUInt32(field.labelIndex);
+      try{
+        switch (field.GetType()) {
+          case GFFDataTypes.BYTE:
+            this.BWFields.WriteUInt32(field.Value);
+            break;
+          case GFFDataTypes.CEXOLOCSTRING:
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            //Calculate the total length of the CExoLocString structure
+            let CExoLocStringTotalSize = 8;//the size of two DWORDS
+            for(let i = 0; i < field.GetCExoLocString().GetStrings().length; i++){
+              //the size of two DWORDS plus the string length
+              CExoLocStringTotalSize += (8 + field.GetCExoLocString().GetStrings()[i].getString().length);
+            }
 
-        this.BWFieldData.WriteUInt32(CExoLocStringTotalSize);
-        this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetRESREF() == -1 ? 0xFFFFFFFF : field.GetCExoLocString().GetRESREF() );
-        this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetStrings().length);
+            this.BWFieldData.WriteUInt32(CExoLocStringTotalSize);
+            this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetRESREF() == -1 ? 0xFFFFFFFF : field.GetCExoLocString().GetRESREF() );
+            this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetStrings().length);
 
-        $.each(field.GetCExoLocString().GetStrings(), (i, sub) => {
-          this.BWFieldData.WriteUInt32(sub.GetStringID());
-          this.BWFieldData.WriteUInt32(sub.getString().length);
-          this.BWFieldData.WriteChars(sub.getString());
-        });
+            for(let i = 0; i < field.GetCExoLocString().GetStrings().length; i++){
+              let sub = field.GetCExoLocString().GetStrings()[i];
+              this.BWFieldData.WriteUInt32(sub.GetStringID());
+              this.BWFieldData.WriteUInt32(sub.getString().length);
+              this.BWFieldData.WriteChars(sub.getString());
+            }
 
-        break;
-      case GFFDataTypes.CEXOSTRING:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteUInt32(field.Value.length);
-        this.BWFieldData.WriteChars(field.Value);
-        break;
-      case GFFDataTypes.CHAR:
-        this.BWFields.WriteUInt32(field.Value.charCodeAt());
-        break;
-      case GFFDataTypes.DOUBLE:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteDouble(field.Value);
-        break;
-      case GFFDataTypes.DWORD:
-        this.BWFields.WriteUInt32(field.Value);
-        break;
-      case GFFDataTypes.DWORD64:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteBytes(field.Data);
-        break;
-      case GFFDataTypes.FLOAT:
-        this.BWFields.WriteSingle(field.Value);
-        break;
-      case GFFDataTypes.INT:
-        this.BWFields.WriteUInt32(field.Value);
-        break;
-      case GFFDataTypes.INT64:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        Bthis.WFieldData.WriteBytes(field.Data);
-        break;
-      case GFFDataTypes.LIST:
-        if (field.GetChildStructs().length == 0){
-            this.BWFields.WriteUInt32(0xFFFFFFFF);
+            break;
+          case GFFDataTypes.CEXOSTRING:
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteUInt32(field.Value.length);
+            this.BWFieldData.WriteChars(field.Value);
+            break;
+          case GFFDataTypes.CHAR:
+            this.BWFields.WriteUInt32(field.Value.charCodeAt());
+            break;
+          case GFFDataTypes.DOUBLE:
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteDouble(field.Value);
+            break;
+          case GFFDataTypes.DWORD:
+            this.BWFields.WriteUInt32(field.Value);
+            break;
+          case GFFDataTypes.DWORD64:
+            //console.log('DWORD64', field);
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteBytes(field.Data);
+            break;
+          case GFFDataTypes.FLOAT:
+            this.BWFields.WriteSingle(field.Value);
+            break;
+          case GFFDataTypes.INT:
+            this.BWFields.WriteInt32(field.Value);
+            break;
+          case GFFDataTypes.INT64:
+            //console.log('INT64', field);
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            Bthis.WFieldData.WriteBytes(field.Data);
+            break;
+          case GFFDataTypes.LIST:
+            if (field.GetChildStructs().length == 0){
+              this.BWFields.WriteUInt32(0xFFFFFFFF);
+            }
+            else {
+              this.BWFields.WriteUInt32(this.BWListIndicies.position);
+              this.BWListIndicies.WriteUInt32(field.GetChildStructs().length);
+              for(let i = 0; i < field.GetChildStructs().length; i++){
+                this.BWListIndicies.WriteUInt32(field.GetChildStructs()[i].index);
+              }
+            }
+            break;
+          case GFFDataTypes.ORIENTATION:
+            //Export the Orientation data to the FieldData block and record the offset with the field
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteSingle(field.GetOrientation().x);
+            this.BWFieldData.WriteSingle(field.GetOrientation().y);
+            this.BWFieldData.WriteSingle(field.GetOrientation().z);
+            this.BWFieldData.WriteSingle(field.GetOrientation().w);
+            break;
+          case GFFDataTypes.RESREF:
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteByte(field.Value.length);
+            this.BWFieldData.WriteChars(field.Value);
+            break;
+          case GFFDataTypes.SHORT:
+            this.BWFields.WriteInt32(field.Value);
+            break;
+          case GFFDataTypes.STRUCT:
+            this.BWFields.WriteUInt32( field.GetChildStructs()[0].index );//Write the struct index value
+            break;
+          case GFFDataTypes.VECTOR:
+            //Export the vector data to the FieldData block and record the offset with the field
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteSingle(field.GetVector().x);
+            this.BWFieldData.WriteSingle(field.GetVector().y);
+            this.BWFieldData.WriteSingle(field.GetVector().z);
+            break;
+          case GFFDataTypes.VOID:
+            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFieldData.WriteUInt32(field.GetVoid().length);
+            this.BWFieldData.WriteBytes(field.GetVoid());
+            break;
+          case GFFDataTypes.WORD:
+            this.BWFields.WriteUInt32(field.Value);
+            break;
+          default:
+            throw('Unknown');
         }
-        else {
-            this.BWFields.WriteUInt32(this.BWListIndicies.position);
-            this.BWListIndicies.WriteUInt32(field.GetChildStructs().length);
-            $.each(field.GetChildStructs(), (i, strt) => {
-              //console.log('LIST: Child Struct');
-              this.BWListIndicies.WriteUInt32(this.ExportStruct(strt));
-            });
-        }
-        break;
-      case GFFDataTypes.ORIENTATION:
-        //Export the Orientation data to the FieldData block and record the offset with the field
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteSingle(field.GetOrientation().x);
-        this.BWFieldData.WriteSingle(field.GetOrientation().y);
-        this.BWFieldData.WriteSingle(field.GetOrientation().z);
-        this.BWFieldData.WriteSingle(field.GetOrientation().w);
-        break;
-      case GFFDataTypes.RESREF:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteByte(field.Value.length);
-        this.BWFieldData.WriteChars(field.Value);
-        break;
-      case GFFDataTypes.SHORT:
-        this.BWFields.WriteUInt32(field.Value);
-        break;
-      case GFFDataTypes.STRUCT:
-        //BWFields.Write((uint)0);//Write a placeholder value
-        //console.log('Export Child Struct')
-        this.BWFields.position += 4;
-
-        let index = this.ExportStruct(field.GetChildStructs()[0]);
-
-        let returnTo = this.BWFields.position;
-        this.BWFields.position = cached;
-        this.BWFields.WriteUInt32(index);//Write the struct index value
-        this.BWFields.position = returnTo;
-        break;
-      case GFFDataTypes.VECTOR:
-        //Export the vector data to the FieldData block and record the offset with the field
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteSingle(field.GetVector().x);
-        this.BWFieldData.WriteSingle(field.GetVector().y);
-        this.BWFieldData.WriteSingle(field.GetVector().z);
-        break;
-      case GFFDataTypes.VOID:
-        this.BWFields.WriteUInt32(this.BWFieldData.position);
-        this.BWFieldData.WriteUInt32(field.GetVoid().length);
-        this.BWFieldData.WriteBytes(field.GetVoid());
-        break;
-      case GFFDataTypes.WORD:
-        this.BWFields.WriteUInt32(field.Value);
-        break;
-      default:
-        throw('Unknown');
+      }catch(e){
+        console.error('GFFObject Write Field Error', e);
+        throw e;
+      }
     }
-
-    return fieldIndex;
   }
 
   ExportLabel(label = ""){
-    if (this.exportedLabels.indexOf(label) == -1){
-      this.exportedLabels.push(label);
-      this.LabelCount++;
-
-      //PadRight is not implemented in JavaScript
-      let newLabel = this.PadRight(label, '\0', 16);
-
-      this.BWLabels.WriteChars(newLabel.substr(0, 16));
-    }
-
-    //console.log(label, this.exportedLabels.indexOf(label), this.exportedLabels)
-    return this.exportedLabels.indexOf(label);
+    //PadRight is not implemented in JavaScript
+    let newLabel = this.PadRight(label, '\0', 16);
+    this.BWLabels.WriteChars(newLabel.substr(0, 16));
   }
 
   PadRight(str = "", pad = '\0', count = 16){
@@ -961,6 +960,13 @@ class Field {
           this.Vector = {x: 0, y: 0, z: 0};
         }
       break;
+      case GFFDataTypes.STRUCT:
+        this.ChildStructs[0] = new Struct();
+      break;
+      case GFFDataTypes.VOID:
+        this.Data = Buffer.alloc(0);
+        this.Value = 0;
+      break;
     }
 
   }
@@ -1038,6 +1044,100 @@ class Field {
           this.CExoLocString.AddSubString(val, 0);
         }
       break;
+      case GFFDataTypes.RESREF:
+        if(!val)
+          val = '';
+
+        if(typeof val !== 'string')
+          val = val.toString()
+        
+        this.Value = val;
+      break;
+      case GFFDataTypes.CEXOSTRING:
+        if(!val)
+          val = '';
+
+        if(typeof val !== 'string')
+          val = val.toString()
+        
+        this.Value = val;
+      break;
+      case GFFDataTypes.CHAR:
+        if(!val)
+          val = '';
+
+        if(typeof val !== 'string')
+          val = val.toString()
+
+        this.Value = val.toString();
+      break;
+      case GFFDataTypes.BYTE:
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
+        
+        if(val >= 0 && val <= 255){
+          this.Value = val;
+        }else{
+          console.error('Field.SetValue BYTE OutOfBounds', val, this);
+          this.Value = val;
+        }
+      break;
+      case GFFDataTypes.SHORT:
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
+        
+        if(val >= -32768 && val <= 32767){
+          this.Value = val;
+        }else{
+          console.error('Field.SetValue SHORT OutOfBounds', val, this);
+          this.Value = val;
+        }
+      break;
+      case GFFDataTypes.INT:
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
+        
+        if(val >= -2147483648 && val <= 21474836487){
+          this.Value = val;
+        }else{
+          console.error('Field.SetValue INT OutOfBounds', val, this);
+          this.Value = val;
+        }
+      break;
+      case GFFDataTypes.WORD:
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
+
+        if(val >= 0 && val <= 65535){
+          this.Value = val;
+        }else{
+          console.error('Field.SetValue WORD OutOfBounds', val, this);
+          this.Value = val;
+        }
+      break;
+      case GFFDataTypes.DWORD:
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
+
+        if(val >= 0 && val <= 4294967296){
+          this.Value = val;
+        }else{
+          console.error('Field.SetValue DWORD OutOfBounds', val, this);
+          this.Value = val;
+        }
+      break;
+      case GFFDataTypes.VOID:
+        if(val instanceof Buffer){
+          this.Value = val;
+        }else if(val instanceof ArrayBuffer){
+          this.Value = Buffer.from(val);
+        }
+      break;
       default:
         this.Value = val;
       break;
@@ -1072,7 +1172,20 @@ class Field {
   }
 
   AddChildStruct(strt){
-    this.ChildStructs.push(strt);
+    if(!(strt instanceof Struct)){
+      console.log('AddChildStruct invalid type', strt);
+      return this;
+    }
+
+    switch(this.Type){
+      case GFFDataTypes.LIST:
+        this.ChildStructs.push(strt);
+      break;
+      case GFFDataTypes.STRUCT:
+        this.ChildStructs[0] = strt;
+      break;
+    }
+
     return this;
   }
 
@@ -1105,6 +1218,10 @@ class CExoLocString {
   AddSubString(subString, index = -1) {
     if(index == -1)
       index = this.strings.length;
+
+    if( !(subString instanceof CExoLocSubString) ){
+      subString = new CExoLocSubString(0, subString.toString());
+    }
 
     this.strings[index] = subString;
     return this;

@@ -7,9 +7,9 @@
 
 class GUIPanel extends GUIControl {
   
-  constructor(control = null, parent = null){
+  constructor(menu = null, control = null, parent = null, scale = false){
     
-    super(control, parent);
+    super(menu, control, parent, scale);
 
   }
 

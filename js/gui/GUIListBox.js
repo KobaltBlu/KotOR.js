@@ -37,31 +37,70 @@ class GUIListBox extends GUIControl {
 
     this.itemGroup = new THREE.Group();
     this.itemGroup.name = 'ListItems';
-    this.widget.add(this.itemGroup);
+    //this.widget.add(this.itemGroup);
+
+    this.scene = new THREE.Scene();
 
     if(this.hasScrollBar){
       this.scrollbar = new GUIScrollBar(this.menu, this._scrollbar, this.widget, this.scale);
       this.scrollbar.setList( this );
-      this.widget.add(this.scrollbar.createControl());
-
+      //this.widget.add(this.scrollbar.createControl());
+      this.scrollWrapper = new THREE.Group();
+      this.scrollWrapper.add(this.scrollbar.createControl())
+      this.scene.add(this.scrollWrapper);
     }
 
-    //this.startFromLeft = ( control.HasField('STARTFROMLEFT') ? control.GetFieldByLabel('STARTFROMLEFT').GetValue() : 0 );
+    let extent = this.getInnerSize();
+    this.width = extent.width;
+    this.height = extent.height;
 
+    this.camera = new THREE.OrthographicCamera(
+      this.width / -2, this.width / 2,
+      this.height / 2, this.height / -2,
+      1, 500
+    );
+    this.camera.position.z = 100;
 
-    /*We don't need to scissor because kotor lists dont show inbetween items. they always snap to the top item.
-    therefor if an item's bounds aren't inside the listbox bounds we will just set it to hidden*/
+    this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
+		//this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
+    this.clearColor = new THREE.Color(0x000000);
 
-    /*this.widget.onBeforeRender = function(){
-      Game.renderer.setScissorTest(true);
-      Game.renderer.setScissor(0, 0, 250, 250);
-      console.log('start scissor');
-    }
+    this.targetMaterial = new THREE.MeshBasicMaterial()
+    this.targetMaterial.blending = THREE.CustomBlending;
 
-    this.widget.onAfterRender = function(){
-      Game.renderer.setScissorTest(false);
-      console.log('end scissor');
-    }*/
+    this.targetMaterial.blendEquation = THREE.AddEquation;
+    this.targetMaterial.blendSrc = THREE.OneFactor;
+    this.targetMaterial.blendDst = THREE.OneMinusSrcColorFactor;
+    //this.targetMaterial.blendSrcAlpha = THREE.OneFactor;
+    //this.targetMaterial.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
+    this.targetGeometry = new THREE.PlaneBufferGeometry(this.width, this.height, 1, 1);
+    this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
+    this.targetMaterial.map = this.texture.texture;
+    this.targetMesh.position.z = 4;
+    this.targetMesh.renderOrder = 5;
+    //this.targetMesh.scale.set(this.width, this.height, 1);
+    this.widget.add(this.targetMesh);
+
+    this.scene.add(this.itemGroup);
+
+  }
+
+  update(delta = 0){
+    super.update(delta);
+
+    if(!this.isVisible())
+      return;
+
+    let oldClearColor = Game.renderer.getClearColor();
+    Game.renderer.setClearColor(this.clearColor, 1);
+    Game.renderer.setRenderTarget(this.texture);
+    Game.renderer.clear(this.texture);
+    Game.renderer.render(this.scene, this.camera);
+    this.texture.needsUpdate = true;
+    Game.renderer.setRenderTarget(null);
+    this.targetMaterial.transparent = true;
+    this.targetMaterial.needsUpdate = true;
+    Game.renderer.setClearColor(oldClearColor, 1);
 
   }
 
@@ -293,6 +332,7 @@ class GUIListBox extends GUIControl {
   }
 
   cullOffscreen(){
+    return;
     let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
     this.minY = parentPos.y + this.extent.height/2;
     this.maxY = parentPos.y - this.extent.height/2;

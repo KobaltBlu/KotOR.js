@@ -15,6 +15,15 @@ class ModulePlayer extends ModuleCreature {
     super.update(delta);
   }
 
+  save(){
+    let gff = super.save();
+
+
+    PartyManager.Player = gff;
+    this.template = gff;
+    return gff;
+  }
+
 }
 
 module.exports = ModulePlayer;

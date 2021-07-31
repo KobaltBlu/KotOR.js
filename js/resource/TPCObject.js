@@ -492,7 +492,7 @@ class TPCObject {
       cloned.bumpMapType = this.bumpMapType;
       cloned.header = this.header;
       cloned.txi = this.txi;
-      return cloned;
+      return this;
     
     }
 

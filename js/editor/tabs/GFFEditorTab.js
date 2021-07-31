@@ -225,7 +225,7 @@ class GFFEditorTab extends EditorTab {
       self.parseField(newField, $fields);
     }}));
     menu.append(new MenuItem({label: 'Add BINARY', click() {
-      let newField = new Field(GFFDataTypes.BINARY, 'New BINARY');
+      let newField = new Field(GFFDataTypes.VOID, 'New BINARY');
       struct.AddField(newField);
       self.parseField(newField, $fields);
     }}));

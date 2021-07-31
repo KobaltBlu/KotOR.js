@@ -193,6 +193,43 @@ class NWScriptStack {
     this.basePointer = 0;
   }
 
+  saveForEventSituation(){
+    let struct = new Struct();
+
+    struct.AddField( new Field(GFFDataTypes.INT, 'BasePointer') ).SetValue(this.basePointer);
+
+    let stack = struct.AddField( new Field(GFFDataTypes.LIST, 'Stack') ).SetValue(this.pointer);
+    for(let i = 0; i < this.stack.length; i++){
+      let element = this.stack[i];
+      let elementStruct = new Struct(i);
+
+      elementStruct.AddField( new Field(GFFDataTypes.CHAR, 'Type') ).SetValue( element.type );
+      switch(element.type){
+        case NWScript.DATATYPE.OBJECT:
+          elementStruct.AddField( new Field(GFFDataTypes.DWORD, 'Value') ).SetValue( element.value instanceof ModuleObject ? element.value.id : 2130706432 );
+        break;
+        case NWScript.DATATYPE.INTEGER:
+          elementStruct.AddField( new Field(GFFDataTypes.INT, 'Value') ).SetValue( element.value );
+        break;
+        case NWScript.DATATYPE.FLOAT:
+          elementStruct.AddField( new Field(GFFDataTypes.FLOAT, 'Value') ).SetValue( element.value );
+        break;
+        case NWScript.DATATYPE.STRING:
+          elementStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Value') ).SetValue( element.value );
+        break;
+        case NWScript.DATATYPE.NWScript.DATATYPE.EFFECT:
+          let gameDefinedStruct = new Struct(0);
+        break;
+      }
+      stack.AddChildStruct(elementStruct);
+    }
+
+    struct.AddField( new Field(GFFDataTypes.INT, 'StackPointer') ).SetValue(this.pointer);
+    struct.AddField( new Field(GFFDataTypes.INT, 'StackPointer') ).SetValue(this.stackSize);
+  
+    return struct;
+  }
+
 }
 
 NWScriptStack.FromActionStruct = function( struct, object_self = undefined ){
@@ -240,16 +277,16 @@ NWScriptStack.FromActionStruct = function( struct, object_self = undefined ){
 
         switch(gameStruct.GetType()){
           case 0: //Effect
-            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.EffectFromStruct(gameStruct), type: NWScript.DATATYPE.EFFECT }))
+            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.EffectFromStruct(gameStruct), type: NWScript.DATATYPE.EFFECT }));
           break;
           case 1: //Event
-
+            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.EventFromStruct(gameStruct), type: NWScript.DATATYPE.EVENT }));
           break;
           case 2: //Location
-
+            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.LocationFromStruct(gameStruct), type: NWScript.DATATYPE.LOCATION }));
           break;
           case 3: //Talent
-
+            stack.stack.push( new NWScriptStackVariable({ value: NWScriptStack.TalentFromStruct(gameStruct), type: NWScript.DATATYPE.TALENT }));
           break;
         }
 
@@ -262,70 +299,48 @@ NWScriptStack.FromActionStruct = function( struct, object_self = undefined ){
 
 };
 
-NWScriptStack.EffectFromStruct = function( struct ){
-
-  //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
-  let type = struct.GetFieldByLabel('Type').GetValue();
-  let subtype = struct.GetFieldByLabel('SubType').GetValue();
-  let duration = struct.GetFieldByLabel('Duration').GetValue();
-  let skipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();
-  let isExposed = struct.GetFieldByLabel('IsExposed').GetValue();
-
-  let ints = [];
-  let floats = [];
-  let strings = [];
-  let objects = [];
-
-  if(struct.HasField('IntList')){
-    let list = struct.GetFieldByLabel('IntList').GetChildStructs();
-    for(let i = 0; i < list.length; i++){
-      ints.push(list[i].GetFieldByLabel('Value').GetValue())
-    }
-  }
-
-  if(struct.HasField('FloatList')){
-    let list = struct.GetFieldByLabel('FloatList').GetChildStructs();
-    for(let i = 0; i < list.length; i++){
-      floats.push(list[i].GetFieldByLabel('Value').GetValue())
-    }
-  }
-
-  if(struct.HasField('StringList')){
-    let list = struct.GetFieldByLabel('StringList').GetChildStructs();
-    for(let i = 0; i < list.length; i++){
-      strings.push(list[i].GetFieldByLabel('Value').GetValue())
-    }
-  }
-
-  if(struct.HasField('ObjectList')){
-    let list = struct.GetFieldByLabel('ObjectList').GetChildStructs();
-    for(let i = 0; i < list.length; i++){
-      objects.push(
-        ModuleObject.GetObjectById( list[i].GetFieldByLabel('Value').GetValue() )
-      );
-    }
-  }
-
-  let effect = {
-    type: type,
-    subtype: subtype,
-    duration: duration,
-    isExposed: isExposed,
-    ints: ints,
-    floats: floats,
-    strings: strings,
-    objects: objects
-  };
-
-  switch(type){
-    case 30:
-      effect.visual = ints[0];
+NWScriptStack.TalentFromStruct = function( struct ){
+  let talentType = struct.GetFieldByLabel('Type').GetValue();
+  let talent = undefined;
+  switch(talentType){
+    case 0:
+      talent = new TalentSpell(struct.GetFieldByLabel('ID').GetValue());
+    break;
+    case 1:
+      talent = new TalentFeat(struct.GetFieldByLabel('ID').GetValue());
+    break;
+    case 2:
+      talent = new TalentSkill(struct.GetFieldByLabel('ID').GetValue());
     break;
   }
 
+  talent.setItem( ModuleObject.GetObjectById( struct.GetFieldByLabel('Item').GetValue() ) );
+  talent.setItemPropertyIndex( struct.GetFieldByLabel('ItemPropertyIndex').GetValue() );
+  talent.setCasterLevel( struct.GetFieldByLabel('CasterLevel').GetValue() );
+  talent.setMetaType( struct.GetFieldByLabel('MetaType').GetValue() );
 
-  return effect;
+  return talent;
+}
 
+NWScriptStack.LocationFromStruct = function( struct ){
+  return new Game.Location(
+    struct.GetFieldByLabel('PositionX').GetValue(),
+    struct.GetFieldByLabel('PositionY').GetValue(),
+    struct.GetFieldByLabel('PositionZ').GetValue(),
+    struct.GetFieldByLabel('OrientationX').GetValue(),
+    struct.GetFieldByLabel('OrientationY').GetValue(),
+    struct.GetFieldByLabel('OrientationZ').GetValue(),
+  );
+}
+
+NWScriptStack.EventFromStruct = function( struct ){
+
+}
+
+NWScriptStack.EffectFromStruct = function( struct ){
+
+  //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
+  return GameEffect.EffectFromStruct( struct );
 
 }
 

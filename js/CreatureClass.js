@@ -92,29 +92,52 @@ class CreatureClass {
         for(let i = 0; i < known_spell_structs.length; i++){
 
           let known_spell_struct = known_spell_structs[i];
-          let spell = {
-            type: 0,
-            id: 0,
-            flags: 0,
-            metaMagic: 0
-          };
+          let spell = undefined;
 
-          if(known_spell_struct.HasField('Spell'))
-            spell.id = known_spell_struct.GetFieldByLabel('Spell').GetValue();
-      
-          if(known_spell_struct.HasField('SpellFlags'))
-            spell.flags = known_spell_struct.GetFieldByLabel('SpellFlags').GetValue();
-      
-          if(known_spell_struct.HasField('SpellMetaMagic'))
-            spell.metaMagic = known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue();
+          if(known_spell_struct.HasField('Spell')){
+            spell = new TalentSpell(
+              known_spell_struct.GetFieldByLabel('Spell').GetValue()
+            );
+          }
 
-          cls.addSpell(new TalentSpell(spell));
+          if(typeof spell != 'undefined'){
+            if(known_spell_struct.HasField('SpellFlags'))
+              spell.setFlags(known_spell_struct.GetFieldByLabel('SpellFlags').GetValue());
+        
+            if(known_spell_struct.HasField('SpellMetaMagic'))
+              spell.setMetaMagic(known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue());
+
+            cls.addSpell(spell);
+          }
 
         }
       }
       return cls;
     }
     return undefined;
+  }
+
+  save(){
+    let _class = new Struct(2);
+    _class.AddField( new Field(GFFDataTypes.INT, 'Class') ).SetValue(this.id);
+    _class.AddField( new Field(GFFDataTypes.SHORT, 'ClassLevel') ).SetValue(this.level);
+
+    //Spell Caster specific data
+    if(this.spellcaster == 1){
+      //Not sure what this is or if it is used in KOTOR
+      let spellsPerDay = _class.AddField( new Field(GFFDataTypes.LIST, 'SpellsPerDayList') );
+      let spellsPerDayStruct = new Struct(17767);
+      spellsPerDayStruct.AddField( new Field(GFFDataTypes.BYTE, "NumSpellsLeft").SetValue(0));
+      spellsPerDay.AddChildStruct(spellsPerDayStruct);
+
+      //List of known spells
+      let knownList0 = _class.AddField( new Field(GFFDataTypes.LIST, 'KnownList0') );
+      for(let i = 0; i < this.spells.length; i++){
+        knownList0.AddChildStruct(this.spells[i].save());
+      }
+    }
+
+    return _class;
   }
 
 }

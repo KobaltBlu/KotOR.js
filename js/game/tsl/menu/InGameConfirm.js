@@ -43,6 +43,7 @@ class InGameConfirm extends GameMenu {
   }
 
   Update(delta){
+    super.Update(delta);
 
     this.tGuiPanel.widget.position.x = 0;//(window.innerWidth/2) - (Game.InGamePause.width/2) - 20;
     this.tGuiPanel.widget.position.y = 0;//(window.innerHeight/2) - (Game.InGamePause.height/2) - 55;

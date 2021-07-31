@@ -280,7 +280,11 @@ class InGameOverlay extends GameMenu {
           });
 
           this.BTN_CHAR1.addEventListener('click', (e) => {
-            Game.MenuEquipment.Open()
+            if(PartyManager.party[0].canLevelUp()){
+              Game.MenuCharacter.Open();
+            }else{
+              Game.MenuEquipment.Open();
+            }
           });
 
           this.BTN_CHAR2.addEventListener('click', (e) => {
@@ -317,6 +321,7 @@ class InGameOverlay extends GameMenu {
             e.stopPropagation();
             Game.getCurrentPlayer().clearAllActions();
             Game.getCurrentPlayer().combatState = false;
+            Game.getCurrentPlayer().cancelCombat();
           });
 
           this.LBL_QUEUE0.addEventListener('click', (e) => {
@@ -467,6 +472,36 @@ class InGameOverlay extends GameMenu {
         this['LBL_BACK'+(nth+1)].show();
         this['PB_FORCE'+(nth+1)].show();
         this['PB_VIT'+(nth+1)].show();
+
+        if(!Game.module.area.MiniGame && PartyManager.party[nth]){
+          switch(nth){
+            case 0:
+              if(PartyManager.party[nth].canLevelUp()){
+                this['LBL_LEVELUP1'].pulsing = 1;
+                this['LBL_LEVELUP1'].show();
+              }else{
+                this['LBL_LEVELUP1'].hide();
+              }
+            break;
+            case 1:
+              if(PartyManager.party[nth].canLevelUp()){
+                this['LBL_LEVELUP3'].pulsing = 1;
+                this['LBL_LEVELUP3'].show();
+              }else{
+                this['LBL_LEVELUP3'].hide();
+              }
+            break;
+            case 2:
+              if(PartyManager.party[nth].canLevelUp()){
+                this['LBL_LEVELUP2'].pulsing = 1;
+                this['LBL_LEVELUP2'].show();
+              }else{
+                this['LBL_LEVELUP2'].hide();
+              }
+            break;
+          }
+        }
+
       }
     }
 
@@ -939,130 +974,134 @@ class InGameOverlay extends GameMenu {
       if(!this.bVisible)
         return;
 
-      this.UpdateTargetUI();
+      if(!Game.module.area.MiniGame){
 
-      let mapTexture = this.LBL_MAPVIEW.getFillTexture();
-      if(mapTexture){
-        //mapTexture.repeat.x = 0.25;
-        //mapTexture.repeat.y = 0.50;
-        
-        let pointX = ( (Game.getCurrentPlayer().position.x - Game.module.area.Map.WorldPt1X) / (Game.module.area.Map.WorldPt2X + Game.module.area.Map.WorldPt1X) );
-        let pointY = ( (Game.getCurrentPlayer().position.y - Game.module.area.Map.WorldPt1Y) / (Game.module.area.Map.WorldPt2Y + Game.module.area.Map.WorldPt1Y) );
+        this.UpdateTargetUI();
 
-        //pointX = ( (pointX - Game.module.area.Map.MapPt1X) / (Game.module.area.Map.MapPt2X + Game.module.area.Map.MapPt1X) );
-        //pointY = ( (pointY - Game.module.area.Map.MapPt1Y) / (Game.module.area.Map.MapPt2Y + Game.module.area.Map.MapPt1Y) );
+        let mapTexture = this.LBL_MAPVIEW.getFillTexture();
+        if(mapTexture){
+          //mapTexture.repeat.x = 0.25;
+          //mapTexture.repeat.y = 0.50;
+          
+          let pointX = ( (Game.getCurrentPlayer().position.x - Game.module.area.Map.WorldPt1X) / (Game.module.area.Map.WorldPt2X + Game.module.area.Map.WorldPt1X) );
+          let pointY = ( (Game.getCurrentPlayer().position.y - Game.module.area.Map.WorldPt1Y) / (Game.module.area.Map.WorldPt2Y + Game.module.area.Map.WorldPt1Y) );
 
-        mapTexture.offset.x = (pointX) + 0.125;
-        mapTexture.offset.y = (pointY) + 0.350;
-        mapTexture.updateMatrix();
-        //console.log(pointX, pointY);
-      }
+          //pointX = ( (pointX - Game.module.area.Map.MapPt1X) / (Game.module.area.Map.MapPt2X + Game.module.area.Map.MapPt1X) );
+          //pointY = ( (pointY - Game.module.area.Map.MapPt1Y) / (Game.module.area.Map.MapPt2Y + Game.module.area.Map.MapPt1Y) );
 
-      this.TogglePartyMember(0, false);
-      this.TogglePartyMember(1, false);
-      this.TogglePartyMember(2, false);
-
-      this.LBL_ARROW.widget.rotation.set(0, 0, PartyManager.party[0].facing - Math.PI/2);
-
-      for(let i = 0; i < PartyManager.party.length; i++){
-        let partyMember = PartyManager.party[i];
-        let portraitId = partyMember.getPortraitId();
-        let portrait = Global.kotor2DA['portraits'].rows[portraitId];
-
-        let id = i;
-        switch(i){
-          case 1:
-            id = 2;
-          break;
-          case 2:
-            id = 1;
-          break;
+          mapTexture.offset.x = (pointX) + 0.125;
+          mapTexture.offset.y = (pointY) + 0.350;
+          mapTexture.updateMatrix();
+          //console.log(pointX, pointY);
         }
 
-        this.TogglePartyMember(id, true);
+        this.TogglePartyMember(0, false);
+        this.TogglePartyMember(1, false);
+        this.TogglePartyMember(2, false);
 
-        let pmBG = this['LBL_CHAR'+(id+1)];
+        this.LBL_ARROW.widget.rotation.set(0, 0, PartyManager.party[0].facing - Math.PI/2);
 
-        if(pmBG.getFillTextureName() != portrait.baseresref){
-          pmBG.setFillTextureName(portrait.baseresref)
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture) => {
-            pmBG.setFillTexture(texture);
-          });
-        }
+        for(let i = 0; i < PartyManager.party.length; i++){
+          let partyMember = PartyManager.party[i];
+          let portraitId = partyMember.getPortraitId();
+          let portrait = Global.kotor2DA['portraits'].rows[portraitId];
 
-        this['PB_VIT'+(id+1)].setProgress( Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0.0), 1.0) * 100 );
-        this['PB_FORCE'+(id+1)].setProgress( Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0.0), 1.0) * 100 );
+          let id = i;
+          switch(i){
+            case 1:
+              id = 2;
+            break;
+            case 2:
+              id = 1;
+            break;
+          }
 
-        if(partyMember.isDebilitated()){
-          this['LBL_DEBILATATED'+(id+1)].show();
-        }else{
-          this['LBL_DEBILATATED'+(id+1)].hide();
-        }
+          this.TogglePartyMember(id, true);
 
-      }
+          let pmBG = this['LBL_CHAR'+(id+1)];
 
-      if((Game.selectedObject && Game.selectedObject.isHostile()) || (Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){
-        this.showCombatUI();
-
-        let action0 = Game.getCurrentPlayer().combatAction;
-        let action1 = Game.getCurrentPlayer().combatQueue[0];
-        let action2 = Game.getCurrentPlayer().combatQueue[1];
-        let action3 = Game.getCurrentPlayer().combatQueue[2];
-
-        if(action0 != undefined){
-          if(this.LBL_QUEUE0.getFillTextureName() != action0.icon){
-            this.LBL_QUEUE0.setFillTextureName(action0.icon)
-            TextureLoader.tpcLoader.fetch(action0.icon, (texture) => {
-              this.LBL_QUEUE0.setFillTexture(texture)
-              this.LBL_QUEUE0.border.fill.material.transparent = true;
+          if(pmBG.getFillTextureName() != portrait.baseresref){
+            pmBG.setFillTextureName(portrait.baseresref)
+            TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture) => {
+              pmBG.setFillTexture(texture);
             });
           }
-        }else{
-          this.LBL_QUEUE0.setFillTextureName('');
-          this.LBL_QUEUE0.setFillTexture(undefined);
-        }
 
-        if(action1 != undefined){
-          if(this.LBL_QUEUE1.getFillTextureName() != action1.icon){
-            this.LBL_QUEUE1.setFillTextureName(action1.icon)
-            TextureLoader.tpcLoader.fetch(action1.icon, (texture) => {
-              this.LBL_QUEUE1.setFillTexture(texture)
-              this.LBL_QUEUE1.border.fill.material.transparent = true;
-            });
+          this['PB_VIT'+(id+1)].setProgress( Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0.0), 1.0) * 100 );
+          this['PB_FORCE'+(id+1)].setProgress( Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0.0), 1.0) * 100 );
+
+          if(partyMember.isDebilitated()){
+            this['LBL_DEBILATATED'+(id+1)].show();
+          }else{
+            this['LBL_DEBILATATED'+(id+1)].hide();
           }
-        }else{
-          this.LBL_QUEUE1.setFillTextureName('');
-          this.LBL_QUEUE1.setFillTexture(undefined);
+
         }
 
-        if(action2 != undefined){
-          if(this.LBL_QUEUE2.getFillTextureName() != action2.icon){
-            this.LBL_QUEUE2.setFillTextureName(action2.icon)
-            TextureLoader.tpcLoader.fetch(action2.icon, (texture) => {
-              this.LBL_QUEUE2.setFillTexture(texture)
-              this.LBL_QUEUE2.border.fill.material.transparent = true;
-            });
+        if((Game.selectedObject && Game.selectedObject.isHostile()) || (Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){
+          this.showCombatUI();
+
+          let action0 = Game.getCurrentPlayer().combatAction;
+          let action1 = Game.getCurrentPlayer().combatQueue[0];
+          let action2 = Game.getCurrentPlayer().combatQueue[1];
+          let action3 = Game.getCurrentPlayer().combatQueue[2];
+
+          if(action0 != undefined){
+            if(this.LBL_QUEUE0.getFillTextureName() != action0.icon){
+              this.LBL_QUEUE0.setFillTextureName(action0.icon)
+              TextureLoader.tpcLoader.fetch(action0.icon, (texture) => {
+                this.LBL_QUEUE0.setFillTexture(texture)
+                this.LBL_QUEUE0.border.fill.material.transparent = true;
+              });
+            }
+          }else{
+            this.LBL_QUEUE0.setFillTextureName('');
+            this.LBL_QUEUE0.setFillTexture(undefined);
           }
-        }else{
-          this.LBL_QUEUE2.setFillTextureName('');
-          this.LBL_QUEUE2.setFillTexture(undefined);
-        }
 
-        if(action3 != undefined){
-          if(this.LBL_QUEUE3.getFillTextureName() != action3.icon){
-            this.LBL_QUEUE3.setFillTextureName(action3.icon)
-            TextureLoader.tpcLoader.fetch(action3.icon, (texture) => {
-              this.LBL_QUEUE3.setFillTexture(texture)
-              this.LBL_QUEUE3.border.fill.material.transparent = true;
-            });
+          if(action1 != undefined){
+            if(this.LBL_QUEUE1.getFillTextureName() != action1.icon){
+              this.LBL_QUEUE1.setFillTextureName(action1.icon)
+              TextureLoader.tpcLoader.fetch(action1.icon, (texture) => {
+                this.LBL_QUEUE1.setFillTexture(texture)
+                this.LBL_QUEUE1.border.fill.material.transparent = true;
+              });
+            }
+          }else{
+            this.LBL_QUEUE1.setFillTextureName('');
+            this.LBL_QUEUE1.setFillTexture(undefined);
           }
+
+          if(action2 != undefined){
+            if(this.LBL_QUEUE2.getFillTextureName() != action2.icon){
+              this.LBL_QUEUE2.setFillTextureName(action2.icon)
+              TextureLoader.tpcLoader.fetch(action2.icon, (texture) => {
+                this.LBL_QUEUE2.setFillTexture(texture)
+                this.LBL_QUEUE2.border.fill.material.transparent = true;
+              });
+            }
+          }else{
+            this.LBL_QUEUE2.setFillTextureName('');
+            this.LBL_QUEUE2.setFillTexture(undefined);
+          }
+
+          if(action3 != undefined){
+            if(this.LBL_QUEUE3.getFillTextureName() != action3.icon){
+              this.LBL_QUEUE3.setFillTextureName(action3.icon)
+              TextureLoader.tpcLoader.fetch(action3.icon, (texture) => {
+                this.LBL_QUEUE3.setFillTexture(texture)
+                this.LBL_QUEUE3.border.fill.material.transparent = true;
+              });
+            }
+          }else{
+            this.LBL_QUEUE3.setFillTextureName('');
+            this.LBL_QUEUE3.setFillTexture(undefined);
+          }
+
         }else{
-          this.LBL_QUEUE3.setFillTextureName('');
-          this.LBL_QUEUE3.setFillTexture(undefined);
+          this.hideCombatUI();
         }
 
-      }else{
-        this.hideCombatUI();
       }
 
     }

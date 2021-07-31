@@ -25,6 +25,8 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     this.AxisFront.set(0, 0, 0);
+    this.sphere.center.copy(this.position);
+    this.sphere.radius = this.getHitDistance() * 2;
 
     if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){
 
@@ -48,13 +50,6 @@ class ModuleCreatureController extends ModuleObject {
 
       //Get the first action in the queue
       this.action = this.actionQueue[0];
-      
-      if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized){
-        this.model.update(delta);
-        if(this.lipObject instanceof LIPObject){
-          this.lipObject.update(delta, this.head ? this.head : this.model);
-        }
-      }
 
       this.areas = [];
       this.area = Game.module.area;
@@ -72,7 +67,7 @@ class ModuleCreatureController extends ModuleObject {
       if(!this.isDead() && this.animState == ModuleCreature.AnimState.DEAD){
         this.animState = ModuleCreature.AnimState.IDLE;
         this.deathAnimationPlayed = false;
-        this.actionPlayAnimation('getupdead');
+        this.animState = ModuleCreature.AnimState.GET_UP_DEAD;
       }
 
       if(!this.isDead()){
@@ -107,12 +102,12 @@ class ModuleCreatureController extends ModuleObject {
         if(this.dialogAnimation && Game.inDialog && (!this.action || this.action.goal != ModuleCreature.ACTION.ANIMATE)){
           if(this.model){
 
-            if(!this.force){
+            if(!this.speed){
                 
               let _animShouldChange = false;
     
               if(this.model.animationManager.currentAnimation instanceof AuroraModelAnimation){
-                if(this.model.animationManager.currentAnimation.name.toLowerCase() != this.getAnimationNameById(this.dialogAnimation.animation).toLowerCase()){
+                if(this.model.animationManager.currentAnimation.name.toLowerCase() != this.dialogAnimation.animation.toLowerCase()){
                   _animShouldChange = true;
                 }
               }else{
@@ -120,7 +115,7 @@ class ModuleCreatureController extends ModuleObject {
               }
     
               if(_animShouldChange){
-                let _newAnim = this.model.getAnimationByName(this.getAnimationNameById(this.dialogAnimation.animation));
+                let _newAnim = this.model.getAnimationByName(this.dialogAnimation.animation);
                 if(_newAnim instanceof AuroraModelAnimation){
                   if(this.dialogAnimation.time == -1){
                     this.model.playAnimation(_newAnim, true);
@@ -150,7 +145,7 @@ class ModuleCreatureController extends ModuleObject {
       }else{
         this.damageList = [];
         this.getUpAnimationPlayed = false;
-        if(this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING){
+        if(this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIE){
           this.animState = ModuleCreature.AnimState.DEAD;
         }
         if(!this.deathStarted){
@@ -164,7 +159,70 @@ class ModuleCreatureController extends ModuleObject {
 
       if(this.isDebilitated()){
         this.force = 0;
+        this.speed = 0;
         this.animState = ModuleCreature.AnimState.IDLE;
+      }
+
+      //-------------------------//
+      // BEGIN: Move Speed Logic //
+      //-------------------------//
+
+      this.AxisFront.z = 0;
+
+      this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
+
+      if(this.speed > this.getMovementSpeed()){
+        this.speed = this.getMovementSpeed();
+      }
+      
+      let forceDelta = this.speed * delta;
+      let gravityDelta = -1 * delta;
+      
+      if(this.speed){
+        this.animSpeed = this.speed / this.getRunSpeed();
+      }else{
+        this.animSpeed = 1;
+      }
+        
+      if(!this.AxisFront.length()){
+        this.AxisFront.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
+        this.AxisFront.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
+        if(this.AxisFront.length()){
+          if(this.animSpeed > 0.75){
+            this.animState = ModuleCreature.AnimState.RUNNING;
+          }else{
+            this.animState = ModuleCreature.AnimState.WALKING;
+          }
+          this.invalidateCollision = true;
+        }
+        //this.AxisFront.z = gravityDelta;
+      }else{
+        this.AxisFront.multiplyScalar(forceDelta);
+        if(this.AxisFront.length()){
+          this.invalidateCollision = true;
+        }
+      }
+
+      if(this.force < 1){
+        this.speed -= (this.getMovementSpeed() * 2.5) * delta;
+      }
+
+      if(this.speed < 0){
+        this.speed = 0;
+      }
+
+      if(!this.AxisFront.length() && ( this.animState == ModuleCreature.AnimState.RUNNING || this.animState == ModuleCreature.AnimState.WALKING )){
+        this.animState = ModuleCreature.AnimState.IDLE;
+        this.speed = 0;
+        this.force = 0;
+      }
+
+      //-----------------------//
+      // END: Move Speed Logic //
+      //-----------------------//
+
+      if(this.combatState && this.animState == ModuleCreature.AnimState.PAUSE){
+        this.animState = ModuleCreature.AnimState.READY;
       }
 
       this.updateExcitedDuration(delta);
@@ -172,21 +230,13 @@ class ModuleCreatureController extends ModuleObject {
       this.updateCasting(delta);
       this.updateAnimationState();
       this.updateItems(delta);
-
-      this.AxisFront.z = 0;
       
-      let forceDelta = this.force * Game.clampedDelta;
-      let gravityDelta = -1 * Game.clampedDelta;
-
-      //if(this.facingAnim && this.rotation.z != this.facing)
-      //  forceDelta *= 0.5;
-        
-      this.AxisFront.multiply(new THREE.Vector3(forceDelta, forceDelta, gravityDelta));
-
-      if(!this.AxisFront.length() && ( this.animState == ModuleCreature.AnimState.RUNNING || this.animState == ModuleCreature.AnimState.WALKING )){
-        this.animState = ModuleCreature.AnimState.IDLE;
+      if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized){
+        this.model.update(delta);
+        if(this.lipObject instanceof LIPObject){
+          this.lipObject.update(delta, this.head ? this.head : this.model);
+        }
       }
-      
 
       //if(this.model instanceof THREE.AuroraModel)
       //  this.model.box.setFromObject(this.model);
@@ -198,7 +248,7 @@ class ModuleCreatureController extends ModuleObject {
       }
 
       if(this.invalidateCollision)
-        this.updateCollision(Game.clampedDelta);
+        this.updateCollision(delta);
 
       this.updatePerceptionList(delta);
       this.updateListeningPatterns();
@@ -297,81 +347,90 @@ class ModuleCreatureController extends ModuleObject {
 
     if(this.action != null){
             
-      let distance = 0;
-      switch(this.action.goal){
+      this.aqOffset = 0;
+      this.processAction(delta, this.action);
+
+    } else {
+      //this.force = 0;
+      //this.animState = ModuleCreature.AnimState.IDLE;
+      /*if(typeof this.model.animationManager.currentAnimation == 'undefined'){
+        let randomPauseIdx = Math.round(Math.random()*2) + 1;
+        this.model.playAnimation('pause'+randomPauseIdx, false);
+      }*/
+
+      if(!this.combatState &&this.isPartyMember() && this != Game.getCurrentPlayer()){
+        this.setFacing(
+          Math.atan2(
+            this.position.y - Game.getCurrentPlayer().position.y,
+            this.position.x - Game.getCurrentPlayer().position.x
+          ) + Math.PI/2,
+          false
+        );
+      }
+
+    }
+
+    this.action = this.actionQueue[0];
+
+  }
+
+  processAction(delta = 0, action = undefined ){
+    let distance = 0;
+    if(action){
+      switch(action.goal){
         case ModuleCreature.ACTION.ANIMATE:
 
           if(this.overlayAnimation)
             break;
 
-          if(this.action.time == -1 || this.action.time > 0){
-
-            //Reduce the action animation timer
-            if(this.action.time > 0){
-              this.action.time -= delta;
-              if(this.action.time < 0){
-                this.action.time = 0;
-              }
-            }
-
-            if(!this.action.started){
-
-              if(this.model){
-
-                if(this.action.animation){
-                  this.animState = ModuleCreature.AnimState.ANIMATING;
-                }
-
-                if(this.action.animation instanceof AuroraModelAnimation){
-                  if(this.action.time == -1){
-                    this.model.playAnimation(this.action.animation.name, true);
-                    this.action.started = true;
-                  }else{
-                    this.model.playAnimation(this.action.animation.name, false);
-                    this.action.started = true;
-                  }
-                  //this.actionQueue.shift();
-                }else{
-                  //console.log('Animation Missing', this.action.animation)
-                  //Kill the action if the animation isn't found
-                  this.actionQueue.shift();
-                }
-
-              }else{
-                //Kill the action if there is no model to animate?
-                this.actionQueue.shift()
-              }
-            }
-
+          if(action.animation >= 10000){
+            this.animState = action.animation;
+            action.started = true;
           }else{
-            //Kill the action because the timer has run out
-            this.actionQueue.shift()
+            console.error('ModuleCreature.ACTION.ANIMATE Invalid animation', this.getName(), action.animation, action);
+            //Kill the action if there is no model to animate?
+            this.actionQueue.shift();
+          }
+
+          if(action.time == -1){
+            //Kill the action if there is no model to animate?
+            this.actionQueue.shift();
+          }else if(action.time > 0){
+            action.time -= delta;
+            if(action.time < 0){
+              action.time = 0;
+            }
+          }else{
+            //Kill the action if there is no model to animate?
+            this.actionQueue.shift();
           }
 
         break;
         case ModuleCreature.ACTION.WAIT:
-          this.action.elapsed += delta;
-          if(this.action.elapsed > this.action.time){
+          action.elapsed += delta;
+          if(action.elapsed > action.time){
             this.actionQueue.shift()
           }
         break;
         case ModuleCreature.ACTION.SCRIPT: //run a block of code from an NWScript file
           if(this == Game.player){
-            //console.log(ModuleCreature.ACTION.SCRIPT, this.action);
+            //console.log(ModuleCreature.ACTION.SCRIPT, action);
           }
-          //console.log('Action Script', this.action);
-          //console.log(ModuleCreature.ACTION.SCRIPT, this.action);
-          if(this.action.script instanceof NWScriptInstance){
-            //this.action.action.script.caller = this;
-            //this.action.action.script.debug.action = true;
-            this.action.script.beginLoop({
+          //console.log('Action Script', action);
+          //console.log(ModuleCreature.ACTION.SCRIPT, action);
+          if(action.script instanceof NWScriptInstance){
+            //action.action.script.caller = this;
+            //action.action.script.debug.action = true;
+            action.script.beginLoop({
               _instr: null, 
               index: -1, 
-              seek: this.action.action.offset,
+              seek: action.action.offset,
               onComplete: () => {
-                //console.log('ACTION.SCRIPT', 'Complete', this.action);
+                //console.log('ACTION.SCRIPT', 'Complete', action);
               }
             });
+          }else{
+            console.error('Action.SCRIPT ERROR: NOT NWScriptInstance')
           }
           this.actionQueue.shift();
         break;
@@ -385,12 +444,12 @@ class ModuleCreatureController extends ModuleObject {
             break;
           }
 
-          this.action.object = {
+          action.object = {
             position: PartyManager.GetFollowPosition(this)
           };
           distance = Utility.Distance2D(this.position, PartyManager.party[0].position.clone());
           if(distance > 10){
-            this.action.path_realtime = true;
+            action.path_realtime = true;
             try{
               this.actionPathfinder(1.5, true, delta);
             }catch(e){}
@@ -411,7 +470,7 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
         case ModuleCreature.ACTION.USEOBJECT:
-          distance = Utility.Distance2D(this.position, this.action.object.position);
+          distance = Utility.Distance2D(this.position, action.object.position);
           if(distance > 1.5){
             try{
               this.actionPathfinder(1.5, undefined, delta);
@@ -419,18 +478,18 @@ class ModuleCreatureController extends ModuleObject {
           }else{
             this.animState = ModuleCreature.AnimState.IDLE;
             this.force = 0;
-            //console.log(this.action.object);
+            //console.log(action.object);
 
             this.setFacing(
               Math.atan2(
-                this.position.y - this.action.object.position.y,
-                this.position.x - this.action.object.position.x
+                this.position.y - action.object.position.y,
+                this.position.x - action.object.position.x
               ) + Math.PI/2,
               false
             );
 
-            if(this.action.object != Game.player){
-              this.action.object.use(this);
+            if(action.object != Game.player){
+              action.object.use(this);
             }
 
             this.actionQueue.shift()
@@ -438,29 +497,29 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
         case ModuleCreature.ACTION.OPENDOOR:
-          distance = Utility.Distance2D(this.position, this.action.object.position);
+          distance = Utility.Distance2D(this.position, action.object.position);
           
-          if(distance > 2 && !this.action.object.box.intersectsBox(this.box)){
+          if(distance > 2 && !action.object.box.intersectsBox(this.box)){
             try{
               this.actionPathfinder(2, undefined, delta);
             }catch(e){}
           }else{
             this.animState = ModuleCreature.AnimState.IDLE;
             this.force = 0;
-            //console.log(this.action.object);
+            //console.log(action.object);
 
             this.setFacing(
               Math.atan2(
-                this.position.y - this.action.object.position.y,
-                this.position.x - this.action.object.position.x
+                this.position.y - action.object.position.y,
+                this.position.x - action.object.position.x
               ) + Math.PI/2,
               false
             );
 
-            if(this.action.object == Game.player){
+            if(action.object == Game.player){
               this.actionQueue.shift()
             }else{
-              this.action.object.use(Game.player);
+              action.object.use(Game.player);
               this.actionQueue.shift()
             }
             
@@ -468,12 +527,12 @@ class ModuleCreatureController extends ModuleObject {
         break;
         case ModuleCreature.ACTION.OPENLOCK:
 
-          if(!this.action.shouted){
-            this.action.shouted = true;
+          if(!action.shouted){
+            action.shouted = true;
             this.PlaySoundSet(SSFObject.TYPES.UNLOCK);
           }
 
-          distance = Utility.Distance2D(this.position, this.action.object.position);
+          distance = Utility.Distance2D(this.position, action.object.position);
           if(distance > 1.5){
             try{
               this.actionPathfinder(1.5, undefined, delta);
@@ -484,39 +543,39 @@ class ModuleCreatureController extends ModuleObject {
                               
             this.setFacing(
               Math.atan2(
-                this.position.y - this.action.object.position.y,
-                this.position.x - this.action.object.position.x
+                this.position.y - action.object.position.y,
+                this.position.x - action.object.position.x
               ) + Math.PI/2, 
               false
             );
 
-            if(this.action.timer == undefined){
-              this.action.timer = 1.5;
-              this.action.object.audioEmitter.PlaySound('gui_lockpick');
+            if(action.timer == undefined){
+              action.timer = 1.5;
+              action.object.audioEmitter.PlaySound('gui_lockpick');
             }
 
             if(!this.isSimpleCreature()){
-              if(this.action.object instanceof ModuleDoor){
+              if(action.object instanceof ModuleDoor){
                 this.overlayAnimation = 'unlockdr';
               }else{
                 this.overlayAnimation = 'unlockcntr';
               }
             }
 
-            this.action.timer -= delta;
+            action.timer -= delta;
 
-            if(this.action.timer <= 0){
-              this.action.object.attemptUnlock(this);
+            if(action.timer <= 0){
+              action.object.attemptUnlock(this);
               this.actionQueue.shift();
             }
             
           }
         break;
         case ModuleCreature.ACTION.DIALOGOBJECT:
-          //console.log('DIALOGOBJECT', this.action);
+          //console.log('DIALOGOBJECT', action);
           if(!Game.inDialog){
-            distance = Utility.Distance2D(this.position, this.action.object.position);
-            if(distance > 4.5 && !this.action.ignoreStartRange){
+            distance = Utility.Distance2D(this.position, action.object.position);
+            if(distance > 4.5 && !action.ignoreStartRange){
               try{
                 this.actionPathfinder(4.5, undefined, delta);
               }catch(e){}
@@ -524,39 +583,41 @@ class ModuleCreatureController extends ModuleObject {
               this.animState = ModuleCreature.AnimState.IDLE;
               this.force = 0;
 
-              this.action.object._conversation = this.action.conversation;
-              this._conversation = this.action.conversation;
+              action.object._conversation = action.conversation;
+              this._conversation = action.conversation;
 
               let caller = this;
-              let target = this.action.object;
+              let target = action.object;
 
               this.heardStrings = [];
               caller.heardStrings = [];
               if(target.scripts.onDialog instanceof NWScriptInstance){
                 target.onDialog(caller, -1);
               }else{
-                Game.InGameDialog.StartConversation(this.action.conversation, target, caller);
+                Game.InGameDialog.StartConversation(action.conversation, target, caller);
               }
               this.actionQueue.shift();
             }
           }else{
-            console.log('Already in dialog', this.action);
+            console.log('Already in dialog', action);
             this.actionQueue.shift();
           }
         break;
         case ModuleCreature.ACTION.MOVETOPOINT:
-          if(this.action.instant){
-            //console.log('INSTANT MOVE', this.getName(), '--->', this.action.object.getName(), this.position.clone(), this.action.object.position.clone());
-            this.setPosition(this.action.object.position);
-            this.setFacing(this.action.object.rotation.z, false);
-            this.getCurrentRoom();
-            this.updateCollision();
+          if(action.instant){
+            //console.log('INSTANT MOVE', this.getName(), '--->', action.object.getName(), this.position.clone(), action.object.position.clone());
+            this.setPosition(action.object.position);
+            this.setFacing(action.object.rotation.z, false);
+            this.groundFace = undefined;
+            this.lastGroundFace = undefined;
+            //this.getCurrentRoom();
+            this.findWalkableFace();
             this.actionQueue.shift();
           }else{
-            distance = Utility.Distance2D(this.position, this.action.object.position);
-            if(distance > (this.action.distance || 0.1)){
+            distance = Utility.Distance2D(this.position, action.object.position);
+            if(distance > (action.distance || 0.1)){
               try{
-                this.actionPathfinder((this.action.distance || 0.1), this.action.run, delta);
+                this.actionPathfinder((action.distance || 0.1), action.run, delta);
               }catch(e){}
             }else{
               this.animState = ModuleCreature.AnimState.IDLE;
@@ -567,11 +628,11 @@ class ModuleCreatureController extends ModuleObject {
         break;
         case ModuleCreature.ACTION.ATTACKOBJECT:
           this.resetExcitedDuration();
-          if(!this.action.combatAction.isCutsceneAttack){
-            if(this.action.object.isDead()){
+          if(!action.combatAction.isCutsceneAttack){
+            if(action.object.isDead()){
               this.actionQueue.shift();
             }else{
-              distance = Utility.Distance2D(this.position, this.action.object.position);
+              distance = Utility.Distance2D(this.position, action.object.position);
               if(distance > ( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ) ){
                 try{
                   this.actionPathfinder(( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ), undefined, delta);
@@ -585,17 +646,17 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
         case ModuleCreature.ACTION.CASTSPELL:
-          //console.log('ACTION.CASTSPELL', this.action);
-          if(this.action.spell.inRange(this.action.object, this)){
-            this.action.spell.useTalentOnObject(this.action.object, this);
+          //console.log('ACTION.CASTSPELL', action);
+          if(action.spell.inRange(action.object, this)){
+            action.spell.useTalentOnObject(action.object, this);
             this.actionQueue.shift();
           }else{
-            this.actionPathfinder(this.action.spell.getCastRange(), undefined, delta);
+            this.actionPathfinder(action.spell.getCastRange(), undefined, delta);
           }
         break;
         default:
-          console.log('Unknown', this.action);
-          distance = Utility.Distance2D(this.position, this.action.object.position);
+          console.log('Unknown', action);
+          distance = Utility.Distance2D(this.position, action.object.position);
           if(distance > 1.5){
             try{
               this.actionPathfinder(1.5, undefined, delta);
@@ -608,25 +669,6 @@ class ModuleCreatureController extends ModuleObject {
           }
         break;
       }
-
-    } else {
-      //this.force = 0;
-      //this.animState = ModuleCreature.AnimState.IDLE;
-      /*if(typeof this.model.animationManager.currentAnimation == 'undefined'){
-        let randomPauseIdx = Math.round(Math.random()*2) + 1;
-        this.model.playAnimation('pause'+randomPauseIdx, false);
-      }*/
-
-      if(!this.combatState &&this.isPartyMember() && this != Game.getCurrentPlayer()){
-        this.setFacing(
-          Math.atan2(
-            this.position.y - Game.getCurrentPlayer().position.y,
-            this.position.x - Game.getCurrentPlayer().position.x
-          ) + Math.PI/2,
-          false
-        );
-      }
-
     }
   }
 
@@ -670,6 +712,10 @@ class ModuleCreatureController extends ModuleObject {
       if(!this.room.model.visible){
         return;
       }
+    }
+
+    if(!this.spawned || !Game.module.readyToProcessEvents){
+      return;
     }
 
     if(this.perceptionTimer < 3){
@@ -734,10 +780,12 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   actionPathfinder(distance, run = !this.walk, delta = 1){
+    let distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
     if(this.action.path == undefined){
       if(this.action.goal == ModuleCreature.ACTION.FOLLOWLEADER){
         this.action.path = Game.module.area.path.traverseToPoint(this.position, PartyManager.GetFollowPosition(this));
         //this.action.path.push(PartyManager.GetFollowPosition(this));
+        distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
       }else if(this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
         if(this.getEquippedWeaponType() == 4){ //RANGED
           this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
@@ -748,7 +796,10 @@ class ModuleCreatureController extends ModuleObject {
             //console.log('openSpot', this.getName(), openSpot);
             this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
             this.action.path.unshift(this.action.object.position.clone());
+            this.action.openSpot = openSpot;
+            distanceToTarget = Utility.Distance2D(this.position, openSpot.targetVector);
           }else{
+            distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
             console.error('openSpot', 'Not found');
           }
         }
@@ -760,27 +811,35 @@ class ModuleCreatureController extends ModuleObject {
             //console.log('openSpot', this.getName(), openSpot);
             this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
             this.action.path.unshift(this.action.object.position.clone());
+            this.action.openSpot = openSpot;
+            distanceToTarget = Utility.Distance2D(this.position, openSpot.targetVector);
           }else{
+            distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
             console.error('openSpot', 'Not found');
           }
         //}
       }else{
         this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
+        distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
       }
       this.action.path_timer = 20;
+    }
+
+    if(this.action.openSpot){
+      distanceToTarget = Utility.Distance2D(this.position, this.action.openSpot.targetVector);
     }
 
     this.invalidateCollision = true;
     let point = this.action.path[0];
 
     if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
-      point = this.action.path[this.action.path.length - 1];
+      /*point = this.action.path[this.action.path.length - 1];
       this.action.path = [point];
       
       if(!(point instanceof THREE.Vector3))
         point = point.vector;
 
-      this.setPosition(point);
+      this.setPosition(point);*/
 
       this.blockingTimer = 0;
       this.collisionTimer = 0;
@@ -880,14 +939,16 @@ class ModuleCreatureController extends ModuleObject {
         }
 
       }
-      
-      if(run){
-        this.force = -this.getRunSpeed();
-        this.animState = ModuleCreature.AnimState.RUNNING;
-      }else{
-        this.force = -this.getWalkSpeed();
-        this.animState = ModuleCreature.AnimState.WALKING;
+
+      let arrivalDistance = distance;
+      if(this.action.openSpot){
+        arrivalDistance = 1.5;
       }
+
+      this.AxisFront.negate();
+      this.force = Math.min( 1, Math.max( 0, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
+      this.walk = !run;
+      this.animState = run ? ModuleCreature.AnimState.RUNNING : ModuleCreature.AnimState.WALKING;
     }else{
       this.action.path.shift();
     }
@@ -1087,11 +1148,25 @@ class ModuleCreatureController extends ModuleObject {
       this.overlayAnimation = undefined;
     }
 
-    if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
+    //if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
+    //  return;
+
+    if(Game.inDialog && this.dialogAnimation && !this.speed && !this.isDead())
       return;
 
-    if(Game.inDialog && this.dialogAnimation && !this.force && !this.isDead())
-      return;
+    let animation = this.animationConstantToAnimation(this.animState);
+    if(animation){
+      if(currentAnimation != animation.name.toLowerCase()){
+        let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping, () => {
+          this.animState = ModuleCreature.AnimState.PAUSE;
+        });
+      }
+    }else{
+      console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+      this.animState = ModuleCreature.AnimState.PAUSE;
+    }
+    return;
 
     
     let modeltype = this.getAppearance().modeltype;
@@ -1116,14 +1191,14 @@ class ModuleCreatureController extends ModuleObject {
       return;
     }
 
-    if(this.casting.length){
+    if(this.casting.length  && this.casting[0].spell){
       if(this.casting[0].conjuring){
-        if(currentAnimation != 'castout1'){
-          this.getModel().playAnimation('castout1', false);
+        if(currentAnimation != this.casting[0].spell.getConjureAnimation()){
+          this.getModel().playAnimation(this.casting[0].spell.getConjureAnimation(), false);
         }
-      }else if(this.casting[0].impact){
-        if(currentAnimation != 'castoutlp1'){
-          this.getModel().playAnimation('castoutlp1', false);
+      }else if(this.casting[0].casting){
+        if(currentAnimation != this.casting[0].spell.getCastingAnimation()){
+          this.getModel().playAnimation(this.casting[0].spell.getCastingAnimation(), false);
         }
       }
     }else if( this.combatAction == undefined || !this.combatAction.ready || !this.hasWeapons() || !currentAnimation ){
@@ -1385,7 +1460,7 @@ class ModuleCreatureController extends ModuleObject {
             break;
           }
         break;
-        case ModuleCreature.AnimState.DIEING:
+        case ModuleCreature.AnimState.DIE:
           switch(modeltype){
             case 'S':
             case 'L':
@@ -1440,7 +1515,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   canMove(){
-    return !this.isParalyzed() && !this.isStunned() && (this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIEING) && !this.casting.length;
+    return !this.isParalyzed() && !this.isStunned() && (this.animState != ModuleCreature.AnimState.DEAD || this.animState != ModuleCreature.AnimState.DIE) && !this.casting.length;
   }
 
   getCurrentAction(){
@@ -1466,7 +1541,7 @@ class ModuleCreatureController extends ModuleObject {
 
   moveToLocation(target = undefined, bRun = true){
 
-    if(typeof target === 'object'){
+    if(target instanceof Game.Location || target instanceof ModuleObject){
 
       let distance = 0.1;
       let creatures = Game.module.area.creatures;
@@ -1507,7 +1582,7 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   jumpToObject(target = undefined){
-    
+    console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
       this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
@@ -1521,8 +1596,8 @@ class ModuleCreatureController extends ModuleObject {
   }
 
   jumpToLocation(target = undefined){
-
-    if(typeof target === 'object'){
+    console.log('jumpToLocation', target, this);
+    if(target instanceof Game.Location || target instanceof ModuleObject){
       this.actionQueue.unshift({
         goal: ModuleCreature.ACTION.MOVETOPOINT,
         object: target,
@@ -1563,6 +1638,10 @@ class ModuleCreatureController extends ModuleObject {
 
   isDueling(){
     return (this.lastAttackTarget?.lastAttackTarget == this && this.lastAttackTarget?.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
+  }
+
+  isDuelingObject( oObject = undefined ){
+    return (oObject instanceof ModuleObject && this.lastAttackTarget == oObject && oObject.lastAttackTarget == this && oObject.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
   }
 
   attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null, attackResult = undefined){
@@ -1692,7 +1771,7 @@ class ModuleCreatureController extends ModuleObject {
   useTalentOnObject(talent, oTarget){
     if(typeof talent != 'undefined'){
 
-      this.actionQueue.push({
+      this.actionQueue.unshift({
         object: oTarget,
         spell: talent,
         goal: ModuleCreature.ACTION.CASTSPELL
@@ -2092,7 +2171,30 @@ class ModuleCreatureController extends ModuleObject {
     }
 
     return 0;
+  }
 
+  isRangedEquipped(){
+    if(this.equipment.RIGHTHAND){
+      return this.equipment.RIGHTHAND.isRangedWeapon();
+    }
+
+    if(this.equipment.LEFTHAND){
+      return this.equipment.LEFTHAND.isRangedWeapon();
+    }
+
+    if(this.equipment.CLAW1){
+      return this.equipment.CLAW1.isRangedWeapon();
+    }
+
+    if(this.equipment.CLAW2){
+      return this.equipment.CLAW2.isRangedWeapon();
+    }
+
+    if(this.equipment.CLAW3){
+      return this.equipment.CLAW3.isRangedWeapon();
+    }
+
+    return false;
   }
 
   updateItems(delta = 0){
@@ -2118,7 +2220,7 @@ class ModuleCreatureController extends ModuleObject {
 
     let _axisFront = this.AxisFront.clone();
 
-    this.getCurrentRoom();
+    //this.getCurrentRoom();
     
     let box = new THREE.Box3()
     
@@ -2259,10 +2361,9 @@ class ModuleCreatureController extends ModuleObject {
     let world_collisions = [];
     for(let i = 0; i < 360; i += 30) {
       let dx = Math.cos(i), dy = Math.sin(i);
-      Game.raycaster.ray.direction.set(dx, dy, -0.25);
+      Game.raycaster.ray.direction.set(dx, dy, 0);
       for(let k = 0, kl = aabbFaces.length; k < kl; k++){
         playerFeetRay.copy(this.position).add(this.AxisFront);
-        //playerFeetRay.z += 0.25;
         Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
 
         let castableFaces = aabbFaces[k];
@@ -2270,7 +2371,7 @@ class ModuleCreatureController extends ModuleObject {
         intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
         if (intersects && intersects.length > 0 ) {
           for(let j = 0; j < intersects.length; j++){
-            if(intersects[j].distance < this.getAppearance().hitdist){
+            if(intersects[j].distance < this.getAppearance().hitdist / 2){
               if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
 
                 if(intersects[j].object.moduleObject instanceof ModuleDoor){
@@ -2383,29 +2484,11 @@ class ModuleCreatureController extends ModuleObject {
     
     falling = true;
 
-    scratchVec3 = new THREE.Vector3(0, 0, 2);
-
-    playerFeetRay = this.position.clone().add(_axisFront).add(scratchVec3);
-    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-    Game.raycaster.ray.direction.set(0, 0,-1);
-
     let negateAxis = false;
     let testFaces = 0;
     
     if(!this.lastGroundFace){
-      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-        let room = Game.module.area.rooms[i];
-        if(room.walkmesh && room.walkmesh.walkableFaces.length){
-          intersects = room.walkmesh.raycast(Game.raycaster, room.walkmesh.walkableFaces) || [];
-          for(let j = 0, jl = intersects.length; j < jl; j++){
-            if(intersects[j].face.walkIndex != 7 && intersects[j].face.walkIndex != 2){
-              this.groundFace = intersects[j].face;
-              this.lastGroundFace = this.groundFace;
-              this.surfaceId = this.groundFace.walkIndex;
-            }
-          }
-        }
-      }
+      this.findWalkableFace();
     }
 
     if(!(typeof this.groundFace === 'undefined')){
@@ -2750,13 +2833,13 @@ class ModuleCreatureController extends ModuleObject {
                   let closestPoint = new THREE.Vector3(0, 0, 0);
                   line.closestPointToPoint(this.tmpPos, true, closestPoint);
                   let distance = closestPoint.distanceTo(this.tmpPos);
-                  if(distance < 1){
+                  if(distance < 0.5){
                     //console.log(distance, line);
                     edgeLines.push({
                       line: line,
                       closestPoint: closestPoint,
                       distance: distance,
-                      maxDistance: 1,
+                      maxDistance: 0.5,
                       position: this.tmpPos
                     });
                   }
@@ -2766,13 +2849,13 @@ class ModuleCreatureController extends ModuleObject {
         }
 
         if(edgeLines.length){
-          edgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
+          //edgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
           let average = new THREE.Vector3();
           for(let i = 0; i < edgeLines.length; i++){
             let edgeLine = edgeLines[i];
-            let distanceOffset = edgeLine.maxDistance - edgeLine.distance;
+            let distanceOffset =  1 - (edgeLine.distance/edgeLine.maxDistance);
             let force = edgeLine.closestPoint.clone().sub(edgeLine.position);
-            force.multiplyScalar(distanceOffset);
+            force.multiplyScalar(distanceOffset + 0.15);
             average.add( force.negate() );
           }
           this.position.copy(this.tmpPos);
@@ -2963,7 +3046,7 @@ class ModuleCreatureController extends ModuleObject {
     if(!isSimple){
       if(weaponType){
         this.clearAllActions();
-        this.actionPlayAnimation('g'+weaponType+'w1');
+        this.animState = ModuleCreature.AnimState.FLOURISH;
         this.weaponPowered(true);
       }
     }

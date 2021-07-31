@@ -120,20 +120,24 @@ class BinaryWriter {
   }
 
   WriteChar(char, encoding='ascii'){
-    let tmpBuffer = Buffer.alloc(1);
-    tmpBuffer.writeUInt8(char.charCodeAt());
-    this.AppendData(tmpBuffer);
+    if(char.length){
+      let tmpBuffer = Buffer.alloc(1);
+      tmpBuffer.writeUInt8(char.charCodeAt());
+      this.AppendData(tmpBuffer);
+    }
   }
 
   WriteChars(chars = [], encoding='ascii'){
     if(typeof chars === 'string')
       chars = chars.split('');
 
-    let tmpBuffer = Buffer.alloc(chars.length);
-    for(let i = 0; i!=chars.length; i++){
-      tmpBuffer.writeUInt8(chars[i].charCodeAt(), i);
+    if(chars.length){
+      let tmpBuffer = Buffer.alloc(chars.length);
+      for(let i = 0; i!=chars.length; i++){
+        tmpBuffer.writeUInt8(chars[i].charCodeAt(), i);
+      }
+      this.AppendData(tmpBuffer);
     }
-    this.AppendData(tmpBuffer);
   }
 
   WriteString(string, encoding='ascii'){

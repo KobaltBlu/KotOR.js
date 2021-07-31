@@ -5617,7 +5617,7 @@ NWScriptDefK2.Actions = {
     args: [ 'string', 'int' ],
     action: function(args, _instr, action){
       if(typeof Game.Globals.Number[args[0].toLowerCase()] !== 'undefined')
-        Game.Globals.Number[args[0].toLowerCase()] += parseInt(args[1]);
+        Game.Globals.Number[args[0].toLowerCase()].value += parseInt(args[1]);
     }	
   },
    800: {
@@ -5627,7 +5627,7 @@ NWScriptDefK2.Actions = {
     args: [ 'string', 'int' ],
     action: function(args, _instr, action){
       if(typeof Game.Globals.Number[args[0].toLowerCase()] !== 'undefined')
-        Game.Globals.Number[args[0].toLowerCase()] -= parseInt(args[1]);
+        Game.Globals.Number[args[0].toLowerCase()].value -= parseInt(args[1]);
     }	
   },
    801: {

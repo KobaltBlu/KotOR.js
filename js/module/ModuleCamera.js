@@ -55,6 +55,22 @@ class ModuleCamera extends ModuleObject {
 
   }
 
+  save(){
+    let gff = new GFFObject();
+    gff.RootNode.Type = 14;
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CameraID') ).SetValue(this.cameraID);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'FieldOfView') ).SetValue(this.fov);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Height') ).SetValue(this.height);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'MicRange') ).SetValue(this.micRange);
+    gff.RootNode.AddField( new Field(GFFDataTypes.ORIENTATION, 'Orientation') ).SetValue( this.template.GetFieldByLabel('Orientation').GetOrientation() );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Pitch') ).SetValue(this.pitch);
+    gff.RootNode.AddField( new Field(GFFDataTypes.VECTOR, 'Position') ).SetValue( this.template.GetFieldByLabel('Position').GetVector() );
+
+    this.template = gff;
+    return gff;
+  }
+
   toToolsetInstance(){
 
     let instance = new Struct(4);

@@ -17,9 +17,9 @@ class BIFObject {
 
       fs.open(this.file, 'r', (err, fd) => {
         if (err) {
-            console.log('BIF Header Read', status.message);
-            throw 'BIFObject: Failed to open '+this.file+' for reading.';
-            return;
+          console.log('BIF Header Read', status.message);
+          throw 'BIFObject: Failed to open '+this.file+' for reading.';
+          return;
         }
         let header = Buffer.alloc(this.HeaderSize);
         fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {

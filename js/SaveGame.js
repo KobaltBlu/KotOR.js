@@ -118,6 +118,18 @@ class SaveGame {
     }
   }
 
+  getIsAutoSave(){
+    return this.folderName.split(' - ')[1] == 'AUTOSAVE';
+  }
+
+  getIsQuickSave(){
+    return this.folderName.split(' - ')[1] == 'QUICKSAVE';
+  }
+
+  getSaveNumber(){
+    return parseInt(this.folderName.split(' - ')[0]);
+  }
+
   GetThumbnail( onLoad = null ){
 
     if(this.thumbnail == null){
@@ -195,25 +207,47 @@ class SaveGame {
       Game.player = undefined;
     }
 
+    PartyManager.PortraitOrder = [];
+
+    if(this.PORTRAIT0)
+      PartyManager.PortraitOrder[0] = this.PORTRAIT0;
+
+    if(this.PORTRAIT1)
+      PartyManager.PortraitOrder[1] = this.PORTRAIT1;
+
+    if(this.PORTRAIT2)
+      PartyManager.PortraitOrder[2] = this.PORTRAIT2;
+
     //Init SAVEGAME.sav
     this.InitSaveGameResourceLoader( ()=> {
-      //Load GlobalVars
-      this.GlobalVARSLoader( () => {
-        //Load Inventory
-        this.InventoryLoader( () => {
-          //Load PartyTable
-          this.PartyTableLoader( () => {
-            //Load The Last Module
-            this.ModuleLoader( () => {
-              console.log('SaveGame', 'Load Complete!');
-              if(typeof onLoad === 'function')
-                onLoad();
+      //Create the gameinprogress folder
+      this.InitGameInProgressFolder( () => {
+        //Load GlobalVars
+        this.GlobalVARSLoader( () => {
+          //Load Inventory
+          this.InventoryLoader( () => {
+            //Load PartyTable
+            this.PartyTableLoader( () => {
+              //Load The Last Module
+              this.ModuleLoader( () => {
+                console.log('SaveGame', 'Load Complete!');
+                if(typeof onLoad === 'function')
+                  onLoad();
+              });
             });
           });
         });
       });
     });
 
+  }
+
+  InitGameInProgressFolder( onLoad = undefined ){
+    CurrentGame.InitGameInProgressFolder();
+    CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME ).then( () => {
+      if(typeof onLoad === 'function')
+        onLoad();
+    });
   }
 
   InitSaveGameResourceLoader(onLoad = null){
@@ -228,38 +262,61 @@ class SaveGame {
     console.log('SaveGame', 'Loading GlobalVARS...');
     this.globalVars = new GFFObject(path.join(this.directory, 'GLOBALVARS.res'), (globalVars) => {
 
-      let catNum = new BinaryReader(globalVars.json.fields.ValNumber.value);
-      for(let i = 0; i < globalVars.json.fields.CatNumber.structs.length; i++){
-        let node = globalVars.json.fields.CatNumber.structs[i];
-        Game.Globals.Number[node.fields.Name.value.toLowerCase()] = catNum.ReadByte();
+      let numBytes = new BinaryReader(globalVars.RootNode.GetFieldByLabel('ValNumber').GetVoid());
+      let catNumbers = globalVars.GetFieldByLabel('CatNumber').GetChildStructs();
+      for(let i = 0; i < catNumbers.length; i++){
+        let numCat = catNumbers[i];
+        let numLabel = numCat.GetFieldByLabel('Name').GetValue();
+        if(Game.Globals.Number[numLabel.toLowerCase()]){
+          Game.Globals.Number[numLabel.toLowerCase()].value = numBytes.ReadByte();
+        }
       }
 
-      let catBool = globalVars.json.fields.ValBoolean.value;
-      let numBool = globalVars.json.fields.CatBoolean.structs.length;
-      /*for(let i = 0; i < numBool; i++){
-        let index = Math.round(Math.floor((i / 8.0)));
-        let bit = Math.round(((i - index * 8)))
-        let node = globalVars.json.fields.CatBoolean.structs[i];
-        Game.Globals.Boolean[node.fields.Name.value.toLowerCase()] = (catBool[index] & bit) > 0;
-      }*/
+      let locBytes = new BinaryReader(globalVars.RootNode.GetFieldByLabel('ValLocation').GetVoid());
+      let catLocations = globalVars.GetFieldByLabel('CatLocation').GetChildStructs();
+      for(let i = 0; i < catLocations.length; i++){
+        let locCat = catLocations[i];
+        let locLabel = locCat.GetFieldByLabel('Name').GetValue();
 
-      let boolBytes = globalVars.RootNode.GetFieldByLabel('ValBoolean').GetVoid()
+        Game.Globals.Location[locLabel.toLowerCase()].value = new Game.Location(
+          locBytes.ReadSingle(),
+          locBytes.ReadSingle(),
+          locBytes.ReadSingle(),
+          locBytes.ReadSingle(),
+          locBytes.ReadSingle(),
+          locBytes.ReadSingle(),
+        );
+      }
+
+      let boolBytes = globalVars.RootNode.GetFieldByLabel('ValBoolean').GetVoid();
+      let catBooleans = globalVars.GetFieldByLabel('CatBoolean').GetChildStructs();
       let maxBits = boolBytes.length * 8;
       for(let i = 0; i < maxBits; i++){
         for(let j = 0; j < 8; j++){
           let index = (i * 8) + j;
           let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
 
-          let node = globalVars.json.fields.CatBoolean.structs[index];
-          if(node){
-            Game.Globals.Boolean[node.fields.Name.value.toLowerCase()] = bit;
+          let boolCat = catBooleans[index];
+          if(boolCat){
+            let boolLabel = boolCat.GetFieldByLabel('Name').GetValue();
+            if(Game.Globals.Boolean[boolLabel.toLowerCase()]){
+              Game.Globals.Boolean[boolLabel.toLowerCase()].value = bit;
+            }
           }
         }
       }
 
-      for(let i = 0; i < globalVars.json.fields.CatString.structs.length; i++){
-        let node = globalVars.json.fields.CatString.structs[i];
-        Game.Globals.String[node.fields.Name.value] = globalVars.json.fields.ValString.structs[i].fields.String.value;
+      let stringValues = globalVars.RootNode.GetFieldByLabel('ValString').GetChildStructs();
+      let catStrings = globalVars.GetFieldByLabel('CatString').GetChildStructs();
+      for(let i = 0; i < catStrings.length; i++){
+        let strCat = catStrings[i];
+        if(strCat){
+          let strLabel = strCat.GetFieldByLabel('Name').GetValue();
+          let strValue = stringValues[i].GetFieldByLabel('String').GetValue();
+          if(Game.Globals.String[strLabel.toLowerCase()]){
+            Game.Globals.String[strLabel.toLowerCase()].value = strValue;
+          }
+        }
       }
 
       if(typeof onLoad === 'function')
@@ -284,15 +341,21 @@ class SaveGame {
 
   InventoryLoader(onLoad = null){
     console.log('SaveGame', 'Loading Inventory...');
-    this.SAVEGAME.getRawResource('inventory', 0, (d) => {
-      this.inventory = new GFFObject(d);
-      let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
 
-      this.LoadInventoryItems(invArr, 0, () => {
-        if(typeof onLoad === 'function')
-          onLoad();
-      });
+    fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'), (error, data) => {
+      if(!error){
+        this.inventory = new GFFObject(data);
+        let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+  
+        this.LoadInventoryItems(invArr, 0, () => {
+          if(typeof onLoad === 'function')
+            onLoad();
+        });
+      }else{
+        console.error('InventoryLoader', e)
+      }
     });
+
   }
 
   LoadInventoryItems(invArr = null, i = 0, onLoad = null){
@@ -313,36 +376,6 @@ class SaveGame {
 
       if(typeof onLoad === 'function')
         onLoad();
-    });
-  }
-
-  IsModuleSaved(name=''){
-    if(!this.isLoaded)
-      return false;
-
-    for(let i = 0; i < this.SAVEGAME.KeyList.length; i++){
-      if(this.SAVEGAME.KeyList[i].ResRef.toLowerCase() === name.toLowerCase()){
-        return true;
-      }
-    }
-    return false;
-  }
-
-  GetModuleRim(name=''){
-    // if(!this.isLoaded)
-    //   return false;
-
-    return new Promise( (resolve, reject) => {
-      for(let i = 0; i < this.SAVEGAME.KeyList.length; i++){
-        if(this.SAVEGAME.KeyList[i].ResRef.toLowerCase() === name.toLowerCase()){
-          this.SAVEGAME.getRawResource(this.SAVEGAME.KeyList[i].ResRef, this.SAVEGAME.KeyList[i].ResType, (sav) => {
-            new ERFObject(sav, (rim) => {
-              console.log('SaveGame', 'GetModuleRum', rim);
-              resolve(rim);
-            });
-          });
-        }
-      }
     });
   }
 
@@ -399,7 +432,7 @@ class SaveGame {
           this.partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_PAZSIDELIST'));
           this.partytable.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'PT_PLAYEDSECONDS'));
           this.partytable.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'PT_SOLOMODE'));
-          this.partytable.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'PT_TUT_WND_SHOWN'));
+          this.partytable.RootNode.AddField(new Field(GFFDataTypes.VOID, 'PT_TUT_WND_SHOWN'));
           this.partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_XP_POOL'));
 
           this.partytable.FileType = 'PT  ';
@@ -411,9 +444,9 @@ class SaveGame {
             this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatLocation'));
             this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatNumber'));
             this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatString'));
-            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValBoolean'));
-            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValLocation'));
-            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'ValNumber'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValBoolean'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValLocation'));
+            this.globalVars.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValNumber'));
             this.globalVars.RootNode.AddField(new Field(GFFDataTypes.LIST, 'ValString'));
 
             this.globalVars.FileType = 'GVT ';
@@ -434,37 +467,237 @@ class SaveGame {
 
   }
 
+  static SaveCurrentGame( name = '', replace_id = 0 ){
+    return new Promise( async (resolve, reject ) => {
+
+      if(Game.module instanceof Module){
+
+        Game.LoadScreen.Open();
+        Game.LoadScreen.showSavingMessage();
+
+        let base_dir = path.join( app.getAppPath(), 'Saves' );
+        let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
+
+        if(!fs.existsSync(base_dir)){
+          fs.mkdirSync(base_dir);
+        }
+
+        let save_dir_name = pad(save_id, 6)+' - Game'+(save_id-1);
+        let save_dir = path.join( base_dir, save_dir_name );
+
+        if(!fs.existsSync(save_dir)){
+          fs.mkdirSync(save_dir);
+        }
+        Game.LoadScreen.setProgress(25);
+
+        await Game.module.save();
+        Game.LoadScreen.setProgress(50);
+
+        await CurrentGame.ExportToSaveFolder( save_dir );
+        Game.LoadScreen.setProgress(75);
+
+        await SaveGame.ExportSaveNFO(save_dir, name);
+        await SaveGame.ExportGlobalVars( save_dir );
+        await PartyTableManager.export( save_dir );
+
+        Game.onScreenShot = (tga) => {
+          tga.export( path.join( save_dir, 'Screen.tga')).then( (d) => {
+            Game.LoadScreen.setProgress(100);
+            Game.LoadScreen.Close();
+            resolve();
+          });
+        };
+
+      }else{
+        resolve();
+      }
+
+    });
+  }
+
+  static ExportSaveNFO( directory, savename){
+    return new Promise( async (resolve, reject) => {
+      console.log('ExportSaveNFO')
+      let nfo = new GFFObject();
+      nfo.FileType = 'NFO ';
+
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'AREANAME')).Value = Game.module.area.Name.GetValue();
+      nfo.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'CHEATUSED')).Value = 0;
+      nfo.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'GAMEPLAYHINT')).Value = 0;
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LASTMODULE')).Value = Game.module.filename.toUpperCase();
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE1')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE2')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE3')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE4')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE5')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'LIVE6')).Value = '';
+      nfo.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'LIVECONTENT')).Value = 0;
+
+      //Save the portraits of the current party
+      for(let i = 0; i < PartyManager.party.length; i++){
+        nfo.RootNode.AddField(new Field(GFFDataTypes.RESREF, 'PORTRAIT'+i)).Value = PartyManager.party[i].getPortraitResRef();
+      }
+
+      nfo.RootNode.AddField(new Field(GFFDataTypes.CEXOSTRING, 'SAVEGAMENAME')).Value = savename;
+      nfo.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'STORYHINT')).Value = 0;
+      nfo.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'TIMEPLAYED')).Value = parseInt(Game.time);
+
+      await nfo.Export(path.join(directory, 'savenfo.res'));
+
+      resolve();
+    });
+  }
+
+  static ExportGlobalVars( directory ){
+    return new Promise( async (resolve, reject) => {
+      console.log('ExportGlobalVars')
+      let gvt = new GFFObject();
+      gvt.FileType = 'GVT ';
+
+      //Global Booleans
+      let catBooleanList  = gvt.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatBoolean'));
+      let boolKeys = Object.keys(Game.Globals.Boolean);
+      let boolBuffer = Buffer.alloc( Math.ceil( boolKeys.length / 8 ) );
+
+      for(let i = 0; i < boolKeys.length; i++){
+        let boolean = Game.Globals.Boolean[boolKeys[i]];
+        let byte_offset = Math.floor( i / 8 );
+        let bit_index = (i % 8);
+
+        if(boolean.value){
+          boolBuffer[byte_offset] |= 1 << bit_index;
+        }
+
+        let boolStruct = new Struct();
+        boolStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Name') ).SetValue(boolean.name);
+        catBooleanList.AddChildStruct(boolStruct);
+      }
+
+      //Global Locations
+      let catLocationList  = gvt.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatLocation'));
+      let locKeys = Object.keys(Game.Globals.Location);
+      let locationBuffer = Buffer.alloc(24 * 100);
+
+      for(let i = 0; i < locKeys.length; i++){
+        let location = Game.Globals.Location[locKeys[i]];
+        locationBuffer.writeFloatLE( location.value.position.x, (24 * i) + 0  );
+        locationBuffer.writeFloatLE( location.value.position.y, (24 * i) + 4  );
+        locationBuffer.writeFloatLE( location.value.position.z, (24 * i) + 8  );
+        locationBuffer.writeFloatLE( location.value.rotation.x, (24 * i) + 12 );
+        locationBuffer.writeFloatLE( location.value.rotation.y, (24 * i) + 16 );
+        locationBuffer.writeFloatLE( location.value.rotation.z, (24 * i) + 20 );
+
+        let locStruct = new Struct();
+        locStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Name') ).SetValue(location.name);
+        catLocationList.AddChildStruct(locStruct);
+      }
+
+      //Global Numbers
+      let catNumberList  = gvt.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatNumber'));
+      let numberKeys = Object.keys(Game.Globals.Number);
+      let numberBuffer = Buffer.alloc(numberKeys.length);
+
+      for(let i = 0; i < numberKeys.length; i++){
+        let numberObj = Game.Globals.Number[numberKeys[i]];
+
+        numberBuffer[i] = (numberObj.value % 256);
+
+        let numberStruct = new Struct();
+        numberStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Name') ).SetValue(numberObj.name);
+        catNumberList.AddChildStruct(numberStruct);
+      }
+
+      
+      let catStringList  = gvt.RootNode.AddField(new Field(GFFDataTypes.LIST, 'CatString'));
+
+      gvt.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValBoolean')).SetData( boolBuffer );
+      gvt.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValLocation')).SetData( locationBuffer );
+      gvt.RootNode.AddField(new Field(GFFDataTypes.VOID, 'ValNumber')).SetData( numberBuffer );
+
+      let valStringList  = gvt.RootNode.AddField(new Field(GFFDataTypes.LIST, 'ValString'));
+      let stringKeys = Object.keys(Game.Globals.String);
+      for(let i = 0; i < stringKeys.length; i++){
+        let stringObj = Game.Globals.String[stringKeys[i]];
+
+        let stringCatStruct = new Struct();
+        stringCatStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Name') ).SetValue(stringObj.name);
+        catStringList.AddChildStruct(stringCatStruct);
+
+
+        let stringValStruct = new Struct();
+        stringValStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'String') ).SetValue(stringObj.value);
+        valStringList.AddChildStruct(stringValStruct);
+      }
+
+      await gvt.Export(path.join(directory, 'GLOBALVARS.res'));
+
+      resolve();
+    });
+  }
+
+  static GetSaveGames(){
+    return new Promise( (resolve, reject) => {
+      fs.readdir(SaveGame.directory, (err, folders) => {
+
+        if(err){
+          if(typeof onLoad === 'function')
+            resolve();
+    
+          //Make the default savegame directory
+          fs.mkdirSync(SaveGame.directory);
+    
+          return;
+        }
+    
+        //Loop through and detect the possible savegame paths
+        for(let i = 0; i < folders.length; i++){
+          if(SaveGame.FolderRegexValidator.test(folders[i])){
+            if(fs.existsSync(path.join(SaveGame.directory, folders[i], 'SAVEGAME.sav'))){
+              SaveGame.AddSaveGame( new SaveGame(folders[i]) );
+            }else{
+              console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);
+            }
+          }else{
+            console.log('SaveGame', 'Folder Invalid', folders[i]);
+          }
+        }
+    
+        resolve();
+    
+      });
+    });
+  }
+
+  static AddSaveGame( savegame = undefined ){
+    if(savegame instanceof SaveGame){
+      let len = SaveGame.saves.push( savegame );
+      let lastSave = SaveGame.saves[len - 1];
+      let saveNumber = lastSave.getSaveNumber();
+      if(saveNumber >= SaveGame.NEXT_SAVE_ID){
+        SaveGame.NEXT_SAVE_ID = saveNumber + 1;
+      }
+    }
+  }
+
 }
 
 SaveGame.saves = [];
 SaveGame.directory = path.join(app_profile.directory, 'Saves');
-SaveGame.getSaveGames = function( onLoad = null ){
+CurrentGame.gameinprogress_dir = path.join(app_profile.directory, 'gameinprogress');
 
-  fs.readdir(SaveGame.directory, (err, folders) => {
-
-    if(err){
-      if(typeof onLoad === 'function')
-        onLoad();
-
-      //Make the default savegame directory
-      fs.mkdirSync(SaveGame.directory);
-
-      return;
-    }
-
-    //Loop through and detect the possible savegame paths
-    for(let i = 0; i < folders.length; i++){
-      if(fs.existsSync(path.join(SaveGame.directory, folders[i], 'SAVEGAME.sav'))){
-        SaveGame.saves.push(new SaveGame(folders[i]));
-      }
-    }
+SaveGame.FolderRegexValidator = /^(\d+) - (Game\d+)$|^(000000) - (QUICKSAVE)$|^(000001) - (AUTOSAVE)$/;
+SaveGame.FolderNameRegex = /^(\d+) - (QUICKSAVE|AUTOSAVE|Game\d+)$/;
+SaveGame.NEXT_SAVE_ID = 1;
+//NEXT_SAVE_ID - 0 QUICKSAVE
+//NEXT_SAVE_ID - 1 AUTOSAVE
+//NEXT_SAVE_ID - X Higher than 1 is a custom save game
 
 
-    if(typeof onLoad === 'function')
-      onLoad();
-
-  });
-
+//Clean up the gameinprogress folder on startup
+try{
+  fs.rmdirSync( CurrentGame.gameinprogress_dir, { recursive: true } );
+}catch(e){
+  console.error('SaveGame', 'delete gameinprogress directory error', e);
 }
 
 module.exports = SaveGame;

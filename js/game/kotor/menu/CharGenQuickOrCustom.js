@@ -45,12 +45,9 @@ class CharGenQuickOrCustom extends GameMenu {
             for(let i = 0, len = feats_table.rows.length; i < len; i++){
               let feat_data = feats_table.rows[i];
               if(feat_data[featstable_key+'_granted'] == 1){
-                Game.player.feats.push(new TalentFeat({type: 1, id: i }));
+                Game.player.feats.push(new TalentFeat(i));
               }
             }
-            console.log('boo');
-            //Game.CharGenMain.state = CharGenMain.STATES.QUICK;
-            //Game.CharGenQuickPanel.Show();
             Game.CharGenMain.Close();
             Game.CharGenMain.childMenu = Game.CharGenQuickPanel;
             Game.CharGenMain.Open();

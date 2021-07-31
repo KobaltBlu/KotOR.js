@@ -11,6 +11,10 @@ class EffectParalyze extends GameEffect {
     super.onApply();
   }
 
+  update(delta = 0){
+    this.object.animState = ModuleCreature.AnimState.PARALYZED;
+  }
+
 }
 
 module.exports = EffectParalyze;

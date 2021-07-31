@@ -12,7 +12,7 @@ class EffectStunned extends GameEffect {
     let eVisualEffect = new EffectVisualEffect(2002);
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
-    eVisualEffect.setSubType(this.getSubType());
+    eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
     eVisualEffect.setDuration(this.duration);
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);

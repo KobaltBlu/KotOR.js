@@ -10,7 +10,8 @@ class Planetary {
   static Init(){
 
     Planetary.planets = [];
-    Planetary.current = null;
+    Planetary.currentIndex = -1;
+    Planetary.current = undefined;
     let planetList = Global.kotor2DA.planetary.rows;
     for(let i = 0; i < Global.kotor2DA.planetary.RowCount; i++){
       Planetary.planets.push(
@@ -20,16 +21,17 @@ class Planetary {
 
   }
 
-  static SetCurrentPlanet(iNum){
-    Planetary.current = Planetary.planets[iNum];
+  static SetCurrentPlanet( index = 0 ){
+    Planetary.currentIndex = index;
+    Planetary.current = Planetary.planets[index];
   }
 
-  static SetPlanetAvailable(iNum, bState){
-    Planetary.planets[iNum].enabled = bState;
+  static SetPlanetAvailable(index, bState){
+    Planetary.planets[index].enabled = bState;
   }
 
-  static SetPlanetSelectable(iNum, bState){
-    Planetary.planets[iNum].selectable = bState;
+  static SetPlanetSelectable(index, bState){
+    Planetary.planets[index].selectable = bState;
   }
 
   static GetPlanetByGUITag(sTag = ''){
@@ -41,6 +43,25 @@ class Planetary {
     }
 
     return null;
+  }
+
+  static SaveStruct(){
+    let struct = new Struct();
+
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'GlxyMapNumPnts') ).SetValue(Planetary.planets.length);
+
+    let planetMask = 0
+    for(let i = 0; i < Planetary.planets.length; i++){
+      let planet = Planetary.planets[i];
+      if(planet.enabled){
+        planetMask |= 1 << planet.id;
+      }
+      planetMask = planetMask >>> 0;
+    }
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'GlxyMapPlntMsk') ).SetValue(planetMask);
+    struct.AddField( new Field(GFFDataTypes.INT, 'GlxyMapSelPnt') ).GetValue(Planetary.current);
+
+    return struct;
   }
 
 }

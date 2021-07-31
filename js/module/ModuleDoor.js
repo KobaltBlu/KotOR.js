@@ -367,19 +367,34 @@ class ModuleDoor extends ModuleObject {
     }
   }
 
-  update(delta = 0){
-    
-    super.update(delta);
+  onSpawn(runScript = true){
+    super.onSpawn(runScript);
+
+    if(this.model instanceof THREE.AuroraModel){
+      this.model.rotation.copy(this.rotation);
+      this.model.position.copy(this.position);
+      this.model.updateMatrix();
+
+      this.box.setFromObject(this.model);
+
+      this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
+      this.boxHelper = new THREE.Box3Helper( this.box, 0xff0000 );
+      Game.group.light_helpers.add( this.boxHelper );
+    }
 
     if(this.walkmesh && this.model){
       this.walkmesh.matrixWorld = this.model.matrix.clone();
     }
+  }
+
+  update(delta = 0){
+    
+    super.update(delta);
 
     if(this.model instanceof THREE.AuroraModel){
       this.model.rotation.copy(this.rotation);
-      //this.model.quaternion = this.quaternion;
       this.model.update(delta);
-      this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
+      //this.box.setFromObject(this.model);
     }
 
     this.action = this.actionQueue[0];
@@ -858,10 +873,97 @@ class ModuleDoor extends ModuleObject {
       this.linkedToModule = this.template.RootNode.GetFieldByLabel('LinkedToModule').GetValue();
 
     if(this.template.RootNode.HasField('TransitionDestin'))
-      this.transitionDestin = this.template.RootNode.GetFieldByLabel('TransitionDestin').GetValue();
+      this.transitionDestin = this.template.RootNode.GetFieldByLabel('TransitionDestin').GetCExoLocString();
 
     this.initialized = true
 
+  }
+
+  save(){
+    let gff = new GFFObject();
+    gff.FileType = 'UTD ';
+
+    let actionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Appearance') ).SetValue(this.appearance);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'AutoRemoveKey') ).SetValue(this.autoRemoveKey);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Bearing') ).SetValue(this.bearing);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'CloseLockDC') ).SetValue(this.closeLockDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Description') ).SetValue();
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DisarmDC') ).SetValue(this.disarmDC);
+
+    //Effects
+    let effectList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'EffectList') );
+    for(let i = 0; i < this.effects.length; i++){
+      effectList.AddChildStruct( this.effects[i].save() );
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Faction') ).SetValue(this.faction);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Fort') ).SetValue(this.fort);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GenericType') ).SetValue(this.genericType);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'HP') ).SetValue(this.hp);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Hardness') ).SetValue(this.hardness);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'KeyName') ).SetValue(this.keyName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'KeyRequired') ).SetValue(this.keyRequired);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'LinkedTo') ).SetValue(this.linkedTo);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'LinkedToFlags') ).SetValue(this.linkedToFlags);
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'LinkedToModule') ).SetValue(this.linkedToModule);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocName') ).SetValue(this.locName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'LoadScreenID') ).SetValue(this.loadScreenID);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Lockable') ).SetValue(this.lockable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Locked') ).SetValue(this.locked);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Min1HP') ).SetValue(this.min1HP);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+
+    //Scripts
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnClick') ).SetValue(this.scripts.onClick ? this.scripts.onClick.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnClosed') ).SetValue(this.scripts.onClosed ? this.scripts.onClosed.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDamaged') ).SetValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDeath') ).SetValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDialog') ).SetValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDisarm') ).SetValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnFailToOpen') ).SetValue(this.scripts.onFailToOpen ? this.scripts.onFailToOpen.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnLock') ).SetValue(this.scripts.onLock ? this.scripts.onLock.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnMeleeAttacked') ).SetValue(this.scripts.onMeleeAttacked ? this.scripts.onMeleeAttacked.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnOpen') ).SetValue(this.scripts.onOpen ? this.scripts.onOpen.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnSpellCastAt') ).SetValue(this.scripts.onSpellCastAt ? this.scripts.onSpellCastAt.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnTrapTriggered') ).SetValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUnlock') ).SetValue(this.scripts.onUnlock ? this.scripts.onUnlock.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUserDefined') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'OpenLockDC') ).SetValue(this.openLockDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'OpenState') ).SetValue(this.isOpen() ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Plot') ).SetValue(this.plot);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(this.portraidId);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Ref') ).SetValue(this.ref);
+
+    //SWVarTable
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'SecretDoorDC') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Static') ).SetValue(this.static);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'TransitionDestin') ).SetValue(this.transitionDestin);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectDC') ).SetValue(this.trapDetectDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectable') ).SetValue(this.trapDetectable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDisarmable') ).SetValue(this.trapDisarmable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapFlag') ).SetValue(this.trapFlag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapOneShot') ).SetValue(this.trapOneShot);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapType') ).SetValue(this.trapType);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Useable') ).SetValue(this.useable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Will') ).SetValue(this.will);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'X') ).SetValue(this.position.x);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Y') ).SetValue(this.position.y);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Z') ).SetValue(this.position.z);
+
+    this.template = gff;
+    return gff;
   }
 
   toToolsetInstance(){
@@ -912,6 +1014,36 @@ class ModuleDoor extends ModuleObject {
 
   }
 
+  animationConstantToAnimation( animation_constant = 10000 ){
+    switch( animation_constant ){
+      case ModuleDoor.AnimState.DEFAULT:       //10000, //327 - 
+        return Global.kotor2DA.animations.rows[327];
+      case ModuleDoor.AnimState.CLOSED:        //10022, //333 - 
+        return Global.kotor2DA.animations.rows[333];
+      case ModuleDoor.AnimState.OPENED1:       //10050, //331 - 
+        return Global.kotor2DA.animations.rows[331];
+      case ModuleDoor.AnimState.OPENED2:       //10051, //332 - 
+        return Global.kotor2DA.animations.rows[332];
+      case ModuleDoor.AnimState.BUSTED:        //10153, //366 - 
+        return Global.kotor2DA.animations.rows[366];
+      case ModuleDoor.AnimState.TRANS:         //10269, //344 - 
+        return Global.kotor2DA.animations.rows[344];
+    }
+
+    return super.animationConstantToAnimation( animation_constant );
+  }
+
+}
+
+ModuleDoor.AnimState = {
+  DAMAGE:          10014, // 328 - damage
+  CLOSED:          10022, // 333 - closed
+  OPENED1:         10050, // 331 - opened1
+  OPENED2:         10051, // 332 - opened2
+  DEFAULT:         10072, // 327 - default
+  CONST1:          10077, // 328 - damage
+  BUSTED:          10153, // 366 - busted
+  TRANS:           10269, // 344 - trans
 }
 
 module.exports = ModuleDoor;

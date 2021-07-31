@@ -288,7 +288,7 @@ class MenuDialog extends GameMenu {
 
     entry.checkList = {
       isSkipped: false,
-      cameraAnimationComplete: true,
+      cameraAnimationComplete: Game.InGameDialog.dialog.isAnimatedCutscene ? false : true,
       voiceOverComplete: false,
       alreadyAllowed: false,
       isComplete: function(){
@@ -297,7 +297,7 @@ class MenuDialog extends GameMenu {
           return false;
         }
 
-        if(Game.InGameDialog.isAnimatedCutscene){
+        if(Game.InGameDialog.dialog.isAnimatedCutscene){
           if(this.cameraAnimationComplete){
             this.alreadyAllowed = true;
             if(Game.InGameDialog.paused){
@@ -649,14 +649,14 @@ class MenuDialog extends GameMenu {
         }else{
           let actor = Game.GetObjectByTag(participant.participant);
           if(actor && participant.animation >= 10000){
-            let anim = this.GetDialogAnimation(participant.animation-10000);
-            //console.log('DialogAnim', participant.animation-10000, anim)
+            let anim = actor.animationConstantToAnimation(participant.animation);
+            //console.log('DialogAnim', participant.animation, anim)
             if(anim){
               //actor.anim = true;
               //actor.model.playAnimation(anim.name, anim.looping  == '1');
               actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
             }else{
-              console.error('Anim', participant.animation-10000)
+              console.error('Anim', participant.animation)
             }
           }
         }
@@ -675,14 +675,14 @@ class MenuDialog extends GameMenu {
         let participant = entry.animations[i];
         let actor = Game.GetObjectByTag(participant.participant);
         if(actor && participant.animation >= 10000){
-          let anim = this.GetDialogAnimation(participant.animation-10000);
-          //console.log('DialogAnim', participant.animation-10000, anim)
+          let anim = actor.animationConstantToAnimation(participant.animation);
+          //console.log('DialogAnim', participant.animation, anim)
           if(anim){
             //actor.anim = true;
             //actor.model.playAnimation(anim.name, anim.looping  == '1');
             actor.dialogPlayAnimation(anim.name, anim.looping  == '1');
           }else{
-            console.error('Anim', participant.animation-10000)
+            console.error('Anim', participant.animation)
           }
         }
       }
@@ -691,38 +691,6 @@ class MenuDialog extends GameMenu {
 
   GetActorAnimation(index = 0){
     return "CUT"+("000" + (index-1200 +1)).slice(-3)+"W";
-  }
-
-  GetDialogAnimation(index = 0){
-    switch(index){
-      case 30: //Listen
-        return Global.kotor2DA.animations.rows[18];
-      break;
-      case 38://Talk_Normal
-        return Global.kotor2DA.animations.rows[25];
-      break;
-      case 39://Talk_Pleading
-        return Global.kotor2DA.animations.rows[27];
-      break;
-      case 40://Talk_Forceful
-        return Global.kotor2DA.animations.rows[26];
-      break;
-      case 41://Talk_Laughing
-        return Global.kotor2DA.animations.rows[29];
-      break;
-      case 42://Talk_Sad
-        return Global.kotor2DA.animations.rows[28];
-      break;
-      case 121: //Use_Computer_LP
-        return Global.kotor2DA.animations.rows[44];
-      break;
-      case 127: //Activate
-        return Global.kotor2DA.animations.rows[38];
-      break;
-      default:
-        return undefined;
-      break;
-    }
   }
 
   SetPlaceableCamera(nCamera){
@@ -909,9 +877,9 @@ class MenuDialog extends GameMenu {
         Game.camera_animated.quaternion.copy(
           this.dialog.animatedCamera.camerahook.quaternion
         );
-        //Game.dialog.camera_animated.rotation.y -= Math.PI/2
-        //Game.dialog.camera_animated.rotation.z= Math.PI
-        Game.dialog.camera_animated.updateProjectionMatrix();
+        //Game.camera_animated.rotation.y -= Math.PI/2
+        //Game.camera_animated.rotation.z= Math.PI
+        Game.camera_animated.updateProjectionMatrix();
         Game.currentCamera = Game.camera_animated;
       }
 

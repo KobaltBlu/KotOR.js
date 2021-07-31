@@ -14,6 +14,7 @@
     };
 
     this.walkableFaces = [];
+    this.walkableFacesWithEdge = [];
     this.grassFaces = [];
     this.rootNode = null;
     this.mesh = new THREE.Object3D();
@@ -57,6 +58,12 @@
         face.adjacentWalkableFaces.a = this.faces[(face.adjacent || [] )[0]];
         face.adjacentWalkableFaces.b = this.faces[(face.adjacent || [] )[1]];
         face.adjacentWalkableFaces.c = this.faces[(face.adjacent || [] )[2]];
+
+        if(face.adjacentWalkableFaces.a instanceof WalkmeshEdge ||
+           face.adjacentWalkableFaces.b instanceof WalkmeshEdge || 
+           face.adjacentWalkableFaces.c instanceof WalkmeshEdge){
+          this.walkableFacesWithEdge.push(face);
+        }
       }
 
       let edge1 = (i * 3) + 0;

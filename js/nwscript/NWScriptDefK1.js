@@ -125,9 +125,8 @@ NWScriptDefK1.Actions = {
         if( args[0] ){
           let scriptInstance = await NWScript.Load( args[0] );
           if(scriptInstance instanceof NWScriptInstance){
-            this.executeScript( scriptInstance, this, args, () => {
-              resolve();
-            });
+            await this.executeScript( scriptInstance, this, args );
+            resolve();
           }else{
             console.warn('NWScript.ExecuteScript failed to find', args[0]);
             resolve();
@@ -481,7 +480,6 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
         this.caller.actionPlayAnimation(args[0], args[2], args[1]);
-        //this.caller.actionQueue.push({ goal: ModuleCreature.ACTION.ANIMATE, animation: args[0], speed: args[1], time: args[2] });
       }
     }
   },
@@ -987,7 +985,7 @@ NWScriptDefK1.Actions = {
     args: ["effect"],
     action: function(args, _instr, action){
       if(args[0] instanceof GameEffect){
-        return args[0].getSubType() & 7;
+        return args[0].getDurationType() & 7;
       }
       return -1;
     }
@@ -1410,11 +1408,15 @@ NWScriptDefK1.Actions = {
         case 'EventUserDefined':
           if(args[0] instanceof ModuleObject){
             args[0].triggerUserDefinedEvent( args[0], args[1].value );
+          }else{
+            console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
           }
         break;
         case 'EventSpellCastAt':
           if(args[0] instanceof ModuleObject){
             args[0].triggerSpellCastAtEvent(args[1].oCaster, args[1].nSpell, args[1].bHarmful);
+          }else{
+            console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
           }
         break;
         default:
@@ -1764,8 +1766,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "string"],
     action: function(args, _instr, action){
-      Game.Globals.String[args[0]] = args[1];
-      //console.error('Unhandled script action', _instr.address, action.name, action.args);
+      if(Game.Globals.String[args[0].toLowerCase()])
+        Game.Globals.String[args[0].toLowerCase()].value = args[1];
     }
   },
   161:{
@@ -2053,7 +2055,7 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: ["string"],
     action: function(args, _instr, action){
-      return Game.Globals.String[args[0]]
+      return Game.Globals.String[args[0].toLowerCase()]?.value || '';
     }
   },
   195:{
@@ -2268,19 +2270,9 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'GetLocation', args);
       if(args[0] instanceof ModuleObject){
-        return {
-          position: args[0].getPosition(),
-          area: Game.module.area,
-          facing: THREE.Math.radToDeg(args[0].rotation.z)
-        };
-      }else{
-        //console.error('NWScript: '+this.name, 'GetLocation', args);
-        return {
-          position: new THREE.Vector3(),
-          area: Game.module.area,
-          facing: 180
-        };
+        return args[0].GetLocation();
       }
+      return new Game.Location();
     }
   },
   214:{
@@ -2289,7 +2281,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["location"],
     action: function(args, _instr, action){
-      if(args[0] instanceof ModuleObject){
+      console.log('ActionJumpToLocation', args, this.caller);
+      if(args[0] instanceof Game.Location){
         this.caller.jumpToLocation( args[0] );
       }
     }
@@ -2300,11 +2293,10 @@ NWScriptDefK1.Actions = {
     type: 18,
     args: ["vector", "float"],
     action: function(args, _instr, action){
-      return {
-        position: args[0],
-        facing: args[1],
-        area: Game.module.area
-      };
+      let location = new Game.Location(
+        args[0].x, args[0].y, args[0].z
+      );
+      location.setBearing(args[1]);
     }
   },
   216:{
@@ -2359,7 +2351,7 @@ NWScriptDefK1.Actions = {
           //console.log('ApplyEffectToObject', args[2], this.caller);
         }else{
           //console.log('ApplyEffectToObject'. args);
-          console.error('ApplyEffectToObject', 'Expected a GameEffect');
+          console.error('ApplyEffectToObject', 'Expected a GameEffect', args);
         }
       }else{
         console.error('ApplyEffectToObject', 'GameEffects must be applied to ModuleObjects');
@@ -2447,7 +2439,13 @@ NWScriptDefK1.Actions = {
     comment: "222: Get the location of the caller's last spell target.\n",
     name: "GetSpellTargetLocation",
     type: 18,
-    args: []
+    args: [],
+    action: function(args){
+      if(this.talent instanceof TalentObject && this.talent.oTarget instanceof ModuleObject){
+        this.talent.oTarget.GetLocation();
+      }
+      return new Game.Location();
+    }
   },
   223:{
     comment: "223: Get the position vector from lLocation.\n",
@@ -2456,9 +2454,9 @@ NWScriptDefK1.Actions = {
     args: ["location"],
     action: function(args, _instr, action){
       if(args[0]){
-        return args[0].position;
+        return args[0].position.clone();
       }
-      return {x: 0.0, y: 0.0, z: 0.0};
+      return new THREE.Vector3();
     }
   },
   224:{
@@ -2471,7 +2469,13 @@ NWScriptDefK1.Actions = {
     comment: "225: Get the orientation value from lLocation.\n",
     name: "GetFacingFromLocation",
     type: 4,
-    args: ["location"]
+    args: ["location"],
+    action: function(args, _instr, action){
+      if(location instanceof Game.Location){
+        return location.getFacing();
+      }
+      return 0;
+    }
   },
   226:{
     comment: "226: Get the creature nearest to lLocation, subject to all the criteria specified.\n- nFirstCriteriaType: CREATURE_TYPE_*\n- nFirstCriteriaValue:\n-> CLASS_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_CLASS\n-> SPELL_* if nFirstCriteriaType was CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT\nor CREATURE_TYPE_HAS_SPELL_EFFECT\n-> TRUE or FALSE if nFirstCriteriaType was CREATURE_TYPE_IS_ALIVE\n-> PERCEPTION_* if nFirstCriteriaType was CREATURE_TYPE_PERCEPTION\n-> PLAYER_CHAR_IS_PC or PLAYER_CHAR_NOT_PC if nFirstCriteriaType was\nCREATURE_TYPE_PLAYER_CHAR\n-> RACIAL_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_RACIAL_TYPE\n-> REPUTATION_TYPE_* if nFirstCriteriaType was CREATURE_TYPE_REPUTATION\nFor example, to get the nearest PC, use\n(CREATURE_TYPE_PLAYER_CHAR, PLAYER_CHAR_IS_PC)\n- lLocation: We're trying to find the creature of the specified type that is\nnearest to lLocation\n- nNth: We don't have to find the first nearest: we can find the Nth nearest....\n- nSecondCriteriaType: This is used in the same way as nFirstCriteriaType to\nfurther specify the type of creature that we are looking for.\n- nSecondCriteriaValue: This is used in the same way as nFirstCriteriaValue\nto further specify the type of creature that we are looking for.\n- nThirdCriteriaType: This is used in the same way as nFirstCriteriaType to\nfurther specify the type of creature that we are looking for.\n- nThirdCriteriaValue: This is used in the same way as nFirstCriteriaValue to\nfurther specify the type of creature that we are looking for.\n* Return value on error: OBJECT_INVALID\n",
@@ -2653,7 +2657,7 @@ NWScriptDefK1.Actions = {
                 let creature = new ModuleCreature(gff)
                 creature.Load( () => {
                   creature.position.copy(args[2].position);
-                  creature.setFacing(THREE.Math.degToRad(args[2].facing), true);
+                  creature.setFacing(args[2].getFacing(), true);
                   Game.module.area.creatures.push(creature);
     
                   resolve(creature);
@@ -2687,7 +2691,7 @@ NWScriptDefK1.Actions = {
                 let plc = new ModulePlaceable(gff)
                 plc.Load( () => {
                   plc.position.copy(args[2].position);
-                  plc.rotation.set(0, 0, THREE.Math.degToRad(args[2].facing));
+                  plc.rotation.set(0, 0, args[2].getFacing());
       
                   resolve(plc);
       
@@ -2780,7 +2784,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      this.getSpellId();
+      return this.getSpellId();
     }
   },
   249:{
@@ -3203,6 +3207,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["action"],
     action: function(args, _instr, action){
+      //console.log('ActionDoCommand', args, this);
       this.caller.doCommand(
         args[0].script, //script
         args[0], //action
@@ -3238,7 +3243,13 @@ NWScriptDefK1.Actions = {
     comment: "298: Get the distance between lLocationA and lLocationB.\n",
     name: "GetDistanceBetweenLocations",
     type: 4,
-    args: ["location", "location"]
+    args: ["location", "location"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof Game.Location && args[1] instanceof Game.Location){
+        return args[0].position.distanceTo(args[1].position);
+      }
+      return 0;
+    }
   },
   299:{
     comment: "299: Use this in spell scripts to get nDamage adjusted by oTarget's reflex and\nevasion saves.\n- nDamage\n- oTarget\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\n",
@@ -3263,7 +3274,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return new TalentSpell({id: args[0]});
+      return new TalentSpell(args[0]);
     }
   },
   302:{
@@ -3272,7 +3283,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return new TalentFeat({id: args[0]});
+      return new TalentFeat(args[0]);
     }
   },
   303:{
@@ -3281,7 +3292,7 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: ["int"],
     action: function(args, _instr, action){
-      return new TalentSkill({id: args[0]});
+      return new TalentSkill(args[0]);
     }
   },
   304:{
@@ -3589,7 +3600,13 @@ NWScriptDefK1.Actions = {
     comment: "334: Get the distance between lLocationA and lLocationB. in 2D\n",
     name: "GetDistanceBetweenLocations2D",
     type: 4,
-    args: ["location", "location"]
+    args: ["location", "location"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof Game.Location && args[1] instanceof Game.Location){
+        return args[0].position.distanceTo(args[1].position);
+      }
+      return 0;
+    }
   },
   335:{
     comment: "335: Get the distance from the caller to oObject in metres.\n* Return value on error: -1.0f\n",
@@ -4198,7 +4215,12 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: ["int"],
     action: function(args, _instr, action){
-      return '0x'+args[0].toString(16);
+      let number = Number(args[0] ? args[0] : 0)
+
+      if (number < 0)
+        number = 0xFFFFFFFF + number + 1;
+      
+      return number.toString(16).padStart(8, '0').toLocaleUpperCase();
     }
   },
   397:{
@@ -5710,9 +5732,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'GetGlobalBoolean ', args);
-      return Game.getGlobalBoolean(
-          args[0],
-        ) ? 1 : 0;
+      return Game.getGlobalBoolean( args[0], ) ? 1 : 0;
     }
   },
   579:{
@@ -5722,10 +5742,7 @@ NWScriptDefK1.Actions = {
     args: ["string", "int"],
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'SetGlobalBoolean ', args);
-      Game.setGlobalBoolean(
-      args[0],
-      args[1]
-      );
+      Game.setGlobalBoolean( args[0], args[1] );
     }
   },
   580:{
@@ -5735,9 +5752,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'GetGlobalNumber ', args);
-      return Game.getGlobalNumber(
-      args[0],
-      );
+      return Game.getGlobalNumber( args[0] );
     }
   },
   581:{
@@ -5747,10 +5762,7 @@ NWScriptDefK1.Actions = {
     args: ["string", "int"],
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, 'SetGlobalNumber ', args[0], args[1]); 
-      Game.setGlobalNumber(
-      args[0],
-      args[1]
-      );
+      Game.setGlobalNumber( args[0], args[1] );
     }
   },
   582:{
@@ -6522,7 +6534,7 @@ NWScriptDefK1.Actions = {
     type: 18,
     args: ["string"],
     action: function(args, _instr, action){
-      return Game.Globals['Location'][args[0]];
+      return Game.getGlobalLocation(args[0]);
     }
   },
   693:{
@@ -6531,7 +6543,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "location"],
     action: function(args, _instr, action){
-      Game.Globals['Location'][args[0]] = args[1];
+      Game.getGlobalLocation(args[0], args[1]);
     }
   },
   694:{
@@ -6603,7 +6615,7 @@ NWScriptDefK1.Actions = {
             partyMember.LoadModel( (model) => {
               partyMember.position.copy(args[1].position);
               model.box = new THREE.Box3().setFromObject(model);
-              partyMember.setFacing(THREE.Math.degToRad(args[1].facing), true);
+              partyMember.setFacing(args[1].getFacing(), true);
               partyMember.model.moduleObject = partyMember;
               model.hasCollision = true;
               Game.group.creatures.add( model );
@@ -6755,7 +6767,12 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "int"],
     action: function(args, _instr, action){
-  
+      let count = Global.kotor2DA.plot.RowCount;
+      for(let i = 0; i < count; i++){
+        if(Global.kotor2DA.plot.rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
+          PartyManager.GiveXP( parseInt(Global.kotor2DA.plot.rows[i]) * (args[1] * 0.01) );
+        }
+      }
     }
   },
   715:{

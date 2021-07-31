@@ -15,6 +15,8 @@ class ModuleObject {
 
     if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
       this.id = gff.GetFieldByLabel('ObjectId').GetValue();
+    }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
+      this.id = gff.GetFieldByLabel('ID').GetValue();
     }else{
       this.id = ModuleObject.COUNT++;
     }
@@ -34,10 +36,12 @@ class ModuleObject {
 
     this.box = new THREE.Box3();
     this.sphere = new THREE.Sphere();
+    this.sphere.moduleObject = this;
     this.facing = 0;
     this.wasFacing = 0;
     this.facingTweenTime = 0;
     this.force = 0;
+    this.speed = 0;
     this.invalidateCollision = false;
     this.room = undefined;
     this.rooms = [];
@@ -185,6 +189,10 @@ class ModuleObject {
     return this.getModel().visible;
   }
 
+  getHitDistance(){
+    return 1;
+  }
+
   update(delta = 0){
     
     //Process the heartbeat timer
@@ -212,7 +220,7 @@ class ModuleObject {
       if(!this.room){
         if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
           this.roomCheckTimer = 1;
-          this.getCurrentRoom();
+          this.findWalkableFace();
         }
         this.roomCheckTimer -= delta;
       }
@@ -237,22 +245,26 @@ class ModuleObject {
       }
     }
 
+    this.sphere.center.copy(this.position);
+    this.sphere.radius = this.getHitDistance() * 2;
+
   }
 
   //Queue an animation to the actionQueue array
-  actionPlayAnimation(anim = '', loop = false, speed = 1){
-    
-    let _anim = typeof anim === 'string' ? anim : this.getAnimationNameById(anim).toLowerCase();
-    let animation = this.model.getAnimationByName(_anim);
-    if(animation){
+  actionPlayAnimation(anim = 0, loop = false, speed = 1){
+    if(typeof anim === 'string')
+      throw 'anim cannot be a string!';
+
+    let animConstant = this.getAnimationNameById(anim);
+    if(animConstant >= 10000){
       this.actionQueue.push({ 
         goal: ModuleCreature.ACTION.ANIMATE,
-        animation: animation,
+        animation: animConstant,
         speed: speed || 1,
-        time: loop ? -1 : animation.length
+        time: loop
       });
     }else{
-      console.warn('actionPlayAnimation', animation);
+      console.error('actionPlayAnimation', animConstant);
     }
   }
 
@@ -261,134 +273,157 @@ class ModuleObject {
   }
 
   getAnimationNameById(id = -1){
-    if(typeof id === 'string'){
+
+    if(typeof id === 'string')
+      throw 'getAnimation id cannot be a string';
+
+    if(id >= 10000)
       return id;
-    }else{
-      switch(id){
-        case 0:  //PAUSE
-          return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
-        case 1:  //PAUSE2
-          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
-        case 2:  //LISTEN
-          return 'listen';
-        case 3:  //MEDITATE
-          return 'meditate';
-        case 4:  //WORSHIP
-          return 'kneel';//['kneel', 'meditate'];
-        case 5:  //TALK_NORMAL
-          return 'tlknorm';
-        case 6:  //TALK_PLEADING
-          return 'tlkplead';
-        case 7:  //TALK_FORCEFUL
-          return 'tlkforce';
-        case 8:  //TALK_LAUGHING
-          return 'tlklaugh';
-        case 9:  //TALK_SAD
-          return 'tlksad';
-        case 10: //GET_LOW
-          return 'getfromgnd';
-        case 11: //GET_MID
-          return 'getfromcntr';
-        //case 12: //PAUSE_TIRED
-        //case 13: //PAUSE_DRUNK
-        case 14: //FLIRT
-          return 'flirt';
-        case 15: //USE_COMPUTER
-          return 'usecomplp';
-        case 16: //DANCE
-          return 'dance';
-        case 17: //DANCE1
-          return 'dance1';
-        case 18: //HORROR
-          return 'horror';
-        //case 19: //READY
-        //case 20: //DEACTIVATE
-        //case 21: //SPASM
-        case 22: //SLEEP
-          return 'sleep';
-        case 23: //PRONE
-          return 'prone';
-        case 24: //PAUSE3
-          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
-        case 25: //WELD
-          return 'weld';
-        case 26: //DEAD
-          return (this.isSimpleCreature() ? 'cdead' : 'dead');
-        case 27: //TALK_INJURED
-          return 'talkinj';
-        case 28: //LISTEN_INJURED
-          return 'listeninj';
-        case 29: //TREAT_INJURED
-          return 'treatinj';
-        case 30: //DEAD_PRONE
-          return (this.isSimpleCreature() ? 'cdead' : 'dead');
-        //case 31: //KNEEL_TALK_ANGRY
-        //case 32: //KNEEL_TALK_SAD
-        case 35: //MEDITATE LOOP
-          return 'meditate';
-        case 100: //HEAD_TURN_LEFT
-          return 'hturnl';
-        case 101: //HEAD_TURN_RIGHT
-          return 'hturnr';
-        case 102: //PAUSE_SCRATCH_HEAD
-          return (this.isSimpleCreature() ? 'cpause1' : 'pause3');
-        case 103: //PAUSE_BORED
-          return (this.isSimpleCreature() ? 'cpause2' : 'pause2');
-        case 104: //SALUTE
-          return 'salute';
-        case 105: //BOW
-          return 'bow';
-        case 106: //GREETING
-          return 'greeting';
-        case 107: //TAUNT
-          return (this.isSimpleCreature() ? 'ctaunt' : 'taunt');
-        case 108: //VICTORY1
-          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
-        case 109: //VICTORY2
-          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
-        case 110: //VICTORY3
-          return (this.isSimpleCreature() ? 'cvictory' : 'victory');
-        //case 111: //READ
-        //  return 'salute';
-        case 112: //INJECT
-          return 'inject';
-        case 113: //USE_COMPUTER
-          return 'usecomp';
-        case 114: //PERSUADE
-          return 'persuade';
-        case 115: //ACTIVATE
-          return 'activate';
-        case 116: //CHOKE
-          return 'choke';
-        case 117: //THROW_HIGH
-          return 'throwgren';
-        case 118: //THROW_LOW
-          return 'throwsab';
-        case 119: //CUSTOM01
-          return 'dunno???';
-        case 120: //TREAT_INJURED
-          return 'treatinj';
 
-        // Placeable animation constants
-        case 200: return 'activate';
-        case 201: return 'deactivate';
-        case 202: return 'open';
-        case 203: return 'close';
-        case 204: return 'animloop01';
-        case 205: return 'animloop02';
-        case 206: return 'animloop03';
-        case 207: return 'animloop04';
-        case 208: return 'animloop05';
-        case 209: return 'animloop06';
-        case 210: return 'animloop07';
-        case 211: return 'animloop08';
-        case 212: return 'animloop09';
-        case 213: return 'animloop10';
+    switch(id){
+      case 0:  //PAUSE
+        return ModuleCreature.AnimState.PAUSE;
+      case 1:  //PAUSE2
+        return ModuleCreature.AnimState.PAUSE2;
+      case 2:  //LISTEN
+        return ModuleCreature.AnimState.LISTEN;
+      case 3:  //MEDITATE
+        return ModuleCreature.AnimState.MEDITATE;
+      case 4:  //WORSHIP
+        return ModuleCreature.AnimState.WORSHIP;
+      case 5:  //TALK_NORMAL
+        return ModuleCreature.AnimState.TALK_NORMAL;
+      case 6:  //TALK_PLEADING
+        return ModuleCreature.AnimState.TALK_PLEADING;
+      case 7:  //TALK_FORCEFUL
+        return ModuleCreature.AnimState.TALK_FORCEFUL;
+      case 8:  //TALK_LAUGHING
+        return ModuleCreature.AnimState.TALK_LAUGHING;
+      case 9:  //TALK_SAD
+        return ModuleCreature.AnimState.TALK_SAD;
+      case 10: //GET_LOW
+        return ModuleCreature.AnimState.GET_LOW;
+      case 11: //GET_MID
+        return ModuleCreature.AnimState.GET_MID;
+      case 12: //PAUSE_TIRED
+        return ModuleCreature.AnimState.PAUSE_TIRED;
+      case 13: //PAUSE_DRUNK
+        return ModuleCreature.AnimState.PAUSE_DRUNK;
+      case 14: //FLIRT
+        return ModuleCreature.AnimState.FLIRT;
+      case 15: //USE_COMPUTER
+        return ModuleCreature.AnimState.USE_COMPUTER;
+      case 16: //DANCE
+        return ModuleCreature.AnimState.DANCE;
+      case 17: //DANCE1
+        return ModuleCreature.AnimState.DANCE1;
+      case 18: //HORROR
+        return ModuleCreature.AnimState.HORROR;
+      case 19: //READY
+        return ModuleCreature.AnimState.READY;
+      case 20: //DEACTIVATE
+        return ModuleCreature.AnimState.DEACTIVATE;
+      case 21: //SPASM
+        return ModuleCreature.AnimState.SPASM;
+      case 22: //SLEEP
+        return ModuleCreature.AnimState.SLEEP;
+      case 23: //PRONE
+        return ModuleCreature.AnimState.PRONE;
+      case 24: //PAUSE3
+        return ModuleCreature.AnimState.PAUSE3;
+      case 25: //WELD
+        return ModuleCreature.AnimState.WELD;
+      case 26: //DEAD
+        return ModuleCreature.AnimState.DEAD;
+      case 27: //TALK_INJURED
+        return ModuleCreature.AnimState.TALK_INJURED;
+      case 28: //LISTEN_INJURED
+        return ModuleCreature.AnimState.LISTEN_INJURED;
+      case 29: //TREAT_INJURED
+        return ModuleCreature.AnimState.TREAT_INJURED_LP;
+      case 30: //DEAD_PRONE
+        return ModuleCreature.AnimState.DEAD_PRONE;
+      case 31: //KNEEL_TALK_ANGRY
+        return ModuleCreature.AnimState.KNEEL_TALK_ANGRY;
+      case 32: //KNEEL_TALK_SAD
+        return ModuleCreature.AnimState.KNEEL_TALK_SAD;
+      case 35: //MEDITATE LOOP
+        return ModuleCreature.AnimState.MEDITATE;
+      case 100: //HEAD_TURN_LEFT
+        return ModuleCreature.AnimState.HEAD_TURN_LEFT;
+      case 101: //HEAD_TURN_RIGHT
+        return ModuleCreature.AnimState.HEAD_TURN_RIGHT;
+      case 102: //PAUSE_SCRATCH_HEAD
+        return ModuleCreature.AnimState.PAUSE_SCRATH_HEAD;
+      case 103: //PAUSE_BORED
+        return ModuleCreature.AnimState.PAUSE_BORED;
+      case 104: //SALUTE
+        return ModuleCreature.AnimState.SALUTE;
+      case 105: //BOW
+        return ModuleCreature.AnimState.BOW;
+      case 106: //GREETING
+        return ModuleCreature.AnimState.GREETING;
+      case 107: //TAUNT
+        return ModuleCreature.AnimState.TAUNT;
+      case 108: //VICTORY1
+        return ModuleCreature.AnimState.VICTORY;
+      case 109: //VICTORY2
+        return ModuleCreature.AnimState.VICTORY;
+      case 110: //VICTORY3
+        return ModuleCreature.AnimState.VICTORY;
+      case 112: //INJECT
+        return ModuleCreature.AnimState.INJECT;
+      case 113: //USE_COMPUTER
+        return ModuleCreature.AnimState.USE_COMPUTER;
+      case 114: //PERSUADE
+        return ModuleCreature.AnimState.PERSUADE;
+      case 115: //ACTIVATE
+        return ModuleCreature.AnimState.ACTIVATE_ITEM;
+      case 116: //CHOKE
+        return ModuleCreature.AnimState.CHOKE;
+      case 117: //THROW_HIGH
+        return ModuleCreature.AnimState.THROW_HIGH;
+      case 118: //THROW_LOW
+        return ModuleCreature.AnimState.THROW_LOW;
+      case 119: //CUSTOM01
+        return ModuleCreature.AnimState.CUSTOM01;
+      case 120: //TREAT_INJURED
+        return ModuleCreature.AnimState.TREAT_INJURED;
 
-      }
-      //console.error('Animation case missing', id);
-      return (this.isSimpleCreature() ? 'cpause1' : 'pause1');
+      // Placeable animation constants
+      case 200: 
+        return ModuleCreature.AnimState.PLACEABLE_ACTIVATE;
+      case 201: 
+        return ModuleCreature.AnimState.PLACEABLE_DEACTIVATE;
+      case 202: 
+        return ModuleCreature.AnimState.PLACEABLE_OPEN;
+      case 203: 
+        return ModuleCreature.AnimState.PLACEABLE_CLOSE;
+      case 204: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP01;
+      case 205: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP02;
+      case 206: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP03;
+      case 207: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP04;
+      case 208: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP05;
+      case 209: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP06;
+      case 210: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP07;
+      case 211: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP08;
+      case 212: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP09;
+      case 213: 
+        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP10;
+
     }
+
+    //console.error('Animation case missing', id);
+    return ModuleCreature.AnimState.PAUSE;
   }
 
   setFacing(facing = 0, instant = false){
@@ -417,7 +452,10 @@ class ModuleObject {
       //return;
     }
 
+    //console.log('triggerUserDefinedEvent', this.getTag())
+
     if(this.scripts.onUserDefined instanceof NWScriptInstance){
+      //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, caller);
       let instance = this.scripts.onUserDefined.nwscript.newInstance();
       instance.run(caller, parseInt(nValue));
     }
@@ -439,16 +477,16 @@ class ModuleObject {
 
   triggerHeartbeat(){
     //Only allow the heartbeat script to run after the onspawn is called
-    if(this.spawned === true){
-      if(this.scripts.onHeartbeat instanceof NWScriptInstance){// && this._locals.Booleans[28]){
-        if(PartyManager.party.indexOf(this) > -1){
-          //process.nextTick(() => {
-            this.scripts.onHeartbeat.run(this, 2001);
-          //});
-        }else{
-          //process.nextTick(() => {
-            this.scripts.onHeartbeat.run(this, 1001);
-          //});
+    if(this.spawned === true && Game.module.readyToProcessEvents){
+      if(this.getLocalBoolean(28) == true){
+        if(this.scripts.onHeartbeat instanceof NWScriptInstance){
+          //console.log('heartbeat', this.getName());
+          let instance = this.scripts.onHeartbeat.nwscript.newInstance();
+          if(PartyManager.party.indexOf(this) > -1){
+            instance.run(this, 2001);
+          }else{
+            instance.run(this, 1001);
+          }
         }
       }
     }
@@ -466,14 +504,13 @@ class ModuleObject {
     }
   }
 
-  onSpawn(runScript = true){
+  async onSpawn(runScript = true){
     if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
-      this.scripts.onSpawn.run(this, 0, () => {
-        this.spawned = true;
-      });
-    }else{
-      this.spawned = true;
+      await this.scripts.onSpawn.run(this, 0);
+      console.log('spawned', this.getName());
     }
+    
+    this.spawned = true;
 
     if(this instanceof ModuleCreature){
       this.initPerceptionList();
@@ -482,8 +519,10 @@ class ModuleObject {
     
     this.initEffects();
 
-    if(this.model instanceof THREE.Object3D)
-      this.box.setFromObject(this.model);
+    if(!(this instanceof ModuleDoor)){
+      if(this.model instanceof THREE.Object3D)
+        this.box.setFromObject(this.model);
+    }
 
   }
 
@@ -582,6 +621,7 @@ class ModuleObject {
   }
 
   doCommand(script, action, instruction){
+    //console.log('doCommand', this.getTag(), script, action, instruction);
     this.actionQueue.push({
       goal: ModuleCreature.ACTION.SCRIPT,
       script: script,
@@ -612,58 +652,88 @@ class ModuleObject {
   }
 
   getCurrentRoom(){
-    this.room = undefined;
-    let aabbFaces = [];
-    let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
-    let box = this.model.box.clone();
+    if(this instanceof ModuleDoor){
+      this.room = undefined;
+      let aabbFaces = [];
+      let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+      let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+      let box = this.model.box.clone();
 
-    this.rooms = [];
-    for(let i = 0; i < Game.module.area.rooms.length; i++){
-      let room = Game.module.area.rooms[i];
-      let model = room.model;
-      if(model instanceof THREE.AuroraModel){
-        let pos = this.position.clone();
-        if(model.box.containsPoint(pos)){
-          this.rooms.push(i);
+      this.rooms = [];
+      for(let i = 0; i < Game.module.area.rooms.length; i++){
+        let room = Game.module.area.rooms[i];
+        let model = room.model;
+        if(model instanceof THREE.AuroraModel){
+          let pos = this.position.clone();
+          if(model.box.containsPoint(pos)){
+            this.rooms.push(i);
+          }
         }
       }
-    }
 
-    if(box){
-      for(let j = 0, jl = this.rooms.length; j < jl; j++){
-        let room = Game.module.area.rooms[this.rooms[j]];
-        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
-          aabbFaces.push({
-            object: room, 
-            faces: room.walkmesh.getAABBCollisionFaces(box)
-          });
+      if(box){
+        for(let j = 0, jl = this.rooms.length; j < jl; j++){
+          let room = Game.module.area.rooms[this.rooms[j]];
+          if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+            aabbFaces.push({
+              object: room, 
+              faces: room.walkmesh.getAABBCollisionFaces(box)
+            });
+          }
         }
       }
-    }
-    
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add(scratchVec3);
-    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-    Game.raycaster.ray.direction.set(0, 0,-1);
-    
-    for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-      let castableFaces = aabbFaces[j];
-      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
       
-      if(intersects.length){
-        if(this == Game.player){
-          //console.log(intersects);
-        }
-        if(intersects[0].object.moduleObject){
-          this.room = intersects[0].object.moduleObject;
-          return;
+      let scratchVec3 = new THREE.Vector3(0, 0, 2);
+      let playerFeetRay = this.position.clone().add(scratchVec3);
+      Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+      Game.raycaster.ray.direction.set(0, 0,-1);
+      
+      for(let j = 0, jl = aabbFaces.length; j < jl; j++){
+        let castableFaces = aabbFaces[j];
+        intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+        
+        if(intersects.length){
+          if(this == Game.player){
+            //console.log(intersects);
+          }
+          if(intersects[0].object.moduleObject){
+            this.room = intersects[0].object.moduleObject;
+            return;
+          }
         }
       }
+      if(this.rooms.length){
+        this.room = Game.module.area.rooms[this.rooms[0]];
+        return;
+      }
+    }else{
+      this.findWalkableFace();
     }
-    if(this.rooms.length){
-      this.room = Game.module.area.rooms[this.rooms[0]];
-      return;
+  }
+
+  findWalkableFace(){
+    for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
+      let room = Game.module.area.rooms[i];
+      if(room.walkmesh){
+        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
+          let face = room.walkmesh.walkableFaces[j]
+          this._triangle.set(
+            room.walkmesh.vertices[face.a],
+            room.walkmesh.vertices[face.b],
+            room.walkmesh.vertices[face.c]
+          );
+          
+          if(this._triangle.containsPoint(this.position)){
+            this.groundFace = face;
+            this.lastGroundFace = this.groundFace;
+            this.surfaceId = this.groundFace.walkIndex;
+            this.room = room;
+
+            this._triangle.closestPointToPoint(this.position, this.wm_c_point);
+            this.position.z = this.wm_c_point.z + .005;
+          }
+        }
+      }
     }
   }
 
@@ -855,6 +925,30 @@ class ModuleObject {
     return Math.floor(this.GetFacing() * 180) + 180;
   }
 
+  GetLocation(){
+    let rotation = this.GetRotationFromBearing();
+
+    let location = new Game.Location(
+      this.position.x, this.position.y, this.position.z,
+      rotation.x, rotation.y, rotation.z,
+      Game?.module?.area
+    );
+
+    return location;
+  }
+
+  GetRotationFromBearing( bearing = undefined ){
+    let theta = this.rotation.z * Math.PI;
+
+    if(typeof bearing == 'number')
+      theta = bearing * Math.PI;
+
+    return new THREE.Vector3(
+      1 * Math.cos(theta),
+      1 * Math.sin(theta),
+      0
+    );
+  }
 
   isStatic(){
     return false;
@@ -1099,7 +1193,10 @@ class ModuleObject {
   }
 
   getTransitionDestin(){
-    return this.transitionDestin;
+    if(this.transitionDestin instanceof CEXoLocString){
+      return this.transitionDestin.GetValue();
+    }
+    return '';
   }
 
   getPortraitId(){
@@ -1197,13 +1294,15 @@ class ModuleObject {
         this.model.box = new THREE.Box3();
       }
 
-      this.model.box = this.box.setFromObject(this.model);
-      this.model.sphere = this.box.getBoundingSphere(this.model.sphere);
+      if(!(this instanceof ModuleDoor)){
+        this.box = this.box.setFromObject(this.model);
+        //this.sphere = this.box.getBoundingSphere(this.sphere);
+      }
     }
   }
 
   isOnScreen(frustum = Game.viewportFrustum){
-    if(!(this instanceof ModuleTrigger)){
+    if(!(this instanceof ModuleTrigger) && !(this instanceof ModuleDoor)){
       if(this.model && this.model.box != this.box){
         this.box = this.model.box;
       }
@@ -1472,6 +1571,9 @@ class ModuleObject {
   }
 
   hasLineOfSight(oTarget = null, max_distance = 30){
+    if(!this.spawned || !Game.module.readyToProcessEvents)
+      return false;
+    //return false;
     if(oTarget instanceof ModuleObject){
       let position_a = this.position.clone();
       let position_b = oTarget.position.clone();
@@ -1500,8 +1602,8 @@ class ModuleObject {
 
       let doors = [];
 
-      for(let j = 0, jl = this.rooms.length; j < jl; j++){
-        let room = Game.module.area.rooms[this.rooms[j]];
+      for(let j = 0, jl = Game.module.area.rooms.length; j < jl; j++){
+        let room = Game.module.area.rooms[j];
         if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
@@ -1515,7 +1617,7 @@ class ModuleObject {
         if(door && !door.isOpen()){
           let box3 = door.box;
           if(box3){
-            if(Game.raycaster.ray.intersectsBox(box3)){
+            if(Game.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
               return false;
             }
           }
@@ -1573,6 +1675,9 @@ class ModuleObject {
   
 
   InitProperties(){
+    
+    if(this.template.RootNode.HasField('Animation'))
+      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
     
     if(this.template.RootNode.HasField('Appearance'))
       this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
@@ -1659,7 +1764,7 @@ class ModuleObject {
       this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
 
     if(this.template.RootNode.HasField('TransitionDestin'))
-      this.transitionDestin = this.template.GetFieldByLabel('TransitionDestin').GetValue();
+      this.transitionDestin = this.template.GetFieldByLabel('TransitionDestin').GetCExoLocString();
 
     if(this.template.RootNode.HasField('TrapDetectable'))
       this.trapDetectable = this.template.RootNode.GetFieldByLabel('TrapDetectable').GetValue();
@@ -1704,12 +1809,24 @@ class ModuleObject {
       this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
-      let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].GetFieldByLabel('Variable').GetValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      let swVarTableStruct = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.HasField('BitArray')){
+          let localBools = swVarTableStruct.GetFieldByLabel('BitArray').GetChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.HasField('ByteArray')){
+          let localNumbers = swVarTableStruct.GetFieldByLabel('ByteArray').GetChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
     }
@@ -1725,6 +1842,35 @@ class ModuleObject {
 
     return gff;
 
+  }
+
+  getSWVarTableSaveStruct(){
+    let swVarTableStruct = new Struct();
+
+    let swVarTableBitArray = swVarTableStruct.AddField( new Field(GFFDataTypes.LIST, 'BitArray') );
+
+    for(let i = 0; i < 3; i++){
+      let varStruct = new Struct();
+      let value = 0;
+      let offset = 32 * i;
+      for(let j = 0; j < 32; j++){
+        if(this.getLocalBoolean(offset + j) == true){
+          value |= 1 << j;
+        }
+      }
+      value = value >>> 0;
+      varStruct.AddField( new Field(GFFDataTypes.DWORD, 'Variable') ).SetValue( value );
+      swVarTableBitArray.AddChildStruct(varStruct);
+    }
+
+    let swVarTableByteArray = swVarTableStruct.AddField( new Field(GFFDataTypes.LIST, 'ByteArray') );
+
+    for(let i = 0; i < 8; i++){
+      let varStruct = new Struct();
+      varStruct.AddField( new Field(GFFDataTypes.BYTE, 'Variable') ).SetValue( Number(this.getLocalNumber(i)) );
+      swVarTableByteArray.AddChildStruct(varStruct);
+    }
+    return swVarTableStruct;
   }
 
   static TemplateFromJSON(json={}){
@@ -1776,6 +1922,486 @@ class ModuleObject {
     );
 
     return instance;
+
+  }
+
+  animationConstantToAnimation( animation_constant = 10000 ){
+    switch( animation_constant ){
+      case ModuleCreature.AnimState.PAUSE:
+      case ModuleCreature.AnimState.PAUSE_ALT:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[256];
+        }else{
+          return Global.kotor2DA.animations.rows[6];
+        }
+      break;
+      case ModuleCreature.AnimState.PAUSE2:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[257];
+        }else{
+          return Global.kotor2DA.animations.rows[7];
+        }
+      break;
+      case ModuleCreature.AnimState.PAUSE3:
+        return Global.kotor2DA.animations.rows[359];
+      break;
+      case ModuleCreature.AnimState.PAUSE4:
+        return Global.kotor2DA.animations.rows[357];
+      break;
+      case ModuleCreature.AnimState.PAUSE_SCRATH_HEAD:
+        return Global.kotor2DA.animations.rows[12];
+      break;
+      case ModuleCreature.AnimState.PAUSE_BORED:
+        return Global.kotor2DA.animations.rows[13];
+      break;
+      case ModuleCreature.AnimState.PAUSE_TIRED:
+        return Global.kotor2DA.animations.rows[14];
+      break;
+      case ModuleCreature.AnimState.PAUSE_DRUNK:
+        return Global.kotor2DA.animations.rows[15];
+      break;
+      case ModuleCreature.AnimState.PAUSE_INJ:
+        return Global.kotor2DA.animations.rows[8];
+      break;
+      case ModuleCreature.AnimState.DEAD:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[275];
+        }else{
+          return Global.kotor2DA.animations.rows[81];
+        }
+      break;
+      case ModuleCreature.AnimState.DIE:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[274];
+        }else{
+          return Global.kotor2DA.animations.rows[80];
+        }
+      break;
+      case ModuleCreature.AnimState.DIE1:
+        return Global.kotor2DA.animations.rows[82];
+      break;
+      case ModuleCreature.AnimState.GET_UP_DEAD:
+        return Global.kotor2DA.animations.rows[381];
+      break;
+      case ModuleCreature.AnimState.GET_UP_DEAD1:
+        return Global.kotor2DA.animations.rows[382];
+      break;
+      case ModuleCreature.AnimState.WALK_INJ:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[254];
+        }else{
+          return Global.kotor2DA.animations.rows[1];
+        }
+      break;
+      case ModuleCreature.AnimState.WALKING:
+        if(this.isSimpleCreature()){
+          if(this.getHP()/this.getMaxHP() > .15){
+            return Global.kotor2DA.animations.rows[253];
+          }else{
+            return Global.kotor2DA.animations.rows[254];
+          }
+        }else{
+          if(this.getHP()/this.getMaxHP() > .15){
+            switch(this.getCombatAnimationWeaponType()){
+              case 2:
+                return Global.kotor2DA.animations.rows[338];
+              case 3:
+                return Global.kotor2DA.animations.rows[341];
+              case 4:
+                return Global.kotor2DA.animations.rows[339];
+              case 7:
+                return Global.kotor2DA.animations.rows[340];
+              case 9:
+                return Global.kotor2DA.animations.rows[340];
+              default:
+                return Global.kotor2DA.animations.rows[0];
+            }
+          }else{
+            return Global.kotor2DA.animations.rows[1];
+          }
+        }
+      break;
+      case ModuleCreature.AnimState.RUNNING:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[255];
+        }else{
+          if(this.getHP()/this.getMaxHP() > .15){
+            switch(this.getCombatAnimationWeaponType()){
+              case 1:
+                return Global.kotor2DA.animations.rows[343];
+              case 2:
+                return Global.kotor2DA.animations.rows[345];
+              case 3:
+                return Global.kotor2DA.animations.rows[345];
+              case 4:
+                return Global.kotor2DA.animations.rows[3];
+              case 7:
+                return Global.kotor2DA.animations.rows[340];
+              case 9:
+                return Global.kotor2DA.animations.rows[340];
+              default:
+                return Global.kotor2DA.animations.rows[2];
+            }
+          }else{
+            return Global.kotor2DA.animations.rows[4];
+          }
+        }
+      break;
+      case ModuleCreature.AnimState.RUN_INJ:
+        return Global.kotor2DA.animations.rows[4];
+      break;
+      //COMBAT READY
+      case ModuleCreature.AnimState.READY:
+      case ModuleCreature.AnimState.READY_ALT:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[278];
+        }else{
+          switch(this.getCombatAnimationWeaponType()){
+            case 1:
+              return Global.kotor2DA.animations.rows[92];
+            case 2:
+              return Global.kotor2DA.animations.rows[133];
+            case 3:
+              return Global.kotor2DA.animations.rows[174];
+            case 4:
+              return Global.kotor2DA.animations.rows[215];
+            case 5:
+              return Global.kotor2DA.animations.rows[223];
+            case 6:
+              return Global.kotor2DA.animations.rows[237];
+            case 7:
+              return Global.kotor2DA.animations.rows[245];
+            case 9:
+              return Global.kotor2DA.animations.rows[245];
+            default:
+              return Global.kotor2DA.animations.rows[249];
+          }
+        }
+      break;
+      case ModuleCreature.AnimState.DODGE:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[281];
+        }else{
+          return Global.kotor2DA.animations.rows[302];
+        }
+      break;
+      case ModuleCreature.AnimState.SPASM:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[268];
+        }else{
+          return Global.kotor2DA.animations.rows[77];
+        }
+      break;
+      case ModuleCreature.AnimState.TAUNT:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[263];
+        }else{
+          return Global.kotor2DA.animations.rows[33];
+        }
+      break;
+      case ModuleCreature.AnimState.GREETING:
+        return Global.kotor2DA.animations.rows[31];
+      break;
+      case ModuleCreature.AnimState.LISTEN:
+        return Global.kotor2DA.animations.rows[18];
+      break;
+      case ModuleCreature.AnimState.LISTEN_INJURED:
+        return Global.kotor2DA.animations.rows[371];
+      break;
+      case ModuleCreature.AnimState.TALK_NORMAL:
+        return Global.kotor2DA.animations.rows[25];
+      break;
+      case ModuleCreature.AnimState.TALK_PLEADING:
+        return Global.kotor2DA.animations.rows[27];
+      break;
+      case ModuleCreature.AnimState.TALK_FORCEFUL:
+        return Global.kotor2DA.animations.rows[26];
+      break;
+      case ModuleCreature.AnimState.TALK_LAUGHING:
+        return Global.kotor2DA.animations.rows[29];
+      break;
+      case ModuleCreature.AnimState.TALK_SAD:
+        return Global.kotor2DA.animations.rows[28];
+      break;
+      case ModuleCreature.AnimState.TALK_INJURED:
+        return Global.kotor2DA.animations.rows[370];
+      break;
+      case ModuleCreature.AnimState.SALUTE:
+        return Global.kotor2DA.animations.rows[16];
+      break;
+      case ModuleCreature.AnimState.BOW:
+        return Global.kotor2DA.animations.rows[19];
+      break;
+      case ModuleCreature.AnimState.VICTORY:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[260];
+        }else{
+          return Global.kotor2DA.animations.rows[17];
+        }
+      break;
+      case ModuleCreature.AnimState.HEAD_TURN_LEFT:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[258];
+        }else{
+          return Global.kotor2DA.animations.rows[11];
+        }
+      break;
+      case ModuleCreature.AnimState.HEAD_TURN_RIGHT:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[259];
+        }else{
+          return Global.kotor2DA.animations.rows[10];
+        }
+      break;
+      case ModuleCreature.AnimState.GET_LOW:
+        return Global.kotor2DA.animations.rows[40];
+      break;
+      case ModuleCreature.AnimState.GET_HIGH:
+        return Global.kotor2DA.animations.rows[41];
+      break;
+      case ModuleCreature.AnimState.INJECT:
+        return Global.kotor2DA.animations.rows[37];
+      break;
+      case ModuleCreature.AnimState.DAMAGE:
+        return Global.kotor2DA.animations.rows[303];
+      break;
+      case ModuleCreature.AnimState.USE_COMPUTER_LP:
+        return Global.kotor2DA.animations.rows[44];
+      break;
+      case ModuleCreature.AnimState.WHIRLWIND:
+        return Global.kotor2DA.animations.rows[75];
+      break;
+      case ModuleCreature.AnimState.DEACTIVATE:
+        return Global.kotor2DA.animations.rows[270];
+      break;
+      case ModuleCreature.AnimState.FLIRT:
+        return Global.kotor2DA.animations.rows[32];
+      break;
+      case ModuleCreature.AnimState.USE_COMPUTER:
+        return Global.kotor2DA.animations.rows[43];
+      break;
+      case ModuleCreature.AnimState.DANCE:
+        return Global.kotor2DA.animations.rows[53];
+      break;
+      case ModuleCreature.AnimState.DANCE1:
+        return Global.kotor2DA.animations.rows[54];
+      break;
+      case ModuleCreature.AnimState.HORROR:
+        return Global.kotor2DA.animations.rows[74];
+      break;
+      case ModuleCreature.AnimState.USE_COMPUTER1:
+        return Global.kotor2DA.animations.rows[43];
+      break;
+      case ModuleCreature.AnimState.PERSUADE:
+        return Global.kotor2DA.animations.rows[68];
+      break;
+      case ModuleCreature.AnimState.ACTIVATE_ITEM:
+        return Global.kotor2DA.animations.rows[38];
+      break;
+      case ModuleCreature.AnimState.UNLOCK_DOOR:
+        return Global.kotor2DA.animations.rows[47];
+      break;
+      case ModuleCreature.AnimState.THROW_HIGH:
+        return Global.kotor2DA.animations.rows[57];
+      break;
+      case ModuleCreature.AnimState.THROW_LOW:
+        return Global.kotor2DA.animations.rows[58];
+      break;
+      case ModuleCreature.AnimState.UNLOCK_CONTAINER:
+        return Global.kotor2DA.animations.rows[48];
+      break;
+      case ModuleCreature.AnimState.DISABLE_MINE:
+        return Global.kotor2DA.animations.rows[51];
+      break;
+      case ModuleCreature.AnimState.WALK_STEALTH:
+        return Global.kotor2DA.animations.rows[5];
+      break;
+      case ModuleCreature.AnimState.UNLOCK_DOOR2:
+        return Global.kotor2DA.animations.rows[47];
+      break;
+      case ModuleCreature.AnimState.UNLOCK_CONTAINER2:
+        return Global.kotor2DA.animations.rows[48];
+      break;
+      case ModuleCreature.AnimState.ACTIVATE_ITEM2:
+        return Global.kotor2DA.animations.rows[38];
+      break;
+      case ModuleCreature.AnimState.SLEEP:
+        return Global.kotor2DA.animations.rows[76];
+      break;
+      case ModuleCreature.AnimState.PARALYZED:
+        return Global.kotor2DA.animations.rows[78];
+      break;
+      case ModuleCreature.AnimState.PRONE:
+        return Global.kotor2DA.animations.rows[79];
+      break;
+      case ModuleCreature.AnimState.SET_MINE:
+        return Global.kotor2DA.animations.rows[52];
+      break;
+      case ModuleCreature.AnimState.DISABLE_MINE2:
+        return Global.kotor2DA.animations.rows[51];
+      break;
+      case ModuleCreature.AnimState.CUSTOM01:
+        return Global.kotor2DA.animations.rows[346];
+      break;
+      case ModuleCreature.AnimState.FBLOCK:
+        return Global.kotor2DA.animations.rows[355];
+      break;
+      case ModuleCreature.AnimState.CHOKE:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[264];
+        }else{
+          return Global.kotor2DA.animations.rows[72];
+        }
+      break;
+      case ModuleCreature.AnimState.WELD:
+        return Global.kotor2DA.animations.rows[360];
+      break;
+      case ModuleCreature.AnimState.TREAT_INJURED:
+        return Global.kotor2DA.animations.rows[34];
+      break;
+      case ModuleCreature.AnimState.TREAT_INJURED_LP:
+        return Global.kotor2DA.animations.rows[35];
+      break;
+      case ModuleCreature.AnimState.CATCH_SABER:
+        return Global.kotor2DA.animations.rows[71];
+      break;
+      case ModuleCreature.AnimState.THROW_SABER_LP:
+        return Global.kotor2DA.animations.rows[70];
+      break;
+      case ModuleCreature.AnimState.THROW_SABER:
+        return Global.kotor2DA.animations.rows[69];
+      break;
+      case ModuleCreature.AnimState.KNEEL_TALK_ANGRY:
+        return Global.kotor2DA.animations.rows[384];
+      break;
+      case ModuleCreature.AnimState.KNEEL_TALK_SAD:
+        return Global.kotor2DA.animations.rows[385];
+      break;
+      case ModuleCreature.AnimState.KNOCKED_DOWN:
+        return Global.kotor2DA.animations.rows[85];
+      break;
+      case ModuleCreature.AnimState.KNOCKED_DOWN2:
+        return Global.kotor2DA.animations.rows[85];
+      break;
+      case ModuleCreature.AnimState.DEAD_PRONE:
+        return Global.kotor2DA.animations.rows[375];
+      break;
+      case ModuleCreature.AnimState.KNEEL:
+        return Global.kotor2DA.animations.rows[23];
+      break;
+      case ModuleCreature.AnimState.KNEEL1:
+        return Global.kotor2DA.animations.rows[23];
+      break;
+      case ModuleCreature.AnimState.FLOURISH:
+        switch( this.getCombatAnimationWeaponType() ){
+          case 1:
+            return Global.kotor2DA.animations.rows[91];
+          case 2:
+            return Global.kotor2DA.animations.rows[132];
+          case 3:
+            return Global.kotor2DA.animations.rows[173];
+          case 4:
+            return Global.kotor2DA.animations.rows[214];
+          case 5:
+            return Global.kotor2DA.animations.rows[222];
+          case 6:
+            return Global.kotor2DA.animations.rows[136];
+          case 7:
+            return Global.kotor2DA.animations.rows[244];
+          case 8:
+            return Global.kotor2DA.animations.rows[373];
+          case 9:
+            return Global.kotor2DA.animations.rows[244];
+          default:
+            return Global.kotor2DA.animations.rows[373];
+        }
+      break;
+      
+      //BEGIN TSL ANIMATIONS
+      case ModuleCreature.AnimState.TOUCH_HEART:
+        return Global.kotor2DA.animations.rows[462];
+      break;
+      case ModuleCreature.AnimState.ROLL_EYES:
+        return Global.kotor2DA.animations.rows[463];
+      break;
+      case ModuleCreature.AnimState.USE_ITEM_ON_OTHER:
+        return Global.kotor2DA.animations.rows[464];
+      break;
+      case ModuleCreature.AnimState.STAND_ATTENTION:
+        return Global.kotor2DA.animations.rows[465];
+      break;
+      case ModuleCreature.AnimState.NOD_YES:
+        return Global.kotor2DA.animations.rows[466];
+      break;
+      case ModuleCreature.AnimState.NOD_NO:
+        return Global.kotor2DA.animations.rows[467];
+      break;
+      case ModuleCreature.AnimState.POINT:
+        return Global.kotor2DA.animations.rows[468];
+      break;
+      case ModuleCreature.AnimState.POINT_LP:
+        return Global.kotor2DA.animations.rows[469];
+      break;
+      case ModuleCreature.AnimState.POINT_DOWN:
+        return Global.kotor2DA.animations.rows[470];
+      break;
+      case ModuleCreature.AnimState.SCANNING:
+        return Global.kotor2DA.animations.rows[471];
+      break;
+      case ModuleCreature.AnimState.SHRUG:
+        return Global.kotor2DA.animations.rows[472];
+      break;
+      case ModuleCreature.AnimState.SIT_CHAIR:
+        return Global.kotor2DA.animations.rows[316];
+      break;
+      case ModuleCreature.AnimState.SIT_CHAIR_DRUNK:
+        return Global.kotor2DA.animations.rows[317];
+      break;
+      case ModuleCreature.AnimState.SIT_CHAIR_PAZAAK:
+        return Global.kotor2DA.animations.rows[318];
+      break;
+      case ModuleCreature.AnimState.SIT_CHAIR_COMP1:
+        return Global.kotor2DA.animations.rows[316];
+      break;
+      case ModuleCreature.AnimState.SIT_CHAIR_COMP2:
+        return Global.kotor2DA.animations.rows[316];
+      break;
+      case ModuleCreature.AnimState.CUT_HANDS:
+        return Global.kotor2DA.animations.rows[557];
+      break;
+      case ModuleCreature.AnimState.L_HAND_CHOP:
+        return Global.kotor2DA.animations.rows[558];
+      break;
+      case ModuleCreature.AnimState.COLLAPSE:
+        return Global.kotor2DA.animations.rows[559];
+      break;
+      case ModuleCreature.AnimState.COLLAPSE_LP:
+        return Global.kotor2DA.animations.rows[560];
+      break;
+      case ModuleCreature.AnimState.COLLAPSE_STAND:
+        return Global.kotor2DA.animations.rows[561];
+      break;
+      case ModuleCreature.AnimState.BAO_DUR_POWER_PUNCH:
+        return Global.kotor2DA.animations.rows[562];
+      break;
+      case ModuleCreature.AnimState.POINT_UP:
+        return Global.kotor2DA.animations.rows[563];
+      break;
+      case ModuleCreature.AnimState.POINT_UP_LOWER:
+        return Global.kotor2DA.animations.rows[564];
+      break;
+      case ModuleCreature.AnimState.HOOD_OFF:
+        return Global.kotor2DA.animations.rows[565];
+      break;
+      case ModuleCreature.AnimState.HOOD_ON:
+        return Global.kotor2DA.animations.rows[566];
+      break;
+      case ModuleCreature.AnimState.DIVE_ROLL:
+        return Global.kotor2DA.animations.rows[567];
+      break;
+      //END TSL ANIMATIONS
+
+    }
 
   }
 

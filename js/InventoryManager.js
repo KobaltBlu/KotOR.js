@@ -70,9 +70,9 @@ class InventoryManager {
     return InventoryManager.getNonQuestInventory(slot, creature);
   }
 
-  static isItemUsableBy( item, creature = null){
-    if(creature == null)
-      return true;
+  static isItemUsableBy( item = undefined, creature = undefined){
+    if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
+      return false;
 
     let droidorhuman = parseInt(item.getBaseItem().droidorhuman);
     
@@ -220,6 +220,22 @@ class InventoryManager {
       }
     }
     return item;
+  }
+
+  static Save(){
+    return new Promise( async (resolve, reject) => {
+      console.log('InventoryManager.Save()', 'Exporting...');
+      let gff = new GFFObject();
+      gff.FileType = 'INV ';
+
+      let itemList = gff.RootNode.AddField( new Field( GFFDataTypes.LIST, 'ItemList' ));
+      for(let i = 0; i < InventoryManager.inventory.length; i++){
+        itemList.AddChildStruct( InventoryManager.inventory[i].save() );
+      }
+
+      await gff.Export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
+      resolve(gff);
+    });
   }
 
 }

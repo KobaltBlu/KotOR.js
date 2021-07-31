@@ -193,18 +193,20 @@ class GUIFeatItem extends GUIProtoItem {
         /* FEAT ICON */
 
         this.widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-        this.widget.iconMaterial.transparent = true;
         this.widget.iconSprite = new THREE.Sprite( this.widget.iconMaterial );
 
         this.widget.iconSprite.scale.x = 32;
         this.widget.iconSprite.scale.y = 32;
-        this.widget.iconSprite.position.z = 1;
+        this.widget.iconSprite.position.z = 5;
+        this.widget.iconSprite.renderOrder = 5;
         TextureLoader.enQueue(feat.icon, this.widget.iconMaterial, TextureLoader.Type.TEXTURE, (texture) => {
           this.widget.iconSprite.scale.x = texture.image.width;
           this.widget.iconSprite.scale.y = texture.image.height;
           if(locked){
             this.widget.iconMaterial.opacity = 0.25;
           }
+          this.widget.iconMaterial.transparent = true;
+          this.widget.iconMaterial.needsUpdate = true;
         });
 
         _buttonIconWidget.add(this.widget.iconSprite);
@@ -218,12 +220,14 @@ class GUIFeatItem extends GUIProtoItem {
           let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.text.text = '';
           arrowIcon.disableTextAlignment();
-          arrowIcon.extent.width = 56;
-          arrowIcon.extent.height = 56;
+          arrowIcon.extent.width = 32;
+          arrowIcon.extent.height = 32;
           arrowIcon.extent.top = 0;
           arrowIcon.extent.left = 0;
           arrowIcon.hasBorder = false;
           arrowIcon.hasHighlight = false;
+          arrowIcon.disableBorder();
+          arrowIcon.disableHighlight();
           arrowIcon.hasText = false;
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);

@@ -19,6 +19,7 @@ class GameMenu {
     this.scale = 1;
     this.background = null;
     this.backgroundSprite = new THREE.Object3D();
+    this.canCancel = true;
 
     this.childMenu = undefined; //This is for MenuTop
 
@@ -186,7 +187,7 @@ class GameMenu {
   RecalculatePosition(){
     try{
       this.tGuiPanel.recalculate();
-    }catch(e){}
+    }catch(e){ console.error(e); }
   }
 
   SetWidgetHoverActive(widget = undefined, bActive = false){

@@ -82,41 +82,53 @@ class NWScriptInstance {
   }
 
   run(caller = null, scriptVar = 0, onComplete = null){
-    this.caller = caller;
-    this.scriptVar = scriptVar;
-    this.onComplete = onComplete;
+    return new Promise( (resolve, reject) => {
+      this.caller = caller;
+      this.scriptVar = scriptVar;
+      this.onComplete = onComplete;
 
-    this.subRoutines = [];
-    this.stack = new NWScriptStack();
-    this.state = [];
+      this.subRoutines = [];
+      this.stack = new NWScriptStack();
+      this.state = [];
 
-    this.lastSpeaker = undefined;
-    this.persistentObjectIdx = 0;
-    this.firstLoop = true;
+      this.lastSpeaker = undefined;
+      this.persistentObjectIdx = 0;
+      this.firstLoop = true;
 
-    if(this.globalCache != null){
-      //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
-      //Need to test the performance impact to see if it helps
-      this.caller = this.globalCache.caller;
-      this.enteringObject = this.globalCache.enteringObject;
-      this.subRoutines = this.globalCache.subRoutines.slice();
+      if(this.globalCache != null){
+        //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
+        //Need to test the performance impact to see if it helps
+        this.caller = this.globalCache.caller;
+        this.enteringObject = this.globalCache.enteringObject;
+        this.subRoutines = this.globalCache.subRoutines.slice();
 
-      this.stack.basePointer = this.globalCache.stack.basePointer;
-      this.stack.pointer = this.globalCache.stack.pointer;
-      this.stack.stack = this.globalCache.stack.stack.slice();
-      
-      this.runScript({
-        instr: this.globalCache.instr,
-        seek: null,
-        onComplete: this.onComplete
-      });
-    }else{
-      this.runScript({
-        instr: this.instructions.values().next().value,
-        seek: null,
-        onComplete: this.onComplete
-      });
-    }
+        this.stack.basePointer = this.globalCache.stack.basePointer;
+        this.stack.pointer = this.globalCache.stack.pointer;
+        this.stack.stack = this.globalCache.stack.stack.slice();
+        
+        this.runScript({
+          instr: this.globalCache.instr,
+          seek: null,
+          onComplete: ( value = 0 ) => {
+            if(typeof onComplete === 'function')
+              onComplete(value);
+            
+            resolve(value)
+          }
+        });
+      }else{
+        this.runScript({
+          instr: this.instructions.values().next().value,
+          seek: null,
+          onComplete: ( value = 0 ) => {
+            if(typeof onComplete === 'function')
+              onComplete(value);
+              
+            resolve(value)
+          }
+        });
+      }
+    });
 
   }
 
@@ -179,6 +191,8 @@ class NWScriptInstance {
         }else{ }
       }
 
+      this.address = scope.instr.address;
+
       scope.seek = null;
       //Run the instruction's run method
       await NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
@@ -233,20 +247,19 @@ class NWScriptInstance {
 
   }
 
-  executeScript(script, scope, args, onComplete){
-    //console.log('executeScript', args);
-    script.lastPerceived = scope.lastPerceived;
-    script.debug = scope.debug;
-    script.debugging = scope.debugging;
-    script.listenPatternNumber = scope.listenPatternNumber;
-    script.listenPatternSpeaker = scope.listenPatternSpeaker;
-    script.talent = scope.talent;
+  executeScript(script, scope, args){
+    return new Promise( async (resolve, reject) => {
+      //console.log('executeScript', args);
+      script.lastPerceived = scope.lastPerceived;
+      script.debug = scope.debug;
+      script.debugging = scope.debugging;
+      script.listenPatternNumber = scope.listenPatternNumber;
+      script.listenPatternSpeaker = scope.listenPatternSpeaker;
+      script.talent = scope.talent;
 
-    script.run( args[1], args[2], (val) => {
-      if(typeof onComplete == 'function')
-        onComplete(val);
+      let val = await script.run( args[1], args[2]);
+      resolve(val);
     });
-
   }
 
   locationCompare(loc1, loc2){
@@ -292,6 +305,23 @@ class NWScriptInstance {
     }else{
       return Game.Flags.LogScripts || this.debugging;
     }
+  }
+
+  saveEventSituation(){
+    //STORE_STATE
+    let scriptSituation = new Struct(0x7777);
+
+    scriptSituation.AddField( new Field(GFFDataTypes.DWORD, 'CRC' ) ).SetValue(0);
+    scriptSituation.AddField( new Field(GFFDataTypes.VOID, 'Code' ) ).SetData( this.nwscript.code );
+    scriptSituation.AddField( new Field(GFFDataTypes.INT, 'CodeSize' ) ).SetValue( this.nwscript.progSize );
+    scriptSituation.AddField( new Field(GFFDataTypes.INT, 'InstructionPtr' ) ).SetValue(this.address);
+    scriptSituation.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Name' ) ).SetValue( this.name );
+    scriptSituation.AddField( new Field(GFFDataTypes.INT, 'SecondaryPtr' ) ).SetValue(0);
+
+    let stack = scriptSituation.AddField( new Field(GFFDataTypes.STRUCT, 'Stack') );
+    stack.AddChildStruct( this.stack.saveForEventSituation() );
+
+    return scriptSituation;
   }
 
 }

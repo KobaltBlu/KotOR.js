@@ -89,7 +89,16 @@ class NWScript {
       reader.Skip(8);
       this.prog = reader.ReadByte();
       this.progSize = reader.ReadUInt32(); //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
+      
+      //Store a binary code of the code for exporting ScriptSituations
+      this.code = data.slice( 13, this.progSize );
+      this.progSize = this.code.length;
+      
+      reader = new BinaryReader(this.code);
+      reader.endians = BinaryReader.Endians.BIG;
     }else{
+       //Store a binary code of the code for exporting ScriptSituations
+      this.code = data;
       this.progSize = progSize;
     }
 
@@ -99,6 +108,7 @@ class NWScript {
       console.log('NWScript: '+this.name, 'NCS Decompile', 'Pass 1: Started');
     }
 
+    this._lastOffset = -1;
     while ( reader.position < this.progSize ){
       this.parseIntr(reader);
     };
@@ -112,20 +122,20 @@ class NWScript {
 
   parseIntr( reader ) {
 
-    let _pos = reader.position;// - 13;
+    let _pos = reader.position;
 
     let instr = new NWScriptInstruction({
       code: reader.ReadByte(),
       type: reader.ReadByte(),
       address: _pos,
-      prevInstr: ( this._lastOffset > 0 ? this.instructions.get(this._lastOffset) : null ),
+      prevInstr: ( this._lastOffset >= 0 ? this.instructions.get(this._lastOffset) : null ),
       eof: false,
       isArg: false,
       index: this.instrIdx++
     });
 
     //If we already have parsed an instruction set the property of nextInstr on the previous instruction to the current one
-    if(this._lastOffset > 0){
+    if(this._lastOffset >= 0){
       this.instructions.get(this._lastOffset).nextInstr = instr;
     }
 
@@ -1393,9 +1403,10 @@ NWScript.ByteCodes = {
       //console.log('STORE_STATE', this.stack.stack.length, this.stack.basePointer);
 
       state.script = new NWScriptInstance();
+      state.script.address = state.offset;
       state.script.nwscript = this.nwscript;
       state.script.isStoreState = true;
-      state.script.name = this.name+':STORE_STATE';
+      state.script.name = this.name;
       state.script.prevByteCode = 0;
       //state.script.Definition = this.Definition;
       state.script.instructions = this.instructions;//.slice();

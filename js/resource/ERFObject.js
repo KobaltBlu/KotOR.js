@@ -7,7 +7,7 @@
 
 class ERFObject {
 
-  constructor(file = null, onComplete = undefined, onError = undefined){
+  constructor(file = undefined, onComplete = undefined, onError = undefined){
     this.file = file;
     this.LocalizedStrings = [];
     this.KeyList = [];
@@ -27,168 +27,168 @@ class ERFObject {
       this.pathInfo = path.parse(this.file);
     }
 
-    try{
+    if(typeof file != 'undefined'){
+      try{
+        if(this.inMemory){
 
-      if(this.inMemory){
+          let header = Buffer.from(this.buffer, 0, this.HeaderSize);
+          this.Reader = new BinaryReader(header);
 
-        let header = Buffer.from(this.buffer, 0, this.HeaderSize);
-        this.Reader = new BinaryReader(header);
+          this.Header.FileType = this.Reader.ReadChars(4);
+          this.Header.FileVersion = this.Reader.ReadChars(4);
 
-        this.Header.FileType = this.Reader.ReadChars(4);
-        this.Header.FileVersion = this.Reader.ReadChars(4);
+          this.Header.LanguageCount = this.Reader.ReadUInt32();
+          this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
+          this.Header.EntryCount = this.Reader.ReadUInt32();
+          this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
+          this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
+          this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
+          this.Header.BuildYear = this.Reader.ReadUInt32();
+          this.Header.BuildDay = this.Reader.ReadUInt32();
+          this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
+          this.Header.Reserved = this.Reader.ReadBytes(116);                 //Byte 116
 
-        this.Header.LanguageCount = this.Reader.ReadUInt32();
-        this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
-        this.Header.EntryCount = this.Reader.ReadUInt32();
-        this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
-        this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
-        this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
-        this.Header.BuildYear = this.Reader.ReadUInt32();
-        this.Header.BuildDay = this.Reader.ReadUInt32();
-        this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
-        this.Header.Reserved = this.Reader.ReadBytes(116);                 //Byte 116
+          header = this.Reader = null;
 
-        header = this.Reader = null;
+          //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+          this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
+          header = Buffer.from(this.buffer, 0, this.erfDataOffset);
+          this.Reader = new BinaryReader(header);
 
-        //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-        this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
-        header = Buffer.from(this.buffer, 0, this.erfDataOffset);
-        this.Reader = new BinaryReader(header);
+          this.Reader.Seek(this.Header.OffsetToLocalizedString);
 
-        this.Reader.Seek(this.Header.OffsetToLocalizedString);
-
-        for (let i = 0; i < this.Header.LanguageCount; i++) {
-          let str = {};
-          str.LanguageID = this.Reader.ReadUInt32();
-          str.StringSize = this.Reader.ReadUInt32();
-          str.String = this.Reader.ReadChars(str.StringSize);
-          this.LocalizedStrings.push(str);
-        }
-
-        this.Reader.Seek(this.Header.OffsetToKeyList);
-
-        for (let i = 0; i < this.Header.EntryCount; i++) {
-          let str = {};
-          str.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-          str.ResID = this.Reader.ReadUInt32();
-          str.ResType = this.Reader.ReadUInt16();
-          str.Unused = this.Reader.ReadUInt16();
-          this.KeyList.push(str);
-        }
-
-        this.Reader.Seek(this.Header.OffsetToResourceList);
-
-        for (let i = 0; i < this.Header.EntryCount; i++) {
-          let str = {};
-          str.OffsetToResource = this.Reader.ReadUInt32();
-          str.ResourceSize = this.Reader.ReadUInt32();
-          this.Resources.push(str);
-        }
-
-        header = this.Reader = null;
-
-        if(typeof onComplete == 'function')
-          onComplete(this);
-
-      }else{
-        fs.open(this.file, 'r', (e, fd) => {
-          if (e) {
-            console.error('ERFObject', 'ERF Header Read', e);
-            if(typeof onError == 'function')
-              onError(undefined);
-            return;
+          for (let i = 0; i < this.Header.LanguageCount; i++) {
+            let str = {};
+            str.LanguageID = this.Reader.ReadUInt32();
+            str.StringSize = this.Reader.ReadUInt32();
+            str.String = this.Reader.ReadChars(str.StringSize);
+            this.LocalizedStrings.push(str);
           }
-          let header = Buffer.alloc(this.HeaderSize);
-          fs.read(fd, header, 0, this.HeaderSize, 0, (e, num) => {
-            this.Reader = new BinaryReader(header);
 
-            this.Header.FileType = this.Reader.ReadChars(4);
-            this.Header.FileVersion = this.Reader.ReadChars(4);
+          this.Reader.Seek(this.Header.OffsetToKeyList);
 
-            this.Header.LanguageCount = this.Reader.ReadUInt32();
-            this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
-            this.Header.EntryCount = this.Reader.ReadUInt32();
-            this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
-            this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
-            this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
-            this.Header.BuildYear = this.Reader.ReadUInt32();
-            this.Header.BuildDay = this.Reader.ReadUInt32();
-            this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
-            this.Header.Reserved = this.Reader.ReadBytes(116);               //Byte 116
+          for (let i = 0; i < this.Header.EntryCount; i++) {
+            let str = {};
+            str.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+            str.ResID = this.Reader.ReadUInt32();
+            str.ResType = this.Reader.ReadUInt16();
+            str.Unused = this.Reader.ReadUInt16();
+            this.KeyList.push(str);
+          }
 
-            header = this.Reader = null;
+          this.Reader.Seek(this.Header.OffsetToResourceList);
 
-            //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-            this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
-            header = Buffer.alloc(this.erfDataOffset);
-            fs.read(fd, header, 0, this.erfDataOffset, 0, (e, num) => {
+          for (let i = 0; i < this.Header.EntryCount; i++) {
+            let str = {};
+            str.OffsetToResource = this.Reader.ReadUInt32();
+            str.ResourceSize = this.Reader.ReadUInt32();
+            this.Resources.push(str);
+          }
+
+          header = this.Reader = null;
+
+          if(typeof onComplete == 'function')
+            onComplete(this);
+
+        }else{
+          fs.open(this.file, 'r', (e, fd) => {
+            if (e) {
+              console.error('ERFObject', 'ERF Header Read', e);
+              if(typeof onError == 'function')
+                onError(undefined);
+              return;
+            }
+            let header = Buffer.alloc(this.HeaderSize);
+            fs.read(fd, header, 0, this.HeaderSize, 0, (e, num) => {
               this.Reader = new BinaryReader(header);
 
-              this.Reader.Seek(this.Header.OffsetToLocalizedString);
+              this.Header.FileType = this.Reader.ReadChars(4);
+              this.Header.FileVersion = this.Reader.ReadChars(4);
 
-              for (let i = 0; i < this.Header.LanguageCount; i++) {
-                let str = {};
-                str.LanguageID = this.Reader.ReadUInt32();
-                str.StringSize = this.Reader.ReadUInt32();
-                str.String = this.Reader.ReadChars(str.StringSize);
-                this.LocalizedStrings.push(str);
-              }
-
-              this.Reader.Seek(this.Header.OffsetToKeyList);
-
-              for (let i = 0; i < this.Header.EntryCount; i++) {
-                let str = {};
-                str.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-                str.ResID = this.Reader.ReadUInt32();
-                str.ResType = this.Reader.ReadUInt16();
-                str.Unused = this.Reader.ReadUInt16();
-                this.KeyList.push(str);
-              }
-
-              this.Reader.Seek(this.Header.OffsetToResourceList);
-
-              for (let i = 0; i < this.Header.EntryCount; i++) {
-                let str = {};
-                str.OffsetToResource = this.Reader.ReadUInt32();
-                str.ResourceSize = this.Reader.ReadUInt32();
-                this.Resources.push(str);
-              }
+              this.Header.LanguageCount = this.Reader.ReadUInt32();
+              this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
+              this.Header.EntryCount = this.Reader.ReadUInt32();
+              this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
+              this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
+              this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
+              this.Header.BuildYear = this.Reader.ReadUInt32();
+              this.Header.BuildDay = this.Reader.ReadUInt32();
+              this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
+              this.Header.Reserved = this.Reader.ReadBytes(116);               //Byte 116
 
               header = this.Reader = null;
 
-              fs.close(fd, (e) => {
+              //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+              this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
+              header = Buffer.alloc(this.erfDataOffset);
+              fs.read(fd, header, 0, this.erfDataOffset, 0, (e, num) => {
+                this.Reader = new BinaryReader(header);
 
-                if(typeof onComplete == 'function')
-                  onComplete(this);
+                this.Reader.Seek(this.Header.OffsetToLocalizedString);
 
-                if (e) {
-                  console.error('ERFObject', "close error:  " + error.message);
-                } else {
-                  console.log('ERFObject', "File was closed!");
+                for (let i = 0; i < this.Header.LanguageCount; i++) {
+                  let str = {};
+                  str.LanguageID = this.Reader.ReadUInt32();
+                  str.StringSize = this.Reader.ReadUInt32();
+                  str.String = this.Reader.ReadChars(str.StringSize);
+                  this.LocalizedStrings.push(str);
                 }
+
+                this.Reader.Seek(this.Header.OffsetToKeyList);
+
+                for (let i = 0; i < this.Header.EntryCount; i++) {
+                  let str = {};
+                  str.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+                  str.ResID = this.Reader.ReadUInt32();
+                  str.ResType = this.Reader.ReadUInt16();
+                  str.Unused = this.Reader.ReadUInt16();
+                  this.KeyList.push(str);
+                }
+
+                this.Reader.Seek(this.Header.OffsetToResourceList);
+
+                for (let i = 0; i < this.Header.EntryCount; i++) {
+                  let str = {};
+                  str.OffsetToResource = this.Reader.ReadUInt32();
+                  str.ResourceSize = this.Reader.ReadUInt32();
+                  this.Resources.push(str);
+                }
+
+                header = this.Reader = null;
+
+                fs.close(fd, (e) => {
+
+                  if(typeof onComplete == 'function')
+                    onComplete(this);
+
+                  if (e) {
+                    console.error('ERFObject', "close error:  " + error.message);
+                  } else {
+                    console.log('ERFObject', "File was closed!");
+                  }
+                });
+
               });
 
             });
 
           });
-
-        });
+        }
+      }catch(e){
+        console.error('ERFObject', 'ERF Open Error', e);
+        if(typeof onComplete == 'function')
+          onComplete(undefined);
       }
-    }catch(e){
-      console.error('ERFObject', 'ERF Open Error', e);
+    }else{
       if(typeof onComplete == 'function')
         onComplete(undefined);
     }
 
   }
 
-  getRawResource(key, restype, onComplete = null) {
-    let resource = this.getResourceByKey(key, restype);
-    if (resource != null) {
-
+  getResourceBuffer(resource = undefined, onComplete = undefined){
+    if (typeof resource != 'undefined') {
       if(resource.ResourceSize){
-        let chunks = [];
-
         if(this.inMemory){
           let buffer = Buffer.alloc(resource.ResourceSize);
           this.buffer.copy(buffer, 0, resource.OffsetToResource, resource.OffsetToResource + (resource.ResourceSize - 1));
@@ -196,41 +196,78 @@ class ERFObject {
           if(typeof onComplete == 'function')
             onComplete(buffer);
         }else{
-
           fs.open(this.file, 'r', (e, fd) => {
             let buffer = Buffer.alloc(resource.ResourceSize);
             fs.read(fd, buffer, 0, buffer.length, resource.OffsetToResource, function(err, br, buf) {
-              //console.log(err, buf);
               fs.close(fd, function(e) {
                 if(typeof onComplete === 'function')
                   onComplete(buf);
               });
             });
           });
-
         }
-
       }else{
-        if(onComplete != null)
+        if(typeof onComplete === 'function')
           onComplete(Buffer.alloc(0));
       }
-
     }else{
-      if(onComplete != null)
+      if(typeof onComplete === 'function')
+        onComplete(Buffer.alloc(0));
+    }
+  }
+
+  getRawResource(key, restype, onComplete = undefined) {
+    let resource = this.getResourceByKey(key, restype);
+    if (typeof resource != 'undefined') {
+      this.getResourceBuffer(resource, (buffer) => {
+        if(typeof onComplete === 'function')
+          onComplete(buffer);
+      });
+    }else{
+      if(typeof onComplete === 'function')
         onComplete(Buffer.alloc(0));
     }
   }
 
   getResourceByKey(key, restype){
-      key = key.toLowerCase();
+    key = key.toLowerCase();
+    for(let i = 0; i < this.KeyList.length; i++){
+      let _key = this.KeyList[i];
+      if (_key.ResRef == key && _key.ResType == restype) {
+        return this.Resources[_key.ResID];
+      }
+    };
+    return undefined;
+  }
 
-      for(let i = 0; i < this.KeyList.length; i++){
-          let _key = this.KeyList[i];
-          if (_key.ResRef == key && _key.ResType == restype) {
-              return this.Resources[_key.ResID];
-          }
-      };
-      return null;
+  getRawResourcesByType( restype, onFetch = undefined, onComplete = undefined) {
+    let resources = this.getResourcesByType(restype) || [];
+    let loop = new AsyncLoop({
+      array: resources,
+      onLoop: (resource, asyncLoop) => {
+        this.getResourceBuffer(resource, (buffer) => {
+          if(typeof onFetch === 'function')
+            onFetch(buffer);
+        
+          asyncLoop.next();
+        });
+      }
+    });
+    loop.iterate(() => {
+      if(typeof onComplete === 'function')
+        onComplete();
+    });
+  }
+
+  getResourcesByType(restype){
+    let resources = [];
+    for(let i = 0; i < this.KeyList.length; i++){
+      let _key = this.KeyList[i];
+      if (_key.ResType == restype) {
+        resources.push(this.Resources[_key.ResID]);
+      }
+    };
+    return resources;
   }
 
   exportRawResource(directory = null, resref = '', restype = 0x000F, onComplete = null) {
@@ -302,23 +339,29 @@ class ERFObject {
   }
 
   export( file = null, onExport = null, onError = null ){
+    return new Promise( (resolve, reject) => {
 
-    if(!file){
-      throw 'Failed to export: Missing file path.';
-    }
-
-    let buffer = this.getExportBuffer();
-
-    fs.writeFile( file, buffer, (err) => {
-      if (err){
-        if(typeof onError === 'function')
-          onError(err);
-      }else{
-        if(typeof onExport === 'function')
-          onExport(err);
+      if(!file){
+        throw 'Failed to export: Missing file path.';
       }
-    });
 
+      let buffer = this.getExportBuffer();
+
+      fs.writeFile( file, buffer, (err) => {
+        if (err){
+          if(typeof onError === 'function')
+            onError(err);
+
+          reject();
+        }else{
+          if(typeof onExport === 'function')
+            onExport(err);
+
+          resolve();
+        }
+      });
+
+    });
   }
 
   getExportBuffer(){

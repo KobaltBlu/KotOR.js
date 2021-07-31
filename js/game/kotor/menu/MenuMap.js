@@ -37,6 +37,11 @@ class MenuMap extends GameMenu {
           }
         });
 
+        this.BTN_EXIT.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.Close();
+        });
+
         this.openScript = 'k_sup_guiopen';
         this.transitScript = 'k_sup_gohawk';
 

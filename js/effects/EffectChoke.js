@@ -11,6 +11,10 @@ class EffectChoke extends GameEffect {
     super.onApply();
   }
 
+  update(delta = 0){
+    this.object.animState = ModuleCreature.AnimState.CHOKE;
+  }
+
 }
 
 module.exports = EffectChoke;

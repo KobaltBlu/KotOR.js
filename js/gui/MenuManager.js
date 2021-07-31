@@ -69,6 +69,10 @@ class MenuManager {
       MenuManager.pulseOpacity = 1 - this.pulse;
     }
 
+    if(Game.InGameOverlay.bVisible){
+      Game.InGameOverlay.Update(delta);
+    }
+
     let activeMenus = MenuManager.activeMenus;
     for(let i = 0, len = activeMenus.length; i < len; i++){
       activeMenus[i].Update(delta);

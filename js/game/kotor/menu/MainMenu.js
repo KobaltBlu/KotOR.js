@@ -172,6 +172,7 @@ class MainMenu extends GameMenu {
     //Game.MainMovies.Hide();
 
     Game.AlphaTest = 0.5;
+    CurrentGame.InitGameInProgressFolder();
 
   }
 

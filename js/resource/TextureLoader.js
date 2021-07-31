@@ -289,15 +289,21 @@ class TextureLoader {
             //I think this has to do with alphaTesting... Not sure...
             if(typeof texture.header === 'object'){
               if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                if(texture.txi.blending && texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
+                if(texture.txi.blending != TXI.BLENDING.PUNCHTHROUGH){
                   tex.material.transparent = true;
                 }
+                
                 if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
-                  tex.material.alphaTest = 0;
+                  //tex.material.alphaTest = 0;
                 }
 
-                if(!texture.txi.blending)
+                if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXI.BLENDING.PUNCHTHROUGH){
                   tex.material.alphaTest = texture.header.alphaTest;
+                  tex.material.transparent = false;
+                }
+
+                //if(!texture.txi.blending)
+                //  tex.material.alphaTest = texture.header.alphaTest;
               }
             }
 
@@ -341,7 +347,7 @@ class TextureLoader {
                       tex.material.transparent = true;
                     }
                     if(texture.txi.blending == TXI.BLENDING.ADDITIVE){
-                      tex.material.alphaTest = 0;
+                      //tex.material.alphaTest = 0;
                     }
                     //tex.material.alphaTest = texture.header.alphaTest;
                   }
@@ -467,7 +473,7 @@ class TextureLoader {
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               if(tex.material.defines.hasOwnProperty('HOLOGRAM')){
-                tex.material.alphaTest = 1;
+                //tex.material.alphaTest = 1;
                 tex.material.combine = THREE.AddOperation;
                 tex.material.blending = THREE['NormalBlending'];
                 tex.material.transparent = true;
@@ -598,13 +604,13 @@ class TextureLoader {
         case TXI.BLENDING.ADDITIVE:
           tex.material.transparent = true;
           tex.material.blending = THREE['AdditiveBlending'];
-          tex.material.alphaTest = 0;//0.5;
+          //tex.material.alphaTest = 0;//0.5;
           //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere
         break;
         case TXI.BLENDING.PUNCHTHROUGH:
           tex.material.transparent = false;
           tex.material.blending = THREE['NormalBlending'];
-          tex.material.alphaTest = texture.header.alphaTest || Game.AlphaTest;//0.5;
+          //tex.material.alphaTest = texture.header.alphaTest || Game.AlphaTest;//0.5;
         break;
       }
 

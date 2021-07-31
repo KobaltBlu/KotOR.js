@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const Game = require("../../tsl/TSL");
+
 /* @file
  * The MenuCharacter menu class.
  */
@@ -61,6 +63,12 @@ class MenuCharacter extends GameMenu {
           //Game.InGameOverlay.Show();
         });
 
+        this.BTN_AUTO.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Game.getCurrentPlayer().autoLevelUp();
+          this.updateCharacterStats(Game.getCurrentPlayer());
+        });
+
         Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdl']), (mdlBuffer) => {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdx']), (mdxBuffer) => {
             try{
@@ -113,6 +121,8 @@ class MenuCharacter extends GameMenu {
                   );
         
                   TextureLoader.LoadQueue(() => {
+
+                    this.LBL_3DCHAR.setFillTexture(this.lbl_3dview.getFillTexture());
   
                     if(typeof this.onLoad === 'function')
                       this.onLoad();
@@ -156,7 +166,7 @@ class MenuCharacter extends GameMenu {
 
     try{
       this._3dView.render(delta);
-      this.lbl_3dview.fill.children[0].material.needsUpdate = true;
+      //this.lbl_3dview.fill.children[0].material.needsUpdate = true;
     }catch(e){}
   }
 
@@ -207,6 +217,12 @@ class MenuCharacter extends GameMenu {
         character.getTotalClassLevel()
       ].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
     );
+
+    if(character.canLevelUp()){
+      this.BTN_AUTO.show();
+    }else{
+      this.BTN_AUTO.hide();
+    }
 
   }
 

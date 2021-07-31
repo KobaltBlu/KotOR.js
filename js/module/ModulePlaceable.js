@@ -190,64 +190,86 @@ class ModulePlaceable extends ModuleObject {
     this.action = this.actionQueue[0];
 
     if(this.action != undefined){
-            
-      /*if(this.action.object instanceof ModuleObject){
-        
-      }else{*/
-        switch(this.action.goal){
-          case ModuleCreature.ACTION.DIALOGOBJECT:
-            Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this, this.action.object);
-            this.actionQueue.shift()
-          break;
-          case ModuleCreature.ACTION.WAIT:
-            this.action.elapsed += delta;
-            if(this.action.elapsed > this.action.time){
-              this.actionQueue.shift()
-            }
-          break;
-          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
-            console.log('ModulePlaceable', 'ACTION.SCRIPT', this.action);
-            if(this.action.script instanceof NWScriptInstance){
-              this.action.action.script.caller = this;
-              this.action.action.script.beginLoop({
-                _instr: null, 
-                index: -1, 
-                seek: this.action.action.offset, 
-                onComplete: () => {
-                  //console.log('ACTION.SCRIPT', 'Complete');
-                }
-              });
-            }
-            this.actionQueue.shift();
-          break;
-          case ModuleCreature.ACTION.ANIMATE:
-            let _animShouldChange = false;
-            let _anim = this.getAnimationNameById(this.action.animation).toLowerCase();
-
-            if(this.model.animationManager.currentAnimation instanceof AuroraModelAnimation){
-              if(this.model.animationManager.currentAnimation.name.toLowerCase() != _anim){
-                _animShouldChange = true;
-              }
-            }else{
-              _animShouldChange = true;
-            }
-
-            if(_animShouldChange){
-              let _newAnim = this.model.getAnimationByName(_anim);
-              if(_newAnim instanceof AuroraModelAnimation){
-                this.model.playAnimation(_newAnim, true);
-              }else{
-                //console.log('Animation Missing', this.action.animation)
-                //Kill the action if the animation isn't found
-                this.actionQueue.shift()
-              }
-            }
-          break;
-        }
-      //}
-
-    } else {
       
+      switch(this.action.goal){
+        case ModuleCreature.ACTION.DIALOGOBJECT:
+          Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this, this.action.object);
+          this.actionQueue.shift()
+        break;
+        case ModuleCreature.ACTION.WAIT:
+          this.action.elapsed += delta;
+          if(this.action.elapsed > this.action.time){
+            this.actionQueue.shift()
+          }
+        break;
+        case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
+          console.log('ModulePlaceable', 'ACTION.SCRIPT', this.action);
+          if(this.action.script instanceof NWScriptInstance){
+            this.action.action.script.caller = this;
+            this.action.action.script.beginLoop({
+              _instr: null, 
+              index: -1, 
+              seek: this.action.action.offset, 
+              onComplete: () => {
+                //console.log('ACTION.SCRIPT', 'Complete');
+              }
+            });
+          }
+          this.actionQueue.shift();
+        break;
+        case ModuleCreature.ACTION.ANIMATE:
+          if(this.action.animation >= 10000){
+            this.animState = this.action.animation;
+            this.action.started = true;
+          }else{
+            console.error('ModulePlaceable.ACTION.ANIMATE Invalid animation', this.getName(), this.action.animation, this.action);
+            //Kill the action
+            this.actionQueue.shift();
+          }
+
+          if(this.action.time == -1){
+            //Kill the action
+            this.actionQueue.shift();
+          }else if(this.action.time > 0){
+            this.action.time -= delta;
+            if(this.action.time < 0){
+              this.action.time = 0;
+              //Kill the action
+              this.actionQueue.shift();
+            }
+          }else{
+            //Kill the action
+            this.actionQueue.shift();
+          }
+        break;
+      }
+
+    }
+
+    if(this.animState == ModulePlaceable.AnimState.DEFAULT){
+      if(this.isOpen()){
+        this.animState = ModulePlaceable.AnimState.OPEN;
+      }else{
+        this.animState = ModulePlaceable.AnimState.CLOSE;
+      }
+    }
+
+    if(!(this.model instanceof THREE.AuroraModel))
+      return;
+
+    let currentAnimation = this.model.getAnimationName();
+
+    let animation = this.animationConstantToAnimation(this.animState);
+    if(animation){
+      if(currentAnimation != animation.name.toLowerCase()){
+        let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping, () => {
+          this.animState = ModulePlaceable.AnimState.DEFAULT;
+        });
+      }
+    }else{
+      console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+      this.animState = ModulePlaceable.AnimState.DEFAULT;
     }
 
   }
@@ -380,8 +402,8 @@ class ModulePlaceable extends ModuleObject {
   }
 
   getAppearanceId(){
-    if(this.template.RootNode.HasField('Appearance')){
-      return this.template.RootNode.GetFieldByLabel('Appearance').GetValue();
+    if(this.appearance){
+      return this.appearance;
     }
     return 0;
   }
@@ -422,9 +444,13 @@ class ModulePlaceable extends ModuleObject {
 
     this.lastUsedBy = object;
 
-    if(this.model.getAnimationByName('close2open')){
-      this.model.playAnimation('close2open', false);
+    if(this.getAnimationState() == ModulePlaceable.STATE.CLOSED){
+      this.animState = ModulePlaceable.AnimState.CLOSE_OPEN;
+    }else{
+      this.animState = ModulePlaceable.AnimState.OPEN;
     }
+
+    this.setAnimationState(ModulePlaceable.STATE.OPEN);
 
     if(this.getObjectSounds()['opened'] != '****'){
       this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
@@ -470,9 +496,13 @@ class ModulePlaceable extends ModuleObject {
       this.scripts.onClosed.run(this);
     }
 
-    if(this.model.getAnimationByName('open2close')){
-      this.model.playAnimation('open2close', false);
+    if(this.getAnimationState() == ModulePlaceable.STATE.OPEN){
+      this.animState = ModulePlaceable.AnimState.OPEN_CLOSE;
+    }else{
+      this.animState = ModulePlaceable.AnimState.CLOSE;
     }
+
+    this.setAnimationState(ModulePlaceable.STATE.CLOSED);
 
     if(this.getObjectSounds()['closed'] != '****'){
       this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
@@ -546,53 +576,6 @@ class ModulePlaceable extends ModuleObject {
             this.position = this.model.position.copy(this.position);
             this.model.rotation.copy(this.rotation);
             this.model.quaternion.copy(this.quaternion);
-
-            try{
-              /*if(this.model.getAnimationByName('default')){
-                this.model.playAnimation('default', false, () => {
-                  this.defaultAnimPlayed = true;
-                });
-              }else{
-                this.defaultAnimPlayed = true;
-              }*/
-
-              this.defaultAnimPlayed = true;
-              switch(this.getAnimationState()){
-                case ModulePlaceable.STATE.DEFAULT:
-                  if(this.model.getAnimationByName('default')){
-                    this.model.playAnimation('default', true);
-                  }
-                break;
-                case ModulePlaceable.STATE.OPEN:
-                  if(this.model.getAnimationByName('open')){
-                    this.model.playAnimation('open', true);
-                  }
-                break;
-                case ModulePlaceable.STATE.CLOSED:
-                  if(this.model.getAnimationByName('close')){
-                    this.model.playAnimation('close', true);
-                  }
-                break;
-                case ModulePlaceable.STATE.DEAD:
-                  if(this.model.getAnimationByName('dead')){
-                    this.model.playAnimation('dead', false);
-                  }
-                break;
-                case ModulePlaceable.STATE.ON:
-                  if(this.model.getAnimationByName('on')){
-                    this.model.playAnimation('on', false);
-                  }
-                break;
-                case ModulePlaceable.STATE.OFF:
-                  if(this.model.getAnimationByName('off')){
-                    this.model.playAnimation('off', false);
-                  }
-                break;
-                default:
-                  this.model.playAnimation(this.model.animations[0], false);
-                break;
-              }
-            }catch(e){ this.defaultAnimPlayed = true; }
 
             this.model.disableMatrixUpdate();
 
@@ -781,8 +764,8 @@ class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.HasField('LocName'))
       this.name = this.template.GetFieldByLabel('LocName').GetCExoLocString().GetValue()
 
-    if(this.template.RootNode.HasField('AnimationState'))
-      this.animationState = this.template.GetFieldByLabel('AnimationState').GetValue();
+    if(this.template.RootNode.HasField('Animation'))
+      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
 
     if(this.template.RootNode.HasField('Appearance'))
       this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
@@ -938,6 +921,106 @@ class ModulePlaceable extends ModuleObject {
 
   }
 
+  save(){
+    let gff = new GFFObject();
+    gff.FileType = 'UTP ';
+
+    let actionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Animation') ).SetValue(this.animState);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Appearance') ).SetValue(this.getAppearanceId());
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'AutoRemoveKey') ).SetValue(this.autoRemoveKey);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Bearing') ).SetValue(this.bearing);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'CloseLockDC') ).SetValue(this.closeLockDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Description') ).SetValue();
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DieWhenEmpty') ).SetValue( this.isBodyBag ? 1 : 0 );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DisarmDC') ).SetValue(this.disarmDC);
+
+    //Effects
+    let effectList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'EffectList') );
+    for(let i = 0; i < this.effects.length; i++){
+      effectList.AddChildStruct( this.effects[i].save() );
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Faction') ).SetValue(this.faction);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Fort') ).SetValue(this.fort);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GroundPile') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'HP') ).SetValue(this.hp);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Hardness') ).SetValue(this.hardness);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'HasInventory') ).SetValue(this.inventory.length ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsBodyBag') ).SetValue(this.isBodyBag ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsBodyBagVisible') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsCorpse') ).SetValue(0);
+
+    //Object Inventory
+    if(this.inventory.length){
+      let itemList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ItemList') );
+      for(let i = 0; i < this.inventory.length; i++){
+        let itemStruct = this.inventory[i].save();
+        itemList.AddChildStruct(itemStruct);
+      }
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'KeyName') ).SetValue(this.keyName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'KeyRequired') ).SetValue(this.keyRequired);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'LightState') ).SetValue(this.lightState ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocName') ).SetValue(this.locName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Lockable') ).SetValue(this.lockable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Locked') ).SetValue(this.locked);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Min1HP') ).SetValue(this.min1HP);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+
+    //Scripts
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnClosed') ).SetValue(this.scripts.onClosed ? this.scripts.onClosed.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDamaged') ).SetValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDeath') ).SetValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDialog') ).SetValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDisarm') ).SetValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnEndDialogue') ).SetValue(this.scripts.onEndDialogue ? this.scripts.onEndDialogue.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnInvDisturbed') ).SetValue(this.scripts.onInvDisturbed ? this.scripts.onInvDisturbed.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnLock') ).SetValue(this.scripts.onLock ? this.scripts.onLock.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnMeleeAttacked') ).SetValue(this.scripts.onMeleeAttacked ? this.scripts.onMeleeAttacked.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnOpen') ).SetValue(this.scripts.onOpen ? this.scripts.onOpen.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnSpellCastAt') ).SetValue(this.scripts.onSpellCastAt ? this.scripts.onSpellCastAt.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnTrapTriggered') ).SetValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUnlock') ).SetValue(this.scripts.onUnlock ? this.scripts.onUnlock.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUsed') ).SetValue(this.scripts.onUsed ? this.scripts.onUsed.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUserDefined') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Open') ).SetValue(this.isOpen() ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'OpenLockDC') ).SetValue(this.openLockDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PartyInteract') ).SetValue(this.partyInteract);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Plot') ).SetValue(this.plot);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(this.portraidId);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Ref') ).SetValue(this.ref);
+
+    //SWVarTable
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Static') ).SetValue(this.static);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectDC') ).SetValue(this.trapDetectDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectable') ).SetValue(this.trapDetectable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDisarmable') ).SetValue(this.trapDisarmable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapFlag') ).SetValue(this.trapFlag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapOneShot') ).SetValue(this.trapOneShot);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapType') ).SetValue(this.trapType);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Useable') ).SetValue(this.useable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Will') ).SetValue(this.will);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'X') ).SetValue(this.position.x);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Y') ).SetValue(this.position.y);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Z') ).SetValue(this.position.z);
+
+    this.template = gff;
+    return gff;
+  }
+
   toToolsetInstance(){
 
     let instance = new Struct(9);
@@ -966,6 +1049,51 @@ class ModulePlaceable extends ModuleObject {
 
   }
 
+  animationConstantToAnimation( animation_constant = 10000 ){
+    switch( animation_constant ){
+      case ModulePlaceable.AnimState.DEFAULT:        //10000, //304 - 
+        return Global.kotor2DA.animations.rows[304];
+      case ModulePlaceable.AnimState.DAMAGE:         //10014, //305 - damage
+        return Global.kotor2DA.animations.rows[305];
+      case ModulePlaceable.AnimState.DEAD: 	    //10072, //307
+        return Global.kotor2DA.animations.rows[307];
+      case ModulePlaceable.AnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
+        return Global.kotor2DA.animations.rows[308];
+      case ModulePlaceable.AnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
+        return Global.kotor2DA.animations.rows[309];
+      case ModulePlaceable.AnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
+        return Global.kotor2DA.animations.rows[310];
+      case ModulePlaceable.AnimState.CLOSE: 			  //10076, //311 - NWSCRIPT Constant: 203
+        return Global.kotor2DA.animations.rows[311];
+      case ModulePlaceable.AnimState.CLOSE_OPEN: 	  //10077, //312
+        return Global.kotor2DA.animations.rows[312];
+      case ModulePlaceable.AnimState.OPEN_CLOSE:    //10078, //313
+        return Global.kotor2DA.animations.rows[313];
+      case ModulePlaceable.AnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
+        return Global.kotor2DA.animations.rows[316];
+      case ModulePlaceable.AnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
+        return Global.kotor2DA.animations.rows[317];
+      case ModulePlaceable.AnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
+        return Global.kotor2DA.animations.rows[318];
+      case ModulePlaceable.AnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
+        return Global.kotor2DA.animations.rows[319];
+      case ModulePlaceable.AnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
+        return Global.kotor2DA.animations.rows[320];
+      case ModulePlaceable.AnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
+        return Global.kotor2DA.animations.rows[321];
+      case ModulePlaceable.AnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
+        return Global.kotor2DA.animations.rows[322];
+      case ModulePlaceable.AnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
+        return Global.kotor2DA.animations.rows[323];
+      case ModulePlaceable.AnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
+        return Global.kotor2DA.animations.rows[324];
+      case ModulePlaceable.AnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213 
+        return Global.kotor2DA.animations.rows[325];
+    }
+
+    return super.animationConstantToAnimation( animation_constant );
+  }
+
 }
 
 ModulePlaceable.STATE = {
@@ -976,6 +1104,28 @@ ModulePlaceable.STATE = {
   DEAD:         3,
   ON:           4,
   OFF:          5
+};
+
+ModulePlaceable.AnimState = {
+  DEFAULT:    10000, //304 - 
+  DAMAGE:     10014, //305 - damage
+  DEAD: 	    10072, //307 - 
+  ACTIVATE: 	10073, //308 - NWSCRIPT Constant: 200
+  DEACTIVATE: 10074, //309 - NWSCRIPT Constant: 201
+  OPEN: 			10075, //310 - NWSCRIPT Constant: 202
+  CLOSE: 			10076, //311 - NWSCRIPT Constant: 203
+  CLOSE_OPEN: 10077, //312 - 10077 is a guess
+  OPEN_CLOSE: 10078, //313 - 10078 is a guess
+  ANIMLOOP01: 10106, //316 - NWSCRIPT Constant: 204
+  ANIMLOOP02: 10107, //317 - NWSCRIPT Constant: 205
+  ANIMLOOP03: 10108, //318 - NWSCRIPT Constant: 206
+  ANIMLOOP04: 10110, //319 - NWSCRIPT Constant: 207
+  ANIMLOOP05: 10111, //320 - NWSCRIPT Constant: 208
+  ANIMLOOP06: 10112, //321 - NWSCRIPT Constant: 209
+  ANIMLOOP07: 10113, //322 - NWSCRIPT Constant: 210
+  ANIMLOOP08: 10114, //323 - NWSCRIPT Constant: 211
+  ANIMLOOP09: 10115, //324 - NWSCRIPT Constant: 212
+  ANIMLOOP10: 10116, //325 - NWSCRIPT Constant: 213 
 }
 
 module.exports = ModulePlaceable;

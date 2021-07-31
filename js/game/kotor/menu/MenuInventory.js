@@ -25,6 +25,11 @@ class MenuInventory extends GameMenu {
         this.BTN_CHANGE1 = this.getControlByName('BTN_CHANGE1');
         this.BTN_CHANGE2 = this.getControlByName('BTN_CHANGE2');
 
+        this.BTN_EXIT.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.Close();
+        });
+
         this.LB_ITEMS.padding = 5;
         this.LB_ITEMS.offset.x = 0;
 

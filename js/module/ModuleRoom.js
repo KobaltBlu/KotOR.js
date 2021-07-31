@@ -60,19 +60,6 @@ class ModuleRoom extends ModuleObject {
             this.linked_rooms[i].model.visible = true;
         }
       }
-
-      //Look for all rooms that can see this room
-      for(let i = 0, rLen = Game.module.area.rooms.length; i < rLen; i++){
-        let room = Game.module.area.rooms[i];
-        if(room instanceof ModuleRoom){
-          for(let j = 0, rcLen = room.linked_rooms.length; j < rcLen; j++){
-            if(room.linked_rooms[j] == this){
-              room.show(false);
-              break;
-            }
-          }
-        }
-      }
     }
 
     //Add the walkmesh back to the scene
@@ -158,16 +145,21 @@ class ModuleRoom extends ModuleObject {
               if(!(this.walkmesh instanceof AuroraWalkMesh)){
 
                 this.loadWalkmesh(this.roomName, (wok) => {
-                  
-                  this.walkmesh = wok;
-                  this.walkmesh.mesh.position.z += 0.001;
-                  this.buildGrass();
-                  
-                  TextureLoader.LoadQueue( () => {
-                    if(typeof onComplete == 'function')
-                      onComplete(this);
-                  });
-    
+                  if(wok){
+                    this.walkmesh = wok;
+                    this.walkmesh.mesh.position.z += 0.001;
+                    this.buildGrass();
+                    
+                    TextureLoader.LoadQueue( () => {
+                      if(typeof onComplete == 'function')
+                        onComplete(this);
+                    });
+                  }else{
+                    TextureLoader.LoadQueue( () => {
+                      if(typeof onComplete == 'function')
+                        onComplete(this);
+                    });
+                  }
                 });
 
               }else{

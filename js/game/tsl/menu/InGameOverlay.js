@@ -306,6 +306,7 @@ class InGameOverlay extends GameMenu {
           e.stopPropagation();
           Game.getCurrentPlayer().clearAllActions();
           Game.getCurrentPlayer().combatState = false;
+          Game.getCurrentPlayer().cancelCombat();
         });
 
         this.LBL_QUEUE0.addEventListener('click', (e) => {

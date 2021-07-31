@@ -311,6 +311,7 @@ const IngameControls = require(path.join(app.getAppPath(), 'js/IngameControls.js
 const LightManager = require(path.join(app.getAppPath(), 'js/LightManager.js'));
 const JournalManager = require(path.join(app.getAppPath(), 'js/JournalManager.js'));
 
+const CurrentGame = require(path.join(app.getAppPath(), 'js/CurrentGame.js'));
 const SaveGame = require(path.join(app.getAppPath(), 'js/SaveGame.js'));
 let Global = {};
 let Clipboard = null;
@@ -319,6 +320,7 @@ let Clipboard = null;
 
 const LBL_3DView = require(path.join(app.getAppPath(), 'js/gui/LBL_3DView.js')); 
 const GUIControl = require(path.join(app.getAppPath(), 'js/gui/GUIControl.js'));
+const GUILabel = require(path.join(app.getAppPath(), 'js/gui/GUILabel.js'));
 const GUIButton = require(path.join(app.getAppPath(), 'js/gui/GUIButton.js'));
 const GUIProgressBar = require(path.join(app.getAppPath(), 'js/gui/GUIProgressBar.js'));
 const GUIListBox = require(path.join(app.getAppPath(), 'js/gui/GUIListBox.js'));

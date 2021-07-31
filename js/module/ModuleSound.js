@@ -15,15 +15,26 @@ class ModuleSound extends ModuleObject {
     this.audioEngine = audioEngine;
 
     this.active = 0;
-    this.looping = 0;
-    this.random = 0;
-    this.randomPosition = 0;
+    this.commandable = 1;
+    this.continuous = 0;
+    this.fixedVariance = 0;
+    this.generatedType = 0;
+    this.hours = 0;
     this.interval = 0;
     this.intervalVariation = 0;
+    this.looping = 0;
     this.maxDistance = 0;
-    this.volume = 0;
+    this.minDistance = 0;
+    this.pitchVariation = 0;
     this.positional = 0;
+    this.random = 0;
+    this.randomPosition = 0;
+    this.randomRangeX = 0;
+    this.randomRangeY = 0;
     this.sounds = [];
+    this.times = 3;
+    this.volume = 0;
+    this.volumeVariation = 0;
 
   }
 
@@ -176,21 +187,21 @@ class ModuleSound extends ModuleObject {
   }
 
   InitProperties(){
-        
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('Active'))
       this.active = this.template.GetFieldByLabel('Active').GetValue()
 
-    if(this.template.RootNode.HasField('Looping'))
-      this.looping = this.template.GetFieldByLabel('Looping').GetValue();
+    if(this.template.RootNode.HasField('Commandable'))
+      this.commandable = this.template.GetFieldByLabel('Commandable').GetValue()
 
-    if(this.template.RootNode.HasField('Random'))
-      this.random = this.template.GetFieldByLabel('Random').GetValue();
+    if(this.template.RootNode.HasField('FixedVariance'))
+      this.fixedVariance = this.template.GetFieldByLabel('FixedVariance').GetValue()
 
-    if(this.template.RootNode.HasField('RandomPosition'))
-      this.randomPosition = this.template.GetFieldByLabel('RandomPosition').GetValue();
+    if(this.template.RootNode.HasField('GeneratedType'))
+      this.generatedType = this.template.GetFieldByLabel('GeneratedType').GetValue()
+
+    if(this.template.RootNode.HasField('Hours'))
+      this.hours = this.template.GetFieldByLabel('Hours').GetValue()
 
     if(this.template.RootNode.HasField('Interval'))
       this.interval = this.template.GetFieldByLabel('Interval').GetValue();
@@ -198,14 +209,35 @@ class ModuleSound extends ModuleObject {
     if(this.template.RootNode.HasField('InternalVrtn'))
       this.intervalVariation = this.template.GetFieldByLabel('InternalVrtn').GetValue();
 
+    if(this.template.RootNode.HasField('Looping'))
+      this.looping = this.template.GetFieldByLabel('Looping').GetValue();
+
     if(this.template.RootNode.HasField('MaxDistance'))
       this.maxDistance = this.template.GetFieldByLabel('MaxDistance').GetValue();
+      
+    if(this.template.RootNode.HasField('MinDistance'))
+      this.minDistance = this.template.GetFieldByLabel('MinDistance').GetValue();
+        
+    if(this.template.RootNode.HasField('ObjectId'))
+      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
-    if(this.template.RootNode.HasField('Volume'))
-      this.volume = this.template.GetFieldByLabel('Volume').GetValue();
+    if(this.template.RootNode.HasField('PitchVariation'))
+      this.pitchVariation = this.template.GetFieldByLabel('PitchVariation').GetValue();
 
     if(this.template.RootNode.HasField('Positional'))
       this.positional = this.template.GetFieldByLabel('Positional').GetValue();
+
+    if(this.template.RootNode.HasField('Random'))
+      this.random = this.template.GetFieldByLabel('Random').GetValue();
+
+    if(this.template.RootNode.HasField('RandomPosition'))
+      this.randomPosition = this.template.GetFieldByLabel('RandomPosition').GetValue();
+
+    if(this.template.RootNode.HasField('RandomRangeX'))
+      this.randomRangeX = this.template.GetFieldByLabel('RandomRangeX').GetValue();
+
+    if(this.template.RootNode.HasField('RandomRangeY'))
+      this.randomRangeY = this.template.GetFieldByLabel('RandomRangeY').GetValue();
 
     if(this.template.RootNode.HasField('Sounds'))
       this.sounds = this.template.GetFieldByLabel('Sounds').GetChildStructs();
@@ -215,6 +247,15 @@ class ModuleSound extends ModuleObject {
 
     if(this.template.RootNode.HasField('TemplateResRef'))
       this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+
+    if(this.template.RootNode.HasField('Times'))
+      this.times = this.template.GetFieldByLabel('Times').GetValue();
+
+    if(this.template.RootNode.HasField('Volume'))
+      this.volume = this.template.GetFieldByLabel('Volume').GetValue();
+
+    if(this.template.RootNode.HasField('VolumeVrtn'))
+      this.volumeVariation = this.template.GetFieldByLabel('VolumeVrtn').GetValue();
 
     if(this.template.RootNode.HasField('XPosition'))
       this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
@@ -239,22 +280,53 @@ class ModuleSound extends ModuleObject {
 
   }
 
-  /*LoadTemplate ( onLoad = null ){
+  save(){
+    let gff = new GFFObject();
+    gff.FileType = 'UTS ';
+    gff.RootNode.Type = 6;
 
-    if(this.props.TemplateResRef != ''){
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Active') ).SetValue(this.cameraID);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Continuous') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'FixedVariance') ).SetValue(this.fixedVariance);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'GeneratedType') ).SetValue(this.generatedType);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Hours') ).SetValue(this.hours);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Interval') ).SetValue(this.interval);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'IntervalVrtn') ).SetValue(this.intervalVariation);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Looping') ).SetValue(this.looping);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'MaxDistance') ).SetValue(this.maxDistance);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'MinDistance') ).SetValue(this.minDistance);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'PitchVariation') ).SetValue(this.micRange);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Positional') ).SetValue(this.micRange);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Random') ).SetValue(this.random);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'RandomPosition') ).SetValue(this.randomPosition);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'RandomRangeX') ).SetValue(this.randomRangeX);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'RandomRangeY') ).SetValue(this.randomRangeY);
 
-      UTSObject.FromTemplate(this.props.TemplateResRef, (uts) => {
-        this.template = uts;
-        this.template.moduleObject = this;
-        this.template.audioEngine = this.audioEngine;
-        if(onLoad != null)
-          onLoad(uts);
+    //SWVarTable
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
 
-      });
-
+    //Sounds
+    let sounds = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Sounds') );
+    for(let i = 0; i < this.sounds.length; i++){
+      sounds.AddChildStruct(this.sounds[i]);
     }
 
-  }*/
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Times') ).SetValue(this.times);
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Volume') ).SetValue(this.volume);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'VolumeVrtn') ).SetValue(this.volumeVariation);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(this.position.x);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(this.position.y);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue(this.position.z);
+
+    this.template = gff;
+    return gff;
+  }
   
   toToolsetInstance(){
     let instance = new Struct(6);

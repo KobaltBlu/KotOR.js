@@ -1142,20 +1142,40 @@ class Engine {
     return Game.player === object;
   }
 
-  static setGlobalBoolean(name = '', bValue = false){
-    Game.Globals.Boolean[name.toLowerCase()] = bValue ? true : false;
+  static setGlobalBoolean(name = '', value = false){
+    if(Game.Globals.Boolean[name.toLowerCase()])
+      Game.Globals.Boolean[name.toLowerCase()].value = value ? true : false;
   }
 
   static getGlobalBoolean(name = ''){
-    return Game.Globals.Boolean[name.toLowerCase()];
+    if(Game.Globals.Boolean[name.toLowerCase()])
+      return Game.Globals.Boolean[name.toLowerCase()].value ? true : false;
+
+    return false;
   }
 
-  static setGlobalNumber(name = '', bValue = 0){
-    Game.Globals.Number[name.toLowerCase()] = parseInt(bValue);
+  static setGlobalNumber(name = '', value = 0){
+    if(Game.Globals.Number[name.toLowerCase()])
+      Game.Globals.Number[name.toLowerCase()].value = parseInt(value);
   }
 
   static getGlobalNumber(name = ''){
-    return Game.Globals.Number[name.toLowerCase()];
+    if(Game.Globals.Number[name.toLowerCase()])
+      return Game.Globals.Number[name.toLowerCase()].value;
+
+    return 0;
+  }
+
+  static setGlobalLocation(name = '', value = new Engine.Location){
+    if(Game.Globals.Location[name.toLowerCase()] && value instanceof Engine.Location)
+      Game.Globals.Location[name.toLowerCase()].value = value;
+  }
+
+  static getGlobalLocation(name = ''){
+    if(Game.Globals.Location[name.toLowerCase()])
+      return Game.Globals.Location[name.toLowerCase()].value;
+
+    return new Engine.Location;
   }
 
   static updateTime(delta){
@@ -1280,8 +1300,6 @@ Engine.mouse = new THREE.Vector3();
 Engine.mouseUI = new THREE.Vector2();
 Engine.screenCenter = new THREE.Vector3();
 
-Engine.SaveGame = null;
-
 Engine.SOLOMODE = false;
 Engine.isLoadingSave = false;
 Engine.Heartbeat = undefined;
@@ -1323,6 +1341,80 @@ Engine.AlphaTest = 0.5;
 Engine.noClickTimer = 0;
 
 Engine._emitters = {};
+
+class Location {
+
+  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area = undefined){
+    this.position = new THREE.Vector3(x, y, z);
+    this.rotation = new THREE.Vector3(rx, ry, rz);
+    this.area = area;
+    this.updateFacing();
+  }
+
+  getPosition(){
+    return this.position;
+  }
+
+  setPosition(x = 0, y = 0, z = 0){
+    this.position.set(x, y, z);
+  }
+
+  getRotation(){
+    return this.rotation;
+  }
+
+  setRotation(rx = 0, ry = 0, rz = 0){
+    this.rotation.set(rx, ry, rz);
+    this.updateFacing();
+  }
+
+  //Set rotation from bearing in degrees
+  setBearing( bearing = 0 ){
+    let facing = bearing / 180;
+    this.setFacing(facing);
+  }
+
+  //Bearing is facing in degrees
+  getBearing(){
+    return this.facing * 180;
+  }
+
+  //Set the facing value and then update the rotation values
+  setFacing( facing = 0 ){
+    this.facing = 0;
+    let theta = facing;
+
+    this.rotation.x = 1 * Math.cos(theta);
+    this.rotation.y = 1 * Math.sin(theta);
+    this.rotation.z = 0;
+  }
+
+  //Bearing is facing in radians
+  getFacing(){
+    return this.facing;
+  }
+
+  //Use the rotation values to update the facing value
+  updateFacing(){
+    this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
+  }
+
+  getArea(){
+    return this.area;
+  }
+
+  setArea(area){
+    this.area = area;
+  }
+
+  //HACK
+  getModel(){
+    return this;
+  }
+
+}
+
+Engine.Location = Location;
 
 
 module.exports = Engine;

@@ -35,6 +35,11 @@ class MenuSaveLoad extends GameMenu {
           e.stopPropagation();
           if(this.selected instanceof SaveGame){
             this.Close();
+
+            if(Game.module instanceof Module){
+              Game.module.dispose();
+            }
+            
             this.selected.Load()
           }
         });

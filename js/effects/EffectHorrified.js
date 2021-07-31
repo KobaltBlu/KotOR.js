@@ -11,6 +11,10 @@ class EffectHorrified extends GameEffect {
     super.onApply();
   }
 
+  update(delta = 0){
+    this.object.animState = ModuleCreature.AnimState.HORROR;
+  }
+
 }
 
 module.exports = EffectHorrified;

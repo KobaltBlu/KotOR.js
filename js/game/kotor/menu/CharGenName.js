@@ -22,41 +22,7 @@ class CharGenName extends GameMenu {
         this.END_BTN = this.getControlByName('END_BTN');
 
         this.NAME_BOX_EDIT = this.getControlByName('NAME_BOX_EDIT');
-
-        this.NAME_BOX_EDIT.addEventListener('click', (e) => {
-          e.stopPropagation();
-
-        });
-
-        this.NAME_BOX_EDIT.onKeyDown = (e) => {
-          //e.stopPropagation();
-          console.log(e);
-
-          switch(e.which){
-            case 8: //Backspace
-              this.NAME_BOX_EDIT.setText(this.NAME_BOX_EDIT.text.text.slice(0, -1));
-            break;
-            case 32: //Spacebar
-            this.NAME_BOX_EDIT.setText(
-              this.NAME_BOX_EDIT.text.text + ' '
-            );
-            break;
-            default:
-              if(e.which >= 48 && e.which <= 90){
-                if(e.shiftKey){
-                  this.NAME_BOX_EDIT.setText(
-                    this.NAME_BOX_EDIT.text.text + String.fromCharCode(e.which).toLocaleUpperCase()
-                  );
-                }else{
-                  this.NAME_BOX_EDIT.setText(
-                    this.NAME_BOX_EDIT.text.text + String.fromCharCode(e.which)
-                  );
-                }
-              }
-            break;
-          }
-
-        }
+        this.NAME_BOX_EDIT.setEditable(true);
 
         this.BTN_BACK.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -65,10 +31,12 @@ class CharGenName extends GameMenu {
 
         this.END_BTN.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.player.firstName = this.NAME_BOX_EDIT.text.text;
+          Game.player.firstName = this.NAME_BOX_EDIT.getValue();
           Game.CharGenQuickPanel.step2 = true;
           this.Close();
         });
+
+        Game.CharGenName.BTN_RANDOM.hide();
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

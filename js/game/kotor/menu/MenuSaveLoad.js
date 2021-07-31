@@ -14,6 +14,7 @@ class MenuSaveLoad extends GameMenu {
 
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.mode = MenuSaveLoad.MODE.LOADGAME;
 
     this.LoadMenu({
       name: 'saveload',
@@ -32,20 +33,30 @@ class MenuSaveLoad extends GameMenu {
         this.BTN_SAVELOAD.setText('Load');
         this.BTN_SAVELOAD.addEventListener('click', (e) => {
           e.stopPropagation();
-          if(this.selected instanceof SaveGame){
-            this.Close();
-            this.selected.Load()
+          if(this.mode == MenuSaveLoad.MODE.LOADGAME){
+            if(this.selected instanceof SaveGame){
+              this.Close();
+
+              if(Game.module instanceof Module){
+                Game.module.dispose();
+              }
+
+              this.selected.Load();
+            }
+          }else{
+            if(this.selected instanceof NewSaveItem){
+              Game.MenuSaveName.Show();
+              Game.MenuSaveName.onSave = ( name = '' ) => {
+                console.log('SavGame', name);
+              };
+            }else{
+
+            }
           }
         });
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
-          /*this.Hide();
-          if(Game.Mode == Game.MODES.MAINMENU){
-            Game.MainMenu.Show();
-          }else{
-            Game.MenuOptions.Show();
-          }*/
           this.Close();
         });
 
@@ -68,68 +79,101 @@ class MenuSaveLoad extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
-    /*Game.MainMenu.Hide();
-    Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Hide();*/
 
     this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
     this.LB_GAMES.clearItems();
-    let saves = SaveGame.saves;
+    let saves = []
+
+    if(this.mode == MenuSaveLoad.MODE.SAVEGAME){
+      saves = SaveGame.saves.filter( (save) => {
+        return !save.getIsQuickSave() && !save.getIsAutoSave();
+      });
+      this.BTN_SAVELOAD.setText(Global.kotorTLK.TLKStrings[1587].Value);
+      saves.unshift(new NewSaveItem());
+    }else{
+      saves = SaveGame.saves;
+      this.BTN_SAVELOAD.setText(Global.kotorTLK.TLKStrings[1589].Value);
+    }
+
     for(let i = 0; i < saves.length; i++){
       let save = saves[i];
-      if(!i){
-        this.selected = save;
-        this.UpdateSelected();
-      }
       this.LB_GAMES.addItem(save, null);
     }
+
+    this.selected = saves[0];
+    this.UpdateSelected();
 
     TextureLoader.LoadQueue();
 
   }
 
   UpdateSelected(){
+    this.LBL_SCREENSHOT.setFillTexture(undefined);
+    this.LBL_PM1.setFillTexture(undefined);
+    this.LBL_PM2.setFillTexture(undefined);
+    this.LBL_PM3.setFillTexture(undefined);
+    this.LBL_PLANETNAME.setText('');
+    this.LBL_AREANAME.setText('');
+    
     if(this.selected instanceof SaveGame){
       this.selected.GetThumbnail( (texture) => {
         this.LBL_SCREENSHOT.setFillTexture(texture);
         this.LBL_SCREENSHOT.getFill().material.transparent = false;
       })
-    }
+    
 
-    this.selected.GetPortrait(0, (texture) => {
-      this.LBL_PM1.setFillTexture(texture);
-      this.LBL_PM1.getFill().material.transparent = false;
-    });
+      this.selected.GetPortrait(0, (texture) => {
+        this.LBL_PM1.setFillTexture(texture);
+        this.LBL_PM1.getFill().material.transparent = false;
+      });
 
-    this.selected.GetPortrait(1, (texture) => {
-      this.LBL_PM2.setFillTexture(texture);
-      this.LBL_PM2.getFill().material.transparent = false;
-    });
+      this.selected.GetPortrait(1, (texture) => {
+        this.LBL_PM2.setFillTexture(texture);
+        this.LBL_PM2.getFill().material.transparent = false;
+      });
 
-    this.selected.GetPortrait(2, (texture) => {
-      this.LBL_PM3.setFillTexture(texture);
-      this.LBL_PM3.getFill().material.transparent = false;
-    });
+      this.selected.GetPortrait(2, (texture) => {
+        this.LBL_PM3.setFillTexture(texture);
+        this.LBL_PM3.getFill().material.transparent = false;
+      });
 
-    let areaNames = this.selected.getAreaName().split(' - ');
-    if(areaNames.length == 2){
-      this.LBL_PLANETNAME.setText(areaNames[0]);
-      this.LBL_AREANAME.setText(areaNames[1]);
+      let areaNames = this.selected.getAreaName().split(' - ');
+      if(areaNames.length == 2){
+        this.LBL_PLANETNAME.setText(areaNames[0]);
+        this.LBL_AREANAME.setText(areaNames[1]);
+      }else{
+        this.LBL_PLANETNAME.setText('');
+        this.LBL_AREANAME.setText(areaNames[0]);
+      }
+
+      this.BTN_SAVELOAD.show();
+      this.BTN_DELETE.show();
+    }else if(this.selected instanceof NewSaveItem){
+
+      this.BTN_SAVELOAD.show();
+      this.BTN_DELETE.hide();
     }else{
-      this.LBL_PLANETNAME.setText('');
-      this.LBL_AREANAME.setText(areaNames[0]);
+      this.BTN_SAVELOAD.hide();
+      this.BTN_DELETE.hide();
     }
 
   }
 
+}
+
+MenuSaveLoad.MODE = {
+  LOADGAME: 0,
+  SAVEGAME: 1
+};
+
+class NewSaveItem {
+  constructor(){
+
+  }
+
+  getFullName(){
+    return Global.kotorTLK.TLKStrings[1586].Value;
+  }
 }
 
 class GUISaveGameItem extends GUIProtoItem {

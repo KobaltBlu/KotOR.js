@@ -49,6 +49,9 @@ class CharGenQuickPanel extends GameMenu {
           e.stopPropagation();
           Game.player.equipment.ARMOR = undefined;
           Game.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
+          PartyManager.Player = Game.player.template;
+          PartyManager.AddPortraitToOrder(Game.player.getPortraitResRef());
+          CurrentGame.InitGameInProgressFolder();
           Game.LoadModule('end_m01aa');
         });
 

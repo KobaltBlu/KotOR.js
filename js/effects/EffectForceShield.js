@@ -24,7 +24,7 @@ class EffectForceShield extends GameEffect {
     let eVisualEffect = new EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
-    eVisualEffect.setSubType(this.getSubType());
+    eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
     eVisualEffect.setDuration(this.duration);
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
@@ -36,7 +36,7 @@ class EffectForceShield extends GameEffect {
     let eDamageResistEffect = new EffectDamageResistance(this.forceShield.damageflags, this.forceShield.resistance, this.forceShield.amount, this.forceShield.vulnerflags);
     eDamageResistEffect.setCreator(this.getCreator());
     eDamageResistEffect.setSpellId(this.getSpellId());
-    eDamageResistEffect.setSubType(this.getSubType());
+    eDamageResistEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
     eDamageResistEffect.setDuration(this.duration);
     eDamageResistEffect.setExpireDay(this.expireDay);
     eDamageResistEffect.setExpireTime(this.expireTime);

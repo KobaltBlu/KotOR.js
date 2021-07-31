@@ -288,7 +288,7 @@ class MenuDialog extends GameMenu {
 
     entry.checkList = {
       isSkipped: false,
-      cameraAnimationComplete: true,
+      cameraAnimationComplete: Game.InGameDialog.dialog.isAnimatedCutscene ? false : true,
       voiceOverComplete: false,
       alreadyAllowed: false,
       isComplete: function(){
@@ -297,7 +297,7 @@ class MenuDialog extends GameMenu {
           return false;
         }
 
-        if(Game.InGameDialog.isAnimatedCutscene){
+        if(Game.InGameDialog.dialog.isAnimatedCutscene){
           if(this.cameraAnimationComplete){
             this.alreadyAllowed = true;
             if(Game.InGameDialog.paused){
@@ -1015,7 +1015,7 @@ class MenuDialog extends GameMenu {
         );
         //Game.dialog.camera_animated.rotation.y -= Math.PI/2
         //Game.dialog.camera_animated.rotation.z= Math.PI
-        Game.dialog.camera_animated.updateProjectionMatrix();
+        Game.camera_animated.updateProjectionMatrix();
         Game.currentCamera = Game.camera_animated;
       }
 

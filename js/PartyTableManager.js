@@ -17,6 +17,12 @@ class PartyTableManager {
         Planetary.SetCurrentPlanet(currentPlanet);
       }
 
+      //Init the TutorialWindowTracker
+      let bitCount = Math.ceil(Global.kotor2DA.tutorial.RowCount / 8) * 8;
+      for(let i = 0; i < bitCount; i++){
+        Game.TutorialWindowTracker[i] = 0;
+      }
+
       if(gff.RootNode.HasField('PT_TUT_WND_SHOWN')){
         let tutWindBytes = gff.RootNode.GetFieldByLabel('PT_TUT_WND_SHOWN').GetVoid();
         let maxBits = tutWindBytes.length * 8;
@@ -53,12 +59,14 @@ class PartyTableManager {
         }
         console.log('PartyTableManager', 'Loading Party Templates')
         let ptLoader = new AsyncLoop({
-          array: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+          array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
           onLoop: (id, asyncLoop) => {
-            Game.SaveGame.SAVEGAME.getRawResource('availnpc'+id, ResourceTypes.utc, (pm) => {
+            fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc'), (error, pm) => {
               PartyManager.NPCS[id].template = null;
-              if(pm.length){
-                PartyManager.NPCS[id].template = new GFFObject(pm);
+              if(!error){
+                if(pm.length){
+                  PartyManager.NPCS[id].template = new GFFObject(pm);
+                }
               }
               asyncLoop.next();
             });
@@ -77,37 +85,100 @@ class PartyTableManager {
 
   }
 
-  export(directory = '', onSave = undefined){
-    //Export PARTYTABLE.res
-    let partytable = new GFFObject();
-    partytable.RootNode.AddField(new Field(GFFDataTypes.STRUCT, 'GlxyMap'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'JNL_Entries'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'JNL_SortOrder'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_AISTATE'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_AVAIL_NPCS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_CHEAT_USED'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_CONTROLLED_NP'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_COST_MULT_LIS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_DLG_MSG_LIST'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_FB_MSG_LIST'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_FOLLOWSTATE'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'PT_GOLD'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_LAST_GUI_PNL'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_MEMBERS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'PT_NUM_MEMBERS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_PAZAAKCARDS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_PAZSIDELIST'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'PT_PLAYEDSECONDS'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'PT_SOLOMODE'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.BINARY, 'PT_TUT_WND_SHOWN'));
-    partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_XP_POOL'));
+  static export(directory = '', onSave = undefined){
+    return new Promise( (resolve, reject) => {
+      //Export PARTYTABLE.res
+      let partytable = new GFFObject();
+      partytable.FileType = 'PT  ';
+      partytable.RootNode.AddField(new Field(GFFDataTypes.STRUCT, 'GlxyMap')).AddChildStruct( Planetary.SaveStruct() );
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'JNL_Entries'));
 
-    partytable.FileType = 'PT  ';
-    partytable.Export(path.join(directory, 'PARTYTABLE.res'), () => {
+      //TODO: Journal Entries
 
-      if(typeof onSave == 'function')
-        onSave();
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'JNL_SortOrder')).SetValue(0);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_AISTATE')).SetValue(0);
+      let availNPCSList = partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_AVAIL_NPCS'));
 
+      //TODO: Party Available NPCS
+      let maxPartyMembers = (app_profile.key == 'kotor') ? 9 : 12;
+      for(let i = 0; i < maxPartyMembers; i++){
+        let pm = PartyManager.NPCS[i];
+        let availStruct = new Struct();
+        availStruct.AddField( new Field(GFFDataTypes.BYTE, 'PT_NPC_AVAIL') ).SetValue(pm.available ? 1 : 0);
+        availStruct.AddField( new Field(GFFDataTypes.BYTE, 'PT_NPC_SELECT') ).SetValue(pm.canSelect ? 1 : 0);
+        availNPCSList.AddChildStruct(availStruct);
+      }
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_CHEAT_USED')).SetValue(0);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_CONTROLLED_NP')).SetValue( Game.getCurrentPlayer() == Game.player ? -1 : PartyManager.party.indexOf(Game.getCurrentPlayer()) );
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_COST_MULT_LIS'));
+
+      //TODO: COST MULT LIST
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_DLG_MSG_LIST'));
+
+      //TODO: Dialog Messages LIST
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_FB_MSG_LIST'));
+
+      //TODO: Feedback Messages LIST
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_FOLLOWSTATE')).SetValue(0);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'PT_GOLD')).SetValue(PartyManager.Gold);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_LAST_GUI_PNL')).SetValue(0);
+      let ptMembersList = partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_MEMBERS'));
+
+      let numMembers = 0;
+      for(let i = 0; i < PartyManager.party.length; i++){
+        let member = PartyManager.party[i];
+        if(member != Game.player){
+          let memberStruct = new Struct();
+          memberStruct.AddField( new Field(GFFDataTypes.BYTE, 'PT_IS_LEADER') ).SetValue( Game.getCurrentPlayer() == member ? 1 : 0 );
+          memberStruct.AddField( new Field(GFFDataTypes.INT, 'PT_MEMBER_ID') ).SetValue( member.partyID );
+          ptMembersList.AddChildStruct( memberStruct );
+          numMembers++;
+        }
+      }
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'PT_NUM_MEMBERS')).SetValue(numMembers);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_PAZAAKCARDS'));
+
+      //TODO: Pazaak Cards LIST
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.LIST, 'PT_PAZSIDELIST'));
+
+      //TODO: Pazaak Side LIST
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.DWORD, 'PT_PLAYEDSECONDS')).SetValue(0);
+      partytable.RootNode.AddField(new Field(GFFDataTypes.BYTE, 'PT_SOLOMODE')).SetValue(0);
+
+      let byteCount = Math.ceil(Global.kotor2DA.tutorial.RowCount / 8);
+      let buffer = Buffer.alloc(byteCount);
+      for(let i = 0; i < byteCount; i++){
+        let byte = 0;
+        for(let j = 0; j < 8; j++){
+          let offset = (8 * i) + j;
+          let bit = Game.TutorialWindowTracker.length[offset];
+          if(bit){
+            byte |= 1 << j;
+          }
+        }
+        buffer.writeUInt8(byte, i);
+      }
+      partytable.RootNode.AddField(new Field(GFFDataTypes.VOID, 'PT_TUT_WND_SHOWN')).SetData(buffer);
+
+      partytable.RootNode.AddField(new Field(GFFDataTypes.INT, 'PT_XP_POOL'));
+
+      partytable.FileType = 'PT  ';
+      partytable.Export(path.join(directory, 'PARTYTABLE.res'), () => {
+
+        if(typeof onSave == 'function')
+          onSave();
+
+        resolve();
+      }, () => {
+        reject();
+      });
     });
   }
 

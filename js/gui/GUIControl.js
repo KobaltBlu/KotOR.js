@@ -510,6 +510,7 @@ class GUIControl {
     //--------//
 
     if(this.border.edge != ''){
+      this.border.edge_material.visible = false;
       TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.border.edge, texture);
@@ -519,13 +520,21 @@ class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.NearestFilter;
         texture.magFilter = THREE.NearestFilter;
+        if(!this.border.edge_material.transparent){
+          this.border.mesh.renderOrder = 0;
+        }
         texture.needsUpdate = true;
+        this.border.edge_material.visible = true;
+        if(typeof this.borderEnabled == 'undefined')
+          this.borderEnabled = true;
       });
     }else{
       this.border.edge_material.visible = false;
+      this.borderEnabled = false;
     }
 
     if(this.border.corner != ''){
+      this.border.corner_material.visible = false;
       TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.border.corner, texture);
@@ -535,14 +544,22 @@ class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.NearestFilter;
         texture.magFilter = THREE.NearestFilter;
+        if(!this.border.corner_material.transparent){
+          this.border.mesh.renderOrder = 0;
+        }
         texture.needsUpdate = true;
+        this.border.corner_material.visible = true;
+        if(typeof this.borderEnabled == 'undefined')
+          this.borderEnabled = true;
       });
     }else{
       this.border.corner_material.visible = false;
+      this.borderEnabled = false;
     }
 
     if(this.border.fill.texture != ''){
       this.border.fill.material.transparent = true;
+      this.border.fill.material.visible = false;
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!(texture instanceof THREE.Texture)){
           this.border.fill.material.visible = false;
@@ -550,11 +567,18 @@ class GUIControl {
           texture.anisotropy = 1;
           texture.minFilter = THREE.NearestFilter;
           texture.magFilter = THREE.NearestFilter;
+          if(!this.border.fill.material.transparent){
+            this.border.fill.mesh.renderOrder = 0;
+          }
           texture.needsUpdate = true;
+          this.border.fill.material.visible = true;
+          if(typeof this.borderFillEnabled == 'undefined')
+            this.borderFillEnabled = true;
         }
       });
     }else{
       this.border.fill.material.visible = false;
+      this.borderFillEnabled = false;
     }
 
     //-----------//
@@ -562,6 +586,7 @@ class GUIControl {
     //-----------//
 
     if(this.highlight.edge != ''){
+      this.highlight.edge_material.visible = false;
       TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.highlight.edge, texture);
@@ -571,13 +596,21 @@ class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.NearestFilter;
         texture.magFilter = THREE.NearestFilter;
+        if(!this.highlight.edge_material.transparent){
+          this.highlight.mesh.renderOrder = 0;
+        }
         texture.needsUpdate = true;
+        this.highlight.edge_material.visible = true;
+        if(typeof this.highlightEnabled == 'undefined')
+          this.highlightEnabled = true;
       });
     }else{
       this.highlight.edge_material.visible = false;
+      this.highlightEnabled = false;
     }
 
     if(this.highlight.corner != ''){
+      this.highlight.corner_material.visible = false;
       TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.highlight.corner, texture);
@@ -587,14 +620,22 @@ class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.NearestFilter;
         texture.magFilter = THREE.NearestFilter;
+        if(!this.highlight.corner_material.transparent){
+          this.highlight.mesh.renderOrder = 0;
+        }
         texture.needsUpdate = true;
+        this.highlight.corner_material.visible = true;
+        if(typeof this.highlightEnabled == 'undefined')
+          this.highlightEnabled = true;
       });
     }else{
       this.highlight.corner_material.visible = false;
+      this.highlightEnabled = false;
     }
 
     if(this.highlight.fill.texture != ''){
       this.highlight.fill.material.transparent = true;
+      this.highlight.fill.material.visible = false;
       TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!(texture instanceof THREE.Texture)){
           this.highlight.fill.material.visible = false;
@@ -602,11 +643,17 @@ class GUIControl {
           texture.anisotropy = 1;
           texture.minFilter = THREE.NearestFilter;
           texture.magFilter = THREE.NearestFilter;
+          if(!this.highlight.fill.material.transparent){
+            this.highlight.fill.mesh.renderOrder = 0;
+          }
           texture.needsUpdate = true;
+          this.highlight.fill.material.visible = true;
+          this.highlightFillEnabled = true;
         }
       });
     }else{
       this.highlight.fill.material.visible = false;
+      this.highlightFillEnabled = false;
     }
 
     //------//
@@ -614,6 +661,7 @@ class GUIControl {
     //------//
 
     if(this.text.font != ''){
+      this.text.material.visible = false;
       TextureLoader.enQueue(this.text.font, this.text.material, TextureLoader.Type.TEXTURE, (texture) => {
         if(!texture)
           console.log('initTextures', this.text.font, texture);
@@ -621,12 +669,15 @@ class GUIControl {
         if(texture){
           this.text.texture = texture;
           this.text.material.uniforms.map.value = texture;
+          this.text.material.alphaTest = 0;
+          this.text.material.transparent = true;
           this.text.material.needsUpdate = true;
           texture.anisotropy = 1;
           texture.minFilter = THREE.NearestFilter;
           texture.magFilter = THREE.NearestFilter;
           texture.needsUpdate = true;
           this.onFontTextureLoaded();
+          this.text.material.visible = true;
         }
       });
     }else{
@@ -655,6 +706,7 @@ class GUIControl {
     if(this.border.edge != '')
       this.showBorder();
 
+    this.processEventListener('mouseOut');
   }
 
   onHoverIn(){
@@ -676,6 +728,9 @@ class GUIControl {
     if(this.isClickable()){
       Game.guiAudioEmitter.PlaySound('gui_scroll');
     }
+
+    this.processEventListener('hover');
+    this.processEventListener('mouseIn');
     
   }
 
@@ -751,6 +806,9 @@ class GUIControl {
           let gui = null;
 
           switch(type){
+            case 4:
+              gui = new GUILabel(this.menu, children[i], this, this.scale);
+            break;
             case 6:
               gui = new GUIButton(this.menu, children[i], this, this.scale);
             break;
@@ -832,6 +890,24 @@ class GUIControl {
         this.border.fill.material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
     }else{
       this.resetPulse();
+    }
+
+    if(this.border.edge_material && this.border.corner_material){
+      this.border.edge_material.visible = this.borderEnabled ? true : false;
+      this.border.corner_material.visible = this.borderEnabled ? true : false;
+    }
+
+    if(this.highlight.edge_material && this.highlight.corner_material){
+      this.highlight.edge_material.visible = this.highlightEnabled ? true : false;
+      this.highlight.corner_material.visible = this.highlightEnabled ? true : false;
+    }
+    
+    if(this.border.fill.material){
+      this.border.fill.material.visible = this.borderFillEnabled;
+    }
+    
+    if(this.highlight.fill.material){
+      this.highlight.fill.material.visible = this.highlightFillEnabled;
     }
 
     let len = this.children.length;
@@ -974,6 +1050,7 @@ class GUIControl {
     this.border.fill.material.needsUpdate = true;
     this.border.fill.material.uniformsNeedUpdate = true;
     this.border.fill.material.visible = (map instanceof THREE.Texture);
+    this.borderFillEnabled = true;
   }
 
   getFillTextureName(){
@@ -982,6 +1059,7 @@ class GUIControl {
 
   setFillTextureName(name = ''){
     this.border.fill.texture = name;
+    this.borderFillEnabled = true;
   }
 
   setMaterialTexture(material = undefined, texture = undefined){
@@ -1008,6 +1086,15 @@ class GUIControl {
     material.needsUpdate = true;
     material.uniformsNeedUpdate = true;
     material.visible = (texture instanceof THREE.Texture);
+
+    if(material == this.border.fill.material){
+      this.borderFillEnabled = true;
+    }
+
+    if(material == this.highlight.fill.material){
+      this.highlightFillEnabled = true;
+    }
+
   }
 
   flipY(flip = true){
@@ -1140,7 +1227,7 @@ class GUIControl {
     let controls = [];
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
-      if(control.box && control.box.containsPoint(Game.mouseUI) && control.allowClick){
+      if(control.box && control.box.containsPoint(Game.mouseUI) && (control.allowClick || control.isEditable)){
         controls.push(control);
       }else{
         this.menu.SetWidgetHoverActive(control, false);
@@ -1153,16 +1240,7 @@ class GUIControl {
 
   updateBounds(){
     let worldPosition = this.widget.getWorldPosition(new THREE.Vector3());
-
-    this.box.min.x = (worldPosition.x) - ( (this.extent.width/2));
-    this.box.min.y = (worldPosition.y) - ( (this.extent.height/2));
-    this.box.max.x = (worldPosition.x) + ( (this.extent.width/2));
-    this.box.max.y = (worldPosition.y) + ( (this.extent.height/2));
-    
-    if(this.menu.scale != 1.0){
-      this.box.expandByScalar(this.menu.scale/2);
-    }
-
+    this.box.setFromCenterAndSize(worldPosition, new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale))
   }
 
   updateScale(){
@@ -1175,6 +1253,7 @@ class GUIControl {
 
   recalculate(){
     this.calculatePosition();
+    this.updateBounds();
     for(let i = 0; i < this.children.length; i++){
       this.children[i].recalculate();
     }
@@ -1664,7 +1743,7 @@ class GUIControl {
       count: textCharCount
     });
 
-    let maxLineWidth = this.getInnerSize().width;
+    let maxLineWidth = this.getInnerSize().width + 10;
 
     let paragraphs = text.split('\n');
     let pCount = paragraphs.length;
@@ -1673,6 +1752,7 @@ class GUIControl {
     let words = [];
     let word, wordLength, wordWidth, char, ul, lr, w, h;
     let u0, v1, u1, v0;
+    
     for(let p = 0; p < pCount; p++){
       let paragraph = paragraphs[p];
       x = 0;
@@ -1697,7 +1777,7 @@ class GUIControl {
         }
 
         //Wrap to new line if needed
-        if( x + wordWidth > ( maxLineWidth - txi_height ) ){
+        if(j >= 1 && x + wordWidth > ( maxLineWidth - txi_height ) ){
           y -= txi_bsline;
           x = 0;
         }
@@ -1777,30 +1857,65 @@ class GUIControl {
     this.text.geometry.boundingBox.getSize(size);
     this.widget.text.position.z = this.zOffset;
 
-    if(!this.text.alignment)
-      return;
+    let horizontal = this.text.alignment & GUIControl.ALIGNMENT.HorizontalMask;
+    let vertical   = this.text.alignment & GUIControl.ALIGNMENT.VerticalMask;
 
-    switch(this.text.alignment){
-      case 9:
-        this.widget.text.position.x = - (this.extent.width/2 - size.x/2) - size.x/2;
-        this.widget.text.position.y = size.y/2;	     		
+    switch(horizontal){
+      case GUIControl.ALIGNMENT.HorizontalLeft:
+        this.widget.text.position.x = -(this.extent.width/2 - size.x/2) - size.x/2;
       break;
-      //case 18:
-      default:
+      case GUIControl.ALIGNMENT.HorizontalCenter:
         this.widget.text.position.x = -size.x/2;
-        this.widget.text.position.y = size.y/2;
+      break;
+      case GUIControl.ALIGNMENT.HorizontalRight:
+        this.widget.text.position.x = (this.extent.width/2 - size.x/2) - size.x/2;
       break;
     }
+
+    switch(vertical){
+      case GUIControl.ALIGNMENT.VerticalTop:
+        this.widget.text.position.y = (this.extent.height/2 - size.y/2) + size.y/2;
+      break;
+      case GUIControl.ALIGNMENT.VerticalCenter:
+        this.widget.text.position.y = size.y/2;
+      break;
+      case GUIControl.ALIGNMENT.VerticalBottom:
+        this.widget.text.position.y = -(this.extent.height/2 - size.y/2) + size.y/2;
+      break;
+    }
+    
   }
 
   disableBorder(){
-    this.border.corner_material.visible = false;
-    this.border.edge_material.visible = false;
+    this.borderEnabled = false;
+  }
+
+  disableBorderFill(){
+    this.borderFillEnabled = false;
   }
 
   disableHighlight(){
-    this.highlight.corner_material.visible = false;
-    this.highlight.edge_material.visible = false;
+    this.highlightEnabled = false;
+  }
+
+  disableHighlightFill(){
+    this.highlightFillEnabled = false;
+  }
+
+  enableBorder(){
+    this.borderEnabled = true;
+  }
+
+  enableBorderFill(){
+    this.borderFillEnabled = true;
+  }
+
+  enableHighlight(){
+    this.highlightEnabled = true;
+  }
+
+  enableHighlightFill(){
+    this.highlightFillEnabled = true;
   }
 
   disableTextAlignment(){
@@ -1820,13 +1935,17 @@ class GUIControl {
     if(typeof this.text.geometry !== 'object')
       this.buildText();
     
-    this.text.mesh.renderOrder = renderOrder;
+    this.text.mesh.renderOrder = undefined;//renderOrder;
 
     if(oldText != this.text.text && typeof this.text.geometry === 'object'){
       //console.log('updateText', this.text.text);
       this.updateTextGeometry(this.text.text);
     }
 
+  }
+
+  getText(){
+    return this.text.text;
   }
 
   _onCreate(){
@@ -2022,6 +2141,7 @@ class GUIControl {
         this.eventListeners[name].push(callback);
       }
     }
+    return this;
   }
 
   //Remove an event listener
@@ -2039,6 +2159,7 @@ class GUIControl {
         this.eventListeners[name] = [];
       }
     }
+    return this;
 
   }
 
@@ -2101,6 +2222,20 @@ class GUIControl {
 
 
 }
+
+GUIControl.ALIGNMENT = {
+  //Horizontal
+  HorizontalLeft:   0x01,
+  HorizontalCenter: 0x02,
+  HorizontalRight:  0x04,
+  HorizontalMask:   0x07,
+
+  //Vertical
+  VerticalTop:      0x08,
+  VerticalCenter:   0x10,
+  VerticalBottom:   0x20,
+  VerticalMask:     0x38
+};
 
 GUIControl.Type = {
   Invalid: -1,

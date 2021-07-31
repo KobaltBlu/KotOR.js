@@ -263,4 +263,23 @@ class RIMObject {
 
 }
 
+class Resource {
+  constructor( args = {} ){
+    args = Object.assign({
+      resref: '',
+      restype: -1,
+      offset: 0,
+      length: 0,
+      id: -1,
+    }, args);
+
+    this.resref = args.resref;
+    this.restype = args.restype;
+    this.offset = args.offset;
+    this.length = args.length;
+    this.id = args.id;
+
+  }
+}
+
 module.exports = RIMObject;

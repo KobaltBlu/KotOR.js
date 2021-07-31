@@ -75,6 +75,27 @@ class TLKObject {
     TLKStrings.push(tlkString);
   }
 
+  Search( term = '' ){
+    return this.TLKStrings.filter( (tlk) => {
+      if(tlk.Value.indexOf(term) >= 0){
+        return true;
+      }
+    }).map( tlk => { return {tlk: tlk, value: tlk.Value, index: this.TLKStrings.indexOf(tlk)} });
+  }
+
 }
+
+TLKObject.LANGUAGE = {
+  English: 0,
+  French: 1,
+  German: 2,
+  Italian: 3,
+  Spanish: 4,
+  Polish: 5,
+  Korean: 128,
+  ChineseTraditional: 129,
+  ChineseSimplified: 130,
+  Japanese: 131,
+};
 
 module.exports = TLKObject;

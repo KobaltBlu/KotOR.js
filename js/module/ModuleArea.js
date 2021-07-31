@@ -480,6 +480,7 @@ class ModuleArea extends ModuleObject {
         this.obstacles.push(_obstacle);
       }
 
+      //Room Linking Pass 1
       for(let ri = 0; ri != this.rooms.length; ri++ ){
         let room = this.rooms[ri];
         let linked_rooms = [];
@@ -647,32 +648,36 @@ class ModuleArea extends ModuleObject {
   getSpawnLocation(){
 
     if(Game.isLoadingSave){
-      return {
-        XPosition: PartyManager.Player.RootNode.GetFieldByLabel('XPosition').GetValue(),
-        YPosition: PartyManager.Player.RootNode.GetFieldByLabel('YPosition').GetValue(),
-        ZPosition: PartyManager.Player.RootNode.GetFieldByLabel('ZPosition').GetValue(),
-        XOrientation: PartyManager.Player.RootNode.GetFieldByLabel('XOrientation').GetValue(),
-        YOrientation: PartyManager.Player.RootNode.GetFieldByLabel('YOrientation').GetValue()
-      };
+      return new Game.Location(
+        PartyManager.Player.RootNode.GetFieldByLabel('XPosition').GetValue(),
+        PartyManager.Player.RootNode.GetFieldByLabel('YPosition').GetValue(),
+        PartyManager.Player.RootNode.GetFieldByLabel('ZPosition').GetValue(),
+        PartyManager.Player.RootNode.GetFieldByLabel('XOrientation').GetValue(),
+        PartyManager.Player.RootNode.GetFieldByLabel('YOrientation').GetValue(),
+        0
+      );
     }else if(this.transWP){
       console.log('TransWP', this.transWP);
-      return {
-        XPosition: this.transWP.RootNode.GetFieldByLabel('XPosition').GetValue(),
-        YPosition: this.transWP.RootNode.GetFieldByLabel('YPosition').GetValue(),
-        ZPosition: this.transWP.RootNode.GetFieldByLabel('ZPosition').GetValue(),
-        XOrientation: this.transWP.RootNode.GetFieldByLabel('XOrientation').GetValue(),
-        YOrientation: this.transWP.RootNode.GetFieldByLabel('YOrientation').GetValue()
-      }
+      return new Game.Location(
+        this.transWP.RootNode.GetFieldByLabel('XPosition').GetValue(),
+        this.transWP.RootNode.GetFieldByLabel('YPosition').GetValue(),
+        this.transWP.RootNode.GetFieldByLabel('ZPosition').GetValue(),
+        this.transWP.RootNode.GetFieldByLabel('XOrientation').GetValue(),
+        this.transWP.RootNode.GetFieldByLabel('YOrientation').GetValue(),
+        0
+      );
     }else{
       console.log('No TransWP');
-      return {
-        XPosition: Game.module['Mod_Entry_X'],
-        YPosition: Game.module['Mod_Entry_Y'],
-        ZPosition: Game.module['Mod_Entry_Z'],
-        XOrientation: Game.module['Mod_Entry_Dir_X'],
-        YOrientation: Game.module['Mod_Entry_Dir_Y']
-      }
+      return new Game.Location(
+        Game.module['Mod_Entry_X'],
+        Game.module['Mod_Entry_Y'],
+        Game.module['Mod_Entry_Z'],
+        Game.module['Mod_Entry_Dir_X'],
+        Game.module['Mod_Entry_Dir_Y'],
+        0
+      );
     }
+
   }
 
   getPlayerTemplate(){
@@ -719,22 +724,22 @@ class ModuleArea extends ModuleObject {
       pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpellAt') ).SetValue('k_def_spellat01');
       pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptUserDefine') ).SetValue('k_def_userdef01');
   
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'GoodEvil') ).SetValue(50);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GoodEvil') ).SetValue(50);
   
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'NaturalAC') ).SetValue(0);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NaturalAC') ).SetValue(0);
   
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Con') ).SetValue(10);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Dex') ).SetValue(14);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Str') ).SetValue(10);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Wis') ).SetValue(10);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Cha') ).SetValue(10);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Int') ).SetValue(10);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Con') ).SetValue(10);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Dex') ).SetValue(14);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Str') ).SetValue(10);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Wis') ).SetValue(10);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Cha') ).SetValue(10);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Int') ).SetValue(10);
   
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'fortbonus') ).SetValue(0);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'refbonus') ).SetValue(0);
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'willbonus') ).SetValue(0);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'fortbonus') ).SetValue(0);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'refbonus') ).SetValue(0);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'willbonus') ).SetValue(0);
   
-      pTPL.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'PerceptionRange') ).SetValue(12);
+      pTPL.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PerceptionRange') ).SetValue(12);
 
       let classList = pTPL.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ClassList') );
       for(let i = 0; i < 1; i++){
@@ -841,12 +846,14 @@ class ModuleArea extends ModuleObject {
 
     return new Promise( (resolve, reject) => {
 
-      console.log('Loading Player')
+      console.log('Loading Player', Game.player)
 
       if(Game.player instanceof ModuleObject){
         Game.player.partyID = -1;
-        if(!this.MiniGame)
-          PartyManager.party.push(Game.player);
+
+        if(!this.MiniGame){
+          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(Game.player) ] = Game.player;
+        }
 
         //Reset the players actions between modules
         Game.player.clearAllActions();
@@ -857,28 +864,20 @@ class ModuleArea extends ModuleObject {
         Game.player.Load( ( object ) => {
 
           if(typeof object == 'undefined'){
-            asyncLoop.next();
+            resolve();
             return;
           }
-
-          // if(GameKey == 'TSL'){
-          //   Game.player.appearance = 134;
-          //   Game.player.gender = 1;
-          //   Game.player.portrait = 10;
-          // }
+          
           Game.player.LoadScripts( () => {
             Game.player.LoadModel( (model) => {
               Game.player.model = model;
-              let spawnLoc = this.getSpawnLocation();
-              Game.player.position.x = spawnLoc.XPosition;
-              Game.player.position.y = spawnLoc.YPosition;
-              Game.player.position.z = spawnLoc.ZPosition;
-              Game.player.setFacing(-Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation), true);
+              //let spawnLoc = this.getSpawnLocation();
+              let spawnLoc = PartyManager.GetSpawnLocation(Game.player);
+              Game.player.position.x = spawnLoc.position.x;
+              Game.player.position.y = spawnLoc.position.y;
+              Game.player.position.z = spawnLoc.position.z;
+              Game.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-              //Game.player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-              //Game.player.setFacing(Game.player.rotation.z);
-
-              //Game.player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
               Game.player.computeBoundingBox();
               Game.player.model.hasCollision = true;
 
@@ -892,34 +891,30 @@ class ModuleArea extends ModuleObject {
           });
         });
       }else{
-        let player = new ModulePlayer(this.getPlayerTemplate());
+        let player = new ModulePlayer( this.getPlayerTemplate() );
         player.partyID = -1;
         player.id = ModuleObject.GetNextPlayerId();
-        if(!this.MiniGame)
-          PartyManager.party.push(player);
-
         
         player.Load( ( object ) => {
           
           if(typeof object == 'undefined'){
-            asyncLoop.next();
+            resolve();
             return;
           }
+        
+          if(!this.MiniGame){
+            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+          }
 
-          // if(GameKey == 'TSL'){
-          //   player.appearance = 134;
-          //   player.gender = 1;
-          //   player.portrait = 10;
-          // }
           player.LoadScripts( () => {
             player.LoadModel( (model) => {
     
               let spawnLoc = this.getSpawnLocation();
     
-              player.position.x = spawnLoc.XPosition;
-              player.position.y = spawnLoc.YPosition;
-              player.position.z = spawnLoc.ZPosition;
-              player.setFacing(-Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation), true);
+              player.position.x = spawnLoc.position.x;
+              player.position.y = spawnLoc.position.y;
+              player.position.z = spawnLoc.position.z;
+              player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
               //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
               player.computeBoundingBox();
               model.moduleObject = player;
@@ -951,14 +946,10 @@ class ModuleArea extends ModuleObject {
           array: this.tracks,
           onLoop: (track, asyncLoop) => {
             console.log('Loading MG Track', track);
-            track.Load( ( object ) => {
-          
-              if(typeof object == 'undefined'){
-                asyncLoop.next();
-                return;
-              }
+            track.Load( () => {
     
               track.LoadModel( (model) => {
+                track.model = model;
                 console.log(model);
                 model.moduleObject = track;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
@@ -976,8 +967,9 @@ class ModuleArea extends ModuleObject {
         loop.iterate(() => {
           resolve();
         });
-      }else
+      }else{
         resolve();
+      }
 
     });
 
@@ -1080,6 +1072,32 @@ class ModuleArea extends ModuleObject {
         for(let j = 0; j < this.rooms.length; j++){
           this.rooms[j].link_rooms(this.rooms);
         }
+
+        //Room Linking Pass 2
+        for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
+          let room1 = this.rooms[i];
+          //console.log(room1.linked_rooms);
+          //Look for all rooms that can see this room
+          for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
+            let room2 = this.rooms[j];
+            //console.log(room2.linked_rooms);
+            if(room2 instanceof ModuleRoom){
+              let room2_links_to_room1 = room2.linked_rooms.indexOf(room1) >= 0;
+              let room1_links_to_room2 = room1.linked_rooms.indexOf(room2) >= 0;
+  
+              let should_link = room2_links_to_room1 || room1_links_to_room2;
+              //console.log('room', room1.roomName, room2.roomName, should_link);
+              if(should_link && room1.linked_rooms.indexOf(room2) == -1 ){
+                room1.linked_rooms.push(room2);
+              }
+  
+              if(should_link && room2.linked_rooms.indexOf(room1) == -1 ){
+                room2.linked_rooms.push(room1);
+              }
+            }
+          }
+          this.walkmesh_rooms = [room1].concat(room1.linked_rooms);
+        }
         resolve();
       });
 
@@ -1122,6 +1140,11 @@ class ModuleArea extends ModuleObject {
                     if(!door.openState){
                       Game.group.room_walkmeshes.add( dwk.mesh );
                     }
+                  }
+
+                  if(door.model instanceof THREE.AuroraModel){
+                    door.model.rotation.copy(door.rotation);
+                    door.box.setFromObject(door.model);
                   }
     
                   if(door.openState){
@@ -1312,7 +1335,6 @@ class ModuleArea extends ModuleObject {
   
             crt.LoadScripts( () => {
               crt.LoadModel( (model) => {
-                
                 crt.model.moduleObject = crt;
                 crt.position.x = (crt.getXPosition());
                 crt.position.y = (crt.getYPosition());
@@ -1331,6 +1353,7 @@ class ModuleArea extends ModuleObject {
                 asyncLoop.next();
               });
             });
+
           });
         }
       });
@@ -1366,7 +1389,7 @@ class ModuleArea extends ModuleObject {
     });
   }
 
-  //This function is responsible for generating the grass for the current module.
+  //This function is responsible for generating the grass for the current area.
   //I already see a lot of room for improvement here. The shader code will need to be moved to seprate shader files
   //to be pulled in at startup somehow. 
   loadGrass(){
@@ -1636,6 +1659,46 @@ class ModuleArea extends ModuleObject {
     });
   }
 
+  async initAreaObjects(runSpawnScripts = false){
+
+    for(let i = 0; i < Game.module.area.doors.length; i++){
+      if(Game.module.area.doors[i] instanceof ModuleObject){
+        await Game.module.area.doors[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < Game.module.area.placeables.length; i++){
+      if(Game.module.area.placeables[i] instanceof ModuleObject){
+        await Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < Game.module.area.triggers.length; i++){
+      if(Game.module.area.triggers[i] instanceof ModuleObject){
+        await Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < Game.module.area.waypoints.length; i++){
+      if(Game.module.area.waypoints[i] instanceof ModuleObject){
+        await Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < Game.module.area.creatures.length; i++){
+      if(Game.module.area.creatures[i] instanceof ModuleObject){
+        await Game.module.area.creatures[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < PartyManager.party.length; i++){
+      if(PartyManager.party[i] instanceof ModuleObject){
+        await PartyManager.party[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+  }
+
   isPointWalkable(point){
     for(let i = 0, len = this.rooms.length; i < len; i++){
       if(this.rooms[i].walkmesh && this.rooms[i].walkmesh.isPointWalkable(point)){
@@ -1876,6 +1939,128 @@ class ModuleArea extends ModuleObject {
 
   }
 
+  getAreaMapStruct(){
+    let struct = new Struct();
+    struct.AddField( new Field(GFFDataTypes.VOID, 'AreaMapData') ).SetData(Buffer.alloc(20));
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'AreaMapDataSize') ).SetValue(20);
+    struct.AddField( new Field(GFFDataTypes.INT, 'AreaMapResX') ).SetValue(15);
+    struct.AddField( new Field(GFFDataTypes.INT, 'AreaMapResY') ).SetValue(8);
+    return struct;
+  }
+
+  getAreaPropertiesStruct(){
+    let struct = new Struct();
+    struct.AddField( new Field(GFFDataTypes.INT, 'AmbientSndDay') ).SetValue(this.audio.AmbientSndDay);
+    struct.AddField( new Field(GFFDataTypes.INT, 'AmbientSndDayVol') ).SetValue(this.audio.AmbientSndDayVol);
+    struct.AddField( new Field(GFFDataTypes.INT, 'AmbientSndNight') ).SetValue(this.audio.AmbientSndNight);
+    struct.AddField( new Field(GFFDataTypes.INT, 'AmbientSndNitVol') ).SetValue(this.audio.AmbientSndNitVol);
+    struct.AddField( new Field(GFFDataTypes.INT, 'EnvAudio') ).SetValue(this.audio.EnvAudio);
+    
+    struct.AddField( new Field(GFFDataTypes.INT, 'MusicBattle') ).SetValue(this.audio.MusicBattle);
+    struct.AddField( new Field(GFFDataTypes.INT, 'MusicDay') ).SetValue(this.audio.MusicDay);
+    struct.AddField( new Field(GFFDataTypes.INT, 'MusicDelay') ).SetValue(this.audio.MusicDelay);
+    struct.AddField( new Field(GFFDataTypes.INT, 'MusicNight') ).SetValue(this.audio.MusicNight);
+
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'RestrictMode') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'StealthXPCurrent') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'StealthXPLoss') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'StealthXPMax') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.DWORD, 'SunFogColor') ).SetValue(0);
+    
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'TransPendCurrID') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'TransPendNextID') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'TransPending') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'Unescapable') ).SetValue(this.Unescapable);
+    return struct;
+  }
+
+  saveAreaListStruct(){
+    let areaStruct = new Struct();
+    areaStruct.AddField( new Field(GFFDataTypes.RESREF, 'Area_Name') ).SetValue(this._name);
+    areaStruct.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+    //unescapable
+    return areaStruct;
+  }
+
+  save(){
+    let git = new GFFObject();
+    git.FileType = 'GIT ';
+
+    let aoeList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'AreaEffectList') );
+    let areaMapField = git.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'AreaMap') );
+    areaMapField.AddChildStruct( this.getAreaMapStruct() );
+
+    let areaPropertiesField = git.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'AreaProperties') );
+    areaPropertiesField.AddChildStruct( this.getAreaPropertiesStruct() );
+
+    let cameraList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'CameraList') );
+    for(let i = 0; i < this.cameras.length; i++){
+      cameraList.AddChildStruct( this.cameras[i].save().RootNode );
+    }
+
+    let creatureList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Creature List') );
+    for(let i = 0; i < this.creatures.length; i++){
+      creatureList.AddChildStruct( this.creatures[i].save().RootNode );
+    }
+
+    git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'CurrentWeather') ).SetValue(0);
+
+    let doorList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Door List') );
+    for(let i = 0; i < this.doors.length; i++){
+      doorList.AddChildStruct( this.doors[i].save().RootNode );
+    }
+
+    let encounterList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Encounter List') );
+    for(let i = 0; i < this.encounters.length; i++){
+      encounterList.AddChildStruct( this.encounters[i].save().RootNode );
+    }
+
+    let list = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'List') );
+
+    let placeableList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Placeable List') );
+    for(let i = 0; i < this.placeables.length; i++){
+      placeableList.AddChildStruct( this.placeables[i].save().RootNode );
+    }
+
+    //SWVarTable
+    let swVarTable = git.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    let soundList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'SoundList') );
+    for(let i = 0; i < this.sounds.length; i++){
+      soundList.AddChildStruct( this.sounds[i].save().RootNode );
+    }
+
+    let storeList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'StoreList') );
+    for(let i = 0; i < this.stores.length; i++){
+      storeList.AddChildStruct( this.stores[i].save().RootNode );
+    }
+    
+    git.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TransPendCurrID') ).SetValue(0);
+    git.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TransPendNextID') ).SetValue(0);
+    git.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TransPending') ).SetValue(0);
+
+    let triggerList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'TriggerList') );
+    for(let i = 0; i < this.triggers.length; i++){
+      triggerList.AddChildStruct( this.triggers[i].save().RootNode );
+    }
+
+    git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+
+    let waypointList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'WaypointList') );
+    for(let i = 0; i < this.waypoints.length; i++){
+      waypointList.AddChildStruct( this.waypoints[i].save().RootNode );
+    }
+    
+    git.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'WeatherStarted') ).SetValue(0);
+
+    this.git = git;
+
+    this.are.FileType = 'ARE ';
+
+    return {git: git, are: this.are};
+  }
+
   toolsetExportGIT(){
     let git = new GFFObject();
     git.FileType = 'GIT ';
@@ -1957,6 +2142,91 @@ class ModuleArea extends ModuleObject {
     return git;
   }
 
+}
+
+class AreaMap {
+
+  //MapWidth = 440;
+  //MapHeight = 256;
+
+  constructor(){
+    this.data = Buffer.alloc(4);
+
+    this.mapResX = 0;
+    this.mapResY = 0;
+    this.northAxis = 0;
+    this.worldPt1X = 0;
+    this.worldPt1Y = 0;
+    this.worldPt2X = 0;
+    this.worldPt2Y = 0;
+    this.mapPt1X = 0;
+    this.mapPt1Y = 0;
+    this.mapPt2X = 0;
+    this.mapPt2Y = 0;
+    this.mapZoom = 0;
+
+  }
+
+  init(){
+
+    this.generateResY();
+  }
+
+  setResX( mapResX = 0 ){
+    this.mapResX = mapResX;
+    this.generateResY();
+  }
+
+  generateResY(){
+    this.mapResY = Math.floor((this.mapResX * 256) / 440);
+  }
+
+  generateMapData(){
+    let dataSize = (this.mapResY + 1) * (this.mapResX + 1) / 33;
+
+    this.data = Buffer.alloc(dataSize);
+  }
+
+  loadDataStruct( struct = undefined ){
+    if(struct instanceof Struct){
+      this.data = struct.GetFieldByLabel('AreaMapData').GetVoid();
+      this.dataSize = struct.GetFieldByLabel('AreaMapDataSize').GetValue();
+      this.mapResX = struct.GetFieldByLabel('AreaMapResX').GetValue();
+      this.mapResY = struct.GetFieldByLabel('AreaMapResY').GetValue();
+    }
+  }
+
+  static FromStruct( struct = undefined ){
+    if(struct instanceof Struct){
+      let areaMap = new AreaMap();
+
+      areaMap.mapPt1X = struct.GetFieldByLabel('MapPt1X').GetValue();
+      areaMap.mapPt1Y = struct.GetFieldByLabel('MapPt1Y').GetValue();
+      areaMap.mapPt2X = struct.GetFieldByLabel('MapPt2X').GetValue();
+      areaMap.mapPt2Y = struct.GetFieldByLabel('MapPt2Y').GetValue();
+      areaMap.mapResX = struct.GetFieldByLabel('MapResX').GetValue();
+      areaMap.mapZoom = struct.GetFieldByLabel('MapZoom').GetValue();
+      areaMap.northAxis = struct.GetFieldByLabel('NorthAxis').GetValue();
+      areaMap.worldPt1X = struct.GetFieldByLabel('WorldPt1X').GetValue();
+      areaMap.worldPt1Y = struct.GetFieldByLabel('WorldPt1Y').GetValue();
+      areaMap.worldPt2X = struct.GetFieldByLabel('WorldPt2X').GetValue();
+      areaMap.worldPt2Y = struct.GetFieldByLabel('WorldPt2Y').GetValue();
+
+      areaMap.init();
+
+      return areaMap;
+    }
+  }
 
 }
+
+AreaMap.MAP_DIRECTION = {
+  NORTH: 0,
+  SOUTH: 1,
+  EAST:  2,
+  WEST:  3
+};
+
+ModuleArea.AreaMap = AreaMap;
+
 module.exports = ModuleArea;

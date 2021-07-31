@@ -16,6 +16,8 @@ class ModuleTrigger extends ModuleObject {
     this.lastObjectEntered = null;
     this.lastObjectExited = null;
 
+    this.setByPlayerParty = 0;
+
     this.tag = '';
     this.vertices = [];
     this.box = new THREE.Box3();
@@ -518,7 +520,7 @@ class ModuleTrigger extends ModuleObject {
       this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
 
     if(this.template.RootNode.HasField('TransitionDestin'))
-      this.transitionDestin = this.template.GetFieldByLabel('TransitionDestin').GetValue();
+      this.transitionDestin = this.template.GetFieldByLabel('TransitionDestin').GetCExoLocString();
 
     if(this.template.RootNode.HasField('TrapDetectable'))
       this.trapDetectable = this.template.RootNode.GetFieldByLabel('TrapDetectable').GetValue();
@@ -568,7 +570,73 @@ class ModuleTrigger extends ModuleObject {
 
   }
 
-  //this.vertices
+  save(){
+    let gff = new GFFObject();
+    gff.FileType = 'UTT ';
+
+    let actionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'AutoRemoveKey') ).SetValue(this.autoRemoveKey);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue( this.commandable );
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'CreatorId') ).SetValue(2130706432);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Cursor') ).SetValue(this.cursor);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Faction') ).SetValue(this.faction);
+
+    let geometry = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Geometry') );
+    for(let i = 0; i < this.vertices.length; i++){
+      let vertStruct = new Struct();
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointX') ).SetValue(this.vertices[i].x);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointY') ).SetValue(this.vertices[i].y);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointZ') ).SetValue(this.vertices[i].z);
+      geometry.AddChildStruct(vertStruct);
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'HighlightHeight') ).SetValue(this.highlightHeight);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'KeyName') ).SetValue(this.keyName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'LinkedTo') ).SetValue(this.linkedTo);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'LinkedToFlags') ).SetValue(this.linkedToFlags);
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'LinkedToModule') ).SetValue(this.linkedToModule);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'LoadscreenID') ).SetValue(this.loadScreenID);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocName') ).SetValue(this.locName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+
+    //Scripts
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnClick') ).SetValue(this.scripts.onClick ? this.scripts.onClick.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnDisarm') ).SetValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnTrapTriggered') ).SetValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(this.portraidId);
+
+    //SWVarTable
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    //Scripts
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnEnter') ).SetValue(this.scripts.onEnter ? this.scripts.onEnter.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnExit') ).SetValue(this.scripts.onExit ? this.scripts.onExit.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptUserDefine') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'SetByPartyPlayer') ).SetValue(this.setByPlayerParty);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'TransitionDestin') ).SetValue(this.transitionDestin);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectDC') ).SetValue(this.trapDetectDC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectable') ).SetValue(this.trapDetectable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDisarmable') ).SetValue(this.trapDisarmable);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapFlag') ).SetValue(this.trapFlag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapOneShot') ).SetValue(this.trapOneShot);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapType') ).SetValue(this.trapType);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Type') ).SetValue(this.type);
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('XOrientation').GetValue());
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(this.position.x);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('YOrientation').GetValue());
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(this.position.y);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue());
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue(this.position.z);
+
+    this.template = gff;
+    return gff;
+  }
 
   toToolsetInstance(){
     let instance = new Struct(1);

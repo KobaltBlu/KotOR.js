@@ -11,12 +11,14 @@ class AppearanceLoader {
 
     args = $.extend({
       id: -1,
+      context: Game,
       type: AppearanceLoader.TYPE.CREATURE
     }, args);
 
     this.id = args.id;
     this.type = args.type;
     this.model = null;
+    this.context = args.context;
 
     //Used for Creatures only!!!
     this.bodyVariant = 'A';
@@ -108,72 +110,91 @@ class AppearanceLoader {
 
       //console.log('modela', bodyModel);
 
-      Game.ModelLoader.load(bodyModel, (model) => {
+      Game.ModelLoader.load({
+        file: bodyModel,
+        onLoad: (mdl) => {
+          if(mdl instanceof AuroraModel){
+            THREE.AuroraModel.FromMDL(mdl, {
+              context: this.context,
+              onComplete: (model) => {
+                if(this.model != null){
+                  let scene = this.model.parent;
+                  let position = this.model.position;
+                  let rotation = this.model.rotation;
+                  scene.remove(this.model);
+                }
 
-        if(this.model != null){
-          let scene = this.model.parent;
-          let position = this.model.position;
-          let rotation = this.model.rotation;
-          scene.remove(this.model);
-        }
+                this.model = model;
+                this.model.moduleObject = this.moduleObject;
 
-        this.model = model;
-        this.model.moduleObject = this.moduleObject;
+                if(typeof scene != 'undefined'){
+                  scene.add(this.model);
+                  this.model.translateX(position.x);
+                  this.model.translateY(position.y);
+                  this.model.translateZ(position.z);
 
-        if(typeof scene != 'undefined'){
-          scene.add(this.model);
-          this.model.translateX(position.x);
-          this.model.translateY(position.y);
-          this.model.translateZ(position.z);
+                  this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+                }
 
-          this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-        }
+                if(headId != '****'){
+                  let head = Global.kotor2DA['heads'].rows[headId];
+                  Game.ModelLoader.load({
+                    file: head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(),
+                    onLoad: (mdl) => {
+                      if(mdl instanceof AuroraModel){
+                        THREE.AuroraModel.FromMDL(mdl, {
+                          context: this.context,
+                          onComplete: (head) => {
+                            try{
+                              this.model.headhook.head = head;
+                              this.model.headhook.add(head);
 
-        if(headId != '****'){
-          let head = Global.kotor2DA['heads'].rows[headId];
-          Game.ModelLoader.load(head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(), (head) => {
-            try{
-              this.model.headhook.head = head;
-              this.model.headhook.add(head);
+                              TextureLoader.LoadQueue(() => {
+                                if(onLoad != null)
+                                  onLoad(this.model);
+                              });
+                            }catch(e){
+                              console.error(e);
+                              TextureLoader.LoadQueue(() => {
+                                if(typeof onLoad === 'function')
+                                  onLoad(this.model);
+                              });
+                            }
+                          }
+                        });
+                      }else{
+                        TextureLoader.LoadQueue(() => {
+                          if(typeof onLoad === 'function')
+                            onLoad(this.model);
+                        });
+                      }
+                    },
+                    onError: (e) => {
+                      console.error(e);
+                      if(onError != null && typeof onError === 'function')
+                        onError(e)
+                    }
+                  });
 
-              TextureLoader.LoadQueue(() => {
-                //console.log(this.model);
-                if(onLoad != null)
-                  onLoad(this.model);
-              }, (texName) => {
-                //loader.SetMessage('Loading Textures: '+texName);
-              });
-            }catch(e){
-              console.error(e);
-              TextureLoader.LoadQueue(() => {
-                //console.log(this.model);
-                if(onLoad != null)
-                  onLoad(this.model);
-              }, (texName) => {
-                //loader.SetMessage('Loading Textures: '+texName);
-              });
-            }
-
-          }, (e) => {
+                }else{
+                  TextureLoader.LoadQueue(() => {
+                    if(onLoad != null)
+                      onLoad(this.model);
+                  });
+                }
+              }
+            });
+          }else{
             console.error(e);
-            if(onError != null && typeof onError === 'function')
+            if(typeof onError === 'function')
               onError(e)
-          });
-
-        }else{
-          TextureLoader.LoadQueue(() => {
-            //console.log(this.model);
-            if(onLoad != null)
-              onLoad(this.model);
-          }, (texName) => {
-            //loader.SetMessage('Loading Textures: '+texName);
-          });
+          }
+        },
+        onError: (e) => {
+          console.error(e);
+          if(typeof onError === 'function')
+            onError(e)
         }
-
-      }, (e) => {
-        console.error(e);
-        if(onError != null && typeof onError === 'function')
-          onError(e)
       });
 
     }else{
@@ -188,39 +209,43 @@ class AppearanceLoader {
 
       let modelName = Global.kotor2DA['genericdoors'].rows[genericType.Value].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-      Game.ModelLoader.load(modelName, (door) => {
+      Game.ModelLoader.load({
+        file: modelName,
+        onLoad: (door) => {
 
-        if(this.model != null){
-          let scene = this.model.parent;
-          let position = this.model.position;
-          let rotation = this.model.rotation;
-          scene.remove(this.model);
+          if(this.model != null){
+            let scene = this.model.parent;
+            let position = this.model.position;
+            let rotation = this.model.rotation;
+            scene.remove(this.model);
+          }
+
+          this.model = door;
+          this.model.moduleObject = this.moduleObject;
+
+          if(typeof scene != 'undefined'){
+            scene.add(this.model);
+            this.model.translateX(position.x);
+            this.model.translateY(position.y);
+            this.model.translateZ(position.z);
+
+            this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+          }
+
+          TextureLoader.LoadQueue(() => {
+            //console.log(this.model);
+            if(onLoad != null)
+              onLoad(this.model);
+          }, (texName) => {
+            //loader.SetMessage('Loading Textures: '+texName);
+          });
+
+        },
+        onError: (e) => {
+          console.error(e);
+          if(onError != null && typeof onError === 'function')
+            onError(e)
         }
-
-        this.model = door;
-        this.model.moduleObject = this.moduleObject;
-
-        if(typeof scene != 'undefined'){
-          scene.add(this.model);
-          this.model.translateX(position.x);
-          this.model.translateY(position.y);
-          this.model.translateZ(position.z);
-
-          this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-        }
-
-        TextureLoader.LoadQueue(() => {
-          //console.log(this.model);
-          if(onLoad != null)
-            onLoad(this.model);
-        }, (texName) => {
-          //loader.SetMessage('Loading Textures: '+texName);
-        });
-
-      }, (e) => {
-        console.error(e);
-        if(onError != null && typeof onError === 'function')
-          onError(e)
       });
 
     }else{
@@ -235,39 +260,43 @@ class AppearanceLoader {
       let modelName = Global.kotor2DA['placeables'].rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
       //console.log('modelName', modelName);
 
-      Game.ModelLoader.load(modelName, (plc) => {
+      Game.ModelLoader.load({
+        file: modelName,
+        onLoad: (plc) => {
 
-        if(this.model != null){
-          let scene = this.model.parent;
-          let position = this.model.position;
-          let rotation = this.model.rotation;
-          scene.remove(this.model);
+          if(this.model != null){
+            let scene = this.model.parent;
+            let position = this.model.position;
+            let rotation = this.model.rotation;
+            scene.remove(this.model);
+          }
+
+          this.model = plc;
+          this.model.moduleObject = this.moduleObject;
+
+          if(typeof scene != 'undefined'){
+            scene.add(this.model);
+            this.model.translateX(position.x);
+            this.model.translateY(position.y);
+            this.model.translateZ(position.z);
+
+            this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+          }
+
+          TextureLoader.LoadQueue(() => {
+            //console.log(this.model);
+            if(onLoad != null)
+              onLoad(this.model);
+          }, (texName) => {
+            //loader.SetMessage('Loading Textures: '+texName);
+          });
+
+        },
+        onError: (e) => {
+          console.error(e);
+          if(onError != null && typeof onError === 'function')
+            onError(e)
         }
-
-        this.model = plc;
-        this.model.moduleObject = this.moduleObject;
-
-        if(typeof scene != 'undefined'){
-          scene.add(this.model);
-          this.model.translateX(position.x);
-          this.model.translateY(position.y);
-          this.model.translateZ(position.z);
-
-          this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-        }
-
-        TextureLoader.LoadQueue(() => {
-          //console.log(this.model);
-          if(onLoad != null)
-            onLoad(this.model);
-        }, (texName) => {
-          //loader.SetMessage('Loading Textures: '+texName);
-        });
-
-      }, (e) => {
-        console.error(e);
-        if(onError != null && typeof onError === 'function')
-          onError(e)
       });
     }else{
       console.error('Invalid ID', this.id);

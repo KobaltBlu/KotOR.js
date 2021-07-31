@@ -18,6 +18,10 @@ class MenuAbilities extends GameMenu {
       onLoad: () => {
 
         //this.lbl_hint = this.getControlByName('LBL_HINT');
+        this.BTN_EXIT.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.Close();
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

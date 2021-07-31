@@ -504,7 +504,7 @@ class ModuleCreature extends ModuleCreatureController {
     if(oCaster instanceof ModuleCreature){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
-      let roll = CombatEngine.Roll(1, 'd20', this.getTotalClassLevel());
+      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
       return (roll > 10 + oCaster.getTotalClassLevel());
     }
     return 0;
@@ -898,7 +898,25 @@ class ModuleCreature extends ModuleCreatureController {
   getPortraitResRef(){
     let portrait = Global.kotor2DA.portraits.rows[this.getPortraitId()];
     if(portrait){
+
+      if(this.getGoodEvil() >= 41){
+        return portrait.baseresref;
+      }else if(this.getGoodEvil() >= 31 && this.getGoodEvil() <= 40){
+        if(portrait.baseresrefe != '****')
+          return portrait.baseresrefe;
+      }else if(this.getGoodEvil() >= 21 && this.getGoodEvil() <= 30){
+        if(portrait.baseresrefve != '****')
+          return portrait.baseresrefve;
+      }else if(this.getGoodEvil() >= 11 && this.getGoodEvil() <= 20){
+        if(portrait.baseresrefvve != '****')
+          return portrait.baseresrefvve;
+      }else if(this.getGoodEvil() >= 0 && this.getGoodEvil() <= 10){
+        if(portrait.baseresrefvvve != '****')
+          return portrait.baseresrefvvve;
+      }
+
       return portrait.baseresref;
+
     }
     return '';
   }
@@ -939,6 +957,14 @@ class ModuleCreature extends ModuleCreatureController {
     return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
   }
 
+  getMovementSpeed(){
+    return this.walk ? this.getWalkSpeed() : this.getRunSpeed()
+  }
+
+  getHitDistance(){
+    return parseFloat(this.getAppearance().hitdist);
+  }
+
   getMainClass(){
     if(!this.classes.length)
       return false;
@@ -961,6 +987,67 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
     return 0;
+  }
+
+  //Does the creature have enough EXP to level up
+  canLevelUp(){
+    let level = this.getTotalClassLevel();
+    let nextLevelEXP = Global.kotor2DA.exptable.rows[level];
+    if(this.getXP() >= parseInt(nextLevelEXP.xp)){
+      return true;
+    }
+
+    return false;
+  }
+
+  //Get the effective creature level based on the creatures current amount of EXP
+  getEffectiveLevel(){
+    let level = 0;
+
+    let totalLevels = Global.kotor2DA.exptable.RowCount;
+    let expLevels = Global.kotor2DA.exptable.rows;
+
+    for(let i = 0; i < totalLevels; i++){
+      if(this.getXP() > parseInt(expLevels[i].level)){
+        level = i;
+      }
+    }
+
+    return level;
+  }
+
+  autoLevelUp(){
+    if(this.canLevelUp()){
+      let mainClass = this.getMainClass();
+      mainClass.level += 1;
+
+      if(this.getTotalClassLevel() % 4 == 0){
+        switch(mainClass.primaryabil.toLowerCase()){
+          case 'str':
+            this.str += 1;
+          break;
+          case 'con':
+            this.con += 1;
+          break;
+          case 'dex':
+            this.dex += 1;
+          break;
+          case 'wis':
+            this.wis += 1;
+          break;
+          case 'cha':
+            this.cha += 1;
+          break;
+          case 'int':
+            this.int += 1;
+          break;
+        }
+      }
+
+      this.maxHitPoints += parseInt(mainClass.hitdie) + ( (this.getCON() - 10) /2 );
+      this.currentHitPoints = 0;
+
+    }
   }
 
   getBaseAttackBonus(){
@@ -1801,6 +1888,9 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('Appearance_Type'))
       this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
 
+    if(this.template.RootNode.HasField('Animation'))
+      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
+
     if(this.template.RootNode.HasField('BodyBag'))
       this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
 
@@ -1864,13 +1954,8 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('FeatList')){
       let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
       for(let i = 0; i < feats.length; i++){
-        let feat = {
-          type: 1,
-          id: feats[i].GetFieldByLabel('Feat').GetValue()
-        };
-
         this.feats.push(
-          new TalentFeat(feat)
+          new TalentFeat( feats[i].GetFieldByLabel('Feat').GetValue() )
         );
       }
     }
@@ -1946,12 +2031,7 @@ class ModuleCreature extends ModuleCreatureController {
     if(this.template.RootNode.HasField('SkillList')){
       let skills = this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
       for(let i = 0; i < skills.length; i++){
-        let skill = {
-          type: 2,
-          id: i,
-          rank: skills[i].GetFieldByLabel('Rank').GetValue()
-        };
-        this.skills[i] = new TalentSkill(skill);
+        this.skills[i] = new TalentSkill(i, skills[i].GetFieldByLabel('Rank').GetValue());
       }
     }
 
@@ -2152,7 +2232,7 @@ class ModuleCreature extends ModuleCreatureController {
           if(action.HasField('Paramaters'))
             paramStructs = action.GetFieldByLabel('Paramaters').GetChildStructs();
 
-          if(actionId == 1){ //MoveToPoint ???
+          if(actionId == -1000){ //MoveToPoint ???
 
             let x = paramStructs[0].GetFieldByLabel('Value').GetValue();
             let y = paramStructs[1].GetFieldByLabel('Value').GetValue();
@@ -2164,9 +2244,9 @@ class ModuleCreature extends ModuleCreatureController {
 
             this.moveToObject(object, run, distance);
 
-          }
-
-          if(actionId == 37){ //ActionDoCommand
+          }else if(actionId == 0x06){ //ActionPlayAnimation
+            console.log('ActionPlayAnimation', action);
+          }else if(actionId == 37){ //ActionDoCommand
 
             let scriptParamStructs = paramStructs[0].GetFieldByLabel('Value').GetChildStructs()[0];
             let script = new NWScript();
@@ -2192,6 +2272,8 @@ class ModuleCreature extends ModuleCreatureController {
 
             //console.log('ActionDoCommand', script, scriptParamStructs, this);
 
+          }else{
+            console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);
           }
         }catch(e){
           console.error('ActionList', e, action, this);
@@ -2340,34 +2422,277 @@ class ModuleCreature extends ModuleCreatureController {
     this.actionQueue.push({object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER});
   }
 
-  Save(){
-    //TODO
+  save(){
 
     let gff = new GFFObject();
+    gff.FileType = 'UTC ';
 
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    let actionList = gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ActionList'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Age'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AmbientAnimState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Animation'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Appearance_Head'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Appearance_Type'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AreaId'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ArmorClass'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'BodyBag'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'Cha'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'ChallengeRating'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
-    gff.RootNode.AddField(new Field(GFFDataTypes.INT, 'AIState'));
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Mod_CommntyName') ).SetValue('Bad StrRef');
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_IsPrimaryPlr') ).SetValue( this == Game.player ? 1 : 0);
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_FirstName') )
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_LastName') )
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'AIState') ).SetValue(0);
+    let actionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Age') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'AmbientAnimState') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Animation') ).SetValue(this.animState);
+    //gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Appearance_Head') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Appearance_Type') ).SetValue(this.getAppearance().__index);
+    //gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'AreaId') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'ArmorClass') ).SetValue(this.getAC());
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Cha') ).SetValue(this.cha);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ChallengeRating') ).SetValue(this.challengeRating);
+
+    //Classes
+    let classList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ClassList') );
+    for(let i = 0; i < this.classes.length; i++){
+      classList.AddChildStruct( this.classes[i].save() );
+    }
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Color_Hair') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Color_Skin') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Color_Tattoo1') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Color_Tattoo2') ).SetValue(0);
+
+    let combatInfoStruct = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'CombatInfo') );
+
+    //TODO: CombatInfo
+
+    let combatRoundDataStruct = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'CombatRoundData') );
+
+    //TODO: CombatRoundData
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue(this.getCommadable() ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Con') ).SetValue(this.str);
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'CreatnScrptFird') ).SetValue( this.spawned ? 1 : 0 );
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CreatureSize') ).SetValue(3);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentForce') ).SetValue(this.currentForce);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'CurrentHitPoints') ).SetValue(this.currentHitPoints);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DeadSelectable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Deity') ).SetValue('');
+    //gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Description') ).SetValue();
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DetectMode') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Dex') ).SetValue(this.dex);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Disarmable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'DuplicatingHead') ).SetValue(255);
+    
+    //Effects
+    let effectList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'EffectList') );
+    for(let i = 0; i < this.effects.length; i++){
+      effectList.AddChildStruct( this.effects[i].save() );
+    }
+
+    //Equipment
+    let equipItemList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Equip_ItemList') );
+
+    if(this.equipment.ARMOR instanceof ModuleItem){
+      let equipItem = this.equipment.ARMOR.save();
+      equipItem.SetType(UTCObject.SLOT.ARMOR);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.ARMS instanceof ModuleItem){
+      let equipItem = this.equipment.ARMS.save();
+      equipItem.SetType(UTCObject.SLOT.ARMS);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.BELT instanceof ModuleItem){
+      let equipItem = this.equipment.BELT.save();
+      equipItem.SetType(UTCObject.SLOT.BELT);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.CLAW1 instanceof ModuleItem){
+      let equipItem = this.equipment.CLAW1.save();
+      equipItem.SetType(UTCObject.SLOT.CLAW1);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.CLAW2 instanceof ModuleItem){
+      let equipItem = this.equipment.CLAW2.save();
+      equipItem.SetType(UTCObject.SLOT.CLAW2);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.CLAW3 instanceof ModuleItem){
+      let equipItem = this.equipment.CLAW3.save();
+      equipItem.SetType(UTCObject.SLOT.CLAW3);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.HEAD instanceof ModuleItem){
+      let equipItem = this.equipment.HEAD.save();
+      equipItem.SetType(UTCObject.SLOT.HEAD);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.HIDE instanceof ModuleItem){
+      let equipItem = this.equipment.HIDE.save();
+      equipItem.SetType(UTCObject.SLOT.HIDE);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.IMPLANT instanceof ModuleItem){
+      let equipItem = this.equipment.IMPLANT.save();
+      equipItem.SetType(UTCObject.SLOT.IMPLANT);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.LEFTARMBAND instanceof ModuleItem){
+      let equipItem = this.equipment.LEFTARMBAND.save();
+      equipItem.SetType(UTCObject.SLOT.LEFTARMBAND);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.LEFTHAND instanceof ModuleItem){
+      let equipItem = this.equipment.LEFTHAND.save();
+      equipItem.SetType(UTCObject.SLOT.LEFTHAND);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
+      let equipItem = this.equipment.RIGHTARMBAND.save();
+      equipItem.SetType(UTCObject.SLOT.RIGHTARMBAND);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    if(this.equipment.RIGHTHAND instanceof ModuleItem){
+      let equipItem = this.equipment.RIGHTHAND.save();
+      equipItem.SetType(UTCObject.SLOT.RIGHTHAND);
+      equipItemList.AddChildStruct(equipItem)
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Experience') ).SetValue(this.experience);
+    
+    let expressionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ExpressionList') );
+    let expressions = Object.keys(this.listeningPatterns);
+    for(let i = 0; i < expressions.length; i++){
+      let expressionString = expressions[i];
+      let expressionId = this.listeningPatterns[expressionString];
+
+      let expressionStruct = new Struct();
+      expressionStruct.AddField( new Field(GFFDataTypes.INT, 'ExpressionId') ).SetValue( expressionId );
+      expressionStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'ExpressionString') ).SetValue( expressionString );
+      expressionList.AddChildStruct(expressionStruct);
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(this.getFactionID());
+
+    //Feats
+    let featList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'FeatList') );
+    for(let i = 0; i < this.feats.length; i++){
+      featList.AddChildStruct( this.feats[i].save() );
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'FirstName') ).SetValue( this.template.RootNode.GetFieldByLabel('FirstName').GetCExoLocString() );
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'ForcePoints') ).SetValue(this.forcePoints);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CHAR, 'FortSaveThrow') ).SetValue(this.fortitudeSaveThrow);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Gender') ).SetValue(this.gender);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Gold') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GoodEvil') ).SetValue(this.goodEvil);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'HitPoints') ).SetValue(this.hitPoints);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Int') ).SetValue(this.int);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Interruptable') ).SetValue(this.interruptable ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsDestroyable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsPC') ).SetValue( this == Game.player ? 1 : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'IsRaiseable') ).SetValue(1);
+
+    //Creature Inventory
+    let itemList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ItemList') );
+    for(let i = 0; i < this.inventory.length; i++){
+      let itemStruct = this.inventory[i].save();
+      itemList.AddChildStruct(itemStruct);
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'JoiningXP') ).SetValue( this.joiningXP ? this.joiningXP : 0 );
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LastName') ).SetValue( this.template.RootNode.GetFieldByLabel('LastName').GetCExoLocString() );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Listening') ).SetValue( this.isListening );
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'MaxForcePoints') ).SetValue(this.maxForcePoints);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'MaxHitPoints') ).SetValue(this.maxHitPoints);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Min1HP') ).SetValue(this.min1HP);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'MovementRate') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NaturalAC') ).SetValue(this.naturalAC);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NotReorienting') ).SetValue(this.notReorienting);
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PM_IsDisguised') ).SetValue( this.hasEffect(GameEffect.Type.EffectDisguise) ? 1 : 0 );
+    if( this.hasEffect(GameEffect.Type.EffectDisguise) ){
+      gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PM_Appearance') ).SetValue( this.appearance );
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PartyInteract') ).SetValue(this.partyInteract);
+
+    let perceptionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'PerceptionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PerceptionRange') ).SetValue(this.perceptionRange);
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Phenotype') ).SetValue(this.phenotype);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Plot') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(this.portraidId);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'PregameCurrent') ).SetValue(28);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Race') ).SetValue(this.race);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CHAR, 'RefSaveThrow') ).SetValue(this.reflexSaveThrow);
+
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    //Scripts
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptAttacked') ).SetValue(this.scripts.onAttacked ? this.scripts.onAttacked.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDamaged') ).SetValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDeath') ).SetValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDialogue') ).SetValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDisturbed') ).SetValue(this.scripts.onDisturbed ? this.scripts.onDisturbed.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptEndDialogu') ).SetValue(this.scripts.onEndDialog ? this.scripts.onEndDialog.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptEndRound') ).SetValue(this.scripts.onEndRound ? this.scripts.onEndRound.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnBlocked') ).SetValue(this.scripts.onBlocked ? this.scripts.onBlocked.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptOnNotice') ).SetValue(this.scripts.onNotice ? this.scripts.onNotice.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptRested') ).SetValue(this.scripts.onRested ? this.scripts.onRested.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpawn') ).SetValue(this.scripts.onSpawn ? this.scripts.onSpawn.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpellAt') ).SetValue(this.scripts.onSpellAt ? this.scripts.onSpellAt.name : '');
+    gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptUserDefine') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+
+    //Skills
+    let skillList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'SkillList') );
+    for(let i = 0; i < 8; i++){
+      skillList.AddChildStruct( this.skills[i].save() );
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SkillPoints') ).SetValue( this.skillPoints ? this.skillPoints : 0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(this.soundSetFile);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'StartingPackage') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'StealthMode') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Str') ).SetValue(this.str);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Subrace') ).SetValue('');
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'SubraceIndex') ).SetValue(this.subrace);
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Tail') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'UseBackupHead') ).SetValue(0);
+    let varTable = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.CHAR, 'WillSaveThrow') ).SetValue(this.willSaveThrow);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Wings') ).SetValue(0);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Wis') ).SetValue(this.wis);
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue( this.position.x );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue( this.position.y );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue( this.position.z );
+
+    let theta = this.rotation.z * Math.PI;
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue( 1 * Math.cos(theta) );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue( 1 * Math.sin(theta) );
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZOrientation') ).SetValue( 0 );
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'fortbonus') ).SetValue(this.fortbonus);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'refbonus') ).SetValue(this.refbonus);
+    gff.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'refbonus') ).SetValue(this.refbonus);
+
+    this.template = gff;
 
     return gff;
 
@@ -2407,14 +2732,185 @@ class ModuleCreature extends ModuleCreatureController {
 
 }
 
+ModuleCreature.AmbientState = {
+  IDLE:               0,
+  READY:              1,
+  PAUSE_POISONED:     2,
+  DEAD2:              3,
+  DEAD:               4,
+  CHOKE:              5,
+  WHIRLWIND:          6,
+  HORROR:             7,
+  DISABLED:           8,
+  PRONE_FORCE_PUSHED: 9,
+  F2A2:               10,
+  SLEEP:              11,
+  PARALYZED:          12,
+  PRONE_FORCE_JUMP:   13,
+  PRONE_DEAD:         14,
+}
+
 ModuleCreature.AnimState = {
-  GETINGUP: -3,
-  DIEING: -2,
-  DEAD: -1,
-  IDLE: 0,
-  WALKING: 1,
-  RUNNING: 2,
+  IDLE: 10000,
   ANIMATING: 4,
+  //CREATURE
+  PAUSE:                10000, //NWSCRIPT Constant: 0
+  //READY - depends on equipped weapons
+  //1=92,2=133,3=174,4=215,5=223,6=237,7=245,8=249,9=245
+  READY:                10001, //see comment ^^^ NWSCRIPT Constant: 19
+  //WALK - depends on equipped weapons
+  //2=338,3=341,4=339,5=0,6=0,7=340,8=0,9=340 simple 253
+  WALKING:              10002, //see comment ^^^ 
+  //WALKING_BACK - depends on equipped weapons
+  //2=338,3=341,4=339,5=0,6=0,7=340,8=0,9=340 simple 253
+  WALKING_BACK:         10003, //see comment ^^^ 
+  RUNNING:              10004, //
+  DEAD:                 10006, //81 - NWSCRIPT Constant: 26
+  DEAD1:                10008, //83
+  ATTACK:               10009, //300
+  DODGE:                10011, //302 -
+  PARRY:                10012, //301 -
+  DAMAGE:               10014, //303 -
+  CASTOUT1:             10015, //62 - 
+  CASTOUT2:             10016, //64 - 
+  CASTOUT1_LP:          10017, //63 - 
+  CASTOUT2_LP:          10018, //65 - 
+  SPASM:                10023, //77 - NWSCRIPT Constant: 21
+  TAUNT:                10028, //33 - NWSCRIPT Constant: 107
+  GREETING:             10029, //31 - NWSCRIPT Constant: 106
+  LISTEN:               10030, //18 - NWSCRIPT Constant: 2
+  MEDITATE:             10032, //24 - NWSCRIPT Constant: 3
+  WORSHIP:              10033, //24 - NWSCRIPT Constant: 4
+  SALUTE:               10034, //16 - NWSCRIPT Constant: 104
+  BOW:                  10035, //19 - NWSCRIPT Constant: 105
+  TALK_NORMAL:          10038, //25 - NWSCRIPT Constant: 5
+  TALK_PLEADING:        10039, //27 - NWSCRIPT Constant: 6
+  TALK_FORCEFUL:        10040, //26 - NWSCRIPT Constant: 7
+  TALK_LAUGHING:        10041, //29 - NWSCRIPT Constant: 8
+  TALK_SAD:             10042, //28 - NWSCRIPT Constant: 9
+  VICTORY:              10044, //260 - NWSCRIPT Constant: 108 - 110
+  PAUSE2:               10052, //7 -NWSCRIPT Constant: 1
+  HEAD_TURN_LEFT:       10053, //11 - NWSCRIPT Constant: 100
+  HEAD_TURN_RIGHT:      10054, //10 - NWSCRIPT Constant: 101
+  PAUSE_SCRATCH_HEAD:   10055, //12 - NWSCRIPT Constant: 102
+  PAUSE_BORED:          10056, //13 - NWSCRIPT Constant: 103
+  PAUSE_TIRED:          10057, //14 - NWSCRIPT Constant: 12
+  PAUSE_DRUNK:          10058, //15 - NWSCRIPT Constant: 13 pausepsn - poisoned
+  GET_LOW:              10059, //40 - NWSCRIPT Constant: 10
+  GET_MID:              10060, //41 - NWSCRIPT Constant: 11
+  THROW_SABER_LP:       10061, //70 - 
+  INJECT:               10070, //37 - NWSCRIPT Constant: 112 - Simple Creatures can't do this one
+  DAMAGE:               10077, //303 -
+  PAUSE_INJ:            10092, //8 - 
+  WALK_INJ:             10093, //1 - 
+  RUN_INJ:              10094, //4 -
+  ATTACK2:              10109, //300
+  USE_COMPUTER_LP:      10112, //44 - 
+  WHIRLWIND:            10117, //75 - 
+  DEACTIVATE:           10118, //270 - NWSCRIPT Constant: 20
+  FLIRT:                10120, //32 - NWSCRIPT Constant: 14
+  USE_COMPUTER:         10121, //43? - NWSCRIPT Constant: 15
+  DANCE:                10122, //53 - NWSCRIPT Constant: 16
+  DANCE1:               10123, //54 - NWSCRIPT Constant: 17
+  HORROR:               10124, //74 - NWSCRIPT Constant: 18
+  USE_COMPUTER:         10125, //43 - NWSCRIPT Constant: 113
+  PERSUADE:             10126, //68 - NWSCRIPT Constant: 114
+  ACTIVATE_ITEM:        10127, //38 - NWSCRIPT Constant: 115
+  UNLOCK_DOOR:          10128, //47
+  THROW_HIGH:           10129, //57 - NWSCRIPT Constant: 117
+  THROW_LOW:            10130, //58 - NWSCRIPT Constant: 118
+  UNLOCK_CONTAINER:     10131, //48 - 
+  DISABLE_MINE:         10132, //51 - 
+  WALK_STEALTH:         10133, //5 - 
+  UNLOCK_DOOR2:         10134, //47 - 
+  UNLOCK_CONTAINER2:    10135, //48 - 
+  ACTIVATE_ITEM2:       10136, //38 - 
+  SLEEP:                10137, //76 - NWSCRIPT Constant: 22
+  PARALYZED:            10138, //78 - 
+  PRONE:                10139, //79 - NWSCRIPT Constant: 23
+  SET_MINE:             10140, //52 - 
+  DISABLE_MINE2:        10141, //51 - 
+  CUSTOM01:             10142, //346 - NWSCRIPT Constant: 119
+  FBLOCK:               10145, //355 - fblock?
+  PAUSE4:               10147, //357 - 
+  //READY_ALT - depends on equipped weapons
+  //1=92,2=133,3=174,4=215,5=223,6=237,7=245,8=249,9=245
+  READY_ALT:            10148, //see comment ^^^
+  PAUSE_ALT:            10149, //pause?
+  CHOKE:                10150, //72 - NWSCRIPT Constant: 116
+  PAUSE3:               10151, //359 - NWSCRIPT Constant: 24
+  WELD:                 10152, //360 - NWSCRIPT Constant: 25
+  TALK_INJURED:         10154, //370 - NWSCRIPT Constant: 27
+  LISTEN_INJURED:       10155, //371 - NWSCRIPT Constant: 28
+  DEAD_PRONE:           10156, //375 - NWSCRIPT Constant: 30
+  //MELEE_WIELD - depends on equipped weapons
+  //1=378,2=377,3=378,4=376,5=378,6=378,7=378,8=378,9=378
+  MELEE_WIELD:          10157, //see comment ^^^
+  //MELEE_COMBAT_WIELD - depends on equipped weapons
+  //2=132,3=214,4=173
+  MELEE_COMBAT_WIELD:   10158, //see comment ^^^
+  TREAT_INJURED:        10159, //34 - NWSCRIPT Constant: 120
+  TREAT_INJURED_LP:     10160, //35 - NWSCRIPT Constant: 29
+  CATCH_SABER:          10161, //71 - catchsab
+  THROW_SABER:          10162, //69 - throwsab
+  KID_TALK_ANGRY:       10163, //384 - NWSCRIPT Constant: 31
+  KID_TALK_SAD:         10164, //385 - NWSCRIPT Constant: 32
+  KNOCKED_DOWN:         10219, //85 -
+  KNOCKED_DOWN2:        10220, //85 -
+  DIE:                  10221, //80 -
+  DIE1:                 10222, //82 -
+  GET_UP_DEAD:          10223, //381 //getupdead
+  GET_UP_DEAD1:         10224, //382 //getupdead1
+  KNEEL:                10237, //23 - 
+  KNEEL1:               10238, //23 - 
+  //FLOURISH - depends on equipped weapons
+  //1=91,2=132,3=173,4=214,5=222,6=136,7=244,8=373,9=244
+  FLOURISH:             10246, //see comment ^^^
+  KNEELING:             10271, //383 - kd - animations.2da
+  //DAMAGED - depends on equipped weapons
+  //1=unknown,2=124,3=206,4=165,5=220,6=234,7=242,8=280,9=242
+  DAMAGED:              10302, //see comment ^^^
+  //BLASTER_DEFLECTION_1H - depends on equipped weapons
+  //2=109,3=151,4=192
+  BLASTER_DEFLECTION_1H:10300, //see comment ^^^
+  //BLASTER_DEFLECTION_2H - depends on equipped weapons
+  //2=110,3=151,4=192
+  BLASTER_DEFLECTION_2H:10301, //see comment ^^^
+  KNOCKED_DOWN_LP:      10400, //84 - 
+  POWER_ATTACK_SS:      10401, //115 - 
+  KNOCKED_DOWN2_LP:     10402, //84 - 
+
+  //BEGIN TSL ANIMATIONS
+
+  TOUCH_HEART:          10403,
+  ROLL_EYES:            10404,
+  USE_ITEM_ON_OTHER:    10405,
+  STAND_ATTENTION:      10406,
+  NOD_YES:              10407,
+  NOD_NO:               10408,
+  POINT:                10409,
+  POINT_LP:             10410,
+  POINT_DOWN:           10411,
+  SCANNING:             10412,
+  SHRUG:                10413,
+  SIT_CHAIR:            10424,
+  SIT_CHAIR_DRUNK:      10425,
+  SIT_CHAIR_PAZAAK:     10426,
+  SIT_CHAIR_COMP1:      10427,
+  SIT_CHAIR_COMP2:      10428,
+  CUT_HANDS:            10499,
+  L_HAND_CHOP:          10500,
+  COLLAPSE:             10501,
+  COLLAPSE_STAND:       10503,
+  BAO_DUR_POWER_PUNCH:  10504,
+  HOOD_OFF:             10507,
+  HOOD_ON:              10508,
+
+  //END TSL ANIMATIONS
+
+  CASTOUT3:             11000, //66 - 
+  CRITICAL_STRIKE2_SS:  11001, //392 -
+  CRITICAL_STRIKE3_SS:  11002, //393 -
 };
 
 ModuleCreature.ACTION = {

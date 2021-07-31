@@ -32,10 +32,6 @@ class GameEffect {
     return this;
   }
 
-  hasSubType( durationType = -1 ){
-    return ((this.subType & durationType) == durationType);
-  }
-
   setCreator(oCreator = undefined){
     this.creator = oCreator;
   }
@@ -44,8 +40,24 @@ class GameEffect {
     this.duration = duration;
   }
 
+  getSubType(){
+    return this.subType & GameEffect.SubType.MASK;
+  }
+
+  setSubType(subType = 0){
+    if(subType >= 8 && subType <= GameEffect.SubType.MASK){
+      this.subType = (this.subType & ~GameEffect.SubType.MASK | subType);
+    }
+  }
+
+  getDurationType(){
+    return this.subType & GameEffect.DurationType.MASK;
+  }
+
   setDurationType(durationType = 0){
-    this.subType = this.subType | durationType;
+    if(durationType >= 0 && durationType <= GameEffect.DurationType.MASK){
+      this.subType = (this.subType & ~GameEffect.DurationType.MASK | durationType);
+    }
   }
 
   setExpireDay(expireDay = 0){
@@ -67,10 +79,6 @@ class GameEffect {
 
   setSpellId(nSpellId = -1){
     this.spellId = nSpellId;
-  }
-
-  setSubType(nSubType = 0){
-    this.subType = nSubType;
   }
 
   setIntList(intList = []){
@@ -125,10 +133,6 @@ class GameEffect {
     return this.duration;
   }
 
-  getDurationType(){
-    return this.subType;
-  }
-
   getExpireDay(){
     return this.expireDay;
   }
@@ -141,8 +145,12 @@ class GameEffect {
     return this.spellId || -1;
   }
 
-  getSubType(){
+  getSubTypeUnMasked(){
     return this.subType;
+  }
+
+  setSubTypeUnMasked( subType = 0){
+    this.subType = subType;
   }
 
   getInt(nOffset = 0){
@@ -162,7 +170,7 @@ class GameEffect {
   }
 
   update(delta){
-    if(this.hasSubType(GameEffect.DurationType.TEMPORARY) && (this.expireDay || this.expireTime)){
+    if(this.getDurationType() == GameEffect.DurationType.TEMPORARY && (this.expireDay || this.expireTime)){
       if(this.duration <= 0){
         this.onDurationEnd();
         return;
@@ -241,162 +249,162 @@ class GameEffect {
         objectList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
       }
 
-      //(???) Means i haven't confirmed this type yet
+      //Initialize the effect object based on the type
       switch(eType){
-        case 1: //Haste
-
+        case GameEffect.Type.EffectHaste: //Haste
+          effect = new EffectHaste();
         break;
-        case 2: //DamageResistance
+        case GameEffect.Type.EffectDamageResistance: //DamageResistance
           effect = new EffectDamageResistance();
         break;
-        case 3: //Slow
-
+        case GameEffect.Type.EffectSlow: //Slow
+          effect = new EffectSlow();
         break;
-        case 4: //Resurrection
-
+        case GameEffect.Type.EffectRessurection: //Resurrection
+          effect = new EffectRessurection();
         break;
-        case 5: //Disease
-
+        case GameEffect.Type.EffectDisease: //Disease
+          effect = new EffectDisease();
         break;
-        case 7: //Regenerate
+        case GameEffect.Type.EffectRegenerate: //Regenerate
           effect = new EffectRegenerate();
         break;
-        case 10: //AttackIncrease
+        case GameEffect.Type.EffectAttackIncrease: //AttackIncrease
           effect = new EffectAttackIncrease();
         break;
-        case 11: //AttackDecrease
+        case GameEffect.Type.EffectAttackDecrease: //AttackDecrease
           effect = new EffectAttackDecrease();
         break;
-        case 12: //DamageReduction
-
+        case GameEffect.Type.EffectDamageReduction: //DamageReduction
+          effect = new EffectDamageReduction();
         break;
-        case 13: //DamageIncrease
+        case GameEffect.Type.EffectDamageIncrease: //DamageIncrease
           effect = new EffectDamageIncrease();
         break;
-        case 14: //DamageDecrease
+        case GameEffect.Type.EffectDamageDecrease: //DamageDecrease
           effect = new EffectDamageDecrease();
         break;
-        case 15: //TemporaryHitpoints
+        case GameEffect.Type.EffectTemporaryHitPoints: //TemporaryHitpoints
+          effect = new EffectTemporaryHitPoints();
+        break;
+        case GameEffect.Type.EffectDamageImmunityIncrease: //DamageImmunityIncrease
+          effect = new EffectDamageImmunityIncrease();
+        break;
+        case GameEffect.Type.EffectDamageImmunityDecrease: //DamageImmunityDecrease
+          effect = new EffectDamageImmunityDecrease();
+        break;
+        case GameEffect.Type.EffectEntangle: //Entangle
+          effect = new EffectEntangle();
+        break;
+        case GameEffect.Type.EffectDeath: //Death
+          effect = new EffectDeath();
+        break;
+        case GameEffect.Type.EffectKnockdown: //Knockdown
 
         break;
-        case 16: //DamageImmunityIncrease
+        case GameEffect.Type.EffectDeaf: //Deaf
 
         break;
-        case 17: //DamageImmunityDecrease
-
-        break;
-        case 18: //Entangle
-
-        break;
-        case 19: //Death
-
-        break;
-        case 20: //Knockdown
-
-        break;
-        case 21: //Deaf
-
-        break;
-        case 22: //Immunity
+        case GameEffect.Type.EffectImmunity: //Immunity
           effect = new EffectImmunity();
         break;
-        case 24: //EnemyAttackBonus
+        case GameEffect.Type.EffectEnemyAttackBonus: //EnemyAttackBonus
 
         break;
-        case 26: //SavingThrowIncrease
+        case GameEffect.Type.EffectSavingThrowIncrease: //SavingThrowIncrease
           effect = new EffectSavingThrowIncrease();
         break;
-        case 27: //SavingThrowDecrease
+        case GameEffect.Type.EffectSavingThrowDecrease: //SavingThrowDecrease
           effect = new EffectSavingThrowDecrease();
         break;
-        case 28: //MovementSpeedIncrease
+        case GameEffect.Type.EffectMovementSpeedIncrease: //MovementSpeedIncrease
           effect = new EffectMovementSpeedIncrease();
         break;
-        case 29: //MovementSpeedDecrease
+        case GameEffect.Type.EffectMovementSpeedDecrease: //MovementSpeedDecrease
           effect = new EffectMovementSpeedDecrease();
         break;
-        case 30: //VisualEffect
+        case GameEffect.Type.EffectVisualEffect: //VisualEffect
           effect = new EffectVisualEffect();
         break;
-        case 31: //AreaOfEffect
+        case GameEffect.Type.EffectAreaOfEffect: //AreaOfEffect
 
         break;
-        case 32: //Beam
+        case GameEffect.Type.EffectBeam: //Beam
           effect = new EffectBeam();
         break;
-        case 33: //ForceResistanceIncrease
+        case GameEffect.Type.EffectForceResistanceIncrease: //ForceResistanceIncrease
 
         break;
-        case 34: //ForceResistanceDecrease
+        case GameEffect.Type.EffectForceResistanceDecrease: //ForceResistanceDecrease
 
         break;
-        case 35: //Poison
+        case GameEffect.Type.EffectPoison: //Poison
           effect = new EffectPoison();
         break;
-        case 36: //AbilityIncrease
+        case GameEffect.Type.EffectAbilityIncrease: //AbilityIncrease
           effect = new EffectAbilityIncrease();
         break;
-        case 37: //AbilityDecrease
+        case GameEffect.Type.EffectAbilityDecrease: //AbilityDecrease
           effect = new EffectAbilityDecrease();
         break;
-        case 38: //Damage
+        case GameEffect.Type.EffectDamage: //Damage
           effect = new EffectDamage();
         break;
-        case 39: //Heal
-
+        case GameEffect.Type.EffectHeal: //Heal
+          effect = new EffectHeal();
         break;
-        case 40: //Link
-
+        case GameEffect.Type.EffectLink: //Link
+          effect = new EffectLink();
         break;
-        case 48: //ACIncrease
+        case GameEffect.Type.EffectACIncrease: //ACIncrease
           effect = new EffectACIncrease();
         break;
-        case 49: //ACDecrease
+        case GameEffect.Type.EffectACDecrease: //ACDecrease
           effect = new EffectACDecrease();
         break;
-        case 50: //SpellImmunity
-
+        case GameEffect.Type.EffectSpellImmunity: //SpellImmunity
+          effect = new EffectSpellImmunity();
         break;
-        case 55: //SkillIncrease
+        case GameEffect.Type.EffectSkillIncrease: //SkillIncrease
           effect = new EffectSkillIncrease();
         break;
-        case 56: //SkillDecrease
+        case GameEffect.Type.EffectSkillDecrease: //SkillDecrease
           effect = new EffectSkillDecrease();
         break;
-        case 57: //HitPointChangeWhenDying
+        case GameEffect.Type.EffectHitPointChangeWhenDying: //HitPointChangeWhenDying
 
         break;
-        case 59: //LimitMovementSpeed
+        case GameEffect.Type.EffectLimitMovementSpeed: //LimitMovementSpeed
 
         break;
-        case 60: //ForcePushed
+        case GameEffect.Type.EffectForcePushed: //ForcePushed
 
         break;
-        case 61: //DamageShield
+        case GameEffect.Type.EffectDamageShield: //DamageShield
 
         break;
-        case 62: //Disguise
+        case GameEffect.Type.EffectDisguise: //Disguise
           effect = new EffectDisguise();
         break;
-        case 65: //SpellLevelAbsorption
+        case GameEffect.Type.EffectSpellLevelAbsorption: //SpellLevelAbsorption
 
         break;
-        case 67: //SetEffectIcon
+        case GameEffect.Type.EffectIcon: //SetEffectIcon
           effect = new EffectIcon();
         break;
-        case 68: //RacialType
-
+        case GameEffect.Type.EffectRacialType: //RacialType
+          effect = new EffectRacialType();
         break;
-        case 83: //BonusFeat
+        case GameEffect.Type.EffectBonusFeat: //BonusFeat
           effect = new EffectFeat();
         break;
-        case 92: //BlasterDeflectionIncrease
+        case GameEffect.Type.EffectBlasterDeflectionIncrease: //BlasterDeflectionIncrease
           effect = new EffectBlasterDeflectionIncrease();
         break;
-        case 93: //BlasterDeflectionDecrease
+        case GameEffect.Type.EffectBlasterDeflectionDecrease: //BlasterDeflectionDecrease
           effect = new EffectBlasterDeflectionDecrease();
         break;
-        case 107: //ForceShield
+        case GameEffect.Type.EffectForceShield: //ForceShield
           effect = new EffectForceShield();
         break;
       }
@@ -410,7 +418,7 @@ class GameEffect {
           effect.setExpireTime(eExpireTime);
           effect.setCreator(eCreator);
           effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
-          effect.setSubType(eSubType);
+          effect.setSubTypeUnMasked(eSubType);
 
           effect.setNumIntegers(eNumIntegers);
           effect.setIntList(intList);
@@ -435,22 +443,186 @@ class GameEffect {
     return undefined;
   }
 
+  getSaveType(){
+    return this.type;
+  }
+
+  save(){
+
+    let effectStruct = new Struct(2);
+    effectStruct.AddField( new Field(GFFDataTypes.DWORD64, 'Id') ).SetValue(0);
+    effectStruct.AddField( new Field(GFFDataTypes.WORD, 'Type') ).SetValue(this.getSaveType());
+    effectStruct.AddField( new Field(GFFDataTypes.WORD, 'SubType') ).SetValue(this.getSubTypeUnMasked());
+    effectStruct.AddField( new Field(GFFDataTypes.FLOAT, 'Duration') ).SetValue(this.getDuration());
+    effectStruct.AddField( new Field(GFFDataTypes.BYTE, 'SkipOnLoad') ).SetValue(this.skipOnLoad ? 1 : 0);
+    effectStruct.AddField( new Field(GFFDataTypes.DWORD, 'ExpireDay') ).SetValue(this.getExpireDay());
+    effectStruct.AddField( new Field(GFFDataTypes.DWORD, 'ExpireTime') ).SetValue(this.getExpireTime());
+    effectStruct.AddField( new Field(GFFDataTypes.DWORD, 'CreatorId') ).SetValue( this.creator instanceof ModuleObject ? this.creator.id : 2130706432 );
+    effectStruct.AddField( new Field(GFFDataTypes.DWORD, 'SpellId') ).SetValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
+    effectStruct.AddField( new Field(GFFDataTypes.INT, 'IsExposed') ).SetValue(1);
+    effectStruct.AddField( new Field(GFFDataTypes.INT, 'NumIntegers') ).SetValue(8);
+
+    let intList = effectStruct.AddField( new Field(GFFDataTypes.LIST, 'IntList') );
+    for(let i = 0; i < 8; i++){
+      let intStruct = new Struct(3);
+      intStruct.AddField( new Field(GFFDataTypes.INT, "Value").SetValue(this.getInt(i) || 0));
+      intList.AddChildStruct(intStruct);
+    }
+
+    let floatList = effectStruct.AddField( new Field(GFFDataTypes.LIST, 'FloatList') );
+    for(let i = 0; i < 4; i++){
+      let floatStruct = new Struct(4);
+      floatStruct.AddField( new Field(GFFDataTypes.FLOAT, "Value").SetValue(this.getFloat(i) || 0.0));
+      floatList.AddChildStruct(floatStruct);
+    }
+
+    let stringList = effectStruct.AddField( new Field(GFFDataTypes.LIST, 'StringList') );
+    for(let i = 0; i < 6; i++){
+      let stringStruct = new Struct(5);
+      stringStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, "Value").SetValue(this.getString(i) || ''));
+      stringList.AddChildStruct(stringStruct);
+    }
+
+    let objectList = effectStruct.AddField( new Field(GFFDataTypes.LIST, 'ObjectList') );
+    for(let i = 0; i < 6; i++){
+      let objectStruct = new Struct(5);
+      objectStruct.AddField( new Field(GFFDataTypes.DWORD, "Value").SetValue( this.getObject(i) instanceof ModuleObject ? this.getObject(i).id : 2130706432 ));
+      objectList.AddChildStruct(objectStruct);
+    }
+
+    return effectStruct;
+
+  }
+
 }
+
+//https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
+
+//--------------------------//
+// GameEffect DurationTypes
+//--------------------------//
 
 GameEffect.DurationType = {
   INSTANT:   0,
   TEMPORARY: 1,
   PERMANENT: 2,
   EQUIPPED:  3,
-  INNATE:    4
+  INNATE:    4,
+
+  MASK: 0x07
 };
 
-GameEffect.Type = {
+//---------------------//
+// GameEffect SubTypes
+//---------------------//
 
-  //---------------------------//
-  // nwscript.nss Effect Types
-  //---------------------------//
-  
+GameEffect.SubType = {
+  MAGICAL:       8,
+  SUPERNATURAL:  16,
+  EXTRAORDINARY: 24,
+
+  MASK: 0x18
+};
+
+//------------------//
+// GameEffect Types
+//------------------//
+
+GameEffect.Type = {
+  EffectHaste:                      0x01,
+  EffectDamageResistance:           0x02,
+  EffectSlow:                       0x03,
+  EffectRessurection:               0x04,
+  EffectDisease:                    0x05,
+  EffectSummonCreature:             0x06,
+  EffectRegenerate:                 0x07,
+  EffectSetState:                   0x08,
+  EffectSetStateInternal:           0x09,
+  EffectAttackIncrease:             0x0A,
+  EffectAttackDecrease:             0x0B,
+  EffectDamageReduction:            0x0C,
+  EffectDamageIncrease:             0x0D,
+  EffectDamageDecrease:             0x0E,
+  EffectTemporaryHitPoints:         0x0F,
+  EffectDamageImmunityIncrease:     0x10,
+  EffectDamageImmunityDecrease:     0x11,
+  EffectEntangle:                   0x12,
+  EffectDeath:                      0x13,
+  EffectKnockdown:                  0x14,
+  EffectDeaf:                       0x15,
+  EffectImmunity:                   0x16,
+  EffectSetAIState:                 0x17,
+  EffectEnemyAttackBonus:           0x18,
+  EffectArcaneSpellFailure:         0x19,
+  EffectSavingThrowIncrease:        0x1A,
+  EffectSavingThrowDecrease:        0x1B,
+  EffectMovementSpeedIncrease:      0x1C,
+  EffectMovementSpeedDecrease:      0x1D,
+  EffectVisualEffect:               0x1E,
+  EffectAreaOfEffect:               0x1F,
+  EffectBeam:                       0x20,
+  EffectForceResistanceIncrease:    0x21,
+  EffectForceResistanceDecrease:    0x22,
+  EffectPoison:                     0x23,
+  EffectAbilityIncrease:            0x24,
+  EffectAbilityDecrease:            0x25,
+  EffectDamage:                     0x26,
+  EffectHeal:                       0x27,
+  EffectLink:                       0x28,
+  EffectModifyNumAttacks:           0x2C,
+  EffectCurse:                      0x2D,
+  EffectSilence:                    0x2E,
+  EffectInvisibility:               0x2F,
+  EffectACIncrease:                 0x30,
+  EffectACDecrease:                 0x31,
+  EffectSpellImmunity:              0x32,
+  EffectDispellMagic:               0x33,
+  EffectDispellMagicBest:           0x34,
+  EffectLight:                      0x36,
+  EffectSkillIncrease:              0x37,
+  EffectSkillDecrease:              0x38,
+  EffectHitPointChangeWhenDying:    0x39,
+  EffectSetWalkAnimation:           0x3A,
+  EffectLimitMovementSpeed:         0x3B,
+  EffectForcePushed:                0x3C,
+  EffectDamageShield:               0x3D,
+  EffectDisguise:                   0x3E,
+  EffectSanctuary:                  0x3F,
+  EffectTimeStop:                   0x40,
+  EffectSpellLevelAbsorption:       0x41,
+  EffectIcon:                       0x43,
+  EffectRacialType:                 0x44,
+  EffectSeeInvisible:               0x46,
+  EffectUltraVision:                0x47,
+  EffectTrueseeing:                 0x48,
+  EffectBlindness:                  0x49,
+  EffectDarkness:                   0x4A,
+  EffectMissChance:                 0x4B,
+  EffectConcealment:                0x4C,
+  EffectAppear:                     0x51,
+  EffectNegativeLevel:              0x52,
+  EffectBonusFeat:                  0x53,
+  EffectSummonParty:                0x59,
+  EffectForceDrain:                 0x5A,
+  EffectTemporaryForce:             0x5B,
+  EffectBlasterDeflectionIncrease:  0x5C,
+  EffectBlasterDeflectionDecrease:  0x5D,
+  EffectDamageForcePoints:          0x5F,
+  EffectHealForcePoints:            0x60,
+  EffectBodyFuel:                   0x62,
+  EffectPsychicStatic:              0x63,
+  EffectLightSaberThrow:            0x64,
+  EffectAssuredHit:                 0x65,
+  EffectForceJump:                  0x66,
+  EffectAssuredDeflection:          0x68,
+  EffectForceResisted:              0x69,
+  EffectForceFizzle:                0x6A,
+  EffectForceShield:                0x6B,
+  EffectPureGoodPowers:             0x6C,
+  EfffectPureEvilPowers:            0x6D,
+};
+
+GameEffect.NWScriptEffectType = {
   EffectInvalidEffect:		undefined,
   EffectDamageResistance:	1,
   //EFFECT_TYPE_ABILITY_BONUS:		2,
@@ -529,19 +701,6 @@ GameEffect.Type = {
   EffectVisualEffect:     75,
   EffectForcePushed:      80,
   EffectFeat:             83,
-  
-  //------------------------//
-  // Unknown Effect Numbers
-  //------------------------//
-  EffectDeath:            99999,
-  EffectHeal:             99998,
-  EffectLink:             99997,
-  EffectDamage:           99996,
-  EffectForceShield:      99995,
-  EffectIcon:             99994,
-  EffectDroidStun:        99993,
-  EffectChoke:            99992,
-  EffectHorrified:        99991
-};
+}
 
 module.exports = GameEffect;

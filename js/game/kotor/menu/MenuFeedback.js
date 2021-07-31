@@ -25,6 +25,11 @@ class MenuFeedback extends GameMenu {
           e.stopPropagation();
           Game.MenuMessages.Show();
         });*/
+        
+        this.BTN_EXIT.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.Close();
+        });
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

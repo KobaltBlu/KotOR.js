@@ -604,7 +604,7 @@ THREE.ShaderLib.aurora = {
     #endif
     #ifdef DANGLY
       float wind = (1.0 * danglyPeriod) * ( cos(time) );
-      transformed += vec3(sin(wind) * constraint.x, sin(wind) * constraint.y, sin(wind) * constraint.z * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
+      transformed += vec3(sin(wind) * constraint.x * 2.0, sin(wind) * constraint.y * 2.0, sin(wind) * constraint.z * 2.0 * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
     #endif
 
     #ifdef FORCE_SHIELD

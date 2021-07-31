@@ -11,6 +11,10 @@ class EffectDroidStun extends GameEffect {
     super.onApply();
   }
 
+  update(delta = 0){
+    this.object.animState = ModuleCreature.AnimState.DEACTIVATE;
+  }
+
 }
 
 module.exports = EffectDroidStun;

@@ -71,11 +71,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.IMPLANT;
           this.equipmentSelectionActive = true;
           this.UpdateList();
-        });
-
-        this.BTN_INV_IMPLANT.addEventListener('hover', (e) => {
-          this.slot = UTCObject.SLOT.IMPLANT;
-          this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.IMPLANT);
         });
 
         this.BTN_INV_HEAD.addEventListener('click', (e) => {
@@ -83,11 +80,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.HEAD;
           this.equipmentSelectionActive = true;
           this.UpdateList();
-        });
-
-        this.BTN_INV_HEAD.addEventListener('hover', (e) => {
-          this.slot = UTCObject.SLOT.HEAD;
-          this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.HEAD);
         });
 
         this.BTN_INV_HANDS.addEventListener('click', (e) => {
@@ -95,6 +89,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.ARMS;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.ARMS);
         });
 
         this.BTN_INV_ARM_L.addEventListener('click', (e) => {
@@ -102,6 +98,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.LEFTARMBAND;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.LEFTARMBAND);
         });
 
         this.BTN_INV_BODY.addEventListener('click', (e) => {
@@ -109,6 +107,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.ARMOR;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.ARMOR);
         });
 
         this.BTN_INV_ARM_R.addEventListener('click', (e) => {
@@ -116,6 +116,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.RIGHTARMBAND;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.RIGHTARMBAND);
         });
 
         this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
@@ -123,6 +125,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.LEFTHAND;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.LEFTHAND);
         });
 
         this.BTN_INV_BELT.addEventListener('click', (e) => {
@@ -130,6 +134,8 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.BELT;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.BELT);
         });
 
         this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
@@ -137,16 +143,22 @@ class MenuEquipment extends GameMenu {
           this.slot = UTCObject.SLOT.RIGHTHAND;
           this.equipmentSelectionActive = true;
           this.UpdateList();
+        }).addEventListener('hover', (e) => {
+          this.UpdateListHover(UTCObject.SLOT.RIGHTHAND);
         });
 
         this.BTN_EQUIP.addEventListener('click', (e) => {
           e.stopPropagation();
-          if(this.selectedItem instanceof ModuleItem){
+          if(this.selectedItem instanceof ModuleItem || this.selectedItem instanceof GUIItemNone){
             //console.log('selectedItem', this.selectedItem, this.slot, );
             let currentPC = PartyManager.party[0];
-            currentPC.equipItem(this.slot, this.selectedItem, () => {
-              this.UpdateSlotIcons();
-            });
+            if(this.selectedItem instanceof ModuleItem){
+              currentPC.equipItem(this.slot, this.selectedItem, () => {
+                this.UpdateSlotIcons();
+              });
+            }else if(this.selectedItem instanceof GUIItemNone){
+              currentPC.unequipSlot(this.slot);
+            }
             this.slot = null;
             this.equipmentSelectionActive = false;
             this.UpdateSelected(null);
@@ -154,6 +166,11 @@ class MenuEquipment extends GameMenu {
             this.UpdateList();
           }
         });
+        
+
+        this.LB_ITEMS.onSelected = (item) => {
+          this.UpdateSelected(item);
+        }
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -161,6 +178,19 @@ class MenuEquipment extends GameMenu {
       }
     })
 
+  }
+
+  UpdateListHover( slot = null ){
+    if(slot){
+      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.clearItems();
+      let inv = InventoryManager.getInventory( slot, Game.getCurrentPlayer() );
+      this.LB_ITEMS.addItem(new GUIItemNone());
+      for(let i = 0; i < inv.length; i++){
+        this.LB_ITEMS.addItem(inv[i]);
+        TextureLoader.LoadQueue();
+      }
+    }
   }
 
   UpdateList(){
@@ -238,20 +268,21 @@ class MenuEquipment extends GameMenu {
     let currentPC = PartyManager.party[0];
     if(this.slot){
       let inv = InventoryManager.getInventory(this.slot, currentPC);
+      this.LB_ITEMS.addItem(new GUIItemNone());
       for(let i = 0; i < inv.length; i++){
-        this.LB_ITEMS.addItem(inv[i], () => {
-          this.UpdateSelected(inv[i]);
-        });
+        this.LB_ITEMS.addItem(inv[i]);
+        TextureLoader.LoadQueue();
       }
-
-      TextureLoader.LoadQueue();
     }
   }
 
   UpdateSelected(item = null){
     this.selectedItem = item;
+    this.LB_DESC.clearItems();
     if(this.selectedItem instanceof ModuleItem){
-      //this.BTN_EQUIP.setText('OK');
+      this.LB_DESC.addItem(
+        this.selectedItem.getDescription()
+      );
     }else{
       //this.BTN_EQUIP.setText('OK');
     }
@@ -468,6 +499,28 @@ class MenuEquipment extends GameMenu {
 
 }
 
+
+
+class GUIItemNone {
+  constructor(){
+
+  }
+
+  getIcon(){
+    return 'inone';
+  }
+
+  getStackSize(){
+    return 1;
+  }
+
+  getName(){
+    //None String
+    return Global.kotorTLK.TLKStrings[363].Value;
+  }
+
+}
+
 class GUIInventoryItem extends GUIProtoItem {
 
   constructor(menu = null, control = null, parent = null, scale = false){
@@ -526,9 +579,12 @@ class GUIInventoryItem extends GUIProtoItem {
 
       this.widget.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.widget.iconMaterial.transparent = true;
+      this.widget.iconMaterial.visible = false;
       this.widget.iconSprite = new THREE.Sprite( this.widget.iconMaterial );
       //console.log(this.node.getIcon());
-      TextureLoader.enQueue(this.node.getIcon(), this.widget.iconMaterial, TextureLoader.Type.TEXTURE);
+      TextureLoader.enQueue(this.node.getIcon(), this.widget.iconMaterial, TextureLoader.Type.TEXTURE, (texture) => {
+        this.widget.iconMaterial.visible = true;
+      });
       
       this.widget.spriteGroup = new THREE.Group();
       //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK

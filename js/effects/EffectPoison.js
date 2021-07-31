@@ -24,7 +24,7 @@ class EffectPoison extends GameEffect {
     let eVisualEffect = new EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
-    eVisualEffect.setSubType(this.getSubType());
+    eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
     eVisualEffect.setDuration(this.duration);
     eVisualEffect.setExpireDay(this.expireDay);
     eVisualEffect.setExpireTime(this.expireTime);
@@ -42,7 +42,7 @@ class EffectPoison extends GameEffect {
   }
 
   update(delta = 0){
-
+    this.object.animState = ModuleCreature.AnimState.PAUSE_DRUNK;
   }
 
 }

@@ -171,19 +171,17 @@ class GUIScrollBar extends GUIControl{
     }
 
     this.addEventListener('mouseMove', () => {
-      if(this.inner_box.containsPoint(Game.mouseUI)){
+      //if(this.inner_box.containsPoint(Game.mouseUI)){
         this.mouseInside();
-      }
+      //}
     });
 
     this.addEventListener('click', () =>{
-      console.log('GUIScrollBar', 'click')
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
 
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      console.log('GUIScrollBar', this.mouseOffset);
       if(this.upArrow.box.containsPoint(Game.mouseUI)){
         this.list.scrollUp();
       }else if(this.downArrow.box.containsPoint(Game.mouseUI)){
@@ -197,10 +195,8 @@ class GUIScrollBar extends GUIControl{
       e.stopPropagation();
       let mouseX = Mouse.Client.x - (window.innerWidth / 2);
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
-      console.log('GUIScrollBar', 'scroll offset', this.thumb.position.y - mouseY);
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      console.log('GUIScrollBar', 'hi', this.mouseOffset);
       this.upArrow.updateBox();
       this.downArrow.updateBox();
     });
@@ -210,7 +206,7 @@ class GUIScrollBar extends GUIControl{
       let mouseY = Mouse.Client.y - (window.innerHeight / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
-      console.log('GUIScrollBar', 'blah');
+      //console.log('GUIScrollBar', 'blah');
       /*if(this.upArrow.box.containsPoint(Game.mouseUI)){
         console.log('GUIScrollBar', 'up');
         this.list.scrollUp();
@@ -218,7 +214,7 @@ class GUIScrollBar extends GUIControl{
         console.log('GUIScrollBar', 'down');
         this.list.scrollDown();
       }else */if(this.inner_box.containsPoint(Game.mouseUI)){
-        console.log('GUIScrollBar', 'scroll');
+        //console.log('GUIScrollBar', 'scroll');
         this.mouseInside();
       }
     });

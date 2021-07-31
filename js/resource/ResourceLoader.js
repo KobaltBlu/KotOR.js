@@ -19,12 +19,12 @@ class ResourceLoader {
             onLoad(data);
         }, (e) => {
           if(Game.module instanceof Module){
-            this._searchModuleArchives(resId, resRef, (data) => {
+            this._searchKeyTable(resId, resRef, (data) => {
               ResourceLoader.setCache(resId, resRef, data);
               if(typeof onLoad === 'function')
                 onLoad(data);
             }, (e) => {
-              this._searchKeyTable(resId, resRef, (data) => {
+              this._searchModuleArchives(resId, resRef, (data) => {
                 ResourceLoader.setCache(resId, resRef, data);
                 if(typeof onLoad === 'function')
                   onLoad(data);

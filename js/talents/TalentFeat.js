@@ -1,14 +1,22 @@
 class TalentFeat extends TalentObject {
 
-  constructor(options = {}){
-    super(options);
+  constructor( id = 0){
+    super(id);
     this.type = 1;
 
     //Merge the feat properties from the feat.2da row with this feat
-    if(Global.kotor2DA.feat.rows[options.id]){
-      Object.assign(this, Global.kotor2DA.feat.rows[options.id]);
+    if(Global.kotor2DA.feat.rows[this.id]){
+      Object.assign(this, Global.kotor2DA.feat.rows[this.id]);
     }
 
+  }
+
+  setId( value = 0 ){
+    this.id = value;
+    //Merge the feat properties from the feat.2da row with this feat
+    if(Global.kotor2DA.feat.rows[this.id]){
+      Object.assign(this, Global.kotor2DA.feat.rows[this.id]);
+    }
   }
 
   useTalentOnObject(oTarget, oCaster){
@@ -82,6 +90,12 @@ class TalentFeat extends TalentObject {
       return feat;
     }
     return false;
+  }
+
+  save(){
+    let featStruct = new Struct(1);
+    featStruct.AddField( new Field(GFFDataTypes.WORD, 'Feat') ).SetValue(this.getId());
+    return featStruct;
   }
 
 }

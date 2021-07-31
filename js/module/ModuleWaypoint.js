@@ -89,6 +89,49 @@ class ModuleWaypoint extends ModuleObject {
     }
   }
 
+  save(){
+    let gff = new GFFObject();
+    gff.FileType = 'UTW ';
+    gff.RootNode.Type = 5;
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST,  'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE,  'Commandable') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE,  'HasMapNote') ).SetValue(1);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'LocalizedName') ).SetValue(this.locName);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+
+    //SWVarTable
+    let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    gff.RootNode.AddField( new Field(GFFDataTypes.LIST,  'VarTable') );
+    
+    if(this.template.RootNode.HasField('XOrientation')){
+      gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('XOrientation').GetValue());
+    }else{
+      gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue(0);
+    }
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(this.position.x);
+    
+    if(this.template.RootNode.HasField('YOrientation')){
+      gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('YOrientation').GetValue());
+    }else{
+      gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue(0);
+    }
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(this.position.y);
+    
+    if(this.template.RootNode.HasField('ZOrientation'))
+      gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue());
+    
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue(this.position.z);
+
+    this.template = gff;
+    return gff;
+  }
+
   toToolsetInstance(){
 
     let instance = new Struct(8);

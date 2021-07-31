@@ -17,6 +17,8 @@ class LoadScreen extends GameMenu {
     this.background = '1600x1200load';
     this.voidFill = true;
 
+    this.canCancel = false;
+
     this.LoadMenu({
       name: 'loadscreen',
       onLoad: () => {
@@ -75,6 +77,7 @@ class LoadScreen extends GameMenu {
   }
 
   showRandomHint(){
+    this.lbl_name.setText(Global.kotorTLK.TLKStrings[42493].Value);
     let id = Math.floor(Math.random() * (Global.kotor2DA.loadscreenhints.RowCount - 0 + 1)) + 0;
     let hint = Global.kotor2DA.loadscreenhints.rows[id];
     if(!hint){
@@ -85,8 +88,15 @@ class LoadScreen extends GameMenu {
     this.lbl_hint.setText(Global.kotorTLK.TLKStrings[hint.gameplayhint].Value);
   }
 
+  showSavingMessage(){
+    this.lbl_name.setText(Global.kotorTLK.TLKStrings[42528].Value);
+    this.lbl_hint.setText(Global.kotorTLK.TLKStrings[41926].Value);
+    this.setProgress(0);
+  }
+
   Show(){
     super.Show();
+    this.setProgress(0);
     Game.InGameAreaTransition.Hide();
     Game.FadeOverlay.plane.visible = false;
   }
@@ -94,6 +104,7 @@ class LoadScreen extends GameMenu {
   Hide(){
     super.Hide();
     Game.FadeOverlay.plane.visible = true;
+    this.setProgress(0);
   }
 
 }

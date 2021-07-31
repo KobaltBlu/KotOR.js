@@ -8,6 +8,7 @@
 class PartyManager {
 
   static Init(){
+    PartyManager.PortraitOrder = [];
     PartyManager.Player = undefined;
     PartyManager.MaxSize = 2;
     PartyManager.NPCS = {
@@ -90,8 +91,9 @@ class PartyManager {
           if(PartyManager.party[j].partyID == nID){
             let creature = PartyManager.party[j];
             PartyManager.party.splice(j, 1);
+            PartyManager.RebuildPortraitOrder();
 
-            if(leaveInWorld){
+            if(!leaveInWorld){
               creature.destroy();
             }else{
               console.log('RemoveNPCById leaveInWorld', creature);
@@ -124,6 +126,28 @@ class PartyManager {
 
   }
 
+  static RebuildPortraitOrder(){
+    PartyManager.PortraitOrder = [];
+    for(let i = 0; i < PartyManager.party.length; i++){
+      PartyManager.PortraitOrder[i] = PartyManager.party[i].getPortraitResRef().toLowerCase();
+    }
+  }
+
+  static GetPortraitByResRef( resref = '' ){
+    let portraits = Global.kotor2DA.portraits.rows;
+    let count = Global.kotor2DA.portraits.RowCount;
+    for(let i = 0; i < count; i++){
+      if(portraits[i].baseresref.toLowerCase() == resref.toLowerCase()){
+        return portraits[i];
+      }
+    }
+  }
+
+  static AddPortraitToOrder( resref = '' ){
+    if(PartyManager.PortraitOrder.indexOf(resref) == -1 )
+      PartyManager.PortraitOrder.push( resref.toLowerCase() );
+  }
+
   static SetSelectable(nID = 0, state = false){
     PartyManager.NPCS[nID].canSelect = state ? true : false;
   }
@@ -146,12 +170,15 @@ class PartyManager {
     return false;
   }
 
+  //Set the PartyMember to unavailable
   static RemoveAvailableNPC(nID = 0){
     PartyManager.NPCS[nID].available = false;
     PartyManager.NPCS[nID].canSelect = false;
-    delete PartyManager.NPCS[nID].template;
+    PartyManager.NPCS[nID].template;
   }
 
+
+  //Add a creature template to the list of available PartyMembers
   static AddNPCByTemplate(nID = 0, ResRef = '', onLoad = null){
 
     if(typeof ResRef === 'string'){
@@ -184,6 +211,7 @@ class PartyManager {
 
   }
 
+  //Add a world creature to the list of Party Members and remove it from the creatures array
   static AddCreatureToParty(slot = 1, creature = null){
     if(creature instanceof ModuleCreature){
       PartyManager.NPCS[slot].available = true;
@@ -248,24 +276,99 @@ class PartyManager {
     }
   }
 
+  //Save the current party member templates
+  static Save(){
+    for(let i = 0; i < PartyManager.party.length; i++){
+      let pm = PartyManager.party[i];
+      if(pm.partyID >= 0){
+        let gff = pm.save();
+        PartyManager.NPCS[pm.partyID].template = gff;
+      }
+    }
+  }
+
+  //Shift the current leader to the end of the party array
+  static ShiftLeader(){
+    PartyManager.party.push( PartyManager.party.shift() );
+    PartyManager.UpdateLeader();
+  }
+
+  //Update the party members to see if any of them is the current party leader
+  static UpdateLeader(){
+    for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
+      if(PartyManager.party[0].partyID == PartyManager.CurrentMembers[i].memberID){
+        PartyManager.CurrentMembers[i].isLeader = true;
+      }else{
+        PartyManager.CurrentMembers[i].isLeader = false;
+      }
+    }
+
+    PartyManager.RebuildPortraitOrder();
+
+  }
+
+  //Check to see if the current leader is a party member and not the player
+  static IsPartyMemberLeader(){
+    if(PartyManager.party[0].partyID >= 0){
+      return true;
+    }
+    return false;
+  }
+
+  //Is the player character the leader of the party
+  static IsPlayerPartyLeader(){
+    return !PartyManager.IsPartyMemberLeader();
+  }
+
+  //Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
+  static GetCreatureStartingPartyIndex(creature = undefined){
+
+    if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+      return 0
+    }else if(PartyManager.PortraitOrder[1]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+      return 1;
+    }else if(PartyManager.PortraitOrder[2]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
+      return 2
+    }
+
+    return PartyManager.party.length;
+
+  }
+
+  //Get the creatures reference in the CurrentMembers array
+  static GetCreatureMemberDetails( creature ){
+    if(creature instanceof ModulePlayer){
+      return undefined;
+    }
+
+    if(creature instanceof ModuleCreature){
+      return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature) ]
+    }
+
+    return undefined;
+  }
+
+  //Load the PartyMember by it's index in the CurrentMembers array.
   static LoadPartyMember(nIdx = 0, onLoad = null){
     let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     let template = npc.template;
     let partyMember = new ModuleCreature(template);
 
-    let currentSlot = PartyManager.party[nIdx+1];
+    let currentSlot = false;//PartyManager.party[nIdx+1];
 
-    if(nIdx <= 1){
+    if(nIdx == 0 || nIdx == 1){
       try{
         if(!(currentSlot instanceof ModuleCreature)){
           partyMember.id = ModuleObject.GetNextPlayerId();
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.Load( () => {
-            PartyManager.party[nIdx+1] = partyMember;
+            //PartyManager.party[nIdx+1] = partyMember;
 
-            if(PartyManager.CurrentMembers[nIdx].isLeader){
+            /*if(PartyManager.CurrentMembers[nIdx].isLeader){
               PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
-            }
+            }*/
+            PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
+            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
 
             partyMember.LoadScripts( () => {
               partyMember.LoadModel( (model) => {
@@ -273,16 +376,14 @@ class PartyManager {
                 model.box = new THREE.Box3().setFromObject(model);
                 model.moduleObject = partyMember;
 
-                partyMember.position.copy(spawn);
-                partyMember.setFacing(Game.player.GetFacing(), true);
+                partyMember.position.copy(spawn.position);
+                partyMember.setFacing(spawn.getFacing(), true);
                 //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
           
                 model.hasCollision = true;
                 //model.buildSkeleton();
                 Game.group.party.add( model );
 
-                //The follow leader action will be controlled by the heartbeat script when it is implemented
-                //partyMember.actionQueue.push({object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER});
                 partyMember.onSpawn();
                 if(typeof onLoad === 'function')
                   onLoad();
@@ -292,8 +393,8 @@ class PartyManager {
           });
         }else{
           let spawn = PartyManager.GetSpawnLocation(currentSlot);
-          currentSlot.position.copy(spawn);
-          currentSlot.setFacing(Game.player.GetFacing(), true);
+          currentSlot.position.copy(spawn.position);
+          currentSlot.setFacing(spawn.getFacing(), true);
           //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
           if(typeof onLoad === 'function')
             onLoad();
@@ -310,6 +411,7 @@ class PartyManager {
     }
   }
 
+  //Used in the TSL PartySelection menu to load creature for the 3D preview of the selected party member
   static LoadPartyMemberCreature(idx = 0, onLoad = null){
     let npc = PartyManager.NPCS[idx];
     if(npc){
@@ -336,41 +438,90 @@ class PartyManager {
     
   }
 
-  static GetSpawnLocation(creature = undefined){
-    if(creature instanceof ModuleCreature){
-      if(Game.isLoadingSave){
-        return new THREE.Vector3(
+  static GetSpawnLocation( creature = undefined ){
+    if( creature instanceof ModuleCreature ){
+      if( Game.isLoadingSave ){
+        return new Game.Location(
           creature.getXPosition(), 
           creature.getYPosition(), 
-          creature.getZPosition()
-        )
-      }else if(Game.module.area.transWP){
-        console.log('TransWP - PM', Game.module.area.transWP);
-        return new THREE.Vector3(
-          Game.module.area.transWP.RootNode.GetFieldByLabel('XPosition').GetValue(),
-          Game.module.area.transWP.RootNode.GetFieldByLabel('YPosition').GetValue(),
-          Game.module.area.transWP.RootNode.GetFieldByLabel('ZPosition').GetValue()
+          creature.getZPosition(),
+          creature.getXOrientation(), 
+          creature.getYOrientation(), 
+          creature.getZOrientation()
         );
-      }else{
-        let _targetOffset = 1.5;
-        if(PartyManager.party.indexOf(creature) == 2){
-          _targetOffset = -1.5;
+      }else if( Game.module.area.transWP ){
+        if( Game.module.area.transWP ){
+          console.log('TransWP - PM', Game.module.area.transWP);
         }
-
+        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
         let spawnLoc = Game.module.area.getSpawnLocation();
-
-        let targetPos = new THREE.Vector3(spawnLoc.XPosition, spawnLoc.YPosition, spawnLoc.ZPosition).sub(
-          new THREE.Vector3(
-            _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
-            _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
-            0
-          )
-        );
-        return targetPos;
+        let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
+        switch(index){
+          case 0:
+            return new Game.Location(
+              spawnLoc.position.x,
+              spawnLoc.position.y, 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z
+            );
+          case 1:
+            return new Game.Location(
+              spawnLoc.position.x + 1.5 * Math.cos(facing), 
+              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z
+            );
+          case 2:
+            return new Game.Location(
+              spawnLoc.position.x + -1.5 * Math.cos(facing), 
+              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z
+            );
+        }
+      }else{
+        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
+        let spawnLoc = Game.module.area.getSpawnLocation();
+        let facing = spawnLoc.getFacing();
+        switch(index){
+          case 0:
+            return new Game.Location(
+              spawnLoc.position.x,
+              spawnLoc.position.y, 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z,
+            );
+          case 1:
+            return new Game.Location(
+              spawnLoc.position.x + 1.5 * Math.cos(facing), 
+              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z,
+            );
+          case 2:
+            return new Game.Location(
+              spawnLoc.position.x + -1.5 * Math.cos(facing), 
+              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.z,
+              spawnLoc.rotation.x,
+              spawnLoc.rotation.y, 
+              spawnLoc.rotation.z,
+            );
+        }
       }
     }
-
-    return new THREE.Vector3(0, 0, 0);
+    
+    return Game.module.area.getSpawnLocation();
 
   }
 
@@ -391,6 +542,37 @@ class PartyManager {
       )
     );
     return Game.module.area.getNearestWalkablePoint(targetPos);
+  }
+
+  static GiveXP( amount = 0){
+
+  }
+
+  static async ExportPartyMemberTemplate( index = 0, template = undefined ){
+    return new Promise( async (resolve, reject) => {
+      if(template instanceof GFFObject){
+        template.Export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc') , () => {
+          resolve();
+        }, () => {
+          resolve();
+        });
+      }else{
+        resolve();
+      }
+    });
+  }
+
+  static async ExportPartyMemberTemplates(){
+    return new Promise( async (resolve, reject) => {
+      let maxPartyMembers = (app_profile.key == 'kotor') ? 9 : 12;
+      for(let i = 0; i < maxPartyMembers; i++){
+        let pm = PartyManager.NPCS[i];
+        if(pm.template instanceof GFFObject){
+          await PartyManager.ExportPartyMemberTemplate(i, pm.template);
+        }
+      }
+      resolve();
+    });
   }
 
 }

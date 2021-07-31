@@ -66,6 +66,7 @@ class Module {
       Mod_OnUsrDefined: '',
     };
 
+    this.Mod_PauseDay = 0;
     this.Mod_PauseTime = 0;
     this.Mod_StartDay = 1;
     this.Mod_StartHour = 13;
@@ -82,6 +83,10 @@ class Module {
     if(ifo instanceof GFFObject){
       this.ifo = ifo;
 
+      if(ifo.RootNode.HasField('Mod_PauseDay')){
+        this.Mod_PauseDay = ifo.GetFieldByLabel('Mod_PauseDay').GetValue();
+      }
+
       if(ifo.RootNode.HasField('Mod_PauseTime')){
         this.Mod_PauseTime = ifo.GetFieldByLabel('Mod_PauseTime').GetValue();
       }
@@ -96,7 +101,14 @@ class Module {
       //KOTOR modules should only ever have one area. But just incase lets loop through the list
       for(let i = 0; i < Mod_Area_listLen; i++){
         let Mod_Area = Mod_Area_list.ChildStructs[0];
-        let area = { 'Area_Name': Mod_Area.GetFieldByLabel('Area_Name').GetValue() };
+        let area = {};
+
+        if(Mod_Area.HasField('Area_Name'))
+          area.Area_Name = Mod_Area.GetFieldByLabel('Area_Name').GetValue()
+
+        if(Mod_Area.HasField('ObjectId'))
+          area.ObjectId = Mod_Area.GetFieldByLabel('ObjectId').GetValue()
+
         this.Mod_Area_list.push(area);
       }
 
@@ -499,6 +511,240 @@ class Module {
     }
   }
 
+  dispose(){
+    Game.collisionList = [];
+    
+    //Remove all weather effects
+    while(Game.weather_effects.length){
+      Game.weather_effects[0].dispose();
+      Game.weather_effects.shift();
+    }
+    
+    //Remove all effects
+    if(Game.module){
+      while(Game.module.effects.length){
+        Game.module.effects[0].dispose();
+        Game.module.effects.shift();
+      }
+    }
+
+    //Cleanup texture cache ignoring GUI & LBL textures
+    Object.keys(TextureLoader.textures).forEach( (key) => {
+
+      if(key.substr(0, 3) == 'lbl' || key.substr(0, 3) == 'gui')
+        return;
+
+      TextureLoader.textures[key].dispose();
+      delete TextureLoader.textures[key]; 
+
+    });
+
+    //Clear walkmesh list
+    while (Game.walkmeshList.length){
+      let wlkmesh = Game.walkmeshList.shift();
+      //wlkmesh.dispose();
+      Game.group.room_walkmeshes.remove(wlkmesh);
+      Game.octree_walkmesh.remove(wlkmesh);
+    }
+
+    Game.octree_walkmesh.rebuild();
+
+    Game.emitters = {};
+
+    if(Game.module instanceof Module){
+
+      if(Game.player instanceof ModuleObject){
+        Game.player.destroy();
+        Game.player = undefined;
+      }
+
+      //Clear emitters
+      while (Game.group.emitters.children.length){
+        Game.group.emitters.remove(Game.group.emitters.children[0]);
+      }
+
+      //Clear room geometries
+      while (Game.module.area.rooms.length){
+        Game.module.area.rooms[0].destroy();
+      }
+
+      //Clear creature geometries
+      while (Game.module.area.creatures.length){
+        Game.module.area.creatures[0].destroy();
+      }
+
+      //Clear placeable geometries
+      while (Game.module.area.placeables.length){
+        Game.module.area.placeables[0].destroy();
+      }
+
+      //Clear door geometries
+      while (Game.module.area.doors.length){
+        Game.module.area.doors[0].destroy();
+      }
+
+      //Clear trigger geometries
+      while (Game.module.area.triggers.length){
+        Game.module.area.triggers[0].destroy();
+      }
+
+      //Clear party geometries
+      // while (Game.group.party.children.length > 1){
+      //   Game.group.party.children[1].dispose();
+      //   Game.group.party.remove(Game.group.party.children[1]);
+      // }
+
+      /*while (PartyManager.party.length){
+        Game.group.party.children[0].dispose();
+        Game.group.party.remove(Game.group.party.children[0]);
+      }*/
+
+      //Clear sound geometries
+      while (Game.group.sounds.children.length){
+        Game.group.sounds.remove(Game.group.sounds.children[0]);
+      }
+
+      //Clear grass geometries
+      while (Game.group.grass.children.length){
+        Game.group.grass.children[0].geometry.dispose();
+        Game.group.grass.children[0].material.dispose();
+        Game.group.grass.remove(Game.group.grass.children[0]);
+      }
+
+      //Clear party geometries
+      /*while (PartyManager.party.length){
+        PartyManager.party[0].destroy();
+        PartyManager.party.shift();
+      }*/
+
+    }
+
+    Game.module = undefined;
+
+  }
+
+  save( isSaveGame = false ){
+
+    return new Promise( async (resolve, reject ) => {
+
+      PartyManager.Save();
+
+      let ifo = new GFFObject();
+      ifo.FileType = 'IFO ';
+
+      ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Creature List') );
+      let eventQueue = ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'EventQueue') );
+      for(let i = 0; i < this.eventQueue.length; i++){
+        
+        let event = this.eventQueue[i];
+        if(event.id == Module.EventID.TIMED_EVENT){
+          let eventStruct = new Struct( 0x7777 );
+
+          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'CallerId') ).SetValue( event.script.caller instanceof ModuleObject ? event.script.caller.id : 2130706432 );
+          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'Day') ).SetValue(event.day);
+          let eventData = eventStruct.AddField( new Field(GFFDataTypes.STRUCT, 'EventData') );
+          eventData.AddChildStruct( event.script.saveEventSituation() );
+          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'EventId') ).SetValue(event.id);
+          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue( event.script.caller instanceof ModuleObject ? event.script.caller.id : 2130706432 );
+          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'Time') ).SetValue(event.time);
+
+          eventQueue.AddChildStruct( eventStruct );
+        }
+
+      }
+
+      let areaList = ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Mod_Area_list') );
+      for(let i = 0; i < this.Mod_Area_list.length; i++){
+        areaList.AddChildStruct( this.Mod_Area_list[i].saveAreaListStruct() );
+        this.Mod_Area_list[i].save();
+      }
+
+      ifo.RootNode.AddField( new Field(GFFDataTypes.INT, 'Mod_Creator_ID') ).SetValue(this.Mod_Creator_ID);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Mod_CutSceneList') );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_DawnHour') ).SetValue(this.Mod_DawnHour);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_Description') ).SetValue( this.Mod_Description );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_DuskHour') ).SetValue(this.Mod_DuskHour);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD64, 'Mod_Effect_NxtId') ).SetValue(this.Mod_Effect_NxtId);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_Entry_Area') ).SetValue(this.Mod_Entry_Area);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Mod_Entry_Dir_X') ).SetValue(this.Mod_Entry_Dir_X);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Mod_Entry_Dir_Y') ).SetValue(this.Mod_Entry_Dir_Y);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Mod_Entry_X') ).SetValue(this.Mod_Entry_X);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Mod_Entry_Y') ).SetValue(this.Mod_Entry_Y);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'Mod_Entry_Z') ).SetValue(this.Mod_Entry_Z);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Mod_Expan_List') );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Mod_Hak') ).SetValue(this.Mod_Hak);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.VOID, 'Mod_ID') );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_IsNWMFile') ).SetValue(0);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_IsSaveGame') ).SetValue( isSaveGame ? 1 : 0);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_MinPerHour') ).SetValue(this.Mod_MinPerHour);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Mod_Name') ).SetValue( this.Mod_Name );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_NextCharId0') ).SetValue(this.Mod_NextCharId0);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_NextCharId1') ).SetValue(this.Mod_NextCharId1);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_NextObjId0') ).SetValue(this.Mod_NextObjId0);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_NextObjId1') ).SetValue(this.Mod_NextObjId1);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnAcquirItem') ).SetValue(this.scripts.onAcquirItem ? this.scripts.onAcquirItem.name : '');
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnActvtItem') ).SetValue(this.scripts.onActvItem ? this.scripts.onActvItem.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientEntr') ).SetValue(this.scripts.onClientEntr ? this.scripts.onClientEntr.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnClientLeav') ).SetValue(this.scripts.onClientLeav ? this.scripts.onClientLeav.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModLoad') ).SetValue(this.scripts.onModLoad ? this.scripts.onModLoad.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnModStart') ).SetValue(this.scripts.onModStart ? this.scripts.onModStart.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDeath') ).SetValue(this.scripts.onPlrDeath ? this.scripts.onPlrDeath.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrDying') ).SetValue(this.scripts.onPlrDying ? this.scripts.onPlrDying.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrLvlUp') ).SetValue(this.scripts.onPlrLvlUp ? this.scripts.onPlrLvlUp.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnPlrRest') ).SetValue(this.scripts.onPlrRest ? this.scripts.onPlrRest.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnSpawnBtnDn') ).SetValue(this.scripts.onSpawnBtnDn ? this.scripts.onSpawnBtnDn.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUnAqreItem') ).SetValue(this.scripts.onUnAqreItem ? this.scripts.onUnAqreItem.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Mod_OnUsrDefined') ).SetValue(this.scripts.onUsrDefined ? this.scripts.onUsrDefined.name : '');;
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_PauseDay') ).SetValue(this.Mod_PauseDay);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_PauseTime') ).SetValue(this.Mod_PauseTime);
+
+      //Player
+      let playerList = ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Mod_PlayerList') );
+      if(Game.player instanceof ModulePlayer){
+        playerList.AddChildStruct( Game.player.save().RootNode );
+      }
+
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_StartDay') ).SetValue(this.Mod_StartDay);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_StartHour') ).SetValue(this.Mod_StartHour);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartMiliSec') ).SetValue(this.Mod_StartMiliSec);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartMinute') ).SetValue(this.Mod_StartMinute);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_StartMonth') ).SetValue(this.Mod_StartMonth);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Mod_StartSecond') ).SetValue(this.Mod_StartSecond);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_StartYear') ).SetValue(this.Mod_StartYear);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Mod_Tag') ).SetValue(this.Mod_Tag);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Mod_Tokens') );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_Transition') ).SetValue(this.Mod_Transition);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Mod_Version') ).SetValue(this.Mod_Version);
+      ifo.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Mod_XPScale') .SetValue(this.Mod_XPScale));
+      ifo.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
+      ifo.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
+      
+      this.ifo = ifo;
+
+      let sav = new ERFObject();
+
+      sav.addResource('module', ResourceTypes['ifo'], this.ifo.GetExportBuffer());
+      for(let i = 0; i < this.Mod_Area_list.length; i++){
+        let area = this.Mod_Area_list[i];
+        sav.addResource(area._name, ResourceTypes['are'], area.are.GetExportBuffer());
+        sav.addResource(area._name, ResourceTypes['git'], area.git.GetExportBuffer());
+      }
+
+      await sav.export( path.join(CurrentGame.gameinprogress_dir, this.filename+'.sav') );
+      
+      console.log('Current Module Exported', this.filename);
+
+      await InventoryManager.Save();
+
+      await PartyManager.ExportPartyMemberTemplates();
+
+      resolve();
+
+    });
+
+  }
+
   static async GetModuleMod(modName = ''){
     return new Promise( (resolve, reject) => {
       let resource_path = path.join(app_profile.directory, 'modules', modName+'.mod');
@@ -578,11 +824,11 @@ class Module {
       let archives = [];
       let archive = undefined;
 
-      let isModuleSaved = Game.SaveGame && Game.SaveGame.IsModuleSaved(modName);
+      let isModuleSaved = await CurrentGame.IsModuleSaved(modName);
 
       try{
         if(isModuleSaved){
-          archive = await Game.SaveGame.GetModuleRim(modName);
+          archive = await CurrentGame.GetModuleRim(modName);
           if(archive instanceof ERFObject){
             archives.push(archive);
           }
@@ -686,6 +932,7 @@ class Module {
     if(modName != null){
       try{
         Module.GetModuleArchives(modName).then( (archives) => {
+          console.log('archives', archives);
           Game.module.archives = archives;
 
           ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {
@@ -722,6 +969,7 @@ class Module {
           });
         });
       }catch(e){
+        console.error('LoadModule', e);
         Game.module = undefined;
       }
     }

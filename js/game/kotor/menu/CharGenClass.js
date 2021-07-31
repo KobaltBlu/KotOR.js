@@ -179,7 +179,7 @@ class CharGenClass extends GameMenu {
           control._3dView.camera.position.z = .9;
 
           let template = this.GetPlayerTemplate(nth);
-          control.objectCreature = new ModuleCreature(template);
+          control.objectCreature = new ModulePlayer(template);
           control.objectCreature.Load( () => {
             control.objectCreature.LoadModel( (model) => {
               model.position.set(0, 0, 0);
@@ -258,11 +258,20 @@ class CharGenClass extends GameMenu {
       }
       //console.log('port', appearanceIdx, portraitId);
 
+      template.RootNode.AddField( new Field(GFFDataTypes.INT, 'AIState') ).SetValue(appearanceIdx);
+      template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+      template.RootNode.AddField( new Field(GFFDataTypes.INT, 'Age') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'AmbientAnimState') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.INT, 'Animation') ).SetValue(10000);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Appearance_Head') ).SetValue(1);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'Appearance_Type') ).SetValue(appearanceIdx);
+      template.RootNode.AddField( new Field(GFFDataTypes.SHORT, 'ArmorClass') ).SetValue(10);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'BodyBag') ).SetValue(0);
+
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(portraitId);
-      template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'FirstName') ).SetValue('New Player');
-      template.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'LastName') ).SetValue('');
+      template.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'FirstName') ).SetValue('New Player');
+      template.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LastName') );
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'HitPoints') ).SetValue(8);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentHitPoints') ).SetValue(8);
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'MaxHitPoints') ).SetValue(20);
@@ -270,6 +279,7 @@ class CharGenClass extends GameMenu {
       template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'CurrentForce') ).SetValue(0);
       template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Gender') ).SetValue(nth < 3 ? 0 : 1);
       let equipment = template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Equip_ItemList') );
+
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptAttacked') ).SetValue('k_hen_attacked01');
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDamaged') ).SetValue('k_hen_damage01');
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptDeath') ).SetValue('');
@@ -285,39 +295,37 @@ class CharGenClass extends GameMenu {
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptSpellAt') ).SetValue('');
       template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'ScriptUserDefine') ).SetValue('');
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'GoodEvil') ).SetValue(50);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'NaturalAC') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'GoodEvil') ).SetValue(50);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'NaturalAC') ).SetValue(0);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Con') ).SetValue(8);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Dex') ).SetValue(8);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Str') ).SetValue(8);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Wis') ).SetValue(8);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Cha') ).SetValue(8);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Int') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Con') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Dex') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Str') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Wis') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Cha') ).SetValue(8);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Int') ).SetValue(8);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'fortbonus') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'refbonus') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'willbonus') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'fortbonus') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'refbonus') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'willbonus') ).SetValue(0);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'PerceptionRange') ).SetValue(13);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PerceptionRange') ).SetValue(13);
   
       let skillList = template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'SkillList') );
   
       for(let i = 0; i < 8; i++){
         let _skill = new Struct();
-        _skill.AddField( new Field(GFFDataTypes.RESREF, 'Rank') ).SetValue(0);
+        _skill.AddField( new Field(GFFDataTypes.BYTE, 'Rank') ).SetValue(0);
         skillList.AddChildStruct(_skill);
       }
 
       //ClassList
       let classList = template.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ClassList') );
-      
-      let _class = new Struct();
-      _class.AddField( new Field(GFFDataTypes.INT, 'Class') ).SetValue(classId);
-      _class.AddField( new Field(GFFDataTypes.SHORT, 'ClassLevel') ).SetValue(1);
-      _class.AddField( new Field(GFFDataTypes.LIST, 'KnownList0') );
-      classList.AddChildStruct(_class);
-
+      let classStruct = new Struct();
+      classStruct.AddField( new Field(GFFDataTypes.INT, 'Class') ).SetValue(classId);
+      classStruct.AddField( new Field(GFFDataTypes.SHORT, 'ClassLevel') ).SetValue(1);
+      classStruct.AddField( new Field(GFFDataTypes.LIST, 'KnownList0') );
+      classList.AddChildStruct(classStruct);
   
       let armorStruct = new Struct(UTCObject.SLOT.ARMOR);
       armorStruct.AddField( new Field(GFFDataTypes.RESREF, 'EquippedRes') ).SetValue('g_a_clothes01');
@@ -341,13 +349,14 @@ class CharGenClass extends GameMenu {
         template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'SoundSetFile') ).SetValue(nth < 3 ? 85 : 83);
       }
 
-      template.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'Race') ).SetValue(6);
+      template.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Race') ).SetValue(6);
   
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'XPosition') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'YPosition') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'ZPosition') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'XOrientation') ).SetValue(0);
-      template.RootNode.AddField( new Field(GFFDataTypes.WORD, 'YOrientation') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue(0);
+      template.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'ZOrientation') ).SetValue(0);
 
       return template;
 

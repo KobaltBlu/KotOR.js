@@ -11,6 +11,7 @@ class InGameConfirm extends GameMenu {
     super(args);
 
     this.isOverlayGUI = true;
+    this.isModal = true;
 
     this.LoadMenu({
       name: 'confirm',
@@ -42,16 +43,21 @@ class InGameConfirm extends GameMenu {
 
   Show(){
     super.Show();
+    this.RecalculatePosition();
   }
 
   Update(delta){
-
     super.Update(delta);
+
     if(!this.bVisible)
       return;
 
     this.tGuiPanel.widget.position.x = 0;
     this.tGuiPanel.widget.position.y = 0;
+
+    this.LB_MESSAGE.updateBounds();
+    this.BTN_CANCEL.updateBounds();
+    this.BTN_OK.updateBounds();
 
   }
 

@@ -26,6 +26,7 @@ class Game extends Engine {
 
     Game.activeGUIElement = undefined;
     Game.hoveredGUIElement = undefined;
+    Game.onScreenShot = undefined;
 
     Game.time = 0;
     Game.deltaTime = 0;
@@ -36,7 +37,10 @@ class Game extends Engine {
 
     Game.$canvas.addClass('noselect').attr('tabindex', 1);
     $('#renderer-container').append(Game.$canvas);
-    Game.canvas = Game.canvas.transferControlToOffscreen();
+    
+    //transferToOffscreen() causes issues with savegame screenshots
+    //Game.canvas = Game.canvas.transferControlToOffscreen();
+
     Game.canvas.style = { width: 0, height: 0};
     Game.context = Game.canvas.getContext( 'webgl' );
 
@@ -46,7 +50,8 @@ class Game extends Engine {
       canvas: Game.canvas,
       context: Game.context,
       logarithmicDepthBuffer: false,
-      alpha: true
+      alpha: true,
+      preserveDrawingBuffer: true
     });
 
     Game.renderer.autoClear = false;
@@ -458,8 +463,8 @@ class Game extends Engine {
     Game.renderPassCursor.clear = false;
     Game.renderPassGUI.clearDepth = true;
 
-    Game.colorPass.uniforms.powRGB.value.set(1,1,1);
-    Game.colorPass.uniforms.mulRGB.value.set(0.5,.5,.5);
+    Game.colorPass.uniforms.powRGB.value.set(1, 1, 1);
+    Game.colorPass.uniforms.mulRGB.value.set(0.5, 0.5, 0.5);
 
     Game.bokehPass.needsSwap = true;
     Game.bokehPass.enabled = false;
@@ -576,28 +581,37 @@ class Game extends Engine {
     //Add the currently controlled PC back to the SceneGraph
     Game.group.party.add(Game.getCurrentPlayer().model);
 
-    //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
+    //Loop through the intersections this frame
     if(intersects.length){
-      for(let i =0; i < intersects.length; i++){
+      for(let i = 0; i < intersects.length; i++){
         let intersection = intersects[i],
           obj = intersection.object;
 
+        if(intersection.distance > 25)
+          break;
+
+        if(typeof obj.wok !== 'undefined'){
+          if(obj.wok.moduleObject instanceof ModuleRoom){
+            break;
+          }
+        }
+
         if(obj.moduleObject){
           if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
-              continue;
+            continue;
           }
           if(obj.moduleObject.model.type === 'AuroraModel'){
             if(typeof onSuccess === 'function')
               onSuccess(obj.moduleObject.model);
 
-              break;
+            break;
           }
         }else if(typeof obj.auroraModel !== 'undefined'){
           obj = obj.auroraModel;
           if(obj.type === 'AuroraModel'){
             if(obj != Game.getCurrentPlayer().getModel()){
               if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
-                  continue;
+                continue;
               }
                 
               if(typeof onSuccess === 'function')
@@ -669,14 +683,17 @@ class Game extends Engine {
         let globItem = _initGlobals[key];
 
         switch(globItem.type){
+          case 'Boolean':
+            Game.Globals.Boolean[globItem.name.toLowerCase()] = {name: globItem.name, value: false};
+          break;
+          case 'Location':
+            Game.Globals.Location[globItem.name.toLowerCase()] = {name: globItem.name, value: new Game.Location()};
+          break;
           case 'Number':
-            Game.Globals.Number[globItem.name.toLowerCase()] = 0;
+            Game.Globals.Number[globItem.name.toLowerCase()] = {name: globItem.name, value: 0};
           break;
           case 'String':
-            Game.Globals.String[globItem.name.toLowerCase()] = '';
-          break;
-          case 'Boolean':
-            Game.Globals.Boolean[globItem.name.toLowerCase()] = false;
+            Game.Globals.String[globItem.name.toLowerCase()] = {name: globItem.name, value: ''};
           break;
         }
 
@@ -684,7 +701,7 @@ class Game extends Engine {
     }
     
     console.log('SaveGames: Loading');
-    SaveGame.getSaveGames( () => {
+    SaveGame.GetSaveGames().then( () => {
       console.log('SaveGames: Complete');
       
       console.log('CursorManager: Init');
@@ -725,6 +742,7 @@ class Game extends Engine {
           'CharGenPortCust', //Character Portrait
           'CharGenMain',
           'MenuSaveLoad',
+          'MenuSaveName',
           'MainOptions',
           'MainMovies',
           'MenuSound',
@@ -879,9 +897,6 @@ class Game extends Engine {
     Game.audioEngine.Reset();
     CombatEngine.Reset();
 
-    //Game.InGameOverlay.Show();
-    //Game.InGameOverlay.Hide();
-
     LightManager.clearLights();
 
     Game.selected = undefined;
@@ -894,101 +909,10 @@ class Game extends Engine {
 
     //Game.InGameOverlay.Hide();
     Game.Mode = Game.MODES.LOADING;
-    Game.collisionList = [];
     
-    //Remove all weather effects
-    while(Game.weather_effects.length){
-      Game.weather_effects[0].dispose();
-      Game.weather_effects.shift();
-    }
-    
-    //Remove all effects
-    if(Game.module){
-      while(Game.module.effects.length){
-        Game.module.effects[0].dispose();
-        Game.module.effects.shift();
-      }
-    }
-
-    //Cleanup texture cache ignoring GUI & LBL textures
-    Object.keys(TextureLoader.textures).forEach( (key) => {
-
-      if(key.substr(0, 3) == 'lbl' || key.substr(0, 3) == 'gui')
-        return;
-
-      TextureLoader.textures[key].dispose();
-      delete TextureLoader.textures[key]; 
-
-    });
-
-    //Clear walkmesh list
-    while (Game.walkmeshList.length){
-      let wlkmesh = Game.walkmeshList.shift();
-      //wlkmesh.dispose();
-      Game.group.room_walkmeshes.remove(wlkmesh);
-      Game.octree_walkmesh.remove(wlkmesh);
-    }
-
-    Game.octree_walkmesh.rebuild();
-
-    Game.emitters = {};
-
     if(Game.module instanceof Module){
-
-      //Clear emitters
-      while (Game.group.emitters.children.length){
-        Game.group.emitters.remove(Game.group.emitters.children[0]);
-      }
-
-      //Clear room geometries
-      while (Game.module.area.rooms.length){
-        Game.module.area.rooms[0].destroy();
-      }
-
-      //Clear creature geometries
-      while (Game.module.area.creatures.length){
-        Game.module.area.creatures[0].destroy();
-      }
-
-      //Clear placeable geometries
-      while (Game.module.area.placeables.length){
-        Game.module.area.placeables[0].destroy();
-      }
-
-      //Clear door geometries
-      while (Game.module.area.doors.length){
-        Game.module.area.doors[0].destroy();
-      }
-
-      //Clear party geometries
-      // while (Game.group.party.children.length > 1){
-      //   Game.group.party.children[1].dispose();
-      //   Game.group.party.remove(Game.group.party.children[1]);
-      // }
-
-      /*while (PartyManager.party.length){
-        Game.group.party.children[0].dispose();
-        Game.group.party.remove(Game.group.party.children[0]);
-      }*/
-
-      //Clear sound geometries
-      while (Game.group.sounds.children.length){
-        Game.group.sounds.remove(Game.group.sounds.children[0]);
-      }
-
-      //Clear grass geometries
-      while (Game.group.grass.children.length){
-        Game.group.grass.children[0].geometry.dispose();
-        Game.group.grass.children[0].material.dispose();
-        Game.group.grass.remove(Game.group.grass.children[0]);
-      }
-
-      //Clear party geometries
-      /*while (PartyManager.party.length){
-        PartyManager.party[0].destroy();
-        PartyManager.party.shift();
-      }*/
-
+      Game.module.save();
+      Game.module.dispose();
     }
 
     //Remove all cached scripts and kill all running instances
@@ -1002,10 +926,7 @@ class Game extends Engine {
       Game.scene.visible = false;
 
       Game.LoadScreen.setLoadBackground('load_'+name, () => {
-        //Game.LoadScreen.lbl_hint.setText('@ABCDEFGHIJKLMNOPQRSTUVWXYZ');
         Game.LoadScreen.showRandomHint();
-        //Game.InGameOverlay.Hide();
-        //Game.MainMenu.Hide();
         Game.LoadScreen.Open();
 
         module.loadScene( (d) => {
@@ -1064,53 +985,37 @@ class Game extends Engine {
                 Game.Mode = Game.MODES.INGAME;
               }
               
-              setTimeout( () => {
-                console.log('inDialog', Game.inDialog);
-                console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
-                if(!Game.holdWorldFadeInForDialog)
-                  Game.FadeOverlay.FadeIn(1, 0, 0, 0);
+              //setTimeout( () => {
+                //console.log('inDialog', Game.inDialog);
+                //console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
                 
-                Game.module.readyToProcessEvents = true;
-                console.log('runSpawnScripts', runSpawnScripts);
-                for(let i = 0; i < Game.module.area.creatures.length; i++){
-                  if(Game.module.area.creatures[i] instanceof ModuleObject){
-                    Game.module.area.creatures[i].onSpawn(runSpawnScripts);
-                  }
-                }
+                //console.log('runSpawnScripts', runSpawnScripts);
+                Game.module.area.initAreaObjects(runSpawnScripts).then( () => {
+                  Game.module.readyToProcessEvents = true;
 
-                for(let i = 0; i < PartyManager.party.length; i++){
-                  if(PartyManager.party[i] instanceof ModuleObject){
-                    PartyManager.party[i].onSpawn(runSpawnScripts);
-                  }
-                }
+                  if(!Game.holdWorldFadeInForDialog)
+                    Game.FadeOverlay.FadeIn(1, 0, 0, 0);
 
-                for(let i = 0; i < Game.module.area.placeables.length; i++){
-                  if(Game.module.area.placeables[i] instanceof ModuleObject){
-                    Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+                  if(Game.Mode == Game.MODES.INGAME){
+  
+                    let anyCanLevel = false;
+                    for(let i = 0; i < PartyManager.party.length; i++){
+                      if(PartyManager.party[i].canLevelUp()){
+                        anyCanLevel = true;
+                      }
+                    }
+  
+                    if(anyCanLevel){
+                      Game.audioEmitter.PlaySound('gui_level');
+                    }
+  
                   }
-                }
 
-                for(let i = 0; i < Game.module.area.doors.length; i++){
-                  if(Game.module.area.doors[i] instanceof ModuleObject){
-                    Game.module.area.doors[i].onSpawn(runSpawnScripts);
-                  }
-                }
+                });
 
-                for(let i = 0; i < Game.module.area.triggers.length; i++){
-                  if(Game.module.area.triggers[i] instanceof ModuleObject){
-                    Game.module.area.triggers[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < Game.module.area.waypoints.length; i++){
-                  if(Game.module.area.waypoints[i] instanceof ModuleObject){
-                    Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-              }, 1000);                
+              //}, 1000);                
               
-              Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
+              Game.renderer.setClearColor( new THREE.Color(Game.module.area.SunFogColor) );
             });
 
           });
@@ -1501,6 +1406,33 @@ class Game extends Engine {
       //Game.renderer.setRenderTarget( null );
 
       Game.composer.render(delta);
+    }
+
+    if(typeof Game.onScreenShot === 'function'){
+      console.log('Screenshot', Game.onScreenShot);
+      //Game.scene_gui.visible = false;
+      //Game.scene_cursor.visible = false;
+      
+      Game.renderer.clear();
+      Game.renderer.render(Game.scene, Game.currentCamera);
+
+      let ssCallback = Game.onScreenShot;
+      let screenshot = new Image();
+      screenshot.src = Game.$canvas[0].toDataURL('image/png');
+      screenshot.onload = function() {
+        let ssCanvas = new OffscreenCanvas(256, 256);
+        let ctx = ssCanvas.getContext('2d');
+        ctx.drawImage(screenshot, 0, 0, 256, 256);
+
+        let tga = TGAObject.FromCanvas(ssCanvas);
+        ssCallback(tga);
+      };
+      
+      Game.composer.render(delta);
+
+      //Game.scene_gui.visible = true;
+      //Game.scene_cursor.visible = true;
+      Game.onScreenShot = undefined;
     }
 
     if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){

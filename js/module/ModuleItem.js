@@ -21,6 +21,8 @@ class ModuleItem extends ModuleObject {
     this.id = -1;
 
     this.baseItem = 0;
+    this.addCost = 0;
+    this.cost = 0;
     this.modelVariation = 0;
     this.textureVariation = 1;
     this.palleteID = 0;
@@ -71,6 +73,10 @@ class ModuleItem extends ModuleObject {
 
   getWeaponType(){
     return parseInt(this.getBaseItem().weapontype);
+  }
+
+  isRangedWeapon(){
+    return this.getBaseItem().rangedweapon == 1;
   }
 
   isStolen(){
@@ -433,7 +439,7 @@ class ModuleItem extends ModuleObject {
       let property = this.properties[i];
       //Activate Item
       if(property.propertyName == ModuleItem.PROPERTY.CastSpell){
-        spells.push(new TalentSpell({id: property.subType}));
+        spells.push(new TalentSpell(property.subType));
       }
     }
 
@@ -595,6 +601,48 @@ class ModuleItem extends ModuleObject {
     }else{
       //oCreature.inventory.push(this);
     }
+  }
+
+  save(){
+    let itemStruct = new Struct(0);
+
+    if(this.id >= 0)
+      itemStruct.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue(this.id);
+    
+    itemStruct.AddField( new Field(GFFDataTypes.INT, 'BaseItem') ).SetValue(this.getBaseItemId());
+    itemStruct.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Identified') ).SetValue(this.identified);
+    itemStruct.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'Description') ).SetValue(this.template.GetFieldByLabel('Description').GetCExoLocString());
+    itemStruct.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'DescIdentified') ).SetValue(this.template.GetFieldByLabel('DescIdentified').GetCExoLocString());
+    itemStruct.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocalizedName') ).SetValue(this.template.GetFieldByLabel('LocalizedName').GetCExoLocString());
+    itemStruct.AddField( new Field(GFFDataTypes.WORD, 'StackSize') ).SetValue(this.stackSize);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Stolen') ).SetValue(this.stolen);
+    itemStruct.AddField( new Field(GFFDataTypes.DWORD, 'Upgrades') ).SetValue(this.upgrades);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Dropable') ).SetValue(this.dropable);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Pickpocketable') ).SetValue(1);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'ModelVariation') ).SetValue(this.modelVariation);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Charges') ).SetValue(this.charges);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'MaxCharges') ).SetValue(this.maxCharges);
+    itemStruct.AddField( new Field(GFFDataTypes.DWORD, 'Cost') ).SetValue(this.cost);
+    itemStruct.AddField( new Field(GFFDataTypes.DWORD, 'AddCost') ).SetValue(this.addCost);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'Plot') ).SetValue(this.plot);
+
+    let propertiesList = itemStruct.AddField( new Field(GFFDataTypes.LIST, 'PropertiesList') );
+    for(let i = 0; i < this.properties.length; i++){
+      propertiesList.AddChildStruct( this.properties[i].save() );
+    }
+
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(this.xPosition);
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(this.yPosition);
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'ZPosition') ).SetValue(this.zPosition);
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'XOrientation') ).SetValue(this.xOrientation);
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'YOrientation') ).SetValue(this.yOrientation);
+    itemStruct.AddField( new Field(GFFDataTypes.FLOAT, 'ZOrientation') ).SetValue(this.zOrientation);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'NonEquippable') ).SetValue(this.nonEquippable);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'NewItem') ).SetValue(this.newItem);
+    itemStruct.AddField( new Field(GFFDataTypes.BYTE, 'DELETING') ).SetValue(0);
+
+    return itemStruct;
   }
 
 
@@ -768,6 +816,23 @@ class ItemProperty {
     }
 
     return 0;
+  }
+
+  save(){
+    let propStruct = new Struct(0);
+
+    propStruct.AddField( new Field(GFFDataTypes.WORD, 'PropertyName') ).SetValue( this.propertyName == -1 ? 255 : this.propertyName);
+    propStruct.AddField( new Field(GFFDataTypes.WORD, 'SubType') ).SetValue( this.subType == -1 ? 255 : this.subType);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'CostTable') ).SetValue( this.costTable == -1 ? 255 : this.costTable);
+    propStruct.AddField( new Field(GFFDataTypes.WORD, 'CostValue') ).SetValue( this.costValue == -1 ? 255 : this.costValue);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'Param1') ).SetValue( this.param1 == -1 ? 255 : this.param1);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'Param1Value') ).SetValue( this.param1Value == -1 ? 255 : this.param1Value);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'ChanceAppear') ).SetValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'UsesPerDay') ).SetValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'Usable') ).SetValue( this.useable == -1 ? 255 : this.useable);
+    propStruct.AddField( new Field(GFFDataTypes.BYTE, 'UpgradeType') ).SetValue( this.upgradeType == -1 ? 255 : this.upgradeType);
+
+    return propStruct;
   }
 
 }

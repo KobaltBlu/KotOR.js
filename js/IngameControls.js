@@ -265,9 +265,9 @@ class IngameControls {
                 clickCaptured = true;
                 try{
                   Game.mouse.clickItem = null;
-                  control.processEventListener('click', [customEvent]);
                   //control.onClick(customEvent);
                   Game.activeGUIElement = control;
+                  control.processEventListener('click', [customEvent]);
                   Game.guiAudioEmitter.PlaySound('gui_click');
                   if(Game.debug.controls)
                     console.log('MouseClick', control, control.name);
@@ -567,7 +567,7 @@ class IngameControls {
     }else{
 
       if(this.keys['escape'].pressed){
-        if(MenuManager.GetCurrentMenu() != Game.InGameOverlay && MenuManager.GetCurrentMenu() != Game.MainMenu){
+        if(MenuManager.GetCurrentMenu() != Game.InGameOverlay && MenuManager.GetCurrentMenu() != Game.MainMenu && MenuManager.GetCurrentMenu() != Game.LoadScreen){
           MenuManager.GetCurrentMenu().Close();
         }else{
           Game.MenuOptions.Open();
@@ -586,7 +586,8 @@ class IngameControls {
 
       if(this.keys['tab'].pressed && (Game.Mode == Game.MODES.INGAME)){
         if(!Game.MenuActive){
-          PartyManager.party.push(PartyManager.party.shift());
+          PartyManager.ShiftLeader();
+          //PartyManager.party.push(PartyManager.party.shift());
         }
       }
   
@@ -644,25 +645,25 @@ class IngameControls {
 
             if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
               followee.clearAllActions(true);
-              followee.force = moveSpeed;
+              followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
               //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
               followee.controlled = true;
               followee.invalidateCollision = true;
 
-              followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
-              followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+              //followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+              //followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);// * Math.cos(0);
 
             }else if( this.keys['s'].down && !followee.isDead()){
               followee.clearAllActions(true);
-              followee.force = moveSpeed;
+              followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
               //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
               followee.controlled = true;
               followee.invalidateCollision = true;
 
-              followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
-              followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);
+              //followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
+              //followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);
 
             }else{
               //followee.controlled = false;

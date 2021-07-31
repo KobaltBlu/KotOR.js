@@ -3,7 +3,7 @@ class EffectSavingThrowIncrease extends GameEffect {
     super();
     this.type = GameEffect.Type.EffectSavingThrowIncrease;
     
-    //intList[0] : 
+    //intList[0] : amount
     //intList[1] : SAVING_THROW_*
     //intList[2] : SAVING_THROW_TYPE_*
     //intList[3] : racialtypes.2da rowcount

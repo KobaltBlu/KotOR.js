@@ -578,28 +578,37 @@ class Game extends Engine {
     //Add the currently controlled PC back to the SceneGraph
     Game.group.party.add(Game.getCurrentPlayer().model);
 
-    //!!!! This needs to be optimized. It's causing a lot of GC calls every few frames
+    //Loop through the intersections this frame
     if(intersects.length){
-      for(let i =0; i < intersects.length; i++){
+      for(let i = 0; i < intersects.length; i++){
         let intersection = intersects[i],
           obj = intersection.object;
 
+        if(intersection.distance > 25)
+          break;
+
+        if(typeof obj.wok !== 'undefined'){
+          if(obj.wok.moduleObject instanceof ModuleRoom){
+            break;
+          }
+        }
+
         if(obj.moduleObject){
           if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
-              continue;
+            continue;
           }
           if(obj.moduleObject.model.type === 'AuroraModel'){
             if(typeof onSuccess === 'function')
               onSuccess(obj.moduleObject.model);
 
-              break;
+            break;
           }
         }else if(typeof obj.auroraModel !== 'undefined'){
           obj = obj.auroraModel;
           if(obj.type === 'AuroraModel'){
             if(obj != Game.getCurrentPlayer().getModel()){
               if(obj.moduleObject instanceof ModuleDoor && obj.moduleObject.isOpen()){
-                  continue;
+                continue;
               }
                 
               if(typeof onSuccess === 'function')
@@ -671,21 +680,24 @@ class Game extends Engine {
         let globItem = _initGlobals[key];
 
         switch(globItem.type){
+          case 'Boolean':
+            Game.Globals.Boolean[globItem.name.toLowerCase()] = {name: globItem.name, value: false};
+          break;
+          case 'Location':
+            Game.Globals.Location[globItem.name.toLowerCase()] = {name: globItem.name, value: new Game.Location()};
+          break;
           case 'Number':
-            Game.Globals.Number[globItem.name.toLowerCase()] = 0;
+            Game.Globals.Number[globItem.name.toLowerCase()] = {name: globItem.name, value: 0};
           break;
           case 'String':
-            Game.Globals.String[globItem.name.toLowerCase()] = '';
-          break;
-          case 'Boolean':
-            Game.Globals.Boolean[globItem.name.toLowerCase()] = false;
+            Game.Globals.String[globItem.name.toLowerCase()] = {name: globItem.name, value: ''};
           break;
         }
 
       }
     }
 
-    SaveGame.getSaveGames( () => {
+    SaveGame.GetSaveGames().then( () => {
       
       CursorManager.init( () => {
 
@@ -908,101 +920,10 @@ class Game extends Engine {
 
     Game.Mode = Game.MODES.LOADING;
     Game.followerCamera.pitch = null;
-    Game.collisionList = [];
-
-    //Remove all weather effects
-    while(Game.weather_effects.length){
-      Game.weather_effects[0].dispose();
-      Game.weather_effects.shift();
-    }
     
-    //Remove all effects
-    if(Game.module){
-      while(Game.module.effects.length){
-        Game.module.effects[0].dispose();
-        Game.module.effects.shift();
-      }
-    }
-
-    //Cleanup texture cache ignoring GUI & LBL textures
-    Object.keys(TextureLoader.textures).forEach( (key) => {
-
-      if(key.substr(0, 3) == 'lbl' || key.substr(0, 3) == 'gui')
-        return;
-
-      TextureLoader.textures[key].dispose();
-      delete TextureLoader.textures[key]; 
-
-    });
-
-    //Clear walkmesh list
-    while (Game.walkmeshList.length){
-      let wlkmesh = Game.walkmeshList.shift();
-      //wlkmesh.dispose();
-      Game.scene.remove(wlkmesh);
-      Game.octree_walkmesh.remove(wlkmesh);
-    }
-
-    Game.octree_walkmesh.rebuild();
-
-    Game.emitters = {};
-
     if(Game.module instanceof Module){
-
-      //Clear emitters
-      while (Game.group.emitters.children.length){
-        Game.group.emitters.remove(Game.group.emitters.children[0]);
-      }
-
-      //Clear room geometries
-      while (Game.module.area.rooms.length){
-        Game.module.area.rooms[0].destroy();
-      }
-
-      //Clear creature geometries
-      while (Game.module.area.creatures.length){
-        Game.module.area.creatures[0].destroy();
-      }
-
-      //Clear placeable geometries
-      while (Game.module.area.placeables.length){
-        Game.module.area.placeables[0].destroy();
-      }
-
-      //Clear door geometries
-      while (Game.module.area.doors.length){
-        Game.module.area.doors[0].destroy();
-      }
-
-      //Clear trigger geometries
-      while (Game.module.area.triggers.length){
-        Game.module.area.triggers[0].destroy();
-      }
-
-      //Clear party geometries
-      while (Game.group.party.children.length > 1){
-        Game.group.party.children[1].dispose();
-        Game.group.party.remove(Game.group.party.children[1]);
-      }
-
-      //Clear sound geometries
-      while (Game.group.sounds.children.length){
-        Game.group.sounds.remove(Game.group.sounds.children[0]);
-      }
-
-      //Clear grass geometries
-      while (Game.group.grass.children.length){
-        Game.group.grass.children[0].geometry.dispose();
-        Game.group.grass.children[0].material.dispose();
-        Game.group.grass.remove(Game.group.grass.children[0]);
-      }
-
-      //Clear party geometries
-      /*while (PartyManager.party.length){
-        PartyManager.party[0].destroy();
-        PartyManager.party.shift();
-      }*/
-
+      Game.module.save();
+      Game.module.dispose();
     }
 
     //Remove all cached scripts and kill all running instances
@@ -1074,7 +995,6 @@ class Game extends Engine {
                 Game.module.readyToProcessEvents = true;
                 console.log('onEnter Completed', Game.module);
 
-                //console.log('Running creature onSpawn scripts');
                 for(let i = 0; i < Game.module.area.creatures.length; i++){
                   if(Game.module.area.creatures[i] instanceof ModuleObject){
                     Game.module.area.creatures[i].onSpawn(runSpawnScripts);
@@ -1129,7 +1049,7 @@ class Game extends Engine {
 
           });
 
-        })
+        });
 
         //console.log(module);
 
@@ -1542,6 +1462,33 @@ class Game extends Engine {
       //Game.renderer.setRenderTarget( null );
 
       Game.composer.render();
+    }
+
+    if(typeof Game.onScreenShot === 'function'){
+      console.log('Screenshot', Game.onScreenShot);
+      //Game.scene_gui.visible = false;
+      //Game.scene_cursor.visible = false;
+      
+      Game.renderer.clear();
+      Game.renderer.render(Game.scene, Game.currentCamera);
+
+      let ssCallback = Game.onScreenShot;
+      let screenshot = new Image();
+      screenshot.src = Game.$canvas[0].toDataURL('image/png');
+      screenshot.onload = function() {
+        let ssCanvas = new OffscreenCanvas(256, 256);
+        let ctx = ssCanvas.getContext('2d');
+        ctx.drawImage(screenshot, 0, 0, 256, 256);
+
+        let tga = TGAObject.FromCanvas(ssCanvas);
+        ssCallback(tga);
+      };
+      
+      Game.composer.render(delta);
+
+      //Game.scene_gui.visible = true;
+      //Game.scene_cursor.visible = true;
+      Game.onScreenShot = undefined;
     }
 
     if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){
