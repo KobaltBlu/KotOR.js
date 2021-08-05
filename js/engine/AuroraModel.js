@@ -1540,7 +1540,7 @@ THREE.AuroraModel.NodeMaterialBuilder = function(auroraModel, node, options){
     if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
       TextureLoader.enQueue(tMap1, material, TextureLoader.Type.TEXTURE, undefined, fallbackTexture);
     }else{
-      material.uniforms.diffuse.copy(_node.Diffuse);
+      material.uniforms.diffuse.value.copy(_node.Diffuse);
     }
 
     material.needsUpdate = true;
