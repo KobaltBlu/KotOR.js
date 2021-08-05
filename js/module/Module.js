@@ -573,6 +573,11 @@ class Module {
         Game.module.area.creatures[0].destroy();
       }
 
+      //Clear item geometries
+      while (Game.module.area.items.length){
+        Game.module.area.items[0].destroy();
+      }
+
       //Clear placeable geometries
       while (Game.module.area.placeables.length){
         Game.module.area.placeables[0].destroy();

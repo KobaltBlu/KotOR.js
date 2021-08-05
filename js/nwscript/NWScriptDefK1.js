@@ -2622,8 +2622,9 @@ NWScriptDefK1.Actions = {
       if(this.isDebugging()){
         //console.log('NWScript: '+this.name, 'DestroyObject', args);
       }
+
       if(args[0] instanceof ModuleObject)
-      args[0].destroy();
+        args[0].destroy();
     }
   },
   242:{
@@ -3264,7 +3265,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "float", "float"],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        this.caller.actionQueue.unshift({ goal: ModuleCreature.ACTION.ANIMATE, animation: args[0], speed: args[1], time: args[2] });
+        this.caller.actionQueue.unshift({ goal: ModuleCreature.ACTION.ANIMATE, animation: this.caller.getAnimationNameById(args[0]), speed: args[1], time: args[2] });
       }
     }
   },
@@ -7242,7 +7243,45 @@ NWScriptDefK1.Actions = {
     comment: "766. CreateItemOnFloor\nShould only be used for items that have been created on the ground, and will\nbe destroyed without ever being picked up or equipped.  Returns true if successful\n",
     name: "CreateItemOnFloor",
     type: 6,
-    args: ["string", "location", "int"]
+    args: ["string", "location", "int"],
+    action: function(args, _instr, action){
+      return new Promise((resolve, reject) => {
+        TemplateLoader.Load({
+          ResRef: args[0],
+          ResType: ResourceTypes.uti,
+          onLoad: (gff) => {
+  
+            let item = new ModuleItem(gff);
+            item.placedInWorld = true;
+            item.Load( () => {
+              item.position.copy(args[1].position);
+              item.rotation.order = 'ZYX';
+              item.rotation.set(args[1].getFacing(), Math.PI/2, 0);
+  
+              resolve(1);
+  
+              item.LoadModel( (model) => {
+
+                item.model.moduleObject = item;
+                
+                model.name = item.getTag();
+                model.buildSkeleton();
+                Game.group.placeables.add( model );
+                Game.module.area.items.push(item);
+
+                item.getCurrentRoom();
+                
+              });
+            });
+  
+          },
+          onFail: () => {
+            console.error('CreateItemOnFloor', 'Failed to load item template', args);
+            resolve(0);
+          }
+        });
+      });
+    }
   },
   767:{
     comment: "767. SetAvailableNPCId\nThis will set the object id that should be used for a specific available NPC\n",

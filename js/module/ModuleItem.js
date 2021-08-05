@@ -29,6 +29,7 @@ class ModuleItem extends ModuleObject {
     this.loaded = false;
     this.properties = [];
     this.upgradeItems = {};
+    this.placedInWorld = false;
 
     this.InitProperties();
 

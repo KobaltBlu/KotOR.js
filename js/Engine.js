@@ -621,6 +621,14 @@ class Engine {
       }
     }
 
+    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_ITEM){
+      len = Game.module.area.items.length;
+      for(let i = 0; i < len; i++){
+        if(Game.module.area.items[i].getTag().toLowerCase() == sTag)
+          results.push(Game.module.area.items[i]);
+      }
+    }
+
     if(sTag == ''){
       return Game.player;
     }else if(results.length){
@@ -653,6 +661,13 @@ class Engine {
       if(Game.module.area.creatures[i].getTag().toLowerCase() == sTag)
         if(oObject != Game.module.area.creatures[i])
           results.push(Game.module.area.creatures[i]);
+    }
+
+    len = Game.module.area.items.length;
+    for(let i = 0; i < len; i++){
+      if(Game.module.area.items[i].getTag().toLowerCase() == sTag)
+        if(oObject != Game.module.area.items[i])
+          results.push(Game.module.area.items[i]);
     }
 
     len = Game.module.area.doors.length;
@@ -710,7 +725,7 @@ class Engine {
         results = Game.module.area.creatures;
       break;
       case    OBJECT_TYPE_ITEM:
-        results = [];
+        results = Game.module.area.items;
       break;
       case    OBJECT_TYPE_TRIGGER:
         results = Game.module.area.triggers;
@@ -745,6 +760,7 @@ class Engine {
         results = results.concat(Game.module.area.stores);
         results = results.concat(Game.module.area.encounters);
         results = results.concat(Game.module.area.sounds);
+        results = results.concat(Game.module.area.items);
       break;
     }
 
@@ -785,6 +801,9 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_ITEM:
+        if(oArea.items.length){
+          return oArea.items[Game.objSearchIndex];
+        }
         return undefined;
       break;
       case    OBJECT_TYPE_TRIGGER:
@@ -852,6 +871,9 @@ class Engine {
         return undefined;
       break;
       case    OBJECT_TYPE_ITEM:
+        if(Game.objSearchIndex < oArea.items.length-1){
+          return oArea.items[Game.objSearchIndex];
+        }
         return undefined;
       break;
       case    OBJECT_TYPE_TRIGGER:

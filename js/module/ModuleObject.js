@@ -264,7 +264,7 @@ class ModuleObject {
         time: loop
       });
     }else{
-      console.error('actionPlayAnimation', animConstant);
+      console.error('actionPlayAnimation', animConstant, anim);
     }
   }
 
@@ -354,7 +354,7 @@ class ModuleObject {
       case 101: //HEAD_TURN_RIGHT
         return ModuleCreature.AnimState.HEAD_TURN_RIGHT;
       case 102: //PAUSE_SCRATCH_HEAD
-        return ModuleCreature.AnimState.PAUSE_SCRATH_HEAD;
+        return ModuleCreature.AnimState.PAUSE_SCRATCH_HEAD;
       case 103: //PAUSE_BORED
         return ModuleCreature.AnimState.PAUSE_BORED;
       case 104: //SALUTE
@@ -478,7 +478,7 @@ class ModuleObject {
   triggerHeartbeat(){
     //Only allow the heartbeat script to run after the onspawn is called
     if(this.spawned === true && Game.module.readyToProcessEvents){
-      if(this.getLocalBoolean(28) == true){
+      //if(this.getLocalBoolean(28) == true){
         if(this.scripts.onHeartbeat instanceof NWScriptInstance){
           //console.log('heartbeat', this.getName());
           let instance = this.scripts.onHeartbeat.nwscript.newInstance();
@@ -488,7 +488,7 @@ class ModuleObject {
             instance.run(this, 1001);
           }
         }
-      }
+      //}
     }
   }
 
@@ -854,6 +854,13 @@ class ModuleObject {
           if(pIdx > -1){
             Game.module.area.triggers.splice(pIdx, 1);            
           }
+        }else if(this instanceof ModuleItem){
+          if(this.placedInWorld){
+            let pIdx = Game.module.area.items.indexOf(this);
+            if(pIdx > -1){
+              Game.module.area.items.splice(pIdx, 1);            
+            }
+          }
         }else{
           console.log('ModuleObject.destory', 'not supported '+this.constructor.name)
         }
@@ -919,6 +926,10 @@ class ModuleObject {
     }catch(e){
       return 0;
     }
+  }
+
+  setFacingObject( target = undefined ){
+
   }
 
   GetRotation(){
@@ -1948,7 +1959,7 @@ class ModuleObject {
       case ModuleCreature.AnimState.PAUSE4:
         return Global.kotor2DA.animations.rows[357];
       break;
-      case ModuleCreature.AnimState.PAUSE_SCRATH_HEAD:
+      case ModuleCreature.AnimState.PAUSE_SCRATCH_HEAD:
         return Global.kotor2DA.animations.rows[12];
       break;
       case ModuleCreature.AnimState.PAUSE_BORED:
@@ -1968,6 +1979,13 @@ class ModuleObject {
           return Global.kotor2DA.animations.rows[275];
         }else{
           return Global.kotor2DA.animations.rows[81];
+        }
+      break;
+      case ModuleCreature.AnimState.DEAD1:
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[275];
+        }else{
+          return Global.kotor2DA.animations.rows[83];
         }
       break;
       case ModuleCreature.AnimState.DIE:
@@ -2156,7 +2174,7 @@ class ModuleObject {
       case ModuleCreature.AnimState.GET_LOW:
         return Global.kotor2DA.animations.rows[40];
       break;
-      case ModuleCreature.AnimState.GET_HIGH:
+      case ModuleCreature.AnimState.GET_MID:
         return Global.kotor2DA.animations.rows[41];
       break;
       case ModuleCreature.AnimState.INJECT:
