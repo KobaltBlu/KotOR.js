@@ -629,42 +629,25 @@ class IngameControls {
 
         if(followee.canMove()){
 
-          let moveSpeed = followee.walk ? followee.getWalkSpeed() : followee.getRunSpeed();
-
           if( gp && (gp.axes[1] < -.1 || gp.axes[1] > .1 || gp.axes[0] < -.1 || gp.axes[0] > .1) ){
             followee.clearAllActions(true);
-            followee.force = moveSpeed;
-            followee.setFacing(Math.atan2((Math.PI/2)*gp.axes[1], (Math.PI/2)*-gp.axes[0]) - Game.followerCamera.facing, true);
+            followee.force = 1;
+            followee.setFacing( Utility.NormalizeRadian( Math.atan2(-gp.axes[0], -gp.axes[1]) + Game.followerCamera.facing + Math.PI/2 ) , false);
             followee.controlled = true;
             followee.invalidateCollision = false;
-
-            followee.AxisFront.x = (Math.PI/2)*gp.axes[0];
-            followee.AxisFront.y = (Math.PI/2)*gp.axes[1];
-            followee.animState = ModuleCreature.AnimState.RUNNING;
           }else{
-
             if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
-              //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI);
               followee.controlled = true;
               followee.invalidateCollision = true;
-
-              //followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
-              //followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);// * Math.cos(0);
-
             }else if( this.keys['s'].down && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
-              //followee.facing = Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI);
               followee.controlled = true;
               followee.invalidateCollision = true;
-
-              //followee.AxisFront.x = Math.cos(followee.rotation.z + Math.PI/2);// * Math.cos(0);
-              //followee.AxisFront.y = Math.sin(followee.rotation.z + Math.PI/2);
-
             }else{
               //followee.controlled = false;
               followee.force = 0;
@@ -673,7 +656,6 @@ class IngameControls {
             if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
               followee.animState = ModuleCreature.AnimState.RUNNING;
             }
-
           }
 
           if(this.keys['num-minus'].down && !followee.isDead()){
@@ -686,18 +668,24 @@ class IngameControls {
 
         }
 
-        if((this.keys['a'].down || (gp && gp.axes[2] < .1) ) && !Game.MenuActive){
-          //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+        if((this.keys['a'].down || (gp && gp.axes[2] < -.1)) && !Game.MenuActive){
           followee.invalidateCollision = true;
           turningCamera = true;
-          this.camDir = 1;
+          if((gp && gp.axes[2] < -.1)){
+            this.camDir = -gp.axes[2];
+          }else{
+            this.camDir = 1;
+          }
         }
     
-        if((this.keys['d'].down || (gp && gp.axes[2] > -.1)) && !Game.MenuActive){
-          //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+        if((this.keys['d'].down || (gp && gp.axes[2] > .1)) && !Game.MenuActive){
           followee.invalidateCollision = true;
           turningCamera = true;
-          this.camDir = -1;
+          if((gp && gp.axes[2] > .1)){
+            this.camDir = -gp.axes[2];
+          }else{
+            this.camDir = -1;
+          }
         }
 
       }
@@ -709,16 +697,22 @@ class IngameControls {
       }
 
     }else if(Game.State == Game.STATES.PAUSED && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
-      if(this.keys['a'].down && !Game.MenuActive){
-        //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing + 2.5 * delta));
+      if((this.keys['a'].down || (gp && gp.axes[2] < -.1)) && !Game.MenuActive){
         turningCamera = true;
-        this.camDir = 1;
+        if((gp && gp.axes[2] < -.1)){
+          this.camDir = -gp.axes[2];
+        }else{
+          this.camDir = 1;
+        }
       }
   
-      if(this.keys['d'].down && !Game.MenuActive){
-        //Game.followerCamera.facing = (Utility.NormalizeRadian(Game.followerCamera.facing - 2.5 * delta));
+      if((this.keys['d'].down || (gp && gp.axes[2] > .1)) && !Game.MenuActive){
         turningCamera = true;
-        this.camDir = -1;
+        if((gp && gp.axes[2] > .1)){
+          this.camDir = -gp.axes[2];
+        }else{
+          this.camDir = -1;
+        }
       }
     }
 

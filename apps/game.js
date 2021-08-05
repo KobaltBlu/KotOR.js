@@ -106,6 +106,37 @@ function gamepadHandler(e, connecting) {
     
     delete gamepads[gamepad.index];
   }
+
+  let keys = Object.keys(gamepads);
+  gpMenu.submenu.clear();
+
+  let noPad = new MenuItem({
+    label: 'No Gamepad',
+    type: 'radio',
+    checked: (currentGamepad == -1) ? true : false,
+    click: () => {
+      currentGamepad = -1;
+    }
+  });
+
+  gpMenu.submenu.append(noPad);
+
+  for(let i = 0; i < keys.length; i++){
+    let gpNode = gamepads[keys[i]];
+    if(gpNode instanceof Gamepad){
+      let newGamePad = new MenuItem({
+        label: 'Gamepad: '+(i+1),
+        type: 'radio',
+        checked: (currentGamepad == gpNode) ? true : false,
+        click: () => {
+          currentGamepad = gpNode;
+        }
+      });
+      gpMenu.submenu.append(newGamePad);
+    }
+  }
+
+  Menu.setApplicationMenu(menu);
 }
 
 global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
@@ -247,6 +278,18 @@ for(let i = 0; i < odysseyGameEffects.length; i++){
   let controllerPath = path.parse(odysseyGameEffects[i]);
   try{
     global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/effects', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* Actions */
+const Action = require(path.join(app.getAppPath(), 'js/actions/Action.js'));
+let actions = fs.readdirSync(path.join(app.getAppPath(), 'js/actions'));
+for(let i = 0; i < actions.length; i++){
+  let controllerPath = path.parse(actions[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/actions', controllerPath.base));
   }catch(e){
     console.error(e);
   }
@@ -539,103 +582,6 @@ const SUBSKILL_FLAGTRAP      = 100;
 const SUBSKILL_RECOVERTRAP   = 101;
 const SUBSKILL_EXAMINETRAP   = 102;
 
-
-
-
-
-
-
-
-// // Looping animation constants.
-// const ANIMATION_LOOPING_PAUSE         = 0;
-// const ANIMATION_LOOPING_PAUSE2        = 1;
-// const ANIMATION_LOOPING_LISTEN        = 2;
-// const ANIMATION_LOOPING_MEDITATE      = 3;
-// const ANIMATION_LOOPING_WORSHIP       = 4;
-// //const ANIMATION_LOOPING_LOOK_FAR    = 5;
-// //const ANIMATION_LOOPING_SIT_CHAIR   = 6;
-// //const ANIMATION_LOOPING_SIT_CROSS   = 7;
-// const ANIMATION_LOOPING_TALK_NORMAL   = 5;
-// const ANIMATION_LOOPING_TALK_PLEADING = 6;
-// const ANIMATION_LOOPING_TALK_FORCEFUL = 7;
-// const ANIMATION_LOOPING_TALK_LAUGHING = 8;
-// const ANIMATION_LOOPING_TALK_SAD      = 9;
-// const ANIMATION_LOOPING_GET_LOW       = 10;
-// const ANIMATION_LOOPING_GET_MID       = 11;
-// const ANIMATION_LOOPING_PAUSE_TIRED   = 12;
-// const ANIMATION_LOOPING_PAUSE_DRUNK   = 13;
-// const ANIMATION_LOOPING_FLIRT         = 14;
-// const ANIMATION_LOOPING_USE_COMPUTER  = 15;
-// const ANIMATION_LOOPING_DANCE         = 16;
-// const ANIMATION_LOOPING_DANCE1        = 17;
-// const ANIMATION_LOOPING_HORROR        = 18;
-// const ANIMATION_LOOPING_READY         = 19;
-// const ANIMATION_LOOPING_DEACTIVATE    = 20;
-// const ANIMATION_LOOPING_SPASM         = 21;
-// const ANIMATION_LOOPING_SLEEP         = 22;
-// const ANIMATION_LOOPING_PRONE         = 23;
-// const ANIMATION_LOOPING_PAUSE3        = 24;
-// const ANIMATION_LOOPING_WELD              = 25;
-// const ANIMATION_LOOPING_DEAD              = 26;
-// const ANIMATION_LOOPING_TALK_INJURED      = 27;
-// const ANIMATION_LOOPING_LISTEN_INJURED    = 28;
-// const ANIMATION_LOOPING_TREAT_INJURED     = 29;
-// const ANIMATION_LOOPING_DEAD_PRONE        = 30;
-// const ANIMATION_LOOPING_KNEEL_TALK_ANGRY  = 31;
-// const ANIMATION_LOOPING_KNEEL_TALK_SAD    = 32;
-// const ANIMATION_LOOPING_CHECK_BODY        = 33;
-// const ANIMATION_LOOPING_UNLOCK_DOOR       = 34;
-// const ANIMATION_LOOPING_SIT_AND_MEDITATE  = 35;
-
-// const ANIMATION_LOOPING_SIT_CHAIR         = 36;//AWD-OEI 07/06/2004
-// const ANIMATION_LOOPING_SIT_CHAIR_DRINK   = 37;//AWD-OEI 07/06/2004
-// const ANIMATION_LOOPING_SIT_CHAIR_PAZAK   = 38;//AWD-OEI 07/06/2004
-// const ANIMATION_LOOPING_SIT_CHAIR_COMP1   = 39;//AWD-OEI 07/06/2004
-// const ANIMATION_LOOPING_SIT_CHAIR_COMP2   = 40;//AWD-OEI 07/06/2004
-
-// const ANIMATION_LOOPING_RAGE              = 41;//JAB-OEI 07/15/2004
-// //const ANIMATION_LOOPING_DIVE_ROLL       = 42;//BMA-OEI 08/18/2004
-// const ANIMATION_LOOPING_CLOSED            = 43;//AWD-OEI 08/23/2004
-// const ANIMATION_LOOPING_STEALTH           = 44;//BMA-OEI 08/31/2004
-// const ANIMATION_LOOPING_CHOKE_WORKING     = 45;//DJS-OEI 09/09/2004
-// const ANIMATION_LOOPING_MEDITATE_STAND    = 46;//DJS-OEI 9/10/2004
-
-// // NOTE: Choke is really a looping animation.  The fire and forget constant has
-// //       been left in because it has already been used in many places.  Please
-// //       use this constant from now on.
-// const ANIMATION_LOOPING_CHOKE                    = 116;
-
-// // Fire and forget animation constants.
-// const ANIMATION_FIREFORGET_HEAD_TURN_LEFT     = 100;
-// const ANIMATION_FIREFORGET_HEAD_TURN_RIGHT    = 101;
-// const ANIMATION_FIREFORGET_PAUSE_SCRATCH_HEAD = 102;
-// const ANIMATION_FIREFORGET_PAUSE_BORED        = 103;
-// const ANIMATION_FIREFORGET_SALUTE             = 104;
-// const ANIMATION_FIREFORGET_BOW                = 105;
-// //const ANIMATION_FIREFORGET_STEAL            = 106;
-// const ANIMATION_FIREFORGET_GREETING           = 106;
-// const ANIMATION_FIREFORGET_TAUNT              = 107;
-// const ANIMATION_FIREFORGET_VICTORY1           = 108;
-// const ANIMATION_FIREFORGET_VICTORY2           = 109;
-// const ANIMATION_FIREFORGET_VICTORY3           = 110;
-// //const ANIMATION_FIREFORGET_READ             = 111;
-// const ANIMATION_FIREFORGET_INJECT             = 112;
-// const ANIMATION_FIREFORGET_USE_COMPUTER       = 113;
-// const ANIMATION_FIREFORGET_PERSUADE           = 114;
-// const ANIMATION_FIREFORGET_ACTIVATE           = 115;
-// // NOTE: Please do not use this choke constant anymore.  The choke is not a fire
-// //       and forget animation.  The looping choke constant above should be used
-// //       instead.
-// const ANIMATION_FIREFORGET_CHOKE              = 116;
-// const ANIMATION_FIREFORGET_THROW_HIGH         = 117;
-// const ANIMATION_FIREFORGET_THROW_LOW          = 118;
-// const ANIMATION_FIREFORGET_CUSTOM01           = 119;
-// const ANIMATION_FIREFORGET_TREAT_INJURED      = 120;
-// const ANIMATION_FIREFORGET_FORCE_CAST         = 121;
-// const ANIMATION_FIREFORGET_OPEN               = 122;//AWD-OEI 08/23/2004
-// const ANIMATION_FIREFORGET_DIVE_ROLL          = 123;//DJS-OEI 08/29/2004
-// const ANIMATION_FIREFORGET_SCREAM             = 124;//DJS-OEI 09/09/2004
-
 THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
 
   //This is a performance tweak from https://discourse.threejs.org/t/updatematrixworld-performance/3217
@@ -645,19 +591,19 @@ THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
 
   if ( this.matrixWorldNeedsUpdate || force ) {
 
-      if ( this.parent === null ) {
+    if ( this.parent === null ) {
 
-          this.matrixWorld.copy( this.matrix );
+      this.matrixWorld.copy( this.matrix );
 
-      } else {
+    } else {
 
-          this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+      this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
 
-      }
+    }
 
-      this.matrixWorldNeedsUpdate = false;
+    this.matrixWorldNeedsUpdate = false;
 
-      force = true;
+    force = true;
 
   }
 
@@ -667,7 +613,7 @@ THREE.Object3D.prototype.updateMatrixWorld = function ( force ) {
 
   for ( var i = 0, l = children.length; i < l; i ++ ) {
 
-      children[ i ].updateMatrixWorld( force, true );
+    children[ i ].updateMatrixWorld( force, true );
 
   }
 
@@ -805,9 +751,10 @@ const template = [
       }
     ]
   }
-]
+];
 
 const menu = Menu.buildFromTemplate(template);
+menu.append(gpMenu);
 Menu.setApplicationMenu(menu);
 
 remote.getCurrentWindow().setMenuBarVisibility(Config.get(['Game','show_application_menu'], false));
