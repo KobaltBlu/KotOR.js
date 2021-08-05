@@ -387,6 +387,20 @@ class ModuleDoor extends ModuleObject {
     }
   }
 
+  onAttacked(){
+    if(this.scripts.onAttacked instanceof NWScriptInstance){
+      let instance = this.scripts.onAttacked.nwscript.newInstance();
+      instance.run(this);
+    }
+  }
+
+  onDamaged(){
+    if(this.scripts.onDamaged instanceof NWScriptInstance){
+      let instance = this.scripts.onDamaged.nwscript.newInstance();
+      instance.run(this);
+    }
+  }
+
   update(delta = 0){
     
     super.update(delta);
@@ -432,6 +446,9 @@ class ModuleDoor extends ModuleObject {
 
     }
 
+    if(this.isDead() && !this.isOpen()){
+      this.openDoor(this);
+    }
 
     //Check Module Creatures
     /*let creatureLen = Game.module.area.creatures.length;
