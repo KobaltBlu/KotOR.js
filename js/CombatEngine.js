@@ -39,18 +39,18 @@ class CombatEngine {
           combatant.combatAction = combatant.combatQueue.shift();
 
           if(typeof combatant.combatAction != 'undefined'){
-            if(combatant.combatAction.type == ModuleCreature.ACTION.ATTACKOBJECT){
+            if(combatant.combatAction.type == Action.TYPE.ActionPhysicalAttacks){
               combatant.lastCombatFeatUsed = combatant.combatAction.feat;
             }
 
-            if(combatant.combatAction.type == ModuleCreature.ACTION.CASTSPELL){
+            if(combatant.combatAction.type == Action.TYPE.ActionCastSpell){
               combatant.lastForcePowerUsed = combatant.combatAction.spell;
               combatant.lastSpellTarget = combatant.combatAction.target;
               if(combatant.combatAction.target != combatant){
                 combatant.lastAttemptedSpellTarget = combatant.combatAction.target;
               }
               combatant.casting.push(combatant.combatAction);
-              console.log('CombatEngine: Adding spell to casting', combatant.combatAction, combatant);
+              //console.log('CombatEngine: Adding spell to casting', combatant.combatAction, combatant);
             }
           }
         }
@@ -62,7 +62,7 @@ class CombatEngine {
           }else{
             //Check to see if the combatant's target is in this group
             if(combatant.lastAttemptedAttackTarget){
-              if(combatGroups[j].indexOf(combatant.lastAttemptedAttackTarget) >= 0){
+              if(combatGroups[j].indexOf(combatant.lastAttemptedAttackTarget) >= 0 ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget) ){
                 group = combatGroups[j];
               }
             }
@@ -75,7 +75,7 @@ class CombatEngine {
           combatGroups.push(group);
 
           //Add the combatant's current target to the group
-          if(combatant.lastAttemptedAttackTarget){
+          if(combatant.lastAttemptedAttackTarget ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget)){
             if(group.indexOf(combatant.lastAttemptedAttackTarget) == -1)
               group.push(combatant.lastAttemptedAttackTarget);
           }
@@ -106,47 +106,52 @@ class CombatEngine {
           let combatant = combatGroups[i][j];
           if(!combatant.isDead()){
 
-            //BEGIN: DUELING SYNC
-            if(combatant.combatRoundTimer == 0){
-              //Check to see if the combatant is dueling it's target. If so make sure the target's combatRoundTimer is synced properly
-              if(combatant.isDueling() && combatant.combatAction){
-                combatant.combatAction.target.combatRoundTimer = 1.5 - delta;
-              }
-            }
-            //END: DUELING SYNC
-
-            //Combat action is ready
-            if(combatant.combatRoundTimer == 0){
-              if(combatant.combatAction){
-                if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatAction)){
-                  combatant.combatAction.ready = true;
-                  CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
-                }else{
-                  //Continue to the next combatant in the group since this one can't act yet
-                  //continue;
+            if(combatant.combatAction){
+              //BEGIN: DUELING SYNC
+              if(!combatant.combatAction.ready){
+                //Check to see if the combatant is dueling it's target. If so make sure the target's combatRoundTimer is synced properly
+                if(combatant.isDueling() && combatant.combatAction){
+                  combatant.combatAction.target.combatRoundTimer = 1.5 - delta;
                 }
               }
+              //END: DUELING SYNC
+
+              //Combat action is ready
+              if(!combatant.combatAction.ready){
+                if(combatant.combatAction){
+                  if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatAction)){
+                    combatant.combatAction.ready = true;
+                    CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
+                  }else{
+                    //Continue to the next combatant in the group since this one can't act yet
+                    //continue;
+                  }
+                }
+              }
+
+              //Progress the combatant's combatRoundTimer
+              if(combatant.combatAction && combatant.combatAction.ready){
+                if(combatant.combatRoundTimer >= 3.0){
+                  //Get the index of the current combatant from the combatants list
+                  let index = CombatEngine.combatants.indexOf(combatant);
+                  //Remove the combatant from the combatants list
+                  CombatEngine.combatants.splice(index, 1);
+                  //And push it to the end of the combatants list
+                  CombatEngine.combatants.push( combatant );
+                  //Reset the combatant's roundTimer
+                  combatant.combatRoundTimer = 0;
+                  //Call the combatant's onCombatRoundEnd script
+                  combatant.onCombatRoundEnd();
+                }else{
+                  //Increment the combatant's roundTimer since it hasn't ended yet
+                  combatant.combatRoundTimer += delta;
+                }
+              }
+
+              //Break the loop now that a combatant in the group was updated
+              //break;
             }
 
-            //Progress the combatant's combatRoundTimer
-            if(combatant.combatRoundTimer >= 3){
-              //Get the index of the current combatant from the combatants list
-              let index = CombatEngine.combatants.indexOf(combatant);
-              //Remove the combatant from the combatants list
-              CombatEngine.combatants.splice(index, 1);
-              //And push it to the end of the combatants list
-              CombatEngine.combatants.push( combatant );
-              //Reset the combatant's roundTimer
-              combatant.combatRoundTimer = 0;
-              //Call the combatant's onCombatRoundEnd script
-              combatant.onCombatRoundEnd();
-            }else{
-              //Increment the combatant's roundTimer since it hasn't ended yet
-              combatant.combatRoundTimer += delta;
-            }
-
-            //Break the loop now that a combatant in the group was updated
-            //break;
           }
 
         }
@@ -316,7 +321,7 @@ class CombatEngine {
     if(combatAction.isCutsceneAttack){
       //console.log('cutsceneAttack', creature, combatAction.target, combatAction);
       creature.overlayAnimation = combatAction.animation;
-      //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), false);
+      //combatAction.target.actionPlayAnimation(combatAction.target.getDamageAnimation(), 1, 1);
       //console.log('CutsceneAttack', 'Result', combatAction.attackResult, creature.getName(), combatAction.target.getName());
 
       if(creature.hasEffect(GameEffect.Type.EffectAssuredHit)){
@@ -344,7 +349,7 @@ class CombatEngine {
         combatAction.target.damage(combatAction.damage, undefined, attackDamageDelay);
       }
 
-      creature.actionQueue.shift();
+      //creature.actionQueue.shift();
 
     }else{
       
