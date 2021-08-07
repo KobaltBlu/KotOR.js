@@ -21,7 +21,7 @@ class ActionFollowLeader extends Action {
 
       let distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
       if(distance > 5){
-        
+
         this.path_realtime = true;
         this.owner.openSpot = undefined;
         let actionMoveToTarget = new ActionMoveToPoint();
@@ -40,6 +40,7 @@ class ActionFollowLeader extends Action {
       }else{
         this.owner.animState = ModuleCreature.AnimState.IDLE;
         this.owner.force = 0;
+        this.owner.speed = 0;
         return Action.STATUS.COMPLETE;
       }
     }

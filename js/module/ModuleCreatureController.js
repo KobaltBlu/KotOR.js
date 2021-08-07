@@ -167,6 +167,13 @@ class ModuleCreatureController extends ModuleObject {
       // BEGIN: Move Speed Logic //
       //-------------------------//
 
+      if(this.isDead()){
+        this.force = 0;
+        this.speed = 0;
+        this.animSpeed = 1;
+        this.AxisFront.set(0, 0, 0);
+      }
+
       this.AxisFront.z = 0;
 
       this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
@@ -347,6 +354,7 @@ class ModuleCreatureController extends ModuleObject {
 
       
     this.actionQueue.process( delta );
+    this.action = this.actionQueue[0];
     if(!(this.action instanceof Action)){
       //this.force = 0;
       //this.animState = ModuleCreature.AnimState.IDLE;
@@ -355,7 +363,7 @@ class ModuleCreatureController extends ModuleObject {
         this.model.playAnimation('pause'+randomPauseIdx, false);
       }*/
 
-      if(!this.combatState &&this.isPartyMember() && this != Game.getCurrentPlayer()){
+      if(!this.combatState && this.isPartyMember() && this != Game.getCurrentPlayer()){
         this.setFacing(
           Math.atan2(
             this.position.y - Game.getCurrentPlayer().position.y,
@@ -366,8 +374,6 @@ class ModuleCreatureController extends ModuleObject {
       }
 
     }
-
-    this.action = this.actionQueue[0];
 
   }
 

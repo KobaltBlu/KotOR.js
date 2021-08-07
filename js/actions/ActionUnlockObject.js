@@ -44,6 +44,7 @@ class ActionUnlockObject extends Action {
     }else{
       this.owner.animState = ModuleCreature.AnimState.IDLE;
       this.owner.force = 0;
+      this.owner.speed = 0;
                         
       if(this.owner instanceof ModuleCreature)
         this.owner.setFacingObject( this.target );

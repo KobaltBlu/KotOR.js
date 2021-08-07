@@ -34,7 +34,7 @@ class ActionMoveToPoint extends Action {
     this.target = this.getParameter(4);
     if(this.target instanceof ModuleObject){
       this.real_target_position.copy(this.target.position);
-      if( this.target.isDead() ){
+      if( this.target instanceof ModuleCreature && this.target.isDead() ){
         return Action.STATUS.FAILED;
       }
     }
@@ -113,6 +113,7 @@ class ActionMoveToPoint extends Action {
     }else{
       this.owner.animState = ModuleCreature.AnimState.IDLE;
       this.owner.force = 0;
+      this.owner.speed = 0;
       return Action.STATUS.COMPLETE;
     }
 
