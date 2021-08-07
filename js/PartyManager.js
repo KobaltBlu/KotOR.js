@@ -96,7 +96,7 @@ class PartyManager {
             if(!leaveInWorld){
               creature.destroy();
             }else{
-              console.log('RemoveNPCById leaveInWorld', creature);
+              //console.log('RemoveNPCById leaveInWorld', creature);
               Game.group.party.remove(creature.model);
               Game.group.creatures.add(creature.model);
               Game.module.area.creatures.push(creature);
@@ -451,7 +451,7 @@ class PartyManager {
         );
       }else if( Game.module.area.transWP ){
         if( Game.module.area.transWP ){
-          console.log('TransWP - PM', Game.module.area.transWP);
+          //console.log('TransWP - PM', Game.module.area.transWP);
         }
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
         let spawnLoc = Game.module.area.getSpawnLocation();

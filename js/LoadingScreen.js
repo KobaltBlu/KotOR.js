@@ -34,7 +34,7 @@ class LoadingScreen {
       this.$loader.css({'position': 'absolute'})
     }
 
-    console.log($parent);
+    //console.log($parent);
     $parent.append(this.$loader);
   }
 

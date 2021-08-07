@@ -655,10 +655,10 @@ class SaveGame {
             if(fs.existsSync(path.join(SaveGame.directory, folders[i], 'SAVEGAME.sav'))){
               SaveGame.AddSaveGame( new SaveGame(folders[i]) );
             }else{
-              console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);
+              //console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);
             }
           }else{
-            console.log('SaveGame', 'Folder Invalid', folders[i]);
+            //console.log('SaveGame', 'Folder Invalid', folders[i]);
           }
         }
     

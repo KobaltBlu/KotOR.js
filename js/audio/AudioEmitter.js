@@ -385,7 +385,7 @@ class AudioEmitter {
         this.currentSound.disconnect();
         this.currentSound.stop(0);
         this.currentSound = null;
-      }catch(e) { console.log('Failed to disconnect sound', e); this.currentSound = null; }
+      }catch(e) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
     }
   }
 

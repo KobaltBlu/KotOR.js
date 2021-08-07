@@ -550,7 +550,7 @@ class GFFObject {
 
   GetExportBuffer(){
 
-    console.log('GetExportBuffer', this);
+    //console.log('GetExportBuffer', this);
 
     this.BWStructs = new BinaryWriter();
     this.BWFields = new BinaryWriter();

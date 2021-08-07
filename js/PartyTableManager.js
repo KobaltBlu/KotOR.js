@@ -37,7 +37,7 @@ class PartyTableManager {
       if(gff.RootNode.HasField('PT_AVAIL_NPCS')){
         let avail = gff.GetFieldByLabel('PT_AVAIL_NPCS').GetChildStructs();
         for(let i = 0; i < avail.length; i++){
-          console.log(PartyManager.NPCS[i]);
+          //console.log(PartyManager.NPCS[i]);
           PartyManager.NPCS[i].available = avail[i].GetFieldByLabel('PT_NPC_AVAIL').GetValue();
           PartyManager.NPCS[i].canSelect = avail[i].GetFieldByLabel('PT_NPC_SELECT').GetValue();
         }
@@ -45,7 +45,7 @@ class PartyTableManager {
 
       PartyManager.Gold = gff.RootNode.GetFieldByLabel('PT_GOLD').GetValue();
 
-      console.log('PT_CONTROLLED_NP', gff.RootNode.GetFieldByLabel('PT_CONTROLLED_NP').GetValue());
+      //console.log('PT_CONTROLLED_NP', gff.RootNode.GetFieldByLabel('PT_CONTROLLED_NP').GetValue());
 
       if(gff.RootNode.HasField('PT_MEMBERS')){
         let pms = gff.GetFieldByLabel('PT_MEMBERS').GetChildStructs();
@@ -57,7 +57,7 @@ class PartyTableManager {
             memberID: pms[i].GetFieldByLabel('PT_MEMBER_ID').GetValue()
           })
         }
-        console.log('PartyTableManager', 'Loading Party Templates')
+        //console.log('PartyTableManager', 'Loading Party Templates')
         let ptLoader = new AsyncLoop({
           array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
           onLoop: (id, asyncLoop) => {

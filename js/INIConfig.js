@@ -115,7 +115,7 @@ class INIConfig {
         return console.log(err);
       }
   
-      console.log("INIConfig saved!");
+      //console.log("INIConfig saved!");
 
       if(typeof onSave === 'function')
         onSave();

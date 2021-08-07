@@ -210,7 +210,7 @@ class AuroraModelAnimationManager {
         }
 
         if(controller.data.length != controller.frameCount){
-          console.log('Missing Controller Data', controller, this);
+          console.log('Missing Controller Data', controller);
           continue;
         }
           

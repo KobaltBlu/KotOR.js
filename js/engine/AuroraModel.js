@@ -1104,7 +1104,7 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
   }
 
   if((_node.NodeType & AuroraModel.NODETYPE.Reference) == AuroraModel.NODETYPE.Reference){
-    console.log('AuroraModel', 'Reference Node', options.parent);
+    //console.log('AuroraModel', 'Reference Node', options.parent);
     if(options.parent.emitter){
       options.parent.emitter.referenceNode = node;
     }
@@ -1630,7 +1630,7 @@ THREE.AuroraModel.NodeLightBuilder = function(auroraModel, node, options){
 
     for(let i = 0, len = _node.flare.textures.length; i < len; i++){
       TextureLoader.enQueue(_node.flare.textures[i], null, TextureLoader.Type.TEXTURE, (texture, tex) => {
-        console.log('LensFlare', i, texture, _node.flare.sizes[i],  _node.flare.positions[i],  _node.flare.colorShifts[i]);
+        //console.log('LensFlare', i, texture, _node.flare.sizes[i],  _node.flare.positions[i],  _node.flare.colorShifts[i]);
         lensFlare.addElement( new THREE.LensflareElement( texture, _node.flare.sizes[i],  _node.flare.positions[i],  _node.flare.colorShifts[i] ) );
       });
     }

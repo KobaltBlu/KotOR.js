@@ -29,7 +29,7 @@ class EffectDisguise extends GameEffect {
         //if(this.getModel())
         //  this.getModel().buildSkeleton();
 
-        console.log('Disguise applied', this.object, this);
+        //console.log('Disguise applied', this.object, this);
       //});
     }
   }

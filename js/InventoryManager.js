@@ -224,7 +224,7 @@ class InventoryManager {
 
   static Save(){
     return new Promise( async (resolve, reject) => {
-      console.log('InventoryManager.Save()', 'Exporting...');
+      //console.log('InventoryManager.Save()', 'Exporting...');
       let gff = new GFFObject();
       gff.FileType = 'INV ';
 
