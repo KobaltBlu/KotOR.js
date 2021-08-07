@@ -683,7 +683,7 @@ class ModuleMGPlayer extends ModuleObject {
               this.lastGroundFace = walkableFace;
 
               if(this == Game.player){
-                console.log(walkableFace);
+                //console.log(walkableFace);
               }
 
               break;

@@ -80,15 +80,10 @@ NWScriptDefK1.Actions = {
         if(typeof args[1] === 'object'){
           args[1].script.caller = args[0];
           args[1].script.debug = this.debug;
-            //args[1].script.stack.push((0)); //Don't know why this makes things work :/
-    
           args[1].script.runScript({
             _instr: null, 
             index: -1, 
-            seek: args[1].offset,
-            onComplete: () => {
-              //console.log('ACTION.SCRIPT', 'Complete', this.action);
-            }
+            seek: args[1].offset
           });
         }else{
           console.error('AssignCommand', args);
@@ -479,7 +474,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "float", "float"],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        this.caller.actionPlayAnimation(args[0], args[2], args[1]);
+        this.caller.actionPlayAnimation(args[0], args[1], args[2]);
       }
     }
   },
@@ -2132,8 +2127,9 @@ NWScriptDefK1.Actions = {
         //console.log('NWScript: '+this.name, 'Run ActionWait', args[0] * 1000);
       }
   
-      if(this.caller instanceof ModuleObject)
-        this.caller.actionQueue.push({ goal: ModuleCreature.ACTION.WAIT, elapsed:0, time: args[0] });
+      if(this.caller instanceof ModuleObject){
+        this.caller.actionWait(args[0]);
+      }
   
     }
   },
@@ -2161,15 +2157,9 @@ NWScriptDefK1.Actions = {
   
         if(this.caller instanceof ModuleObject){
           console.log('ActionStartConversation', args, this.caller);
-          args[0].actionQueue.push({
-            object: this.caller,
-            conversation: args[1],
-            //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
-            //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
-            ignoreStartRange: true,//args[4] ? true : false,
-            goal: ModuleCreature.ACTION.DIALOGOBJECT,
-            clearable: false
-          });
+          //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
+          //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
+          args[0].actionDialogObject( this.caller, args[1], true );
         }else{
           console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
           //console.log(args, this.caller);
@@ -2190,7 +2180,7 @@ NWScriptDefK1.Actions = {
         //console.log('NWScript: '+this.name, 'ActionPauseConversation');
       }
       Game.InGameDialog.PauseConversation();
-      //console.log('script', this.name, 'PauseConversation', this.caller);
+      console.log('script', this.name, 'PauseConversation', this.caller);
     }
   },
   206:{
@@ -2199,11 +2189,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(args, _instr, action){
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'ActionResumeConversation', this.caller);
+
+      if(this.caller instanceof ModuleObject){
+        this.caller.actionQueue.add( new ActionResumeDialog() );
       }
-      Game.InGameDialog.ResumeConversation();
-      //console.log('script', this.name, 'ResumeConversation');
+      
     }
   },
   207:{
@@ -3265,7 +3255,11 @@ NWScriptDefK1.Actions = {
     args: ["int", "float", "float"],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        this.caller.actionQueue.unshift({ goal: ModuleCreature.ACTION.ANIMATE, animation: this.caller.getAnimationNameById(args[0]), speed: args[1], time: args[2] });
+        let action = new ActionPlayAnimation();
+        action.setParameter(0, Action.Parameter.TYPE.INT, this.caller.getAnimationNameById(args[0]))
+        action.setParameter(1, Action.Parameter.TYPE.FLOAT, args[1])
+        action.setParameter(2, Action.Parameter.TYPE.FLOAT, args[2])
+        this.caller.actionQueue.addFront(action);
       }
     }
   },
@@ -5321,8 +5315,47 @@ NWScriptDefK1.Actions = {
   
       if(args[0] == undefined)
         args[0] = this.caller;
+
+      if(args[0] instanceof ModuleObject){
+
+        let action = args[0].actionQueue[0];
+        if(action){
+          switch(action.type){
+            case Action.TYPE.ActionMoveToPoint: return 0;
+            case Action.TYPE.ActionPickUpItem: return 1;
+            case Action.TYPE.ActionDropItem: return 2;
+            case Action.TYPE.ActionPhysicalAttacks: return 3;
+            case Action.TYPE.ActionCastSpell: return 4;
+            case Action.TYPE.ActionItemCastSpell: return 4;
+            case Action.TYPE.ActionOpenDoor: return 5;
+            case Action.TYPE.ActionCloseDoor: return 6;
+            case Action.TYPE.ActionDialogObject: return 7;
+            case Action.TYPE.ActionDisableMine: return 8;
+            case Action.TYPE.ActionRecoverMine: return 9;
+            case Action.TYPE.ActionFlagMine: return 10;
+            case Action.TYPE.ActionExamineMine: return 11;
+            case Action.TYPE.ActionSetMine: return 12;
+            case Action.TYPE.ActionUnlockObject: return 13;
+            case Action.TYPE.ActionLockObject: return 14;
+            case Action.TYPE.ActionUseObject: return 15;
+            //case Action.TYPE.ActionAnimalEmpathy: return 16;
+            //case Action.TYPE.ActionRest: return 17;
+            //case Action.TYPE.ActionTaunt: return 18;
+            case Action.TYPE.ActionItemCastSpell: return 19;
+            case Action.TYPE.ActionCounterSpell: return 31;
+            case Action.TYPE.ActionHeal: return 33;
+            //case Action.TYPE.ActionPickPocket: return 34;
+            case Action.TYPE.ActionForceFollowObject: return 35;
+            case Action.TYPE.ActionWait: return 36;
+            //case Action.TYPE.ActionSit: return 37;
+            case Action.TYPE.ActionFollowLeader: return 38;
+          }
+        }else{
+          return 65534; //Empty
+        }
+      }
   
-      return args[0].action || 65535;
+      return 65535; //Invalid
     }
   },
   523:{
@@ -6856,8 +6889,16 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      //console.log('GetLastAttackAction', args[0].lastAttackAction);
-      return args[0].lastAttackAction;
+      if(args[0] instanceof ModuleObject){
+        switch(args[0].lastAttackAction){
+          case Action.TYPE.ActionPhysicalAttacks:
+            return 3;
+          case Action.TYPE.ActionCastSpell:
+          case Action.TYPE.ActionItemCastSpell:
+            return 4;
+        }
+      }
+      return -1;
     }
   },
   723:{
@@ -6931,7 +6972,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleCreature) {
-        this.caller.actionQueue.push({ object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER });
+        this.caller.actionFollowLeader();
       }
     }
   },

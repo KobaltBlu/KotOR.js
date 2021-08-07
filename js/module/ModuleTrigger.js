@@ -246,44 +246,7 @@ class ModuleTrigger extends ModuleObject {
     }catch(e){}
 
     this.action = this.actionQueue[0];
-
-    if(this.action != null){
-            console.log(this.action);
-      /*if(this.action.object instanceof ModuleObject){
-        
-      }else{*/
-        switch(this.action.goal){
-          case ModuleCreature.ACTION.DIALOGOBJECT:
-            Game.InGameDialog.StartConversation(this.action.conversation, this.action.object, this);
-            this.actionQueue.shift()
-          break;
-          case ModuleCreature.ACTION.WAIT:
-            this.action.elapsed += delta;
-            if(this.action.elapsed > this.action.time){
-              this.actionQueue.shift()
-            }
-          break;
-          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScriptInstance file
-            //console.log('Action Script', this.action);
-            if(this.action.script instanceof NWScriptInstance){
-              this.action.action.script.caller = this;
-              this.action.action.script.beginLoop({
-                _instr: null, 
-                index: -1, 
-                seek: this.action.action.offset, 
-                onComplete: () => {
-                  //console.log('ACTION.SCRIPT', 'Complete');
-                }
-              });
-            }
-            this.actionQueue.shift();
-          break;
-        }
-      //}
-
-    } else {
-      
-    }
+    this.actionQueue.process( delta );
 
     /*
     let pos = Game.player.getModel().position.clone();

@@ -88,7 +88,8 @@ class ModuleObject {
     this.currentHP = 0;
     this.faction = 0;
 
-    this.actionQueue = [];
+    this.actionQueue = new Action.ActionQueue();
+    this.actionQueue.setOwner( this );
     this.effects = [];
     this.casting = [];
     this.damageList = [];
@@ -251,20 +252,64 @@ class ModuleObject {
   }
 
   //Queue an animation to the actionQueue array
-  actionPlayAnimation(anim = 0, loop = false, speed = 1){
+  actionPlayAnimation(anim = 0, speed = 1, time = 1){
     if(typeof anim === 'string')
       throw 'anim cannot be a string!';
 
     let animConstant = this.getAnimationNameById(anim);
     if(animConstant >= 10000){
-      this.actionQueue.push({ 
-        goal: ModuleCreature.ACTION.ANIMATE,
-        animation: animConstant,
-        speed: speed || 1,
-        time: loop
-      });
+      let action = new ActionPlayAnimation();
+      action.setParameter(0, Action.Parameter.TYPE.INT, animConstant);
+      action.setParameter(1, Action.Parameter.TYPE.FLOAT, speed || 1);
+      action.setParameter(2, Action.Parameter.TYPE.FLOAT, time);
+      this.actionQueue.add(action);
     }else{
       console.error('actionPlayAnimation', animConstant, anim);
+    }
+  }
+
+  actionDialogObject( target = undefined, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1 ){
+    let action = new ActionDialogObject();
+    action.setParameter(0, Action.Parameter.TYPE.DWORD, target.id);
+    action.setParameter(1, Action.Parameter.TYPE.STRING, dialogResRef);
+    action.setParameter(2, Action.Parameter.TYPE.INT, unk1);
+    action.setParameter(3, Action.Parameter.TYPE.INT, unk2);
+    action.setParameter(4, Action.Parameter.TYPE.INT, ignoreStartRange ? 1 : 0);
+    action.setParameter(5, Action.Parameter.TYPE.DWORD, ModuleObject.OBJECT_INVALID);
+    this.actionQueue.add(action);
+  }
+
+  actionUseObject( object = undefined ){
+    if(object instanceof ModuleObject){
+      let action = new ActionUseObject();
+      action.setParameter(0, Action.Parameter.TYPE.DWORD, object.id);
+      this.actionQueue.add(action);
+    }
+  }
+
+  actionOpenDoor( door = undefined ){
+    if(door instanceof ModuleDoor){
+      let action = new ActionOpenDoor();
+      action.setParameter(0, Action.Parameter.TYPE.DWORD, door.id);
+      action.setParameter(1, Action.Parameter.TYPE.INT, 0);
+      this.actionQueue.add(action);
+    }
+  }
+
+  actionCloseDoor( door = undefined ){
+    if(door instanceof ModuleDoor){
+      let action = new ActionCloseDoor();
+      action.setParameter(0, Action.Parameter.TYPE.DWORD, door.id);
+      action.setParameter(1, Action.Parameter.TYPE.INT, 0);
+      this.actionQueue.add(action);
+    }
+  }
+
+  actionWait( time = 0 ){
+    if(door instanceof ModuleDoor){
+      let action = new ActionWait();
+      action.setParameter(0, Action.Parameter.TYPE.FLOAT, time);
+      this.actionQueue.add(action);
     }
   }
 
@@ -620,15 +665,11 @@ class ModuleObject {
     this.invalidateCollision = false;*/
   }
 
-  doCommand(script, action, instruction){
+  doCommand(script){
     //console.log('doCommand', this.getTag(), script, action, instruction);
-    this.actionQueue.push({
-      goal: ModuleCreature.ACTION.SCRIPT,
-      script: script,
-      action, action,
-      instruction, instruction,
-      clearable: false
-    });
+    let action = new ActionDoCommand();
+    action.setParameter(0, Action.Parameter.TYPE.SCRIPT_SITUATION, script);
+    this.actionQueue.add(action);
   }
 
   isDead(){
@@ -2431,6 +2472,12 @@ ModuleObject.GetObjectById = function(id = -1){
 
   if(id == ModuleObject.OBJECT_INVALID)
     return undefined;
+
+  if(id instanceof ModuleObject){
+    if(id.id){
+      return id;
+    }
+  }
 
   for(let i = 0, len = ModuleObject.List.length; i < len; i++){
     if(ModuleObject.List[i].id == id)

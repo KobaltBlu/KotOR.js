@@ -163,7 +163,6 @@ class ModuleCreature extends ModuleCreatureController {
     this.perceptionList = [];
 
     this.animState = ModuleCreature.AnimState.IDLE;
-    this.actionQueue = [];
     this.combatActionTimer = 3; 
     this.combatAction = undefined;
     this.combatState = false;
@@ -339,6 +338,18 @@ class ModuleCreature extends ModuleCreatureController {
     return this.rotation.z;
   }
 
+  setFacingObject( target = undefined ){
+    if(target instanceof ModuleObject){
+      this.setFacing(
+        Math.atan2(
+          this.position.y - target.position.y,
+          this.position.x - target.position.x
+        ) + Math.PI/2,
+        false
+      );
+    }
+  }
+
   onClick(callee = null){
 
     //You can't interact with yourself
@@ -350,18 +361,10 @@ class ModuleCreature extends ModuleCreatureController {
       Game.getCurrentPlayer().attackCreature(this, undefined);
     }else if(this.isHostile(callee) && this.isDead()){
       this.clearAllActions();
-      Game.getCurrentPlayer().actionQueue.push({
-        object: this,
-        goal: ModuleCreature.ACTION.USEOBJECT
-      });
+      Game.getCurrentPlayer().actionUseObject(this);
     }else if(!this.isDead()){
       this.clearAllActions();
-      Game.getCurrentPlayer().actionQueue.push({
-        object: this,
-        conversation: this.GetConversation(),
-        ignoreStartRange: false,
-        goal: ModuleCreature.ACTION.DIALOGOBJECT
-      });
+      Game.getCurrentPlayer().actionDialogObject(this, this.GetConversation(), false);
     }
     
   }
@@ -2221,62 +2224,11 @@ class ModuleCreature extends ModuleCreatureController {
 
     //ActionList
     if(this.template.RootNode.HasField('ActionList')){
-      let actions = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
-      for(let i = 0, len = actions.length; i < len; i++){
-        let action = actions[i];
-        try{
-          let actionId = action.GetFieldByLabel('ActionId').GetValue();
-          let paramCount = action.GetFieldByLabel('NumParams').GetValue();
-
-          let paramStructs = [];
-          if(action.HasField('Paramaters'))
-            paramStructs = action.GetFieldByLabel('Paramaters').GetChildStructs();
-
-          if(actionId == -1000){ //MoveToPoint ???
-
-            let x = paramStructs[0].GetFieldByLabel('Value').GetValue();
-            let y = paramStructs[1].GetFieldByLabel('Value').GetValue();
-            let z = paramStructs[2].GetFieldByLabel('Value').GetValue();
-
-            let object = ModuleObject.GetObjectById(paramStructs[4].GetFieldByLabel('Value').GetValue());
-            let run = paramStructs[5].GetFieldByLabel('Value').GetValue();
-            let distance = paramStructs[6].GetFieldByLabel('Value').GetValue();
-
-            this.moveToObject(object, run, distance);
-
-          }else if(actionId == 0x06){ //ActionPlayAnimation
-            console.log('ActionPlayAnimation', action);
-          }else if(actionId == 37){ //ActionDoCommand
-
-            let scriptParamStructs = paramStructs[0].GetFieldByLabel('Value').GetChildStructs()[0];
-            let script = new NWScript();
-            script.name = scriptParamStructs.GetFieldByLabel('Name').GetValue();
-            script.init(
-              scriptParamStructs.GetFieldByLabel('Code').GetVoid(),
-              scriptParamStructs.GetFieldByLabel('CodeSize').GetValue()
-            );
-
-            let scriptInstance = script.newInstance();
-            scriptInstance.isStoreState = true;
-            scriptInstance.setCaller(this);
-
-            let stackStruct = scriptParamStructs.GetFieldByLabel('Stack').GetChildStructs()[0]
-            scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
-            
-            this.actionQueue.push({
-              goal: ModuleCreature.ACTION.SCRIPT,
-              script: scriptInstance,
-              action: { script: scriptInstance, offset: scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue() },
-              clearable: false
-            });
-
-            //console.log('ActionDoCommand', script, scriptParamStructs, this);
-
-          }else{
-            console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);
-          }
-        }catch(e){
-          console.error('ActionList', e, action, this);
+      let actionStructs = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
+      for(let i = 0, len = actionStructs.length; i < len; i++){
+        let action = Action.FromStruct(actionStructs[i]);
+        if(action instanceof Action){
+          this.actionQueue.add(action);
         }
       }
     }
@@ -2417,9 +2369,8 @@ class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  followLeader(){
-    //The follow leader action will be controlled by the heartbeat script when it is implemented
-    this.actionQueue.push({object: Game.player, goal: ModuleCreature.ACTION.FOLLOWLEADER});
+  actionFollowLeader(){
+    this.actionQueue.add( new ActionFollowLeader() );
   }
 
   save(){
@@ -2804,7 +2755,7 @@ ModuleCreature.AnimState = {
   PAUSE_INJ:            10092, //8 - 
   WALK_INJ:             10093, //1 - 
   RUN_INJ:              10094, //4 -
-  ATTACK2:              10109, //300
+  ATTACK_DUELING:       10109, //300
   USE_COMPUTER_LP:      10112, //44 - 
   WHIRLWIND:            10117, //75 - 
   DEACTIVATE:           10118, //270 - NWSCRIPT Constant: 20
@@ -2911,40 +2862,6 @@ ModuleCreature.AnimState = {
   CASTOUT3:             11000, //66 - 
   CRITICAL_STRIKE2_SS:  11001, //392 -
   CRITICAL_STRIKE3_SS:  11002, //393 -
-};
-
-ModuleCreature.ACTION = {
-  MOVETOPOINT: 0,
-  PICKUPITEM: 1,
-  DROPITEM: 2,
-  ATTACKOBJECT: 3,
-  CASTSPELL: 4,
-  OPENDOOR: 5,
-  CLOSEDOOR: 6,
-  DIALOGOBJECT: 7,
-  DISABLETRAP: 8,
-  RECOVERTRAP: 9,
-  FLAGTRAP: 10,
-  EXAMINETRAP: 11,
-  SETTRAP: 12,
-  OPENLOCK: 13,
-  LOCK: 14,
-  USEOBJECT: 15,
-  ANIMALEMPATHY: 16,
-  REST: 17,
-  TAUNT: 18,
-  ITEMCASTSPELL: 19,
-  COUNTERSPELL: 31,
-  HEAL: 33,
-  PICKPOCKET: 34,
-  FOLLOW: 35,
-  WAIT: 36,
-  SIT: 37,
-  FOLLOWLEADER: 38,
-  ANIMATE: 65532,
-  SCRIPT: 65533,
-  INVALID: 65535,
-  QUEUEEMPTY: 65534,
 };
 
 module.exports = ModuleCreature;

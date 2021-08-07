@@ -23,7 +23,7 @@ class ActionJumpToPoint extends Action {
   }
 
   update(delta){
-    this.target = ModuleObject.GetObjectById(this.getParameter(3) || ModuleObject.OBJECT_INVALID);
+    this.target = this.getParameter(3);
 
     //if(!(this.target instanceof ModuleObject))
     //  return Action.STATUS.FAILED;

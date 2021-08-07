@@ -356,7 +356,7 @@ class InGameOverlay extends GameMenu {
                 if(i==0){
                   Game.getCurrentPlayer().attackCreature(action.action.object, action.action.feat);
                 }else{
-                  Game.getCurrentPlayer().actionQueue.push(
+                  Game.getCurrentPlayer().actionQueue.add(
                     action.action
                   );
                 }
@@ -537,17 +537,16 @@ class InGameOverlay extends GameMenu {
 
         }else if(Game.selectedObject instanceof ModuleDoor){
           if(Game.selectedObject.isLocked() && !Game.selectedObject.requiresKey()){
+            let action1 = new ActionUnlockObject();
+            action1.setParameter(0, Action.Parameter.TYPE.DWORD, Game.selectedObject.id)
             skills.target1.push({
-              action: {
-                goal: ModuleCreature.ACTION.OPENLOCK,
-                object:Game.selectedObject
-              },
+              action: action1,
               icon: 'isk_security'
             });
 
             skills.target0.push({
               action: {
-                goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                type: Action.TYPE.ActionPhysicalAttacks,
                 object:Game.selectedObject,
                 feat: undefined
               },
@@ -557,7 +556,7 @@ class InGameOverlay extends GameMenu {
         }else if(Game.selectedObject instanceof ModuleCreature && Game.selectedObject.isHostile(Game.player)){
           skills.target0.push({
             action: {
-              goal: ModuleCreature.ACTION.ATTACKOBJECT,
+              type: Action.TYPE.ActionPhysicalAttacks,
               object: Game.selectedObject,
               feat: undefined
             },
@@ -570,7 +569,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(81)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(81)
                 },
@@ -579,7 +578,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(19)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(19)
                 },
@@ -588,7 +587,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(8)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(8)
                 },
@@ -600,7 +599,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(83)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(83)
                 },
@@ -609,7 +608,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(17)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(17)
                 },
@@ -618,7 +617,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(28)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(28)
                 },
@@ -630,7 +629,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(53)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(53)
                 },
@@ -639,7 +638,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(91)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(91)
                 },
@@ -648,7 +647,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(11)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(11)
                 },
@@ -664,7 +663,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(77)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(77)
                 },
@@ -673,7 +672,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(20)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(20)
                 },
@@ -682,7 +681,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(31)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(31)
                 },
@@ -695,7 +694,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(82)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(82)
                 },
@@ -704,7 +703,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(18)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(18)
                 },
@@ -713,7 +712,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(29)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(29)
                 },
@@ -726,7 +725,7 @@ class InGameOverlay extends GameMenu {
             if(currentPlayer.getFeat(26)){ //Master
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(26)
                 },
@@ -735,7 +734,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(92)){ //Imporved
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(92)
                 },
@@ -744,7 +743,7 @@ class InGameOverlay extends GameMenu {
             }else if(currentPlayer.getFeat(30)){ //Basic
               skills.target0.push({
                 action: {
-                  goal: ModuleCreature.ACTION.ATTACKOBJECT,
+                  type: Action.TYPE.ActionPhysicalAttacks,
                   object: Game.selectedObject,
                   feat: currentPlayer.getFeat(30)
                 },

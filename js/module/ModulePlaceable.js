@@ -101,10 +101,7 @@ class ModulePlaceable extends ModuleObject {
       return;
     }
 
-    Game.getCurrentPlayer().actionQueue.push({
-      object: this,
-      goal: ModuleCreature.ACTION.USEOBJECT
-    });
+    Game.getCurrentPlayer().actionUseObject( this );
     
   }
 
@@ -188,63 +185,7 @@ class ModulePlaceable extends ModuleObject {
     }
 
     this.action = this.actionQueue[0];
-
-    if(this.action != undefined){
-      
-      switch(this.action.goal){
-        case ModuleCreature.ACTION.DIALOGOBJECT:
-          Game.InGameDialog.StartConversation(this.action.conversation ? this.action.conversation : this.conversation, this, this.action.object);
-          this.actionQueue.shift()
-        break;
-        case ModuleCreature.ACTION.WAIT:
-          this.action.elapsed += delta;
-          if(this.action.elapsed > this.action.time){
-            this.actionQueue.shift()
-          }
-        break;
-        case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScript file
-          console.log('ModulePlaceable', 'ACTION.SCRIPT', this.action);
-          if(this.action.script instanceof NWScriptInstance){
-            this.action.action.script.caller = this;
-            this.action.action.script.beginLoop({
-              _instr: null, 
-              index: -1, 
-              seek: this.action.action.offset, 
-              onComplete: () => {
-                //console.log('ACTION.SCRIPT', 'Complete');
-              }
-            });
-          }
-          this.actionQueue.shift();
-        break;
-        case ModuleCreature.ACTION.ANIMATE:
-          if(this.action.animation >= 10000){
-            this.animState = this.action.animation;
-            this.action.started = true;
-          }else{
-            console.error('ModulePlaceable.ACTION.ANIMATE Invalid animation', this.getName(), this.action.animation, this.action);
-            //Kill the action
-            this.actionQueue.shift();
-          }
-
-          if(this.action.time == -1){
-            //Kill the action
-            this.actionQueue.shift();
-          }else if(this.action.time > 0){
-            this.action.time -= delta;
-            if(this.action.time < 0){
-              this.action.time = 0;
-              //Kill the action
-              this.actionQueue.shift();
-            }
-          }else{
-            //Kill the action
-            this.actionQueue.shift();
-          }
-        break;
-      }
-
-    }
+    this.actionQueue.process( delta );
 
     if(this.animState == ModulePlaceable.AnimState.DEFAULT){
       if(this.isOpen()){

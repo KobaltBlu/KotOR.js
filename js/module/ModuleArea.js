@@ -2015,6 +2015,7 @@ class ModuleArea extends ModuleObject {
       encounterList.AddChildStruct( this.encounters[i].save().RootNode );
     }
 
+    //Area Items List
     let list = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'List') );
 
     let placeableList = git.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Placeable List') );

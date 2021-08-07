@@ -29,9 +29,14 @@ class ActionMoveToPoint extends Action {
       this.getParameter(2),
     );
 
-    this.target = ModuleObject.GetObjectById(this.getParameter(4) || ModuleObject.OBJECT_INVALID);
+    this.real_target_position = this.target_position.clone();
+
+    this.target = this.getParameter(4);
     if(this.target instanceof ModuleObject){
-      this.target_position.copy(this.target.position);
+      this.real_target_position.copy(this.target.position);
+      if( this.target.isDead() ){
+        return Action.STATUS.FAILED;
+      }
     }
 
     this.range = this.getParameter(6) || 0.1;
@@ -40,14 +45,21 @@ class ActionMoveToPoint extends Action {
     this.distance = Utility.Distance2D(this.owner.position, this.target_position);
     if(this.distance > this.range){
 
+      let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
       if(this.path == undefined){
-        this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.target_position);
+        if(this.owner.openSpot){
+          this.path_realtime = true;
+          this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
+          this.path.unshift(this.target.position.clone());
+        }else{
+          this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.target_position);
+        }
         distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
         this.path_timer = 20;
       }
 
-      if(this.openSpot){
-        distanceToTarget = Utility.Distance2D(this.owner.position, this.openSpot.targetVector);
+      if(this.owner.openSpot){
+        distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
       }
   
       this.invalidateCollision = true;
@@ -80,7 +92,7 @@ class ActionMoveToPoint extends Action {
         }
 
         this.owner.AxisFront.negate();
-        this.owner.force = Math.min( 1, Math.max( 0, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
+        this.owner.force = Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
         this.owner.walk = !this.run;
         this.owner.animState = this.run ? ModuleCreature.AnimState.RUNNING : ModuleCreature.AnimState.WALKING;
       }else{
@@ -99,8 +111,8 @@ class ActionMoveToPoint extends Action {
 
       return Action.STATUS.IN_PROGRESS;
     }else{
-      this.animState = ModuleCreature.AnimState.IDLE;
-      this.force = 0;
+      this.owner.animState = ModuleCreature.AnimState.IDLE;
+      this.owner.force = 0;
       return Action.STATUS.COMPLETE;
     }
 

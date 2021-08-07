@@ -90,7 +90,7 @@ class TalentSpell extends TalentObject {
 
       oCaster.combatQueue.push({
         target: oTarget,
-        type: ModuleCreature.ACTION.CASTSPELL,
+        type: Action.TYPE.ActionCastSpell,
         icon: this.iconresref,
         spell: this,
         ready: false,
@@ -153,7 +153,7 @@ class TalentSpell extends TalentObject {
       oCaster.lastAttemptedSpellTarget = oTarget;
       oCaster.casting.push({
         target: oTarget,
-        type: ModuleCreature.ACTION.CASTSPELL,
+        type: Action.TYPE.ActionCastSpell,
         icon: this.iconresref,
         spell: this,
         conjureTime: this.getConjureTime(),

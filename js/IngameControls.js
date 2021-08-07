@@ -19,6 +19,8 @@ class IngameControls {
 
     this.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
 
+    this.gamePad = new GamePad();
+
     this.InitKeys();
 
     this.element.requestPointerLock = this.element.requestPointerLock;
@@ -168,6 +170,7 @@ class IngameControls {
       Game.mouse.leftDown = true;
 
     }).mousemove((event) => {
+      Game.scene_cursor.visible = true;
 
       Game.mouse.x = Mouse.Vector.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       Game.mouse.y = Mouse.Vector.y = - ( event.clientY / window.innerHeight ) * 2 + 1; 
@@ -296,15 +299,15 @@ class IngameControls {
 
                   if(Game.selectedObject == obj.moduleObject && distance <= distanceThreshold){
                     if(typeof obj.moduleObject.onClick === 'function'){
+                      Game.getCurrentPlayer().clearAllActions();
                       obj.moduleObject.onClick(Game.getCurrentPlayer());
                     }else{
                       let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
                       //console.log(distance);
                       if(distance > 1.5){
+                        Game.getCurrentPlayer().clearAllActions();
                         obj.moduleObject.clearAllActions();
-                        Game.getCurrentPlayer().actionQueue.push({
-                          object: obj.moduleObject, goal: 'ACTION_DIALOGOBJECT'
-                        });
+                        Game.getCurrentPlayer().actionDialogObject(obj.moduleObject);
                       }
                     }
                   }
@@ -456,8 +459,9 @@ class IngameControls {
     let gp = undefined;
     if(currentGamepad instanceof Gamepad){
       gp = navigator.getGamepads()[currentGamepad.index];
-      //console.log(gp.axes);
+      this.gamePad.setGamePad(gp);
     }
+    this.gamePad.updateState();
 
     if(Mouse.Dragging){
       xoffset = Mouse.OffsetX || 0;
@@ -467,7 +471,7 @@ class IngameControls {
     }
 
     if(Game.binkVideo.isPlaying){
-      if(this.keys['escape'].pressed){
+      if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
         Game.binkVideo.stop();
       }
       //Set all pressed keys to false so they can only be triggered on this frame 
@@ -520,7 +524,7 @@ class IngameControls {
           }
         }
 
-        if(this.keys['escape'].pressed){
+        if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
           Game.InGameDialog.EndConversation(true);
         }
 
@@ -552,21 +556,21 @@ class IngameControls {
 
         }
 
-        if(this.keys['escape'].pressed){
+        if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
           Game.InGameComputer.EndConversation(true);
         }
 
       }else if(Game.InGameComputerCam.bVisible){
-        if(this.keys['escape'].pressed){
+        if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
           Game.InGameComputerCam.Close();
-        }else if(this.keys['space'].pressed){
+        }else if( this.keys['space'].pressed ){
           Game.InGameComputerCam.Close();
         }
       }
 
     }else{
 
-      if(this.keys['escape'].pressed){
+      if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
         if(MenuManager.GetCurrentMenu() != Game.InGameOverlay && MenuManager.GetCurrentMenu() != Game.MainMenu && MenuManager.GetCurrentMenu() != Game.LoadScreen){
           MenuManager.GetCurrentMenu().Close();
         }else{
@@ -584,7 +588,7 @@ class IngameControls {
         }
       }*/
 
-      if(this.keys['tab'].pressed && (Game.Mode == Game.MODES.INGAME)){
+      if( (this.keys['tab'].pressed || this.gamePad.button_back.pressed) && (Game.Mode == Game.MODES.INGAME)){
         if(!Game.MenuActive){
           PartyManager.ShiftLeader();
           //PartyManager.party.push(PartyManager.party.shift());
@@ -593,11 +597,11 @@ class IngameControls {
   
       if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME) && MenuManager.GetCurrentMenu() == Game.InGameOverlay){
         Game.State = ( Game.State == Game.STATES.PAUSED ? Game.STATES.RUNNING : Game.STATES.PAUSED );
-      }else if(this.keys['space'].pressed && MenuManager.GetCurrentMenu() == Game.InGameConfirm){
+      }else if( (this.keys['space'].pressed || this.gamePad.button_a.pressed) && MenuManager.GetCurrentMenu() == Game.InGameConfirm){
         Game.InGameConfirm.Close();
       }
 
-      if(this.keys['z'].pressed){
+      if(this.keys['z'].pressed || this.gamePad.button_y.pressed){
         Game.getCurrentPlayer().flourish();
       }
     }
@@ -618,7 +622,6 @@ class IngameControls {
     let gp = undefined;
     if(currentGamepad instanceof Gamepad){
       gp = navigator.getGamepads()[currentGamepad.index];
-      //console.log(gp.axes);
     }
     let turningCamera = false;
     if(Game.State == Game.STATES.RUNNING){
@@ -629,12 +632,13 @@ class IngameControls {
 
         if(followee.canMove()){
 
-          if( gp && (gp.axes[1] < -.1 || gp.axes[1] > .1 || gp.axes[0] < -.1 || gp.axes[0] > .1) ){
+          if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
             followee.clearAllActions(true);
             followee.force = 1;
-            followee.setFacing( Utility.NormalizeRadian( Math.atan2(-gp.axes[0], -gp.axes[1]) + Game.followerCamera.facing + Math.PI/2 ) , false);
+            followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + Game.followerCamera.facing + Math.PI/2 ) , false);
             followee.controlled = true;
             followee.invalidateCollision = false;
+            Game.scene_cursor.visible = false;
           }else{
             if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
               followee.clearAllActions(true);
@@ -642,12 +646,14 @@ class IngameControls {
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
               followee.controlled = true;
               followee.invalidateCollision = true;
+              Game.scene_cursor.visible = true;
             }else if( this.keys['s'].down && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
               followee.controlled = true;
               followee.invalidateCollision = true;
+              Game.scene_cursor.visible = true;
             }else{
               //followee.controlled = false;
               followee.force = 0;
@@ -655,6 +661,7 @@ class IngameControls {
 
             if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
               followee.animState = ModuleCreature.AnimState.RUNNING;
+              Game.scene_cursor.visible = true;
             }
           }
 
@@ -668,23 +675,27 @@ class IngameControls {
 
         }
 
-        if((this.keys['a'].down || (gp && gp.axes[2] < -.1)) && !Game.MenuActive){
+        if((this.keys['a'].down || this.gamePad.stick_r_x.value < 0) && !Game.MenuActive){
           followee.invalidateCollision = true;
           turningCamera = true;
-          if((gp && gp.axes[2] < -.1)){
-            this.camDir = -gp.axes[2];
+          if(this.gamePad.stick_r_x.value){
+            Game.scene_cursor.visible = false;
+            this.camDir = -this.gamePad.stick_r_x.value;
           }else{
             this.camDir = 1;
+            Game.scene_cursor.visible = true;
           }
         }
     
-        if((this.keys['d'].down || (gp && gp.axes[2] > .1)) && !Game.MenuActive){
+        if((this.keys['d'].down || this.gamePad.stick_r_x.value > 0) && !Game.MenuActive){
           followee.invalidateCollision = true;
           turningCamera = true;
-          if((gp && gp.axes[2] > .1)){
-            this.camDir = -gp.axes[2];
+          if(this.gamePad.stick_r_x.value){
+            Game.scene_cursor.visible = false;
+            this.camDir = -this.gamePad.stick_r_x.value;
           }else{
             this.camDir = -1;
+            Game.scene_cursor.visible = true;
           }
         }
 
@@ -697,19 +708,19 @@ class IngameControls {
       }
 
     }else if(Game.State == Game.STATES.PAUSED && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
-      if((this.keys['a'].down || (gp && gp.axes[2] < -.1)) && !Game.MenuActive){
+      if((this.keys['a'].down || this.gamePad.stick_r_x.value < 0) && !Game.MenuActive){
         turningCamera = true;
-        if((gp && gp.axes[2] < -.1)){
-          this.camDir = -gp.axes[2];
+        if(this.gamePad.stick_r_x.value){
+          this.camDir = -this.gamePad.stick_r_x.value;
         }else{
           this.camDir = 1;
         }
       }
   
-      if((this.keys['d'].down || (gp && gp.axes[2] > .1)) && !Game.MenuActive){
+      if((this.keys['d'].down || this.gamePad.stick_r_x.value > 0) && !Game.MenuActive){
         turningCamera = true;
-        if((gp && gp.axes[2] > .1)){
-          this.camDir = -gp.axes[2];
+        if(this.gamePad.stick_r_x.value){
+          this.camDir = -this.gamePad.stick_r_x.value;
         }else{
           this.camDir = -1;
         }
@@ -796,6 +807,190 @@ class IngameControls {
     Mouse.OffsetY = (event.movementY || 0)*-1.0;
 
     //console.log(Mouse.OffsetX, Mouse.OffsetY, Mouse.Dragging, event);
+  }
+
+}
+
+class KeyInput {
+
+  constructor( label = 'N/A' ){
+    //Input label
+    this.label = label;
+    //Stores the current down value
+    this.down = false;
+    //Stores the previous down value
+    this.pDown = false;
+
+    //This should only trigger once at the beginning of a button press event
+    this.pressed = false;
+    //the index of the button object on the gamepad's buttons array
+    this.buttonIndex = -1;
+  }
+
+  update(gamePad){
+    if(gamePad instanceof Gamepad){
+      if(gamePad.buttons[this.buttonIndex]){
+        this.pressed = false;
+        this.pDown = this.down;
+        this.down = gamePad.buttons[this.buttonIndex].pressed;
+
+        //If the key is pressed, but was previously not pressed then set the pressed value to true
+        if(!this.pDown && this.down){
+          this.pressed = true;
+        }
+      }
+    }
+  }
+
+}
+
+class AnalogInput {
+
+  constructor( label = 'N/A', deadZone = 0.0, axes = false ){
+    //Input label
+    this.label = label;
+    //Analog deadzone
+    this.deadZone = deadZone;
+    //Gamepad Axes or Button
+    this.axes = axes ? true : false;
+    //Gamepad Axes Index
+    this.axesIndex = -1;
+    //Gamepad Button Index
+    this.buttonIndex = -1;
+    //Input value
+    this.value = 0.0;
+  }
+
+  update(gamePad){
+    if(gamePad instanceof Gamepad){
+      if(this.axes && gamePad.axes[this.axesIndex]){
+        this.value = gamePad.axes[this.axesIndex] * ( Math.max(0, Math.abs( gamePad.axes[this.axesIndex] ) - this.deadZone ) / ( 1 - this.deadZone ) );
+      }else if(!this.axes && gamePad.buttons[this.buttonIndex]){
+        this.value = gamePad.buttons[this.buttonIndex].value * ( Math.max(0, Math.abs( gamePad.buttons[this.buttonIndex].value ) - this.deadZone ) / ( 1 - this.deadZone ) );
+      }
+    }
+  }
+
+}
+
+class GamePad {
+
+  button_a = new KeyInput('A');
+  button_b = new KeyInput('B');
+  button_x = new KeyInput('X');
+  button_y = new KeyInput('Y');
+
+  button_back = new KeyInput('BACK');
+  button_start = new KeyInput('START');
+
+  button_d_up = new KeyInput('D_UP');
+  button_d_down = new KeyInput('D_DOWN');
+  button_d_left = new KeyInput('D_LEFT');
+  button_d_right = new KeyInput('D_RIGHT');
+
+  button_bumper_l = new KeyInput('BUMPER_LEFT');
+  button_bumper_r = new KeyInput('BUMPER_RIGHT');
+
+  trigger_l = new AnalogInput('TRIGGER_LEFT', 0.0);
+  trigger_r = new AnalogInput('TRIGGER_RIGHT', 0.0);
+
+  stick_l_x = new AnalogInput('L_STICK_X', 0.1, true);
+  stick_l_y = new AnalogInput('L_STICK_Y', 0.1, true);
+  stick_l = new KeyInput('L_STICK');
+
+  stick_r_x = new AnalogInput('R_STICK_X', 0.1, true);
+  stick_r_y = new AnalogInput('R_STICK_Y', 0.1, true);
+  stick_r = new KeyInput('R_STICK');
+
+  constructor(){
+    this.gamePad = undefined;
+    this.controlsMapped = false;
+    this.mapKeys();
+  }
+
+  setGamePad( gamePad = undefined ){
+    this.gamePad = gamePad;
+  }
+
+  updateState(){
+    if(this.gamePad instanceof Gamepad){
+      this.button_a.update(this.gamePad);
+      this.button_b.update(this.gamePad);
+      this.button_x.update(this.gamePad);
+      this.button_y.update(this.gamePad);
+
+      this.button_bumper_l.update(this.gamePad);
+      this.button_bumper_r.update(this.gamePad);
+
+      this.trigger_l.update(this.gamePad);
+      this.trigger_r.update(this.gamePad);
+
+      this.button_back.update(this.gamePad);
+      this.button_start.update(this.gamePad);
+
+      this.button_d_up.update(this.gamePad);
+      this.button_d_down.update(this.gamePad);
+      this.button_d_left.update(this.gamePad);
+      this.button_d_right.update(this.gamePad);
+
+      this.stick_l.update(this.gamePad);
+      this.stick_l_x.update(this.gamePad);
+      this.stick_l_y.update(this.gamePad);
+      
+      this.stick_r.update(this.gamePad);
+      this.stick_r_x.update(this.gamePad);
+      this.stick_r_y.update(this.gamePad);
+    }
+  }
+
+  mapKeys(){
+    //A B X Y | X O ◻ △
+    this.button_a.buttonIndex = 0; //a | X == 0
+    this.button_b.buttonIndex = 1; //b | O == 1
+    this.button_x.buttonIndex = 2; //x | ◻ == 2
+    this.button_y.buttonIndex = 3; //y | △ == 3
+
+    //Bumpers
+    this.button_bumper_l.buttonIndex = 4; //bumper_l == 4
+    this.button_bumper_r.buttonIndex = 5; //bumper_r == 5
+
+    //Triggers
+    this.trigger_l.buttonIndex = 6; //trigger_l == 6
+    this.trigger_r.buttonIndex = 7; //trigger_r == 7
+
+    //Start / Select
+    this.button_back.buttonIndex = 8; //back == 8
+    this.button_start.buttonIndex = 9; //start == 9
+
+    //Left Stick
+    this.stick_l.buttonIndex = 10; //stick_l == 10
+    this.stick_l_x.axesIndex = 0;
+    this.stick_l_y.axesIndex = 1;
+
+    //Right Stick
+    this.stick_r.buttonIndex = 11; //stick_r == 11
+    this.stick_r_x.axesIndex = 2;
+    this.stick_r_y.axesIndex = 3;
+
+    //D Pad
+    this.button_d_up.buttonIndex = 12; //d_up == 12
+    this.button_d_down.buttonIndex = 13; //d_down == 13
+    this.button_d_left.buttonIndex = 14; //d_left == 14
+    this.button_d_right.buttonIndex = 15; //d_right == 15
+
+
+    //16 //home_button
+    //17 //dualshock4 trackpad button
+
+    this.controlsMapped = true;
+  }
+
+  onDisconnected(){
+
+  }
+
+  onConnected(){
+
   }
 
 }

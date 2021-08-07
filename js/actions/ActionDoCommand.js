@@ -10,11 +10,13 @@ class ActionDoCommand extends Action {
   }
 
   update(delta){
-    if(this.script instanceof NWScriptInstance){
-      this.script.beginLoop({
+    let script = this.getParameter(0);
+    if(script instanceof NWScriptInstance){
+      script.setCaller(this.owner);
+      script.beginLoop({
         _instr: null, 
         index: -1, 
-        seek: this.action.offset
+        seek: script.offset
       });
       return Action.STATUS.COMPLETE;
     }else{

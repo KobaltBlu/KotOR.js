@@ -929,16 +929,17 @@ class Game extends Engine {
         Game.LoadScreen.showRandomHint();
         Game.LoadScreen.Open();
 
+        console.log('Module.loadScene');
         module.loadScene( (d) => {
           Game.FadeOverlay.FadeOut(0, 0, 0, 0);
           module.initEventQueue();
+          console.log('Module.initScripts');
           module.initScripts( () => {
             Game.LoadScreen.Close();
             process.nextTick( ()=> {
               //Game.scene_gui.background = null;
               Game.scene.visible = true;
               
-              console.log('loadScene', d);
               AudioEngine.Unmute();
               if(Game.module.area.MiniGame){
                 Game.Mode = Game.MODES.MINIGAME
@@ -990,7 +991,9 @@ class Game extends Engine {
                 //console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
                 
                 //console.log('runSpawnScripts', runSpawnScripts);
+                console.log('ModuleArea.initAreaObjects');
                 Game.module.area.initAreaObjects(runSpawnScripts).then( () => {
+                  console.log('ModuleArea: ready to play');
                   Game.module.readyToProcessEvents = true;
 
                   if(!Game.holdWorldFadeInForDialog)

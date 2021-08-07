@@ -32,111 +32,6 @@ class Action {
     this.target;
   }
 
-  actionPathfinder(distance, run = !this.owner.walk, delta = 1){
-    let distanceToTarget = Utility.Distance2D(this.owner.position, this.target.position);
-    if(this.path == undefined){
-      if(this.type == Action.TYPE.ActionFollowLeader){
-        this.path = Game.module.area.path.traverseToPoint(this.owner.position, PartyManager.GetFollowPosition(this));
-        //this.path.push(PartyManager.GetFollowPosition(this));
-        distanceToTarget = Utility.Distance2D(this.owner.position, this.target.position);
-      }else if(this.type == Action.TYPE.ActionPhysicalAttacks){
-        if(this.getEquippedWeaponType() == 4){ //RANGED
-          this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.target.position);
-        }else{ //MELEE
-          this.path_realtime = true;
-          let openSpot = this.target.getClosesetOpenSpot(this);
-          if(typeof openSpot != 'undefined'){
-            //console.log('openSpot', this.owner.getName(), openSpot);
-            this.path = Game.module.area.path.traverseToPoint(this.owner.position, openSpot.targetVector);
-            this.path.unshift(this.target.position.clone());
-            this.openSpot = openSpot;
-            distanceToTarget = Utility.Distance2D(this.owner.position, openSpot.targetVector);
-          }else{
-            distanceToTarget = Utility.Distance2D(this.owner.position, this.target.position);
-            console.error('openSpot', 'Not found');
-          }
-        }
-      }else if(this.type == Action.TYPE.ActionCastSpell){
-        //if(PartyManager.party.indexOf(this) >= 0){
-          this.path_realtime = true;
-          let openSpot = this.target.getClosesetOpenSpot(this);
-          if(typeof openSpot != 'undefined'){
-            //console.log('openSpot', this.owner.getName(), openSpot);
-            this.path = Game.module.area.path.traverseToPoint(this.owner.position, openSpot.targetVector);
-            this.path.unshift(this.target.position.clone());
-            this.openSpot = openSpot;
-            distanceToTarget = Utility.Distance2D(this.owner.position, openSpot.targetVector);
-          }else{
-            distanceToTarget = Utility.Distance2D(this.owner.position, this.target.position);
-            console.error('openSpot', 'Not found');
-          }
-        //}
-      }else{
-        this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.target.position);
-        distanceToTarget = Utility.Distance2D(this.owner.position, this.target.position);
-      }
-      this.path_timer = 20;
-    }
-
-    if(this.openSpot){
-      distanceToTarget = Utility.Distance2D(this.owner.position, this.openSpot.targetVector);
-    }
-
-    this.invalidateCollision = true;
-    let point = this.path[0];
-
-    if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
-      this.owner.blockingTimer = 0;
-      this.owner.collisionTimer = 0;
-    }
-
-    if(point == undefined)
-      point = this.target.position;
-
-    if(!(point instanceof THREE.Vector3))
-      point = point.vector;
-
-    let pointDistance = Utility.Distance2D(this.owner.position, point);
-    if(pointDistance > distance){
-      let tangent = point.clone().sub(this.owner.position.clone());
-      let atan = Math.atan2(-tangent.y, -tangent.x);
-      this.owner.setFacing(atan + Math.PI/2, false);
-      this.owner.AxisFront.x = Math.cos(atan);
-      this.owner.AxisFront.y = Math.sin(atan);
-
-      this.runCreatureAvoidance(delta);
-
-      let arrivalDistance = distance;
-      if(this.openSpot){
-        arrivalDistance = 1.5;
-      }
-
-      this.owner.AxisFront.negate();
-      this.owner.force = Math.min( 1, Math.max( 0, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
-      this.owner.walk = !run;
-      this.owner.animState = run ? ModuleCreature.AnimState.RUNNING : ModuleCreature.AnimState.WALKING;
-    }else{
-      this.path.shift();
-    }
-
-    if(this.path_timer < 0){
-      if(this.path_realtime){
-        this.path = undefined;
-        this.path_timer = 20;
-        //console.log('Path invalidated');
-      }
-    }else{
-      this.path_timer -= 10*delta;
-    }
-
-    if(pointDistance > distance){
-      return false;
-    }else{
-      return true;
-    }
-
-  }
-
   runCreatureAvoidance(delta = 0){
     if(PartyManager.party.indexOf(this) >= 0){
 
@@ -243,7 +138,7 @@ class Action {
     let param = this.parameters[index];
 
     if(typeof param == 'undefined'){
-      param = new ActionParameter( type );
+      param = this.parameters[index] = new ActionParameter( type );
     }
 
     switch(param.type){
@@ -283,17 +178,74 @@ class Action {
       paramStructs = struct.GetFieldByLabel('Paramaters').GetChildStructs();
 
     switch(actionId){
+      case Action.TYPE.ActionCastSpell:
+        action = new ActionCastSpell(groupId);
+      break;
+      case Action.TYPE.ActionCloseDoor:
+        action = new ActionCloseDoor(groupId);
+      break;
+      case Action.TYPE.ActionDialogObject:
+        action = new ActionDialogObject(groupId);
+      break;
+      case Action.TYPE.ActionDoCommand:
+        action = new ActionDoCommand(groupId);
+      break;
+      case Action.TYPE.ActionDropItem:
+        action = new ActionDropItem(groupId);
+      break;
+      case Action.TYPE.ActionEquipItem:
+        action = new ActionEquipItem(groupId);
+      break;
+      case Action.TYPE.ActionFollowLeader:
+        action = new ActionFollowLeader(groupId);
+      break;
+      case Action.TYPE.ActionGiveItem:
+        action = new ActionGiveItem(groupId);
+      break;
+      case Action.TYPE.ActionItemCastSpell:
+        action = new ActionItemCastSpell(groupId);
+      break;
+      case Action.TYPE.ActionJumpToObject:
+        action = new ActionJumpToObject(groupId);
+      break;
+      case Action.TYPE.ActionJumpToPoint:
+        action = new ActionJumpToPoint(groupId);
+      break;
+      case Action.TYPE.ActionLockObject:
+        action = new ActionLockObject(groupId);
+      break;
       case Action.TYPE.ActionMoveToPoint:
         action = new ActionMoveToPoint(groupId);
+      break;
+      case Action.TYPE.ActionOpenDoor:
+        action = new ActionOpenDoor(groupId);
+      break;
+      case Action.TYPE.ActionPauseDialog:
+        action = new ActionPauseDialog(groupId);
       break;
       case Action.TYPE.ActionPlayAnimation:
         action = new ActionPlayAnimation(groupId);
       break;
+      case Action.TYPE.ActionPhysicalAttacks:
+        action = new ActionPhysicalAttacks(groupId);
+      break;
+      case Action.TYPE.ActionResumeDialog:
+        action = new ActionResumeDialog(groupId);
+      break;
+      case Action.TYPE.ActionSetCommandable:
+        action = new ActionSetCommandable(groupId);
+      break;
+      case Action.TYPE.ActionTakeItem:
+        action = new ActionTakeItem(groupId);
+      break;
+      case Action.TYPE.ActionUnlockObject:
+        action = new ActionUnlockObject(groupId);
+      break;
+      case Action.TYPE.ActionUseObject:
+        action = new ActionUseObject(groupId);
+      break;
       case Action.TYPE.ActionWait:
         action = new ActionWait(groupId);
-      break;
-      case Action.TYPE.ActionDoCommand:
-        action = new ActionDoCommand(groupId);
       break;
       default:
         console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);
@@ -424,8 +376,7 @@ class ActionParameter {
       
           let scriptInstance = script.newInstance();
           scriptInstance.isStoreState = true;
-          scriptInstance.offset = scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue();
-          scriptInstance.setCaller(this);
+          scriptInstance.offset = scriptInstance.address = scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue();
       
           let stackStruct = scriptParamStructs.GetFieldByLabel('Stack').GetChildStructs()[0];
           scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
@@ -452,36 +403,60 @@ ActionParameter.TYPE = {
 
 Action.Parameter = ActionParameter;
 
-class ActionList extends Array {
+class ActionQueue extends Array {
 
   constructor(...items){
     super(...items);
     this.groupId = 1;
     this.lastGroupId = 0;
+    this.owner = undefined;
+  }
+
+  setOwner( owner = undefined ){
+    this.owner = owner;
   }
 
   add( actionNode = undefined ){
     if(actionNode instanceof Action){
+      actionNode.owner = this.owner;
       super.push( actionNode );
     }
   }
 
   addFront( actionNode = undefined ){
     if(actionNode instanceof Action){
+      actionNode.owner = this.owner;
       super.unshift( actionNode );
     }
   }
 
   push( actionNode = undefined ){
+    actionNode.owner = this.owner;
     this.add( actionNode );
   }
 
   unshift( actionNode = undefined ){
+    actionNode.owner = this.owner;
     this.addFront( actionNode );
+  }
+
+  process( delta ){
+    let action = this[0];
+    if(action instanceof Action){
+      action.owner = this.owner;
+      let status = action.update( delta );
+      if(status != Action.STATUS.IN_PROGRESS){
+        this.shift();
+      }
+    }
+  }
+
+  clear(){
+    this.splice(0, this.length);
   }
 
 }
 
-Action.ActionList = ActionList;
+Action.ActionQueue = ActionQueue;
 
 module.exports = Action;

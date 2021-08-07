@@ -2,7 +2,7 @@ class ActionPlayAnimation extends Action {
 
   constructor( groupId = 0 ){
     super(groupId);
-    this.type = Action.TYPE.PlayAnimation;
+    this.type = Action.TYPE.ActionPlayAnimation;
 
     //PARAMS
     // 0 - int: animation constant value like (10000, 10001, etc...)
@@ -15,6 +15,10 @@ class ActionPlayAnimation extends Action {
   update(delta){
     if(this.overlayAnimation)
       return Action.STATUS.FAILED;
+
+    this.animation = this.getParameter(0);
+    this.speed = this.getParameter(1);
+    this.time = this.getParameter(2);
 
     if(this.animation >= 10000){
       this.owner.animState = this.animation;

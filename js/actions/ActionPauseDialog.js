@@ -5,6 +5,11 @@ class ActionPauseDialog extends Action {
     this.type = Action.TYPE.ActionPauseDialog;
   }
 
+  update(){
+    Game.InGameDialog.PauseConversation();
+    return Action.STATUS.COMPLETE;
+  }
+
 }
 
 module.exports = ActionPauseDialog;

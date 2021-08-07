@@ -26,8 +26,8 @@ class TalentFeat extends TalentObject {
     if(this.category == 0x1104){
       oCaster.attackCreature(oTarget, this);
       return;
-      oCaster.actionQueue.push({
-        goal: ModuleCreature.ACTION.ATTACKOBJECT,
+      oCaster.actionQueue.add({
+        type: Action.TYPE.ActionPhysicalAttacks,
         object: oTarget,
         feat: this.id
       });
@@ -38,8 +38,8 @@ class TalentFeat extends TalentObject {
     if(this.category == 0x1111){
       oCaster.attackCreature(oTarget, this);
       return;
-      oCaster.actionQueue.push({
-        goal: ModuleCreature.ACTION.ATTACKOBJECT,
+      oCaster.actionQueue.add({
+        type: Action.TYPE.ActionPhysicalAttacks,
         object: oTarget,
         feat: this.id
       });

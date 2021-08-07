@@ -99,7 +99,7 @@ class ModuleCreatureController extends ModuleObject {
           this.updateActionQueue(delta);
         }
 
-        if(this.dialogAnimation && Game.inDialog && (!this.action || this.action.goal != ModuleCreature.ACTION.ANIMATE)){
+        if(this.dialogAnimation && Game.inDialog && (!this.action || this.action.type != Action.TYPE.ActionPlayAnimation)){
           if(this.model){
 
             if(!this.speed){
@@ -175,7 +175,7 @@ class ModuleCreatureController extends ModuleObject {
         this.speed = this.getMovementSpeed();
       }
       
-      let forceDelta = this.speed * delta;
+      let forceDelta = Math.max(this.force * delta, this.speed * delta);
       let gravityDelta = -1 * delta;
       
       if(this.speed){
@@ -345,12 +345,9 @@ class ModuleCreatureController extends ModuleObject {
     if(this.isDebilitated())
       return;
 
-    if(this.action != null){
-            
-      this.aqOffset = 0;
-      this.processAction(delta, this.action);
-
-    } else {
+      
+    this.actionQueue.process( delta );
+    if(!(this.action instanceof Action)){
       //this.force = 0;
       //this.animState = ModuleCreature.AnimState.IDLE;
       /*if(typeof this.model.animationManager.currentAnimation == 'undefined'){
@@ -372,304 +369,6 @@ class ModuleCreatureController extends ModuleObject {
 
     this.action = this.actionQueue[0];
 
-  }
-
-  processAction(delta = 0, action = undefined ){
-    let distance = 0;
-    if(action){
-      switch(action.goal){
-        case ModuleCreature.ACTION.ANIMATE:
-
-          if(this.overlayAnimation)
-            break;
-
-          if(action.animation >= 10000){
-            this.animState = action.animation;
-            action.started = true;
-          }else{
-            console.error('ModuleCreature.ACTION.ANIMATE Invalid animation', this.getName(), action.animation, action);
-            //Kill the action if there is no model to animate?
-            this.actionQueue.shift();
-          }
-
-          if(action.time == -1){
-            //Kill the action if there is no model to animate?
-            this.actionQueue.shift();
-          }else if(action.time > 0){
-            action.time -= delta;
-            if(action.time < 0){
-              action.time = 0;
-            }
-          }else{
-            //Kill the action if there is no model to animate?
-            this.actionQueue.shift();
-          }
-
-        break;
-        case ModuleCreature.ACTION.WAIT:
-          action.elapsed += delta;
-          if(action.elapsed > action.time){
-            this.actionQueue.shift()
-          }
-        break;
-        case ModuleCreature.ACTION.SCRIPT: //run a block of code from an NWScript file
-          if(this == Game.player){
-            //console.log(ModuleCreature.ACTION.SCRIPT, action);
-          }
-          //console.log('Action Script', action);
-          //console.log(ModuleCreature.ACTION.SCRIPT, action);
-          if(action.script instanceof NWScriptInstance){
-            //action.action.script.caller = this;
-            //action.action.script.debug.action = true;
-            action.script.beginLoop({
-              _instr: null, 
-              index: -1, 
-              seek: action.action.offset,
-              onComplete: () => {
-                //console.log('ACTION.SCRIPT', 'Complete', action);
-              }
-            });
-          }else{
-            console.error('Action.SCRIPT ERROR: NOT NWScriptInstance')
-          }
-          this.actionQueue.shift();
-        break;
-
-        case ModuleCreature.ACTION.FOLLOWLEADER:
-          //let targetPos = PartyManager.GetFollowPosition(this);
-
-          if(Game.inDialog){
-            this.actionQueue.shift();
-            this.animState = ModuleCreature.AnimState.IDLE;
-            break;
-          }
-
-          action.object = {
-            position: PartyManager.GetFollowPosition(this)
-          };
-          distance = Utility.Distance2D(this.position, PartyManager.party[0].position.clone());
-          if(distance > 10){
-            action.path_realtime = true;
-            try{
-              this.actionPathfinder(1.5, true, delta);
-            }catch(e){}
-            /*this.invalidateCollision = true;
-            
-            let tangent2 = targetPos.clone().sub(this.position);
-            this.rotation.z = Math.atan2(tangent2.y, tangent2.x) - Math.PI/2;
-
-            this.AxisFront.x = (tangent2.x / distance);
-            this.AxisFront.y = (tangent2.y / distance);
-            
-            this.force = 5.40;
-            this.animState = ModuleCreature.AnimState.RUNNING;*/
-          }else{
-            this.animState = ModuleCreature.AnimState.IDLE;
-            this.force = 0;
-            this.actionQueue.shift();
-          }
-        break;
-        case ModuleCreature.ACTION.USEOBJECT:
-          distance = Utility.Distance2D(this.position, action.object.position);
-          if(distance > 1.5){
-            try{
-              this.actionPathfinder(1.5, undefined, delta);
-            }catch(e){}
-          }else{
-            this.animState = ModuleCreature.AnimState.IDLE;
-            this.force = 0;
-            //console.log(action.object);
-
-            this.setFacing(
-              Math.atan2(
-                this.position.y - action.object.position.y,
-                this.position.x - action.object.position.x
-              ) + Math.PI/2,
-              false
-            );
-
-            if(action.object != Game.player){
-              action.object.use(this);
-            }
-
-            this.actionQueue.shift()
-            
-          }
-        break;
-        case ModuleCreature.ACTION.OPENDOOR:
-          distance = Utility.Distance2D(this.position, action.object.position);
-          
-          if(distance > 2 && !action.object.box.intersectsBox(this.box)){
-            try{
-              this.actionPathfinder(2, undefined, delta);
-            }catch(e){}
-          }else{
-            this.animState = ModuleCreature.AnimState.IDLE;
-            this.force = 0;
-            //console.log(action.object);
-
-            this.setFacing(
-              Math.atan2(
-                this.position.y - action.object.position.y,
-                this.position.x - action.object.position.x
-              ) + Math.PI/2,
-              false
-            );
-
-            if(action.object == Game.player){
-              this.actionQueue.shift()
-            }else{
-              action.object.use(Game.player);
-              this.actionQueue.shift()
-            }
-            
-          }
-        break;
-        case ModuleCreature.ACTION.OPENLOCK:
-
-          if(!action.shouted){
-            action.shouted = true;
-            this.PlaySoundSet(SSFObject.TYPES.UNLOCK);
-          }
-
-          distance = Utility.Distance2D(this.position, action.object.position);
-          if(distance > 1.5){
-            try{
-              this.actionPathfinder(1.5, undefined, delta);
-            }catch(e){}
-          }else{
-            this.animState = ModuleCreature.AnimState.IDLE;
-            this.force = 0;
-                              
-            this.setFacing(
-              Math.atan2(
-                this.position.y - action.object.position.y,
-                this.position.x - action.object.position.x
-              ) + Math.PI/2, 
-              false
-            );
-
-            if(action.timer == undefined){
-              action.timer = 1.5;
-              action.object.audioEmitter.PlaySound('gui_lockpick');
-            }
-
-            if(!this.isSimpleCreature()){
-              if(action.object instanceof ModuleDoor){
-                this.overlayAnimation = 'unlockdr';
-              }else{
-                this.overlayAnimation = 'unlockcntr';
-              }
-            }
-
-            action.timer -= delta;
-
-            if(action.timer <= 0){
-              action.object.attemptUnlock(this);
-              this.actionQueue.shift();
-            }
-            
-          }
-        break;
-        case ModuleCreature.ACTION.DIALOGOBJECT:
-          //console.log('DIALOGOBJECT', action);
-          if(!Game.inDialog){
-            distance = Utility.Distance2D(this.position, action.object.position);
-            if(distance > 4.5 && !action.ignoreStartRange){
-              try{
-                this.actionPathfinder(4.5, undefined, delta);
-              }catch(e){}
-            }else{
-              this.animState = ModuleCreature.AnimState.IDLE;
-              this.force = 0;
-
-              action.object._conversation = action.conversation;
-              this._conversation = action.conversation;
-
-              let caller = this;
-              let target = action.object;
-
-              this.heardStrings = [];
-              caller.heardStrings = [];
-              if(target.scripts.onDialog instanceof NWScriptInstance){
-                target.onDialog(caller, -1);
-              }else{
-                Game.InGameDialog.StartConversation(action.conversation, target, caller);
-              }
-              this.actionQueue.shift();
-            }
-          }else{
-            console.log('Already in dialog', action);
-            this.actionQueue.shift();
-          }
-        break;
-        case ModuleCreature.ACTION.MOVETOPOINT:
-          if(action.instant){
-            //console.log('INSTANT MOVE', this.getName(), '--->', action.object.getName(), this.position.clone(), action.object.position.clone());
-            this.setPosition(action.object.position);
-            this.setFacing(action.object.rotation.z, false);
-            this.groundFace = undefined;
-            this.lastGroundFace = undefined;
-            //this.getCurrentRoom();
-            this.findWalkableFace();
-            this.actionQueue.shift();
-          }else{
-            distance = Utility.Distance2D(this.position, action.object.position);
-            if(distance > (action.distance || 0.1)){
-              try{
-                this.actionPathfinder((action.distance || 0.1), action.run, delta);
-              }catch(e){}
-            }else{
-              this.animState = ModuleCreature.AnimState.IDLE;
-              this.force = 0;
-              this.actionQueue.shift()
-            }
-          }
-        break;
-        case ModuleCreature.ACTION.ATTACKOBJECT:
-          this.resetExcitedDuration();
-          if(!action.combatAction.isCutsceneAttack){
-            if(action.object.isDead()){
-              this.actionQueue.shift();
-            }else{
-              distance = Utility.Distance2D(this.position, action.object.position);
-              if(distance > ( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ) ){
-                try{
-                  this.actionPathfinder(( this.getEquippedWeaponType() == 4 ? 15.0 : 2.0 ), undefined, delta);
-                }catch(e){}
-              }else{
-                this.animState = ModuleCreature.AnimState.IDLE;
-                this.force = 0;
-                this.actionQueue.shift();
-              }
-            }
-          }
-        break;
-        case ModuleCreature.ACTION.CASTSPELL:
-          //console.log('ACTION.CASTSPELL', action);
-          if(action.spell.inRange(action.object, this)){
-            action.spell.useTalentOnObject(action.object, this);
-            this.actionQueue.shift();
-          }else{
-            this.actionPathfinder(action.spell.getCastRange(), undefined, delta);
-          }
-        break;
-        default:
-          console.log('Unknown', action);
-          distance = Utility.Distance2D(this.position, action.object.position);
-          if(distance > 1.5){
-            try{
-              this.actionPathfinder(1.5, undefined, delta);
-            }catch(e){}
-          }else{
-            this.animState = ModuleCreature.AnimState.IDLE;
-            this.force = 0;
-
-            this.actionQueue.shift();
-          }
-        break;
-      }
-    }
   }
 
   updateListeningPatterns(){
@@ -779,198 +478,6 @@ class ModuleCreatureController extends ModuleObject {
     
   }
 
-  actionPathfinder(distance, run = !this.walk, delta = 1){
-    let distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
-    if(this.action.path == undefined){
-      if(this.action.goal == ModuleCreature.ACTION.FOLLOWLEADER){
-        this.action.path = Game.module.area.path.traverseToPoint(this.position, PartyManager.GetFollowPosition(this));
-        //this.action.path.push(PartyManager.GetFollowPosition(this));
-        distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
-      }else if(this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT){
-        if(this.getEquippedWeaponType() == 4){ //RANGED
-          this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
-        }else{ //MELEE
-          this.action.path_realtime = true;
-          let openSpot = this.action.object.getClosesetOpenSpot(this);
-          if(typeof openSpot != 'undefined'){
-            //console.log('openSpot', this.getName(), openSpot);
-            this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
-            this.action.path.unshift(this.action.object.position.clone());
-            this.action.openSpot = openSpot;
-            distanceToTarget = Utility.Distance2D(this.position, openSpot.targetVector);
-          }else{
-            distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
-            console.error('openSpot', 'Not found');
-          }
-        }
-      }else if(this.action.goal == ModuleCreature.ACTION.CASTSPELL){
-        //if(PartyManager.party.indexOf(this) >= 0){
-          this.action.path_realtime = true;
-          let openSpot = this.action.object.getClosesetOpenSpot(this);
-          if(typeof openSpot != 'undefined'){
-            //console.log('openSpot', this.getName(), openSpot);
-            this.action.path = Game.module.area.path.traverseToPoint(this.position, openSpot.targetVector);
-            this.action.path.unshift(this.action.object.position.clone());
-            this.action.openSpot = openSpot;
-            distanceToTarget = Utility.Distance2D(this.position, openSpot.targetVector);
-          }else{
-            distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
-            console.error('openSpot', 'Not found');
-          }
-        //}
-      }else{
-        this.action.path = Game.module.area.path.traverseToPoint(this.position, this.action.object.position);
-        distanceToTarget = Utility.Distance2D(this.position, this.action.object.position);
-      }
-      this.action.path_timer = 20;
-    }
-
-    if(this.action.openSpot){
-      distanceToTarget = Utility.Distance2D(this.position, this.action.openSpot.targetVector);
-    }
-
-    this.invalidateCollision = true;
-    let point = this.action.path[0];
-
-    if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
-      /*point = this.action.path[this.action.path.length - 1];
-      this.action.path = [point];
-      
-      if(!(point instanceof THREE.Vector3))
-        point = point.vector;
-
-      this.setPosition(point);*/
-
-      this.blockingTimer = 0;
-      this.collisionTimer = 0;
-    }
-
-    if(point == undefined)
-      point = this.action.object.position;
-
-    if(!(point instanceof THREE.Vector3))
-      point = point.vector;
-
-    let pointDistance = Utility.Distance2D(this.position, point);
-    if(pointDistance > distance){
-      let tangent = point.clone().sub(this.position.clone());
-      let atan = Math.atan2(-tangent.y, -tangent.x);
-      this.setFacing(atan + Math.PI/2, false);
-      this.AxisFront.x = Math.cos(atan);
-      this.AxisFront.y = Math.sin(atan);
-
-      if(PartyManager.party.indexOf(this) >= 0){
-
-        //Check Creature Avoidance
-        let threatening = undefined;
-        let threateningDistance = Infinity;
-        let ahead = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1);
-        let ahead2 = this.position.clone().sub(this.AxisFront.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
-        for(let i = 0; i < Game.module.area.creatures.length; i++){
-          let creature = Game.module.area.creatures[i];
-          if(creature === this || creature.isDead())
-            continue;
-
-          let hitDistance = parseInt(creature.getAppearance().hitdist);
-          let creaturePos = creature.position.clone();
-          let distance = this.position.distanceTo(creature.position);
-
-          if(ahead.distanceTo(creaturePos) <= hitDistance){
-            if(ahead.distanceTo(creaturePos) < threateningDistance){
-              threatening = creature;
-              threateningDistance = ahead.distanceTo(creaturePos);
-            }
-          }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
-            //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-            if(ahead2.distanceTo(creaturePos) < threateningDistance){
-              threatening = creature;
-              threateningDistance = ahead2.distanceTo(creaturePos);
-            }
-          }   
-        }
-
-        for(let i = 0; i < PartyManager.party.length; i++){
-          let creature = PartyManager.party[i];
-          if(creature === this || creature.isDead())
-            continue;
-
-          let hitDistance = parseInt(creature.getAppearance().hitdist);
-          let creaturePos = creature.position.clone();
-          let distance = this.position.distanceTo(creature.position);
-
-          if(ahead.distanceTo(creaturePos) <= hitDistance){
-            if(ahead.distanceTo(creaturePos) < threateningDistance){
-              threatening = creature;
-              threateningDistance = ahead.distanceTo(creaturePos);
-            }
-          }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
-            //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-            if(ahead2.distanceTo(creaturePos) < threateningDistance){
-              threatening = creature;
-              threateningDistance = ahead2.distanceTo(creaturePos);
-            }
-          }
-        }
-
-        if(threatening instanceof ModuleCreature){
-          //console.log(threatening.getName(), 'is threatening', this.getName());
-
-          let dVector = threatening.position.clone().sub(this.position).normalize();
-
-          
-          let creaturePos = threatening.position.clone();        
-          let avoidance_force = ahead.clone().sub(dVector);
-          avoidance_force.z = 0;
-          let newTarget = this.position.clone().add(avoidance_force);
-
-          let tangent = newTarget.sub(this.position.clone());
-          let atan = Math.atan2(-avoidance_force.y, -avoidance_force.x);
-          this.rotation.z = (atan + Math.PI/2); //(1 - delta) * this.rotation.z + delta * (atan + Math.PI/2)
-          this.AxisFront.x = Math.cos(atan);
-          this.AxisFront.y = Math.sin(atan);
-
-          this.blockingTimer += 1;
-        }else{
-          if(this.blockingTimer > 0){
-            this.blockingTimer -= 0.5;
-          }
-          if(this.blockingTimer > 0)
-            this.blockingTimer = 0;
-        }
-
-      }
-
-      let arrivalDistance = distance;
-      if(this.action.openSpot){
-        arrivalDistance = 1.5;
-      }
-
-      this.AxisFront.negate();
-      this.force = Math.min( 1, Math.max( 0, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
-      this.walk = !run;
-      this.animState = run ? ModuleCreature.AnimState.RUNNING : ModuleCreature.AnimState.WALKING;
-    }else{
-      this.action.path.shift();
-    }
-
-    if(this.action.path_timer < 0){
-      if(this.action.path_realtime){
-        this.action.path = undefined;
-        this.action.path_timer = 20;
-        //console.log('Path invalidated');
-      }
-    }else{
-      this.action.path_timer -= 10*delta;
-    }
-
-    if(pointDistance > distance){
-      return false;
-    }else{
-      return true;
-    }
-
-  }
-
   updateCombat(delta = 0){
 
     if(this.lastAttackTarget instanceof ModuleObject && this.lastAttackTarget.isDead()){
@@ -1007,7 +514,7 @@ class ModuleCreatureController extends ModuleObject {
         this.attackCreature(this.lastAttackTarget, undefined);
       }
 
-      /*if(this.action && (this.action.goal == ModuleCreature.ACTION.ATTACKOBJECT || this.action.goal == ModuleCreature.ACTION.CASTSPELL)){
+      /*if(this.action && (this.action.type == Action.TYPE.ActionPhysicalAttacks || this.action.type == Action.TYPE.ActionCastSpell)){
         if(this.action.object.getHP() <= 0){
           this.clearTarget();
           this.actionQueue.shift();
@@ -1033,9 +540,9 @@ class ModuleCreatureController extends ModuleObject {
 
       if(this.combatAction != undefined){
         if(this.combatAction != undefined && this.combatAction.target != this){
-          if(!this.actionQueue.length || this.actionQueue[0].goal != ModuleCreature.ACTION.ATTACKOBJECT){
-            /*this.actionQueue.unshift(
-              {object: this.combatAction.target, goal: ModuleCreature.ACTION.ATTACKOBJECT, isCutsceneAttack: this.combatAction.isCutsceneAttack}
+          if(!this.actionQueue.length || this.actionQueue[0].type != Action.TYPE.ActionPhysicalAttacks){
+            /*this.actionQueue.addFront(
+              {object: this.combatAction.target, type: Action.TYPE.ActionPhysicalAttacks, isCutsceneAttack: this.combatAction.isCutsceneAttack}
             )*/
           }
           
@@ -1100,7 +607,7 @@ class ModuleCreatureController extends ModuleObject {
 
   actionInRange(action = undefined){
     if(action){
-      if(action.type == ModuleCreature.ACTION.CASTSPELL){
+      if(action.type == Action.TYPE.ActionCastSpell){
         return action.spell.inRange(action.target, this);
       }else{
         let distance = this.position.distanceTo(action.target.position);
@@ -1148,7 +655,7 @@ class ModuleCreatureController extends ModuleObject {
       this.overlayAnimation = undefined;
     }
 
-    //if(this.action && this.action.goal == ModuleCreature.ACTION.ANIMATE)
+    //if(this.action && this.action.type == Action.TYPE.ActionPlayAnimation)
     //  return;
 
     if(Game.inDialog && this.dialogAnimation && !this.speed && !this.isDead())
@@ -1478,7 +985,7 @@ class ModuleCreatureController extends ModuleObject {
       }
 
     }else{
-      if(this.combatAction.type == ModuleCreature.ACTION.CASTSPELL){
+      if(this.combatAction.type == Action.TYPE.ActionCastSpell){
         if(this.combatAction.conjuring){
           if(currentAnimation != 'castout1'){
             this.getModel().playAnimation('castout1', false);
@@ -1520,7 +1027,7 @@ class ModuleCreatureController extends ModuleObject {
 
   getCurrentAction(){
     if(this.actionQueue.length){
-      return this.actionQueue[0].goal;
+      return this.actionQueue[0].type;
     }
     return 65535;
   }
@@ -1528,13 +1035,20 @@ class ModuleCreatureController extends ModuleObject {
   moveToObject(target = undefined, bRun = true, distance = 1.0){
 
     if(target instanceof ModuleObject){
-      this.actionQueue.push({
-        goal: ModuleCreature.ACTION.MOVETOPOINT,
-        object: target,
-        run: bRun,
-        distance: Math.max(1.5, distance),
-        instant: false
-      });
+        
+      this.openSpot = undefined;
+      let action = new ActionMoveToPoint();
+      let target_position = target.position.clone();
+      action.setParameter(0, Action.Parameter.TYPE.FLOAT, target_position.x);
+      action.setParameter(1, Action.Parameter.TYPE.FLOAT, target_position.y);
+      action.setParameter(2, Action.Parameter.TYPE.FLOAT, target_position.z);
+      action.setParameter(3, Action.Parameter.TYPE.DWORD, Game.module.area.id);
+      action.setParameter(4, Action.Parameter.TYPE.DWORD, target.id);
+      action.setParameter(5, Action.Parameter.TYPE.INT, bRun ? 1 : 0);
+      action.setParameter(6, Action.Parameter.TYPE.FLOAT, Math.max(1.5, distance));
+      action.setParameter(7, Action.Parameter.TYPE.INT, 0);
+      action.setParameter(8, Action.Parameter.TYPE.FLOAT, 30.0);
+      this.actionQueue.add(action);
     }
 
   }
@@ -1546,7 +1060,7 @@ class ModuleCreatureController extends ModuleObject {
       let distance = 0.1;
       let creatures = Game.module.area.creatures;
 
-      //Check if creatures are to close to location
+      //Check if creatures are too close to location
       for(let i = 0; i < creatures.length; i++){
         let creature = creatures[i];
         if(this == creature)
@@ -1558,7 +1072,7 @@ class ModuleCreatureController extends ModuleObject {
         }
       }
 
-      //Check if party are to close to location
+      //Check if party are too close to location
       for(let i = 0; i < PartyManager.party.length; i++){
         let creature = PartyManager.party[i];
         if(this == creature)
@@ -1570,13 +1084,21 @@ class ModuleCreatureController extends ModuleObject {
         }
       }
 
-      this.actionQueue.push({
-        goal: ModuleCreature.ACTION.MOVETOPOINT,
-        object: target,
-        run: bRun,
-        distance: distance,
-        instant: false
-      });
+        
+      this.openSpot = undefined;
+      let action = new ActionMoveToPoint();
+      let target_position = target.position.clone();
+      action.setParameter(0, Action.Parameter.TYPE.FLOAT, target_position.x);
+      action.setParameter(1, Action.Parameter.TYPE.FLOAT, target_position.y);
+      action.setParameter(2, Action.Parameter.TYPE.FLOAT, target_position.z);
+      action.setParameter(3, Action.Parameter.TYPE.DWORD, Game.module.area.id);
+      action.setParameter(4, Action.Parameter.TYPE.DWORD, target instanceof Game.Location ? ModuleObject.OBJECT_INVALID : target.id );
+      action.setParameter(5, Action.Parameter.TYPE.INT, bRun ? 1 : 0);
+      action.setParameter(6, Action.Parameter.TYPE.FLOAT, Math.max(1.5, distance));
+      action.setParameter(7, Action.Parameter.TYPE.INT, 0);
+      action.setParameter(8, Action.Parameter.TYPE.FLOAT, 30.0);
+      this.actionQueue.add(action);
+
     }
 
   }
@@ -1584,27 +1106,29 @@ class ModuleCreatureController extends ModuleObject {
   jumpToObject(target = undefined){
     console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
-      this.actionQueue.unshift({
-        goal: ModuleCreature.ACTION.MOVETOPOINT,
-        object: target,
-        run: false,
-        distance: 1.0,
-        instant: true
-      });
+
+      let action = new ActionJumpToObject();
+      action.setParameter(0, Action.Parameter.TYPE.DWORD, target.id );
+      action.setParameter(1, Action.Parameter.TYPE.INT, 0);
+      this.actionQueue.add(action);
+
     }
 
   }
 
   jumpToLocation(target = undefined){
     console.log('jumpToLocation', target, this);
-    if(target instanceof Game.Location || target instanceof ModuleObject){
-      this.actionQueue.unshift({
-        goal: ModuleCreature.ACTION.MOVETOPOINT,
-        object: target,
-        run: false,
-        distance: 1.0,
-        instant: true
-      });
+    if(target instanceof Game.Location){
+      let action = new ActionJumpToPoint();
+      action.setParameter(0, Action.Parameter.TYPE.FLOAT, target.position.x);
+      action.setParameter(1, Action.Parameter.TYPE.FLOAT, target.position.y);
+      action.setParameter(2, Action.Parameter.TYPE.FLOAT, target.position.z);
+      action.setParameter(3, Action.Parameter.TYPE.DWORD, Game.module.area.id);
+      action.setParameter(4, Action.Parameter.TYPE.INT, 0);
+      action.setParameter(5, Action.Parameter.TYPE.FLOAT, 20.0);
+      action.setParameter(6, Action.Parameter.TYPE.FLOAT, target.rotation.x);
+      action.setParameter(7, Action.Parameter.TYPE.FLOAT, target.rotation.y);
+      this.actionQueue.add(action);
     }
 
   }
@@ -1718,7 +1242,7 @@ class ModuleCreatureController extends ModuleObject {
 
     this.weaponPowered(true);
 
-    this.lastAttackAction = ModuleCreature.ACTION.ATTACKOBJECT;
+    this.lastAttackAction = Action.TYPE.ActionPhysicalAttacks;
     this.lastAttackTarget = target;
     this.lastAttemptedAttackTarget = target;
 
@@ -1739,7 +1263,7 @@ class ModuleCreatureController extends ModuleObject {
 
     let combatAction = {
       target: target,
-      type: ModuleCreature.ACTION.ATTACKOBJECT,
+      type: Action.TYPE.ActionPhysicalAttacks,
       icon: icon,
       animation: animation,
       feat: feat,
@@ -1751,53 +1275,77 @@ class ModuleCreatureController extends ModuleObject {
       damage: attackDamage
     };
 
-    //if(!isCutsceneAttack){
-      if(this.combatAction == undefined){
-        this.combatAction = combatAction;
-      }else{
-        this.combatQueue.push(combatAction);
-      }
-      this.actionQueue = [];
-    //}
-    
-    this.actionQueue.push({
-      object: target,
-      goal: ModuleCreature.ACTION.ATTACKOBJECT,
-      combatAction: combatAction
-    });
+    if(this.combatAction == undefined){
+      this.combatAction = combatAction;
+    }else{
+      this.combatQueue.push(combatAction);
+    }
+
+    if(!isCutsceneAttack){
+      this.actionQueue.clear();
+      let action = new ActionPhysicalAttacks();
+      action.setParameter(0, Action.Parameter.TYPE.INT, 0);
+      action.setParameter(1, Action.Parameter.TYPE.DWORD, target.id);
+      action.setParameter(2, Action.Parameter.TYPE.INT, 1);
+      action.setParameter(3, Action.Parameter.TYPE.INT, 25);
+      action.setParameter(4, Action.Parameter.TYPE.INT, -36);
+      action.setParameter(5, Action.Parameter.TYPE.INT, 1);
+      action.setParameter(6, Action.Parameter.TYPE.INT, feat instanceof TalentFeat ? feat.id : 0);
+      action.setParameter(7, Action.Parameter.TYPE.INT, 0);
+      action.setParameter(8, Action.Parameter.TYPE.INT, 4);
+      action.setParameter(9, Action.Parameter.TYPE.INT, 0);
+      this.actionQueue.add(action);
+    }
 
   }
 
   useTalentOnObject(talent, oTarget){
-    if(typeof talent != 'undefined'){
+    if(talent instanceof TalentObject){
 
-      this.actionQueue.unshift({
+      /*this.actionQueue.addFront({
         object: oTarget,
         spell: talent,
-        goal: ModuleCreature.ACTION.CASTSPELL
-      });
+        type: Action.TYPE.ActionCastSpell
+      });*/
+    let action;
+    switch(talent.type){
+      case 1: //FEAT
+        action = new ActionPhysicalAttacks();
+        action.setParameter(0, Action.Parameter.TYPE.INT, 0);
+        action.setParameter(1, Action.Parameter.TYPE.DWORD, oTarget.position.y);
+        action.setParameter(2, Action.Parameter.TYPE.INT, 1);
+        action.setParameter(3, Action.Parameter.TYPE.INT, 25);
+        action.setParameter(4, Action.Parameter.TYPE.INT, -36);
+        action.setParameter(5, Action.Parameter.TYPE.INT, 1);
+        action.setParameter(6, Action.Parameter.TYPE.INT, talent.id);
+        action.setParameter(7, Action.Parameter.TYPE.INT, 0);
+        action.setParameter(8, Action.Parameter.TYPE.INT, 4);
+        action.setParameter(9, Action.Parameter.TYPE.INT, 0);
+        this.actionQueue.add(action);
+      break;
+      case 2: //SKILL
+
+      break;
+      case 0: //SPELL
+        action = new ActionCastSpell();
+        action.setParameter(0, Action.Parameter.TYPE.INT, talent.id); //Spell Id
+        action.setParameter(1, Action.Parameter.TYPE.INT, -1); //
+        action.setParameter(2, Action.Parameter.TYPE.INT, 0); //DomainLevel
+        action.setParameter(3, Action.Parameter.TYPE.INT, 0);
+        action.setParameter(4, Action.Parameter.TYPE.INT, 0);
+        action.setParameter(5, Action.Parameter.TYPE.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID); //Target Object
+        action.setParameter(6, Action.Parameter.TYPE.FLOAT, oTarget.position.x); //Target X
+        action.setParameter(7, Action.Parameter.TYPE.FLOAT, oTarget.position.y); //Target Y
+        action.setParameter(8, Action.Parameter.TYPE.FLOAT, oTarget.position.z); //Target Z
+        action.setParameter(9, Action.Parameter.TYPE.INT, 0); //ProjectilePath
+        action.setParameter(10, Action.Parameter.TYPE.INT, -1);
+        action.setParameter(11, Action.Parameter.TYPE.INT, -1);
+        this.actionQueue.add(action);
+      break;
+    }
 
       //talent.useTalentOnObject(oTarget, this);
     }
-  }
-
-  castSpellAtCreature(target = undefined, spellId = 0){
-
-    if(target == undefined)
-      return;
-
-    this.resetExcitedDuration();
-
-    CombatEngine.AddCombatant(this);
-
-    this.combatQueue.push({
-      target: target,
-      type: ModuleCreature.ACTION.CASTSPELL,
-      icon: 'ip_heal',
-      animation: animation,
-      ready: false
-    });
-
   }
 
   playOverlayAnimation(NWScriptAnimId = -1){
@@ -1812,22 +1360,22 @@ class ModuleCreatureController extends ModuleObject {
 
   dialogPlayAnimation(anim = '', loop = false, speed = 1){
     this.dialogAnimation = { 
-      //goal: ModuleCreature.ACTION.ANIMATE,
+      //type: Action.TYPE.ActionPlayAnimation,
       animation: anim,
       speed: speed || 1,
       time: loop ? -1 : 0
     };
     /*let currentAction = this.actionQueue[0];
-    if(currentAction && currentAction.goal == ModuleCreature.ACTION.ANIMATE){
+    if(currentAction && currentAction.type == Action.TYPE.ActionPlayAnimation){
       this.actionQueue[0] = { 
-        goal: ModuleCreature.ACTION.ANIMATE,
+        type: Action.TYPE.ActionPlayAnimation,
         animation: anim,
         speed: 1,
         time: loop ? -1 : 0
       };
     }else{
-      this.actionQueue.unshift({ 
-        goal: ModuleCreature.ACTION.ANIMATE,
+      this.actionQueue.addFront({ 
+        type: Action.TYPE.ActionPlayAnimation,
         animation: anim,
         speed: 1,
         time: loop ? -1 : 0
@@ -1839,7 +1387,7 @@ class ModuleCreatureController extends ModuleObject {
     this.combatQueue = [];
     //Reset the anim state
     this.animState = 0;
-    //this.actionQueue = [];
+    //this.actionQueue.clear();
     if(skipUnclearable){
       let i = this.actionQueue.length;
       while(i--){
@@ -1853,7 +1401,7 @@ class ModuleCreatureController extends ModuleObject {
         }
       }
     }else{
-      this.actionQueue = [];
+      this.actionQueue.clear();
     }
 
     this.combatAction = undefined;
@@ -2790,7 +2338,7 @@ class ModuleCreatureController extends ModuleObject {
               this.lastGroundFace = walkableFace;
 
               if(this == Game.player){
-                console.log(walkableFace);
+                //console.log(walkableFace);
               }
 
               break;

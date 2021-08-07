@@ -1404,6 +1404,7 @@ NWScript.ByteCodes = {
 
       state.script = new NWScriptInstance();
       state.script.address = state.offset;
+      state.script.offset = state.offset;
       state.script.nwscript = this.nwscript;
       state.script.isStoreState = true;
       state.script.name = this.name;

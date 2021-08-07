@@ -12,7 +12,7 @@ class ActionJumpToObject extends Action {
 
   update(delta){
 
-    this.target = ModuleObject.GetObjectById(this.getParameter(0) || ModuleObject.OBJECT_INVALID);
+    this.target = this.getParameter(0);
 
     if(!(this.target instanceof ModuleObject))
       return Action.STATUS.FAILED;

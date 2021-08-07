@@ -170,10 +170,7 @@ class ModuleDoor extends ModuleObject {
       return;
     }
 
-    Game.getCurrentPlayer().actionQueue.push({
-      object: this,
-      goal: ModuleCreature.ACTION.OPENDOOR
-    });
+    Game.getCurrentPlayer().actionOpenDoor( this );
     
   }
 
@@ -412,39 +409,7 @@ class ModuleDoor extends ModuleObject {
     }
 
     this.action = this.actionQueue[0];
-    if(this.action != null){
-          
-      //if(this.action){
-        let distance = 0;
-        switch(this.action.goal){
-          case ModuleCreature.ACTION.WAIT:
-            this.action.elapsed += delta;
-            if(this.action.elapsed > this.action.time){
-              this.actionQueue.shift()
-            }
-          break;
-          case ModuleCreature.ACTION.SCRIPT: //run a code block of an NWScriptInstance file
-            //console.log('Action Script', this.action);
-            if(this.action.script instanceof NWScriptInstance){
-              this.action.action.script.caller = this;
-              this.action.action.script.beginLoop({
-                _instr: null, 
-                index: -1, 
-                seek: this.action.action.offset, 
-                onComplete: () => {
-                  //console.log('ACTION.SCRIPT', 'Complete');
-                }
-              });
-            }
-            this.actionQueue.shift();
-          break;
-          default:
-            this.actionQueue.shift();
-          break;
-        }
-      //}
-
-    }
+    this.actionQueue.process( delta );
 
     if(this.isDead() && !this.isOpen()){
       this.openDoor(this);
