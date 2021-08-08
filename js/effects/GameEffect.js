@@ -436,6 +436,7 @@ class GameEffect {
         }else{
           console.log('Unhandled Skipped Effect', eType, struct.ToJSON());
         }
+        effect = undefined;
       }
 
       return effect;
