@@ -49,6 +49,7 @@ class MenuSoundAdvanced extends GameMenu {
           }*/
           this.Close();
         });
+        this._button_b = this.BTN_BACK;
 
         if(typeof this.onLoad === 'function')
           this.onLoad();

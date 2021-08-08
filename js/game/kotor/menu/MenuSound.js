@@ -45,6 +45,7 @@ class MenuSound extends GameMenu {
           }*/
           this.Close();
         });
+        this._button_b = this.BTN_BACK;
 
         this.BTN_ADVANCED.addEventListener('click', (e) => {
           e.stopPropagation();

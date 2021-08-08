@@ -25,12 +25,14 @@ class MenuSaveName extends GameMenu {
 
           this.Close();
         });
+        this._button_b = this.BTN_OK;
 
         this.BTN_CANCEL.addEventListener('click', () => {
 
 
           this.Close();
         });
+        this._button_a = this.BTN_CANCEL;
         
 
         if(typeof this.onLoad === 'function')

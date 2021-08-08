@@ -1120,6 +1120,22 @@ class InGameOverlay extends GameMenu {
     Resize(){
       this.RecalculatePosition();
     }
+
+    triggerControllerAPress(){
+      if(Game.selectedObject){
+        if(typeof Game.selectedObject.onClick === 'function'){
+          Game.getCurrentPlayer().clearAllActions();
+          Game.selectedObject.onClick(Game.getCurrentPlayer());
+        }else{
+          let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
+          if(distance > 1.5){
+            Game.getCurrentPlayer().clearAllActions();
+            Game.selectedObject.clearAllActions();
+            Game.getCurrentPlayer().actionDialogObject(Game.selectedObject);
+          }
+        }
+      }
+    }
   
   }
   

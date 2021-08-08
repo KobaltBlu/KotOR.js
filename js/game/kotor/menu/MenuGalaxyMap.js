@@ -57,6 +57,7 @@ class MenuGalaxyMap extends GameMenu {
           this.Close();
           Planetary.SetCurrentPlanet(Game.getGlobalNumber('K_CURRENT_PLANET'));
         });
+        this._button_b = this.BTN_BACK;
 
         this.BTN_ACCEPT.addEventListener('click', (e) => {
           e.stopPropagation();

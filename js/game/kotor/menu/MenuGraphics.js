@@ -41,6 +41,7 @@ class MenuGraphics extends GameMenu {
           }*/
           this.Close();
         });
+        this._button_b = this.BTN_BACK;
 
         this.SLI_GAMMA.onValueChanged = (value) => {
           //let gamma = (1.5 * value) + .25;

@@ -1556,95 +1556,33 @@ class Game extends Engine {
       //}
     }
 
+    if(Game.selectedObject instanceof ModuleObject){
+      if(Game.selectedObject.position.distanceTo(Game.getCurrentPlayer().position) > Game.maxSelectableDistance){
+        Game.selectedObject = undefined;
+      }
+    }
+
     if(!cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
       if(MenuManager.GetCurrentMenu() == Game.InGameOverlay){
-        //console.log(Game.scene_cursor_holder.position);
-        let hoveredObject = false;
-        Game.onMouseHitInteractive( (obj) => {
-          if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){
-            if(obj.moduleObject != Game.getCurrentPlayer()){
-
-              let distance = Game.getCurrentPlayer().getModel().position.distanceTo(obj.position);
-              let distanceThreshold = 10;
-
-              let canChangeCursor = (distance <= distanceThreshold) || (Game.hoveredObject == Game.selectedObject);
-
-              if(obj.moduleObject instanceof ModuleDoor){
-                if(canChangeCursor)
-                  CursorManager.setCursor('door');
-                else
-                  CursorManager.setCursor('select');
-
-                CursorManager.setReticle('reticleF');
-              }else if(obj.moduleObject instanceof ModulePlaceable){
-                if(!obj.moduleObject.isUseable()){
-                  return;
-                }
-                if(canChangeCursor)
-                  CursorManager.setCursor('use');
-                else
-                  CursorManager.setCursor('select');
-
-                CursorManager.setReticle('reticleF');
-              }else if(obj.moduleObject instanceof ModuleCreature){
-
-                if(obj.moduleObject.isHostile(Game.getCurrentPlayer())){
-                  if(!obj.moduleObject.isDead()){
-                    if(canChangeCursor)
-                      CursorManager.setCursor('attack');
-                    else
-                      CursorManager.setCursor('select');
-
-                    CursorManager.setReticle('reticleH');
-                  }else{
-                    if(canChangeCursor)
-                      CursorManager.setCursor('use');
-                    else
-                      CursorManager.setCursor('select');
-      
-                    CursorManager.setReticle('reticleF');
-                  }
-                }else{
-                  if(canChangeCursor)
-                    CursorManager.setCursor('talk');
-                  else
-                    CursorManager.setCursor('select');
-
-                  CursorManager.setReticle('reticleF');
-                }
-
-              }else{
-                //console.log()
-                //Game.hovered = undefined;
+        if(Game.scene_cursor.visible){
+          //console.log(Game.scene_cursor_holder.position);
+          let hoveredObject = false;
+          Game.onMouseHitInteractive( (obj) => {
+            if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){
+              if(obj.moduleObject != Game.getCurrentPlayer()){
+                Game.setReticleHoveredObject(obj.moduleObject);
               }
-
-              if(obj.lookathook != undefined){
-                CursorManager.reticle.position.copy(obj.lookathook.getWorldPosition(new THREE.Vector3()));
-                Game.hovered = obj.lookathook;
-                Game.hoveredObject = obj.moduleObject;
-              }else if(obj.headhook != undefined){
-                CursorManager.reticle.position.copy(obj.headhook.getWorldPosition(new THREE.Vector3()));
-                Game.hovered = obj.headhook;
-                Game.hoveredObject = obj.moduleObject;
-              }else{
-                try{
-                  CursorManager.reticle.position.copy(obj.getObjectByName('camerahook').getWorldPosition(new THREE.Vector3()));
-                  Game.hovered = obj.getObjectByName('camerahook');
-                  Game.hoveredObject = obj.moduleObject;
-                }catch(e){
-                  if(!(obj.moduleObject instanceof ModuleRoom)){
-                    CursorManager.reticle.position.copy(obj.position);
-                    Game.hovered = obj;
-                    Game.hoveredObject = obj.moduleObject;
-                  }
-                }
-              }
-
+            }else{
+              Game.hovered = Game.hoveredObject = undefined;
             }
-          }else{
-            Game.hovered = Game.hoveredObject = undefined;
+          });
+        }else{
+          if(!Game.selectedObject){
+            let closest = Game.GetNearestInteractableObject();
+            Game.setReticleSelectedObject(closest);
+            Game.setReticleHoveredObject(closest);
           }
-        });
+        }
       }
     }
 

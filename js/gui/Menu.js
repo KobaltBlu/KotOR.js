@@ -15,6 +15,11 @@ class GameMenu {
       onLoad: null
     }, args);
 
+    this._button_a = undefined;
+    this._button_b = undefined;
+    this._button_x = undefined;
+    this._button_y = undefined;
+
     this.bVisible = false;
     this.scale = 1;
     this.background = null;
@@ -239,6 +244,83 @@ class GameMenu {
     //STUB
   }
 
+  triggerControllerAPress(){
+    if(this._button_a instanceof GUIControl){
+      this._button_a.click();
+    }else if(Game.activeGUIElement instanceof GUIControl){
+      Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerBPress(){
+    if(this._button_b instanceof GUIControl){
+      this._button_b.click();
+    }
+  }
+
+  triggerControllerXPress(){
+    if(this._button_x instanceof GUIControl){
+      this._button_x.click();
+    }
+  }
+
+  triggerControllerYPress(){
+    if(this._button_y instanceof GUIControl){
+      this._button_y.click();
+    }
+  }
+
+  triggerControllerDUpPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerDDownPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerDLeftPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerDRightPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerBumperLPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerBumperRPress(){
+    if(Game.activeGUIElement instanceof GUIControl){
+      //Game.activeGUIElement.click();
+    }
+  }
+
+  triggerControllerLStickXPress( positive = false ){
+    
+  }
+
+  triggerControllerLStickYPress( positive = false ){
+
+  }
+
+  triggerControllerRStickXPress( positive = false ){
+
+  }
+
+  triggerControllerRStickYPress( positive = false ){
+
+  }
 
 }
 

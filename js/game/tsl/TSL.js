@@ -1598,7 +1598,7 @@ class Game extends Engine {
       //}
     }
 
-    if(!cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
+    if(Game.scene_cursor.visible && !cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
       //console.log(Game.scene_cursor_holder.position);
       let hoveredObject = false;
       Game.onMouseHitInteractive( (obj) => {

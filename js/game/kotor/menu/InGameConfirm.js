@@ -25,11 +25,13 @@ class InGameConfirm extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_a = this.BTN_OK;
 
         this.BTN_CANCEL.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_CANCEL;
 
         this.tGuiPanel.widget.position.z = 10;
 

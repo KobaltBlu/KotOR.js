@@ -990,6 +990,20 @@ class MenuDialog extends GameMenu {
     }
   }
 
+  triggerControllerAPress(){
+    if(this.LB_REPLIES.selectedItem instanceof GUIProtoItem){
+      this.LB_REPLIES.selectedItem.click();
+    }
+  }
+
+  triggerControllerDUpPress(){
+    this.LB_REPLIES.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress(){
+    this.LB_REPLIES.directionalNavigate('down');
+  }
+
 }
 
 module.exports = MenuDialog;

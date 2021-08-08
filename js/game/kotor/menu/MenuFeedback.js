@@ -25,7 +25,8 @@ class MenuFeedback extends GameMenu {
           e.stopPropagation();
           Game.MenuMessages.Show();
         });*/
-        
+        this._button_b = this.BTN_EXIT;
+
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Close();
@@ -41,7 +42,7 @@ class MenuFeedback extends GameMenu {
 
   Show(){
     super.Show();
-    
+    Game.MenuTop.LBLH_MSG.onHoverIn();
     Game.MenuActive = true;
 
   }

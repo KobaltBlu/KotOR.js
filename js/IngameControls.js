@@ -59,10 +59,10 @@ class IngameControls {
         }
       }
     }).keyup( ( event ) => {
+      if(Game.debug.controls)
+        console.log(event.key)
 
       if(event.which >= 48 && event.which <= 57){
-        if(Game.debug.controls)
-          console.log(event.key)
         this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = false;
       }else if(event.which >= 65 && event.which <= 90){
         this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = false;
@@ -295,7 +295,7 @@ class IngameControls {
                   selectedObject = true;
 
                   let distance = Game.getCurrentPlayer().position.distanceTo(obj.position);
-                  let distanceThreshold = 10;
+                  let distanceThreshold = 20;
 
                   if(Game.selectedObject == obj.moduleObject && distance <= distanceThreshold){
                     if(typeof obj.moduleObject.onClick === 'function'){
@@ -312,42 +312,7 @@ class IngameControls {
                     }
                   }
 
-                  if(obj.lookathook != undefined){
-                    CursorManager.reticle2.position.copy(obj.lookathook.getWorldPosition(new THREE.Vector3()));
-                    Game.selected = obj.lookathook;
-                    Game.selectedObject = obj.moduleObject;
-                  }else if(obj.headhook != undefined){
-                    CursorManager.reticle2.position.copy(obj.headhook.getWorldPosition(new THREE.Vector3()));
-                    Game.selected = obj.headhook;
-                    Game.selectedObject = obj.moduleObject;
-                  }else{
-                    try{
-                      CursorManager.reticle2.position.copy(obj.getObjectByName('camerahook').getWorldPosition(new THREE.Vector3()));
-                      Game.selected = obj.getObjectByName('camerahook');
-                      Game.selectedObject = obj.moduleObject;
-                    }catch(e){
-                      if(!(obj.moduleObject instanceof ModuleRoom)){
-                        CursorManager.reticle2.position.copy(obj.position);
-                        Game.selected = obj;
-                        Game.selectedObject = obj.moduleObject;
-                      }
-                    }
-                  }
-
-                  if(obj.moduleObject instanceof ModuleDoor){      
-                    CursorManager.setReticle2('reticleF2');
-                  }else if(obj.moduleObject instanceof ModulePlaceable){
-                    if(!obj.moduleObject.isUseable()){
-                      return;
-                    }      
-                    CursorManager.setReticle2('reticleF2');
-                  }else if(obj.moduleObject instanceof ModuleCreature){
-                    if(obj.moduleObject.isHostile(Game.getCurrentPlayer())){
-                      CursorManager.setReticle2('reticleH2');
-                    }else{
-                      CursorManager.setReticle2('reticleF2');
-                    }
-                  }
+                  Game.setReticleSelectedObject(obj.moduleObject);
                   
                 }
                 if(Game.debug.selectedObject)
@@ -461,7 +426,7 @@ class IngameControls {
       gp = navigator.getGamepads()[currentGamepad.index];
       this.gamePad.setGamePad(gp);
     }
-    this.gamePad.updateState();
+    this.gamePad.updateState(delta);
 
     if(Mouse.Dragging){
       xoffset = Mouse.OffsetX || 0;
@@ -486,6 +451,50 @@ class IngameControls {
       Mouse.OldMouseY = Mouse.MouseY;
       return;
     }
+
+    if(MenuManager.GetCurrentMenu() instanceof GameMenu){
+      if(this.gamePad.button_a.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerAPress();
+      }else if(this.gamePad.button_b.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerBPress();
+      }else if(this.gamePad.button_x.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerXPress();
+      }else if(this.gamePad.button_y.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerYPress();
+      }else if(this.gamePad.button_bumper_l.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerBumperLPress();
+      }else if(this.gamePad.button_bumper_r.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerBumperRPress();
+      }else if(this.gamePad.button_d_up.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerDUpPress();
+      }else if(this.gamePad.button_d_down.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerDDownPress();
+      }else if(this.gamePad.button_d_left.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerDLeftPress();
+      }else if(this.gamePad.button_d_right.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerDRightPress();
+      }else if(this.gamePad.stick_l_x.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerLStickXPress( this.gamePad.stick_l_x.value > 0 ? true : false );
+      }else if(this.gamePad.stick_l_y.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerLStickYPress( this.gamePad.stick_l_y.value > 0 ? true : false );
+      }else if(this.gamePad.stick_r_x.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerRStickXPress( this.gamePad.stick_r_x.value > 0 ? true : false );
+      }else if(this.gamePad.stick_r_y.pressed){
+        MenuManager.GetCurrentMenu().triggerControllerRStickYPress( this.gamePad.stick_r_y.value > 0 ? true : false );
+      }
+    }
+
+    /*if(Game.activeGUIElement instanceof GUIControl){
+      if(this.gamePad.button_d_up.pressed){
+        Game.activeGUIElement.directionalNavigate('up');
+      }else if(this.gamePad.button_d_down.pressed){
+        Game.activeGUIElement.directionalNavigate('down');
+      }else if(this.gamePad.button_d_left.pressed){
+        Game.activeGUIElement.directionalNavigate('left');
+      }else if(this.gamePad.button_d_right.pressed){
+        Game.activeGUIElement.directionalNavigate('right');
+      }
+    }*/
 
     if(Game.inDialog){
       if(Game.InGameDialog.bVisible){
@@ -513,7 +522,7 @@ class IngameControls {
             try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
           }
         }else{
-          if(this.keys['space'].pressed){
+          if(this.keys['space'].pressed || this.gamePad.button_a.pressed){
             if(Game.InGameDialog.isListening){
               Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
             }
@@ -563,7 +572,7 @@ class IngameControls {
       }else if(Game.InGameComputerCam.bVisible){
         if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
           Game.InGameComputerCam.Close();
-        }else if( this.keys['space'].pressed ){
+        }else if( this.keys['space'].pressed || this.gamePad.button_a.pressed ){
           Game.InGameComputerCam.Close();
         }
       }
@@ -577,16 +586,6 @@ class IngameControls {
           Game.MenuOptions.Open();
         }
       }
-
-      /*if(this.keys['escape'].pressed && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME)){
-        if(Game.MenuActive){
-          Game.MenuActive = false;
-          Game.InGameOverlay.Show();
-        }else{
-          Game.MenuActive = true;
-          Game.MenuOptions.Show();
-        }
-      }*/
 
       if( (this.keys['tab'].pressed || this.gamePad.button_back.pressed) && (Game.Mode == Game.MODES.INGAME)){
         if(!Game.MenuActive){
@@ -702,7 +701,7 @@ class IngameControls {
       }
       
       if(MenuManager.GetCurrentMenu() == Game.InGameConfirm){
-        if(this.keys['space'].down){
+        if(this.keys['space'].down || this.gamePad.button_a.pressed){
           Game.InGameConfirm.Close();
         }
       }
@@ -813,6 +812,8 @@ class IngameControls {
 
 class KeyInput {
 
+  static RepeatThreshold = 0.5;
+
   constructor( label = 'N/A' ){
     //Input label
     this.label = label;
@@ -825,18 +826,43 @@ class KeyInput {
     this.pressed = false;
     //the index of the button object on the gamepad's buttons array
     this.buttonIndex = -1;
+
+    this.repeating = false;
+    this.repeatTimer = 0;
+    this.repeatPulseTimer = 0;
   }
 
-  update(gamePad){
-    if(gamePad instanceof Gamepad){
-      if(gamePad.buttons[this.buttonIndex]){
-        this.pressed = false;
-        this.pDown = this.down;
+  update(gamePad, delta = 0){
+    this.pressed = false;
+    this.repeating = false;
+    this.pDown = this.down;
+    if( gamePad instanceof Gamepad ){
+      if( gamePad.buttons[this.buttonIndex] ){
         this.down = gamePad.buttons[this.buttonIndex].pressed;
 
         //If the key is pressed, but was previously not pressed then set the pressed value to true
-        if(!this.pDown && this.down){
+        if( !this.pDown && this.down ){
           this.pressed = true;
+        }
+
+        if( this.down ){
+          this.repeatTimer += delta;
+          this.reapeatSpeed = Math.floor(this.repeatTimer / AnalogInput.RepeatThreshold) < 5 ? 1 : 2;
+          if( this.repeatTimer >= KeyInput.RepeatThreshold ){
+            if( !this.repeatPulseTimer ){
+              this.pressed = true;
+              this.repeating = true;
+              this.repeatPulseTimer += delta;
+            }else{
+              this.repeatPulseTimer += delta;
+              if( this.repeatPulseTimer >= (0.1 / this.reapeatSpeed) ){
+                this.repeatPulseTimer = 0;
+              }
+            }
+          }
+        }else{
+          this.repeatTimer = 0;
+          this.repeatPulseTimer = 0;
         }
       }
     }
@@ -846,11 +872,13 @@ class KeyInput {
 
 class AnalogInput {
 
+  static RepeatThreshold = 0.5;
+
   constructor( label = 'N/A', deadZone = 0.0, axes = false ){
     //Input label
     this.label = label;
     //Analog deadzone
-    this.deadZone = deadZone;
+    this.deadZone = Math.abs(deadZone);
     //Gamepad Axes or Button
     this.axes = axes ? true : false;
     //Gamepad Axes Index
@@ -859,15 +887,58 @@ class AnalogInput {
     this.buttonIndex = -1;
     //Input value
     this.value = 0.0;
+    //This should only trigger once at the after the value crosses the pressThreshold
+    this.pressed = false;
+
+    this.pressThreshold = 0.50;
+    this.pressThresholdActive = false;
+
+    this.repeating = false;
+    this.repeatTimer = 0;
+    this.repeatPulseTimer = 0;
   }
 
-  update(gamePad){
-    if(gamePad instanceof Gamepad){
-      if(this.axes && gamePad.axes[this.axesIndex]){
+  update(gamePad, delta = 0){
+    this.pressed = false;
+    this.repeating = false;
+    if( gamePad instanceof Gamepad ){
+      if( this.axes && gamePad.axes[this.axesIndex] ){
         this.value = gamePad.axes[this.axesIndex] * ( Math.max(0, Math.abs( gamePad.axes[this.axesIndex] ) - this.deadZone ) / ( 1 - this.deadZone ) );
-      }else if(!this.axes && gamePad.buttons[this.buttonIndex]){
+      }else if( !this.axes && gamePad.buttons[this.buttonIndex] ){
         this.value = gamePad.buttons[this.buttonIndex].value * ( Math.max(0, Math.abs( gamePad.buttons[this.buttonIndex].value ) - this.deadZone ) / ( 1 - this.deadZone ) );
       }
+
+      if( !this.pressed && Math.abs(this.value) >= this.pressThreshold ){
+        if( !this.pressThresholdActive ){
+          this.pressed = true;
+          this.pressThresholdActive = true;
+        }
+      }
+
+      if( Math.abs(this.value) < this.pressThreshold ){
+        this.pressThresholdActive = false;
+      }
+
+      if( this.pressThresholdActive ){
+        this.repeatTimer += delta;
+        this.reapeatSpeed = Math.floor(this.repeatTimer / AnalogInput.RepeatThreshold) < 5 ? 1 : 2;
+        if( this.repeatTimer >= AnalogInput.RepeatThreshold ){
+          if( !this.repeatPulseTimer ){
+            this.pressed = true;
+            this.repeating = true;
+            this.repeatPulseTimer += delta;
+          }else{
+            this.repeatPulseTimer += delta;
+            if( this.repeatPulseTimer >= (0.1 / this.reapeatSpeed) ){
+              this.repeatPulseTimer = 0;
+            }
+          }
+        }
+      }else{
+        this.repeatTimer = 0;
+        this.repeatPulseTimer = 0;
+      }
+
     }
   }
 
@@ -912,43 +983,43 @@ class GamePad {
     this.gamePad = gamePad;
   }
 
-  updateState(){
+  updateState(delta = 0){
     if(this.gamePad instanceof Gamepad){
-      this.button_a.update(this.gamePad);
-      this.button_b.update(this.gamePad);
-      this.button_x.update(this.gamePad);
-      this.button_y.update(this.gamePad);
+      this.button_a.update(this.gamePad, delta);
+      this.button_b.update(this.gamePad, delta);
+      this.button_x.update(this.gamePad, delta);
+      this.button_y.update(this.gamePad, delta);
 
-      this.button_bumper_l.update(this.gamePad);
-      this.button_bumper_r.update(this.gamePad);
+      this.button_bumper_l.update(this.gamePad, delta);
+      this.button_bumper_r.update(this.gamePad, delta);
 
-      this.trigger_l.update(this.gamePad);
-      this.trigger_r.update(this.gamePad);
+      this.trigger_l.update(this.gamePad, delta);
+      this.trigger_r.update(this.gamePad, delta);
 
-      this.button_back.update(this.gamePad);
-      this.button_start.update(this.gamePad);
+      this.button_back.update(this.gamePad, delta);
+      this.button_start.update(this.gamePad, delta);
 
-      this.button_d_up.update(this.gamePad);
-      this.button_d_down.update(this.gamePad);
-      this.button_d_left.update(this.gamePad);
-      this.button_d_right.update(this.gamePad);
+      this.button_d_up.update(this.gamePad, delta);
+      this.button_d_down.update(this.gamePad, delta);
+      this.button_d_left.update(this.gamePad, delta);
+      this.button_d_right.update(this.gamePad, delta);
 
-      this.stick_l.update(this.gamePad);
-      this.stick_l_x.update(this.gamePad);
-      this.stick_l_y.update(this.gamePad);
+      this.stick_l.update(this.gamePad, delta);
+      this.stick_l_x.update(this.gamePad, delta);
+      this.stick_l_y.update(this.gamePad, delta);
       
-      this.stick_r.update(this.gamePad);
-      this.stick_r_x.update(this.gamePad);
-      this.stick_r_y.update(this.gamePad);
+      this.stick_r.update(this.gamePad, delta);
+      this.stick_r_x.update(this.gamePad, delta);
+      this.stick_r_y.update(this.gamePad, delta);
     }
   }
 
   mapKeys(){
     //A B X Y | X O ◻ △
-    this.button_a.buttonIndex = 0; //a | X == 0
-    this.button_b.buttonIndex = 1; //b | O == 1
-    this.button_x.buttonIndex = 2; //x | ◻ == 2
-    this.button_y.buttonIndex = 3; //y | △ == 3
+    this.button_a.buttonIndex = 0; //A | X == 0
+    this.button_b.buttonIndex = 1; //B | O == 1
+    this.button_x.buttonIndex = 2; //X | ◻ == 2
+    this.button_y.buttonIndex = 3; //Y | △ == 3
 
     //Bumpers
     this.button_bumper_l.buttonIndex = 4; //bumper_l == 4

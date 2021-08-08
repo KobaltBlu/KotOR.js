@@ -18,7 +18,15 @@ class ModuleItem extends ModuleObject {
       this.template = gff;
     }
 
-    this.id = -1;
+    if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
+      this.id = gff.GetFieldByLabel('ObjectId').GetValue();
+    }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
+      this.id = gff.GetFieldByLabel('ID').GetValue();
+    }else{
+      this.id = -1;
+    }
+
+    //this.id = -1;
 
     this.baseItem = 0;
     this.addCost = 0;

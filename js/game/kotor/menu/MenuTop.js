@@ -32,15 +32,6 @@ class MenuTop extends GameMenu {
         this.BTN_INV = this.getControlByName('BTN_INV');
         this.BTN_EQU = this.getControlByName('BTN_EQU');
 
-        /*this.LBLH_OPT.hideBorder();
-        this.LBLH_MAP.hideBorder();
-        this.LBLH_JOU.hideBorder();
-        this.LBLH_MSG.hideBorder();
-        this.LBLH_ABI.hideBorder();
-        this.LBLH_CHA.hideBorder();
-        this.LBLH_INV.hideBorder();
-        this.LBLH_EQU.hideBorder();*/
-
         this.BTN_MSG.addEventListener('click', (e) => {
           e.stopPropagation();
           this.CloseAllOtherMenus();
@@ -98,6 +89,18 @@ class MenuTop extends GameMenu {
       }
     })
 
+  }
+
+  Show(){
+    super.Show();
+    this.LBLH_OPT.onHoverOut();
+    this.LBLH_MAP.onHoverOut();
+    this.LBLH_JOU.onHoverOut();
+    this.LBLH_ABI.onHoverOut();
+    this.LBLH_MSG.onHoverOut();
+    this.LBLH_CHA.onHoverOut();
+    this.LBLH_INV.onHoverOut();
+    this.LBLH_EQU.onHoverOut();
   }
 
   

@@ -251,6 +251,33 @@ class ModuleObject {
 
   }
 
+  
+
+  clearAllActions(skipUnclearable = false){
+    this.combatQueue = [];
+    //Reset the anim state
+    //this.animState = 0;
+    //this.actionQueue.clear();
+    if(skipUnclearable){
+      let i = this.actionQueue.length;
+      while(i--){
+        let action = this.actionQueue[i];
+        if(typeof action.clearable !== 'undefined'){
+          if(action.clearable){
+            this.actionQueue.splice(i , 1);
+          }
+        }else{
+          this.actionQueue.splice(i , 1);
+        }
+      }
+    }else{
+      this.actionQueue.clear();
+    }
+
+    this.combatAction = undefined;
+    //this.clearTarget();
+  }
+
   //Queue an animation to the actionQueue array
   actionPlayAnimation(anim = 0, speed = 1, time = 1){
     if(typeof anim === 'string')
@@ -268,7 +295,7 @@ class ModuleObject {
     }
   }
 
-  actionDialogObject( target = undefined, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1 ){
+  actionDialogObject( target = undefined, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
     let action = new ActionDialogObject();
     action.setParameter(0, Action.Parameter.TYPE.DWORD, target.id);
     action.setParameter(1, Action.Parameter.TYPE.STRING, dialogResRef);
@@ -276,6 +303,7 @@ class ModuleObject {
     action.setParameter(3, Action.Parameter.TYPE.INT, unk2);
     action.setParameter(4, Action.Parameter.TYPE.INT, ignoreStartRange ? 1 : 0);
     action.setParameter(5, Action.Parameter.TYPE.DWORD, ModuleObject.OBJECT_INVALID);
+    action.clearable = clearable;
     this.actionQueue.add(action);
   }
 
@@ -306,11 +334,9 @@ class ModuleObject {
   }
 
   actionWait( time = 0 ){
-    if(door instanceof ModuleDoor){
-      let action = new ActionWait();
-      action.setParameter(0, Action.Parameter.TYPE.FLOAT, time);
-      this.actionQueue.add(action);
-    }
+    let action = new ActionWait();
+    action.setParameter(0, Action.Parameter.TYPE.FLOAT, time);
+    this.actionQueue.add(action);
   }
 
   isSimpleCreature(){
@@ -1666,7 +1692,7 @@ class ModuleObject {
 
       for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
         let door = Game.module.area.doors[j];
-        if(door && !door.isOpen()){
+        if(door && door != this && !door.isOpen()){
           let box3 = door.box;
           if(box3){
             if(Game.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){

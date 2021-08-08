@@ -41,6 +41,7 @@ class MenuMap extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         this.openScript = 'k_sup_guiopen';
         this.transitScript = 'k_sup_gohawk';
@@ -67,23 +68,20 @@ class MenuMap extends GameMenu {
 
   Show(){
     super.Show();
-    
+    Game.MenuTop.LBLH_MAP.onHoverIn();
     Game.MenuActive = true;
-
-    /*Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    //Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
 
     if(this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
 
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_JOU.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_OPT.click();
   }
 
 }

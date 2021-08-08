@@ -59,6 +59,124 @@ class Engine {
     }
   }
 
+  static setReticleSelectedObject( object = undefined ){
+    if(object instanceof ModuleObject){
+      if(object.model && object.model.lookathook != undefined){
+        object.model.lookathook.getWorldPosition(CursorManager.reticle2.position);
+        Game.selected = object.model.lookathook;
+        Game.selectedObject = object;
+      }else if(object.model && object.model.headhook != undefined){
+        object.model.headhook.getWorldPosition(CursorManager.reticle2.position);
+        Game.selected = object.model.headhook;
+        Game.selectedObject = object;
+      }else{
+        let cameraHook = object.model.getObjectByName('camerahook');
+        if(object.model && cameraHook){
+          cameraHook.getWorldPosition(CursorManager.reticle2.position);
+          Game.selected = cameraHook;
+          Game.selectedObject = object;
+        }else{
+          if(!(object instanceof ModuleRoom)){
+            CursorManager.reticle2.position.copy(object);
+            Game.selected = obj.model;
+            Game.selectedObject = object;
+          }
+        }
+      }
+
+      if(object instanceof ModuleDoor){      
+        CursorManager.setReticle2('reticleF2');
+      }else if(object instanceof ModulePlaceable){
+        if(!object.isUseable()){
+          return;
+        }      
+        CursorManager.setReticle2('reticleF2');
+      }else if(object instanceof ModuleCreature){
+        if(object.isHostile(Game.getCurrentPlayer())){
+          CursorManager.setReticle2('reticleH2');
+        }else{
+          CursorManager.setReticle2('reticleF2');
+        }
+      }
+    }
+  }
+
+  static setReticleHoveredObject( object = undefined ){
+    if(object instanceof ModuleObject){
+      let distance = Game.getCurrentPlayer().position.distanceTo(object.position);
+      let canChangeCursor = (distance <= Engine.maxSelectableDistance) || (Engine.hoveredObject == Engine.selectedObject);
+
+      if(object instanceof ModuleDoor){
+        if(canChangeCursor)
+          CursorManager.setCursor('door');
+        else
+          CursorManager.setCursor('select');
+
+        CursorManager.setReticle('reticleF');
+      }else if(object instanceof ModulePlaceable){
+        if(!object.isUseable()){
+          return;
+        }
+        if(canChangeCursor)
+          CursorManager.setCursor('use');
+        else
+          CursorManager.setCursor('select');
+
+        CursorManager.setReticle('reticleF');
+      }else if(object instanceof ModuleCreature){
+
+        if(object.isHostile(Game.getCurrentPlayer())){
+          if(!object.isDead()){
+            if(canChangeCursor)
+              CursorManager.setCursor('attack');
+            else
+              CursorManager.setCursor('select');
+
+            CursorManager.setReticle('reticleH');
+          }else{
+            if(canChangeCursor)
+              CursorManager.setCursor('use');
+            else
+              CursorManager.setCursor('select');
+
+            CursorManager.setReticle('reticleF');
+          }
+        }else{
+          if(canChangeCursor)
+            CursorManager.setCursor('talk');
+          else
+            CursorManager.setCursor('select');
+
+          CursorManager.setReticle('reticleF');
+        }
+
+      }
+
+      if(object.model && object.model.lookathook != undefined){
+        object.model.lookathook.getWorldPosition(CursorManager.reticle.position);
+        Game.hovered = object.model.lookathook;
+        Game.hoveredObject = object;
+      }else if(object.model && object.model.headhook != undefined){
+        object.model.headhook.getWorldPosition(CursorManager.reticle.position);
+        Game.hovered = object.model.headhook;
+        Game.hoveredObject = object;
+      }else{
+        let cameraHook = object.model.getObjectByName('camerahook');
+        if(object.model && cameraHook){
+          cameraHook.getWorldPosition(CursorManager.reticle.position);
+          Game.hovered = cameraHook;
+          Game.hoveredObject = object;
+        }else{
+          if(!(object instanceof ModuleRoom)){
+            CursorManager.reticle.position.copy(object.position);
+            Game.hovered = obj;
+            Game.hoveredObject = object;
+          }
+        }
+      }
+    }
+  }
+
   static Start(){
 
   }
@@ -558,14 +676,14 @@ class Engine {
     sTag = sTag.toLowerCase();
     let len = Game.module.area.placeables.length;
     let results = [];
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_PLACEABLE){
+    if(oType & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
       for(let i = 0; i < len; i++){
         if(Game.module.area.placeables[i].getTag().toLowerCase() == sTag)
           results.push(Game.module.area.placeables[i]);
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_CREATURE){
+    if(oType & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
       len = Game.module.area.creatures.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.creatures[i].getTag().toLowerCase() == sTag)
@@ -573,7 +691,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_CREATURE){
+    if(oType & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
       len = PartyManager.party.length;
       for(let i = 0; i < len; i++){
         if(PartyManager.party[i].getTag().toLowerCase() == sTag)
@@ -581,7 +699,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_STORE){
+    if(oType & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
       len = Game.module.area.stores.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.stores[i].getTag().toLowerCase() == sTag)
@@ -589,7 +707,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_DOOR){
+    if(oType & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
       len = Game.module.area.doors.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.doors[i].getTag().toLowerCase() == sTag)
@@ -597,7 +715,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_TRIGGER){
+    if(oType & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
       len = Game.module.area.triggers.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.triggers[i].getTag().toLowerCase() == sTag)
@@ -605,7 +723,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_WAYPOINT){
+    if(oType & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
       len = Game.module.area.waypoints.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.waypoints[i].getTag().toLowerCase() == sTag)
@@ -613,7 +731,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_SOUND){
+    if(oType & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
       len = Game.module.area.sounds.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.sounds[i].getTag().toLowerCase() == sTag)
@@ -621,7 +739,7 @@ class Engine {
       }
     }
 
-    if(oType === OBJECT_TYPE_ALL || oType === OBJECT_TYPE_ITEM){
+    if(oType & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
       len = Game.module.area.items.length;
       for(let i = 0; i < len; i++){
         if(Game.module.area.items[i].getTag().toLowerCase() == sTag)
@@ -718,50 +836,75 @@ class Engine {
 
   }
 
+  static GetNearestInteractableObject(oObject = null){
+    let results = [];
+
+    results = results.concat(PartyManager.party);
+    results = results.concat(Game.module.area.creatures);
+    results = results.concat(Game.module.area.doors);
+    results = results.concat(Game.module.area.placeables);
+
+    results.sort(
+      function(a,b) {
+        try{
+          let distanceA = a.position.distanceTo(oObject.position);
+          let distanceB = b.position.distanceTo(oObject.position);
+          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
+        }catch(e){
+          return 0;
+        }
+      }
+    );
+
+    let result = undefined;
+    let count = results.length;
+
+    for(let i = 0; i < count; i++){
+      result = results[i];
+      if( result != Game.getCurrentPlayer() && result.isOnScreen() && result.isUseable() ){
+        if( result.hasLineOfSight( Game.getCurrentPlayer() ) ){
+          break;
+        }
+      }
+      result = undefined;
+    }
+
+    return result;
+
+  }
+
   static GetNearestObject(nObjectFilter = 0, oObject = null, iNum = 0){
     let results = [];
-    switch(nObjectFilter){
-      case    OBJECT_TYPE_CREATURE:
-        results = Game.module.area.creatures;
-      break;
-      case    OBJECT_TYPE_ITEM:
-        results = Game.module.area.items;
-      break;
-      case    OBJECT_TYPE_TRIGGER:
-        results = Game.module.area.triggers;
-      break;
-      case    OBJECT_TYPE_DOOR:
-        results = Game.module.area.doors;
-      break;
-      case    OBJECT_TYPE_AREA_OF_EFFECT:
-        results = [];
-      break;
-      case    OBJECT_TYPE_WAYPOINT:
-        results = Game.module.area.waypoints;
-      break;
-      case    OBJECT_TYPE_PLACEABLE:
-        results = Game.module.area.placeables;
-      break;
-      case    OBJECT_TYPE_STORE:
-        results = Game.module.stores;
-      break;
-      case    OBJECT_TYPE_ENCOUNTER:
-        results = Game.module.encounters;
-      break;
-      case    OBJECT_TYPE_SOUND:
-        results = Game.module.area.sounds;
-      break;
-      case    OBJECT_TYPE_ALL:
-        results = results.concat(Game.module.area.creatures);
-        results = results.concat(Game.module.area.triggers);
-        results = results.concat(Game.module.area.doors);
-        results = results.concat(Game.module.area.waypoints);
-        results = results.concat(Game.module.area.placeables);
-        results = results.concat(Game.module.area.stores);
-        results = results.concat(Game.module.area.encounters);
-        results = results.concat(Game.module.area.sounds);
-        results = results.concat(Game.module.area.items);
-      break;
+
+    if((nObjectFilter & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+      results = results.concat(Game.module.area.creatures);
+    }
+    if((nObjectFilter & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+      results = results.concat(Game.module.area.items);
+    }
+    if((nObjectFilter & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+      results = results.concat(Game.module.area.triggers);
+    }
+    if((nObjectFilter & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+      results = results.concat(Game.module.area.doors);
+    }
+    if((nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
+      //results = results.concat([]);
+    }
+    if((nObjectFilter & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+      results = results.concat(Game.module.area.waypoints);
+    }
+    if((nObjectFilter & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+      results = results.concat(Game.module.area.placeables);
+    }
+    if((nObjectFilter & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+      results = results.concat(Game.module.area.stores);
+    }
+    if((nObjectFilter & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
+      results = results.concat(Game.module.area.encounters);
+    }
+    if((nObjectFilter & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+      results = results.concat(Game.module.area.sounds);
     }
 
     results.sort(
@@ -793,68 +936,46 @@ class Engine {
       
 
     Game.objSearchIndex = 0;
-    switch(nObjectFilter){
-      case    OBJECT_TYPE_CREATURE:
-        if(oArea.creatures.length){
-          return oArea.creatures[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ITEM:
-        if(oArea.items.length){
-          return oArea.items[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_TRIGGER:
-        if(oArea.triggers.length){
-          return oArea.triggers[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_DOOR:
-        if(oArea.doors.length){
-          return oArea.doors[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_AREA_OF_EFFECT:
 
-      break;
-      case    OBJECT_TYPE_WAYPOINT:
-        if(oArea.waypoints.length){
-          return oArea.waypoints[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_PLACEABLE:
-        if(oArea.placeables.length){
-          return oArea.placeables[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_STORE:
-        if(Game.module.stores.length){
-          return Game.module.stores[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ENCOUNTER:
-        if(Game.module.encounters.length){
-          return Game.module.encounters[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_SOUND:
-        if(oArea.sounds.length){
-          return oArea.sounds[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ALL:
-        return undefined;
-      break;
+    let results = [];
+    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+      results = results.concat(Game.module.area.creatures);
     }
+    if(nObjectFilter & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
+      results = results.concat(Game.module.area.items);
+    }
+    if(nObjectFilter & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
+      results = results.concat(Game.module.area.triggers);
+    }
+    if(nObjectFilter & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
+      results = results.concat(Game.module.area.doors);
+    }
+    if(nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT == OBJECT_TYPE_AREA_OF_EFFECT){
+      //results = results.concat([]);
+    }
+    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+      results = results.concat(Game.module.area.creatures);
+    }
+    if(nObjectFilter & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
+      results = results.concat(Game.module.area.waypoints);
+    }
+    if(nObjectFilter & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
+      results = results.concat(Game.module.area.placeables);
+    }
+    if(nObjectFilter & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
+      results = results.concat(Game.module.area.stores);
+    }
+    if(nObjectFilter & OBJECT_TYPE_ENCOUNTER == OBJECT_TYPE_ENCOUNTER){
+      results = results.concat(Game.module.area.encounters);
+    }
+    if(nObjectFilter & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
+      results = results.concat(Game.module.area.sounds);
+    }
+
+    if(results.length){
+      return results[Game.objSearchIndex];
+    }
+    return undefined;
   }
 
   static GetNextObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
@@ -863,68 +984,46 @@ class Engine {
       oArea = Game.module.area;
     }
     ++Game.objSearchIndex;
-    switch(nObjectFilter){
-      case    OBJECT_TYPE_CREATURE:
-        if(Game.objSearchIndex < oArea.creatures.length-1){
-          return oArea.creatures[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ITEM:
-        if(Game.objSearchIndex < oArea.items.length-1){
-          return oArea.items[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_TRIGGER:
-        if(Game.objSearchIndex < oArea.triggers.length-1){
-          return oArea.triggers[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_DOOR:
-        if(Game.objSearchIndex < oArea.doors.length-1){
-          return oArea.doors[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_AREA_OF_EFFECT:
 
-      break;
-      case    OBJECT_TYPE_WAYPOINT:
-        if(Game.objSearchIndex < oArea.waypoints.length-1){
-          return oArea.waypoints[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_PLACEABLE:
-        if(Game.objSearchIndex < oArea.placeables.length-1){
-          return oArea.placeables[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_STORE:
-        if(Game.objSearchIndex < Game.module.stores.length-1){
-          return Game.module.stores[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ENCOUNTER:
-        if(Game.objSearchIndex < Game.module.encounters.length-1){
-          return Game.module.encounters[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_SOUND:
-        if(Game.objSearchIndex < oArea.sounds.length-1){
-          return oArea.sounds[Game.objSearchIndex];
-        }
-        return undefined;
-      break;
-      case    OBJECT_TYPE_ALL:
-        return undefined;
-      break;
+    let results = [];
+    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+      results = results.concat(Game.module.area.creatures);
     }
+    if(nObjectFilter & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
+      results = results.concat(Game.module.area.items);
+    }
+    if(nObjectFilter & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
+      results = results.concat(Game.module.area.triggers);
+    }
+    if(nObjectFilter & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
+      results = results.concat(Game.module.area.doors);
+    }
+    if(nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT == OBJECT_TYPE_AREA_OF_EFFECT){
+      //results = results.concat([]);
+    }
+    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+      results = results.concat(Game.module.area.creatures);
+    }
+    if(nObjectFilter & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
+      results = results.concat(Game.module.area.waypoints);
+    }
+    if(nObjectFilter & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
+      results = results.concat(Game.module.area.placeables);
+    }
+    if(nObjectFilter & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
+      results = results.concat(Game.module.area.stores);
+    }
+    if(nObjectFilter & OBJECT_TYPE_ENCOUNTER == OBJECT_TYPE_ENCOUNTER){
+      results = results.concat(Game.module.area.encounters);
+    }
+    if(nObjectFilter & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
+      results = results.concat(Game.module.area.sounds);
+    }
+
+    if(Game.objSearchIndex < results.length-1){
+      return results[Game.objSearchIndex];
+    }
+    return undefined;
   }
 
   static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarget=null, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list = null ){
@@ -1361,6 +1460,7 @@ Engine.holdWorldFadeInForDialog = false;
 Engine.autoRun = false;
 Engine.AlphaTest = 0.5;
 Engine.noClickTimer = 0;
+Engine.maxSelectableDistance = 20;
 
 Engine._emitters = {};
 

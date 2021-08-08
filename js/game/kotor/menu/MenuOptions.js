@@ -33,6 +33,7 @@ class MenuOptions extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         this.BTN_LOADGAME.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -96,6 +97,8 @@ class MenuOptions extends GameMenu {
           this.LB_DESC.addItem(Global.kotorTLK.TLKStrings[42302].Value)
         });
 
+        this.selectedControl = this.BTN_LOADGAME;
+
         if(typeof this.onLoad === 'function')
           this.onLoad();
 
@@ -106,20 +109,94 @@ class MenuOptions extends GameMenu {
 
   Show(){
     super.Show();
-
+    Game.MenuTop.LBLH_OPT.onHoverIn();
     Game.MenuActive = true;
+  }
 
-    /*Game.InGameOverlay.Hide();
-    //Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
+  triggerControllerDUpPress(){
+    if(!this.selectedControl){
+      this.selectedControl = this.BTN_NEWGAME;
+    }
 
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_SAVEGAME.onHoverOut();
+    this.BTN_FEEDBACK.onHoverOut();
+    this.BTN_GRAPHICS.onHoverOut();
+    this.BTN_GAMEPLAY.onHoverOut();
+    this.BTN_SOUND.onHoverOut();
+    this.BTN_AUTOPAUSE.onHoverOut();
+
+    if(this.selectedControl == this.BTN_SOUND){
+      this.selectedControl = this.BTN_GRAPHICS;
+    }else if(this.selectedControl == this.BTN_GRAPHICS){
+      this.selectedControl = this.BTN_AUTOPAUSE;
+    }else if(this.selectedControl == this.BTN_AUTOPAUSE){
+      this.selectedControl = this.BTN_FEEDBACK;
+    }else if(this.selectedControl == this.BTN_FEEDBACK){
+      this.selectedControl = this.BTN_GAMEPLAY;
+    }else if(this.selectedControl == this.BTN_GAMEPLAY){
+      this.selectedControl = this.BTN_SAVEGAME;
+    }else if(this.selectedControl == this.BTN_SAVEGAME){
+      this.selectedControl = this.BTN_LOADGAME;
+    }else if(this.selectedControl == this.BTN_LOADGAME){
+      this.selectedControl = this.BTN_SOUND;
+    }
+
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerDDownPress(){
+    if(!this.selectedControl){
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_SAVEGAME.onHoverOut();
+    this.BTN_FEEDBACK.onHoverOut();
+    this.BTN_GRAPHICS.onHoverOut();
+    this.BTN_GAMEPLAY.onHoverOut();
+    this.BTN_SOUND.onHoverOut();
+    this.BTN_AUTOPAUSE.onHoverOut();
+
+    if(this.selectedControl == this.BTN_LOADGAME){
+      this.selectedControl = this.BTN_SAVEGAME;
+    }else if(this.selectedControl == this.BTN_SAVEGAME){
+      this.selectedControl = this.BTN_GAMEPLAY;
+    }else if(this.selectedControl == this.BTN_GAMEPLAY){
+      this.selectedControl = this.BTN_FEEDBACK;
+    }else if(this.selectedControl == this.BTN_FEEDBACK){
+      this.selectedControl = this.BTN_AUTOPAUSE;
+    }else if(this.selectedControl == this.BTN_AUTOPAUSE){
+      this.selectedControl = this.BTN_GRAPHICS;
+    }else if(this.selectedControl == this.BTN_GRAPHICS){
+      this.selectedControl = this.BTN_SOUND;
+    }else if(this.selectedControl == this.BTN_SOUND){
+      this.selectedControl = this.BTN_LOADGAME;
+    }
+
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerAPress(){
+    if(this.selectedControl instanceof GUIControl){
+      this.selectedControl.click();
+    }
+  }
+
+  triggerControllerRStickYPress( positive = false ){
+    if(positive){
+      this.LB_DESC.scrollUp();
+    }else{
+      this.LB_DESC.scrollDown();
+    }
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_MAP.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_EQU.click();
   }
 
 }

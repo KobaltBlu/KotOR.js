@@ -3,6 +3,7 @@ class ActionDialogObject extends Action {
   constructor( groupId = 0 ){
     super(groupId);
     this.type = Action.TYPE.ActionDialogObject;
+    this.clearable = false;
 
     //PARAMS
     // 0 - dword: speaker object id

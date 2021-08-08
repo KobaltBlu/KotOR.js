@@ -521,6 +521,30 @@ class GUIListBox extends GUIControl {
     
   }
 
+  directionalNavigate(direction = ''){
+    let maxItems = this.children.length;
+    let index = this.children.indexOf(this.selectedItem);
+    switch(direction){
+      case 'up':
+        index--;
+        if(index < 0){
+          index = 0;
+        }
+        this.select(this.children[index]);
+        this.scrollUp();
+      return;
+      case 'down':
+        index++;
+        if(index >= maxItems){
+          index = maxItems-1;
+        }
+        this.select(this.children[index]);
+        this.scrollDown();
+      return;
+    }
+    super.directionalNavigate(direction);
+  }
+
 }
 
 GUIListBox.hexTextures = new Map();

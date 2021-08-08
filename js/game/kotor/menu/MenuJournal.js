@@ -23,6 +23,7 @@ class MenuJournal extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -34,7 +35,16 @@ class MenuJournal extends GameMenu {
 
   Show(){
     super.Show();
+    Game.MenuTop.LBLH_JOU.onHoverIn();
     Game.MenuActive = true;
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_MSG.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_MAP.click();
   }
 
 }

@@ -35,6 +35,7 @@ class MenuContainer extends GameMenu {
           }
           this.Close();
         });
+        this._button_b = this.BTN_CANCEL;
 
         this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -48,6 +49,7 @@ class MenuContainer extends GameMenu {
           }
           this.Close(true);
         });
+        this._button_a = this.BTN_OK;
 
         for(let i = 0; i < 7; i++){
           if(!i){

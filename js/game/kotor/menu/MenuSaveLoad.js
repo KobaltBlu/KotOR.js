@@ -29,6 +29,9 @@ class MenuSaveLoad extends GameMenu {
         this.LBL_PM2 = this.getControlByName('LBL_PM2');
         this.LBL_PM3 = this.getControlByName('LBL_PM3');
         this.BTN_DELETE = this.getControlByName('BTN_DELETE');
+
+        this._button_y = this.BTN_DELETE;
+
         this.BTN_SAVELOAD = this.getControlByName('BTN_SAVELOAD');
         this.BTN_SAVELOAD.setText('Load');
         this.BTN_SAVELOAD.addEventListener('click', (e) => {
@@ -54,11 +57,14 @@ class MenuSaveLoad extends GameMenu {
             }
           }
         });
+        this._button_a = this.BTN_SAVELOAD;
+
         this.BTN_EXIT = this.getControlByName('BTN_BACK');
         this.BTN_EXIT.addEventListener('click', (e) => {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         this.LB_GAMES.onSelected = (save) => {
           this.selected = save;
@@ -79,6 +85,7 @@ class MenuSaveLoad extends GameMenu {
     super.Show();
     
     Game.MenuActive = true;
+    this.selectedControl = this.LB_GAMES;
 
     this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
     this.LB_GAMES.clearItems();
@@ -157,6 +164,14 @@ class MenuSaveLoad extends GameMenu {
       this.BTN_DELETE.hide();
     }
 
+  }
+
+  triggerControllerDUpPress(){
+    this.LB_GAMES.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress(){
+    this.LB_GAMES.directionalNavigate('down');
   }
 
 }

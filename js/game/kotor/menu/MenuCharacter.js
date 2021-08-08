@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-const Game = require("../../tsl/TSL");
-
 /* @file
  * The MenuCharacter menu class.
  */
@@ -62,12 +60,16 @@ class MenuCharacter extends GameMenu {
           this.Close();
           //Game.InGameOverlay.Show();
         });
+        this._button_b = this.BTN_EXIT;
 
         this.BTN_AUTO.addEventListener('click', (e) => {
           e.stopPropagation();
-          Game.getCurrentPlayer().autoLevelUp();
-          this.updateCharacterStats(Game.getCurrentPlayer());
+          if(Game.getCurrentPlayer().canLevelUp()){
+            Game.getCurrentPlayer().autoLevelUp();
+            this.updateCharacterStats(Game.getCurrentPlayer());
+          }
         });
+        this._button_y = this.BTN_AUTO;
 
         Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdl']), (mdlBuffer) => {
           Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('charrec_light', ResourceTypes['mdx']), (mdxBuffer) => {
@@ -228,7 +230,7 @@ class MenuCharacter extends GameMenu {
 
   Show(){
     super.Show();
-
+    Game.MenuTop.LBLH_CHA.onHoverIn();
     this.RecalculatePosition()
 
     if(this.char){
@@ -347,17 +349,6 @@ class MenuCharacter extends GameMenu {
     
     Game.MenuActive = true;
 
-    /*Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    //Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
-
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
 
@@ -377,6 +368,14 @@ class MenuCharacter extends GameMenu {
       }
     }
 
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_INV.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_ABI.click();
   }
 
 }

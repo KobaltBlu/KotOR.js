@@ -1697,6 +1697,56 @@ class ModuleArea extends ModuleObject {
       }
     }
 
+    await this.runStartScripts();
+
+  }
+
+  runOnEnterScripts(){
+    return new Promise( (resolve, reject) => {
+      if(this.scripts.onEnter instanceof NWScriptInstance){
+        console.log('onEnter', this.scripts.onEnter)
+        this.scripts.onEnter.enteringObject = Game.player;
+        this.scripts.onEnter.debug.action = true;
+        this.scripts.onEnter.run(this, 0, () => {
+          resolve();
+        });
+      }else{
+        resolve();
+      }
+    });
+  }
+
+  runMiniGameScripts(){
+    return new Promise( (resolve, reject) => {
+
+      if(!this.MiniGame){
+        resolve();
+        return;
+      }
+
+      let loop = new AsyncLoop({
+        array: this.area.MiniGame.Enemies,
+        onLoop: (enemy, asyncLoop) => {
+          if(enemy.scripts.onCreate instanceof NWScriptInstance){
+            enemy.scripts.onCreate.run(enemy, 0, () => {
+              asyncLoop.next();
+            });
+          }else{
+            asyncLoop.next();
+          }
+        }
+      });
+      loop.iterate(() => {
+        resolve();
+      });
+
+    });
+
+  }
+
+  async runStartScripts(){
+    await this.runMiniGameScripts();
+    await this.runOnEnterScripts();
   }
 
   isPointWalkable(point){

@@ -27,6 +27,7 @@ class MenuResolutions extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_CANCEL;
 
         this.BTN_OK.addEventListener('click', (e) => {
           e.stopPropagation();

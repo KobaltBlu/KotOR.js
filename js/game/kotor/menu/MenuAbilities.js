@@ -23,6 +23,8 @@ class MenuAbilities extends GameMenu {
           this.Close();
         });
 
+        this._button_b = this.BTN_EXIT;
+
         if(typeof this.onLoad === 'function')
           this.onLoad();
 
@@ -33,7 +35,16 @@ class MenuAbilities extends GameMenu {
 
   Show(){
     super.Show();
+    Game.MenuTop.LBLH_ABI.onHoverIn();
     Game.MenuActive = true;
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_CHAR.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_MSG.click();
   }
 
 }

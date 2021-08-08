@@ -672,7 +672,8 @@ class ModuleCreatureController extends ModuleObject {
       if(currentAnimation != animation.name.toLowerCase()){
         let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
         this.getModel().playAnimation(animation.name.toLowerCase(), aLooping, () => {
-          this.animState = ModuleCreature.AnimState.PAUSE;
+          if(!aLooping)
+            this.animState = ModuleCreature.AnimState.PAUSE;
         });
       }
     }else{
@@ -1387,31 +1388,6 @@ class ModuleCreatureController extends ModuleObject {
         time: loop ? -1 : 0
       });
     }*/
-  }
-
-  clearAllActions(skipUnclearable = false){
-    this.combatQueue = [];
-    //Reset the anim state
-    this.animState = 0;
-    //this.actionQueue.clear();
-    if(skipUnclearable){
-      let i = this.actionQueue.length;
-      while(i--){
-        let action = this.actionQueue[i];
-        if(typeof action.clearable !== 'undefined'){
-          if(action.clearable){
-            this.actionQueue.splice(i , 1);
-          }
-        }else{
-          this.actionQueue.splice(i , 1);
-        }
-      }
-    }else{
-      this.actionQueue.clear();
-    }
-
-    this.combatAction = undefined;
-    //this.clearTarget();
   }
 
   cancelCombat(){

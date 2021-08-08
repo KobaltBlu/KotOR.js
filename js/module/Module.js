@@ -414,51 +414,10 @@ class Module {
       }
     });
     loop.iterate(() => {
-      //Load any MiniGame scripts if available
-      this.miniGameScripts( () => {
-        //Load the Module Area's onEnter Script
-        if(this.area.scripts.onEnter instanceof NWScriptInstance){
-          console.log('onEnter', this.area.scripts.onEnter)
-          this.area.scripts.onEnter.enteringObject = Game.player;
-          this.area.scripts.onEnter.debug.action = true;
-          this.area.scripts.onEnter.run(this.area, 0, () => {
-            if(typeof onComplete === 'function')
-              onComplete();
-          });
-        }else{
-          if(typeof onComplete === 'function')
-            onComplete();
-        }
-      });
+      if(typeof onComplete === 'function')
+        onComplete();
     });
     
-  }
-
-  miniGameScripts(onComplete = null){
-
-    if(!Game.module.area.MiniGame){
-      if(typeof onComplete === 'function')
-        onComplete();
-      return;
-    }
-
-    let loop = new AsyncLoop({
-      array: this.area.MiniGame.Enemies,
-      onLoop: (enemy, asyncLoop) => {
-        if(enemy.scripts.onCreate instanceof NWScriptInstance){
-          enemy.scripts.onCreate.run(enemy, 0, () => {
-            asyncLoop.next();
-          });
-        }else{
-          asyncLoop.next();
-        }
-      }
-    });
-    loop.iterate(() => {
-      if(typeof onComplete === 'function')
-        onComplete();
-    });
-
   }
 
   getCameraStyle(){

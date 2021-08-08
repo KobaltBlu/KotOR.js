@@ -16,6 +16,13 @@ class GUIControl {
     this.iniProperty = undefined;
     this.autoCalculatePosition = true;
 
+    this.dPadTarget = {
+      up: undefined,
+      down: undefined,
+      left: undefined,
+      right: undefined
+    };
+
     this.anchor = 'none';
     this.offset = new THREE.Vector2();
 
@@ -2193,6 +2200,46 @@ class GUIControl {
 
   click(){
     this.processEventListener('click');
+  }
+
+  setDPadTarget(direction = '', control = undefined){
+    if(typeof direction == 'string'){
+      direction = direction.toLowerCase();
+    }
+
+    if(control instanceof GUIControl){
+      switch(direction){
+        case 'up':
+          this.dPadTarget.up = control;
+        break;
+        case 'down':
+          this.dPadTarget.down = control;
+        break;
+        case 'left':
+          this.dPadTarget.left = control;
+        break;
+        case 'right':
+          this.dPadTarget.right = control;
+        break;
+      }
+    }
+  }
+
+  directionalNavigate(direction = ''){
+    switch(direction){
+      case 'up':
+
+      break;
+      case 'down':
+
+      break;
+      case 'left':
+
+      break;
+      case 'right':
+
+      break;
+    }
   }
 
   onINIPropertyAttached(){

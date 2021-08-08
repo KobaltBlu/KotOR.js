@@ -123,6 +123,12 @@ class GUIProtoItem extends GUIControl{
 
   }
 
+  directionalNavigate(direction = ''){
+    if(this.list instanceof GUIListBox){
+      this.list.directionalNavigate(direction);
+    }
+  }
+
 }
 
 module.exports = GUIProtoItem;

@@ -213,6 +213,7 @@ class MenuPartySelection extends GameMenu {
 
             this.Close();
           });
+          this._button_b = this.BTN_BACK;
 
           this.btn_accept.addEventListener('click', (e) => {
             e.stopPropagation();

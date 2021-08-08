@@ -48,6 +48,8 @@ class MenuEquipment extends GameMenu {
         this.LBL_INV_BELT =     this.getControlByName('LBL_INV_BELT');
         this.LBL_INV_WEAP_R =   this.getControlByName('LBL_INV_WEAP_R');
 
+        this.defaultControl = this.BTN_INV_BODY;
+
         this.LB_ITEMS.padding = 5;
         this.LB_ITEMS.offset.x = 0;
         
@@ -65,6 +67,7 @@ class MenuEquipment extends GameMenu {
             this.Close();
           }
         });
+        this._button_b = this.BTN_EXIT;
 
         this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -442,20 +445,11 @@ class MenuEquipment extends GameMenu {
 
   Show(){
     super.Show();
-    
+    Game.MenuTop.LBLH_EQU.onHoverIn();
     Game.MenuActive = true;
-    /*Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    //Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
 
     this.equipmentSelectionActive = false;
+    this.selectedControl = this.defaultControl;
 
     this.UpdateList();
 
@@ -495,6 +489,185 @@ class MenuEquipment extends GameMenu {
       }
     }
 
+  }
+
+  triggerControllerAPress(){
+    if(this.equipmentSelectionActive){
+      if(this.selectedControl instanceof GUIControl){
+        this.selectedControl.click();
+      }
+    }else{
+      this.BTN_EQUIP.click();
+    }
+  }
+
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_OPT.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_INV.click();
+  }
+
+  triggerControllerDUpPress(){
+    if(this.equipmentSelectionActive){
+      this.LB_ITEMS.directionalNavigate('up');
+    }else{
+      this.BTN_INV_IMPLANT.onHoverOut();
+      this.BTN_INV_HEAD.onHoverOut();
+      this.BTN_INV_HANDS.onHoverOut();
+      this.BTN_INV_ARM_L.onHoverOut();
+      this.BTN_INV_BODY.onHoverOut();
+      this.BTN_INV_ARM_R.onHoverOut();
+      this.BTN_INV_WEAP_L.onHoverOut();
+      this.BTN_INV_BELT.onHoverOut();
+      this.BTN_INV_WEAP_R.onHoverOut();
+      if(this.selectedControl == this.BTN_INV_IMPLANT){
+        
+      }else if(this.selectedControl == this.BTN_INV_HEAD){
+        
+      }else if(this.selectedControl == this.BTN_INV_HANDS){
+        
+      }else if(this.selectedControl == this.BTN_INV_ARM_L){
+        this.selectedControl = this.BTN_INV_IMPLANT;
+      }else if(this.selectedControl == this.BTN_INV_BODY){
+        this.selectedControl = this.BTN_INV_HEAD;
+      }else if(this.selectedControl == this.BTN_INV_ARM_R){
+        this.selectedControl = this.BTN_INV_HANDS;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_L){
+        this.selectedControl = this.BTN_INV_ARM_L;
+      }else if(this.selectedControl == this.BTN_INV_BELT){
+        this.selectedControl = this.BTN_INV_BODY;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_R){
+        this.selectedControl = this.BTN_INV_ARM_R;
+      }
+      if(this.selectedControl instanceof GUIControl){
+        this.selectedControl.onHoverIn();
+      }
+    }
+  }
+
+  triggerControllerDDownPress(){
+    if(this.equipmentSelectionActive){
+      this.LB_ITEMS.directionalNavigate('down');
+    }else{
+      this.BTN_INV_IMPLANT.onHoverOut();
+      this.BTN_INV_HEAD.onHoverOut();
+      this.BTN_INV_HANDS.onHoverOut();
+      this.BTN_INV_ARM_L.onHoverOut();
+      this.BTN_INV_BODY.onHoverOut();
+      this.BTN_INV_ARM_R.onHoverOut();
+      this.BTN_INV_WEAP_L.onHoverOut();
+      this.BTN_INV_BELT.onHoverOut();
+      this.BTN_INV_WEAP_R.onHoverOut();
+      if(this.selectedControl == this.BTN_INV_IMPLANT){
+        this.selectedControl = this.BTN_INV_ARM_L;
+      }else if(this.selectedControl == this.BTN_INV_HEAD){
+        this.selectedControl = this.BTN_INV_BODY;
+      }else if(this.selectedControl == this.BTN_INV_HANDS){
+        this.selectedControl = this.BTN_INV_BODY;
+      }else if(this.selectedControl == this.BTN_INV_ARM_L){
+        this.selectedControl = this.BTN_INV_WEAP_L;
+      }else if(this.selectedControl == this.BTN_INV_BODY){
+        this.selectedControl = this.BTN_INV_BELT;
+      }else if(this.selectedControl == this.BTN_INV_ARM_R){
+        this.selectedControl = this.BTN_INV_WEAP_R;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_L){
+        
+      }else if(this.selectedControl == this.BTN_INV_BELT){
+        
+      }else if(this.selectedControl == this.BTN_INV_WEAP_R){
+        
+      }
+      if(this.selectedControl instanceof GUIControl){
+        this.selectedControl.onHoverIn();
+      }
+    }
+  }
+
+  triggerControllerDLeftPress(){
+    if(this.equipmentSelectionActive){
+      
+    }else{
+      this.BTN_INV_IMPLANT.onHoverOut();
+      this.BTN_INV_HEAD.onHoverOut();
+      this.BTN_INV_HANDS.onHoverOut();
+      this.BTN_INV_ARM_L.onHoverOut();
+      this.BTN_INV_BODY.onHoverOut();
+      this.BTN_INV_ARM_R.onHoverOut();
+      this.BTN_INV_WEAP_L.onHoverOut();
+      this.BTN_INV_BELT.onHoverOut();
+      this.BTN_INV_WEAP_R.onHoverOut();
+      if(this.selectedControl == this.BTN_INV_IMPLANT){
+
+      }else if(this.selectedControl == this.BTN_INV_HEAD){
+        this.selectedControl = this.BTN_INV_IMPLANT;
+      }else if(this.selectedControl == this.BTN_INV_HANDS){
+        this.selectedControl = this.BTN_INV_HEAD;
+      }else if(this.selectedControl == this.BTN_INV_ARM_L){
+        
+      }else if(this.selectedControl == this.BTN_INV_BODY){
+        this.selectedControl = this.BTN_INV_ARM_L;
+      }else if(this.selectedControl == this.BTN_INV_ARM_R){
+        this.selectedControl = this.BTN_INV_BODY;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_L){
+        
+      }else if(this.selectedControl == this.BTN_INV_BELT){
+        this.selectedControl = this.BTN_INV_WEAP_L;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_R){
+        this.selectedControl = this.BTN_INV_BELT;
+      }
+      if(this.selectedControl instanceof GUIControl){
+        this.selectedControl.onHoverIn();
+      }
+    }
+  }
+
+  triggerControllerDRightPress(){
+    if(this.equipmentSelectionActive){
+      
+    }else{
+      this.BTN_INV_IMPLANT.onHoverOut();
+      this.BTN_INV_HEAD.onHoverOut();
+      this.BTN_INV_HANDS.onHoverOut();
+      this.BTN_INV_ARM_L.onHoverOut();
+      this.BTN_INV_BODY.onHoverOut();
+      this.BTN_INV_ARM_R.onHoverOut();
+      this.BTN_INV_WEAP_L.onHoverOut();
+      this.BTN_INV_BELT.onHoverOut();
+      this.BTN_INV_WEAP_R.onHoverOut();
+      if(this.selectedControl == this.BTN_INV_IMPLANT){
+        this.selectedControl = this.BTN_INV_HEAD;
+      }else if(this.selectedControl == this.BTN_INV_HEAD){
+        this.selectedControl = this.BTN_INV_HANDS;
+      }else if(this.selectedControl == this.BTN_INV_HANDS){
+
+      }else if(this.selectedControl == this.BTN_INV_ARM_L){
+        this.selectedControl = this.BTN_INV_BODY;
+      }else if(this.selectedControl == this.BTN_INV_BODY){
+        this.selectedControl = this.BTN_INV_ARM_R;
+      }else if(this.selectedControl == this.BTN_INV_ARM_R){
+        
+      }else if(this.selectedControl == this.BTN_INV_WEAP_L){
+        this.selectedControl = this.BTN_INV_BELT;
+      }else if(this.selectedControl == this.BTN_INV_BELT){
+        this.selectedControl = this.BTN_INV_WEAP_R;
+      }else if(this.selectedControl == this.BTN_INV_WEAP_R){
+        
+      }
+      if(this.selectedControl instanceof GUIControl){
+        this.selectedControl.onHoverIn();
+      }
+    }
+  }
+
+  triggerControllerLStickYPress( positive = false ){
+    if(positive){
+      this.LB_DESC.scrollUp();
+    }else{
+      this.LB_DESC.scrollDown();
+    }
   }
 
 }
@@ -665,6 +838,8 @@ class GUIInventoryItem extends GUIProtoItem {
     return this.widget;
 
   }
+
+
 
 }
 

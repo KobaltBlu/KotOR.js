@@ -29,6 +29,7 @@ class MenuInventory extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         this.LB_ITEMS.padding = 5;
         this.LB_ITEMS.offset.x = 0;
@@ -43,19 +44,9 @@ class MenuInventory extends GameMenu {
 
   Show(){
     super.Show();
-    
+    Game.MenuTop.LBLH_INV.onHoverIn();
     Game.MenuActive = true;
 
-    /*Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    //Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     let inv = InventoryManager.getNonQuestInventory();
@@ -101,6 +92,14 @@ class MenuInventory extends GameMenu {
       }
     }
 
+  }
+
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_EQU.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_CHAR.click();
   }
 
 }

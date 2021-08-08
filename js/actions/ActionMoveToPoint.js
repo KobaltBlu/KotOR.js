@@ -87,7 +87,7 @@ class ActionMoveToPoint extends Action {
         this.runCreatureAvoidance(delta);
   
         let arrivalDistance = this.range;
-        if(this.openSpot){
+        if( this.openSpot ){
           arrivalDistance = 1.5;
         }
 

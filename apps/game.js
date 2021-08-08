@@ -99,6 +99,9 @@ function gamepadHandler(e, connecting) {
   console.log('gamepadHandler', e, connecting);
   if (connecting) {
     gamepads[gamepad.index] = gamepad;
+    if(currentGamepad == -1){
+      currentGamepad = gamepad;
+    }
   } else {
 
     if(currentGamepad == gamepad.index)

@@ -364,7 +364,7 @@ class ModuleCreature extends ModuleCreatureController {
       Game.getCurrentPlayer().actionUseObject(this);
     }else if(!this.isDead()){
       this.clearAllActions();
-      Game.getCurrentPlayer().actionDialogObject(this, this.GetConversation(), false);
+      Game.getCurrentPlayer().actionDialogObject(this, this.GetConversation(), false, undefined, undefined, true);
     }
     
   }

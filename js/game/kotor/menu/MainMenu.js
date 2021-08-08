@@ -17,6 +17,8 @@ class MainMenu extends GameMenu {
       name: 'mainmenu16x12',
       onLoad: () => {
 
+        this.selectedControl = this.BTN_NEWGAME;
+
         Game.MainMenu.getControlByName('LB_MODULES').hide();
         Game.MainMenu.getControlByName('LBL_BW').hide();
         Game.MainMenu.getControlByName('LBL_LUCAS').hide();
@@ -30,12 +32,6 @@ class MainMenu extends GameMenu {
         this.btn_movies = Game.MainMenu.getControlByName('BTN_MOVIES');
         this.btn_options = Game.MainMenu.getControlByName('BTN_OPTIONS');
         this.btn_exit = Game.MainMenu.getControlByName('BTN_EXIT');
-
-        //this.btn_newgame.hideBorder();
-        //this.btn_loadgame.hideBorder();
-        //this.btn_movies.hideBorder();
-        //this.btn_options.hideBorder();
-        //this.btn_exit.hideBorder();
 
         this.btn_newgame.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -173,7 +169,68 @@ class MainMenu extends GameMenu {
 
     Game.AlphaTest = 0.5;
     CurrentGame.InitGameInProgressFolder();
+  }
 
+  triggerControllerDUpPress(){
+    if(!this.selectedControl){
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+
+    this.BTN_NEWGAME.onHoverOut();
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_MOVIES.onHoverOut();
+    this.BTN_OPTIONS.onHoverOut();
+    this.BTN_EXIT.onHoverOut();
+
+    if(this.selectedControl == this.BTN_EXIT){
+      this.selectedControl = this.BTN_OPTIONS;
+    }else if(this.selectedControl == this.BTN_OPTIONS){
+      this.selectedControl = this.BTN_MOVIES;
+    }else if(this.selectedControl == this.BTN_MOVIES){
+      this.selectedControl = this.BTN_LOADGAME;
+    }else if(this.selectedControl == this.BTN_LOADGAME){
+      this.selectedControl = this.BTN_NEWGAME;
+    }else if(this.selectedControl == this.BTN_NEWGAME){
+      this.selectedControl = this.BTN_EXIT;
+    }
+
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerDDownPress(){
+    if(!this.selectedControl){
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+
+    this.BTN_NEWGAME.onHoverOut();
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_MOVIES.onHoverOut();
+    this.BTN_OPTIONS.onHoverOut();
+    this.BTN_EXIT.onHoverOut();
+
+    if(this.selectedControl == this.BTN_NEWGAME){
+      this.selectedControl = this.BTN_LOADGAME;
+    }else if(this.selectedControl == this.BTN_LOADGAME){
+      this.selectedControl = this.BTN_MOVIES;
+    }else if(this.selectedControl == this.BTN_MOVIES){
+      this.selectedControl = this.BTN_OPTIONS;
+    }else if(this.selectedControl == this.BTN_OPTIONS){
+      this.selectedControl = this.BTN_EXIT;
+    }else if(this.selectedControl == this.BTN_EXIT){
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerAPress(){
+    if(this.selectedControl instanceof GUIControl){
+      this.selectedControl.click();
+    }
+  }
+
+  triggerControllerBPress(){
+    this.BTN_EXIT.click();
   }
 
 }

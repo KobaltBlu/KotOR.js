@@ -22,6 +22,7 @@ class MenuMessages extends GameMenu {
           e.stopPropagation();
           this.Close();
         });
+        this._button_b = this.BTN_EXIT;
 
         if(typeof this.onLoad === 'function')
           this.onLoad();
@@ -33,20 +34,17 @@ class MenuMessages extends GameMenu {
 
   Show(){
     super.Show();
-    
+    Game.MenuTop.LBLH_MSG.onHoverIn();
     Game.MenuActive = true;
 
-    /*Game.InGameOverlay.Hide();
-    Game.MenuOptions.Hide();
-    Game.MenuCharacter.Hide();
-    Game.MenuEquipment.Hide();
-    //Game.MenuMessages.Hide();
-    Game.MenuJournal.Hide();
-    Game.MenuMap.Hide();
-    Game.MenuInventory.Hide();
-    Game.MenuPartySelection.Hide();
-    Game.MenuTop.Show();*/
+  }
 
+  triggerControllerBumperLPress(){
+    Game.MenuTop.BTN_ABI.click();
+  }
+
+  triggerControllerBumperRPress(){
+    Game.MenuTop.BTN_JOU.click();
   }
 
 }
