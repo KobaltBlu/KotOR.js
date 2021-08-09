@@ -74,6 +74,8 @@ class MenuPartySelection extends GameMenu {
           this.btn_done = this.getControlByName('BTN_DONE');
           this.btn_back = this.getControlByName('BTN_BACK');
           this.btn_accept = this.getControlByName('BTN_ACCEPT');
+
+          this.LBL_BEVEL_R.widget.rotation.z = -Math.PI;
     
           /*this.btn_party0.hideBorder();
           this.btn_party1.hideBorder();
@@ -121,74 +123,74 @@ class MenuPartySelection extends GameMenu {
     
           this.btn_party0.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(0)){
+            //if(PartyManager.IsAvailable(0)){
               this.selectedNPC = 0;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party1.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(1)){
+            //if(PartyManager.IsAvailable(1)){
               this.selectedNPC = 1;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party2.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(2)){
+            //if(PartyManager.IsAvailable(2)){
               this.selectedNPC = 2;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party3.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(3)){
+            //if(PartyManager.IsAvailable(3)){
               this.selectedNPC = 3;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party4.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(4)){
+            //if(PartyManager.IsAvailable(4)){
               this.selectedNPC = 4;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party5.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(5)){
+            //if(PartyManager.IsAvailable(5)){
               this.selectedNPC = 5;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party6.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(6)){
+            //if(PartyManager.IsAvailable(6)){
               this.selectedNPC = 6;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party7.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(7)){
+            //if(PartyManager.IsAvailable(7)){
               this.selectedNPC = 7;
               this.UpdateSelection();
-            }
+            //}
           });
     
           this.btn_party8.addEventListener('click', (e) => {
             e.stopPropagation();
-            if(PartyManager.IsAvailable(8)){
+            //if(PartyManager.IsAvailable(8)){
               this.selectedNPC = 8;
               this.UpdateSelection();
-            }
+            //}
           });
 
           this.btn_done.addEventListener('click', (e) => {
@@ -226,7 +228,9 @@ class MenuPartySelection extends GameMenu {
                   PartyManager.RemoveNPCById(this.selectedNPC);
                 }
               }else if(PartyManager.CurrentMembers.length < PartyManager.MaxSize){
-                this.addToParty(this.selectedNPC);
+                if(PartyManager.IsAvailable(this.selectedNPC)){
+                  this.addToParty(this.selectedNPC);
+                }
               }
 
             }
@@ -283,10 +287,30 @@ class MenuPartySelection extends GameMenu {
     
     UpdateSelection(){
 
-      if(this.npcInParty(this.selectedNPC)){
-        this.btn_accept.setText('Remove');
+      for(let i = 0; i < 9; i++){
+        let btn = this['BTN_NPC'+i];
+        if( this.npcInParty(i) ){
+          btn.highlight.edge_material.uniforms.diffuse.value.setRGB(0, 1, 0);
+          btn.highlight.corner_material.uniforms.diffuse.value.setRGB(0, 1, 0);
+        }else{
+          btn.highlight.edge_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+          btn.highlight.corner_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+        }
+        btn.disableBorder();
+        btn.disableHighlight();
+        btn.pulsing = false;
+      }
+
+      let btn = this['BTN_NPC'+this.selectedNPC];
+      if( btn instanceof GUIControl ){
+        btn.enableHighlight();
+        btn.pulsing = true;
+      }
+
+      if( this.npcInParty(this.selectedNPC) ){
+        this.btn_accept.setText( Global.kotorTLK.GetStringById(38456) );
       }else{
-        this.btn_accept.setText('Add');
+        this.btn_accept.setText( Global.kotorTLK.GetStringById(38455) );
       }
 
     }
@@ -349,20 +373,7 @@ class MenuPartySelection extends GameMenu {
           this['lbl_party'+i].show();
         }
 
-        /*if(PartyManager.IsAvailable(i)){
-          this['lbl_na'+i].hide();
-          let portrait = PartyManager.GetPortraitByIndex(i);
-            
-          if(this['lbl_na'+i].getFillTextureName() != portrait){
-            console.log(portrait);
-            this['lbl_party'+i].setFillTextureName(portrait)
-            TextureLoader.tpcLoader.fetch(portrait, (texture) => {
-
-              this['lbl_party'+i].setFillTexture(texture);
-            });
-          }
-          this['lbl_party'+i].show();
-        }*/
+        this.UpdateSelection();
       }
 
       TextureLoader.LoadQueue(() => {
@@ -372,10 +383,6 @@ class MenuPartySelection extends GameMenu {
       this.onCloseScript = undefined;
       if(this.scriptName != '' || this.scriptName != null){
         this.onCloseScript = await NWScript.Load(this.scriptName);
-        // ResourceLoader.loadResource(ResourceTypes['ncs'], this.scriptName, (buffer) => {
-        //   this.onCloseScript = new NWScript(buffer);
-        //   this.onCloseScript.name = this.scriptName;
-        // });
       }
 
     }
@@ -410,7 +417,23 @@ class MenuPartySelection extends GameMenu {
         return PartyManager.IsSelectable(index);
       }*/
     }
-  
+
+    triggerControllerDUpPress(){
+
+    }
+
+    triggerControllerDDownPress(){
+
+    }
+ 
+    triggerControllerDLeftPress(){
+
+    }
+
+    triggerControllerDRightPress(){
+
+    }
+
   }
   
   module.exports = MenuPartySelection;
