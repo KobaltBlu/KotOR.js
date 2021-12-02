@@ -345,6 +345,8 @@ class GFFObject {
     if (Fields == null)
       Fields = this.RootNode.GetFields();
 
+    let listFields = [];
+
     for(let i = 0; i!=Fields.length; i++){
       let field = Fields[i];
       if (field.Label == Label){
@@ -352,12 +354,17 @@ class GFFObject {
       }
 
       if (field.GetType() == GFFDataTypes.LIST || field.GetType() == GFFDataTypes.STRUCT){
-        for(let j = 0; j!=field.GetChildStructs().length; j++){
-          let str = field.GetChildStructs()[j];
-          let child = this.GetFieldByLabel(Label, str.GetFields());
-          if (child != null){
-            return child;
-          }
+        listFields.push(field);
+      }
+    }
+
+    for(let i = 0, len = listFields.length; i < len; i++){
+      let field = listFields[i];
+      for(let j = 0; j!=field.GetChildStructs().length; j++){
+        let str = field.GetChildStructs()[j];
+        let child = this.GetFieldByLabel(Label, str.GetFields());
+        if (child != null){
+          return child;
         }
       }
     }
