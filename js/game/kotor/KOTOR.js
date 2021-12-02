@@ -888,7 +888,7 @@ class Game extends Engine {
     Game.initTimers();
     ResourceLoader.clearCache();
     
-    ModuleObject.COUNT = 0;
+    ModuleObject.COUNT = 1;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
     Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);

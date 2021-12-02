@@ -898,7 +898,7 @@ class Game extends Engine {
 
     Game.scene.visible = false;
     Game.inDialog = false;
-    ModuleObject.COUNT = 0;
+    ModuleObject.COUNT = 1;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
     Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);
