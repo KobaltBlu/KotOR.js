@@ -38,6 +38,7 @@ class ModuleItem extends ModuleObject {
     this.properties = [];
     this.upgradeItems = {};
     this.placedInWorld = false;
+    this.possessor = undefined;
 
     this.InitProperties();
 
@@ -591,6 +592,14 @@ class ModuleItem extends ModuleObject {
 
   }
 
+  setPossessor( oCreature = undefined){
+    this.possessor = oCreature;
+  }
+
+  getPossessor(){
+    return this.possessor;
+  }
+
   onEquip(oCreature = undefined){
     console.log('ModuleItem.onEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
@@ -607,6 +616,7 @@ class ModuleItem extends ModuleObject {
     }else{
       //oCreature.inventory.push(this);
     }
+    this.setPossessor(oCreature);
   }
 
   onUnEquip(oCreature = undefined){
@@ -619,6 +629,7 @@ class ModuleItem extends ModuleObject {
     }else{
       //oCreature.inventory.push(this);
     }
+    this.setPossessor(undefined);
   }
 
   save(){
