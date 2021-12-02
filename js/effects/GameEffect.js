@@ -404,6 +404,12 @@ class GameEffect {
         case GameEffect.Type.EffectBlasterDeflectionDecrease: //BlasterDeflectionDecrease
           effect = new EffectBlasterDeflectionDecrease();
         break;
+        case GameEffect.Type.EffectDamageForcePoints: //EffectDamageForcePoints
+          effect = new EffectDamageForcePoints();
+        break;
+        case GameEffect.Type.EffectHealForcePoints: //EffectHealForcePoints
+          effect = new EffectHealForcePoints();
+        break;
         case GameEffect.Type.EffectForceShield: //ForceShield
           effect = new EffectForceShield();
         break;

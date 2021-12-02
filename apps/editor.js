@@ -257,6 +257,7 @@ const TXI = require(path.join(app.getAppPath(), 'js/resource/TXI.js'));
 const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.js'));
 const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
+const NWScriptSubroutine = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptSubroutine.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstance.js'));
 const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));

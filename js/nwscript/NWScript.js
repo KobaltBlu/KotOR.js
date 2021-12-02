@@ -1137,7 +1137,8 @@ NWScript.ByteCodes = {
       }
       let pos = scope.instr.address;
       scope.seek = pos + scope.instr.offset;
-      this.subRoutines.push(scope.instr.nextInstr.address); //Where to return to after the subRoutine is done
+      this.subRoutine = new NWScriptSubroutine(scope.instr.nextInstr.address);
+      this.subRoutines.push( this.subRoutine ); //Where to return to after the subRoutine is done
 
       if(this.subRoutines.length > 1000)
         throw 'JSR seems to be looping endlessly';
@@ -1163,8 +1164,12 @@ NWScript.ByteCodes = {
     run: function( scope = {} ){
       
       if(this.subRoutines.length){
-        let _subRout = this.subRoutines.pop();
-        if(_subRout == -1){
+        let subRoutine = this.subRoutines.pop();
+        subRoutine.onEnd();
+
+        this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
+
+        if(subRoutine.returnAddress == -1){
           if(this.isDebugging()){
             console.error('RETN');
           }
@@ -1172,9 +1177,9 @@ NWScript.ByteCodes = {
           scope.instr.eof = true;
         }else{
           if(this.isDebugging()){
-            console.log('NWScript: '+this.name, 'RETN', _subRout, this.subRoutines.length);
+            console.log('NWScript: '+this.name, 'RETN', subRoutine.returnAddress, this.subRoutines.length);
           }
-          scope.seek = _subRout; //Resume the code just after our pervious jump
+          scope.seek = subRoutine.returnAddress; //Resume the code just after our pervious jump
           if(!scope.seek){
             if(this.isDebugging()){
               console.log('NWScript: seek '+this.name, scope.seek, 'RETN');
@@ -1185,8 +1190,9 @@ NWScript.ByteCodes = {
         if(this.isDebugging()){
           console.log('NWScript: '+this.name, 'RETN', 'END')
         }
-        let _subRout = this.subRoutines.pop();
-        //scope.seek = _subRout;
+        //let subRoutine = this.subRoutines.pop();
+        //scope.seek = subRoutine.returnAddress;
+        this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
         scope.instr.eof = true;
         scope.running = false;
         if(this.isDebugging()){

@@ -38,6 +38,7 @@ class NWScriptInstance {
     this.onComplete = undefined;
 
     this.subRoutines = [];
+    this.subRoutine = undefined;
 
     this.enteringObject = undefined;
     this.exitingObject = undefined;

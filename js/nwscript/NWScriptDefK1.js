@@ -101,12 +101,14 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, args);
 
-      Game.module.eventQueue.push({
-        id: Module.EventID.TIMED_EVENT,
-        script: args[1].script,
-        offset: args[1].offset,
-        time: (Game.time + args[0]) * 1000
-      });
+      if(this.subRoutine instanceof NWScriptSubroutine){
+        this.subRoutine.addDelayCommand({
+          id: Module.EventID.TIMED_EVENT,
+          script: args[1].script,
+          offset: args[1].offset,
+          time: (Game.time + args[0]) * 1000
+        });
+      }
   
     }
   },
@@ -4008,7 +4010,14 @@ NWScriptDefK1.Actions = {
     comment: "372: Damages the creatures force points\n",
     name: "EffectDamageForcePoints",
     type: 16,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      let effect = new EffectDamageForcePoints();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   373:{
     comment: "373: Heals the creatures force points\n",
@@ -4016,7 +4025,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: ["int"],
     action: function(args, _instr, action){
-      // return {type: 422, amount: args[0]};
+      let effect = new EffectHealForcePoints();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
     }
   },
   374:{
