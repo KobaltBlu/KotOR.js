@@ -1405,24 +1405,32 @@ NWScriptDefK1.Actions = {
       //console.error('Unhandled script action', _instr.address, action.name, action.args);
       //console.log('SignalEvent', this.name, args[0], args[1]);
       //This needs to happen once the script has completed
-      switch(args[1].name){
-        case 'EventUserDefined':
-          if(args[0] instanceof ModuleObject){
-            args[0].triggerUserDefinedEvent( args[0], args[1].value );
-          }else{
-            console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
-          }
-        break;
-        case 'EventSpellCastAt':
-          if(args[0] instanceof ModuleObject){
-            args[0].triggerSpellCastAtEvent(args[1].oCaster, args[1].nSpell, args[1].bHarmful);
-          }else{
-            console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
-          }
-        break;
-        default:
-          console.warn('Unknown Event', args);
-        break;
+      if(!(args[0] instanceof ModuleObject)){
+        args[0] = Game.module.area;
+      }
+
+      if(args[1] instanceof NWScriptEvent){
+        switch(args[1].type){
+          case NWScriptEvent.Type.EventUserDefined:
+            if(args[0] instanceof ModuleObject){
+              args[0].triggerUserDefinedEvent( args[0], args[1].getInt(0) );
+            }else{
+              console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
+            }
+          break;
+          case NWScriptEvent.Type.EventSpellCastAt:
+            if(args[0] instanceof ModuleObject){
+              args[0].triggerSpellCastAtEvent(args[1].getObject(0), args[1].getInt(0), args[1].getInt(1));
+            }else{
+              console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
+            }
+          break;
+          default:
+            console.error('SignalEvent', 'Unhandled Event', args);
+          break;
+        }
+      }else{
+        console.warn('SignalEvent', 'Invalid event argument', args);
       }
     }
   },
@@ -1433,10 +1441,9 @@ NWScriptDefK1.Actions = {
     args: ["int"],
     action: function(args, _instr, action){
       //console.error('Unhandled script action', _instr.address, action.name, action.args);
-      return new NWScriptEvent({
-        name: 'EventUserDefined',
-        value: args[0]
-      });
+      let event = new EventUserDefined();
+      event.setInt(0, args[0]);
+      return event;
     }
   },
   133:{
@@ -2739,13 +2746,12 @@ NWScriptDefK1.Actions = {
     type: 17,
     args: ["object", "int", "int"],
     action: function(args, _instr, action){
-      return new NWScriptEvent({
-        name: 'EventSpellCastAt',
-        value: args[0],
-        oCaster: args[0],
-        nSpell: args[1],
-        bHarmful: args[2]
-      });
+      let event = new EventSpellCastAt();
+      event.setObject(0, args[0]);
+      event.setInt(0, args[1]);
+      event.setInt(1, args[2]);
+
+      return event;
     }
   },
   245:{
@@ -3218,10 +3224,8 @@ NWScriptDefK1.Actions = {
     type: 17,
     args: [],
     action: function(args, _instr, action){
-      return new NWScriptEvent({
-      name: 'EventConversation',
-        value: 0
-      });
+      let event = new EventConversation();
+      return event;
     }
   },
   296:{
@@ -4535,13 +4539,25 @@ NWScriptDefK1.Actions = {
     type: 17,
     args: ["object", "location", "object"],
     action: function(args, _instr, action){
-      return new NWScriptEvent({
-        name: 'EventActivateItem',
-        value: args[0],
-        oItem: args[0],
-        lTarget: args[1],
-        oTarget: args[2]
-      });
+      let event = new EventSpellCastAt();
+      //oItem
+      event.setObject(0, args[0]);
+      //oCaller
+      event.setObject(1, this.caller);
+      //oPossessor
+      if(args[0] instanceof ModuleItem && args[0].possessor instanceof ModuleObject){
+        event.setObject(2, args[0].possessor);
+      }else{
+        event.setObject(2, undefined);
+      }
+      //oTarget
+      event.setObject(3, args[2]);
+
+      event.setFloat(0, args[1].position.x);
+      event.setFloat(1, args[1].position.y);
+      event.setFloat(2, args[1].position.z);
+
+      return event;
     }
   },
   425:{

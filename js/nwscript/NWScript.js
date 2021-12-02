@@ -1526,12 +1526,4 @@ class NWScriptEffect {
   }
 }
 
-class NWScriptEvent {
-  constructor(args={}){
-    const {name, value} = args;
-    this.name = name;
-    this.value = value;
-  }
-}
-
-module.exports = { NWScript: NWScript, NWScriptEffect: NWScriptEffect, NWScriptEvent: NWScriptEvent };
+module.exports = { NWScript: NWScript, NWScriptEffect: NWScriptEffect };

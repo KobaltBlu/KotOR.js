@@ -264,7 +264,20 @@ const DLGNode = require(path.join(app.getAppPath(), 'js/resource/DLGNode.js'));
 
 /* NWScript */
 
-const { NWScript, NWScriptEffect, NWScriptEvent } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
+const { NWScript, NWScriptEffect } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));
+
+/* NWScriptEvents */
+const NWScriptEvent = require(path.join(app.getAppPath(), 'js/nwscript/events/NWScriptEvent.js'));
+let odysseyScriptEvents = fs.readdirSync(path.join(app.getAppPath(), 'js/nwscript/events'));
+for(let i = 0; i < odysseyScriptEvents.length; i++){
+  let controllerPath = path.parse(odysseyScriptEvents[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/nwscript/events', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
 const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptStack.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptSubroutine = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptSubroutine.js'));

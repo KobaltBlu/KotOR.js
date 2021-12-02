@@ -334,7 +334,9 @@ NWScriptStack.LocationFromStruct = function( struct ){
 }
 
 NWScriptStack.EventFromStruct = function( struct ){
-
+  let event = NWScriptEvent.EventFromStruct(struct);
+  console.log('EventFromStruct', event, struct);
+  return event;
 }
 
 NWScriptStack.EffectFromStruct = function( struct ){
