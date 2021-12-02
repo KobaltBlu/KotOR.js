@@ -1709,6 +1709,65 @@ class ModuleCreature extends ModuleCreatureController {
   unequipSlot(slot = 0x1){
     try{
       switch(slot){
+        case UTCObject.SLOT.IMPLANT:
+          try{
+            if(this.equipment.IMPLANT instanceof ModuleItem){
+              this.equipment.IMPLANT.onUnEquip(this, slot);
+              this.equipment.IMPLANT.destroy();
+              this.equipment.IMPLANT = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
+        case UTCObject.SLOT.HEAD:
+
+          if(this.equipment.HEAD instanceof ModuleItem){
+            this.equipment.HEAD.onUnEquip(this, slot);
+          }
+
+          try{
+            this.equipment.HEAD.model.parent.remove(this.equipment.HEAD.model);
+          }catch(e){}
+
+          this.equipment.HEAD = undefined;
+          this.LoadModel( () => {
+            this.getModel().buildSkeleton()
+          });
+        break;
+        case UTCObject.SLOT.ARMS:
+          try{
+            if(this.equipment.ARMS instanceof ModuleItem){
+              this.equipment.ARMS.onUnEquip(this, slot);
+              this.equipment.ARMS.destroy();
+              this.equipment.ARMS = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
+        case UTCObject.SLOT.RIGHTARMBAND:
+          try{
+            if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
+              this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
+              this.equipment.RIGHTARMBAND.destroy();
+              this.equipment.RIGHTARMBAND = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
+        case UTCObject.SLOT.LEFTARMBAND:
+          try{
+            if(this.equipment.LEFTARMBAND instanceof ModuleItem){
+              this.equipment.LEFTARMBAND.onUnEquip(this, slot);
+              this.equipment.LEFTARMBAND.destroy();
+              this.equipment.LEFTARMBAND = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
         case UTCObject.SLOT.ARMOR:
 
           if(this.equipment.ARMOR instanceof ModuleItem){
@@ -1720,6 +1779,18 @@ class ModuleCreature extends ModuleCreatureController {
             this.getModel().buildSkeleton()
           });
         break;
+        case UTCObject.SLOT.RIGHTARMBAND:
+          try{
+            if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
+              this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
+              this.model.rhand.remove(this.equipment.RIGHTARMBAND.model);
+              this.equipment.RIGHTARMBAND.destroy();
+              this.equipment.RIGHTARMBAND = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
         case UTCObject.SLOT.RIGHTHAND:
           try{
             if(this.equipment.RIGHTHAND instanceof ModuleItem){
@@ -1727,6 +1798,18 @@ class ModuleCreature extends ModuleCreatureController {
               this.model.rhand.remove(this.equipment.RIGHTHAND.model);
               this.equipment.RIGHTHAND.destroy();
               this.equipment.RIGHTHAND = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
+        case UTCObject.SLOT.BELT:
+          try{
+            if(this.equipment.BELT instanceof ModuleItem){
+              this.equipment.BELT.onUnEquip(this, slot);
+              this.model.rhand.remove(this.equipment.BELT.model);
+              this.equipment.BELT.destroy();
+              this.equipment.BELT = undefined;
             }
           }catch(e){
             
@@ -2338,6 +2421,7 @@ class ModuleCreature extends ModuleCreatureController {
       onLoop: (slot_key, asyncLoop) => {
         let slot = this.equipment[slot_key];
         if(slot instanceof ModuleObject){
+          slot.setPossessor(this);
           slot.Load( () => {
             slot.LoadModel( () => {
               if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
