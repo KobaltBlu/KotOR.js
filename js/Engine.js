@@ -674,76 +674,77 @@ class Engine {
     OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
-    let len = Game.module.area.placeables.length;
     let results = [];
-    if(oType & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.placeables[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.placeables[i]);
+    let obj = undefined;
+    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+      for(let i = 0, len = Game.module.area.placeables.length; i < len; i++){
+        obj = Game.module.area.placeables[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
-      len = Game.module.area.creatures.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.creatures[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.creatures[i]);
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        obj = Game.module.area.creatures[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
-      len = PartyManager.party.length;
-      for(let i = 0; i < len; i++){
-        if(PartyManager.party[i].getTag().toLowerCase() == sTag)
-          results.push(PartyManager.party[i]);
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+      for(let i = 0, len = PartyManager.party.length; i < len; i++){
+        obj = PartyManager.party[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
-      len = Game.module.area.stores.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.stores[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.stores[i]);
+    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+      for(let i = 0, len = Game.module.area.stores.length; i < len; i++){
+        obj = Game.module.area.stores[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
-      len = Game.module.area.doors.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.doors[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.doors[i]);
+    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+      for(let i = 0, len = Game.module.area.doors.length; i < len; i++){
+        obj = Game.module.area.doors[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
-      len = Game.module.area.triggers.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.triggers[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.triggers[i]);
+    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+      for(let i = 0, len = Game.module.area.triggers.length; i < len; i++){
+        obj = Game.module.area.triggers[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
-      len = Game.module.area.waypoints.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.waypoints[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.waypoints[i]);
+    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+      for(let i = 0, len = Game.module.area.waypoints.length; i < len; i++){
+        obj = Game.module.area.waypoints[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
-      len = Game.module.area.sounds.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.sounds[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.sounds[i]);
+    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+      for(let i = 0, len = Game.module.area.sounds.length; i < len; i++){
+        obj = Game.module.area.sounds[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
-    if(oType & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
-      len = Game.module.area.items.length;
-      for(let i = 0; i < len; i++){
-        if(Game.module.area.items[i].getTag().toLowerCase() == sTag)
-          results.push(Game.module.area.items[i]);
+    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+      for(let i = 0, len = Game.module.area.items.length; i < len; i++){
+        obj = Game.module.area.items[i];
+        if(obj.getTag().toLowerCase() == sTag)
+          results.push(obj);
       }
     }
 
@@ -757,7 +758,7 @@ class Engine {
 
   }
 
-  static GetNearestObjectByTag(sTag = '', oObject = null, iNum = 0){
+  static GetNearestObjectByTag(sTag = '', oObject = undefined, iNum = 0){
     sTag = sTag.toLowerCase();
     let results = [];
     let len = Game.module.area.placeables.length;
@@ -873,37 +874,37 @@ class Engine {
 
   }
 
-  static GetNearestObject(nObjectFilter = 0, oObject = null, iNum = 0){
+  static GetNearestObject(oType = 0, oObject = null, iNum = 0){
     let results = [];
 
-    if((nObjectFilter & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
       results = results.concat(Game.module.area.creatures);
     }
-    if((nObjectFilter & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
       results = results.concat(Game.module.area.items);
     }
-    if((nObjectFilter & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
       results = results.concat(Game.module.area.triggers);
     }
-    if((nObjectFilter & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
       results = results.concat(Game.module.area.doors);
     }
-    if((nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
       //results = results.concat([]);
     }
-    if((nObjectFilter & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
       results = results.concat(Game.module.area.waypoints);
     }
-    if((nObjectFilter & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
       results = results.concat(Game.module.area.placeables);
     }
-    if((nObjectFilter & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
       results = results.concat(Game.module.area.stores);
     }
-    if((nObjectFilter & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
+    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
       results = results.concat(Game.module.area.encounters);
     }
-    if((nObjectFilter & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
       results = results.concat(Game.module.area.sounds);
     }
 
@@ -927,7 +928,7 @@ class Engine {
 
   }
 
-  static GetFirstObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
+  static GetFirstObjectInArea(oArea = Game.module.area, oType = 0){
 
     if(!(oArea instanceof ModuleArea)){
       console.error(oArea);
@@ -938,37 +939,37 @@ class Engine {
     Game.objSearchIndex = 0;
 
     let results = [];
-    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
       results = results.concat(Game.module.area.creatures);
     }
-    if(nObjectFilter & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
+    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
       results = results.concat(Game.module.area.items);
     }
-    if(nObjectFilter & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
+    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
       results = results.concat(Game.module.area.triggers);
     }
-    if(nObjectFilter & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
+    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
       results = results.concat(Game.module.area.doors);
     }
-    if(nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
       //results = results.concat([]);
     }
-    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
       results = results.concat(Game.module.area.creatures);
     }
-    if(nObjectFilter & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
+    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
       results = results.concat(Game.module.area.waypoints);
     }
-    if(nObjectFilter & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
+    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
       results = results.concat(Game.module.area.placeables);
     }
-    if(nObjectFilter & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
+    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
       results = results.concat(Game.module.area.stores);
     }
-    if(nObjectFilter & OBJECT_TYPE_ENCOUNTER == OBJECT_TYPE_ENCOUNTER){
+    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
       results = results.concat(Game.module.area.encounters);
     }
-    if(nObjectFilter & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
+    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
       results = results.concat(Game.module.area.sounds);
     }
 
@@ -978,7 +979,7 @@ class Engine {
     return undefined;
   }
 
-  static GetNextObjectInArea(oArea = Game.module.area, nObjectFilter = 0){
+  static GetNextObjectInArea(oArea = Game.module.area, oType = 0){
     if(!(oArea instanceof ModuleArea)){
       console.error(oArea);
       oArea = Game.module.area;
@@ -986,37 +987,37 @@ class Engine {
     ++Game.objSearchIndex;
 
     let results = [];
-    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
       results = results.concat(Game.module.area.creatures);
     }
-    if(nObjectFilter & OBJECT_TYPE_ITEM == OBJECT_TYPE_ITEM){
+    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
       results = results.concat(Game.module.area.items);
     }
-    if(nObjectFilter & OBJECT_TYPE_TRIGGER == OBJECT_TYPE_TRIGGER){
+    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
       results = results.concat(Game.module.area.triggers);
     }
-    if(nObjectFilter & OBJECT_TYPE_DOOR == OBJECT_TYPE_DOOR){
+    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
       results = results.concat(Game.module.area.doors);
     }
-    if(nObjectFilter & OBJECT_TYPE_AREA_OF_EFFECT == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
       //results = results.concat([]);
     }
-    if(nObjectFilter & OBJECT_TYPE_CREATURE == OBJECT_TYPE_CREATURE){
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
       results = results.concat(Game.module.area.creatures);
     }
-    if(nObjectFilter & OBJECT_TYPE_WAYPOINT == OBJECT_TYPE_WAYPOINT){
+    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
       results = results.concat(Game.module.area.waypoints);
     }
-    if(nObjectFilter & OBJECT_TYPE_PLACEABLE == OBJECT_TYPE_PLACEABLE){
+    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
       results = results.concat(Game.module.area.placeables);
     }
-    if(nObjectFilter & OBJECT_TYPE_STORE == OBJECT_TYPE_STORE){
+    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
       results = results.concat(Game.module.area.stores);
     }
-    if(nObjectFilter & OBJECT_TYPE_ENCOUNTER == OBJECT_TYPE_ENCOUNTER){
+    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
       results = results.concat(Game.module.area.encounters);
     }
-    if(nObjectFilter & OBJECT_TYPE_SOUND == OBJECT_TYPE_SOUND){
+    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
       results = results.concat(Game.module.area.sounds);
     }
 
@@ -1145,7 +1146,7 @@ class Engine {
     return undefined;
   }
 
-  static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, objectFilter = -1, origin = new THREE.Vector3, idx = -1){
+  static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
     let object_pool = [];
     let results = [];
@@ -1166,48 +1167,44 @@ class Engine {
 
     //console.log('GetObjectsInShape', objectFilter, shape);
 
-    if(objectFilter & 1 == 1){ //CREATURE
+    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){ //CREATURE
       object_pool = object_pool.concat(Game.module.area.creatures);
     }
 
-    if(objectFilter & 1 == 2){ //ITEM
+    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){ //ITEM
       object_pool = object_pool.concat(Game.module.area.items);
     }
 
-    if(objectFilter & 1 == 4){ //TRIGGER
+    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){ //TRIGGER
       object_pool = object_pool.concat(Game.module.area.triggers); 
     }
 
-    if(objectFilter & 1 == 8){ //DOOR
+    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){ //DOOR
       object_pool = object_pool.concat(Game.module.area.doors); 
     }
 
-    if(objectFilter & 1 == 16){ //AOE
+    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){ //AOE
               
     }
 
-    if(objectFilter & 1 == 32){ //WAYPOINTS
+    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(Game.module.area.waypoints);
     }
     
-    if(objectFilter & 1 == 64){ //PLACEABLE
+    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(Game.module.area.placeables);
     }
 
-    if(objectFilter & 1 == 128){ //STORE
+    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){ //STORE
           
     }
     
-    if(objectFilter & 1 == 256){ //ENCOUNTER
+    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){ //ENCOUNTER
           
     }
     
-    if(objectFilter & 1 == 512){ //SOUND
+    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){ //SOUND
       object_pool = object_pool.concat(Game.module.area.sounds);
-    }
-
-    if(objectFilter & 1 == 32767){ //ALL
-          
     }
 
     for(let i = 0, len = object_pool.length; i < len; i++){
