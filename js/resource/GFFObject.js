@@ -94,6 +94,20 @@ class GFFObject {
 
   }
 
+  AddField(field){
+    if(this.RootNode instanceof Struct){
+      return this.RootNode.AddField(field);
+    }
+    return undefined;
+  }
+
+  RemoveFieldByLabel(label = ''){
+    if(this.RootNode instanceof Struct){
+      return this.RootNode.RemoveFieldByLabel(label);
+    }
+    return false;
+  }
+
   static FromStruct(strt = null, type = -1){
     let gff = new GFFObject();
     if(strt instanceof Struct){
@@ -864,7 +878,22 @@ class Struct {
   }
 
   AddField(field){
-    return this.Fields[this.Fields.length] = field;
+    if(field instanceof Field){
+      return this.Fields[this.Fields.length] = field;
+    }
+    return undefined;
+  }
+
+  RemoveFieldByLabel(label = ''){
+    let field;
+    for(let i = 0, len = this.Fields.length; i < len; i++){
+      field = this.Fields[i];
+      if(field.Label == label){
+        this.Fields.splice(i, 1);
+        return true;
+      }
+    }
+    return false;
   }
 
   GetType(){
