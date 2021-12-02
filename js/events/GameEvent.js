@@ -123,7 +123,7 @@ GameEvent.Type = {
   EventSummonCreature:             0x18,
   EventAquireItem:                 0x19,
   EventAreaTransition:             0x1A,
-  EventControllerRubmle:           0x1B,
+  EventControllerRumble:           0x1B,
 };
 
 module.exports = GameEvent;
