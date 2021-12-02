@@ -551,7 +551,7 @@ class PartyManager {
   static async ExportPartyMemberTemplate( index = 0, template = undefined ){
     return new Promise( async (resolve, reject) => {
       if(template instanceof GFFObject){
-        pm.template.RemoveFieldByLabel('TemplateResRef');
+        template.RemoveFieldByLabel('TemplateResRef');
         template.Export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc') , () => {
           resolve();
         }, () => {
