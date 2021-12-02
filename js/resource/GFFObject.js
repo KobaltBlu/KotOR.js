@@ -1067,7 +1067,9 @@ class Field {
 
     switch(this.Type){
       case GFFDataTypes.CEXOLOCSTRING:
-        if(typeof val === 'number'){
+        if(val instanceof CExoLocString){
+          this.CExoLocString = val;
+        }else if(typeof val === 'number'){
           this.CExoLocString.SetRESREF(val);
         }else if(typeof val === 'string'){
           this.CExoLocString.AddSubString(val, 0);
