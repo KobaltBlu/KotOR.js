@@ -102,12 +102,16 @@ NWScriptDefK1.Actions = {
       //console.log('NWScript: '+this.name, args);
 
       if(this.subRoutine instanceof NWScriptSubroutine){
-        this.subRoutine.addDelayCommand({
-          id: Module.EventID.TIMED_EVENT,
-          script: args[1].script,
-          offset: args[1].offset,
-          time: (Game.time + args[0]) * 1000
-        });
+        let timedEvent = new EventTimedEvent();
+        timedEvent.setCaller(this.caller);
+        timedEvent.setObject(this.caller);
+        timedEvent.setDay(0);
+        timedEvent.setTime((Game.time + args[0]) * 1000);
+        timedEvent.setNWScript(args[1].script);
+        timedEvent.setInstructionPtr(args[1].offset);
+        this.subRoutine.addDelayCommand(timedEvent);
+      }else{
+        console.error('tried to call DelayCommand outside of a NWScript Subroutine');
       }
   
     }

@@ -270,21 +270,9 @@ class Module {
       for(let i = eqLen; i >= 0; i--){
         let event = this.eventQueue[i];
         
-        if(event.id == Module.EventID.TIMED_EVENT){
-          if( ( Game.time * 1000 ) >= event.time ){
-            if(event.script instanceof NWScriptInstance){
-              event.script.beginLoop({
-                _instr: null, 
-                index: -1, 
-                seek: event.offset,
-                onComplete: () => { 
-                  //console.log('ScriptEvent: complete', event); 
-                }
-              });
-            }
-
-            this.eventQueue.splice(i, 1);
-          }
+        if( ( Game.time * 1000 ) >= event.time ){
+          event.execute();
+          this.eventQueue.splice(i, 1);
         }
       }
 
@@ -438,32 +426,9 @@ class Module {
       let eventQueue = this.ifo.GetFieldByLabel('EventQueue').GetChildStructs();
       for(let i = 0; i < eventQueue.length; i++){
         let event_struct = eventQueue[i];
-        console.log(event_struct);
-        let event = {
-          id: event_struct.GetFieldByLabel('EventId').GetValue()
-        }
-        if(event.id == Module.EventID.TIMED_EVENT){
-
-          let eventData = event_struct.GetFieldByLabel('EventData').GetChildStructs()[0];
-
-          let script = new NWScript();
-          script.name = eventData.GetFieldByLabel('Name').GetValue();
-          script.init(
-            eventData.GetFieldByLabel('Code').GetVoid(),
-            eventData.GetFieldByLabel('CodeSize').GetValue()
-          );
-
-          let scriptInstance = script.newInstance();
-          scriptInstance.isStoreState = true;
-          scriptInstance.setCaller(ModuleObject.GetObjectById(event_struct.GetFieldByLabel('ObjectId').GetValue()) );
-
-          let stackStruct = eventData.GetFieldByLabel('Stack').GetChildStructs()[0];
-          scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
-
-          event.script = scriptInstance;
-          event.offset = eventData.GetFieldByLabel('InstructionPtr').GetValue();
-          event.day = event_struct.GetFieldByLabel('Day').GetValue();
-          event.time = event_struct.GetFieldByLabel('Time').GetValue();
+        let event = GameEvent.EventFromStruct(event_struct);
+        console.log(event_struct, event);
+        if(event instanceof GameEvent){
           this.eventQueue.push(event);
         }
       }
@@ -601,18 +566,8 @@ class Module {
       for(let i = 0; i < this.eventQueue.length; i++){
         
         let event = this.eventQueue[i];
-        if(event.id == Module.EventID.TIMED_EVENT){
-          let eventStruct = new Struct( 0x7777 );
-
-          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'CallerId') ).SetValue( event.script.caller instanceof ModuleObject ? event.script.caller.id : 2130706432 );
-          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'Day') ).SetValue(event.day);
-          let eventData = eventStruct.AddField( new Field(GFFDataTypes.STRUCT, 'EventData') );
-          eventData.AddChildStruct( event.script.saveEventSituation() );
-          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'EventId') ).SetValue(event.id);
-          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'ObjectId') ).SetValue( event.script.caller instanceof ModuleObject ? event.script.caller.id : 2130706432 );
-          eventStruct.AddField( new Field(GFFDataTypes.DWORD, 'Time') ).SetValue(event.time);
-
-          eventQueue.AddChildStruct( eventStruct );
+        if(event instanceof GameEvent){
+          eventQueue.AddChildStruct( event.export() );
         }
 
       }

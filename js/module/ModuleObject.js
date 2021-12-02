@@ -2506,7 +2506,7 @@ ModuleObject.GetObjectById = function(id = -1){
     return undefined;
 
   if(id instanceof ModuleObject){
-    if(id.id){
+    if(id.id >= 1){
       return id;
     }
   }
@@ -2516,13 +2516,9 @@ ModuleObject.GetObjectById = function(id = -1){
   }
   return undefined;
 
-  for(let i = 0, len = ModuleObject.List.length; i < len; i++){
-    if(ModuleObject.List[i].id == id)
-      return ModuleObject.List[i];
-  }
 }
 
-ModuleObject.COUNT = 0;
+ModuleObject.COUNT = 1;
 ModuleObject.PLAYER_ID = 0x7fffffff;
 ModuleObject.OBJECT_INVALID = 0x7f000000;
 

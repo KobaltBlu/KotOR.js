@@ -268,18 +268,27 @@ const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWSc
 
 /* Effects */
 const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));
-const EffectAbilityIncrease = require(path.join(app.getAppPath(), 'js/effects/EffectAbilityIncrease.js'));
-const EffectAssuredHit = require(path.join(app.getAppPath(), 'js/effects/EffectAssuredHit.js'));
-const EffectBeam = require(path.join(app.getAppPath(), 'js/effects/EffectBeam.js'));
-const EffectDamage = require(path.join(app.getAppPath(), 'js/effects/EffectDamage.js'));
-const EffectDamageResistance = require(path.join(app.getAppPath(), 'js/effects/EffectDamageResistance.js'));
-const EffectDeath = require(path.join(app.getAppPath(), 'js/effects/EffectDeath.js'));
-const EffectDisguise = require(path.join(app.getAppPath(), 'js/effects/EffectDisguise.js'));
-const EffectHeal = require(path.join(app.getAppPath(), 'js/effects/EffectHeal.js'));
-const EffectForcePushed = require(path.join(app.getAppPath(), 'js/effects/EffectForcePushed.js'));
-const EffectLink = require(path.join(app.getAppPath(), 'js/effects/EffectLink.js'));
-const EffectResurrection = require(path.join(app.getAppPath(), 'js/effects/EffectResurrection.js'));
-const EffectVisualEffect = require(path.join(app.getAppPath(), 'js/effects/EffectVisualEffect.js'));
+let odysseyGameEffects = fs.readdirSync(path.join(app.getAppPath(), 'js/effects'));
+for(let i = 0; i < odysseyGameEffects.length; i++){
+  let controllerPath = path.parse(odysseyGameEffects[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/effects', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* Events */
+const GameEvent = require(path.join(app.getAppPath(), 'js/events/GameEvent.js'));
+let odysseyGameEvents = fs.readdirSync(path.join(app.getAppPath(), 'js/events'));
+for(let i = 0; i < odysseyGameEvents.length; i++){
+  let controllerPath = path.parse(odysseyGameEvents[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/events', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
 
 /* Talents */
 const TalentObject = require(path.join(app.getAppPath(), 'js/talents/TalentObject.js'));

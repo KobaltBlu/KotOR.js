@@ -287,6 +287,18 @@ for(let i = 0; i < odysseyGameEffects.length; i++){
   }
 }
 
+/* Events */
+const GameEvent = require(path.join(app.getAppPath(), 'js/events/GameEvent.js'));
+let odysseyGameEvents = fs.readdirSync(path.join(app.getAppPath(), 'js/events'));
+for(let i = 0; i < odysseyGameEvents.length; i++){
+  let controllerPath = path.parse(odysseyGameEvents[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/events', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
 /* Actions */
 const Action = require(path.join(app.getAppPath(), 'js/actions/Action.js'));
 let actions = fs.readdirSync(path.join(app.getAppPath(), 'js/actions'));
