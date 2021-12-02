@@ -62,27 +62,110 @@ class GameEvent {
       let event = undefined;
 
       let eType = struct.GetFieldByLabel('EventId').GetValue();
-      let nObjectId = struct.GetFieldByLabel('ObjectId').GetValue();
-      let nCallerId = struct.GetFieldByLabel('CallerId').GetValue();
-      let nDay = struct.GetFieldByLabel('Day').GetValue();
-      let nTime = struct.GetFieldByLabel('Time').GetValue();
+      let eObjectId = struct.GetFieldByLabel('ObjectId').GetValue();
+      let eCallerId = struct.GetFieldByLabel('CallerId').GetValue();
+      let eDay = struct.GetFieldByLabel('Day').GetValue();
+      let eTime = struct.GetFieldByLabel('Time').GetValue();
 
-      let eventData = struct.GetFieldByLabel('EventData').GetChildStructs()[0];
+      let eventData = struct.GetFieldByLabel('EventData');
+      if(eventData){
+        eventData = eventData.GetChildStructs()[0];
+      }
 
       //Initialize the event object based on the type
       switch(eType){
         case GameEvent.Type.EventTimedEvent: //TimedEvent
           event = new EventTimedEvent();
         break;
+        case GameEvent.Type.EventEnteredTrigger: //EventEnteredTrigger
+          event = new EventEnteredTrigger();
+        break;
+        case GameEvent.Type.EventLeftTrigger: //EventLeftTrigger
+          event = new EventLeftTrigger();
+        break;
+        case GameEvent.Type.EventRemoveFromArea: //EventRemoveFromArea
+          event = new EventRemoveFromArea();
+        break;
+        case GameEvent.Type.EventApplyEffect: //EventApplyEffect
+          event = new EventApplyEffect();
+        break;
+        case GameEvent.Type.EventCloseObject: //EventCloseObject
+          event = new EventCloseObject();
+        break;
+        case GameEvent.Type.EventOpenObject: //EventOpenObject
+          event = new EventOpenObject();
+        break;
+        case GameEvent.Type.EventSpellImpact: //EventSpellImpact
+          event = new EventSpellImpact();
+        break;
+        case GameEvent.Type.EventPlayAnimation: //EventPlayAnimation
+          event = new EventPlayAnimation();
+        break;
+        case GameEvent.Type.EventSignalEvent: //EventSignalEvent
+          event = new EventSignalEvent();
+        break;
+        case GameEvent.Type.EventDestroyObject: //EventDestroyObject
+          event = new EventDestroyObject();
+        break;
+        case GameEvent.Type.EventUnlockObject: //EventUnlockObject
+          event = new EventUnlockObject();
+        break;
+        case GameEvent.Type.EventLockObject: //EventLockObject
+          event = new EventLockObject();
+        break;
+        case GameEvent.Type.EventRemoveEffect: //EventRemoveEffect
+          event = new EventRemoveEffect();
+        break;
+        case GameEvent.Type.EventOnMeleeAttacked: //EventOnMeleeAttacked
+          event = new EventOnMeleeAttacked();
+        break;
+        case GameEvent.Type.EventDecrementStackSize: //EventDecrementStackSize
+          event = new EventDecrementStackSize();
+        break;
+        case GameEvent.Type.EventSpawnBodyBag: //EventSpawnBodyBag
+          event = new EventSpawnBodyBag();
+        break;
+        case GameEvent.Type.EventForcedAction: //EventForcedAction
+          event = new EventForcedAction();
+        break;
+        case GameEvent.Type.EventItemOnHitSpellImpact: //EventItemOnHitSpellImpact
+          event = new EventItemOnHitSpellImpact();
+        break;
+        case GameEvent.Type.EventBroadcastAOO: //EventBroadcastAOO
+          event = new EventBroadcastAOO();
+        break;
+        case GameEvent.Type.EventBroadcastSafeProjectile: //EventBroadcastSafeProjectile
+          event = new EventBroadcastSafeProjectile();
+        break;
+        case GameEvent.Type.EventFeedbackMessage: //EventFeedbackMessage
+          event = new EventFeedbackMessage();
+        break;
+        case GameEvent.Type.EventAbilityEffectApplied: //EventAbilityEffectApplied
+          event = new EventAbilityEffectApplied();
+        break;
+        case GameEvent.Type.EventSummonCreature: //EventSummonCreature
+          event = new EventSummonCreature();
+        break;
+        case GameEvent.Type.EventAquireItem: //EventAquireItem
+          event = new EventAquireItem();
+        break;
+        case GameEvent.Type.EventAreaTransition: //EventAreaTransition
+          event = new EventAreaTransition();
+        break;
+        case GameEvent.Type.EventControllerRumble: //EventControllerRumble
+          event = new EventControllerRumble();
+        break;
       }
 
       if(event instanceof GameEvent){
-        event.setDay(nDay);
-        event.setTime(nTime);
-        event.setCallerId(nCallerId);
-        event.setObjectId(nObjectId);
+        event.setDay(eDay);
+        event.setTime(eTime);
+        event.setCallerId(eCallerId);
+        event.setObjectId(eObjectId);
 
-        event.eventDataFromStruct(eventData);
+        if(eventData){
+          event.eventDataFromStruct(eventData);
+        }
       }
 
       return event;
