@@ -453,33 +453,33 @@ class ModuleObject {
 
       // Placeable animation constants
       case 200: 
-        return ModuleCreature.AnimState.PLACEABLE_ACTIVATE;
+        return ModulePlaceable.AnimState.ACTIVATE;
       case 201: 
-        return ModuleCreature.AnimState.PLACEABLE_DEACTIVATE;
+        return ModulePlaceable.AnimState.DEACTIVATE;
       case 202: 
-        return ModuleCreature.AnimState.PLACEABLE_OPEN;
+        return ModulePlaceable.AnimState.OPEN;
       case 203: 
-        return ModuleCreature.AnimState.PLACEABLE_CLOSE;
+        return ModulePlaceable.AnimState.CLOSE;
       case 204: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP01;
+        return ModulePlaceable.AnimState.ANIMLOOP01;
       case 205: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP02;
+        return ModulePlaceable.AnimState.ANIMLOOP02;
       case 206: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP03;
+        return ModulePlaceable.AnimState.ANIMLOOP03;
       case 207: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP04;
+        return ModulePlaceable.AnimState.ANIMLOOP04;
       case 208: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP05;
+        return ModulePlaceable.AnimState.ANIMLOOP05;
       case 209: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP06;
+        return ModulePlaceable.AnimState.ANIMLOOP06;
       case 210: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP07;
+        return ModulePlaceable.AnimState.ANIMLOOP07;
       case 211: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP08;
+        return ModulePlaceable.AnimState.ANIMLOOP08;
       case 212: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP09;
+        return ModulePlaceable.AnimState.ANIMLOOP09;
       case 213: 
-        return ModuleCreature.AnimState.PLACEABLE_ANIMLOOP10;
+        return ModulePlaceable.AnimState.ANIMLOOP10;
 
     }
 
