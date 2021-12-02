@@ -24,6 +24,31 @@ class SaveGame {
     this.thumbnail = null;
   }
 
+  async InitSavePIFO(){
+    return new Promise( (resolve, reject) => {
+      try{
+        if(fs.existsSync(path.join(this.directory, 'pifo.ifo'))){
+          this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo) => {
+      
+            if(pifo.RootNode.HasField('Mod_PlayerList')){
+              let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
+              if(playerList.length){
+                PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+              }
+            }
+
+            resolve();
+      
+          });
+        }else{
+          resolve();
+        }
+      }catch(e){
+        resolve();
+      }
+    });
+  }
+
   InitSaveNFO(){
     this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo) => {
 
@@ -228,11 +253,14 @@ class SaveGame {
           this.InventoryLoader( () => {
             //Load PartyTable
             this.PartyTableLoader( () => {
-              //Load The Last Module
-              this.ModuleLoader( () => {
-                console.log('SaveGame', 'Load Complete!');
-                if(typeof onLoad === 'function')
-                  onLoad();
+              //Load PIFO if it exists
+              this.InitSavePIFO().then( () => {
+                //Load The Last Module
+                this.ModuleLoader( () => {
+                  console.log('SaveGame', 'Load Complete!');
+                  if(typeof onLoad === 'function')
+                    onLoad();
+                });
               });
             });
           });
