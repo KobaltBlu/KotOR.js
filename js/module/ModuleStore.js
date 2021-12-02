@@ -63,12 +63,21 @@ class ModuleStore extends ModuleObject {
   }
 
   InitProperties( onLoad = null ){
+    
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
 
     if(this.template.RootNode.HasField('BuySellFlag'))
       this.buySellFlag = this.template.GetFieldByLabel('BuySellFlag').GetValue()
-
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('LocName'))
       this.locName = this.template.GetFieldByLabel('LocName').GetCExoLocString();

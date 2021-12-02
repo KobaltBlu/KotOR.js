@@ -18,13 +18,13 @@ class ModuleItem extends ModuleObject {
       this.template = gff;
     }
 
-    if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
-      this.id = gff.GetFieldByLabel('ObjectId').GetValue();
-    }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
-      this.id = gff.GetFieldByLabel('ID').GetValue();
-    }else{
-      this.id = -1;
-    }
+    // if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
+    //   this.id = gff.GetFieldByLabel('ObjectId').GetValue();
+    // }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
+    //   this.id = gff.GetFieldByLabel('ID').GetValue();
+    // }else{
+    //   this.id = -1;
+    // }
 
     //this.id = -1;
 
@@ -461,8 +461,17 @@ class ModuleItem extends ModuleObject {
       return;
     }
     
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
 
     if(this.template.RootNode.HasField('AddCost'))
       this.addCost = parseInt(this.template.GetFieldByLabel('AddCost').GetValue());

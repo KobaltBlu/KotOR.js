@@ -416,8 +416,17 @@ class ModuleTrigger extends ModuleObject {
 
   InitProperties(){
     
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
 
     if(this.template.RootNode.HasField('AutoRemoveKey'))
       this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();

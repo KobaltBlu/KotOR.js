@@ -187,6 +187,18 @@ class ModuleSound extends ModuleObject {
   }
 
   InitProperties(){
+    
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
 
     if(this.template.RootNode.HasField('Active'))
       this.active = this.template.GetFieldByLabel('Active').GetValue()
@@ -217,9 +229,6 @@ class ModuleSound extends ModuleObject {
       
     if(this.template.RootNode.HasField('MinDistance'))
       this.minDistance = this.template.GetFieldByLabel('MinDistance').GetValue();
-        
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
 
     if(this.template.RootNode.HasField('PitchVariation'))
       this.pitchVariation = this.template.GetFieldByLabel('PitchVariation').GetValue();

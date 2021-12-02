@@ -733,6 +733,35 @@ class ModuleCreature extends ModuleCreatureController {
     return this.maxForcePoints;
   }
 
+  setFP(nAmount = 0){
+    let bonus = this.maxForcePoints - this.forcePoints;
+    this.currentForce = nAmount - bonus;
+  }
+
+  addFP(nAmount = 0, ignoreMaxForcePoints = false){
+    if(ignoreMaxForcePoints){
+      this.currentForce += nAmount;
+    }else{
+      let currentFP = this.getFP();
+      if(currentFP < this.getMaxFP()){
+        if(currentFP + nAmount > this.getMaxFP()){
+          this.currentForce += nAmount + (this.getMaxFP() - (currentFP + nAmount));
+        }else{
+          this.currentForce += nAmount;
+        }
+      }
+    }
+
+    if(this.getFP() < 0)
+      this.setFP(0);
+  }
+
+  subtractFP(nAmount = 0){
+    this.currentForce -= nAmount;
+    if(this.getFP() < 0)
+      this.setFP(0);
+  }
+
   getCameraHeight(){
     if(this.model && this.model.camerahook){
       return this.model.camerahook.position.z;
@@ -1884,9 +1913,21 @@ class ModuleCreature extends ModuleCreatureController {
     this.classes = [];
     this.feats = [];
     this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
-
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+    
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+        while(ModuleObject.List.has(this.id)){
+          this.id = ModuleObject.COUNT++;
+        }
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
 
     if(this.template.RootNode.HasField('Appearance_Type'))
       this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();

@@ -11,16 +11,6 @@ class ModuleObject {
 
   constructor (gff = new GFFObject) {
 
-    ModuleObject.List.push(this);
-
-    if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
-      this.id = gff.GetFieldByLabel('ObjectId').GetValue();
-    }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
-      this.id = gff.GetFieldByLabel('ID').GetValue();
-    }else{
-      this.id = ModuleObject.COUNT++;
-    }
-
     this.initialized = false;
 
     //this.moduleObject = null;
@@ -938,9 +928,9 @@ class ModuleObject {
       clearTimeout(this.heartbeatTimer);
 
       //Remove the object from the global list of objects
-      let listIdx = ModuleObject.List.indexOf(this);
-      if(listIdx >= 0)
-        ModuleObject.List.splice(listIdx, 1);
+      if(this.id >= 1 && ModuleObject.List.has(this.id)){
+        ModuleObject.List.delete(this.id);
+      }
 
     }catch(e){
       console.error('ModuleObject.destory', e);
@@ -1753,6 +1743,18 @@ class ModuleObject {
   
 
   InitProperties(){
+
+    if(!this.initialized){
+      if(this.template.RootNode.HasField('ObjectId')){
+        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+      }else if(this.template.RootNode.HasField('ID')){
+        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      }else{
+        this.id = ModuleObject.COUNT++;
+      }
+      
+      ModuleObject.List.set(this.id, this);
+    }
     
     if(this.template.RootNode.HasField('Animation'))
       this.animState = this.template.GetFieldByLabel('Animation').GetValue();
@@ -2027,7 +2029,11 @@ class ModuleObject {
         return Global.kotor2DA.animations.rows[357];
       break;
       case ModuleCreature.AnimState.PAUSE_SCRATCH_HEAD:
-        return Global.kotor2DA.animations.rows[12];
+        if(this.isSimpleCreature()){
+          return Global.kotor2DA.animations.rows[12];
+        }else{
+          return Global.kotor2DA.animations.rows[7];
+        }
       break;
       case ModuleCreature.AnimState.PAUSE_BORED:
         return Global.kotor2DA.animations.rows[13];
@@ -2492,7 +2498,7 @@ class ModuleObject {
 
 }
 
-ModuleObject.List = [];
+ModuleObject.List = new Map();
 
 ModuleObject.GetObjectById = function(id = -1){
 
@@ -2504,6 +2510,11 @@ ModuleObject.GetObjectById = function(id = -1){
       return id;
     }
   }
+
+  if(ModuleObject.List.has(id)){
+    return ModuleObject.List.get(id);
+  }
+  return undefined;
 
   for(let i = 0, len = ModuleObject.List.length; i < len; i++){
     if(ModuleObject.List[i].id == id)
