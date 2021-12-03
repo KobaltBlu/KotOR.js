@@ -508,31 +508,33 @@ class ModuleObject {
 
   }
 
-  triggerUserDefinedEvent( nValue = 0, onComplete = null ){
+  triggerUserDefinedEvent( event = undefined ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
 
-    //console.log('triggerUserDefinedEvent', this.getTag())
-
-    if(this.scripts.onUserDefined instanceof NWScriptInstance){
-      //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, this);
-      let instance = this.scripts.onUserDefined.nwscript.newInstance();
-      instance.run(this, parseInt(nValue));
+    if(event instanceof NWScriptEvent){
+      if(this.scripts.onUserDefined instanceof NWScriptInstance){
+        //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, this);
+        let instance = this.scripts.onUserDefined.nwscript.newInstance();
+        instance.run(this, parseInt(event.getInt(0)));
+      }
     }
   }
 
-  triggerSpellCastAtEvent(oCaster = undefined, nSpell = 0, bHarmful = 0){
+  triggerSpellCastAtEvent( event = undefined ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
 
-    if(this.scripts.onSpellAt instanceof NWScriptInstance){
-      let instance = this.scripts.onSpellAt.nwscript.newInstance();
-      instance.lastSpellCaster = oCaster;
-      instance.lastSpell = nSpell;
-      instance.lastSpellHarmful = bHarmful;
-      instance.run(this);
+    if(event instanceof NWScriptEvent){
+      if(this.scripts.onSpellAt instanceof NWScriptInstance){
+        let instance = this.scripts.onSpellAt.nwscript.newInstance();
+        instance.lastSpellCaster = event.getObject(0);
+        instance.lastSpell = event.getInt(0);
+        instance.lastSpellHarmful = event.getInt(1) ? 1 : 0;
+        instance.run(this);
+      }
     }
   }
 
@@ -540,10 +542,10 @@ class ModuleObject {
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEvent.Type.EventUserDefined:
-          this.triggerUserDefinedEvent( event.getInt(0) );
+          this.triggerUserDefinedEvent( event );
         break;
         case NWScriptEvent.Type.EventSpellCastAt:
-          this.triggerSpellCastAtEvent(event.getObject(0), event.getInt(0), event.getInt(1));
+          this.triggerSpellCastAtEvent( event );
         break;
         default:
           console.error('scriptEventHandler', 'Unhandled Event', event, this);
