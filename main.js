@@ -45,11 +45,11 @@ function createWindowFromProfile( profile = {} ) {
     backgroundColor: profile.launch.backgroundColor,
     autoHideMenuBar: false,
     webPreferences: {
+      webviewTag: false,
       nodeIntegration: true,
-      nodeIntegrationInWorker: true,
       enableRemoteModule: true,
-      worldSafeExecuteJavaScript: false,
-      //contextIsolation: false,
+      //worldSafeExecuteJavaScript: true,
+      contextIsolation: false,
     }
   });
 
@@ -92,11 +92,11 @@ function createLauncherWindow() {
     title: 'KotOR Launcher',
     backgroundColor: "#000000",
     webPreferences: {
-      webviewTag: true,
+      webviewTag: false,
       nodeIntegration: true,
       enableRemoteModule: true,
-      worldSafeExecuteJavaScript: true,
-      //contextIsolation: true,
+      //worldSafeExecuteJavaScript: true,
+      contextIsolation: false,
     }
   });
   // and load the index.html of the app.
@@ -237,7 +237,7 @@ app.on('activate', () => {
 function updateThreeJS(){
   return new Promise( (resolve, reject, ) => {
 
-    let file_path = path.join(app.getAppPath(), 'js', 'engine', 'three.js');
+    let file_path = path.join(app.getAppPath(), 'js', 'three', 'three.js');
     if(!fs.existsSync(file_path)){
       console.log('Downloading: THREE.js...');
       const file = fs.createWriteStream(file_path);
