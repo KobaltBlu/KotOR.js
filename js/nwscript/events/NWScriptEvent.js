@@ -55,12 +55,18 @@ class NWScriptEvent {
     }
   }
 
-  setObject(nOffset = 0, nValue = ''){
+  setObject(nOffset = 0, nValue = undefined){
+    if(nValue instanceof ModuleObject){
+      nValue = nValue.id;
+    }else if(!nValue || (typeof nValue == 'undefined')){
+      nValue = undefined;
+    }
+
     this.objectList[nOffset] = nValue;
   }
 
   getObject(nOffset = 0){
-    return this.objectList[nOffset];
+    return (this.objectList[nOffset] instanceof ModuleObject) ? this.objectList[nOffset] : ModuleObject.GetObjectById(this.objectList[nOffset]);
   }
 
   static EventFromStruct( struct = undefined ){
