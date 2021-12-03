@@ -508,7 +508,7 @@ class ModuleObject {
 
   }
 
-  triggerUserDefinedEvent(caller = this, nValue = 0, onComplete = null ){
+  triggerUserDefinedEvent( nValue = 0, onComplete = null ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
@@ -516,9 +516,9 @@ class ModuleObject {
     //console.log('triggerUserDefinedEvent', this.getTag())
 
     if(this.scripts.onUserDefined instanceof NWScriptInstance){
-      //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, caller);
+      //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, this);
       let instance = this.scripts.onUserDefined.nwscript.newInstance();
-      instance.run(caller, parseInt(nValue));
+      instance.run(this, parseInt(nValue));
     }
   }
 
@@ -533,6 +533,22 @@ class ModuleObject {
       instance.lastSpell = nSpell;
       instance.lastSpellHarmful = bHarmful;
       instance.run(this);
+    }
+  }
+
+  scriptEventHandler( event = undefined ){
+    if(event instanceof NWScriptEvent){
+      switch(event.type){
+        case NWScriptEvent.Type.EventUserDefined:
+          this.triggerUserDefinedEvent( event.getInt(0) );
+        break;
+        case NWScriptEvent.Type.EventSpellCastAt:
+          this.triggerSpellCastAtEvent(event.getObject(0), event.getInt(0), event.getInt(1));
+        break;
+        default:
+          console.error('scriptEventHandler', 'Unhandled Event', event, this);
+        break;
+      }
     }
   }
 
@@ -557,7 +573,7 @@ class ModuleObject {
     for(let i = 0, len = this.effects.length; i < len; i++){
       let effect = this.effects[i];
       if(effect instanceof GameEffect){
-          effect.initialize();
+        effect.initialize();
         //effect.setCreator(this);
         effect.setAttachedObject(this);
         effect.onApply(this);

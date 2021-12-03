@@ -1409,28 +1409,14 @@ NWScriptDefK1.Actions = {
         args[0] = Game.module.area;
       }
 
-      if(args[1] instanceof NWScriptEvent){
-        switch(args[1].type){
-          case NWScriptEvent.Type.EventUserDefined:
-            if(args[0] instanceof ModuleObject){
-              args[0].triggerUserDefinedEvent( args[0], args[1].getInt(0) );
-            }else{
-              console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
-            }
-          break;
-          case NWScriptEvent.Type.EventSpellCastAt:
-            if(args[0] instanceof ModuleObject){
-              args[0].triggerSpellCastAtEvent(args[1].getObject(0), args[1].getInt(0), args[1].getInt(1));
-            }else{
-              console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
-            }
-          break;
-          default:
-            console.error('SignalEvent', 'Unhandled Event', args);
-          break;
+      if(args[0] instanceof ModuleObject){
+        if(args[1] instanceof NWScriptEvent){
+          args[0].scriptEventHandler( args[1] );
+        }else{
+          console.warn('SignalEvent', 'Invalid event argument', args);
         }
       }else{
-        console.warn('SignalEvent', 'Invalid event argument', args);
+        console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
       }
     }
   },
@@ -1440,7 +1426,6 @@ NWScriptDefK1.Actions = {
     type: 17,
     args: ["int"],
     action: function(args, _instr, action){
-      //console.error('Unhandled script action', _instr.address, action.name, action.args);
       let event = new EventUserDefined();
       event.setInt(0, args[0]);
       return event;
