@@ -1518,12 +1518,4 @@ NWScript.Types = {
 NWScript.TRUE = 1;
 NWScript.FALSE = 0;
 
-class NWScriptEffect {
-  constructor(args={}){
-    const {name, value} = args;
-    this.name = name;
-    this.value = value;
-  }
-}
-
-module.exports = { NWScript: NWScript, NWScriptEffect: NWScriptEffect };
+module.exports = { NWScript: NWScript };
