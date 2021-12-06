@@ -332,6 +332,7 @@ class ModuleEncounter extends ModuleObject {
     gff.FileType = 'UTT ';
 
     let actionList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'ActionList') );
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Commandable') ).SetValue(this.commandable);
     gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Active') ).SetValue(this.active);
     gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Reset') ).SetValue( this.reset );
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'ResetTime') ).SetValue(this.resetTime);
@@ -345,6 +346,21 @@ class ModuleEncounter extends ModuleObject {
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Difficulty') ).SetValue( this.faction );
     gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocalizedName') ).SetValue(this.localizedName);
     gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
+
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'NumberSpawned') ).SetValue(this.numberSpawned);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'HeartbeatDay') ).SetValue(this.heartbeatDay);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'HeartbeatTime') ).SetValue(this.heartbeatTime);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastSpawnDay') ).SetValue(this.lastSpawnDay);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastSpawnTime') ).SetValue(this.lastSpawnTime);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Started') ).SetValue(this.started);
+    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Exhausted') ).SetValue(this.exhausted);
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CurrentSpawns') ).SetValue(this.currentSpawns);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'SpawnPoolActive') ).SetValue(this.spawnPoolActive);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastEntered') ).SetValue(this.lastEntered);
+    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastLeft') ).SetValue(this.lastLeft);
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CustomScriptId') ).SetValue(this.customScriptId);
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'AreaListMaxSize') ).SetValue(this.areaListMaxSize);
+    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'AreaPoints') ).SetValue(this.areaPoints);
 
     let creatureList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'CreatureList') );
     let creature = undefined;
@@ -375,28 +391,11 @@ class ModuleEncounter extends ModuleObject {
     let geometry = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){
       let vertStruct = new Struct();
-      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointX') ).SetValue(this.vertices[i].x);
-      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointY') ).SetValue(this.vertices[i].y);
-      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'PointZ') ).SetValue(this.vertices[i].z);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'X') ).SetValue(this.vertices[i].x);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'Y') ).SetValue(this.vertices[i].y);
+      vertStruct.AddField( new Field(GFFDataTypes.FLOAT, 'Z') ).SetValue(this.vertices[i].z);
       geometry.AddChildStruct(vertStruct);
     }
-
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'NumberSpawned') ).SetValue(this.numberSpawned);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'HeartbeatDay') ).SetValue(this.heartbeatDay);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'HeartbeatTime') ).SetValue(this.heartbeatTime);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastSpawnDay') ).SetValue(this.lastSpawnDay);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastSpawnTime') ).SetValue(this.lastSpawnTime);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Started') ).SetValue(this.started);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Exhausted') ).SetValue(this.exhausted);
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CurrentSpawns') ).SetValue(this.currentSpawns);
-    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'SpawnPoolActive') ).SetValue(this.spawnPoolActive);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastEntered') ).SetValue(this.lastEntered);
-    gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'LastLeft') ).SetValue(this.lastLeft);
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'CustomScriptId') ).SetValue(this.customScriptId);
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'AreaListMaxSize') ).SetValue(this.areaListMaxSize);
-    gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'AreaPoints') ).SetValue(this.areaPoints);
-    
-    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'PortraitId') ).SetValue(this.portraidId);
 
     //SWVarTable
     let swVarTable = gff.RootNode.AddField( new Field(GFFDataTypes.STRUCT, 'SWVarTable') );
@@ -409,16 +408,6 @@ class ModuleEncounter extends ModuleObject {
     gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
     gff.RootNode.AddField( new Field(GFFDataTypes.RESREF, 'OnUserDefined') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
 
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'SetByPartyPlayer') ).SetValue(this.setByPlayerParty);
-    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'TransitionDestin') ).SetValue(this.transitionDestin);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectDC') ).SetValue(this.trapDetectDC);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDetectable') ).SetValue(this.trapDetectable);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapDisarmable') ).SetValue(this.trapDisarmable);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapFlag') ).SetValue(this.trapFlag);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapOneShot') ).SetValue(this.trapOneShot);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'TrapType') ).SetValue(this.trapType);
-    gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Type') ).SetValue(this.type);
     gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'VarTable') );
     gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'XPosition') ).SetValue(this.position.x);
     gff.RootNode.AddField( new Field(GFFDataTypes.FLOAT, 'YPosition') ).SetValue(this.position.y);
