@@ -929,6 +929,12 @@ class ModuleObject {
           if(pIdx > -1){
             Game.module.area.triggers.splice(pIdx, 1);            
           }
+        }else if(this instanceof ModuleEncounter){
+          let pIdx = Game.module.area.encounters.indexOf(this);
+          //console.log('ModuleObject.destory', 'trigger', pIdx)
+          if(pIdx > -1){
+            Game.module.area.encounters.splice(pIdx, 1);            
+          }
         }else if(this instanceof ModuleItem){
           if(this.placedInWorld){
             let pIdx = Game.module.area.items.indexOf(this);
@@ -1034,6 +1040,10 @@ class ModuleObject {
       1 * Math.sin(theta),
       0
     );
+  }
+
+  lookAt(){
+    return false;
   }
 
   isStatic(){
