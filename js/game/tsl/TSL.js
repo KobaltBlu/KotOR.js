@@ -1279,6 +1279,7 @@ class Game extends Engine {
         let roomCount = Game.module.area.rooms.length;
 
         let trigCount = Game.module.area.triggers.length;
+        let encounterCount = Game.module.area.encounters.length;
         let creatureCount = Game.module.area.creatures.length;
         let placeableCount = Game.module.area.placeables.length;
         let doorCount = Game.module.area.doors.length;
@@ -1298,6 +1299,11 @@ class Game extends Engine {
         //update triggers
         for(let i = 0; i < trigCount; i++){
           Game.module.area.triggers[i].update(delta);
+        }
+
+        //update encounters
+        for(let i = 0; i < encounterCount; i++){
+          Game.module.area.encounters[i].update(delta);
         }
 
         //update party

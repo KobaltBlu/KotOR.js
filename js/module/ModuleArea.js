@@ -340,7 +340,7 @@ class ModuleArea extends ModuleObject {
     //Encounter
     for(let i = 0; i != encounters.ChildStructs.length; i++){
       let strt = encounters.ChildStructs[i];
-      //this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+      this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
     }
 
     //Doors
@@ -579,6 +579,8 @@ class ModuleArea extends ModuleObject {
     Game.LoadScreen.setProgress(50);
 
     await this.loadTriggers();
+
+    await this.loadEncounters();
 
     Game.LoadScreen.setProgress(60);
 
@@ -1260,6 +1262,55 @@ class ModuleArea extends ModuleObject {
   
             asyncLoop.next();
           });
+        }
+      });
+      loop.iterate(() => {
+        resolve();
+      });
+
+    });
+
+  }
+
+  async loadEncounters(){
+
+    return new Promise( (resolve, reject) => {
+      console.log('Loading Encounters');
+      let loop = new AsyncLoop({
+        array: this.encounters,
+        onLoop: (trig, asyncLoop) => {
+          try{
+            trig.InitProperties();
+            trig.Load( ( object ) => {
+          
+              if(typeof object == 'undefined'){
+                asyncLoop.next();
+                return;
+              }
+    
+              let _distance = 1000000000;
+              let _currentRoom = null;
+              let roomCenter = new THREE.Vector3();
+              for(let i = 0; i < Game.group.rooms.children.length; i++){
+                let room = Game.group.rooms.children[i];
+                if(room instanceof THREE.AuroraModel){
+                  if(room.box.containsPoint(trig.mesh.position)){
+                    room.box.getCenter(roomCenter);
+                    let distance = trig.mesh.position.distanceTo(roomCenter);
+                    if(distance < _distance){
+                      _distance = distance;
+                      _currentRoom = room;
+                    }
+                  }
+                }
+              }
+              trig.mesh.area = _currentRoom;
+              asyncLoop.next();
+            });
+          }catch(e){
+            console.error(e);
+            asyncLoop.next();
+          }
         }
       });
       loop.iterate(() => {

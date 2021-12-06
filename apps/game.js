@@ -339,6 +339,7 @@ const ModuleArea = require(path.join(app.getAppPath(), 'js/module/ModuleArea.js'
 const ModuleCreatureController = require(path.join(app.getAppPath(), 'js/module/ModuleCreatureController.js'));
 const ModuleCamera = require(path.join(app.getAppPath(), 'js/module/ModuleCamera.js'));
 const ModuleDoor = require(path.join(app.getAppPath(), 'js/module/ModuleDoor.js'));
+const ModuleEncounter = require(path.join(app.getAppPath(), 'js/module/ModuleEncounter.js'));
 const ModuleRoom = require(path.join(app.getAppPath(), 'js/module/ModuleRoom.js'));
 const ModuleItem = require(path.join(app.getAppPath(), 'js/module/ModuleItem.js'));
 const ModuleSound = require(path.join(app.getAppPath(), 'js/module/ModuleSound.js'));
