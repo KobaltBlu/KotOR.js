@@ -1278,10 +1278,10 @@ class ModuleArea extends ModuleObject {
       console.log('Loading Encounters');
       let loop = new AsyncLoop({
         array: this.encounters,
-        onLoop: (trig, asyncLoop) => {
+        onLoop: (encounter, asyncLoop) => {
           try{
-            trig.InitProperties();
-            trig.Load( ( object ) => {
+            encounter.InitProperties();
+            encounter.Load( ( object ) => {
           
               if(typeof object == 'undefined'){
                 asyncLoop.next();
@@ -1294,9 +1294,9 @@ class ModuleArea extends ModuleObject {
               for(let i = 0; i < Game.group.rooms.children.length; i++){
                 let room = Game.group.rooms.children[i];
                 if(room instanceof THREE.AuroraModel){
-                  if(room.box.containsPoint(trig.mesh.position)){
+                  if(room.box.containsPoint(encounter.mesh.position)){
                     room.box.getCenter(roomCenter);
-                    let distance = trig.mesh.position.distanceTo(roomCenter);
+                    let distance = encounter.mesh.position.distanceTo(roomCenter);
                     if(distance < _distance){
                       _distance = distance;
                       _currentRoom = room;
@@ -1304,7 +1304,7 @@ class ModuleArea extends ModuleObject {
                   }
                 }
               }
-              trig.mesh.area = _currentRoom;
+              encounter.mesh.area = _currentRoom;
               asyncLoop.next();
             });
           }catch(e){

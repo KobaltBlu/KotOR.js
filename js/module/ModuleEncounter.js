@@ -18,7 +18,6 @@ class ModuleEncounter extends ModuleObject {
     this.scripts = {
       onEntered: undefined,
       onExhausted: undefined,
-      onBlocked: undefined,
       onExit: undefined,
       onHeartbeat: undefined,
       onUserDefined: undefined
@@ -37,7 +36,7 @@ class ModuleEncounter extends ModuleObject {
 
           this.template.Merge(gff);
           this.InitProperties();
-          this.LoadScripts.then( () => {
+          this.LoadScripts().then( () => {
             this.buildGeometry();
             //this.initObjectsInside();
             if(onLoad != null)
@@ -57,7 +56,7 @@ class ModuleEncounter extends ModuleObject {
       //console.log('Encounter savegame')
       try{
         this.InitProperties();
-        this.LoadScripts.then( () => {
+        this.LoadScripts().then( () => {
           try{
             this.buildGeometry();
             //this.initObjectsInside();
@@ -120,10 +119,9 @@ class ModuleEncounter extends ModuleObject {
   }
 
   LoadScripts(){
-    return new Promise( () => {
+    return new Promise( (resolve, reject) => {
       this.scripts.onEntered = this.template.GetFieldByLabel('OnEntered').GetValue();
       this.scripts.onExhausted = this.template.GetFieldByLabel('OnExhausted').GetValue();
-      this.scripts.onBlocked = this.template.GetFieldByLabel('OnBlocked').GetValue();
       this.scripts.onExit = this.template.GetFieldByLabel('OnExit').GetValue();
       this.scripts.onHeartbeat = this.template.GetFieldByLabel('OnHeartbeat').GetValue();
       this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
@@ -493,7 +491,7 @@ class SpawnEntry{
 
 class SpawnPointEntry{
 
-  position = THREE.Vector3();
+  position = new THREE.Vector3();
   orientation = 0.0;
 
   save(){
@@ -509,7 +507,7 @@ class SpawnPointEntry{
 
   static FromStruct( struct = undefined ){
     if(struct instanceof Struct){
-      let entry = new EncounterCreatureEntry();
+      let entry = new SpawnPointEntry();
       if(struct.HasField('X'))
         entry.position.x = struct.GetFieldByLabel('X').GetValue();
 
