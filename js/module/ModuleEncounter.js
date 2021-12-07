@@ -11,9 +11,25 @@ class ModuleEncounter extends ModuleObject {
     super(gff);
     this.template = gff;
     this.vertices = []; 
+
     this.creatureList = [];
-    this.spawnPointList = [];   
+
+    this.spawnPointList = [];  
+
     this.spawnList = [];
+
+    this.active = 1; //0: Inactive | 1: Active
+    this.difficulty = 1; //OBSOLETE FIELD; Should always be identical to the VALUE in encdifficulty.2da pointed to by the DifficultyIndex Field.
+    this.difficultyIndex = 1; //Index into encdifficulty.2da
+    this.faction = 0; //Faction ID; Only spawn when entered by creatures hostile to this faction
+    this.localizedName = undefined;
+    this.maxCreatures = 1; //Maximum number of creatures this encounter can spawn; 1-8
+    this.playerOnly = 0; //0: Any Creature | 1: Only Player ; Can Trigger
+    this.recCreatures = 1; //Recommneded number of creatures; 1-8
+    this.reset = 0; //0: No Respawn | 1: Respawn
+    this.resetTime = 32000; //Seconds before encounter respawns
+    this.spawnOption = 0; //0: Continuous Spawn | 1: Single-Shot Spawn
+    this.started = 0; //0: if there are no creatures currently belonging to the encounter. | 1: if any creatures currently exist that belong to the encounter.
 
     this.scripts = {
       onEntered: undefined,
@@ -23,6 +39,95 @@ class ModuleEncounter extends ModuleObject {
       onUserDefined: undefined
     };
 
+    this.objectsInside = [];
+    this.objectsInsideIdx = 0;
+    this.lastObjectEntered = null;
+    this.lastObjectExited = null;
+
+  }
+
+  update(delta = 0){
+    
+    super.update(delta);
+    
+    this.getCurrentRoom();
+    
+    //Check Module Creatures
+    let creatureLen = Game.module.area.creatures.length;
+    for(let i = 0; i < creatureLen; i++){
+      let creature = Game.module.area.creatures[i];
+      let pos = creature.position.clone();
+      if(this.box.containsPoint(pos)){
+        if(this.objectsInside.indexOf(creature) == -1){
+          this.objectsInside.push(creature);
+          if(this.isHostile(creature)){
+            creature.lastTriggerEntered = this;
+            this.lastObjectEntered = creature;
+
+            this.onEnter(creature);
+            this.triggered = true;
+          }
+        }
+      }else{
+        if(this.objectsInside.indexOf(creature) >= 0){
+          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
+          if(this.isHostile(creature)){
+            creature.lastTriggerExited = this;
+            this.lastObjectExited = creature;
+            this.onExit(creature);
+          }
+        }
+      }
+    }
+
+    //Check Party Members
+    let partyLen = PartyManager.party.length;
+    for(let i = 0; i < partyLen; i++){
+      let partymember = PartyManager.party[i];
+      let pos = partymember.position.clone();
+      
+      if(this.box.containsPoint(pos)){
+        if(this.objectsInside.indexOf(partymember) == -1){
+          this.objectsInside.push(partymember);
+          if(this.isHostile(partymember)){
+            partymember.lastTriggerEntered = this;
+            this.lastObjectEntered = partymember;
+
+            this.onEnter(partymember);
+            this.triggered = true;
+          }
+        }
+      }else{
+        if(this.objectsInside.indexOf(partymember) >= 0){
+          this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
+          if(this.isHostile(partymember)){
+            partymember.lastTriggerExited = this;
+            this.lastObjectExited = partymember;
+
+            this.onExit(partymember);
+          }
+        }
+      }
+    }
+
+    this.mesh.visible = Config.get('Game.debug.trigger_geometry_show') ? true : false;
+
+  }
+
+  onEnter(object = undefined){
+    if(this.scripts.onEnter instanceof NWScriptInstance){
+      let instance = this.scripts.onEnter.nwscript.newInstance();
+      instance.enteringObject = object;
+      instance.run(this, 0);
+    }
+  }
+
+  onExit(object = undefined){
+    if(this.scripts.onExit instanceof NWScriptInstance){
+      let instance = this.scripts.onExit.nwscript.newInstance();
+      instance.exitingObject = object;
+      instance.run(this, 0);
+    }
   }
 
   Load( onLoad = null ){
@@ -260,8 +365,8 @@ class ModuleEncounter extends ModuleObject {
       if(this.template.RootNode.HasField('Respawns'))
         this.respawns = this.template.GetFieldByLabel('Respawns').GetValue();
 
-      if(this.template.RootNode.HasField('SpawnOptions'))
-        this.spawnOptions = this.template.GetFieldByLabel('SpawnOptions').GetValue();
+      if(this.template.RootNode.HasField('SpawnOption'))
+        this.spawnOption = this.template.GetFieldByLabel('SpawnOption').GetValue();
 
       if(this.template.RootNode.HasField('Tag'))
         this.tag = this.template.GetFieldByLabel('Tag').GetValue();
@@ -335,7 +440,7 @@ class ModuleEncounter extends ModuleObject {
     gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'Reset') ).SetValue( this.reset );
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'ResetTime') ).SetValue(this.resetTime);
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Respawns') ).SetValue(this.respawns);
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'SpawnOption') ).SetValue(this.spawnOptions);
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'SpawnOption') ).SetValue(this.spawnOption);
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'MaxCreatures') ).SetValue(this.maxCreatures);
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'RecCreatures') ).SetValue(this.recCreatures);
     gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PlayerOnly') ).SetValue( this.playerOnly );
