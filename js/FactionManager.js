@@ -284,7 +284,7 @@ class Faction {
   initReputations( value = 100 ){
     for (let id of FactionManager.factions.keys()) {
       let repKey = Reputation.GetReputationKey(this.id, id);
-      console.log('Faction.initReputations', this.id, id, repKey, value);
+      //console.log('Faction.initReputations', this.id, id, repKey, value);
       if(repKey){
         let reputation = FactionManager.reputations.get(repKey);
         if(reputation instanceof Reputation){
@@ -409,6 +409,46 @@ class Faction {
     return undefined;
   }
 
+  getWorstACMember(bMustBeVisible = false){
+    if(oTarget instanceof ModuleCreature){
+      let ac = Infinity;
+      let cAC = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          cAC = creature.getAC();
+          if(cAC < ac){
+            ac = cAC;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
+    return undefined;
+  }
+
+  getBestACMember(bMustBeVisible = false){
+    if(oTarget instanceof ModuleCreature){
+      let ac = -Infinity;
+      let cAC = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          cAC = creature.getAC();
+          if(cAC > ac){
+            ac = cAC;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
+    return undefined;
+  }
+
   getMemberGold(){
     let gold = 0;
     let creature;
@@ -467,6 +507,65 @@ class Faction {
       return Math.floor(totalLevel / totalCreatures); 
     }
     return -1;
+  }
+
+  getAverageExperience(){
+    if(oTarget instanceof ModuleCreature){
+      let totalExp = 0;
+      let totalCreatures = 0;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          totalExp += creature.getXP();
+          totalCreatures++;
+        }
+      }
+      return Math.floor(totalExp / totalCreatures); 
+    }
+    return -1;
+  }
+
+  getMostFrequestClass(){
+    if(oTarget instanceof ModuleCreature){
+      let classCount = new Map();
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          let creatureClass = creature.getMainClass();
+          if(creatureClass){
+            classCount.set(creatureClass, (typeof classCount.get(creatureClass) == 'number') ? classCount.get(creatureClass) + 1 : 1);
+          }
+        }
+      }
+      if(classCount.length){
+        let bestClass = undefined;
+        let count = -Infinity;
+        for(let c of classCount.entries()){
+          if(c[1] > count){
+            bestClass = c[0];
+            count = c[1];
+          }
+        }
+        return typeof bestClass == 'number' ? bestClass : -1; 
+      }else{
+        return -1;
+      }
+    }
+    return -1;
+  }
+
+  getFactionMemberByIndex(index = 0, isPCOnly = false){
+    let cIdx = 0;
+    for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+      creature = Game.module.area.creatures[i];
+      if(creature.faction == this.id){
+        if(cIdx == index){
+          if(!isPCOnly || creature instanceof ModulePlayer)
+            return creature;
+        }
+        cIdx++;
+      }
+    }
   }
 
   toStruct(structIdx){

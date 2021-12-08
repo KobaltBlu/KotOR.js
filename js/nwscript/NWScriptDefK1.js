@@ -1031,10 +1031,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object", "int"],
     action: function(args, _instr, action){
-      return Game.GetFirstObjectInArea(
-      args[0],
-      args[1]
-      );
+      return Game.GetFirstObjectInArea( args[0], args[1] );
     }
   },
   94:{
@@ -1043,10 +1040,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object", "int"],
     action: function(args, _instr, action){
-      return Game.GetNextObjectInArea(
-      args[0],
-      args[1]
-      );
+      return Game.GetNextObjectInArea( args[0], args[1] );
     }
   },
   95:{
@@ -2112,8 +2106,13 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        //TODO:
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getAverageExperience();
+        }
       }
+
+      return -1;
     }
   },
   191:{
@@ -2123,8 +2122,13 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        //TODO:
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getMostFrequestClass();
+        }
       }
+
+      return -1;
     }
   },
   192:{
@@ -2134,8 +2138,13 @@ NWScriptDefK1.Actions = {
     args: ["object", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        //TODO:
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getWorstACMember(args[1]);
+        }
       }
+
+      return undefined;
     }
   },
   193:{
@@ -2145,8 +2154,13 @@ NWScriptDefK1.Actions = {
     args: ["object", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
-        //TODO:
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getWorstBestMember(args[1]);
+        }
       }
+
+      return undefined;
     }
   },
   194:{
@@ -4192,13 +4206,32 @@ NWScriptDefK1.Actions = {
     comment: "380: Get the first member of oMemberOfFaction's faction (start to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
     name: "GetFirstFactionMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      this.creatureFactionIdx = 0;
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getFactionMemberByIndex(this.creatureFactionIdx, args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   381:{
     comment: "381: Get the next member of oMemberOfFaction's faction (continue to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
     name: "GetNextFactionMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getFactionMemberByIndex(++this.creatureFactionIdx, args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   382:{
     comment: "382: Force the action subject to move to lDestination.\n",
