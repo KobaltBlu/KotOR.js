@@ -602,7 +602,53 @@ NWScriptDefK1.Actions = {
     comment: "53:\nReturns the ID of the subscreen that is currently onscreen.  This will be one of the\nSUBSCREEN_ID_* constant values.\n",
     name: "GetSubScreenID",
     type: 3,
-    args: []
+    args: [],
+    action: function(){
+
+      //SUBSCREEN_ID_EQUIP = 1;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuEquipment ).length){
+        return 1;
+      }
+
+      //SUBSCREEN_ID_ITEM = 2;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuInventory ).length){
+        return 2;
+      }
+
+      //SUBSCREEN_ID_CHARACTER_RECORD = 3;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuCharacter ).length){
+        return 3;
+      }
+
+      //SUBSCREEN_ID_ABILITY = 4;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuAbilities ).length){
+        return 4;
+      }
+
+      //SUBSCREEN_ID_MAP = 5;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuMap ).length){
+        return 5;
+      }
+
+      //SUBSCREEN_ID_QUEST = 6;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuJournal ).length){
+        return 6;
+      }
+
+      //SUBSCREEN_ID_OPTIONS = 7;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuOptions ).length){
+        return 7;
+      }
+
+      //SUBSCREEN_ID_MESSAGES = 8;
+      if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuMessages ).length){
+        return 8;
+      }
+
+      //SUBSCREEN_ID_NONE = 0;
+      return 0;
+      
+    }
   },
   54:{
     comment: "54:\nCancels combat for the specified creature.\n",
