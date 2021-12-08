@@ -881,6 +881,7 @@ class ModuleObject {
           if(cIdx > -1){
             Game.module.area.creatures.splice(cIdx, 1);
           }
+          FactionManager.RemoveCreatureFromFaction(this);
         }else if(this instanceof ModulePlaceable){
           let pIdx = Game.module.area.placeables.indexOf(this);
           //console.log('ModuleObject.destory', 'placeable', pIdx)
@@ -1449,22 +1450,18 @@ class ModuleObject {
 
 
   getLocalBoolean(iNum){
-    //console.log('getLocalBoolean', iNum, this);
     return this._locals.Booleans[iNum] ? 1 : 0;
   }
 
   getLocalNumber(iNum){
-    //console.log('getLocalNumber', iNum, this);
     return this._locals.Numbers[iNum] ? this._locals.Numbers[iNum] : 0;
   }
 
   setLocalBoolean(iNum, bVal){
-    //console.log('setLocalBoolean', iNum, bVal, this);
     this._locals.Booleans[iNum] = bVal ? 1 : 0;
   }
 
   setLocalNumber(iNum, iVal){
-    //console.log('setLocalNumber', iNum, iVal, this);
     this._locals.Numbers[iNum] = iVal;
   }
 

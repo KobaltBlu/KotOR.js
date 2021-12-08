@@ -20,6 +20,24 @@ class FactionManager {
     FactionManager.reputations.clear();
   }
 
+  static AddCreatureToFaction( creature = undefined ){
+    if(creature instanceof ModuleCreature){
+      let faction = FactionManager.factions.get(creature.faction);
+      if(faction instanceof Faction){
+        faction.addMember(creature);
+      }
+    }
+  }
+
+  static RemoveCreatureFromFaction( creature = undefined ){
+    if(creature instanceof ModuleCreature){
+      let faction = FactionManager.factions.get(creature.faction);
+      if(faction instanceof Faction){
+        faction.removeMember(creature);
+      }
+    }
+  }
+
   static GetCreatureFaction(oSource = undefined){
     if(oSource instanceof ModuleCreature){
       return FactionManager.factions.get(oSource.faction);
@@ -280,6 +298,24 @@ class Faction {
   label = '';
   global = 0;
   parentId = 4294967295;
+  creatures = [];
+
+  addMember( creature = undefined ){
+    if(creature instanceof ModuleCreature){
+      if(this.creatures.indexOf(creature) == -1){
+        this.creatures.push(creature);
+      }
+    }
+  }
+
+  removeMember( creature = undefined ){
+    if(creature instanceof ModuleCreature){
+      let index = this.creatures.indexOf(creature);
+      if(index >= 0){
+        this.creatures.splice(index, 1);
+      }
+    }
+  }
 
   initReputations( value = 100 ){
     for (let id of FactionManager.factions.keys()) {
@@ -374,8 +410,8 @@ class Faction {
       let lowestHP = Infinity;
       let cLowestHP = 0;
       let currentCreature = undefined;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           cLowestHP = creature.maxHitPoints - creature.currentHitPoints;
           if(cLowestHP < lowestHP){
@@ -394,8 +430,8 @@ class Faction {
       let highestHP = -Infinity;
       let cHighestHP = 0;
       let currentCreature = undefined;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           cHighestHP = creature.maxHitPoints + creature.currentHitPoints;
           if(cHighestHP > highestHP){
@@ -414,8 +450,8 @@ class Faction {
       let ac = Infinity;
       let cAC = 0;
       let currentCreature = undefined;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           cAC = creature.getAC();
           if(cAC < ac){
@@ -434,8 +470,8 @@ class Faction {
       let ac = -Infinity;
       let cAC = 0;
       let currentCreature = undefined;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           cAC = creature.getAC();
           if(cAC > ac){
@@ -452,8 +488,8 @@ class Faction {
   getMemberGold(){
     let gold = 0;
     let creature;
-    for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-      creature = Game.module.area.creatures[i];
+    for(let i = 0, len = this.creatures.length; i < len; i++){
+      creature = this.creatures[i];
       if(creature.faction == this.id){
         gold += creature.getGold();
       }
@@ -465,8 +501,8 @@ class Faction {
     if(oTarget instanceof ModuleCreature){
       let totalRep = 0;
       let totalCreatures = 0;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           totalRep += this.getCreatureReputation(oTarget);
           totalCreatures++;
@@ -481,8 +517,8 @@ class Faction {
     if(oTarget instanceof ModuleCreature){
       let totalGoodEvil = 0;
       let totalCreatures = 0;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           totalGoodEvil += creature.getGoodEvil();
           totalCreatures++;
@@ -497,8 +533,8 @@ class Faction {
     if(oTarget instanceof ModuleCreature){
       let totalLevel = 0;
       let totalCreatures = 0;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           totalLevel += creature.getTotalClassLevel();
           totalCreatures++;
@@ -513,8 +549,8 @@ class Faction {
     if(oTarget instanceof ModuleCreature){
       let totalExp = 0;
       let totalCreatures = 0;
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           totalExp += creature.getXP();
           totalCreatures++;
@@ -528,8 +564,8 @@ class Faction {
   getMostFrequestClass(){
     if(oTarget instanceof ModuleCreature){
       let classCount = new Map();
-      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-        creature = Game.module.area.creatures[i];
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
         if(creature.faction == this.id){
           let creatureClass = creature.getMainClass();
           if(creatureClass){
@@ -556,8 +592,8 @@ class Faction {
 
   getFactionMemberByIndex(index = 0, isPCOnly = false){
     let cIdx = 0;
-    for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
-      creature = Game.module.area.creatures[i];
+    for(let i = 0, len = this.creatures.length; i < len; i++){
+      creature = this.creatures[i];
       if(creature.faction == this.id){
         if(cIdx == index){
           if(!isPCOnly || creature instanceof ModulePlayer)

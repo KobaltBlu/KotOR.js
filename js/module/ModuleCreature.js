@@ -20,6 +20,8 @@ class ModuleCreature extends ModuleCreatureController {
 
     this.surfaceId = 0;
     this.isCommandable = true;
+    this.lookAtObject = undefined;
+    this.lookAtMatrix = new THREE.Matrix4();
 
     this.lastTriggerEntered = null;
     this.lastTriggerExited = null;
@@ -347,6 +349,12 @@ class ModuleCreature extends ModuleCreatureController {
         ) + Math.PI/2,
         false
       );
+    }
+  }
+
+  lookAt(oObject = undefined){
+    if(oObject instanceof ModuleCreature){
+      this.lookAtObject = oObject;
     }
   }
 
@@ -1275,6 +1283,7 @@ class ModuleCreature extends ModuleCreatureController {
         onLoad: (gff) => {
           this.template.Merge(gff);
           this.InitProperties( () => {
+            FactionManager.AddCreatureToFaction(this);
             //this.LoadEquipment( () => {
               if(onLoad != null)
                 onLoad(this.template);
@@ -1289,6 +1298,7 @@ class ModuleCreature extends ModuleCreatureController {
       });
     }else{
       this.InitProperties( () => {
+        FactionManager.AddCreatureToFaction(this);
         //this.LoadEquipment( () => {
           //We already have the template (From SAVEGAME)
           if(onLoad != null)
@@ -2658,7 +2668,7 @@ class ModuleCreature extends ModuleCreatureController {
       expressionList.AddChildStruct(expressionStruct);
     }
 
-    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(this.getFactionID());
+    gff.RootNode.AddField( new Field(GFFDataTypes.WORD, 'FactionID') ).SetValue(this.faction);
 
     //Feats
     let featList = gff.RootNode.AddField( new Field(GFFDataTypes.LIST, 'FeatList') );
