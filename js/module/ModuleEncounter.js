@@ -445,8 +445,8 @@ class ModuleEncounter extends ModuleObject {
     gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'RecCreatures') ).SetValue(this.recCreatures);
     gff.RootNode.AddField( new Field(GFFDataTypes.BYTE, 'PlayerOnly') ).SetValue( this.playerOnly );
     gff.RootNode.AddField( new Field(GFFDataTypes.DWORD, 'Faction') ).SetValue( this.faction );
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'DifficultyIndex') ).SetValue( this.faction );
-    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Difficulty') ).SetValue( this.faction );
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'DifficultyIndex') ).SetValue( this.difficultyIndex );
+    gff.RootNode.AddField( new Field(GFFDataTypes.INT, 'Difficulty') ).SetValue( this.difficulty );
     gff.RootNode.AddField( new Field(GFFDataTypes.CEXOLOCSTRING, 'LocalizedName') ).SetValue(this.localizedName);
     gff.RootNode.AddField( new Field(GFFDataTypes.CEXOSTRING, 'Tag') ).SetValue(this.tag);
 

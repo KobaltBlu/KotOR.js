@@ -3244,37 +3244,67 @@ NWScriptDefK1.Actions = {
     comment: "276: Determine whether oEncounter is active.\n",
     name: "GetEncounterActive",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleEncounter){
+        return args[0].active;
+      }
+    }
   },
   277:{
     comment: "277: Set oEncounter's active state to nNewValue.\n- nNewValue: TRUE/FALSE\n- oEncounter\n",
     name: "SetEncounterActive",
     type: 0,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      if(args[1] instanceof ModuleEncounter){
+        args[1].active = (args[0] ? 1 : 0);
+      }
+    }
   },
   278:{
     comment: "278: Get the maximum number of times that oEncounter will spawn.\n",
     name: "GetEncounterSpawnsMax",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleEncounter){
+        return args[0].maxCreatures;
+      }
+    }
   },
   279:{
     comment: "279: Set the maximum number of times that oEncounter can spawn\n",
     name: "SetEncounterSpawnsMax",
     type: 0,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      if(args[1] instanceof ModuleEncounter){
+        args[1].maxCreatures = arg[0];
+      }
+    }
   },
   280:{
     comment: "280: Get the number of times that oEncounter has spawned so far\n",
     name: "GetEncounterSpawnsCurrent",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleEncounter){
+        return args[0].currentSpawns;
+      }
+    }
   },
   281:{
     comment: "281: Set the number of times that oEncounter has spawned so far\n",
     name: "SetEncounterSpawnsCurrent",
     type: 0,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      if(args[1] instanceof ModuleEncounter){
+        args[1].currentSpawns = arg[0];
+      }
+    }
   },
   282:{
     comment: "282: Use this in an OnItemAcquired script to get the item that was acquired.\n* Returns OBJECT_INVALID if the module is not valid.\n",
@@ -3401,13 +3431,23 @@ NWScriptDefK1.Actions = {
     comment: "296: Set the difficulty level of oEncounter.\n- nEncounterDifficulty: ENCOUNTER_DIFFICULTY_*\n- oEncounter\n",
     name: "SetEncounterDifficulty",
     type: 0,
-    args: ["int", "object"]
+    args: ["int", "object"],
+    action: function(args, _instr, action){
+      if(args[1] instanceof ModuleEncounter){
+        args[1].difficultyIndex = arg[0];
+      }
+    }
   },
   297:{
     comment: "297: Get the difficulty level of oEncounter.\n",
     name: "GetEncounterDifficulty",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleEncounter){
+        return args[0].difficultyIndex;
+      }
+    }
   },
   298:{
     comment: "298: Get the distance between lLocationA and lLocationB.\n",
