@@ -1884,7 +1884,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object", "object"],
     action: function(args, _instr, action){
-      if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
+      if(args[0] instanceof ModuleCreature && args[1] instanceof ModuleCreature){
         return args[0].faction == args[1].faction;
       }
       return false;
