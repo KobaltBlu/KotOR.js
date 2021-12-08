@@ -1472,97 +1472,20 @@ class ModuleObject {
 
   }
 
-  getFactionID(){
-    return this.faction;
-  }
-
   isHostile(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleObject))
-      return false;
-
-    if(target.isDead() || this.isDead())
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] <= 10;
-    }else{
-      return faction[targetFaction.label.toLowerCase()] <= 10;
-    }
-
+    return FactionManager.IsHostile(this, target);
   }
 
   isNeutral(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleObject))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(targetFaction.label.toLowerCase() == 'player'){
-      return targetFaction[faction.label.toLowerCase()] >= 11;
-    }else{
-      return faction[targetFaction.label.toLowerCase()] <= 89;
-    }
-
+    return FactionManager.IsNeutral(this, target);
   }
 
   isFriendly(target = undefined){
-
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(target instanceof ModuleObject))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-
-    if(typeof targetFaction != 'undefined' && typeof faction != 'undefined'){
-      if(targetFaction.label.toLowerCase() == 'player'){
-        return targetFaction[faction.label.toLowerCase()] >= 11;
-      }else{
-        return faction[targetFaction.label.toLowerCase()] >= 11;
-      }
-    }else{
-      console.log('isFriendly', target, this);
-      return undefined;
-    }
-
+    return FactionManager.IsFriendly(this, target);
   }
 
   getReputation(target){
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-    if(!(target instanceof ModuleObject))
-      return false;
-
-    let targetFaction = Global.kotor2DA["repute"].rows[target.getFactionID()];
-    let faction = Global.kotor2DA["repute"].rows[this.getFactionID()];
-    if(typeof targetFaction != 'undefined' && typeof faction != 'undefined'){
-      if(targetFaction.label.toLowerCase() == 'player'){
-        return targetFaction[faction.label.toLowerCase()];
-      }else{
-        return faction[targetFaction.label.toLowerCase()];
-      }
-    }else{
-      console.log('getReputation', target, this);
-      return undefined;
-    }
+    return FactionManager.GetReputation(this, target);
   }
 
   getPerceptionRangePrimary(){

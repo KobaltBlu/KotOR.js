@@ -6957,7 +6957,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleObject){
-        return args[0].getFactionID();
+        return typeof args[0].faction == 'number' ? args[0].faction : -1;
       }
       return -1;
     }
