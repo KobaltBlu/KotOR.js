@@ -1888,13 +1888,24 @@ NWScriptDefK1.Actions = {
     comment: "172: * Returns TRUE if the Faction Ids of the two objects are the same\n",
     name: "GetFactionEqual",
     type: 3,
-    args: ["object", "object"]
+    args: ["object", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
+        return args[0].faction == args[1].faction;
+      }
+      return false;
+    }
   },
   173:{
     comment: "173: Make oObjectToChangeFaction join the faction of oMemberOfFactionToJoin.\nNB. ** This will only work for two NPCs **\n",
     name: "ChangeFaction",
     type: 0,
-    args: ["object", "object"]
+    args: ["object", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature && args[1] instanceof ModuleCreature){
+        args[0].faction = args[1].faction;
+      }
+    }
   },
   174:{
     comment: "174: * Returns TRUE if oObject is listening for something\n",
@@ -1968,43 +1979,109 @@ NWScriptDefK1.Actions = {
     comment: "181: Get the weakest member of oFactionMember's faction.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionWeakestMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getWeakestMember(args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   182:{
     comment: "182: Get the strongest member of oFactionMember's faction.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionStrongestMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getStrongestMember(args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   183:{
     comment: "183: Get the member of oFactionMember's faction that has taken the most hit points\nof damage.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionMostDamagedMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getMostDamagedMember(args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   184:{
     comment: "184: Get the member of oFactionMember's faction that has taken the fewest hit\npoints of damage.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionLeastDamagedMember",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getLeastDamagedMember(args[1]);
+        }
+      }
+      return undefined;
+    }
   },
   185:{
     comment: "185: Get the amount of gold held by oFactionMember's faction.\n* Returns -1 if oFactionMember's faction is invalid.\n",
     name: "GetFactionGold",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getMemberGold();
+        }
+      }
+
+      return -1;
+    }
   },
   186:{
     comment: "186: Get an integer between 0 and 100 (inclusive) that represents how\noSourceFactionMember's faction feels about oTarget.\n* Return value on error: -1\n",
     name: "GetFactionAverageReputation",
     type: 3,
-    args: ["object", "object"]
+    args: ["object", "object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getAverageReputation(args[1]);
+        }
+      }
+
+      return -1;
+    }
   },
   187:{
     comment: "187: Get an integer between 0 and 100 (inclusive) that represents the average\ngood/evil alignment of oFactionMember's faction.\n* Return value on error: -1\n",
     name: "GetFactionAverageGoodEvilAlignment",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getAverageGoodEvilAlignment();
+        }
+      }
+
+      return -1;
+    }
   },
   188:{
     comment: "188. SoundObjectGetFixedVariance\nGets the constant variance at which to play the sound object\n",
@@ -2016,31 +2093,61 @@ NWScriptDefK1.Actions = {
     comment: "189: Get the average level of the members of the faction.\n* Return value on error: -1\n",
     name: "GetFactionAverageLevel",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        let faction = FactionManager.GetCreatureFaction(args[0]);
+        if(faction){
+          return faction.getAverageLevel();
+        }
+      }
+
+      return -1;
+    }
   },
   190:{
     comment: "190: Get the average XP of the members of the faction.\n* Return value on error: -1\n",
     name: "GetFactionAverageXP",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        //TODO:
+      }
+    }
   },
   191:{
     comment: "191: Get the most frequent class in the faction - this can be compared with the\nconstants CLASS_TYPE_*.\n* Return value on error: -1\n",
     name: "GetFactionMostFrequentClass",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        //TODO:
+      }
+    }
   },
   192:{
     comment: "192: Get the object faction member with the lowest armour class.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionWorstAC",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        //TODO:
+      }
+    }
   },
   193:{
     comment: "193: Get the object faction member with the highest armour class.\n* Returns OBJECT_INVALID if oFactionMember's faction is invalid.\n",
     name: "GetFactionBestAC",
     type: 6,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        //TODO:
+      }
+    }
   },
   194:{
     comment: "194: Get a global string with the specified identifier\nThis is an EXTREMELY restricted function.  Use only with explicit permission.\nThis means if you are not Preston.  Then go see him if you're even thinking\nabout using this.\n",
@@ -2217,17 +2324,19 @@ NWScriptDefK1.Actions = {
     args: ["object", "object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature && args[1] instanceof ModuleCreature){
-        return args[0].getReputation(args[1]) || 50;
-      }else{
-        return 50; //Neutral
+        return FactionManager.GetReputation(args[0], args[1]);
       }
+      return -1;
     }
   },
   209:{
     comment: "209: Adjust how oSourceFactionMember's faction feels about oTarget by the\nspecified amount.\nNote: This adjusts Faction Reputation, how the entire faction that\noSourceFactionMember is in, feels about oTarget.\n* No return value\n",
     name: "AdjustReputation",
     type: 0,
-    args: ["object", "object", "int"]
+    args: ["object", "object", "int"],
+    action: function(args, _instr, action){
+      FactionManager.AdjustFactionReputation(args[0], args[1], args[2]);
+    }
   },
   210:{
     comment: "210: Gets the actual file name of the current module\n",
@@ -4427,8 +4536,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "int"],
     action: function(args, _instr, action){
-      if(args[0] instanceof ModuleObject){
-      args[0].faction = args[1];
+      if(args[0] instanceof ModuleCreature){
+        args[0].faction = args[1];
       }
     }
   },
@@ -5651,7 +5760,11 @@ NWScriptDefK1.Actions = {
     comment: "562: Get the leader of the faction of which oMemberOfFaction is a member.\n* Returns OBJECT_INVALID if oMemberOfFaction is not a valid creature.\n",
     name: "GetFactionLeader",
     type: 6,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      //https://nwnlexicon.com/index.php/GetFactionLeader
+      return undefined;
+    }
   },
   563:{
     comment: "563: Turns on or off the speed blur effect in rendered scenes.\nbEnabled: Set TRUE to turn it on, FALSE to turn it off.\nfRatio: Sets the frame accumulation ratio.\n",
@@ -6810,7 +6923,10 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
-      return args[0].getFactionID();
+      if(args[0] instanceof ModuleObject){
+        return args[0].getFactionID();
+      }
+      return -1;
     }
   },
   714:{
@@ -7054,13 +7170,19 @@ NWScriptDefK1.Actions = {
     comment: "736: This affects all creatures in the area that are in faction nFactionFrom...\n- Makes them join nFactionTo\n- Clears all actions\n- Disables combat mode\n",
     name: "SurrenderByFaction",
     type: 0,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      //TODO
+    }
   },
   737:{
     comment: "737: This affects all creatures in the area that are in faction nFactionFrom.\nmaking them change to nFactionTo\n",
     name: "ChangeFactionByFaction",
     type: 0,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args, _instr, action){
+      //TODO
+    }
   },
   738:{
     comment: "738: PlayRoomAnimation\nPlays a looping animation on a room\n",

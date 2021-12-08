@@ -1384,6 +1384,10 @@ class ModuleObject {
 
   }
 
+  getGold(){
+    return 0;
+  }
+
   computeBoundingBox(){
     if(this.model){
       if(!this.model.box){

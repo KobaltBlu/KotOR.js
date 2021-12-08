@@ -20,6 +20,14 @@ class FactionManager {
     FactionManager.reputations.clear();
   }
 
+  static GetCreatureFaction(oSource = undefined){
+    if(oSource instanceof ModuleCreature){
+      return FactionManager.factions.get(oSource.faction);
+    }
+
+    return undefined;
+  }
+
   static GetReputationObject(id1 = 0, id2 = 0){
     let repKey = Reputation.GetReputationKey(id1, id2);
     if(repKey){
@@ -80,84 +88,16 @@ class FactionManager {
   }
 
   static IsHostile(oSource = undefined, oTarget = undefined){
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
-      return false;
-
-    if(oSource.faction == oTarget.faction)
-      return false;
-
-    if(oSource.isDead() || oTarget.isDead())
-      return false;
-
-    let sourceFaction = FactionManager.factions.get(oSource.faction);
-
-    if(sourceFaction instanceof Faction){
-      let repKey = Reputation.GetReputationKey(oSource.faction, oTarget.faction);
-      if(repKey){
-        let reputation = FactionManager.reputations.get(repKey);
-        if(reputation instanceof Reputation){
-          return reputation.reputation <= 10;
-        }
-      }
-    }
-
-    return false;
+    return FactionManager.GetReputation(oSource, oTarget) <= 10;
   }
 
   static IsNeutral(oSource = undefined, oTarget = undefined){
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
-      return false;
-
-    if(oSource.faction == oTarget.faction)
-      return true;
-
-    let sourceFaction = FactionManager.factions.get(oSource.faction);
-
-    if(sourceFaction instanceof Faction){
-      let repKey = Reputation.GetReputationKey(oSource.faction, oTarget.faction);
-      if(repKey){
-        let reputation = FactionManager.reputations.get(repKey);
-        if(reputation instanceof Reputation){
-          return (reputation.reputation >= 11) || (reputation.reputation <= 89);
-        }
-      }
-    }
-
-    return true;
+    let rep = FactionManager.GetReputation(oSource, oTarget);
+    return (rep >= 11) && (rep <= 89);
   }
 
   static IsFriendly(oSource = undefined, oTarget = undefined){
-    // -> 0-10 means oSource is hostile to oTarget
-    // -> 11-89 means oSource is neutral to oTarget
-    // -> 90-100 means oSource is friendly to oTarget
-
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
-      return false;
-
-    if(oSource.faction == oTarget.faction)
-      return true;
-
-    let sourceFaction = FactionManager.factions.get(oSource.faction);
-
-    if(sourceFaction instanceof Faction){
-      let repKey = Reputation.GetReputationKey(oSource.faction, oTarget.faction);
-      if(repKey){
-        let reputation = FactionManager.reputations.get(repKey);
-        if(reputation instanceof Reputation){
-          return reputation.reputation >= 90;
-        }
-      }
-    }
-
-    return false;
+    return FactionManager.GetReputation(oSource, oTarget) >= 90;
   }
 
   static GetReputation(oSource = undefined, oTarget = undefined){
@@ -307,7 +247,7 @@ class FactionManager {
               console.log('FactionManager.save', 'invalid struct', id, i, repStruct);
             }
           }else{
-            console.log('FactionManager.save', 'skipping because 100', id, i, reputation.reputation);
+            //console.log('FactionManager.save', 'skipping because 100', id, i, reputation.reputation);
           }
         }else{
           console.log('FactionManager.save', 'missing repKey', id, i);
@@ -404,6 +344,129 @@ class Faction {
       }
     }
     return REP_NEUTRAL;
+  }
+
+  getCreatureReputation(oTarget = undefined){
+    if(oTarget instanceof ModuleCreature){
+      let repKey = Reputation.GetReputationKey(this.id, oTarget.faction);
+      if(repKey){
+        let reputation = FactionManager.reputations.get(repKey);
+        if(reputation instanceof Reputation){
+          return reputation.reputation;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  getWeakestMember(bMustBeVisible = false){
+    //TODO:
+    return undefined;
+  }
+
+  getStrongestMember(bMustBeVisible = false){
+    //TODO:
+    return undefined;
+  }
+
+  getMostDamagedMember(bMustBeVisible = false){
+    if(oTarget instanceof ModuleCreature){
+      let lowestHP = Infinity;
+      let cLowestHP = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          cLowestHP = creature.maxHitPoints - creature.currentHitPoints;
+          if(cLowestHP < lowestHP){
+            lowestHP = cLowestHP;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
+    return undefined;
+  }
+
+  getLeastDamagedMember(bMustBeVisible = false){
+    if(oTarget instanceof ModuleCreature){
+      let highestHP = -Infinity;
+      let cHighestHP = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          cHighestHP = creature.maxHitPoints + creature.currentHitPoints;
+          if(cHighestHP > highestHP){
+            highestHP = cHighestHP;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
+    return undefined;
+  }
+
+  getMemberGold(){
+    let gold = 0;
+    let creature;
+    for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+      creature = Game.module.area.creatures[i];
+      if(creature.faction == this.id){
+        gold += creature.getGold();
+      }
+    }
+    return gold;
+  }
+
+  getAverageReputation(oTarget = undefined){
+    if(oTarget instanceof ModuleCreature){
+      let totalRep = 0;
+      let totalCreatures = 0;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          totalRep += this.getCreatureReputation(oTarget);
+          totalCreatures++;
+        }
+      }
+      return Math.floor(totalRep / totalCreatures); 
+    }
+    return -1;
+  }
+
+  getAverageGoodEvilAlignment(){
+    if(oTarget instanceof ModuleCreature){
+      let totalGoodEvil = 0;
+      let totalCreatures = 0;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          totalGoodEvil += creature.getGoodEvil();
+          totalCreatures++;
+        }
+      }
+      return Math.floor(totalGoodEvil / totalCreatures); 
+    }
+    return -1;
+  }
+
+  getAverageLevel(){
+    if(oTarget instanceof ModuleCreature){
+      let totalLevel = 0;
+      let totalCreatures = 0;
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
+        if(creature.faction == this.id){
+          totalLevel += creature.getTotalClassLevel();
+          totalCreatures++;
+        }
+      }
+      return Math.floor(totalLevel / totalCreatures); 
+    }
+    return -1;
   }
 
   toStruct(structIdx){
