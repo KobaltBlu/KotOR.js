@@ -1355,20 +1355,26 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: ["int"],
     action: function(args, _instr, action){
-      return args[0] * 6.0;
+      return (args[0] * 3.0);
     }
   },
   122:{
     comment: "122: Convert nHours into a number of seconds\nThe result will depend on how many minutes there are per hour (game-time)\n",
     name: "HoursToSeconds",
     type: 4,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      return (args[0] * 60.0);
+    }
   },
   123:{
     comment: "123: Convert nTurns into a number of seconds\nA turn is always 60.0 seconds\n",
     name: "TurnsToSeconds",
     type: 4,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      return (args[0] * 3.0) * 10.0;
+    }
   },
   124:{
     comment: "124. SoundObjectSetFixedVariance\nSets the constant variance at which to play the sound object\nThis variance is a multiplier of the original sound\n",
