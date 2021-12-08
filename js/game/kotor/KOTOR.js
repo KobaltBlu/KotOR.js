@@ -921,113 +921,117 @@ class Game extends Engine {
     //Resets all keys to their default state
     Game.controls.InitKeys();
 
-    Module.BuildFromExisting(name, waypoint, (module) => {
+    FactionManager.Load().then( () => {
 
-      Game.scene.visible = false;
+      Module.BuildFromExisting(name, waypoint, (module) => {
 
-      Game.LoadScreen.setLoadBackground('load_'+name, () => {
-        Game.LoadScreen.showRandomHint();
-        Game.LoadScreen.Open();
+        Game.scene.visible = false;
 
-        console.log('Module.loadScene');
-        module.loadScene( (d) => {
-          Game.FadeOverlay.FadeOut(0, 0, 0, 0);
-          module.initEventQueue();
-          console.log('Module.initScripts');
-          module.initScripts( () => {
-            Game.LoadScreen.Close();
-            process.nextTick( ()=> {
-              //Game.scene_gui.background = null;
-              Game.scene.visible = true;
-              
-              AudioEngine.Unmute();
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
+        Game.LoadScreen.setLoadBackground('load_'+name, () => {
+          Game.LoadScreen.showRandomHint();
+          Game.LoadScreen.Open();
 
-              let runSpawnScripts = !Game.isLoadingSave;
-              Game.isLoadingSave = false;
-              
-              Game.InGameComputer.audioEmitter = Game.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
-                engine: Game.audioEngine,
-                channel: AudioEngine.CHANNEL.VO,
-                props: {
-                  XPosition: 0,
-                  YPosition: 0,
-                  ZPosition: 0
-                },
-                template: {
-                  sounds: [],
-                  isActive: true,
-                  isLooping: false,
-                  isRandom: false,
-                  isRandomPosition: false,
-                  interval: 0,
-                  intervalVariation: 0,
-                  maxDistance: 50,
-                  volume: 127,
-                  positional: 0
-                },
-                onLoad: () => {
-                },
-                onError: () => {
-                }
-              });
-              Game.audioEngine.AddEmitter(this.audioEmitter);
-              Game.InGameOverlay.RecalculatePosition();
-              Game.InGameOverlay.Open();
-              Game.renderer.compile(Game.scene, Game.currentCamera);
-
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
-              
-              //setTimeout( () => {
-                //console.log('inDialog', Game.inDialog);
-                //console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
+          console.log('Module.loadScene');
+          module.loadScene( (d) => {
+            Game.FadeOverlay.FadeOut(0, 0, 0, 0);
+            module.initEventQueue();
+            console.log('Module.initScripts');
+            module.initScripts( () => {
+              Game.LoadScreen.Close();
+              process.nextTick( ()=> {
+                //Game.scene_gui.background = null;
+                Game.scene.visible = true;
                 
-                //console.log('runSpawnScripts', runSpawnScripts);
-                console.log('ModuleArea.initAreaObjects');
-                Game.module.area.initAreaObjects(runSpawnScripts).then( () => {
-                  console.log('ModuleArea: ready to play');
-                  Game.module.readyToProcessEvents = true;
+                AudioEngine.Unmute();
+                if(Game.module.area.MiniGame){
+                  Game.Mode = Game.MODES.MINIGAME
+                }else{
+                  Game.Mode = Game.MODES.INGAME;
+                }
 
-                  if(!Game.holdWorldFadeInForDialog)
-                    Game.FadeOverlay.FadeIn(1, 0, 0, 0);
-
-                  if(Game.Mode == Game.MODES.INGAME){
-  
-                    let anyCanLevel = false;
-                    for(let i = 0; i < PartyManager.party.length; i++){
-                      if(PartyManager.party[i].canLevelUp()){
-                        anyCanLevel = true;
-                      }
-                    }
-  
-                    if(anyCanLevel){
-                      Game.audioEmitter.PlaySound('gui_level');
-                    }
-  
+                let runSpawnScripts = !Game.isLoadingSave;
+                Game.isLoadingSave = false;
+                
+                Game.InGameComputer.audioEmitter = Game.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
+                  engine: Game.audioEngine,
+                  channel: AudioEngine.CHANNEL.VO,
+                  props: {
+                    XPosition: 0,
+                    YPosition: 0,
+                    ZPosition: 0
+                  },
+                  template: {
+                    sounds: [],
+                    isActive: true,
+                    isLooping: false,
+                    isRandom: false,
+                    isRandomPosition: false,
+                    interval: 0,
+                    intervalVariation: 0,
+                    maxDistance: 50,
+                    volume: 127,
+                    positional: 0
+                  },
+                  onLoad: () => {
+                  },
+                  onError: () => {
                   }
-
                 });
+                Game.audioEngine.AddEmitter(this.audioEmitter);
+                Game.InGameOverlay.RecalculatePosition();
+                Game.InGameOverlay.Open();
+                Game.renderer.compile(Game.scene, Game.currentCamera);
 
-              //}, 1000);                
-              
-              Game.renderer.setClearColor( new THREE.Color(Game.module.area.SunFogColor) );
+                if(Game.module.area.MiniGame){
+                  Game.Mode = Game.MODES.MINIGAME
+                }else{
+                  Game.Mode = Game.MODES.INGAME;
+                }
+                
+                //setTimeout( () => {
+                  //console.log('inDialog', Game.inDialog);
+                  //console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
+                  
+                  //console.log('runSpawnScripts', runSpawnScripts);
+                  console.log('ModuleArea.initAreaObjects');
+                  Game.module.area.initAreaObjects(runSpawnScripts).then( () => {
+                    console.log('ModuleArea: ready to play');
+                    Game.module.readyToProcessEvents = true;
+
+                    if(!Game.holdWorldFadeInForDialog)
+                      Game.FadeOverlay.FadeIn(1, 0, 0, 0);
+
+                    if(Game.Mode == Game.MODES.INGAME){
+    
+                      let anyCanLevel = false;
+                      for(let i = 0; i < PartyManager.party.length; i++){
+                        if(PartyManager.party[i].canLevelUp()){
+                          anyCanLevel = true;
+                        }
+                      }
+    
+                      if(anyCanLevel){
+                        Game.audioEmitter.PlaySound('gui_level');
+                      }
+    
+                    }
+
+                  });
+
+                //}, 1000);                
+                
+                Game.renderer.setClearColor( new THREE.Color(Game.module.area.SunFogColor) );
+              });
+
             });
 
-          });
+          })
 
-        })
+          //console.log(module);
 
-        //console.log(module);
+          Game.LoadScreen.setProgress(0);
 
-        Game.LoadScreen.setProgress(0);
+        });
 
       });
 

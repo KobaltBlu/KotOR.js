@@ -251,7 +251,7 @@ const TwoDAObject = require(path.join(app.getAppPath(), 'js/resource/TwoDAObject
 const LIPObject = require(path.join(app.getAppPath(), 'js/resource/LIPObject.js'));
 const BIKObject = require(path.join(app.getAppPath(), 'js/resource/BIKObject.js'));
 
-
+const FactionManager = require(path.join(app.getAppPath(), 'js/FactionManager.js'));
 
 const TXI = require(path.join(app.getAppPath(), 'js/resource/TXI.js'));
 const AnimatedTexture = require(path.join(app.getAppPath(), 'js/AnimatedTexture.js'));

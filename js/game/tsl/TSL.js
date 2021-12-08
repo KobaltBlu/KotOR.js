@@ -932,128 +932,132 @@ class Game extends Engine {
     //Resets all keys to their default state
     Game.controls.InitKeys();
 
-    Module.BuildFromExisting(name, waypoint, (module) => {
+    FactionManager.Load().then( () => {
 
-      Game.LoadScreen.setLoadBackground('load_'+name, () => {
-        Game.LoadScreen.showRandomHint();
-        Game.LoadScreen.Open();
-        Game.FadeOverlay.holdForScript = false;
-        module.loadScene( (d) => {
-          module.initEventQueue();
-          module.initScripts( () => {
-            //Game.scene_gui.background = null;
-            Game.scene.visible = false;
-            Game.LoadScreen.Close();
-            Game.FadeOverlay.FadeOut(0, 0, 0, 0);
-            console.log('loadScene', d);
+      Module.BuildFromExisting(name, waypoint, (module) => {
 
-            Game.InGameComputer.audioEmitter = Game.InGameDialog.audioEmitter = new AudioEmitter({
-              engine: Game.audioEngine,
-              channel: AudioEngine.CHANNEL.VO,
-              props: {
-                XPosition: 0,
-                YPosition: 0,
-                ZPosition: 0
-              },
-              template: {
-                sounds: [],
-                isActive: true,
-                isLooping: false,
-                isRandom: false,
-                isRandomPosition: false,
-                interval: 0,
-                intervalVariation: 0,
-                maxDistance: 50,
-                volume: 127,
-                positional: 0
-              },
-              onLoad: () => {
-              },
-              onError: () => {
-              }
-            });
-            Game.audioEngine.AddEmitter(Game.InGameDialog.audioEmitter);
+        Game.LoadScreen.setLoadBackground('load_'+name, () => {
+          Game.LoadScreen.showRandomHint();
+          Game.LoadScreen.Open();
+          Game.FadeOverlay.holdForScript = false;
+          module.loadScene( (d) => {
+            module.initEventQueue();
+            module.initScripts( () => {
+              //Game.scene_gui.background = null;
+              Game.scene.visible = false;
+              Game.LoadScreen.Close();
+              Game.FadeOverlay.FadeOut(0, 0, 0, 0);
+              console.log('loadScene', d);
 
-            process.nextTick( () => {
-            
-              if(Game.module.area.MiniGame){
-                Game.Mode = Game.MODES.MINIGAME
-              }else{
-                Game.Mode = Game.MODES.INGAME;
-              }
+              Game.InGameComputer.audioEmitter = Game.InGameDialog.audioEmitter = new AudioEmitter({
+                engine: Game.audioEngine,
+                channel: AudioEngine.CHANNEL.VO,
+                props: {
+                  XPosition: 0,
+                  YPosition: 0,
+                  ZPosition: 0
+                },
+                template: {
+                  sounds: [],
+                  isActive: true,
+                  isLooping: false,
+                  isRandom: false,
+                  isRandomPosition: false,
+                  interval: 0,
+                  intervalVariation: 0,
+                  maxDistance: 50,
+                  volume: 127,
+                  positional: 0
+                },
+                onLoad: () => {
+                },
+                onError: () => {
+                }
+              });
+              Game.audioEngine.AddEmitter(Game.InGameDialog.audioEmitter);
 
-              let runSpawnScripts = !Game.isLoadingSave;
-              Game.isLoadingSave = false;
+              process.nextTick( () => {
               
-              AudioEngine.Unmute();
-              //Game.InGameDialog.audioEmitter = undefined
-              setTimeout( () => {
-                console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
-                if(!Game.holdWorldFadeInForDialog)
-                  Game.FadeOverlay.FadeIn(2.5, 0, 0, 0);
-
-                Game.module.readyToProcessEvents = true;
-                console.log('onEnter Completed', Game.module);
-
-                for(let i = 0; i < Game.module.area.creatures.length; i++){
-                  if(Game.module.area.creatures[i] instanceof ModuleObject){
-                    Game.module.area.creatures[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < PartyManager.party.length; i++){
-                  if(PartyManager.party[i] instanceof ModuleObject){
-                    PartyManager.party[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < Game.module.area.placeables.length; i++){
-                  if(Game.module.area.placeables[i] instanceof ModuleObject){
-                    Game.module.area.placeables[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < Game.module.area.doors.length; i++){
-                  if(Game.module.area.doors[i] instanceof ModuleObject){
-                    Game.module.area.doors[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < Game.module.area.triggers.length; i++){
-                  if(Game.module.area.triggers[i] instanceof ModuleObject){
-                    Game.module.area.triggers[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                for(let i = 0; i < Game.module.area.waypoints.length; i++){
-                  if(Game.module.area.waypoints[i] instanceof ModuleObject){
-                    Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
-                  }
-                }
-
-                Game.InGameOverlay.RecalculatePosition();
-                Game.InGameOverlay.Open();
-
                 if(Game.module.area.MiniGame){
                   Game.Mode = Game.MODES.MINIGAME
                 }else{
                   Game.Mode = Game.MODES.INGAME;
                 }
 
-                Game.scene.visible = true;
+                let runSpawnScripts = !Game.isLoadingSave;
+                Game.isLoadingSave = false;
+                
+                AudioEngine.Unmute();
+                //Game.InGameDialog.audioEmitter = undefined
+                setTimeout( () => {
+                  console.log('HOLDFADE', Game.holdWorldFadeInForDialog, Game.inDialog);
+                  if(!Game.holdWorldFadeInForDialog)
+                    Game.FadeOverlay.FadeIn(2.5, 0, 0, 0);
 
-              }, 1000);
-              
-              Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
+                  Game.module.readyToProcessEvents = true;
+                  console.log('onEnter Completed', Game.module);
+
+                  for(let i = 0; i < Game.module.area.creatures.length; i++){
+                    if(Game.module.area.creatures[i] instanceof ModuleObject){
+                      Game.module.area.creatures[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < PartyManager.party.length; i++){
+                    if(PartyManager.party[i] instanceof ModuleObject){
+                      PartyManager.party[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.placeables.length; i++){
+                    if(Game.module.area.placeables[i] instanceof ModuleObject){
+                      Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.doors.length; i++){
+                    if(Game.module.area.doors[i] instanceof ModuleObject){
+                      Game.module.area.doors[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.triggers.length; i++){
+                    if(Game.module.area.triggers[i] instanceof ModuleObject){
+                      Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  for(let i = 0; i < Game.module.area.waypoints.length; i++){
+                    if(Game.module.area.waypoints[i] instanceof ModuleObject){
+                      Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+                    }
+                  }
+
+                  Game.InGameOverlay.RecalculatePosition();
+                  Game.InGameOverlay.Open();
+
+                  if(Game.module.area.MiniGame){
+                    Game.Mode = Game.MODES.MINIGAME
+                  }else{
+                    Game.Mode = Game.MODES.INGAME;
+                  }
+
+                  Game.scene.visible = true;
+
+                }, 1000);
+                
+                Game.renderer.setClearColor(new THREE.Color(Game.module.area.SunFogColor));
+              });
+
             });
 
           });
 
+          //console.log(module);
+
+          Game.LoadScreen.setProgress(0);
+
         });
-
-        //console.log(module);
-
-        Game.LoadScreen.setProgress(0);
 
       });
 

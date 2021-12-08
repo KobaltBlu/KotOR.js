@@ -262,6 +262,8 @@ const VISObject = require(path.join(app.getAppPath(), 'js/resource/VISObject.js'
 const DLGObject = require(path.join(app.getAppPath(), 'js/resource/DLGObject.js'));
 const DLGNode = require(path.join(app.getAppPath(), 'js/resource/DLGNode.js'));
 
+const FactionManager = require(path.join(app.getAppPath(), 'js/FactionManager.js'));
+
 /* NWScript */
 
 const { NWScript, NWScriptEffect } = require(path.join(app.getAppPath(), 'js/nwscript/NWScript.js'));

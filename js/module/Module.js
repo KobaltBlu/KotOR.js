@@ -658,6 +658,8 @@ class Module {
 
       await PartyManager.ExportPartyMemberTemplates();
 
+      await FactionManager.Export( path.join(CurrentGame.gameinprogress_dir, 'repute.fac') );
+
       resolve();
 
     });
