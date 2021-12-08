@@ -1898,6 +1898,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature && args[1] instanceof ModuleCreature){
         args[0].faction = args[1].faction;
+        FactionManager.AddCreatureToFaction(args[0]);
       }
     }
   },
@@ -4571,6 +4572,7 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleCreature){
         args[0].faction = args[1];
+        FactionManager.AddCreatureToFaction(args[0]);
       }
     }
   },

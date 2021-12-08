@@ -22,6 +22,7 @@ class FactionManager {
 
   static AddCreatureToFaction( creature = undefined ){
     if(creature instanceof ModuleCreature){
+      FactionManager.RemoveCreatureFromFaction(creature);
       let faction = FactionManager.factions.get(creature.faction);
       if(faction instanceof Faction){
         faction.addMember(creature);
