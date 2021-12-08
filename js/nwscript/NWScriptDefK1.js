@@ -603,7 +603,7 @@ NWScriptDefK1.Actions = {
     name: "GetSubScreenID",
     type: 3,
     args: [],
-    action: function(){
+    action: function(args, _instr, action){
 
       //SUBSCREEN_ID_EQUIP = 1;
       if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuEquipment ).length){
@@ -708,7 +708,12 @@ NWScriptDefK1.Actions = {
     comment: "58: SetPlayerRestrictMode\nSets whether the player is currently in 'restricted' mode\n",
     name: "SetPlayerRestrictMode",
     type: 0,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      if(Game.module.area instanceof ModuleArea){
+        Game.module.area.setRestrictMode(args[0]);
+      }
+    }
   },
   59:{
     comment: "59: Get the length of sString\n* Return value on error: -1\n",
@@ -969,6 +974,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["object"],
     action: function(args, _instr, action){
+      if(Game.module.area instanceof ModuleArea){
+        Game.module.area.restrictMode ? 1 : 0;
+      }
       return 0;
     }
   },

@@ -1830,6 +1830,10 @@ class ModuleArea extends ModuleObject {
     return nearest_point;
   }
 
+  setRestrictMode( restrictMode = 0 ){
+    this.restrictMode = restrictMode;
+  }
+
   toolsetExportARE(){
     let are = new GFFObject();
     are.FileType = 'ARE ';
@@ -2062,7 +2066,7 @@ class ModuleArea extends ModuleObject {
     struct.AddField( new Field(GFFDataTypes.INT, 'MusicDelay') ).SetValue(this.audio.MusicDelay);
     struct.AddField( new Field(GFFDataTypes.INT, 'MusicNight') ).SetValue(this.audio.MusicNight);
 
-    struct.AddField( new Field(GFFDataTypes.BYTE, 'RestrictMode') ).SetValue(0);
+    struct.AddField( new Field(GFFDataTypes.BYTE, 'RestrictMode') ).SetValue(this.restrictMode ? 1 : 0);
     struct.AddField( new Field(GFFDataTypes.DWORD, 'StealthXPCurrent') ).SetValue(0);
     struct.AddField( new Field(GFFDataTypes.BYTE, 'StealthXPLoss') ).SetValue(0);
     struct.AddField( new Field(GFFDataTypes.DWORD, 'StealthXPMax') ).SetValue(0);
