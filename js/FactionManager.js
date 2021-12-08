@@ -39,6 +39,20 @@ class FactionManager {
     }
   }
 
+  static GetFactionLeader( creature = undefined ){
+    if(creature instanceof ModuleCreature){
+      if(creature.faction == 0){
+        return PartyManager.party[0];
+      }else{
+        let faction = FactionManager.GetCreatureFaction(creature);
+        if(faction instanceof Faction){
+          return faction.getStrongestMember();
+        }
+      }
+    }
+    return undefined;
+  }
+
   static GetCreatureFaction(oSource = undefined){
     if(oSource instanceof ModuleCreature){
       return FactionManager.factions.get(oSource.faction);
@@ -397,12 +411,42 @@ class Faction {
   }
 
   getWeakestMember(bMustBeVisible = false){
-    //TODO:
+    if(oTarget instanceof ModuleCreature){
+      let lowerCR = Infinity;
+      let cLowestCR = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
+        if(creature.faction == this.id){
+          cLowestCR = creature.challengeRating;
+          if(cLowestCR < lowerCR){
+            lowerCR = cLowestCR;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
     return undefined;
   }
 
   getStrongestMember(bMustBeVisible = false){
-    //TODO:
+    if(oTarget instanceof ModuleCreature){
+      let highestCR = -Infinity;
+      let cHighestCR = 0;
+      let currentCreature = undefined;
+      for(let i = 0, len = this.creatures.length; i < len; i++){
+        creature = this.creatures[i];
+        if(creature.faction == this.id){
+          cHighestCR = creature.challengeRating;
+          if(cHighestCR > highestCR){
+            highestCR = cHighestCR;
+            currentCreature = creature;
+          }
+        }
+      }
+      return currentCreature; 
+    }
     return undefined;
   }
 

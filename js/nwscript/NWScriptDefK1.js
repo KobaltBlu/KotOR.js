@@ -5898,7 +5898,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       //https://nwnlexicon.com/index.php/GetFactionLeader
-      return undefined;
+      return FactionManager.GetFactionLeader(args[0]);
     }
   },
   563:{
