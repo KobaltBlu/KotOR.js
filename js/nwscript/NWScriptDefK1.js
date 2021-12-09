@@ -5501,7 +5501,12 @@ NWScriptDefK1.Actions = {
     comment: "513: Get the game difficulty (GAME_DIFFICULTY_*).\n",
     name: "GetGameDifficulty",
     type: 3,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      try {
+        return iniConfig.options['Game Options']['Difficulty Level'];
+      } catch(e){  }
+    }
   },
   514:{
     comment: "514:\nThis will test the combat action queue to see if the user has placed any actions on the queue.\nwill only work during combat.\n",
