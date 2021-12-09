@@ -7277,7 +7277,6 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: async function(args, _instr, action){
       return new Promise( async ( resolve, reject) => {
-        //console.log('PlayMovie', args[0]);
         VideoPlayer.Load(args[0], () => {
           resolve();
         });
