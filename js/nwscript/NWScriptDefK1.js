@@ -5506,7 +5506,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       try {
-        return iniConfig.options['Game Options']['Difficulty Level'];
+        return parseInt(iniConfig.options['Game Options']['Difficulty Level']);
       } catch(e){  }
     }
   },
@@ -5631,7 +5631,14 @@ NWScriptDefK1.Actions = {
     comment: "523:\n",
     name: "GetDifficultyModifier",
     type: 4,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let difficulty = 0;
+      try {
+        difficulty = parseInt(iniConfig.options['Game Options']['Difficulty Level']);
+      } catch(e){  }
+      parseFloat(Global.kotor2DA.difficultyopt.rows[difficulty].multiplier);
+    }
   },
   524:{
     comment: "524: Returns the appearance type of oCreature (0 if creature doesn't exist)\n- oCreature\n",
