@@ -827,12 +827,11 @@ class Game extends Engine {
           );
 
           TextureLoader.LoadQueue(() => {
-            Game.MainMenu.Open();
-            $( window ).trigger('resize');
-            this.setTestingGlobals();
-            Game.Update = Game.Update.bind(this);
-            Game.Update();
+            Game.Ready = true;
             loader.Hide();
+            if(Game.OpeningMoviesComplete){
+              Game.OnReady();
+            }
           });
         });
 
@@ -840,6 +839,17 @@ class Game extends Engine {
 
     });
 
+  }
+
+  static OnReady(){
+    if(Game.Ready && !Game.OnReadyCalled){
+      Game.OnReadyCalled = true;
+      Game.MainMenu.Open();
+      $( window ).trigger('resize');
+      this.setTestingGlobals();
+      Game.Update = Game.Update.bind(this);
+      Game.Update();
+    }
   }
 
   static onHeartbeat(){

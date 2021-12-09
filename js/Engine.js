@@ -11,6 +11,10 @@ class Engine {
     
   }
 
+  static OnReady(){
+
+  }
+
   static updateFrustumObjects(object){
 
     // every time the camera or objects change position (or every frame)
@@ -1534,6 +1538,8 @@ class Location {
 }
 
 Engine.Location = Location;
+Engine.OpeningMoviesComplete = false;
+Engine.Ready = false;
 
 
 module.exports = Engine;

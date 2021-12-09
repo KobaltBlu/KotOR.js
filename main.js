@@ -13,6 +13,9 @@ const { execFile } = require('child_process');
 const { exec } = require('child_process');
 const http = require('https');
 const fs = require('fs');
+const ProgressBar = require('electron-progressbar');
+const pathToFfmpeg = require('ffmpeg-static');
+const shell = require('any-shell-escape');
 
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
@@ -34,7 +37,11 @@ ipcMain.on('config-changed', (event, data) => {
   }
 });
 
-function createWindowFromProfile( profile = {} ) {
+async function createWindowFromProfile( profile = {} ) {
+
+  if(profile.category == 'game')
+    await convertBIKtoMP4(path.join(profile.directory, 'movies'));
+
   // Create the browser window.
   let _window = new BrowserWindow({
     width: profile.width ? profile.width : 1200, 
@@ -233,6 +240,86 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
+function convertBIKtoMP4( sourceFolder = '' ){
+  return new Promise( async (resolve, reject) => {
+    try{
+      const contents = await fs.promises.readdir(sourceFolder);
+
+      const bik = new Map();
+      const mp4 = new Map();
+
+      const toConvert = [];
+
+      for(let i = 0, len = contents.length; i < len; i++){
+        let file = path.parse(contents[i]);
+        if(file.ext == '.bik'){
+          bik.set(file.name, file);
+        }else if(file.ext == '.mp4'){
+          mp4.set(file.name, file);
+        }
+      }
+
+      for (let [name, file] of bik) {
+        if(!mp4.has(name)){
+          toConvert.push(file);
+        }
+      }
+
+      let totalToConvert = toConvert.length;
+      if(totalToConvert){
+        const progressBar = new ProgressBar({
+          text: 'Converting movies...',
+          detail: 'Wait...',
+          indeterminate: false,
+          initialValue: 0,
+          maxValue: totalToConvert
+        });
+        
+        progressBar
+          .on('completed', function() {
+            console.info(`completed...`);
+            progressBar.detail = 'Convert completed. Launching...';
+            resolve();
+          })
+          .on('aborted', function() {
+            console.info(`aborted...`);
+            resolve();
+          })
+          .on('progress', function(value) {
+            currentFile = toConvert[value];
+            progressBar.detail = `Converting: ${currentFile.name}.bik to ${currentFile.name}.mp4 | ${value}/${progressBar.getOptions().maxValue-1}...`;
+          });
+        
+        for(let i = 0, len = toConvert.length; i < len; i++){
+          progressBar.value = i;
+          const file = toConvert[i];
+          const makeMP4 = shell([
+            pathToFfmpeg, '-y', '-v', 'error',
+            '-i', path.join(sourceFolder, file.name+'.bik'),
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '20',
+            '-c:a', 'aac',
+            '-format', 'mp4',
+            '-vf', 'format=yuv420p',
+            '-movflags', '+faststart',
+            path.join(sourceFolder, file.name+'.mp4')
+          ]);
+          
+          await convertFile(makeMP4);
+        }
+
+        progressBar.setCompleted();
+      }else{
+        resolve();
+      }
+
+    }catch(e){
+
+    }
+  });
+}
+
 
 function updateThreeJS(){
   return new Promise( (resolve, reject, ) => {
@@ -250,5 +337,18 @@ function updateThreeJS(){
       resolve();
     }
 
+  });
+}
+
+function convertFile(command){
+  return new Promise( (resolve, reject) => {
+    exec(command, (err) => {
+      if (err) {
+        console.error(err)
+        resolve();
+      } else {
+        resolve();
+      }
+    })
   });
 }

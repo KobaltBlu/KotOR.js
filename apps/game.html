@@ -50,6 +50,18 @@
         verifyGame({
           directory: app_profile.directory,
           onVerify: () => {
+            VideoPlayer.Load('ObsidianEnt', () => {
+              VideoPlayer.Load('biologo', () => {
+                VideoPlayer.Load('leclogo', () => {
+                  VideoPlayer.Load('Legal', () => {
+                    Game.OpeningMoviesComplete = true;
+                    if(Game.Ready){
+                      Game.OnReady();
+                    }
+                  });
+                });
+              });
+            });
             loader.Show();
             GameInitializer.Init({
               game: Games[GameKey],
@@ -59,7 +71,6 @@
                 GUIListBox.InitTextures();
                 AuroraWalkMesh.Init();
                 Game.Init();
-                //window.mainmenu = new MainMenu();
               }
             });
           },

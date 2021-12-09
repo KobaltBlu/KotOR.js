@@ -15,11 +15,14 @@
     "electron-rebuild": "^1.11.0"
   },
   "dependencies": {
+    "any-shell-escape": "^0.1.1",
     "bit-buffer": "^0.2.5",
     "bluebird": "^3.7.2",
     "blueimp-md5": "^2.18.0",
     "dxt": "github:alexkirsz/node-dxt#master",
     "electron-is-running-in-asar": "^1.0.0",
+    "electron-progressbar": "^2.0.1",
+    "ffmpeg-static": "^4.4.0",
     "interpolate-angle": "^1.0.2",
     "jquery": "^3.6.0",
     "node-abi": "^3.0.0",

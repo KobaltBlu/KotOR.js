@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+const VideoPlayer = require("../VideoPlayer");
+
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
  */
@@ -7276,9 +7278,9 @@ NWScriptDefK1.Actions = {
     action: async function(args, _instr, action){
       return new Promise( async ( resolve, reject) => {
         //console.log('PlayMovie', args[0]);
-        //await Game.binkVideo.play(args[0]+'.bik', () => {
+        VideoPlayer.Load(args[0], () => {
           resolve();
-        //});
+        });
       });
     }
   },
