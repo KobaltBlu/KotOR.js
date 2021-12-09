@@ -54,7 +54,7 @@ class ActionDialogObject extends Action {
           if(this.target.scripts.onDialog instanceof NWScriptInstance){
             this.target.onDialog(this.owner, -1);
           }else{
-            Game.InGameDialog.StartConversation(this.owner.conversation, this.target, this.owner);
+            Game.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.target, this.owner);
           }
           return Action.STATUS.COMPLETE;
         }
@@ -63,7 +63,7 @@ class ActionDialogObject extends Action {
         return Action.STATUS.FAILED;
       }
     }else{
-      Game.InGameDialog.StartConversation(this.owner.conversation ? conversation : this.owner.conversation, this.owner, this.target);
+      Game.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.owner, this.target);
       return Action.STATUS.COMPLETE;
     }
     

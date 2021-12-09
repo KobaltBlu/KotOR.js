@@ -1755,7 +1755,7 @@ class ModuleArea extends ModuleObject {
   runOnEnterScripts(){
     return new Promise( (resolve, reject) => {
       if(this.scripts.onEnter instanceof NWScriptInstance){
-        console.log('onEnter', this.scripts.onEnter)
+        console.log('onEnter', this.scripts.onEnter, Game.player)
         this.scripts.onEnter.enteringObject = Game.player;
         this.scripts.onEnter.debug.action = true;
         this.scripts.onEnter.run(this, 0, () => {

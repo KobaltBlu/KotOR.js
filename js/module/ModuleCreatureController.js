@@ -352,6 +352,9 @@ class ModuleCreatureController extends ModuleObject {
     if(this.isDebilitated())
       return;
 
+    if(!Game.module.readyToProcessEvents)
+      return;
+
       
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];

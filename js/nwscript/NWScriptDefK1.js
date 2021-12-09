@@ -5467,8 +5467,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "string", "string", "string", "string", "string", "string", "string"],
     action: function(args, _instr, action){
-      //console.log('NWScript: '+this.name, 'LOAD MODULE ', args[0], args[1]);
-      Game.LoadModule(args[0], args[1]);
+      Game.LoadModule(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
     }
   },
   510:{

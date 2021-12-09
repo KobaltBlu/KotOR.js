@@ -82,7 +82,7 @@ class Engine {
         }else{
           if(!(object instanceof ModuleRoom)){
             CursorManager.reticle2.position.copy(object);
-            Game.selected = obj.model;
+            Game.selected = object.model;
             Game.selectedObject = object;
           }
         }
@@ -173,7 +173,7 @@ class Engine {
         }else{
           if(!(object instanceof ModuleRoom)){
             CursorManager.reticle.position.copy(object.position);
-            Game.hovered = obj;
+            Game.hovered = object.model;
             Game.hoveredObject = object;
           }
         }
@@ -245,7 +245,7 @@ class Engine {
 
   }
 
-  static LoadModule(name = '', waypoint = null){
+  static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
     clearTimeout(Engine.Heartbeat);
     Engine.holdWorldFadeInForDialog = false;
     Engine.audioEngine.stopBackgroundMusic();

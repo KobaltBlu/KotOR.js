@@ -8,15 +8,21 @@
 
 class VideoPlayer {
 
-  static Load(sName = '', onEnded = null){
-    let playerSession = new VideoPlayerSession(
-      path.join(app_profile.directory, 'Movies', sName+'.mp4'),
-      onEnded
-    );
+  static Load(name = '', onEnded = undefined){
+    if(typeof name == 'string' && name.length){
+      let playerSession = new VideoPlayerSession(
+        path.join(app_profile.directory, 'Movies', name+'.mp4'),
+        onEnded
+      );
 
-    VideoPlayer.CurrentSession = playerSession;
-    VideoPlayer.Sessions.push(playerSession);
-    playerSession.play();
+      VideoPlayer.CurrentSession = playerSession;
+      VideoPlayer.Sessions.push(playerSession);
+      playerSession.play();
+    }else{
+      if(typeof onEnded === 'function'){
+        onEnded();
+      }
+    }
 
   }
 
