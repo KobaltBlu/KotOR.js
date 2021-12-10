@@ -267,49 +267,110 @@ function convertBIKtoMP4( sourceFolder = '' ){
 
       let totalToConvert = toConvert.length;
       if(totalToConvert){
-        const progressBar = new ProgressBar({
-          text: 'Converting movies...',
-          detail: 'Wait...',
-          indeterminate: false,
-          initialValue: 0,
-          maxValue: totalToConvert
-        });
-        
-        progressBar
-          .on('completed', function() {
-            console.info(`completed...`);
-            progressBar.detail = 'Convert completed. Launching...';
-            resolve();
-          })
-          .on('aborted', function() {
-            console.info(`aborted...`);
-            resolve();
-          })
-          .on('progress', function(value) {
-            currentFile = toConvert[value];
-            progressBar.detail = `Converting: ${currentFile.name}.bik to ${currentFile.name}.mp4 | ${value}/${progressBar.getOptions().maxValue-1}...`;
-          });
-        
-        for(let i = 0, len = toConvert.length; i < len; i++){
-          progressBar.value = i;
-          const file = toConvert[i];
-          const makeMP4 = shell([
-            pathToFfmpeg, '-y', '-v', 'error',
-            '-i', path.join(sourceFolder, file.name+'.bik'),
-            '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '20',
-            '-c:a', 'aac',
-            '-format', 'mp4',
-            '-vf', 'format=yuv420p',
-            '-movflags', '+faststart',
-            path.join(sourceFolder, file.name+'.mp4')
-          ]);
-          
-          await convertFile(makeMP4);
-        }
 
-        progressBar.setCompleted();
+        let options = {
+          //Can be "none", "info", "error", "question" or "warning".
+          type: "question",
+  
+          //Array of texts for buttons.
+          buttons: ["&High Quality - Slow","&Low Quality - Faster","&Skip"],
+  
+          //Index of the button in the buttons array which will be selected by default when the message box opens.
+          defaultId: 2,
+  
+          //Title of the message box
+          title: "Convert Movies?",
+  
+          //Content of the message box
+          message: "Do you want to convert movies to enable playback support?",
+  
+          //More information of the message
+          detail: "Press Skip button to continue without video playback support",
+  
+          //Shows a checkbox
+          //checkboxLabel: "Checkbox only works with callback",
+  
+          //Initial checked state
+          //checkboxChecked: true,
+  
+          //icon: "/path/image.png",
+  
+          //The index of the button to be used to cancel the dialog, via the Esc key
+          cancelId: 2,
+  
+          //Prevent Electron on Windows to figure out which one of the buttons are common buttons (like "Cancel" or "Yes")
+          noLink: true,
+  
+          //Normalize the keyboard access keys
+          normalizeAccessKeys: true,
+        };
+        let res = await dialog.showMessageBox(winLauncher, options);
+
+        if(res.response != 2){
+          const progressBar = new ProgressBar({
+            text: 'Converting movies...',
+            detail: 'Please Wait...',
+            indeterminate: false,
+            initialValue: 0,
+            maxValue: totalToConvert
+          });
+          
+          progressBar
+            .on('completed', function() {
+              console.info(`completed...`);
+              progressBar.detail = 'Convert completed. Launching...';
+              resolve();
+            })
+            .on('aborted', function() {
+              console.info(`aborted...`);
+              resolve();
+            })
+            .on('progress', function(value) {
+              currentFile = toConvert[value];
+              progressBar.detail = `Converting: ${currentFile.name}.bik to ${currentFile.name}.mp4 | ${value}/${progressBar.getOptions().maxValue-1}...`;
+            });
+          
+          for(let i = 0, len = toConvert.length; i < len; i++){
+            progressBar.value = i;
+            const file = toConvert[i];
+            
+            if(res.response == 0){
+              await convertFile(
+                shell([
+                  pathToFfmpeg, '-y', '-v', 'error',
+                  '-i', path.join(sourceFolder, file.name+'.bik'),
+                  '-c:v', 'libx264',
+                  '-preset', 'slow',
+                  '-crf', '20',
+                  '-c:a', 'aac',
+                  '-format', 'mp4',
+                  '-vf', 'format=yuv420p',
+                  '-movflags', '+faststart',
+                  path.join(sourceFolder, file.name+'.mp4')
+                ])
+              );
+            }else{
+              await convertFile(
+                shell([
+                  pathToFfmpeg, '-y', '-v', 'error',
+                  '-i', path.join(sourceFolder, file.name+'.bik'),
+                  '-c:v', 'libx264',
+                  '-preset', 'fast',
+                  //'-crf', '20',
+                  '-c:a', 'aac',
+                  '-format', 'mp4',
+                  '-vf', 'format=yuv420p',
+                  '-movflags', '+faststart',
+                  path.join(sourceFolder, file.name+'.mp4')
+                ])
+              );
+            }
+          }
+
+          progressBar.setCompleted();
+        }else{
+          resolve();
+        }
       }else{
         resolve();
       }
