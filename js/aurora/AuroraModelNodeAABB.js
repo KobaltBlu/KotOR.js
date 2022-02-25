@@ -35,7 +35,7 @@ class AuroraModelNodeAABB extends AuroraModelNodeMesh {
       leftNodeOffset: this.auroraModel.mdlReader.ReadInt32(),
       rightNodeOffset: this.auroraModel.mdlReader.ReadInt32(),
       faceIdx: this.auroraModel.mdlReader.ReadInt32(),
-      unk1: this.auroraModel.mdlReader.ReadInt32(),
+      mostSignificantPlane: this.auroraModel.mdlReader.ReadInt32(),
       leftNode: undefined,
       rightNode: undefined,
       face: undefined
