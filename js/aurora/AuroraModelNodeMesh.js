@@ -272,6 +272,7 @@
         this.faces[i].a = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].b = this.auroraModel.mdlReader.ReadUInt16();
         this.faces[i].c = this.auroraModel.mdlReader.ReadUInt16();
+        this.faces[i].surfacemat = AuroraWalkMesh.SURFACEMATERIALS[this.faces[i].materialId];
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 

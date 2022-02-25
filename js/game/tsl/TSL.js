@@ -1319,9 +1319,6 @@ class Game extends Engine {
           }
         }
 
-        Game.module.area.grassMaterial.uniforms.time.value += delta;
-        Game.module.area.grassMaterial.uniforms.playerPosition.value = Game.player.position;
-
         //update triggers
         for(let i = 0; i < trigCount; i++){
           Game.module.area.triggers[i].update(delta);

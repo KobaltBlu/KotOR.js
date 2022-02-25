@@ -1,8 +1,6 @@
 /* KotOR.js - A remake of the Odyssey Game Engine that powered KotOR I & II written in JavaScript
  */
 
-const ConfigManager = require("../../ConfigManager");
-
 /* @file
  * The main engine file that runs KotOR I.
  * It extends Engine.js which holds shared methods for both games.
@@ -1339,9 +1337,6 @@ class Game extends Engine {
           Game.module.area.rooms[i].update(delta);
           Game.module.area.rooms[i].hide();
         }
-
-        Game.module.area.grassMaterial.uniforms.time.value += delta;
-        Game.module.area.grassMaterial.uniforms.playerPosition.value = Game.player.position;
 
         Game.UpdateVisibleRooms();
 

@@ -7,6 +7,8 @@
 
 class AuroraModelNodeAABB extends AuroraModelNodeMesh {
 
+  grassFaces = [];
+
   constructor(parent = undefined){
     super(parent);
     this.type |= AuroraModel.NODETYPE.AABB;
@@ -20,6 +22,17 @@ class AuroraModelNodeAABB extends AuroraModelNodeMesh {
 
     let rootNodeOffset = this.auroraModel.mdlReader.ReadUInt32();
     this.rootAABBNode = this.readBinaryAABBNode(rootNodeOffset);
+
+    let face;
+    for(let i = 0; i < this.faces.length; i++){
+      face = this.faces[i];
+      if(face && face.surfacemat){
+        //Is this face grassy
+        if(face.surfacemat.grass == 1){
+          this.grassFaces.push(face);
+        }
+      }
+    }
 
   }
 

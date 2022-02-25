@@ -12,15 +12,13 @@ class GrassShader{
     uniform float alphaTest;
     //attribute vec3 position; //Already defined in shader code
     attribute vec4 offset;
-    //attribute vec2 uv; //Already defined in shader code
-    attribute vec2 uv2;
-    attribute vec2 uv3;
-    attribute vec2 uv4;
     //attribute vec4 orientation;
     attribute float constraint;
     attribute vec4 grassUV;
+    attribute vec2 lmUV;
     attribute float quadIdx;
     varying vec2 vUv;
+    varying vec2 vlmUv;
     varying float dist;
     varying float distCulled;
     varying vec4 vSpriteSheet;
@@ -73,6 +71,7 @@ class GrassShader{
 
       //Pass the uv value to the fragment shader
       vUv = uv;
+      vlmUv = lmUV;
 
       float wind = constraint * windPower * ( cos(time) * 0.1 );
         
@@ -106,9 +105,11 @@ class GrassShader{
     this.fragment = `
     precision highp float;
     uniform sampler2D map;
+    uniform sampler2D lightMap;
     uniform vec3 ambientColor;
     uniform float alphaTest;
     varying vec2 vUv;
+    varying vec2 vlmUv;
     varying float dist;
     varying float distCulled;
     varying vec4 vSpriteSheet;
@@ -123,11 +124,12 @@ class GrassShader{
       );
 
       vec4 textureColor = texture2D(map, uvTransform);
+      vec4 lightmapColor = texture2D( lightMap, vlmUv );
 
       if (textureColor[3] < alphaTest) {
         discard;
       } else {
-        gl_FragColor = textureColor;// * vec4(ambientColor, 1.0);
+        gl_FragColor = lightmapColor * textureColor;// * vec4(ambientColor, 1.0);
         gl_FragColor.a = distCulled;
         /*${THREE.ShaderChunk[ "fog_fragment" ]}*/
       }

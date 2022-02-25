@@ -46,11 +46,23 @@ class ModuleRoom extends ModuleObject {
     if(this.model instanceof THREE.AuroraModel){
       this.model.update(delta);
     }
+    if(this.grass){
+      this.grass.material.uniforms.time.value += delta;
+      let c_player = Game.getCurrentPlayer();
+      if(c_player){
+        this.grass.material.uniforms.playerPosition.value.copy(c_player.position);
+      }
+      this.grass.material.uniformsNeedUpdate = true;
+    }
   }
 
   show(recurse = false){
     if(this.model){
       this.model.visible = true;
+    }
+
+    if(this.grass){
+      this.grass.visible = true;
     }
 
     if(recurse){
@@ -74,6 +86,10 @@ class ModuleRoom extends ModuleObject {
   hide(){
     if(this.model){
       this.model.visible = false;
+    }
+
+    if(this.grass){
+      this.grass.visible = false;
     }
 
     for(let i = 0; i < this.linked_rooms.length; i++){
@@ -171,6 +187,7 @@ class ModuleRoom extends ModuleObject {
 
               //Disable matrix update for static objects
               //room.disableMatrixUpdate();
+              this.buildGrass();
 
             },
             context: this.context,
@@ -217,199 +234,179 @@ class ModuleRoom extends ModuleObject {
   }
 
   buildGrass(){
-    return;
-    //console.log(this.model.wok)
     if(Game.module.area.Grass.TexName){
-      if(this.model.wok instanceof AuroraWalkMesh){
-        if(this.model.wok.grassFaces.length){
+      let density = Game.module.area.Grass.Density;
+      let quadOffsetZ = Game.module.area.Grass.QuadSize/2;
+      if(this.model){
+        let aabb = this.model.aabb;
+        if(aabb instanceof AuroraModelNodeAABB){
+          if(aabb.grassFaces.length){
 
-          //Build the grass instance
-          let grassGeometry = new THREE.Geometry();
-
-          let uvs_array = [
-            [], [], [], []
-          ]
-          
-          for(let i = 0; i < 4; i++){
-            let blade = new THREE.PlaneGeometry(Game.module.area.Grass.QuadSize, Game.module.area.Grass.QuadSize, 1);
+            //Build the grass instance
+            let grassGeometry = undefined;
+            let lm_texture = null;
             
-            let uv1 = new THREE.Vector2(0, 0);
-            let uv2 = new THREE.Vector2(1, 1);
+            for(let i = 0; i < 4; i++){
+              let blade = new THREE.PlaneBufferGeometry(Game.module.area.Grass.QuadSize, Game.module.area.Grass.QuadSize, 1, 1);
+              blade.rotateX(Math.PI/2);
+              blade.rotateZ(Math.PI/4 * i);
+              if(grassGeometry){
+                grassGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
+              }else{
+                grassGeometry = blade;
+              }
+            }
+      
+            //The constraint array is a per vertex array to determine if the current vertex in the vertex shader
+            //can be affected by wind. 1 = Wind 0 = No Wind
+            let constraint = new Float32Array([
+              1, 0, 1, 0, 0, 1,
+              1, 0, 1, 0, 0, 1,
+              1, 0, 1, 0, 0, 1,
+              1, 0, 1, 0, 0, 1
+            ]);
+            grassGeometry.setAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
+      
+            //QuadIdx is used to track the current quad index inside the vertex shader
+            let quadIdx = new Float32Array([
+              0, 0, 0, 0, 0, 0,
+              1, 1, 1, 1, 1, 1,
+              2, 2, 2, 2, 2, 2,
+              3, 3, 3, 3, 3, 3,
+            ]);
+            grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
+          
+            let geometry = new THREE.InstancedBufferGeometry();
+            geometry.index = grassGeometry.index;
+            geometry.attributes.position = grassGeometry.attributes.position;
+            geometry.attributes.constraint = grassGeometry.attributes.constraint;
+            geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
+            geometry.attributes.uv = grassGeometry.attributes.uv;
+      
+            // per instance data
+            let offsets = [];
+            let grassUVs = [];
+            let lmUVs = [];
+            let vector = new THREE.Vector4();
 
-            for(let j = 0; j < 4; j++){
+            let grass_material = new THREE.ShaderMaterial({
+              uniforms: THREE.UniformsUtils.merge([
+                THREE.UniformsLib[ "fog" ],
+                {
+                  map: { value: null },
+                  lightMap: { value: null },
+                  time: { value: 0 },
+                  ambientColor: { value: new THREE.Color().setHex('0x'+(Game.module.area.SunFogColor).toString(16)) },
+                  windPower: { value: Game.module.area.WindPower },
+                  playerPosition: { value: new THREE.Vector3 },
+                  alphaTest: { value: Game.module.area.AlphaTest }
+                }
+              ]),
+              vertexShader: Shaders['grass'].getVertex(),
+              fragmentShader: Shaders['grass'].getFragment(),
+              //color: new THREE.Color( 1, 1, 1 ),
+              side: THREE.DoubleSide,
+              transparent: false,
+              fog: true,
+              visible: iniConfig.getProperty('Graphics Options.Grass'),
+              //blending: 5
+            });
+        
+            grass_material.defines.USE_FOG = '';
 
-              switch(j){
-                case 1:
-                  uv1.set(0.5, 0);
-                  uv2.set(1, 0.5);
-                break;
-                case 2: 
-                  uv1.set(0, 0.5);
-                  uv2.set(0.5, 1);
-                break;
-                case 3:
-                  uv1.set(0.5, 0.5);
-                  uv2.set(1, 1);
-                break;
-                default:
-                  uv1.set(0, 0);
-                  uv2.set(0.5, 0.5);
-                break;
+            lm_texture = aabb.TextureMap2;
+
+            for(let k = 0; k < aabb.grassFaces.length; k++){
+              let face = aabb.grassFaces[k];
+
+              //FACE A
+              let FA = new THREE.Vector3(aabb.vertices[face.a * 3], aabb.vertices[(face.a * 3) + 1], aabb.vertices[(face.a * 3) + 2]);
+              //FACE B
+              let FB = new THREE.Vector3(aabb.vertices[face.b * 3], aabb.vertices[(face.b * 3) + 1], aabb.vertices[(face.b * 3) + 2]);
+              //FACE C
+              let FC = new THREE.Vector3(aabb.vertices[face.c * 3], aabb.vertices[(face.c * 3) + 1], aabb.vertices[(face.c * 3) + 2]);
+
+              let uvA = aabb.tvectors[1][face.a];
+              let uvB = aabb.tvectors[1][face.b];
+              let uvC = aabb.tvectors[1][face.c];
+
+              let triangle = new THREE.Triangle(FA,FB,FC);
+              let area = triangle.getArea();
+              let grassCount = ((area) * density)*.25;
+
+              if(grassCount < 1){
+                grassCount = 1;
               }
 
-              let faceUV1 = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()];
-              let faceUV2 = [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()];
+              for(let j = 0; j < grassCount; j++){
+                let instance = {
+                  position: {x: 0, y: 0, z: 0},
+                  orientation: {x: 0, y: 0, z: 0, w: 0},
+                  uvs: {uv1: this.getRandomGrassUVIndex(), uv2: this.getRandomGrassUVIndex(), uv3: this.getRandomGrassUVIndex(), uv4: this.getRandomGrassUVIndex()}
+                };
 
-              faceUV1[ 0 ].set( uv1.x, uv2.y );
-              faceUV1[ 1 ].set( uv1.x, uv1.y );
-              faceUV1[ 2 ].set( uv2.x, uv2.y );
-              faceUV2[ 0 ].set( uv1.x, uv1.y );
-              faceUV2[ 1 ].set( uv2.x, uv1.y );
-              faceUV2[ 2 ].set( uv2.x, uv2.y );
+                // offsets
+                let a = Math.random();
+                let b = Math.random();
 
-              uvs_array[j].push(faceUV1[0]);
-              uvs_array[j].push(faceUV1[1]);
-              uvs_array[j].push(faceUV1[2]);
-              uvs_array[j].push(faceUV2[0]);
-              uvs_array[j].push(faceUV2[1]);
-              uvs_array[j].push(faceUV2[2]);
+                if (a + b > 1) {
+                  a = 1 - a;
+                  b = 1 - b;
+                }
 
-            }
-            
-            blade.rotateX(Math.PI/2);
-            blade.rotateZ(Math.PI/4 * i);
-            
-            grassGeometry.merge(blade, new THREE.Matrix4());
-            blade.dispose();
-          }
+                let c = 1 - a - b;
 
-          grassGeometry = new THREE.BufferGeometry().fromGeometry(grassGeometry);
-          let constraint = new Float32Array([
-            1, 0, 1, 0, 0, 1,
-            1, 0, 1, 0, 0, 1,
-            1, 0, 1, 0, 0, 1,
-            1, 0, 1, 0, 0, 1
-          ]);
-          grassGeometry.setAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
+                vector.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
+                vector.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
+                vector.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
 
-          let quadIdx = new Float32Array([
-            0, 0, 0, 0, 0, 0,
-            1, 1, 1, 1, 1, 1,
-            2, 2, 2, 2, 2, 2,
-            3, 3, 3, 3, 3, 3,
-          ]);
-          grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
-          
-          let geometry = new THREE.InstancedBufferGeometry();
-          geometry.index = grassGeometry.index;
-          geometry.attributes.position = grassGeometry.attributes.position;
-          geometry.attributes.constraint = grassGeometry.attributes.constraint;
-          geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
+                let lm_uv = THREE.Triangle.getUV( vector, FA, FB, FC, uvA, uvB, uvC, new THREE.Vector2() );
 
-          for(let i = 0; i < 4; i++){
-            let uvs = new Float32Array( uvs_array[i].length * 2 );
-            switch(i){
-              case 1:
-              case 2:
-              case 3:
-                grassGeometry.setAttribute( 'uv'+(i+1), new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
-              break;
-              default:
-                grassGeometry.setAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ).copyVector2sArray( uvs_array[i] ) );
-              break;
-            }
-          }
+                instance.position = {
+                  x: this.model.position.x + aabb.position.x + vector.x, 
+                  y: this.model.position.y + aabb.position.y + vector.y, 
+                  z: this.model.position.z + aabb.position.z + vector.z + quadOffsetZ
+                };
 
-          geometry.attributes.uv = grassGeometry.attributes.uv;
-          geometry.attributes.uv2 = grassGeometry.attributes.uv2;
-          geometry.attributes.uv3 = grassGeometry.attributes.uv3;
-          geometry.attributes.uv4 = grassGeometry.attributes.uv4;
+                // orientations
+                let r = Math.floor(Math.random() * 360) + 0;
 
-          // per instance data
-          let offsets = [];
-          let orientations = [];
-          let grassUVs = [];
-          let vector = new THREE.Vector4();
+                instance.orientation = r;
 
-          let density = Game.module.area.Grass.Density;
-
-          for(let i = 0; i < this.model.wok.grassFaces.length; i++){
-            let face = this.model.wok.grassFaces[i];
-
-            //FACE A
-            let FA = this.model.wok.vertices[face.a];
-            //FACE B
-            let FB = this.model.wok.vertices[face.b];
-            //FACE C
-            let FC = this.model.wok.vertices[face.c];
-
-            let triangle = new THREE.Triangle(FA,FB,FC);
-            let area = triangle.getArea();
-            let grassCount = (area) * density;
-
-            if(grassCount < 1){
-              grassCount = 1;
-            }
-
-            for(let j = 0; j < grassCount; j++){
-
-              // offsets
-              let a = Math.random();
-              let b = Math.random();
-
-              // UV Indexes
-
-              grassUVs.push(
-                0, //this.getRandomGrassUVIndex(),
-                1, //this.getRandomGrassUVIndex(),
-                2, //this.getRandomGrassUVIndex(),
-                3, //this.getRandomGrassUVIndex()
-              );
-
-              if (a + b > 1) {
-                a = 1 - a;
-                b = 1 - b;
+                //this.grassInstances.push(instance);
+                offsets.push( instance.position.x, instance.position.y, instance.position.z, instance.orientation );
+                grassUVs.push(instance.uvs.uv1, instance.uvs.uv2, instance.uvs.uv3, instance.uvs.uv4);
+                lmUVs.push(lm_uv.x, lm_uv.y);
               }
-
-              let c = 1 - a - b;
-
-              vector.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
-              vector.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
-              vector.z = (a * FA.z) + (b * FB.z) + (c * FC.z) + Game.module.area.Grass.QuadSize/2;
-
-              //vector.set( face.centroid.x + ( ( Math.random() - .5 ) * 10 ), face.centroid.y + ( ( Math.random() - .5 ) * 10 ), face.centroid.z + 0.5, 0 );
-              offsets.push( vector.x, vector.y, vector.z );
-
-              // orientations
-              let r = Math.random();
-              let c1 = Math.cos( 0 / 2 );
-              let c2 = Math.cos( 0 / 2 );
-              let c3 = Math.cos( r / 2 );
-
-              let s1 = Math.sin( 0 / 2 );
-              let s2 = Math.sin( 0 / 2 );
-              let s3 = Math.sin( r / 2 );
-
-              vector.x = s1 * c2 * c3 + c1 * s2 * s3;
-              vector.y = c1 * s2 * c3 - s1 * c2 * s3;
-              vector.z = c1 * c2 * s3 + s1 * s2 * c3;
-              vector.w = c1 * c2 * c3 - s1 * s2 * s3;
-              
-              orientations.push( vector.x, vector.y, vector.z, vector.w );
             }
-          }
-          
-          this.offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
-          this.orientationAttribute = new THREE.InstancedBufferAttribute( new Float32Array( orientations ), 4 );
-          this.grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 );
-          geometry.setAttribute( 'offset', this.offsetAttribute );
-          geometry.setAttribute( 'orientation', this.orientationAttribute );
-          geometry.setAttribute( 'grassUV', this.grassUVAttribute );
-          this.grassMesh = new THREE.Mesh( geometry, Game.module.grassMaterial );
-          this.grassMesh.frustumCulled = false;
-          this.grassMesh.renderOrder = 9999;
-          Game.group.grass.add(this.grassMesh);
 
+            let offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 4 ).setUsage( THREE.StaticDrawUsage );
+            let grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 ).setUsage( THREE.StaticDrawUsage );
+            let lmUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( lmUVs ), 2 ).setUsage( THREE.StaticDrawUsage );
+            geometry.setAttribute( 'offset', offsetAttribute );
+            geometry.setAttribute( 'grassUV', grassUVAttribute );
+            geometry.setAttribute( 'lmUV', lmUVAttribute );
+            this.grass = new THREE.Mesh( geometry, grass_material );
+            this.grass.frustumCulled = false;
+            Game.group.grass.add(this.grass);
+
+            //Load in the grass texture
+            TextureLoader.Load(Game.module.area.Grass.TexName, (grassTexture) => {
+              grassTexture.minFilter = THREE.LinearFilter;
+              grassTexture.magFilter = THREE.LinearFilter;
+              grass_material.uniforms.map.value = grassTexture;
+              grass_material.uniformsNeedUpdate = true;
+              grass_material.needsUpdate = true;
+              //Load in the grass lm texture
+              TextureLoader.Load(lm_texture, (lmTexture) => {
+                lmTexture.minFilter = THREE.LinearFilter;
+                lmTexture.magFilter = THREE.LinearFilter;
+                grass_material.uniforms.lightMap.value = lmTexture;
+                grass_material.uniformsNeedUpdate = true;
+                grass_material.needsUpdate = true;
+              });
+            });
+          }
         }
       }
     }

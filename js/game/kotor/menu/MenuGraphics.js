@@ -59,7 +59,7 @@ class MenuGraphics extends GameMenu {
         this.CB_GRASS.onValueChanged = (value) => {
           //Toggle Grass
           if(Game.module){
-            Game.module.grassMaterial.visible = value;
+            //Game.module.grassMaterial.visible = value;
           }
         };
         this.CB_GRASS.attachINIProperty('Graphics Options.Grass');

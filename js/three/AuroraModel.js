@@ -1047,10 +1047,10 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
   let node = new THREE.Group();
   node._node = _node;
   node.NodeType = _node.NodeType;
-  node.isWalkmesh = false;//((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB);
+  node.isWalkmesh = ((_node.NodeType & AuroraModel.NODETYPE.AABB) == AuroraModel.NODETYPE.AABB);
 
   if(node.isWalkmesh){
-    auroraModel.aabb = _node.rootAABB;
+    auroraModel.aabb = _node;
   }
 
   node.controllers = _node.controllers;
