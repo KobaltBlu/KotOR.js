@@ -63,10 +63,10 @@ class GrassShader{
       float columnNorm = column / framesX;
       float rowNorm = row / framesY;
 
-      vSpriteSheet.x = 1.0 / framesX;
-      vSpriteSheet.y = 1.0 / framesY;
-      vSpriteSheet.z = columnNorm;
-      vSpriteSheet.w = rowNorm;
+      vSpriteSheet.x = columnNorm;
+      vSpriteSheet.y = rowNorm;
+      vSpriteSheet.z = (1.0 / framesX);
+      vSpriteSheet.w = (1.0 / framesY);
       //END: SpriteSheet Calculations
 
       //Pass the uv value to the fragment shader
@@ -119,8 +119,9 @@ class GrassShader{
 
     void main() {
       
-      vec2 uvTransform = vec2( (vUv.x * vSpriteSheet.x + vSpriteSheet.z), 
-        (vUv.y * vSpriteSheet.y + vSpriteSheet.w)
+      vec2 uvTransform = vec2(
+        vSpriteSheet.x + (vSpriteSheet.z * vUv.x), 
+        vSpriteSheet.y + (vSpriteSheet.w * vUv.y)
       );
 
       vec4 textureColor = texture2D(map, uvTransform);
@@ -129,7 +130,7 @@ class GrassShader{
       if (textureColor[3] < alphaTest) {
         discard;
       } else {
-        gl_FragColor = lightmapColor * textureColor;// * vec4(ambientColor, 1.0);
+        gl_FragColor = lightmapColor * textureColor;
         gl_FragColor.a = distCulled;
         /*${THREE.ShaderChunk[ "fog_fragment" ]}*/
       }
