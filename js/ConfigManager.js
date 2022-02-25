@@ -341,6 +341,7 @@ const defaults = {
       trigger_geometry_show: false,
       waypoint_geometry_show: false,
       is_shipping_build: true,
+      disable_intro_movies: false,
     }
   },
   Theme: {

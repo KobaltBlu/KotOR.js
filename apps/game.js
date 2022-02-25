@@ -731,6 +731,9 @@ const template = [
         }
 
       }},
+      { label: 'Disable Intro Movies', type: 'checkbox', checked: Config.get('Game.debug.disable_intro_movies'), 'accelerator': 'Alt+M', click: () => {
+        Config.set('Game.debug.disable_intro_movies', !Config.get('Game.debug.disable_intro_movies'));
+      }},
       { label: 'Shipping Build', type: 'checkbox', checked: Config.get('Game.debug.is_shipping_build'), click: () => {
         Config.set('Game.debug.is_shipping_build', !Config.get('Game.debug.is_shipping_build'));
       }},

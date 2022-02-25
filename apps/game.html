@@ -50,18 +50,25 @@
         verifyGame({
           directory: app_profile.directory,
           onVerify: () => {
-            VideoPlayer.Load('ObsidianEnt', () => {
-              VideoPlayer.Load('biologo', () => {
-                VideoPlayer.Load('leclogo', () => {
-                  VideoPlayer.Load('Legal', () => {
-                    Game.OpeningMoviesComplete = true;
-                    if(Game.Ready){
-                      Game.OnReady();
-                    }
+            if(!Config.get('Game.debug.disable_intro_movies')){
+              VideoPlayer.Load('ObsidianEnt', () => {
+                VideoPlayer.Load('biologo', () => {
+                  VideoPlayer.Load('leclogo', () => {
+                    VideoPlayer.Load('Legal', () => {
+                      Game.OpeningMoviesComplete = true;
+                      if(Game.Ready){
+                        Game.OnReady();
+                      }
+                    });
                   });
                 });
               });
-            });
+            }else{
+              Game.OpeningMoviesComplete = true;
+              if(Game.Ready){
+                Game.OnReady();
+              }
+            }
             loader.Show();
             GameInitializer.Init({
               game: Games[GameKey],
