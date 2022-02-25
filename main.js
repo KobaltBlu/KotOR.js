@@ -20,6 +20,10 @@ const shell = require('any-shell-escape');
 const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
 
+const videoSupport = require('./ffmpeg-helper');
+const VideoServer = require('./VideoServer');
+let movieServer = null;
+
 console.log(process.argv);
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -37,10 +41,62 @@ ipcMain.on('config-changed', (event, data) => {
   }
 });
 
+ipcMain.on('movie', (event, data) => {
+  console.log(data);
+  switch(data.action){
+    case 'play':
+      onVideoFileSeleted(data.file, event.sender);
+    break;
+    case 'stop':
+
+    break;
+  }
+});
+
+ipcMain.on('movie-kill-stream', (event, data) => {
+  if (movieServer) {
+    movieServer.killFfmpegCommand();
+  }
+});
+
+function onVideoFileSeleted(videoFilePath, sender) {
+  videoSupport(videoFilePath).then((checkResult) => {
+    if (checkResult.videoCodecSupport && checkResult.audioCodecSupport) {
+      if (movieServer) {
+        movieServer.killFfmpegCommand();
+      }
+      let playParams = {};
+      playParams.movie = path.parse(videoFilePath).name;
+      playParams.type = "native";
+      playParams.videoSource = videoFilePath;
+      sender.send('movie-ready', playParams);
+    }
+    if (!checkResult.videoCodecSupport || !checkResult.audioCodecSupport) {
+      if (!movieServer) {
+        movieServer = new VideoServer();
+      }
+      movieServer.videoSourceInfo = { videoSourcePath: videoFilePath, checkResult: checkResult };
+      movieServer.createServer();
+      console.log("createVideoServer success");
+      let playParams = {};
+      playParams.movie = path.parse(videoFilePath).name;
+      playParams.type = "stream";
+      playParams.videoSource = "http://127.0.0.1:8888?startTime=0";
+      playParams.duration = checkResult.duration
+      sender.send('movie-ready', playParams);
+    }
+  }).catch((err) => {
+    console.log("video format error", err);
+    let playParams = {};
+    playParams.movie = path.parse(videoFilePath).name;
+    sender.send('movie-fail', playParams);
+  })
+}
+
 async function createWindowFromProfile( profile = {} ) {
 
-  if(profile.category == 'game')
-    await convertBIKtoMP4(path.join(profile.directory, 'movies'));
+  // if(profile.category == 'game')
+  //   await convertBIKtoMP4(path.join(profile.directory, 'movies'));
 
   // Create the browser window.
   let _window = new BrowserWindow({

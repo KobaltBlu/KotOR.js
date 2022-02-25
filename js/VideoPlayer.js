@@ -10,14 +10,38 @@ class VideoPlayer {
 
   static Load(name = '', onEnded = undefined){
     if(typeof name == 'string' && name.length){
-      let playerSession = new VideoPlayerSession(
-        path.join(app_profile.directory, 'Movies', name+'.mp4'),
-        onEnded
-      );
+      let mp4 = path.join(app_profile.directory, 'Movies', name+'.mp4');
+      let bik = path.join(app_profile.directory, 'Movies', name+'.bik');
+
+      let hasMP4 = false;//fs.existsSync(mp4);
+      let hasBIK = fs.existsSync(bik);
+      let playerSession;
+
+      console.log(name, hasMP4, hasBIK);
+
+      if(hasMP4){
+        ipcRenderer.send('movie', {
+          action: 'play',
+          movie: name,
+          file: mp4
+        });
+        playerSession = new VideoPlayerSession( bik, name, onEnded );
+      }else if(hasBIK){
+        ipcRenderer.send('movie', {
+          action: 'play',
+          movie: name,
+          file: bik
+        });
+        playerSession = new VideoPlayerSession( bik, name, onEnded );
+      }else{
+        console.log('no video');
+        if(typeof onEnded === 'function')
+          onEnded();
+        return;
+      }
 
       VideoPlayer.CurrentSession = playerSession;
       VideoPlayer.Sessions.push(playerSession);
-      playerSession.play();
     }else{
       if(typeof onEnded === 'function'){
         onEnded();
@@ -34,26 +58,21 @@ VideoPlayer.Sessions = [];
 class VideoPlayerSession {
 
   src = '';
+  movie = '';
   onEnded = undefined;
   hasEnded = false;
+  player = null;
 
-  constructor(src, onEnded){
+  constructor(src, movie, onEnded){
     this.src = src;
+    this.movie = movie;
     this.onEnded = onEnded;
     let self = this;
 
     this.$video = $('<video />');
 
     this.$video[0].onended = function(){
-      if(!self.hasEnded){
-        self.hasEnded = true;
-        $(this).attr('src', '');
-        try{
-          $(this).remove();
-        }catch(e){ console.error(e) }
-        if(typeof self.onEnded === 'function')
-          self.onEnded();
-      }
+      self.destroy();
     };
 
     this.$video[0].onerror = this.$video[0].onended;
@@ -73,8 +92,19 @@ class VideoPlayerSession {
 
     $('body').append(this.$video);
 
-    this.$video.attr('src', src);
-    this.$video.currentTime = 0;
+    // this.$video.attr('src', src);
+    // this.$video.currentTime = 0;
+  }
+
+  attachNative(params){
+    this.$video.attr('src', params.videoSource);
+    this.$video[0].play();
+  }
+
+  attachStream(params = {}){
+    this.duration = params.duration;
+    this.$video.attr('src', params.videoSource);
+    this.$video[0].play();
   }
 
   play(){
@@ -88,15 +118,62 @@ class VideoPlayerSession {
 
   stop(){
     try{
-      if(this.$video[0]){
-        this.$video[0].currentTime = this.$video[0].duration;
-      }
+      this.destroy();
     }catch(e){ console.error(e) }
     let idx = VideoPlayer.Sessions.indexOf(this);
     if(idx >= 0){
       VideoPlayer.Sessions.splice(idx, 1);
     }
   }
+
+  destroy(){
+    console.log('destroy');
+    if(!this.hasEnded){
+      this.hasEnded = true;
+      try{
+        this.$video[0].pause();
+      }catch(e){ }
+      this.$video.attr('src', '');
+      try{
+        this.$video.remove();
+      }catch(e){ console.error(e) }
+      if(typeof this.onEnded === 'function')
+        this.onEnded();
+    }
+  }
+
 }
+
+
+ipcRenderer.on('movie-ready', (event, response) => {
+
+  // response.movie = path.parse(videoFilePath).name;
+  // response.type = "stream";
+  // response.videoSource = "http://127.0.0.1:8888?startTime=0";
+  // response.duration = checkResult.duration
+
+  let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
+  if(session instanceof VideoPlayerSession){
+    if (response.type === 'native') {
+      session.attachNative(response);
+    } else if (response.type === 'stream') {
+      session.attachStream(response);
+    }
+  }else{
+    //kill movie stream
+    ipcRenderer.send('movie-kill-stream');
+  }
+
+});
+ipcRenderer.on('movie-fail', (event, response) => {
+  console.log('movie-fail', response);
+  let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
+  if(session instanceof VideoPlayerSession){
+    session.stop();
+  }else{
+    //kill movie stream
+    //ipcRenderer.send('movie-kill-stream');
+  }
+});
 
 module.exports = VideoPlayer;
