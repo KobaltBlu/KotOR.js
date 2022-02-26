@@ -29,7 +29,7 @@ class IngameControls {
     document.exitPointerLock = document.exitPointerLock;
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
-    this.editor.$canvas.keydown( ( event ) => {
+    $(window).keydown( ( event ) => {
 
       if(event.which >= 48 && event.which <= 57){
         this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = true;
@@ -61,6 +61,14 @@ class IngameControls {
     }).keyup( ( event ) => {
       if(Game.debug.controls)
         console.log(event.key)
+
+      
+      if(VideoPlayer.Sessions.length){
+        if( (this.keys['escape'].pressed || this.keys['space'].pressed || this.gamePad.button_start.pressed) ){
+          let player = VideoPlayer.Sessions[0];
+          player.stop();
+        }
+      }
 
       if(event.which >= 48 && event.which <= 57){
         this.keys[event.key.toLowerCase()].down = this.keys[event.key.toLowerCase()].pressed = false;
@@ -420,6 +428,7 @@ class IngameControls {
 
     let xoffset = 0;
     let yoffset = 0;
+    let currentMenu = MenuManager.GetCurrentMenu();
 
     let gp = undefined;
     if(currentGamepad instanceof Gamepad){
@@ -435,52 +444,35 @@ class IngameControls {
       Mouse.OffsetX = Mouse.OffsetY = 0;
     }
 
-    if(Game.binkVideo.isPlaying){
-      if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
-        Game.binkVideo.stop();
-      }
-      //Set all pressed keys to false so they can only be triggered on this frame 
-      //May need to move this to the end of the Game Loop
-      for (let key in this.keys) {
-        this.keys[key].pressed = false;
-      }
-
-      Game.mouse.leftClick = false;
-
-      Mouse.OldMouseX = Mouse.MouseX;
-      Mouse.OldMouseY = Mouse.MouseY;
-      return;
-    }
-
-    if(MenuManager.GetCurrentMenu() instanceof GameMenu){
+    if(currentMenu instanceof GameMenu){
       if(this.gamePad.button_a.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerAPress();
+        currentMenu.triggerControllerAPress();
       }else if(this.gamePad.button_b.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerBPress();
+        currentMenu.triggerControllerBPress();
       }else if(this.gamePad.button_x.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerXPress();
+        currentMenu.triggerControllerXPress();
       }else if(this.gamePad.button_y.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerYPress();
+        currentMenu.triggerControllerYPress();
       }else if(this.gamePad.button_bumper_l.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerBumperLPress();
+        currentMenu.triggerControllerBumperLPress();
       }else if(this.gamePad.button_bumper_r.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerBumperRPress();
+        currentMenu.triggerControllerBumperRPress();
       }else if(this.gamePad.button_d_up.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerDUpPress();
+        currentMenu.triggerControllerDUpPress();
       }else if(this.gamePad.button_d_down.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerDDownPress();
+        currentMenu.triggerControllerDDownPress();
       }else if(this.gamePad.button_d_left.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerDLeftPress();
+        currentMenu.triggerControllerDLeftPress();
       }else if(this.gamePad.button_d_right.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerDRightPress();
+        currentMenu.triggerControllerDRightPress();
       }else if(this.gamePad.stick_l_x.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerLStickXPress( this.gamePad.stick_l_x.value > 0 ? true : false );
+        currentMenu.triggerControllerLStickXPress( this.gamePad.stick_l_x.value > 0 ? true : false );
       }else if(this.gamePad.stick_l_y.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerLStickYPress( this.gamePad.stick_l_y.value > 0 ? true : false );
+        currentMenu.triggerControllerLStickYPress( this.gamePad.stick_l_y.value > 0 ? true : false );
       }else if(this.gamePad.stick_r_x.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerRStickXPress( this.gamePad.stick_r_x.value > 0 ? true : false );
+        currentMenu.triggerControllerRStickXPress( this.gamePad.stick_r_x.value > 0 ? true : false );
       }else if(this.gamePad.stick_r_y.pressed){
-        MenuManager.GetCurrentMenu().triggerControllerRStickYPress( this.gamePad.stick_r_y.value > 0 ? true : false );
+        currentMenu.triggerControllerRStickYPress( this.gamePad.stick_r_y.value > 0 ? true : false );
       }
     }
 
@@ -495,113 +487,112 @@ class IngameControls {
         Game.activeGUIElement.directionalNavigate('right');
       }
     }*/
+    if(Game.Mode == Game.MODES.MINIGAME || Game.Mode == Game.MODES.INGAME){
+      if(Game.inDialog){
+        if(Game.InGameDialog.bVisible){
 
-    if(Game.inDialog){
-      if(Game.InGameDialog.bVisible){
-
-        if(Game.InGameDialog.state == 1){
-          if(this.keys['1'].pressed){
-            if(Game.debug.controls)
-              console.log('Tried to press 1');
-            try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['2'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['3'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['4'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['5'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['6'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['7'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['8'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }else if(this.keys['9'].pressed){
-            try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
-          }
-        }else{
-          if(this.keys['space'].pressed || this.gamePad.button_a.pressed){
-            if(Game.InGameDialog.isListening){
-              Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+          if(Game.InGameDialog.state == 1){
+            if(this.keys['1'].pressed){
+              if(Game.debug.controls)
+                console.log('Tried to press 1');
+              try{ Game.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['2'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['3'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['4'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['5'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['6'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['7'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['8'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+            }else if(this.keys['9'].pressed){
+              try{ Game.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
             }
-          }else if(Game.mouse.leftClick){
-            if(Game.InGameDialog.isListening){
-              Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+          }else{
+            if(this.keys['space'].pressed || this.gamePad.button_a.pressed){
+              if(Game.InGameDialog.isListening){
+                Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+              }
+            }else if(Game.mouse.leftClick){
+              if(Game.InGameDialog.isListening){
+                Game.InGameDialog.PlayerSkipEntry(Game.InGameDialog.currentEntry);
+              }
             }
           }
-        }
 
-        if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
-          Game.InGameDialog.EndConversation(true);
-        }
-
-        
-
-      }else if(Game.InGameComputer.bVisible){
-
-        if(Game.InGameComputer.state == 1){
-          if(this.keys['1'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['2'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['3'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['4'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['5'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['6'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['7'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['8'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-          }else if(this.keys['9'].pressed){
-            try{ Game.InGameComputer.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+          if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
+            Game.InGameDialog.EndConversation(true);
           }
-        }else{
 
+        }else if(Game.InGameComputer.bVisible){
+
+          if(Game.InGameComputer.state == 1){
+            if(this.keys['1'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['2'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['3'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['4'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['5'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['6'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['7'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['8'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }else if(this.keys['9'].pressed){
+              try{ Game.InGameComputer.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+            }
+          }else{
+
+          }
+
+          if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
+            Game.InGameComputer.EndConversation(true);
+          }
+
+        }else if(Game.InGameComputerCam.bVisible){
+          if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
+            Game.InGameComputerCam.Close();
+          }else if( this.keys['space'].pressed || this.gamePad.button_a.pressed ){
+            Game.InGameComputerCam.Close();
+          }
         }
+
+      }else{
 
         if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
-          Game.InGameComputer.EndConversation(true);
+          if(currentMenu != Game.InGameOverlay){
+            currentMenu.Close();
+          }else{
+            Game.MenuOptions.Open();
+          }
         }
 
-      }else if(Game.InGameComputerCam.bVisible){
-        if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
-          Game.InGameComputerCam.Close();
-        }else if( this.keys['space'].pressed || this.gamePad.button_a.pressed ){
-          Game.InGameComputerCam.Close();
+        if( (this.keys['tab'].pressed || this.gamePad.button_back.pressed) && (Game.Mode == Game.MODES.INGAME)){
+          if(!Game.MenuActive){
+            PartyManager.ShiftLeader();
+            //PartyManager.party.push(PartyManager.party.shift());
+          }
         }
-      }
-
-    }else{
-
-      if( (this.keys['escape'].pressed || this.gamePad.button_start.pressed) ){
-        if(MenuManager.GetCurrentMenu() != Game.InGameOverlay && MenuManager.GetCurrentMenu() != Game.MainMenu && MenuManager.GetCurrentMenu() != Game.LoadScreen){
-          MenuManager.GetCurrentMenu().Close();
-        }else{
-          Game.MenuOptions.Open();
+    
+        if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME) && currentMenu == Game.InGameOverlay){
+          Game.State = ( Game.State == Game.STATES.PAUSED ? Game.STATES.RUNNING : Game.STATES.PAUSED );
+        }else if( (this.keys['space'].pressed || this.gamePad.button_a.pressed) && currentMenu == Game.InGameConfirm){
+          Game.InGameConfirm.Close();
         }
-      }
 
-      if( (this.keys['tab'].pressed || this.gamePad.button_back.pressed) && (Game.Mode == Game.MODES.INGAME)){
-        if(!Game.MenuActive){
-          PartyManager.ShiftLeader();
-          //PartyManager.party.push(PartyManager.party.shift());
+        if(this.keys['z'].pressed || this.gamePad.button_y.pressed){
+          Game.getCurrentPlayer().flourish();
         }
-      }
-  
-      if(this.keys['space'].pressed && !Game.MenuActive && (Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME) && MenuManager.GetCurrentMenu() == Game.InGameOverlay){
-        Game.State = ( Game.State == Game.STATES.PAUSED ? Game.STATES.RUNNING : Game.STATES.PAUSED );
-      }else if( (this.keys['space'].pressed || this.gamePad.button_a.pressed) && MenuManager.GetCurrentMenu() == Game.InGameConfirm){
-        Game.InGameConfirm.Close();
-      }
-
-      if(this.keys['z'].pressed || this.gamePad.button_y.pressed){
-        Game.getCurrentPlayer().flourish();
       }
     }
 
@@ -622,10 +613,11 @@ class IngameControls {
     if(currentGamepad instanceof Gamepad){
       gp = navigator.getGamepads()[currentGamepad.index];
     }
+    let currentMenu = MenuManager.GetCurrentMenu();
     let turningCamera = false;
     if(Game.State == Game.STATES.RUNNING){
 
-      if(!Game.inDialog && MenuManager.GetCurrentMenu() != Game.InGameConfirm && MenuManager.GetCurrentMenu() != Game.MenuContainer){
+      if(!Game.inDialog && currentMenu != Game.InGameConfirm && currentMenu != Game.MenuContainer){
 
         let followee = PartyManager.party[0];
 
@@ -700,7 +692,7 @@ class IngameControls {
 
       }
       
-      if(MenuManager.GetCurrentMenu() == Game.InGameConfirm){
+      if(currentMenu == Game.InGameConfirm){
         if(this.keys['space'].down || this.gamePad.button_a.pressed){
           Game.InGameConfirm.Close();
         }
