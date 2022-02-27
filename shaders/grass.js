@@ -130,7 +130,11 @@ class GrassShader{
       if (textureColor[3] < alphaTest) {
         discard;
       } else {
-        gl_FragColor = lightmapColor * textureColor;
+        #ifdef USE_LIGHTMAP
+          gl_FragColor = lightmapColor * textureColor;
+        #else
+          gl_FragColor = textureColor;
+        #endif
         gl_FragColor.a = distCulled;
         /*${THREE.ShaderChunk[ "fog_fragment" ]}*/
       }

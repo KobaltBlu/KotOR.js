@@ -216,7 +216,6 @@ class ModuleMGEnemy extends ModuleObject {
     //END: PLAYER WORLD COLLISION
 
     //END Gravity
-    this.invalidateCollision = false;
     Game.raycaster.far = Infinity;
     this.track.updateMatrixWorld();
 

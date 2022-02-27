@@ -19,6 +19,7 @@
     this.rootNode = null;
     this.mesh = new THREE.Object3D();
     this.box = new THREE.Box3();
+    this.mat4 = new THREE.Matrix4();
     this.faces = [];
     this.vertices = [];
     this.walkTypes = [];
@@ -28,6 +29,7 @@
     this.walkableFacesEdgesAdjacencyMatrix = [];
     this.edges = {};
     this.perimeters = [];
+    this.edgeLines = [];
 
 
     this.wokReader = wokReader;
@@ -72,14 +74,32 @@
 
       if(!face.adjacentWalkableFaces.a && typeof this.edges[edge1] != 'undefined'){
         face.adjacentWalkableFaces.a = this.edges[edge1];
+        if(face.adjacentWalkableFaces.a instanceof WalkmeshEdge){
+          //face.adjacentWalkableFaces.a.line = new THREE.Line3( this.vertices[face.a].clone(), this.vertices[face.b].clone() );
+          face.adjacentWalkableFaces.a.face = face;
+          face.adjacentWalkableFaces.a.index = 0;
+          face.adjacentWalkableFaces.a.update();
+        }
       }
 
       if(!face.adjacentWalkableFaces.b && typeof this.edges[edge2] != 'undefined'){
         face.adjacentWalkableFaces.b = this.edges[edge2];
+        if(face.adjacentWalkableFaces.b instanceof WalkmeshEdge){
+          //face.adjacentWalkableFaces.b.line = new THREE.Line3( this.vertices[face.b].clone(), this.vertices[face.c].clone() );
+          face.adjacentWalkableFaces.b.face = face;
+          face.adjacentWalkableFaces.b.index = 1;
+          face.adjacentWalkableFaces.b.update();
+        }
       }
 
       if(!face.adjacentWalkableFaces.c && typeof this.edges[edge3] != 'undefined'){
         face.adjacentWalkableFaces.c = this.edges[edge3];
+        if(face.adjacentWalkableFaces.c instanceof WalkmeshEdge){
+          //face.adjacentWalkableFaces.c.line = new THREE.Line3( this.vertices[face.c].clone(), this.vertices[face.a].clone() );
+          face.adjacentWalkableFaces.c.face = face;
+          face.adjacentWalkableFaces.c.index = 2;
+          face.adjacentWalkableFaces.c.update();
+        }
       }
       
       //Is this face grassy
@@ -144,6 +164,14 @@
 
     this.aabbRoot = this.aabbNodes[0];
 
+  }
+
+  updateMatrix(){
+    //updateMatrix
+    let edgeKeys = Object.keys(this.edges);
+    for(let i = 0, len = edgeKeys.length; i < len; i++){
+      this.edges[edgeKeys[i]].update();
+    }
   }
 
   readBinary(){
@@ -222,7 +250,8 @@
 
       this.wokReader.Seek(this.header.offsetToEdges);
       for (let i = 0; i < this.header.edgesCount; i++){
-        this.edges[this.wokReader.ReadInt32()] = new WalkmeshEdge(this.wokReader.ReadInt32());
+        let edge = this.edges[this.wokReader.ReadInt32()] = new WalkmeshEdge(this.wokReader.ReadInt32());
+        edge.setWalkmesh(this);
       }
 
       this.wokReader.Seek(this.header.offsetToPerimeters);
@@ -236,51 +265,63 @@
   }
 
   detectFacePerimiterLines( face ){
+    if(this.header.walkMeshType == AuroraWalkMesh.TYPE.NONE){
+      let aEdge = true;
+      let bEdge = true;
+      let cEdge = true;
 
-    face.perimiterLines = [];
-
-    let aEdge = true;
-    let bEdge = true;
-    let cEdge = true;
-
-    for(let i = 0; i < this.faces.length; i++){
-      let adjFace = this.faces[i];
-      if(adjFace == face)
-        continue;
-      
-      for(let j = 0; j < 3; j++){
-        if(j == 0 && aEdge){
-          if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
-            (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
-            (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
-            aEdge = false;
-          }
-        }else if(j == 1 && bEdge){
-          if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
-            (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
-            (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
-            bEdge = false;
-          }
-        }else if(j == 2 && cEdge){
-          if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
-            (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
-            (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
-            cEdge = false;
+      for(let i = 0; i < this.faces.length; i++){
+        let adjFace = this.faces[i];
+        if(adjFace == face)
+          continue;
+        
+        for(let j = 0; j < 3; j++){
+          if(j == 0 && aEdge){
+            if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
+              (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
+              (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
+              aEdge = false;
+            }
+          }else if(j == 1 && bEdge){
+            if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
+              (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
+              (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
+              bEdge = false;
+            }
+          }else if(j == 2 && cEdge){
+            if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
+              (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
+              (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
+              cEdge = false;
+            }
           }
         }
+
       }
 
+      if(aEdge){
+        this.generateFaceWalkmeshEdge(face, 0); 
+      }
+
+      if(bEdge){
+        this.generateFaceWalkmeshEdge(face, 1); 
+      }
+
+      if(cEdge){
+        this.generateFaceWalkmeshEdge(face, 2); 
+      }
     }
+  }
 
-    if(aEdge)
-      face.perimiterLines.push( new THREE.Line3( this.vertices[face.a].clone(), this.vertices[face.b].clone() ) );
-
-    if(bEdge)
-      face.perimiterLines.push( new THREE.Line3( this.vertices[face.b].clone(), this.vertices[face.c].clone() ) );
-
-    if(cEdge)
-      face.perimiterLines.push( new THREE.Line3( this.vertices[face.c].clone(), this.vertices[face.a].clone() ) );
-    
+  generateFaceWalkmeshEdge(face = undefined, index = 0){
+    if(face){
+      let edge = new WalkmeshEdge(-1);
+      edge.setWalkmesh(this);
+      edge.setSideIndex(index);
+      edge.setFace(face);
+      edge.update();
+      this.edges[Object.keys(this.edges).length] = edge;
+    }
   }
 
   dispose(){
@@ -597,7 +638,48 @@
 class WalkmeshEdge {
   constructor(transition = -1){
     this.transition = transition;
+    this.line = undefined;
+    this.normal = new THREE.Vector3(0, 0, 1);
+    this.face = undefined;
+    this.walkmesh = undefined;
+    this.index = -1;
   }
+
+  setFace(face){
+    this.face = face;
+  }
+
+  setSideIndex(index){
+    this.index = index;
+  }
+
+  setWalkmesh(walkmesh){
+    this.walkmesh = walkmesh;
+  }
+
+  update(){
+    if(this.walkmesh){
+      this.line = undefined;
+      if(this.index == 0){
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.a].clone(), this.walkmesh.vertices[this.face.b].clone() );
+      }else if(this.index == 1){
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.b].clone(), this.walkmesh.vertices[this.face.c].clone() );
+      }else if(this.index == 2){
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.c].clone(), this.walkmesh.vertices[this.face.a].clone() );
+      }
+
+      if(this.line instanceof THREE.Line3){
+        this.line.start = this.line.start.applyMatrix4(this.walkmesh.mat4);
+        this.line.end = this.line.end.applyMatrix4(this.walkmesh.mat4);
+        let dx = this.line.end.x - this.line.start.x;
+        let dy = this.line.end.y - this.line.start.y;
+        this.normal.set(-dy, dx, 0).normalize();
+      }
+    }
+  }
+
+
+
 }
 
   

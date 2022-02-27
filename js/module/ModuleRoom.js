@@ -392,19 +392,24 @@ class ModuleRoom extends ModuleObject {
 
             //Load in the grass texture
             TextureLoader.Load(Game.module.area.Grass.TexName, (grassTexture) => {
-              grassTexture.minFilter = THREE.LinearFilter;
-              grassTexture.magFilter = THREE.LinearFilter;
-              grass_material.uniforms.map.value = grassTexture;
-              grass_material.uniformsNeedUpdate = true;
-              grass_material.needsUpdate = true;
-              //Load in the grass lm texture
-              TextureLoader.Load(lm_texture, (lmTexture) => {
-                lmTexture.minFilter = THREE.LinearFilter;
-                lmTexture.magFilter = THREE.LinearFilter;
-                grass_material.uniforms.lightMap.value = lmTexture;
+              if(grassTexture){
+                grassTexture.minFilter = THREE.LinearFilter;
+                grassTexture.magFilter = THREE.LinearFilter;
+                grass_material.uniforms.map.value = grassTexture;
                 grass_material.uniformsNeedUpdate = true;
                 grass_material.needsUpdate = true;
-              });
+                //Load in the grass lm texture
+                TextureLoader.Load(lm_texture, (lmTexture) => {
+                  if(lmTexture){
+                    lmTexture.minFilter = THREE.LinearFilter;
+                    lmTexture.magFilter = THREE.LinearFilter;
+                    grass_material.uniforms.lightMap.value = lmTexture;
+                    grass_material.uniformsNeedUpdate = true;
+                    grass_material.needsUpdate = true;
+                    grass_material.defines.USE_LIGHTMAP = '';
+                  }
+                });
+              }
             });
           }
         }
@@ -442,6 +447,33 @@ class ModuleRoom extends ModuleObject {
     return point.x < this.model.box.min.x || point.x > this.model.box.max.x ||
       point.y < this.model.box.min.y || point.y > this.model.box.max.y ||
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
+  }
+
+  findWalkableFace( object = undefined ){
+    if(object instanceof ModuleObject){
+      if(this.walkmesh){
+        let face;
+        for(let j = 0, jl = this.walkmesh.walkableFaces.length; j < jl; j++){
+          face = this.walkmesh.walkableFaces[j];
+          object._triangle.set(
+            this.walkmesh.vertices[face.a],
+            this.walkmesh.vertices[face.b],
+            this.walkmesh.vertices[face.c]
+          );
+          
+          if(object._triangle.containsPoint(object.position)){
+            object.groundFace = face;
+            object.lastGroundFace = object.groundFace;
+            object.surfaceId = object.groundFace.walkIndex;
+            object.room = this;
+
+            object._triangle.closestPointToPoint(object.position, object.wm_c_point);
+            object.position.z = object.wm_c_point.z + .005;
+            return face;
+          }
+        }
+      }
+    }
   }
 
   toToolsetInstance(){

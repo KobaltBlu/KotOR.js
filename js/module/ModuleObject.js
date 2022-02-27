@@ -32,7 +32,6 @@ class ModuleObject {
     this.facingTweenTime = 0;
     this.force = 0;
     this.speed = 0;
-    this.invalidateCollision = false;
     this.room = undefined;
     this.rooms = [];
     this.roomSize = new THREE.Vector3();
@@ -696,7 +695,7 @@ class ModuleObject {
     //END: PLAYER WORLD COLLISION
 
     //END Gravity
-    this.invalidateCollision = false;*/
+    */
   }
 
   doCommand(script){
