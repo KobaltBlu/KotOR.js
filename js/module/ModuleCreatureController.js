@@ -1794,30 +1794,32 @@ class ModuleCreatureController extends ModuleObject {
     if(Config.options.Game.debug.creature_collision){
       for(let i = 0; i < Game.module.area.creatures.length; i++){
         let creature = Game.module.area.creatures[i];
-        let position = this.position.clone().add(this.AxisFront);
-        
-        if(creature === this || creature.isDead())
-          continue;
+        if(creature){
+          let position = this.position.clone().add(this.AxisFront);
+          
+          if(creature === this || creature.isDead())
+            continue;
 
-        if(!creature.getAppearance())
-          continue;
+          if(!creature.getAppearance())
+            continue;
 
-        let distance = position.distanceTo(creature.position);
-        if( distance < hitdist ){
-          let pDistance = hitdist - distance;
-          scratchVec3.set(
-            pDistance * Math.cos(this.rotation.z + Math.PI/2),
-            pDistance * Math.sin(this.rotation.z + Math.PI/2),
-            0 
-          );
-          position.sub(scratchVec3);
-          if(this.AxisFront.clone().normalize().length() > 0){
-            let ahead = position.clone().add(this.AxisFront.clone().normalize());
-            let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
-            avoidance_force.z = 0;
-            this.AxisFront.copy(avoidance_force);
+          let distance = position.distanceTo(creature.position);
+          if( distance < hitdist ){
+            let pDistance = hitdist - distance;
+            scratchVec3.set(
+              pDistance * Math.cos(this.rotation.z + Math.PI/2),
+              pDistance * Math.sin(this.rotation.z + Math.PI/2),
+              0 
+            );
+            position.sub(scratchVec3);
+            if(this.AxisFront.clone().normalize().length() > 0){
+              let ahead = position.clone().add(this.AxisFront.clone().normalize());
+              let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
+              avoidance_force.z = 0;
+              this.AxisFront.copy(avoidance_force);
+            }
+            break;
           }
-          break;
         }
       }
     }
@@ -1826,12 +1828,12 @@ class ModuleCreatureController extends ModuleObject {
     if(Config.options.Game.debug.creature_collision){
       for(let i = 0; i < PartyManager.party.length; i++){
         let creature = PartyManager.party[i];
-        let position = this.position.clone().add(this.AxisFront);
+        if(creature){
+          let position = this.position.clone().add(this.AxisFront);
 
-        if(creature === this || creature.isDead())
-          continue;
+          if(creature === this || creature.isDead())
+            continue;
 
-        //try{
           let distance = position.distanceTo(creature.position);
           if(distance < hitdist){
             let pDistance = hitdist - distance;
@@ -1849,7 +1851,7 @@ class ModuleCreatureController extends ModuleObject {
             }
             break;
           }
-        //}catch(e){}
+        }
       }
     }
 
