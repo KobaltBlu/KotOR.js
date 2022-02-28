@@ -841,54 +841,6 @@ class Game extends Engine {
     }
   }
 
-  static onHeartbeat(){
-
-    if(Game.module){
-
-      Game.Heartbeat = setTimeout( () => {
-          process.nextTick( ()=> {
-        Game.onHeartbeat();
-          });
-      }, Game.HeartbeatTimer);
-
-      for(let i = 0; i < PartyManager.party.length; i++){
-          process.nextTick( ()=> {
-            PartyManager.party[i].triggerHeartbeat();
-          });
-      }
-
-      for(let i = 0; i < Game.module.area.creatures.length; i++){
-        process.nextTick( ()=> {
-            Game.module.area.creatures[i].triggerHeartbeat();
-        });
-      }
-
-      for(let i = 0; i < Game.module.area.placeables.length; i++){
-          process.nextTick( ()=> {
-        Game.module.area.placeables[i].triggerHeartbeat();
-          });
-      }
-
-      for(let i = 0; i < Game.module.area.doors.length; i++){
-          process.nextTick( ()=> {
-        Game.module.area.doors[i].triggerHeartbeat();
-          });
-      }
-
-      for(let i = 0; i < Game.module.area.triggers.length; i++){
-          process.nextTick( ()=> {
-        Game.module.area.triggers[i].triggerHeartbeat();
-          });
-      }
-
-      /*for(let i = 0; i < Game.module.encounters.length; i++){
-        Game.module.encounters[i].triggerHeartbeat();
-      }*/
-
-    }
-
-  }
-
   static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
     MenuManager.ClearMenus();
     Game.deltaTime = 0;
@@ -1060,8 +1012,8 @@ class Game extends Engine {
   }
 
   static UpdateFollowerCamera(delta = 0) {
-
     let followee = Game.getCurrentPlayer();
+    if(!followee) return;
 
     let camStyle = Game.module.getCameraStyle();
     let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
@@ -1097,14 +1049,11 @@ class Game extends Engine {
     this.cameraBoundingBox.max.copy(Game.raycaster.ray.origin);
     this.cameraBoundingBox.expandByScalar(distance * 1.5);
     
-    for(let j = 0, jl = Game.module.area.rooms.length; j < jl; j++){
-      let room = Game.module.area.rooms[j];
-      if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
-        aabbFaces.push({
-          object: room, 
-          faces: room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
-        });
-      }
+    if(followee.room && followee.room.walkmesh && followee.room.walkmesh.aabbNodes.length){
+      aabbFaces.push({
+        object: followee.room, 
+        faces: followee.room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
+      });
     }
 
     for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
@@ -1169,7 +1118,6 @@ class Game extends Engine {
     }
     
     Game.followerCamera.updateProjectionMatrix();
-
   }
 
   static UpdateVideoEffect(){
@@ -1259,11 +1207,6 @@ class Game extends Engine {
         Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
         Game.updateTime(delta);
 
-        if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
-          Game.module.tick(delta);
-          CombatEngine.Update(delta);
-        }
-
         //PartyMember cleanup
         for(let i = 0; i < Game.group.party.children.length; i++){
           let pm = Game.group.party.children[i].moduleObject;
@@ -1274,74 +1217,8 @@ class Game extends Engine {
           }
         }
 
-        let walkCount = Game.walkmeshList.length;
-        let roomCount = Game.group.rooms.children.length;
-
-        let trigCount = Game.module.area.triggers.length;
-        let encounterCount = Game.module.area.encounters.length;
-        let creatureCount = Game.module.area.creatures.length;
-        let placeableCount = Game.module.area.placeables.length;
-        let doorCount = Game.module.area.doors.length;
-        let partyCount = PartyManager.party.length;
-        let animTexCount = AnimatedTextures.length;
-        let obj = undefined;
-
-        //update triggers
-        for(let i = 0; i < trigCount; i++){
-          Game.module.area.triggers[i].update(delta);
-        }
-
-        //update encounters
-        for(let i = 0; i < encounterCount; i++){
-          Game.module.area.encounters[i].update(delta);
-        }
-
-        //update party
-        for(let i = 0; i < partyCount; i++){
-          PartyManager.party[i].update(delta);
-        }
-        
-        //update creatures
-        for(let i = 0; i < creatureCount; i++){
-          Game.module.area.creatures[i].update(delta);
-        }
-        
-        //update placeables
-        for(let i = 0; i < placeableCount; i++){
-          Game.module.area.placeables[i].update(delta);
-        }
-        
-        //update doors
-        for(let i = 0; i < doorCount; i++){
-          Game.module.area.doors[i].update(delta);
-        }
-
-        //update animated textures
-        for(let i = 0; i < animTexCount; i++){
-          AnimatedTextures[i].Update(delta);
-        }
-
-        //unset party controlled
-        for(let i = 0; i < partyCount; i++){
-          PartyManager.party[i].controlled = false;
-        }
-
-        if(Game.Mode == Game.MODES.MINIGAME){
-          for(let i = 0; i < Game.module.area.MiniGame.Enemies.length; i++){
-            Game.module.area.MiniGame.Enemies[i].update(delta);
-          }
-        }
-
-        //update rooms
-        for(let i = 0; i < roomCount; i++){
-          Game.module.area.rooms[i].update(delta);
-          Game.module.area.rooms[i].hide();
-        }
-
-        Game.UpdateVisibleRooms();
-
-        for(let i = 0; i < partyCount; i++){
-          PartyManager.party[i].controlled = false;
+        if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
+          Game.module.tick(delta);
         }
         
         if(Game.inDialog){
@@ -1484,56 +1361,6 @@ class Game extends Engine {
 
     Game.stats.update();
     
-  }
-
-  static UpdateVisibleRooms(){
-
-    let rooms = [];
-    let room = undefined;
-    let model = undefined;
-    let pos = 0;
-    
-    if(Game.inDialog){
-      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
-      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-        room = Game.module.area.rooms[i] || undefined;
-        if(room){
-          model = room.model || undefined;
-          if(model != undefined && model.type === 'AuroraModel'){
-            
-            if(!room.hasVISObject || model.box.containsPoint(pos)){
-              rooms.push(room);
-            }
-          }
-        }
-      }
-
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
-      }
-
-    }else if(PartyManager.party[0]){
-
-      let player = Game.getCurrentPlayer();
-      if(player && player.room){
-        player.room.show(true);
-      }
-
-      //SKYBOX Fix
-      if(player){
-        for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
-          let room = Game.module.area.rooms[i];
-          if(room.model instanceof THREE.AuroraModel){
-            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
-              //Show the room, but don't recursively show it's children
-              room.show(false);
-            }
-          }
-        }
-      }
-
-    }
-
   }
 
   static getCurrentPlayer(){

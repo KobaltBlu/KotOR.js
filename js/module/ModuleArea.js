@@ -123,6 +123,184 @@ class ModuleArea extends ModuleObject {
 
   }
 
+  dispose(){
+
+    //Clear room geometries
+    while (this.rooms.length){
+      this.rooms[0].destroy();
+    }
+
+    //Clear creature geometries
+    while (this.creatures.length){
+      this.creatures[0].destroy();
+    }
+
+    //Clear item geometries
+    while (this.items.length){
+      this.items[0].destroy();
+    }
+
+    //Clear placeable geometries
+    while (this.placeables.length){
+      this.placeables[0].destroy();
+    }
+
+    //Clear door geometries
+    while (this.doors.length){
+      this.doors[0].destroy();
+    }
+
+    //Clear trigger geometries
+    while (this.triggers.length){
+      this.triggers[0].destroy();
+    }
+
+    //Clear party geometries
+    /*while (Game.group.party.children.length > 1){
+      Game.group.party.children[1].dispose();
+      Game.group.party.remove(Game.group.party.children[1]);
+    }*/
+
+    /*while (PartyManager.party.length){
+      Game.group.party.children[0].dispose();
+      Game.group.party.remove(Game.group.party.children[0]);
+    }*/
+
+    //Clear sound geometries
+    while (Game.group.sounds.children.length){
+      Game.group.sounds.remove(Game.group.sounds.children[0]);
+    }
+
+    //Clear grass geometries
+    while (Game.group.grass.children.length){
+      Game.group.grass.children[0].geometry.dispose();
+      Game.group.grass.children[0].material.dispose();
+      Game.group.grass.remove(Game.group.grass.children[0]);
+    }
+
+    //Clear party geometries
+    /*while (PartyManager.party.length){
+      PartyManager.party[0].destroy();
+      PartyManager.party.shift();
+    }*/
+  }
+
+  update(delta){
+    
+
+    let walkCount = Game.walkmeshList.length;
+    let roomCount = Game.group.rooms.children.length;
+
+    let trigCount = this.triggers.length;
+    let encounterCount = this.encounters.length;
+    let creatureCount = this.creatures.length;
+    let placeableCount = this.placeables.length;
+    let doorCount = this.doors.length;
+    let partyCount = PartyManager.party.length;
+    let animTexCount = AnimatedTextures.length;
+    let obj = undefined;
+
+    //update triggers
+    for(let i = 0; i < trigCount; i++){
+      this.triggers[i].update(delta);
+    }
+
+    //update encounters
+    for(let i = 0; i < encounterCount; i++){
+      this.encounters[i].update(delta);
+    }
+
+    //update party
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].update(delta);
+    }
+    
+    //update creatures
+    for(let i = 0; i < creatureCount; i++){
+      this.creatures[i].update(delta);
+    }
+    
+    //update placeables
+    for(let i = 0; i < placeableCount; i++){
+      this.placeables[i].update(delta);
+    }
+    
+    //update doors
+    for(let i = 0; i < doorCount; i++){
+      this.doors[i].update(delta);
+    }
+
+    //update animated textures
+    for(let i = 0; i < animTexCount; i++){
+      AnimatedTextures[i].Update(delta);
+    }
+
+    //unset party controlled
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].controlled = false;
+    }
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+        this.MiniGame.Enemies[i].update(delta);
+      }
+    }
+
+    //update rooms
+    for(let i = 0; i < roomCount; i++){
+      this.rooms[i].update(delta);
+      this.rooms[i].hide();
+    }
+
+    this.updateRoomVisibility(delta);
+
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].controlled = false;
+    }
+  }
+
+  updateRoomVisibility(delta){
+    let rooms = [];
+    let room = undefined;
+    let model = undefined;
+    let pos = undefined;
+    
+    if(Game.inDialog){
+      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
+      for(let i = 0, il = this.rooms.length; i < il; i++){
+        if((room = this.rooms[i])){
+          if((model = room.model) && model.type === 'AuroraModel'){
+            if(!room.hasVISObject || model.box.containsPoint(pos)){
+              rooms.push(room);
+            }
+          }
+        }
+      }
+
+      for(let i = 0; i < rooms.length; i++){
+        rooms[i].show(true);
+      }
+    }else if(PartyManager.party[0]){
+      let player = Game.getCurrentPlayer();
+      if(player && player.room){
+        player.room.show(true);
+      }
+
+      //SKYBOX Fix
+      if(player){
+        for(let i = 0, len = this.rooms.length; i < len; i++){
+          let room = this.rooms[i];
+          if(room.model instanceof THREE.AuroraModel){
+            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
+              //Show the room, but don't recursively show it's children
+              room.show(false);
+            }
+          }
+        }
+      }
+    }
+  }
+
   SetTransitionWaypoint(sTag = ''){
     this.transWP = sTag;
   }
@@ -1527,33 +1705,33 @@ class ModuleArea extends ModuleObject {
 
   async initAreaObjects(runSpawnScripts = false){
 
-    for(let i = 0; i < Game.module.area.doors.length; i++){
-      if(Game.module.area.doors[i] instanceof ModuleObject){
-        await Game.module.area.doors[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.doors.length; i++){
+      if(this.doors[i] instanceof ModuleObject){
+        await this.doors[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
-      if(Game.module.area.placeables[i] instanceof ModuleObject){
-        await Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.placeables.length; i++){
+      if(this.placeables[i] instanceof ModuleObject){
+        await this.placeables[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.triggers.length; i++){
-      if(Game.module.area.triggers[i] instanceof ModuleObject){
-        await Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.triggers.length; i++){
+      if(this.triggers[i] instanceof ModuleObject){
+        await this.triggers[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.waypoints.length; i++){
-      if(Game.module.area.waypoints[i] instanceof ModuleObject){
-        await Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.waypoints.length; i++){
+      if(this.waypoints[i] instanceof ModuleObject){
+        await this.waypoints[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.creatures.length; i++){
-      if(Game.module.area.creatures[i] instanceof ModuleObject){
-        await Game.module.area.creatures[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.creatures.length; i++){
+      if(this.creatures[i] instanceof ModuleObject){
+        await this.creatures[i].onSpawn(runSpawnScripts);
       }
     }
 
