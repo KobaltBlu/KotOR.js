@@ -257,6 +257,7 @@ class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
+    this.updateFollowerCamera(delta);
 
     this.weather.update(delta);
   }
@@ -301,6 +302,115 @@ class ModuleArea extends ModuleObject {
         }
       }
     }
+  }
+
+  updateFollowerCamera(delta){
+    let followee = Game.getCurrentPlayer();
+    if(!followee) return;
+
+    let camStyle = Game.module.getCameraStyle();
+    let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
+
+    let offsetHeight = 0;
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+      offsetHeight = 1;
+    }else{
+      if(!isNaN(parseFloat(followee.getAppearance().cameraheightoffset))){
+        offsetHeight = parseFloat(followee.getAppearance().cameraheightoffset);
+      }
+    }
+
+    Game.followerCamera.pitch = THREE.Math.degToRad(camStyle.pitch);
+    
+    let camHeight = (1.35 + cameraHeight)-offsetHeight;
+    let distance = camStyle.distance * Game.CameraDebugZoom;
+
+    Game.raycaster.far = 10;
+    
+    Game.raycaster.ray.direction.set(Math.cos(Game.followerCamera.facing), Math.sin(Game.followerCamera.facing), 0).normalize();
+    Game.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
+
+    let aabbFaces = [];
+    let intersects;
+
+    if(typeof this.cameraBoundingBox == 'undefined'){
+      this.cameraBoundingBox = new THREE.Box3(Game.raycaster.ray.origin.clone(), Game.raycaster.ray.origin.clone());
+    }
+
+    this.cameraBoundingBox.min.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.max.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.expandByScalar(distance * 1.5);
+    
+    if(followee.room && followee.room.walkmesh && followee.room.walkmesh.aabbNodes.length){
+      aabbFaces.push({
+        object: followee.room, 
+        faces: followee.room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
+      });
+    }
+
+    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+      let door = Game.module.area.doors[j];
+      if(door && door.walkmesh && !door.isOpen()){
+        if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
+          aabbFaces.push({
+            object: door,
+            faces: door.walkmesh.faces
+          });
+        }
+      }
+    }
+    
+    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+      let castableFaces = aabbFaces[k];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      if ( intersects.length > 0 ) {
+        for(let i = 0; i < intersects.length; i++){
+          if(intersects[i].distance < distance){
+            distance = intersects[i].distance * .75;
+          }
+        }
+      }
+    }
+
+    Game.raycaster.far = Infinity;
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+
+      followee.camera.camerahook.getWorldPosition(Game.followerCamera.position);
+      followee.camera.camerahook.getWorldQuaternion(Game.followerCamera.quaternion);
+
+      switch(Game.module.area.MiniGame.Type){
+        case 1: //SWOOPRACE
+          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+        break;
+        case 2: //TURRET
+          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+        break;
+      }
+      Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+
+    }else{
+      Game.followerCamera.position.copy(followee.position);
+
+      //If the distance is greater than the last distance applied to the camera. 
+      //Increase the distance by the frame delta so it will grow overtime until it
+      //reaches the max allowed distance wether by collision or camera settings.
+      if(distance > Game.followerCamera.distance){
+        distance = Game.followerCamera.distance += 2 * delta;
+      }
+        
+      Game.followerCamera.position.x += distance * Math.cos(Game.followerCamera.facing);
+      Game.followerCamera.position.y += distance * Math.sin(Game.followerCamera.facing);
+      Game.followerCamera.position.z += camHeight;
+
+      Game.followerCamera.distance = distance;
+    
+      Game.followerCamera.rotation.order = 'YZX';
+      Game.followerCamera.rotation.set(Game.followerCamera.pitch, 0, Game.followerCamera.facing+Math.PI/2);
+    }
+    
+    Game.followerCamera.updateProjectionMatrix();
   }
 
   SetTransitionWaypoint(sTag = ''){

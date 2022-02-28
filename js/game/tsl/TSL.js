@@ -1039,115 +1039,6 @@ class Game extends Engine {
 
   }
 
-  static UpdateFollowerCamera(delta = 0) {
-    let followee = Game.getCurrentPlayer();
-    if(!followee) return;
-
-    let camStyle = Game.module.getCameraStyle();
-    let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
-
-    let offsetHeight = 0;
-
-    if(Game.Mode == Game.MODES.MINIGAME){
-      offsetHeight = 1;
-    }else{
-      if(!isNaN(parseFloat(followee.getAppearance().cameraheightoffset))){
-        offsetHeight = parseFloat(followee.getAppearance().cameraheightoffset);
-      }
-    }
-
-    Game.followerCamera.pitch = THREE.Math.degToRad(camStyle.pitch);
-    
-    let camHeight = (1.35 + cameraHeight)-offsetHeight;
-    let distance = camStyle.distance * Game.CameraDebugZoom;
-
-    Game.raycaster.far = 10;
-    
-    Game.raycaster.ray.direction.set(Math.cos(Game.followerCamera.facing), Math.sin(Game.followerCamera.facing), 0).normalize();
-    Game.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
-
-    let aabbFaces = [];
-    let intersects;
-
-    if(typeof this.cameraBoundingBox == 'undefined'){
-      this.cameraBoundingBox = new THREE.Box3(Game.raycaster.ray.origin.clone(), Game.raycaster.ray.origin.clone());
-    }
-
-    this.cameraBoundingBox.min.copy(Game.raycaster.ray.origin);
-    this.cameraBoundingBox.max.copy(Game.raycaster.ray.origin);
-    this.cameraBoundingBox.expandByScalar(distance * 1.5);
-    
-    if(followee.room && followee.room.walkmesh && followee.room.walkmesh.aabbNodes.length){
-      aabbFaces.push({
-        object: followee.room, 
-        faces: followee.room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
-      });
-    }
-
-    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
-      let door = Game.module.area.doors[j];
-      if(door && door.walkmesh && !door.isOpen()){
-        if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
-          aabbFaces.push({
-            object: door,
-            faces: door.walkmesh.faces
-          });
-        }
-      }
-    }
-    
-    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      let castableFaces = aabbFaces[k];
-      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
-      if ( intersects.length > 0 ) {
-        for(let i = 0; i < intersects.length; i++){
-          if(intersects[i].distance < distance){
-            distance = intersects[i].distance * .75;
-          }
-        }
-      }
-    }
-
-    Game.raycaster.far = Infinity;
-
-    if(Game.Mode == Game.MODES.MINIGAME){
-
-      followee.camera.camerahook.getWorldPosition(Game.followerCamera.position);
-      followee.camera.camerahook.getWorldQuaternion(Game.followerCamera.quaternion);
-
-      switch(Game.module.area.MiniGame.Type){
-        case 1: //SWOOPRACE
-          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
-        break;
-        case 2: //TURRET
-          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
-        break;
-      }
-      Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
-
-    }else{
-      Game.followerCamera.position.copy(followee.position);
-
-      //If the distance is greater than the last distance applied to the camera. 
-      //Increase the distance by the frame delta so it will grow overtime until it
-      //reaches the max allowed distance wether by collision or camera settings.
-      if(distance > Game.followerCamera.distance){
-        distance = Game.followerCamera.distance += 2 * delta;
-      }
-        
-      Game.followerCamera.position.x += distance * Math.cos(Game.followerCamera.facing);
-      Game.followerCamera.position.y += distance * Math.sin(Game.followerCamera.facing);
-      Game.followerCamera.position.z += camHeight;
-
-      Game.followerCamera.distance = distance;
-    
-      Game.followerCamera.rotation.order = 'YZX';
-      Game.followerCamera.rotation.set(Game.followerCamera.pitch, 0, Game.followerCamera.facing+Math.PI/2);
-    }
-    
-    Game.followerCamera.updateProjectionMatrix();
-  }
-
   static UpdateVideoEffect(){
     if(!isNaN(parseInt(Game.videoEffect))){
       let effect = Global.kotor2DA.videoeffects.rows[Game.videoEffect];
@@ -1247,23 +1138,21 @@ class Game extends Engine {
 
         if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
           Game.module.tick(delta);
-          CombatEngine.Update(delta);
         }
-
-        Game.UpdateVisibleRooms();
         
         if(Game.inDialog){
           Game.InGameDialog.Update(delta);
           if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
             Game.scene_cursor_holder.visible = false;
           }
-        }        
-
-        Game.UpdateFollowerCamera(delta);
+        }
 
       }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){
-        Game.controls.UpdatePlayerControls(delta);
-        Game.UpdateFollowerCamera(delta);
+        if(Game.module && Game.module.area){
+          Game.module.area.updateRoomVisibility(delta);
+          Game.controls.UpdatePlayerControls(delta);
+          Game.module.area.updateFollowerCamera(delta);
+        }
       }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
         if(Game.MenuPartySelection.bVisible){
           Game.MenuPartySelection.Update(delta);
@@ -1396,56 +1285,6 @@ class Game extends Engine {
     Game.stats.update();
     //requestAnimationFrame( Game.Update );
     
-  }
-
-  static UpdateVisibleRooms(){
-
-    let rooms = [];
-    let room = undefined;
-    let model = undefined;
-    let pos = 0;
-    
-    if(Game.inDialog){
-      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
-      for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-        room = Game.module.area.rooms[i] || undefined;
-        if(room){
-          model = room.model || undefined;
-          if(model != undefined && model.type === 'AuroraModel'){
-            
-            if(!room.hasVISObject || model.box.containsPoint(pos)){
-              rooms.push(room);
-            }
-          }
-        }
-      }
-
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
-      }
-
-    }else if(PartyManager.party[0]){
-
-      let player = Game.getCurrentPlayer();
-      if(player && player.room){
-        player.room.show(true);
-      }
-
-      //SKYBOX Fix
-      if(player){
-        for(let i = 0, len = Game.module.area.rooms.length; i < len; i++){
-          let room = Game.module.area.rooms[i];
-          if(room.model instanceof THREE.AuroraModel){
-            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
-              //Show the room, but don't recursively show it's children
-              room.show(false);
-            }
-          }
-        }
-      }
-
-    }
-
   }
 
   static getCurrentPlayer(){
