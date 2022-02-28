@@ -68,7 +68,6 @@ class ModuleTrigger extends ModuleObject {
   }
 
   getCurrentRoom(){
-    this.room = undefined;
     let _distance = 1000000000;
     for(let i = 0; i < Game.module.area.rooms.length; i++){
       let room = Game.module.area.rooms[i];
@@ -80,7 +79,7 @@ class ModuleTrigger extends ModuleObject {
           let distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
             _distance = distance;
-            this.room = room;
+            this.attachToRoom(room);
           }
         }
       }

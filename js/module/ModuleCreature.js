@@ -1356,9 +1356,7 @@ class ModuleCreature extends ModuleCreatureController {
         this.LoadHead( () => {
           TextureLoader.LoadQueue(() => {
             this.isReady = true;
-
-            this.invalidateCollision = true;
-
+            this.updateCollision(0.016);
             if(onLoad != null)
               onLoad(this.model);
           });
