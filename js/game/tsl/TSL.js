@@ -1104,11 +1104,6 @@ class Game extends Engine {
     Game.UpdateVideoEffect();
     MenuManager.Update(delta);
 
-    Game.currentRoom = null;
-    Game.currentDistance = 10000000;
-
-    Game.__rooms = [];
-
     Game.scene_cursor_holder.visible = true;
 
     // if enough time has elapsed, draw the next frame
