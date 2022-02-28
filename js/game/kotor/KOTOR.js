@@ -243,7 +243,6 @@ class Game extends Engine {
 
     Game.collisionList = [];
     Game.walkmeshList = [];
-    Game.emitters = {};
     Game.group = {
       creatures: new THREE.Group(),
       doors: new THREE.Group(),
@@ -1081,11 +1080,6 @@ class Game extends Engine {
     Game.currentDistance = 10000000;
 
     Game.__rooms = [];
-
-    for(let emitter in Game.emitters){
-      //console.log(emitter);
-      Game.emitters[emitter].tick(delta);
-    }
 
     Game.scene_cursor_holder.visible = true;
 

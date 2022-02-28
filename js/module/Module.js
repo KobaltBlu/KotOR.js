@@ -479,8 +479,6 @@ class Module {
 
     Game.octree_walkmesh.rebuild();
 
-    Game.emitters = {};
-
     if(Game.module instanceof Module){
 
       if(Game.player instanceof ModuleObject){
