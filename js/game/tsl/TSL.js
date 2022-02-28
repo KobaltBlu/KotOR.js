@@ -847,7 +847,7 @@ class Game extends Engine {
       Game.MainMenu.Open();
       $( window ).trigger('resize');
       this.setTestingGlobals();
-      Game.Update = Game.Update.bind(this);
+      //Game.Update = Game.Update.bind(this);
       Game.Update();
     }
   }
@@ -1148,10 +1148,10 @@ class Game extends Engine {
         }
 
       }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){
+        Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
+        Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
         if(Game.module && Game.module.area){
-          Game.module.area.updateRoomVisibility(delta);
-          Game.controls.UpdatePlayerControls(delta);
-          Game.module.area.updateFollowerCamera(delta);
+          Game.module.area.updatePaused(delta);
         }
       }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
         if(Game.MenuPartySelection.bVisible){

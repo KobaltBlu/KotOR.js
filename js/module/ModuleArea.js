@@ -189,10 +189,7 @@ class ModuleArea extends ModuleObject {
   }
 
   update(delta){
-    
-    let walkCount = Game.walkmeshList.length;
-    let roomCount = Game.group.rooms.children.length;
-
+    let roomCount = this.rooms.length;
     let trigCount = this.triggers.length;
     let encounterCount = this.encounters.length;
     let creatureCount = this.creatures.length;
@@ -200,7 +197,6 @@ class ModuleArea extends ModuleObject {
     let doorCount = this.doors.length;
     let partyCount = PartyManager.party.length;
     let animTexCount = AnimatedTextures.length;
-    let obj = undefined;
 
     Game.controls.UpdatePlayerControls(delta);
 
@@ -260,6 +256,62 @@ class ModuleArea extends ModuleObject {
     this.updateFollowerCamera(delta);
 
     this.weather.update(delta);
+  }
+
+  updatePaused(delta){
+    let roomCount = this.rooms.length;
+    let trigCount = this.triggers.length;
+    let encounterCount = this.encounters.length;
+    let creatureCount = this.creatures.length;
+    let placeableCount = this.placeables.length;
+    let doorCount = this.doors.length;
+    let partyCount = PartyManager.party.length;
+
+    Game.controls.UpdatePlayerControls(delta);
+
+    //update triggers
+    for(let i = 0; i < trigCount; i++){
+      this.triggers[i].updatePaused(delta);
+    }
+
+    //update encounters
+    for(let i = 0; i < encounterCount; i++){
+      this.encounters[i].updatePaused(delta);
+    }
+
+    //update party
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].updatePaused(delta);
+    }
+    
+    //update creatures
+    for(let i = 0; i < creatureCount; i++){
+      this.creatures[i].updatePaused(delta);
+    }
+    
+    //update placeables
+    for(let i = 0; i < placeableCount; i++){
+      this.placeables[i].updatePaused(delta);
+    }
+    
+    //update doors
+    for(let i = 0; i < doorCount; i++){
+      this.doors[i].updatePaused(delta);
+    }
+
+    // if(Game.Mode == Game.MODES.MINIGAME){
+    //   for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+    //     this.MiniGame.Enemies[i].update(delta);
+    //   }
+    // }
+
+    //update rooms
+    for(let i = 0; i < roomCount; i++){
+      this.rooms[i].hide();
+    }
+
+    this.updateRoomVisibility(delta);
+    this.updateFollowerCamera(delta);
   }
 
   updateRoomVisibility(delta){

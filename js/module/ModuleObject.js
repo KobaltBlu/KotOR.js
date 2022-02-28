@@ -249,33 +249,41 @@ class ModuleObject {
         }
         this.roomCheckTimer -= delta;
       }
-
-      if(this.model){
-        this.model.wasOffscreen = !this.model.visible;
-        if(!this.room || (this.room && !this.room.model.visible)){
-          this.model.visible = false;
-        }else{
-          this.model.visible = true;
-        }
-
-        //Check to see if the model is inside the current camera's frustum
-        if(!this.isOnScreen()){
-          this.model.visible = false;
-        }
-
-        if(Game.inDialog){
-          this.model.visible = true;
-        }
-
-      }
+      this.setModelVisibility();
     }
+
 
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
   }
 
-  
+  updatePaused(delta){
+    if(this.spawned){
+      this.setModelVisibility();
+    }
+  }
+
+  setModelVisibility(){
+    if(this.model){
+      this.model.wasOffscreen = !this.model.visible;
+      if(!this.room || (this.room && !this.room.model.visible)){
+        this.model.visible = false;
+      }else{
+        this.model.visible = true;
+      }
+
+      //Check to see if the model is inside the current camera's frustum
+      if(!this.isOnScreen()){
+        this.model.visible = false;
+      }
+
+      if(Game.inDialog){
+        this.model.visible = true;
+      }
+
+    }
+  }
 
   clearAllActions(skipUnclearable = false){
     this.combatQueue = [];
