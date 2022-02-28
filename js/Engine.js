@@ -397,70 +397,11 @@ class Engine {
 
   }
 
-  static UpdateFollowerCamera(delta = 0) {
-    
-    for(let i = 0; i < Engine.collisionList.length; i++){
-      let obj = Engine.collisionList[i];
-      if(obj instanceof THREE.Mesh){
-        obj.visible = true;
-      }
-    }
-
-    let followee = Engine.getCurrentPlayer();
-
-    let camStyle = Engine.module.getCameraStyle();
-
-    let camHeight = new THREE.Vector3(0, 0, 1.6);
-    let distance = camStyle.distance;
-    
-    let camPosition = followee.getModel().position.clone().add(new THREE.Vector3(distance*Math.cos(Engine.followerCamera.facing), distance*Math.sin(Engine.followerCamera.facing), 1.8));
-    
-    let frontRay = followee.getModel().position.clone().add(new THREE.Vector3(-1*Math.cos(Engine.followerCamera.facing), -1*Math.sin(Engine.followerCamera.facing), 1.8));
-    let backRay = followee.getModel().position.clone().add(new THREE.Vector3(1*Math.cos(Engine.followerCamera.facing), 1*Math.sin(Engine.followerCamera.facing), 1.8));
-    let detect = false;
-    let fDir = new THREE.Vector3(1*Math.cos(Engine.followerCamera.facing), 1*Math.sin(Engine.followerCamera.facing), 0);
-    //let bDir = new THREE.Vector3(-1*Math.cos(Engine.followerCamera.facing), -1*Math.sin(Engine.followerCamera.facing), 0);
-    Engine.raycaster.ray.direction.set(fDir.x,fDir.y,0);
-    Engine.raycaster.ray.origin.set(frontRay.x,frontRay.y,frontRay.z);
-    
-    let intersects = Engine.raycaster.intersectObjects( Engine.collisionList );
-    if ( intersects.length > 0 ) {
-      if(intersects[ 0 ].distance < 2){
-        distance = intersects[ 0 ].distance * .75;
-        detect = true
-      }
-    }
-
-    if(!detect){
-      Engine.raycaster.ray.direction.set(fDir.x,fDir.y,0);
-      Engine.raycaster.ray.origin.set(backRay.x,backRay.y,backRay.z);
-      let intersects = Engine.raycaster.intersectObjects( Engine.collisionList );
-      if ( intersects.length > 0 ) {
-        if(intersects[ 0 ].distance < 2){
-          distance = intersects[ 0 ].distance * .75;
-        }
-      }
-    }
-
-    for(let i = 0; i < Engine.collisionList.length; i++){
-      let obj = Engine.collisionList[i];
-      if(obj instanceof THREE.Mesh){
-        obj.visible = false;
-      }
-    }
-
-    Engine.followerCamera.position.copy(followee.getModel().position.clone().add(new THREE.Vector3(distance*Math.cos(Engine.followerCamera.facing), distance*Math.sin(Engine.followerCamera.facing), 1.8)));
-    Engine.followerCamera.lookAt(followee.getModel().position.clone().add(camHeight));
-    Engine.followerCamera.updateProjectionMatrix();
-
-  }
-
   static getCurrentPlayer(){
     let p = Engine.module.party[0];
     return p ? p : Engine.player;
   }
-
-
+  
   static updateCursor(){
     CursorManager.setCursor('default');
     Engine.scene_cursor_holder.position.x = Mouse.Client.x - (window.innerWidth/2) + (32/2);

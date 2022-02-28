@@ -120,7 +120,349 @@ class ModuleArea extends ModuleObject {
     this.git = git;
 
     this.transWP = '';
+    this.weather = new AreaWeather(this);
 
+  }
+
+  dispose(){
+
+    //Clear room geometries
+    while (this.rooms.length){
+      this.rooms[0].destroy();
+    }
+
+    //Clear creature geometries
+    while (this.creatures.length){
+      this.creatures[0].destroy();
+    }
+
+    //Clear item geometries
+    while (this.items.length){
+      this.items[0].destroy();
+    }
+
+    //Clear placeable geometries
+    while (this.placeables.length){
+      this.placeables[0].destroy();
+    }
+
+    //Clear door geometries
+    while (this.doors.length){
+      this.doors[0].destroy();
+    }
+
+    //Clear trigger geometries
+    while (this.triggers.length){
+      this.triggers[0].destroy();
+    }
+
+    //Clear party geometries
+    /*while (Game.group.party.children.length > 1){
+      Game.group.party.children[1].dispose();
+      Game.group.party.remove(Game.group.party.children[1]);
+    }*/
+
+    /*while (PartyManager.party.length){
+      Game.group.party.children[0].dispose();
+      Game.group.party.remove(Game.group.party.children[0]);
+    }*/
+
+    //Clear sound geometries
+    while (Game.group.sounds.children.length){
+      Game.group.sounds.remove(Game.group.sounds.children[0]);
+    }
+
+    //Clear grass geometries
+    while (Game.group.grass.children.length){
+      Game.group.grass.children[0].geometry.dispose();
+      Game.group.grass.children[0].material.dispose();
+      Game.group.grass.remove(Game.group.grass.children[0]);
+    }
+
+    this.weather.destroy();
+
+    //Clear party geometries
+    /*while (PartyManager.party.length){
+      PartyManager.party[0].destroy();
+      PartyManager.party.shift();
+    }*/
+  }
+
+  update(delta){
+    let roomCount = this.rooms.length;
+    let trigCount = this.triggers.length;
+    let encounterCount = this.encounters.length;
+    let creatureCount = this.creatures.length;
+    let placeableCount = this.placeables.length;
+    let doorCount = this.doors.length;
+    let partyCount = PartyManager.party.length;
+    let animTexCount = AnimatedTextures.length;
+
+    Game.controls.UpdatePlayerControls(delta);
+
+    //update triggers
+    for(let i = 0; i < trigCount; i++){
+      this.triggers[i].update(delta);
+    }
+
+    //update encounters
+    for(let i = 0; i < encounterCount; i++){
+      this.encounters[i].update(delta);
+    }
+
+    //update party
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].update(delta);
+    }
+    
+    //update creatures
+    for(let i = 0; i < creatureCount; i++){
+      this.creatures[i].update(delta);
+    }
+    
+    //update placeables
+    for(let i = 0; i < placeableCount; i++){
+      this.placeables[i].update(delta);
+    }
+    
+    //update doors
+    for(let i = 0; i < doorCount; i++){
+      this.doors[i].update(delta);
+    }
+
+    //update animated textures
+    for(let i = 0; i < animTexCount; i++){
+      AnimatedTextures[i].Update(delta);
+    }
+
+    //unset party controlled
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].controlled = false;
+    }
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+        this.MiniGame.Enemies[i].update(delta);
+      }
+    }
+
+    //update rooms
+    for(let i = 0; i < roomCount; i++){
+      this.rooms[i].update(delta);
+      this.rooms[i].hide();
+    }
+
+    this.updateRoomVisibility(delta);
+    this.updateFollowerCamera(delta);
+
+    this.weather.update(delta);
+  }
+
+  updatePaused(delta){
+    let roomCount = this.rooms.length;
+    let trigCount = this.triggers.length;
+    let encounterCount = this.encounters.length;
+    let creatureCount = this.creatures.length;
+    let placeableCount = this.placeables.length;
+    let doorCount = this.doors.length;
+    let partyCount = PartyManager.party.length;
+
+    Game.controls.UpdatePlayerControls(delta);
+
+    //update triggers
+    for(let i = 0; i < trigCount; i++){
+      this.triggers[i].updatePaused(delta);
+    }
+
+    //update encounters
+    for(let i = 0; i < encounterCount; i++){
+      this.encounters[i].updatePaused(delta);
+    }
+
+    //update party
+    for(let i = 0; i < partyCount; i++){
+      PartyManager.party[i].updatePaused(delta);
+    }
+    
+    //update creatures
+    for(let i = 0; i < creatureCount; i++){
+      this.creatures[i].updatePaused(delta);
+    }
+    
+    //update placeables
+    for(let i = 0; i < placeableCount; i++){
+      this.placeables[i].updatePaused(delta);
+    }
+    
+    //update doors
+    for(let i = 0; i < doorCount; i++){
+      this.doors[i].updatePaused(delta);
+    }
+
+    // if(Game.Mode == Game.MODES.MINIGAME){
+    //   for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+    //     this.MiniGame.Enemies[i].update(delta);
+    //   }
+    // }
+
+    //update rooms
+    for(let i = 0; i < roomCount; i++){
+      this.rooms[i].hide();
+    }
+
+    this.updateRoomVisibility(delta);
+    this.updateFollowerCamera(delta);
+  }
+
+  updateRoomVisibility(delta){
+    let rooms = [];
+    let room = undefined;
+    let model = undefined;
+    let pos = undefined;
+    
+    if(Game.inDialog){
+      pos = Game.currentCamera.position.clone().add(Game.playerFeetOffset);
+      for(let i = 0, il = this.rooms.length; i < il; i++){
+        if((room = this.rooms[i])){
+          if((model = room.model) && model.type === 'AuroraModel'){
+            if(!room.hasVISObject || model.box.containsPoint(pos)){
+              rooms.push(room);
+            }
+          }
+        }
+      }
+
+      for(let i = 0; i < rooms.length; i++){
+        rooms[i].show(true);
+      }
+    }else if(PartyManager.party[0]){
+      let player = Game.getCurrentPlayer();
+      if(player && player.room){
+        player.room.show(true);
+      }
+
+      //SKYBOX Fix
+      if(player){
+        for(let i = 0, len = this.rooms.length; i < len; i++){
+          let room = this.rooms[i];
+          if(room.model instanceof THREE.AuroraModel){
+            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
+              //Show the room, but don't recursively show it's children
+              room.show(false);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  updateFollowerCamera(delta){
+    let followee = Game.getCurrentPlayer();
+    if(!followee) return;
+
+    let camStyle = Game.module.getCameraStyle();
+    let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
+
+    let offsetHeight = 0;
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+      offsetHeight = 1;
+    }else{
+      if(!isNaN(parseFloat(followee.getAppearance().cameraheightoffset))){
+        offsetHeight = parseFloat(followee.getAppearance().cameraheightoffset);
+      }
+    }
+
+    Game.followerCamera.pitch = THREE.Math.degToRad(camStyle.pitch);
+    
+    let camHeight = (1.35 + cameraHeight)-offsetHeight;
+    let distance = camStyle.distance * Game.CameraDebugZoom;
+
+    Game.raycaster.far = 10;
+    
+    Game.raycaster.ray.direction.set(Math.cos(Game.followerCamera.facing), Math.sin(Game.followerCamera.facing), 0).normalize();
+    Game.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
+
+    let aabbFaces = [];
+    let intersects;
+
+    if(typeof this.cameraBoundingBox == 'undefined'){
+      this.cameraBoundingBox = new THREE.Box3(Game.raycaster.ray.origin.clone(), Game.raycaster.ray.origin.clone());
+    }
+
+    this.cameraBoundingBox.min.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.max.copy(Game.raycaster.ray.origin);
+    this.cameraBoundingBox.expandByScalar(distance * 1.5);
+    
+    if(followee.room && followee.room.walkmesh && followee.room.walkmesh.aabbNodes.length){
+      aabbFaces.push({
+        object: followee.room, 
+        faces: followee.room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
+      });
+    }
+
+    for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
+      let door = Game.module.area.doors[j];
+      if(door && door.walkmesh && !door.isOpen()){
+        if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
+          aabbFaces.push({
+            object: door,
+            faces: door.walkmesh.faces
+          });
+        }
+      }
+    }
+    
+    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+      let castableFaces = aabbFaces[k];
+      intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+      if ( intersects.length > 0 ) {
+        for(let i = 0; i < intersects.length; i++){
+          if(intersects[i].distance < distance){
+            distance = intersects[i].distance * .75;
+          }
+        }
+      }
+    }
+
+    Game.raycaster.far = Infinity;
+
+    if(Game.Mode == Game.MODES.MINIGAME){
+
+      followee.camera.camerahook.getWorldPosition(Game.followerCamera.position);
+      followee.camera.camerahook.getWorldQuaternion(Game.followerCamera.quaternion);
+
+      switch(Game.module.area.MiniGame.Type){
+        case 1: //SWOOPRACE
+          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+        break;
+        case 2: //TURRET
+          Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+        break;
+      }
+      Game.followerCamera.fov = Game.module.area.MiniGame.CameraViewAngle;
+
+    }else{
+      Game.followerCamera.position.copy(followee.position);
+
+      //If the distance is greater than the last distance applied to the camera. 
+      //Increase the distance by the frame delta so it will grow overtime until it
+      //reaches the max allowed distance wether by collision or camera settings.
+      if(distance > Game.followerCamera.distance){
+        distance = Game.followerCamera.distance += 2 * delta;
+      }
+        
+      Game.followerCamera.position.x += distance * Math.cos(Game.followerCamera.facing);
+      Game.followerCamera.position.y += distance * Math.sin(Game.followerCamera.facing);
+      Game.followerCamera.position.z += camHeight;
+
+      Game.followerCamera.distance = distance;
+    
+      Game.followerCamera.rotation.order = 'YZX';
+      Game.followerCamera.rotation.set(Game.followerCamera.pitch, 0, Game.followerCamera.facing+Math.PI/2);
+    }
+    
+    Game.followerCamera.updateProjectionMatrix();
   }
 
   SetTransitionWaypoint(sTag = ''){
@@ -605,37 +947,7 @@ class ModuleArea extends ModuleObject {
 
     Game.followerCamera.facing = Utility.NormalizeRadian(Game.player.GetFacing() - Math.PI/2);
 
-    if(this.ChanceSnow == 100){
-      Game.ModelLoader.load({
-        file: 'fx_snow',
-        onLoad: (mdl) => {
-          THREE.AuroraModel.FromMDL(mdl, { 
-            onComplete: (model) => {
-              Game.weather_effects.push(model);
-              Game.group.weather_effects.add(model);
-              TextureLoader.LoadQueue();
-            },
-            manageLighting: false
-          });
-        }
-      });
-    }
-
-    if(this.ChanceRain == 100){
-      Game.ModelLoader.load({
-        file: 'fx_rain',
-        onLoad: (mdl) => {
-          THREE.AuroraModel.FromMDL(mdl, { 
-            onComplete: (model) => {
-              Game.weather_effects.push(model);
-              Game.group.weather_effects.add(model);
-              TextureLoader.LoadQueue();
-            },
-            manageLighting: false
-          });
-        }
-      });
-    }
+    await this.weather.load();
 
     this.transWP = null;
 
@@ -1527,33 +1839,33 @@ class ModuleArea extends ModuleObject {
 
   async initAreaObjects(runSpawnScripts = false){
 
-    for(let i = 0; i < Game.module.area.doors.length; i++){
-      if(Game.module.area.doors[i] instanceof ModuleObject){
-        await Game.module.area.doors[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.doors.length; i++){
+      if(this.doors[i] instanceof ModuleObject){
+        await this.doors[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.placeables.length; i++){
-      if(Game.module.area.placeables[i] instanceof ModuleObject){
-        await Game.module.area.placeables[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.placeables.length; i++){
+      if(this.placeables[i] instanceof ModuleObject){
+        await this.placeables[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.triggers.length; i++){
-      if(Game.module.area.triggers[i] instanceof ModuleObject){
-        await Game.module.area.triggers[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.triggers.length; i++){
+      if(this.triggers[i] instanceof ModuleObject){
+        await this.triggers[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.waypoints.length; i++){
-      if(Game.module.area.waypoints[i] instanceof ModuleObject){
-        await Game.module.area.waypoints[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.waypoints.length; i++){
+      if(this.waypoints[i] instanceof ModuleObject){
+        await this.waypoints[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < Game.module.area.creatures.length; i++){
-      if(Game.module.area.creatures[i] instanceof ModuleObject){
-        await Game.module.area.creatures[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.creatures.length; i++){
+      if(this.creatures[i] instanceof ModuleObject){
+        await this.creatures[i].onSpawn(runSpawnScripts);
       }
     }
 
@@ -2155,5 +2467,80 @@ AreaMap.MAP_DIRECTION = {
 };
 
 ModuleArea.AreaMap = AreaMap;
+
+class AreaWeather {
+  constructor(area = undefined){
+    this.area = area;
+    this.model = undefined;
+  }
+
+  update(delta){
+    if(this.model){
+      this.model.position.copy( Game.getCurrentPlayer().position ).add( new THREE.Vector3(0,0,3) );
+      this.model.update(delta);
+    }
+  }
+
+  async load(){
+    return new Promise( (resolve, reject) => {
+      if(this.ChanceSnow == 100){
+        Game.ModelLoader.load({
+          file: 'fx_snow',
+          onLoad: (mdl) => {
+            THREE.AuroraModel.FromMDL(mdl, { 
+              onComplete: (model) => {
+                this.model = model;
+                Game.weather_effects.push(model);
+                Game.group.weather_effects.add(model);
+                TextureLoader.LoadQueue();
+                resolve();
+              },
+              manageLighting: false
+            });
+          },
+          onError: () => {
+            resolve();
+          }
+        });
+      }else if(this.ChanceRain == 100){
+        Game.ModelLoader.load({
+          file: 'fx_rain',
+          onLoad: (mdl) => {
+            THREE.AuroraModel.FromMDL(mdl, { 
+              onComplete: (model) => {
+                this.model = model;
+                Game.weather_effects.push(model);
+                Game.group.weather_effects.add(model);
+                TextureLoader.LoadQueue();
+                resolve();
+              },
+              manageLighting: false
+            });
+          },
+          onError: () => {
+            resolve();
+          }
+        });
+      }else{
+        resolve();
+      }
+    });
+  }
+
+  destroy(){
+    let index = Game.weather_effects.indexOf(this.model);
+    if(index >= 1){
+      this.model.remove();
+      this.model.dispose();
+      Game.weather_effects.splice(index, 1);
+    }
+    //Remove all weather effects
+    // while(Game.weather_effects.length){
+    //   Game.weather_effects[0].dispose();
+    //   Game.weather_effects.shift();
+    // }
+  }
+
+}
 
 module.exports = ModuleArea;

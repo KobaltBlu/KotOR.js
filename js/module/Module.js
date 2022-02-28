@@ -19,6 +19,12 @@ class Module {
     this.customTokens = new Map();
   }
 
+  update(delta){
+    if(this.area){
+      this.area.update(delta);
+    }
+  }
+
   initProperties(){
     this.Expansion_Pack;
     this.Mod_Area_list = [];
@@ -264,6 +270,8 @@ class Module {
   tick(delta = 0){
 
     if(this.readyToProcessEvents){
+      
+      CombatEngine.Update(delta);
 
       //Process EventQueue
       let eqLen = this.eventQueue.length - 1;
@@ -282,10 +290,19 @@ class Module {
         this.effects[i].update(delta);
       }
 
+      if(this.area){
+        this.area.update(delta);
+      }
+
     }
 
   }
 
+  tickPaused(delta = 0){
+    if(this.area){
+      this.area.updatePaused(delta);
+    }
+  }
 
   setReturnStrRef(enabled = false, str1 = -1, str2 = -1){
     Game.MenuMap.BTN_RETURN.setText(Global.kotorTLK.GetStringById(str1));
@@ -438,12 +455,6 @@ class Module {
   dispose(){
     Game.collisionList = [];
     
-    //Remove all weather effects
-    while(Game.weather_effects.length){
-      Game.weather_effects[0].dispose();
-      Game.weather_effects.shift();
-    }
-    
     //Remove all effects
     if(Game.module){
       while(Game.module.effects.length){
@@ -473,8 +484,6 @@ class Module {
 
     Game.octree_walkmesh.rebuild();
 
-    Game.emitters = {};
-
     if(Game.module instanceof Module){
 
       if(Game.player instanceof ModuleObject){
@@ -486,65 +495,10 @@ class Module {
       while (Game.group.emitters.children.length){
         Game.group.emitters.remove(Game.group.emitters.children[0]);
       }
-
-      //Clear room geometries
-      while (Game.module.area.rooms.length){
-        Game.module.area.rooms[0].destroy();
+      
+      if(this.area){
+        this.area.dispose();
       }
-
-      //Clear creature geometries
-      while (Game.module.area.creatures.length){
-        Game.module.area.creatures[0].destroy();
-      }
-
-      //Clear item geometries
-      while (Game.module.area.items.length){
-        Game.module.area.items[0].destroy();
-      }
-
-      //Clear placeable geometries
-      while (Game.module.area.placeables.length){
-        Game.module.area.placeables[0].destroy();
-      }
-
-      //Clear door geometries
-      while (Game.module.area.doors.length){
-        Game.module.area.doors[0].destroy();
-      }
-
-      //Clear trigger geometries
-      while (Game.module.area.triggers.length){
-        Game.module.area.triggers[0].destroy();
-      }
-
-      //Clear party geometries
-      // while (Game.group.party.children.length > 1){
-      //   Game.group.party.children[1].dispose();
-      //   Game.group.party.remove(Game.group.party.children[1]);
-      // }
-
-      /*while (PartyManager.party.length){
-        Game.group.party.children[0].dispose();
-        Game.group.party.remove(Game.group.party.children[0]);
-      }*/
-
-      //Clear sound geometries
-      while (Game.group.sounds.children.length){
-        Game.group.sounds.remove(Game.group.sounds.children[0]);
-      }
-
-      //Clear grass geometries
-      while (Game.group.grass.children.length){
-        Game.group.grass.children[0].geometry.dispose();
-        Game.group.grass.children[0].material.dispose();
-        Game.group.grass.remove(Game.group.grass.children[0]);
-      }
-
-      //Clear party geometries
-      /*while (PartyManager.party.length){
-        PartyManager.party[0].destroy();
-        PartyManager.party.shift();
-      }*/
 
     }
 
@@ -853,7 +807,7 @@ class Module {
     if(modName != null){
       try{
         Module.GetModuleArchives(modName).then( (archives) => {
-          console.log('archives', archives);
+          // console.log('archives', archives);
           Game.module.archives = archives;
 
           ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {
@@ -907,17 +861,17 @@ class Module {
 
       fs.readFile(path.join(directory, 'module.ifo'), (err, ifo_data) => {
         new GFFObject(ifo_data, (ifo) => {
-          console.log('Module.FromProject', 'IFO', ifo);
+          //console.log('Module.FromProject', 'IFO', ifo);
           try{
             Game.module.setFromIFO(ifo);
             Game.time = Game.module.Mod_PauseTime / 1000;
 
             fs.readFile(path.join(directory, module.Mod_Entry_Area+'.git'), (err, data) => {
               new GFFObject(data, (git) => {
-                console.log('Module.FromProject', 'GIT', git);
+                //console.log('Module.FromProject', 'GIT', git);
                 fs.readFile(path.join(directory, module.Mod_Entry_Area+'.are'), (err, data) => {
                   new GFFObject(data, (are) => {
-                    console.log('Module.FromProject', 'ARE', are);
+                    //console.log('Module.FromProject', 'ARE', are);
                     module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                     module.area.module = module;
                     module.Mod_Area_list = [module.area];

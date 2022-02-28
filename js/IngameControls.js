@@ -643,7 +643,6 @@ class IngameControls {
               followee.controlled = true;
               Game.scene_cursor.visible = true;
             }else{
-              //followee.controlled = false;
               followee.force = 0;
             }
 

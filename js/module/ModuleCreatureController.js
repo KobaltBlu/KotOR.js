@@ -30,11 +30,6 @@ class ModuleCreatureController extends ModuleObject {
 
     if(Game.Mode == Game.MODES.INGAME || Game.Mode == Game.MODES.MINIGAME){
 
-      if(Game.module){
-        if(this === PartyManager.party[0])
-          Game.controls.UpdatePlayerControls(delta);
-      }
-
       if(this.animState == ModuleCreature.AnimState.IDLE){
         this.footstepEmitter.Stop();
       }
@@ -309,6 +304,7 @@ class ModuleCreatureController extends ModuleObject {
       if(this.equipment.ARMOR instanceof ModuleItem){
         this.equipment.ARMOR.update(delta);
       }
+      
       if(this.equipment.BELT instanceof ModuleItem){
         this.equipment.BELT.update(delta);
       }
