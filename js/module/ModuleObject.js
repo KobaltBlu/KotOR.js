@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-const EffectLink = require("../effects/EffectLink");
-
 /* @file
  * The ModuleObject class.
  */
@@ -786,29 +784,25 @@ class ModuleObject {
   }
 
   findWalkableFace(){
+    let face;
+    let room;
     for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-      let room = Game.module.area.rooms[i];
+      room = Game.module.area.rooms[i];
       if(room.walkmesh){
         for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          let face = room.walkmesh.walkableFaces[j]
-          this._triangle.set(
-            room.walkmesh.vertices[face.a],
-            room.walkmesh.vertices[face.b],
-            room.walkmesh.vertices[face.c]
-          );
-          
-          if(this._triangle.containsPoint(this.position)){
+          face = room.walkmesh.walkableFaces[j];
+          if(face.triangle.containsPoint(this.position)){
             this.groundFace = face;
             this.lastGroundFace = this.groundFace;
             this.surfaceId = this.groundFace.walkIndex;
             this.room = room;
-
-            this._triangle.closestPointToPoint(this.position, this.wm_c_point);
+            face.triangle.closestPointToPoint(this.position, this.wm_c_point);
             this.position.z = this.wm_c_point.z + .005;
           }
         }
       }
     }
+    return face;
   }
 
   getCameraHeight(){
@@ -2481,5 +2475,8 @@ ModuleObject.GetNextPlayerId = function(){
   console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
   return ModuleObject.PLAYER_ID--;
 }
+
+ModuleObject.DX_LIST = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
+ModuleObject.DY_LIST = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
 
 module.exports = ModuleObject;

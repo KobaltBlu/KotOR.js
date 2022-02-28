@@ -22,12 +22,14 @@
     this.mat4 = new THREE.Matrix4();
     this.faces = [];
     this.vertices = [];
+    this._vertices = [];
     this.walkTypes = [];
     this.normals = [];
     this.facePlaneCoefficients = [];
     this.aabbNodes = [];
     this.walkableFacesEdgesAdjacencyMatrix = [];
     this.edges = {};
+    this.edgeKeys = [];
     this.perimeters = [];
     this.edgeLines = [];
 
@@ -44,6 +46,11 @@
       face.walkIndex = this.walkTypes[i];
       face.color = (AuroraWalkMesh.TILECOLORS[this.walkTypes[i]] || AuroraWalkMesh.TILECOLORS[0]).clone();
       face.surfacemat = AuroraWalkMesh.SURFACEMATERIALS[face.walkIndex];
+      face.triangle = new THREE.Triangle(
+        this.vertices[face.a],
+        this.vertices[face.b],
+        this.vertices[face.c],
+      );
 
       if(face.surfacemat == undefined){
         console.warn('AuroraWalkMesh', 'Unknown surfacemat', face, AuroraWalkMesh.SURFACEMATERIALS);
@@ -163,6 +170,7 @@
     }
 
     this.aabbRoot = this.aabbNodes[0];
+    this.edgeKeys = Object.keys(this.edges);
 
   }
 
@@ -172,6 +180,12 @@
     for(let i = 0, len = edgeKeys.length; i < len; i++){
       this.edges[edgeKeys[i]].update();
     }
+    
+    //transform vertex positions
+    for(let i = 0, len = this.vertices.length; i < len; i++){
+      this.vertices[i].copy(this._vertices[i]);
+      this.vertices[i].applyMatrix4(this.mat4);
+    }
   }
 
   readBinary(){
@@ -179,8 +193,10 @@
       this.header = this.readHeader();
       //READ Verticies
       this.wokReader.Seek(this.header.offsetToVertices);
-      for (let i = 0; i < this.header.verticesCount; i++)
-        this.vertices[i] = new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle());
+      for (let i = 0; i < this.header.verticesCount; i++){
+        this._vertices[i] = new THREE.Vector3(this.wokReader.ReadSingle(), this.wokReader.ReadSingle(), this.wokReader.ReadSingle());
+        this.vertices[i] = this._vertices[i].clone();
+      }
 
       //READ Faces
       this.wokReader.Seek(this.header.offsetToFaces);
@@ -661,16 +677,16 @@ class WalkmeshEdge {
     if(this.walkmesh){
       this.line = undefined;
       if(this.index == 0){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.a].clone(), this.walkmesh.vertices[this.face.b].clone() );
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.a], this.walkmesh.vertices[this.face.b] );
       }else if(this.index == 1){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.b].clone(), this.walkmesh.vertices[this.face.c].clone() );
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.b], this.walkmesh.vertices[this.face.c] );
       }else if(this.index == 2){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.c].clone(), this.walkmesh.vertices[this.face.a].clone() );
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.c], this.walkmesh.vertices[this.face.a] );
       }
 
       if(this.line instanceof THREE.Line3){
-        this.line.start = this.line.start.applyMatrix4(this.walkmesh.mat4);
-        this.line.end = this.line.end.applyMatrix4(this.walkmesh.mat4);
+        // this.line.start = this.line.start.applyMatrix4(this.walkmesh.mat4);
+        // this.line.end = this.line.end.applyMatrix4(this.walkmesh.mat4);
         let dx = this.line.end.x - this.line.start.x;
         let dy = this.line.end.y - this.line.start.y;
         this.normal.set(-dy, dx, 0).normalize();

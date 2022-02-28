@@ -1747,6 +1747,7 @@ class ModuleCreatureController extends ModuleObject {
       return;
 
     let _axisFront = this.AxisFront.clone();
+    let _oPosition = this.position.clone();
 
     //this.getCurrentRoom();
     let hitdist = this.getAppearance().hitdist;
@@ -1773,31 +1774,17 @@ class ModuleCreatureController extends ModuleObject {
     let intersects = [];
     let obj = undefined;
 
-    if(Config.options.Game.debug.door_collision){
-      for(let j = 0, jl = Game.module.area.doors.length; j < jl; j++){
-        obj = Game.module.area.doors[j];
-        if(obj && obj.walkmesh && !obj.isOpen()){
-          //Doing distance checking instead of BB checking for now. BB checking is preferred.
-          //if(obj.position.distanceTo(this.position) <= 10){
-            aabbFaces.push({
-              object: obj,
-              faces: obj.walkmesh.faces
-            });
-          //}
-        }
-      }
-    }
-
     //START: CREATURE COLLISION
     
     //Check creature collision
+    let creature = undefined;
     if(Config.options.Game.debug.creature_collision){
-      for(let i = 0; i < Game.module.area.creatures.length; i++){
-        let creature = Game.module.area.creatures[i];
+      for(let i = 0, len = Game.module.area.creatures.length; i < len; i++){
+        creature = Game.module.area.creatures[i];
         if(creature){
           let position = this.position.clone().add(this.AxisFront);
           
-          if(creature === this || creature.isDead())
+          if(creature == this || creature.isDead())
             continue;
 
           if(!creature.getAppearance())
@@ -1826,12 +1813,12 @@ class ModuleCreatureController extends ModuleObject {
 
     //Check party collision
     if(Config.options.Game.debug.creature_collision){
-      for(let i = 0; i < PartyManager.party.length; i++){
-        let creature = PartyManager.party[i];
+      for(let i = 0, len = PartyManager.party.length; i < len; i++){
+        creature = PartyManager.party[i];
         if(creature){
           let position = this.position.clone().add(this.AxisFront);
 
-          if(creature === this || creature.isDead())
+          if(creature == this || creature.isDead())
             continue;
 
           let distance = position.distanceTo(creature.position);
@@ -1857,95 +1844,110 @@ class ModuleCreatureController extends ModuleObject {
 
     //END: CREATURE COLLISION
 
-    //START: DOOR COLLISION
+    if(this.room){
 
-    let worldCollide = false;
-    let collider = undefined;
-    let world_collisions = [];
-    for(let i = 0; i < 360; i += 30) {
-      let dx = Math.cos(i), dy = Math.sin(i);
-      Game.raycaster.ray.direction.set(dx, dy, 0);
-      for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-        playerFeetRay.copy(this.position).add(this.AxisFront);
-        Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+      //START: DOOR COLLISION
 
-        let castableFaces = aabbFaces[k];
-        castableFaces.object.walkmesh.mesh.visible = true;
-        intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
-        if (intersects && intersects.length > 0 ) {
-          for(let j = 0; j < intersects.length; j++){
-            if(intersects[j].distance < hitdist_half){
-              if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
+      if(Config.options.Game.debug.door_collision){
+        for(let j = 0, jl = this.room.doors.length; j < jl; j++){
+          obj = this.room.doors[j];
+          if(obj && obj.walkmesh && !obj.isOpen()){
+            aabbFaces.push({
+              object: obj,
+              faces: obj.walkmesh.faces
+            });
+          }
+        }
+      }
 
-                if(intersects[j].object.moduleObject instanceof ModuleDoor){
-                  this.blocking = intersects[j].object.moduleObject;
+      let worldCollide = false;
+      let collider = undefined;
+      let world_collisions = [];
+      let castableFaces = [];
+      let dot = 0;
+      for(let i = 0; i < 12; i++){
+        Game.raycaster.ray.direction.set(ModuleObject.DX_LIST[i], ModuleObject.DY_LIST[i], 0);
+        for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+          playerFeetRay.copy(this.position).add(this.AxisFront);
+          Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+
+          castableFaces = aabbFaces[k];
+          castableFaces.object.walkmesh.mesh.visible = true;
+          intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+          if (intersects && intersects.length > 0 ) {
+            for(let j = 0, jLen = intersects.length; j < jLen; j++){
+              if(intersects[j].distance < hitdist_half){
+                if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
+
+                  if(intersects[j].object.moduleObject instanceof ModuleDoor){
+                    this.blocking = intersects[j].object.moduleObject;
+                  }
+
+                  if(!collider || collider.distance < intersects[j].distance)
+                    collider = intersects[j];
+
+                  world_collisions.push(collider);
+                  dot = _axisFront.clone().dot(intersects[j].face.normal);
+                  
+                  if(dot){
+                    this.AxisFront.add(
+                      intersects[j].face.normal.clone().multiplyScalar(-dot)
+                    );
+                  }
+                  worldCollide = true;
                 }
-
-                if(!collider || collider.distance < intersects[j].distance)
-                  collider = intersects[j];
-
-                world_collisions.push(collider);
-                let dot = _axisFront.clone().dot(intersects[j].face.normal);
-                
-                if(dot){
-                  this.AxisFront.add(
-                    intersects[j].face.normal.clone().multiplyScalar(-dot)
-                  );
-                }
-                worldCollide = true;
               }
             }
           }
         }
       }
-    }
 
-    //END: DOOR COLLISION
+      //END: DOOR COLLISION
 
-    //START: PLACEABLE COLLISION
-    this.tmpPos = this.position.clone().add(this.AxisFront);
-    let plcEdgeLines = [];
-    let edge;
-    let line;
-    let closestPoint = new THREE.Vector3(0, 0, 0);
-    let distance;
-    let edgeKeys = [];
-    for(let j = 0, jl = Game.module.area.placeables.length; j < jl; j++){
-      obj = Game.module.area.placeables[j];
-      if(obj && obj.walkmesh && obj.model && obj.model.visible){
-        obj.box.setFromObject(obj.model);
-        if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
-          edgeKeys = Object.keys(obj.walkmesh.edges)
-          for(let l = 0, ll = edgeKeys.length; l < ll; l++){
-            edge = obj.walkmesh.edges[edgeKeys[l]];
-            edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
-            distance = closestPoint.distanceTo(this.tmpPos);
-            if(distance < hitdist_half){
-              plcEdgeLines.push({
-                line: line,
-                closestPoint: closestPoint.clone(),
-                distance: distance,
-                maxDistance: hitdist_half,
-                position: this.position
-              });
+      //START: PLACEABLE COLLISION
+      this.tmpPos = this.position.clone().add(this.AxisFront);
+      let plcEdgeLines = [];
+      let face;
+      let edge;
+      let line;
+      let closestPoint = new THREE.Vector3(0, 0, 0);
+      let distance;
+      let plcCollision = false;
+      for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
+        obj = this.room.placeables[j];
+        if(obj && obj.walkmesh && obj.model && obj.model.visible){
+          obj.box.setFromObject(obj.model);
+          if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
+            for(let l = 0, ll = obj.walkmesh.edgeKeys.length; l < ll; l++){
+              edge = obj.walkmesh.edges[obj.walkmesh.edgeKeys[l]];
+              edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
+              distance = closestPoint.distanceTo(this.tmpPos);
+              if(distance < hitdist_half){
+                plcEdgeLines.push({
+                  line: line,
+                  closestPoint: closestPoint.clone(),
+                  distance: distance,
+                  maxDistance: hitdist_half,
+                  position: this.position
+                });
+                plcCollision = true;
+              }
             }
           }
         }
       }
-    }
 
-    //END: PLACEABLE COLLISION
-    
-    //START: ROOM COLLISION
-    if(!this.groundFace){
-      this.findWalkableFace();
-    }
+      //END: PLACEABLE COLLISION
+      
+      //START: ROOM COLLISION
+      if(!this.groundFace){
+        this.findWalkableFace();
+      }
 
-    //room perimeter check
-    if(this.room){
-      edgeKeys = Object.keys(this.room.walkmesh.edges);
-      for(let i = 0, len = edgeKeys.length; i < len; i++){
-        edge = this.room.walkmesh.edges[edgeKeys[i]];
+      //room perimeter check
+      let roomCollision = false;
+      for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
+        edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.tmpPos);
@@ -1957,35 +1959,56 @@ class ModuleCreatureController extends ModuleObject {
               maxDistance: hitdist_half,
               position: this.position
             });
+            roomCollision = true;
           }
         }
       }
-    }
 
-    if(plcEdgeLines.length){
-      plcEdgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
-      let average = new THREE.Vector3();
-      let edgeLine = undefined;
-      let distanceOffset = 0;
-      let force = 0;
-      for(let i = 0, len = plcEdgeLines.length; i < len; i++){
-        edgeLine = plcEdgeLines[i];
-        distanceOffset = edgeLine.maxDistance - edgeLine.distance;
-        force = edgeLine.closestPoint.clone().sub(edgeLine.position);
-        force.multiplyScalar(distanceOffset * 2.5);
-        force.z = 0;
-        average.add( force.negate() );
+      
+        
+      if(!(plcCollision && roomCollision)){
+        if(plcEdgeLines.length){
+          plcEdgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
+          let average = new THREE.Vector3();
+          let edgeLine = undefined;
+          let distanceOffset = 0;
+          let force = 0;
+          for(let i = 0, len = plcEdgeLines.length; i < len; i++){
+            edgeLine = plcEdgeLines[i];
+            distanceOffset = edgeLine.maxDistance - edgeLine.distance;
+            force = edgeLine.closestPoint.clone().sub(edgeLine.position);
+            force.multiplyScalar(distanceOffset * 2.5);
+            force.z = 0;
+            average.add( force.negate() );
+          }
+          //this.AxisFront.copy(this.position).sub(this.tmpPos);
+          this.position.copy(this.tmpPos);
+          this.AxisFront.copy(average.divideScalar(plcEdgeLines.length));
+        }
+      }else{
+        this.AxisFront.set(0, 0, 0);
       }
-      //this.AxisFront.copy(this.position).sub(this.tmpPos);
-      this.position.copy(this.tmpPos);
-      this.AxisFront.copy(average.divideScalar(plcEdgeLines.length));
-    }
-    //END: ROOM COLLISION
-    
-    //DETECT: ROOM TRANSITION
-    if(this.room){
-      for(let i = 0, len = edgeKeys.length; i < len; i++){
-        edge = this.room.walkmesh.edges[edgeKeys[i]];
+      //END: ROOM COLLISION
+
+      //Check to see if we tp'd inside of a placeable
+      this.tmpPos.copy(this.position).add(this.AxisFront);
+      for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
+        obj = this.room.placeables[j];
+        if(obj && obj.walkmesh && obj.model && obj.model.visible){
+          for(let i = 0, iLen = obj.walkmesh.faces.length; i < iLen; i++){
+            face = obj.walkmesh.faces[i];
+            if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk == 0){
+              //bail we should not be here
+              this.AxisFront.set(0, 0, 0);
+              this.position.copy(_oPosition);
+            }
+          }
+        }
+      }
+      
+      //DETECT: ROOM TRANSITION
+      for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
+        edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
         if(edge && edge.transition >= 0){
           if(
             Utility.LineLineIntersection(
@@ -2004,27 +2027,28 @@ class ModuleCreatureController extends ModuleObject {
           }
         }
       }
-    }
 
-    //update creature position
-    if(this.AxisFront.length()){
-      this.position.add(this.AxisFront);
-      //DETECT: GROUND FACE
-      this.lastRoom = this.room;
-      this.lastGroundFace = this.groundFace;
-      this.groundFace = undefined;
-      if(this.room){
-        let face = this.room.findWalkableFace(this);
-        if(!face){
-          this.findWalkableFace();
+      //update creature position
+      if(this.AxisFront.length()){
+        this.position.add(this.AxisFront);
+        //DETECT: GROUND FACE
+        this.lastRoom = this.room;
+        this.lastGroundFace = this.groundFace;
+        this.groundFace = undefined;
+        if(this.room){
+          let face = this.room.findWalkableFace(this);
+          if(!face){
+            this.findWalkableFace();
+          }
         }
-      }
 
-      if(!this.groundFace){
-        this.position.sub(this.AxisFront);
-        this.groundFace = this.lastGroundFace;
-        this.room = this.lastRoom;
-        this.AxisFront.set(0, 0, 0);
+        if(!this.groundFace){
+          this.AxisFront.set(0, 0, 0);
+          this.position.copy(_oPosition);
+          this.groundFace = this.lastGroundFace;
+          this.room = this.lastRoom;
+          this.AxisFront.set(0, 0, 0);
+        }
       }
     }
 
@@ -2052,58 +2076,59 @@ class ModuleCreatureController extends ModuleObject {
     switch(event){
       case 'snd_footstep':
         let sndTable = Global.kotor2DA["footstepsounds"].rows[appearance.footsteptype];
-        let sound = '****';
-        switch(this.surfaceId){
-          case 1:
-            sound = (sndTable['dirt'+sndIdx]);
-          break;
-          case 3:
-            sound = (sndTable['grass'+sndIdx]);
-          break;
-          case 4:
-            sound = (sndTable['stone'+sndIdx]);
-          break;
-          case 5:
-            sound = (sndTable['wood'+sndIdx]);
-          break;
-          case 6:
-            sound = (sndTable['water'+sndIdx]);
-          break;
-          case 9:
-            sound = (sndTable['carpet'+sndIdx]);
-          break;
-          case 10:
-            sound = (sndTable['metal'+sndIdx]);
-          break;
-          case 11:
-          case 13:
-            sound = (sndTable['puddles'+sndIdx]);
-          break;
-          case 14:
-            sound = (sndTable['leaves'+sndIdx]);
-          break;
-          default:
-            sound = (sndTable['dirt'+sndIdx]);
-          break;
-        }
+        if(sndTable){
+          let sound = '****';
+          switch(this.surfaceId){
+            case 1:
+              sound = (sndTable['dirt'+sndIdx]);
+            break;
+            case 3:
+              sound = (sndTable['grass'+sndIdx]);
+            break;
+            case 4:
+              sound = (sndTable['stone'+sndIdx]);
+            break;
+            case 5:
+              sound = (sndTable['wood'+sndIdx]);
+            break;
+            case 6:
+              sound = (sndTable['water'+sndIdx]);
+            break;
+            case 9:
+              sound = (sndTable['carpet'+sndIdx]);
+            break;
+            case 10:
+              sound = (sndTable['metal'+sndIdx]);
+            break;
+            case 11:
+            case 13:
+              sound = (sndTable['puddles'+sndIdx]);
+            break;
+            case 14:
+              sound = (sndTable['leaves'+sndIdx]);
+            break;
+            default:
+              sound = (sndTable['dirt'+sndIdx]);
+            break;
+          }
 
-        if(sound != '****'){
-          this.footstepEmitter.Stop();
-          this.footstepEmitter.PlaySound(sound);
-        }else if(sndTable['rolling'] != '****'){
-          if(!this.footstepEmitter.currentSound){
+          if(sound != '****'){
             this.footstepEmitter.Stop();
-            this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer) => {
-              buffer.loop = true;
-            });
-          }else if(this.footstepEmitter.currentSound && this.footstepEmitter.currentSound.name != sndTable['rolling']){
-            this.footstepEmitter.Stop();
-            this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer) => {
-              buffer.loop = true;
-            });
+            this.footstepEmitter.PlaySound(sound);
+          }else if(sndTable['rolling'] != '****'){
+            if(!this.footstepEmitter.currentSound){
+              this.footstepEmitter.Stop();
+              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer) => {
+                buffer.loop = true;
+              });
+            }else if(this.footstepEmitter.currentSound && this.footstepEmitter.currentSound.name != sndTable['rolling']){
+              this.footstepEmitter.Stop();
+              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer) => {
+                buffer.loop = true;
+              });
+            }
           }
         }
-
       break;
       case 'Swingshort':
         if(this.equipment.RIGHTHAND){
