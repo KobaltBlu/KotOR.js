@@ -813,8 +813,6 @@ class Game extends Engine {
           Game.MenuMap.childMenu = Game.MenuTop;
           Game.MenuAbilities.childMenu = Game.MenuTop;
 
-          Game.binkVideo = new BIKObject();
-
           //Preload fx textures
           TextureLoader.enQueue(
             ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
@@ -1090,16 +1088,6 @@ class Game extends Engine {
 
     Game.limiter.now = Date.now();
     Game.limiter.elapsed = Game.limiter.now - Game.limiter.then;
-
-    if(Game.binkVideo.isPlaying){
-      Game.controls.Update(delta);
-      Game.binkVideo.resize();
-      Game.binkVideo.update(delta);
-
-      Game.renderer.render(Game.binkVideo.scene, Game.camera_gui);
-
-      return;
-    }
 
     Game.UpdateVideoEffect();
     MenuManager.Update(delta);
