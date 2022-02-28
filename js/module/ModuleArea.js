@@ -202,6 +202,8 @@ class ModuleArea extends ModuleObject {
     let animTexCount = AnimatedTextures.length;
     let obj = undefined;
 
+    Game.controls.UpdatePlayerControls(delta);
+
     //update triggers
     for(let i = 0; i < trigCount; i++){
       this.triggers[i].update(delta);
@@ -256,9 +258,6 @@ class ModuleArea extends ModuleObject {
 
     this.updateRoomVisibility(delta);
 
-    for(let i = 0; i < partyCount; i++){
-      PartyManager.party[i].controlled = false;
-    }
     this.weather.update(delta);
   }
 
