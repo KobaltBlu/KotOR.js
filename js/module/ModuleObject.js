@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-const EffectLink = require("../effects/EffectLink");
-
 /* @file
  * The ModuleObject class.
  */
@@ -32,7 +30,6 @@ class ModuleObject {
     this.facingTweenTime = 0;
     this.force = 0;
     this.speed = 0;
-    this.invalidateCollision = false;
     this.room = undefined;
     this.rooms = [];
     this.roomSize = new THREE.Vector3();
@@ -144,6 +141,43 @@ class ModuleObject {
       console.error('Missing rotation', this);
     }
 	}
+
+  attachToRoom(room){
+    if(room instanceof ModuleRoom){
+      this.detachFromRoom(this.room);
+      this.room = room;
+      if(this instanceof ModuleCreature){
+        this.room.creatures.push(this);
+      }else if (this instanceof ModulePlaceable){
+        this.room.placeables.push(this);
+      }else if(this instanceof ModuleDoor){
+        this.room.doors.push(this);
+      }
+    }
+  }
+
+  detachFromRoom(room){
+    if(!room) room = this.room;
+    if(room instanceof ModuleRoom){
+      let index = -1;
+      if(this instanceof ModuleCreature){
+        index = room.creatures.indexOf(this);
+        if(index >= 0){
+          room.creatures.splice(index, 1);
+        }
+      }else if (this instanceof ModulePlaceable){
+        index = room.placeables.indexOf(this);
+        if(index >= 0){
+          room.placeables.splice(index, 1);
+        }
+      }else if(this instanceof ModuleDoor){
+        index = room.doors.indexOf(this);
+        if(index >= 0){
+          room.doors.splice(index, 1);
+        }
+      }
+    }
+  }
 
   _heartbeat(){
     /*this.heartbeatTimer = setTimeout( () => {
@@ -696,7 +730,7 @@ class ModuleObject {
     //END: PLAYER WORLD COLLISION
 
     //END Gravity
-    this.invalidateCollision = false;*/
+    */
   }
 
   doCommand(script){
@@ -772,13 +806,13 @@ class ModuleObject {
             //console.log(intersects);
           }
           if(intersects[0].object.moduleObject){
-            this.room = intersects[0].object.moduleObject;
+            this.attachToRoom(intersects[0].object.moduleObject);
             return;
           }
         }
       }
       if(this.rooms.length){
-        this.room = Game.module.area.rooms[this.rooms[0]];
+        this.attachToRoom(Game.module.area.rooms[this.rooms[0]]);
         return;
       }
     }else{
@@ -787,29 +821,25 @@ class ModuleObject {
   }
 
   findWalkableFace(){
+    let face;
+    let room;
     for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
-      let room = Game.module.area.rooms[i];
+      room = Game.module.area.rooms[i];
       if(room.walkmesh){
         for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          let face = room.walkmesh.walkableFaces[j]
-          this._triangle.set(
-            room.walkmesh.vertices[face.a],
-            room.walkmesh.vertices[face.b],
-            room.walkmesh.vertices[face.c]
-          );
-          
-          if(this._triangle.containsPoint(this.position)){
+          face = room.walkmesh.walkableFaces[j];
+          if(face.triangle.containsPoint(this.position)){
             this.groundFace = face;
             this.lastGroundFace = this.groundFace;
             this.surfaceId = this.groundFace.walkIndex;
-            this.room = room;
-
-            this._triangle.closestPointToPoint(this.position, this.wm_c_point);
+            this.attachToRoom(room);
+            face.triangle.closestPointToPoint(this.position, this.wm_c_point);
             this.position.z = this.wm_c_point.z + .005;
           }
         }
       }
     }
+    return face;
   }
 
   getCameraHeight(){
@@ -2482,5 +2512,8 @@ ModuleObject.GetNextPlayerId = function(){
   console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
   return ModuleObject.PLAYER_ID--;
 }
+
+ModuleObject.DX_LIST = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
+ModuleObject.DY_LIST = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
 
 module.exports = ModuleObject;

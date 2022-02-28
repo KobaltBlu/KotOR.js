@@ -62,7 +62,6 @@ class ActionMoveToPoint extends Action {
         distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
       }
   
-      this.invalidateCollision = true;
       let point = this.path[0];
   
       if(this.blockingTimer >= 5 || this.collisionTimer >= 1){

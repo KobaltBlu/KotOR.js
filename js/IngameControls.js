@@ -628,7 +628,6 @@ class IngameControls {
             followee.force = 1;
             followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + Game.followerCamera.facing + Math.PI/2 ) , false);
             followee.controlled = true;
-            followee.invalidateCollision = false;
             Game.scene_cursor.visible = false;
           }else{
             if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
@@ -636,14 +635,12 @@ class IngameControls {
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
               followee.controlled = true;
-              followee.invalidateCollision = true;
               Game.scene_cursor.visible = true;
             }else if( this.keys['s'].down && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
               followee.controlled = true;
-              followee.invalidateCollision = true;
               Game.scene_cursor.visible = true;
             }else{
               //followee.controlled = false;
@@ -667,7 +664,6 @@ class IngameControls {
         }
 
         if((this.keys['a'].down || this.gamePad.stick_r_x.value < 0) && !Game.MenuActive){
-          followee.invalidateCollision = true;
           turningCamera = true;
           if(this.gamePad.stick_r_x.value){
             Game.scene_cursor.visible = false;
@@ -679,7 +675,6 @@ class IngameControls {
         }
     
         if((this.keys['d'].down || this.gamePad.stick_r_x.value > 0) && !Game.MenuActive){
-          followee.invalidateCollision = true;
           turningCamera = true;
           if(this.gamePad.stick_r_x.value){
             Game.scene_cursor.visible = false;

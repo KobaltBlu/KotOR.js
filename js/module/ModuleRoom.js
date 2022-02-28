@@ -30,6 +30,33 @@ class ModuleRoom extends ModuleObject {
     this.linked_rooms = args.linked_rooms;
     this.hasVISObject = false;
 
+    this.doors = [];
+    this.placeables = [];
+    this.creatures = [];
+    this.triggers = [];
+    this.encounters = [];
+
+  }
+
+  detectChildObjects(){
+    let v = new THREE.Vector3();
+    this.box.getSize(v);
+    let box = this.box.clone().expandByVector(v);
+    this.doors = [];
+    this.placeables = [];
+    for(let i = 0, len = Game.module.area.doors.length; i < len; i++){
+      let object = Game.module.area.doors[i];
+      if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
+        this.doors.push(object);
+      }
+    }
+
+    for(let i = 0, len = Game.module.area.placeables.length; i < len; i++){
+      let object = Game.module.area.placeables[i];
+      if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
+        this.placeables.push(object);
+      }
+    }
   }
 
   setLinkedRooms(array = []){
@@ -392,19 +419,24 @@ class ModuleRoom extends ModuleObject {
 
             //Load in the grass texture
             TextureLoader.Load(Game.module.area.Grass.TexName, (grassTexture) => {
-              grassTexture.minFilter = THREE.LinearFilter;
-              grassTexture.magFilter = THREE.LinearFilter;
-              grass_material.uniforms.map.value = grassTexture;
-              grass_material.uniformsNeedUpdate = true;
-              grass_material.needsUpdate = true;
-              //Load in the grass lm texture
-              TextureLoader.Load(lm_texture, (lmTexture) => {
-                lmTexture.minFilter = THREE.LinearFilter;
-                lmTexture.magFilter = THREE.LinearFilter;
-                grass_material.uniforms.lightMap.value = lmTexture;
+              if(grassTexture){
+                grassTexture.minFilter = THREE.LinearFilter;
+                grassTexture.magFilter = THREE.LinearFilter;
+                grass_material.uniforms.map.value = grassTexture;
                 grass_material.uniformsNeedUpdate = true;
                 grass_material.needsUpdate = true;
-              });
+                //Load in the grass lm texture
+                TextureLoader.Load(lm_texture, (lmTexture) => {
+                  if(lmTexture){
+                    lmTexture.minFilter = THREE.LinearFilter;
+                    lmTexture.magFilter = THREE.LinearFilter;
+                    grass_material.uniforms.lightMap.value = lmTexture;
+                    grass_material.uniformsNeedUpdate = true;
+                    grass_material.needsUpdate = true;
+                    grass_material.defines.USE_LIGHTMAP = '';
+                  }
+                });
+              }
             });
           }
         }
@@ -442,6 +474,26 @@ class ModuleRoom extends ModuleObject {
     return point.x < this.model.box.min.x || point.x > this.model.box.max.x ||
       point.y < this.model.box.min.y || point.y > this.model.box.max.y ||
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
+  }
+
+  findWalkableFace( object = undefined ){
+    let face;
+    if(object instanceof ModuleObject && this.walkmesh){
+      for(let j = 0, jl = this.walkmesh.walkableFaces.length; j < jl; j++){
+        face = this.walkmesh.walkableFaces[j];
+        if(face.triangle.containsPoint(object.position)){
+          object.groundFace = face;
+          object.lastGroundFace = object.groundFace;
+          object.surfaceId = object.groundFace.walkIndex;
+          object.room = this;
+
+          face.triangle.closestPointToPoint(object.position, object.wm_c_point);
+          object.position.z = object.wm_c_point.z + .005;
+          return face;
+        }
+      }
+    }
+    return face;
   }
 
   toToolsetInstance(){

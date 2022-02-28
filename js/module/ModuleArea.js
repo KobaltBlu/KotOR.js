@@ -640,6 +640,7 @@ class ModuleArea extends ModuleObject {
     this.transWP = null;
 
     this.cleanupUninitializedObjects();
+    this.detectRoomObjects();
 
     if(typeof onLoad === 'function')
       onLoad();
@@ -1133,10 +1134,10 @@ class ModuleArea extends ModuleObject {
                   Game.walkmeshList.push( dwk.mesh );
     
                   if(dwk.mesh instanceof THREE.Object3D){
-                    dwk.mat4 = new THREE.Matrix4();
                     dwk.mat4.makeRotationFromEuler(door.rotation);
                     dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
                     dwk.mesh.geometry.applyMatrix4(dwk.mat4);
+                    dwk.updateMatrix();
                     //dwk.mesh.position.copy(door.position);
                     if(!door.openState){
                       Game.group.room_walkmeshes.add( dwk.mesh );
@@ -1196,10 +1197,10 @@ class ModuleArea extends ModuleObject {
                 plc.computeBoundingBox();
 
                 if(pwk.mesh instanceof THREE.Object3D){
-                  pwk.mat4 = new THREE.Matrix4();
                   pwk.mat4.makeRotationFromEuler(plc.rotation);
                   pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
                   pwk.mesh.geometry.applyMatrix4(pwk.mat4);
+                  pwk.updateMatrix();
                   //pwk.mesh.position.copy(plc.position);
                   Game.group.room_walkmeshes.add( pwk.mesh );
                 }
@@ -1612,6 +1613,12 @@ class ModuleArea extends ModuleObject {
   async runStartScripts(){
     await this.runMiniGameScripts();
     await this.runOnEnterScripts();
+  }
+
+  detectRoomObjects(){
+    for(let i = 0, len = this.rooms.length; i < len; i++){
+      this.rooms[i].detectChildObjects();
+    }
   }
 
   isPointWalkable(point){

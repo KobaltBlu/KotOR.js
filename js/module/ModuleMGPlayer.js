@@ -665,7 +665,7 @@ class ModuleMGPlayer extends ModuleObject {
         }
 
       }else{
-        this.room = Game.module.area.rooms[transitionNode.transition];
+        this.attachToRoom(Game.module.area.rooms[transitionNode.transition]);
         this.lastGroundFace = undefined;
         this.groundFace = undefined;
         this.tmpPos = this.position.clone().add(this.AxisFront);
@@ -765,7 +765,6 @@ class ModuleMGPlayer extends ModuleObject {
     //END: PLAYER WORLD COLLISION
 
     //END Gravity
-    this.invalidateCollision = false;
     Game.raycaster.far = Infinity;
     this.track.updateMatrixWorld();
 

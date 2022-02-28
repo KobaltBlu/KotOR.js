@@ -1,10 +1,10 @@
-class EventDestoryObject extends GameEvent {
+class EventDestroyObject extends GameEvent {
 
   constructor(){
     super();
 
     //Event Type
-    this.type = GameEvent.Type.EventDestoryObject;
+    this.type = GameEvent.Type.EventDestroyObject;
 
   }
 
@@ -33,4 +33,4 @@ class EventDestoryObject extends GameEvent {
 
 }
 
-module.exports = EventDestoryObject;
+module.exports = EventDestroyObject;
