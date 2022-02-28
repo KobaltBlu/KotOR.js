@@ -1097,7 +1097,7 @@ class Game extends Engine {
     // if enough time has elapsed, draw the next frame
     if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
-      if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && Game.State != Game.STATES.PAUSED && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
+      if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
         //Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
         Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
         Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
@@ -1114,7 +1114,11 @@ class Game extends Engine {
         }
 
         if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
-          Game.module.tick(delta);
+          if(Game.State != Game.STATES.PAUSED){
+            Game.module.tick(delta);
+          }else{
+            Game.module.tickPaused(delta);
+          }
         }
         
         if(Game.inDialog){
@@ -1124,12 +1128,6 @@ class Game extends Engine {
           }
         }
 
-      }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){
-        Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
-        Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
-        if(Game.module && Game.module.area){
-          Game.module.area.updatePaused(delta);
-        }
       }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
         if(Game.MenuPartySelection.bVisible){
           Game.MenuPartySelection.Update(delta);

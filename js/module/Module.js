@@ -298,6 +298,11 @@ class Module {
 
   }
 
+  tickPaused(delta = 0){
+    if(this.area){
+      this.area.updatePaused(delta);
+    }
+  }
 
   setReturnStrRef(enabled = false, str1 = -1, str2 = -1){
     Game.MenuMap.BTN_RETURN.setText(Global.kotorTLK.GetStringById(str1));
