@@ -1924,6 +1924,7 @@ class ModuleCreatureController extends ModuleObject {
               distance = closestPoint.distanceTo(this.tmpPos);
               if(distance < hitdist_half){
                 plcEdgeLines.push({
+                  object: obj,
                   line: line,
                   closestPoint: closestPoint.clone(),
                   distance: distance,
@@ -1944,7 +1945,7 @@ class ModuleCreatureController extends ModuleObject {
         this.findWalkableFace();
       }
 
-      //room perimeter check
+      //room walkable edge check
       let roomCollision = false;
       for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
         edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
@@ -1953,6 +1954,7 @@ class ModuleCreatureController extends ModuleObject {
           distance = closestPoint.distanceTo(this.tmpPos);
           if(distance < hitdist_half){
             plcEdgeLines.push({
+              object: this.room,
               line: edge.line,
               closestPoint: closestPoint.clone(),
               distance: distance,
@@ -1981,7 +1983,6 @@ class ModuleCreatureController extends ModuleObject {
             force.z = 0;
             average.add( force.negate() );
           }
-          //this.AxisFront.copy(this.position).sub(this.tmpPos);
           this.position.copy(this.tmpPos);
           this.AxisFront.copy(average.divideScalar(plcEdgeLines.length));
         }
@@ -1991,45 +1992,45 @@ class ModuleCreatureController extends ModuleObject {
       //END: ROOM COLLISION
 
       //Check to see if we tp'd inside of a placeable
-      this.tmpPos.copy(this.position).add(this.AxisFront);
-      for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
-        obj = this.room.placeables[j];
-        if(obj && obj.walkmesh && obj.model && obj.model.visible){
-          for(let i = 0, iLen = obj.walkmesh.faces.length; i < iLen; i++){
-            face = obj.walkmesh.faces[i];
-            if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk == 0){
-              //bail we should not be here
-              this.AxisFront.set(0, 0, 0);
-              this.position.copy(_oPosition);
+      if(this.AxisFront.length()){
+        this.tmpPos.copy(this.position).add(this.AxisFront);
+        for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
+          obj = this.room.placeables[j];
+          if(obj && obj.walkmesh && obj.model && obj.model.visible){
+            for(let i = 0, iLen = obj.walkmesh.faces.length; i < iLen; i++){
+              face = obj.walkmesh.faces[i];
+              if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk == 0){
+                //bail we should not be here
+                this.AxisFront.set(0, 0, 0);
+                this.position.copy(_oPosition);
+              }
             }
           }
         }
-      }
       
-      //DETECT: ROOM TRANSITION
-      for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
-        edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
-        if(edge && edge.transition >= 0){
-          if(
-            Utility.LineLineIntersection(
-              this.position.x,
-              this.position.y,
-              this.position.x + this.AxisFront.x,
-              this.position.y + this.AxisFront.y,
-              edge.line.start.x,
-              edge.line.start.y,
-              edge.line.end.x,
-              edge.line.end.y
-            )
-          ){
-            this.room = Game.module.area.rooms[edge.transition];
-            break;
+        //DETECT: ROOM TRANSITION
+        for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
+          edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
+          if(edge && edge.transition >= 0){
+            if(
+              Utility.LineLineIntersection(
+                this.position.x,
+                this.position.y,
+                this.position.x + this.AxisFront.x,
+                this.position.y + this.AxisFront.y,
+                edge.line.start.x,
+                edge.line.start.y,
+                edge.line.end.x,
+                edge.line.end.y
+              )
+            ){
+              this.attachToRoom(Game.module.area.rooms[edge.transition]);
+              break;
+            }
           }
         }
-      }
 
-      //update creature position
-      if(this.AxisFront.length()){
+        //update creature position
         this.position.add(this.AxisFront);
         //DETECT: GROUND FACE
         this.lastRoom = this.room;
@@ -2046,7 +2047,7 @@ class ModuleCreatureController extends ModuleObject {
           this.AxisFront.set(0, 0, 0);
           this.position.copy(_oPosition);
           this.groundFace = this.lastGroundFace;
-          this.room = this.lastRoom;
+          this.attachToRoom(this.lastRoom);
           this.AxisFront.set(0, 0, 0);
         }
       }

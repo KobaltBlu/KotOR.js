@@ -142,6 +142,43 @@ class ModuleObject {
     }
 	}
 
+  attachToRoom(room){
+    if(room instanceof ModuleRoom){
+      this.detachFromRoom(this.room);
+      this.room = room;
+      if(this instanceof ModuleCreature){
+        this.room.creatures.push(this);
+      }else if (this instanceof ModulePlaceable){
+        this.room.placeables.push(this);
+      }else if(this instanceof ModuleDoor){
+        this.room.doors.push(this);
+      }
+    }
+  }
+
+  detachFromRoom(room){
+    if(!room) room = this.room;
+    if(room instanceof ModuleRoom){
+      let index = -1;
+      if(this instanceof ModuleCreature){
+        index = room.creatures.indexOf(this);
+        if(index >= 0){
+          room.creatures.splice(index, 1);
+        }
+      }else if (this instanceof ModulePlaceable){
+        index = room.placeables.indexOf(this);
+        if(index >= 0){
+          room.placeables.splice(index, 1);
+        }
+      }else if(this instanceof ModuleDoor){
+        index = room.doors.indexOf(this);
+        if(index >= 0){
+          room.doors.splice(index, 1);
+        }
+      }
+    }
+  }
+
   _heartbeat(){
     /*this.heartbeatTimer = setTimeout( () => {
       process.nextTick( ()=> {
@@ -769,13 +806,13 @@ class ModuleObject {
             //console.log(intersects);
           }
           if(intersects[0].object.moduleObject){
-            this.room = intersects[0].object.moduleObject;
+            this.attachToRoom(intersects[0].object.moduleObject);
             return;
           }
         }
       }
       if(this.rooms.length){
-        this.room = Game.module.area.rooms[this.rooms[0]];
+        this.attachToRoom(Game.module.area.rooms[this.rooms[0]]);
         return;
       }
     }else{
@@ -795,7 +832,7 @@ class ModuleObject {
             this.groundFace = face;
             this.lastGroundFace = this.groundFace;
             this.surfaceId = this.groundFace.walkIndex;
-            this.room = room;
+            this.attachToRoom(room);
             face.triangle.closestPointToPoint(this.position, this.wm_c_point);
             this.position.z = this.wm_c_point.z + .005;
           }

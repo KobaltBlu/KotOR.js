@@ -32,6 +32,9 @@ class ModuleRoom extends ModuleObject {
 
     this.doors = [];
     this.placeables = [];
+    this.creatures = [];
+    this.triggers = [];
+    this.encounters = [];
 
   }
 
