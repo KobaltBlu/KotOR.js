@@ -1227,11 +1227,6 @@ class Game extends Engine {
           }
         }
 
-        for(let i = 0, len = Game.weather_effects.length; i < len; i++){
-          Game.weather_effects[i].position.copy( Game.getCurrentPlayer().position.clone().add( new THREE.Vector3(0,0,3) ) );
-          Game.weather_effects[i].update(delta);
-        } 
-
         Game.UpdateFollowerCamera(delta);
 
       }else if(Game.Mode == Game.MODES.INGAME && Game.State == Game.STATES.PAUSED && !Game.MenuActive){

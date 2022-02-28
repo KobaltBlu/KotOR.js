@@ -120,6 +120,7 @@ class ModuleArea extends ModuleObject {
     this.git = git;
 
     this.transWP = '';
+    this.weather = new AreaWeather(this);
 
   }
 
@@ -178,6 +179,8 @@ class ModuleArea extends ModuleObject {
       Game.group.grass.remove(Game.group.grass.children[0]);
     }
 
+    this.weather.destroy();
+
     //Clear party geometries
     /*while (PartyManager.party.length){
       PartyManager.party[0].destroy();
@@ -187,7 +190,6 @@ class ModuleArea extends ModuleObject {
 
   update(delta){
     
-
     let walkCount = Game.walkmeshList.length;
     let roomCount = Game.group.rooms.children.length;
 
@@ -257,6 +259,7 @@ class ModuleArea extends ModuleObject {
     for(let i = 0; i < partyCount; i++){
       PartyManager.party[i].controlled = false;
     }
+    this.weather.update(delta);
   }
 
   updateRoomVisibility(delta){
@@ -783,37 +786,7 @@ class ModuleArea extends ModuleObject {
 
     Game.followerCamera.facing = Utility.NormalizeRadian(Game.player.GetFacing() - Math.PI/2);
 
-    if(this.ChanceSnow == 100){
-      Game.ModelLoader.load({
-        file: 'fx_snow',
-        onLoad: (mdl) => {
-          THREE.AuroraModel.FromMDL(mdl, { 
-            onComplete: (model) => {
-              Game.weather_effects.push(model);
-              Game.group.weather_effects.add(model);
-              TextureLoader.LoadQueue();
-            },
-            manageLighting: false
-          });
-        }
-      });
-    }
-
-    if(this.ChanceRain == 100){
-      Game.ModelLoader.load({
-        file: 'fx_rain',
-        onLoad: (mdl) => {
-          THREE.AuroraModel.FromMDL(mdl, { 
-            onComplete: (model) => {
-              Game.weather_effects.push(model);
-              Game.group.weather_effects.add(model);
-              TextureLoader.LoadQueue();
-            },
-            manageLighting: false
-          });
-        }
-      });
-    }
+    await this.weather.load();
 
     this.transWP = null;
 
@@ -2333,5 +2306,80 @@ AreaMap.MAP_DIRECTION = {
 };
 
 ModuleArea.AreaMap = AreaMap;
+
+class AreaWeather {
+  constructor(area = undefined){
+    this.area = area;
+    this.model = undefined;
+  }
+
+  update(delta){
+    if(this.model){
+      this.model.position.copy( Game.getCurrentPlayer().position ).add( new THREE.Vector3(0,0,3) );
+      this.model.update(delta);
+    }
+  }
+
+  async load(){
+    return new Promise( (resolve, reject) => {
+      if(this.ChanceSnow == 100){
+        Game.ModelLoader.load({
+          file: 'fx_snow',
+          onLoad: (mdl) => {
+            THREE.AuroraModel.FromMDL(mdl, { 
+              onComplete: (model) => {
+                this.model = model;
+                Game.weather_effects.push(model);
+                Game.group.weather_effects.add(model);
+                TextureLoader.LoadQueue();
+                resolve();
+              },
+              manageLighting: false
+            });
+          },
+          onError: () => {
+            resolve();
+          }
+        });
+      }else if(this.ChanceRain == 100){
+        Game.ModelLoader.load({
+          file: 'fx_rain',
+          onLoad: (mdl) => {
+            THREE.AuroraModel.FromMDL(mdl, { 
+              onComplete: (model) => {
+                this.model = model;
+                Game.weather_effects.push(model);
+                Game.group.weather_effects.add(model);
+                TextureLoader.LoadQueue();
+                resolve();
+              },
+              manageLighting: false
+            });
+          },
+          onError: () => {
+            resolve();
+          }
+        });
+      }else{
+        resolve();
+      }
+    });
+  }
+
+  destroy(){
+    let index = Game.weather_effects.indexOf(this.model);
+    if(index >= 1){
+      this.model.remove();
+      this.model.dispose();
+      Game.weather_effects.splice(index, 1);
+    }
+    //Remove all weather effects
+    // while(Game.weather_effects.length){
+    //   Game.weather_effects[0].dispose();
+    //   Game.weather_effects.shift();
+    // }
+  }
+
+}
 
 module.exports = ModuleArea;

@@ -450,12 +450,6 @@ class Module {
   dispose(){
     Game.collisionList = [];
     
-    //Remove all weather effects
-    while(Game.weather_effects.length){
-      Game.weather_effects[0].dispose();
-      Game.weather_effects.shift();
-    }
-    
     //Remove all effects
     if(Game.module){
       while(Game.module.effects.length){

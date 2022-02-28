@@ -1257,20 +1257,7 @@ class Game extends Engine {
           if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
             Game.scene_cursor_holder.visible = false;
           }
-        }
-
-
-        for(let i = 0; i < Game.weather_effects.length; i++){
-          let emitter = Game.weather_effects[i].emitters[0];
-          Game.weather_effects[i].position.copy(
-            Game.getCurrentPlayer().position.clone().add(
-              new THREE.Vector3(0,0,3)
-            )
-          );
-          //emitter.velocity.value = emitter.node.emitterOptions.velocity.value.clone().sub(Game.getCurrentPlayer().AxisFront);
-          //emitter.updateFlags['velocity'] = true;
-          Game.weather_effects[i].update(delta);
-        }             
+        }        
 
         Game.UpdateFollowerCamera(delta);
 
