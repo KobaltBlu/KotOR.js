@@ -11,7 +11,6 @@ class MenuManager {
   }
 
   static Add(menu = null){
-    console.log('MenuManager.Add', menu);
     if(!menu.isOverlayGUI){
       //Hide the current top most menu in the list before adding the new Menu
       if(MenuManager.activeMenus.length)
@@ -25,7 +24,6 @@ class MenuManager {
   }
 
   static Remove(menu = null){
-    console.log('MenuManager.Remove', menu);
     let mIdx = MenuManager.activeMenus.indexOf(menu);
     if(mIdx >= 0)
       MenuManager.activeMenus.splice(mIdx, 1);

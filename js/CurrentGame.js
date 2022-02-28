@@ -28,11 +28,11 @@ class CurrentGame {
       fs.readFile( path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav'), (error, data) => {
         if(!error){
           new ERFObject(data, (rim) => {
-            console.log('CurrentGame', 'GetModuleRim', name, rim);
+            // console.log('CurrentGame', 'GetModuleRim', name, rim);
             resolve(rim);
           });
         }else{
-          console.error('CurrentGame', 'GetModuleRim', name, e);
+          // console.error('CurrentGame', 'GetModuleRim', name, e);
           reject(e);
         }
       });
@@ -86,12 +86,12 @@ class CurrentGame {
                   sav.addResource(file_info.name, ResourceTypes[ext], data);
                   asyncLoop.next();
                 }else{
-                  console.log('ExportCurrentGameFolder', 'file open error', file, error);
+                  // console.log('ExportCurrentGameFolder', 'file open error', file, error);
                   asyncLoop.next();
                 }
               });
             }else{
-              console.log('ExportCurrentGameFolder', 'Unhandled file', file);
+              // console.log('ExportCurrentGameFolder', 'Unhandled file', file);
               asyncLoop.next();
             }
           }

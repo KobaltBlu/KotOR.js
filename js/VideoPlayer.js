@@ -17,7 +17,7 @@ class VideoPlayer {
       let hasBIK = fs.existsSync(bik);
       let playerSession;
 
-      console.log(name, hasMP4, hasBIK);
+      // console.log(name, hasMP4, hasBIK);
 
       if(hasMP4){
         ipcRenderer.send('movie', {
@@ -34,7 +34,7 @@ class VideoPlayer {
         });
         playerSession = new VideoPlayerSession( bik, name, onEnded );
       }else{
-        console.log('no video');
+        // console.log('no video');
         if(typeof onEnded === 'function')
           onEnded();
         return;
@@ -127,7 +127,7 @@ class VideoPlayerSession {
   }
 
   destroy(){
-    console.log('destroy');
+    // console.log('destroy');
     if(!this.hasEnded){
       this.hasEnded = true;
       try{
@@ -166,7 +166,7 @@ ipcRenderer.on('movie-ready', (event, response) => {
 
 });
 ipcRenderer.on('movie-fail', (event, response) => {
-  console.log('movie-fail', response);
+  // console.log('movie-fail', response);
   let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
   if(session instanceof VideoPlayerSession){
     session.stop();
