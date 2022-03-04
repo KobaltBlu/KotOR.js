@@ -257,7 +257,7 @@ class Module {
       for(let i = eqLen; i >= 0; i--){
         let event = this.eventQueue[i];
         
-        if( ( Game.time * 1000 ) >= event.time ){
+        if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
           event.execute();
           this.eventQueue.splice(i, 1);
         }
@@ -995,113 +995,75 @@ class Module {
 
 class ModuleTimeManager {
 
-  minutesPerHour = 2;
-  pauseDay = 0;
-  pauseTime = 0;
-  year = 0;
-  month = 0;
-  day = 0;
-  hour = 0;
-  minute = 0;
-  second = 0;
-  milisecond = 0;
+  //minutesPerHour = 2;
+  // pauseDay = 0;
+  // pauseTime = 0;
+  // year = 0;
+  // month = 0;
+  // day = 0;
+  // hour = 0;
+  // minute = 0;
+  // second = 0;
+  // milisecond = 0;
   dawnHour = 6;
   duskHour = 18;
 
   enabled = true;
 
-  constructor(pauseDay = 0, pauseTime = 0, year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, milisecond = 0){
+  constructor(){
     this.calendar = new ModuleCalendar();
-    this.pauseDay = pauseDay;
-    this.pauseTime = pauseTime;
-    this.year = year;
-    this.month = month;
-    this.day = day;
-    this.hour = hour;
-    this.minute = minute;
-    this.second = second;
-    this.milisecond = milisecond;
 
     //24 = days in a month
     //12 = months in a year
     //02 = default minutes per hour
   }
 
-  getPauseDay(){
-    return this.pauseDay;
-  }
-
-  getPauseTime(){
-    return this.pauseTime;
-  }
-
   update(delta = 0){
     if(!this.enabled) return;
-    let miliseconds = ModuleCalendar.MILISECONDS_IN_SECOND * delta | 0;
-
-    this.milisecond += miliseconds;
-    if(this.milisecond >= ModuleCalendar.MILISECONDS_IN_SECOND){
-      this.milisecond = (this.milisecond % ModuleCalendar.MILISECONDS_IN_SECOND) | 0;
-      this.second++;
-      if(this.second >= ModuleCalendar.SECONDS_IN_MINUTE){
-        this.second = 0;
-        this.minute++;
-        if(this.minute >= this.minutesPerHour){
-          this.minute = 0;
-          this.hour++;
-          if(this.hour >= ModuleCalendar.HOURS_IN_DAY){
-            this.hour = 0;
-            this.day++;
-            if(this.day >= ModuleCalendar.DAYS_IN_MONTH){
-              this.day = 1;
-              this.month++;
-              if(this.month >= ModuleCalendar.MONTHS_IN_YEAR){
-                this.month = 1;
-                this.year++;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    this.pauseDay = this.year + ( (this.month - 1) * ModuleCalendar.DAYS_IN_MONTH) + (this.day - 1);
-    this.pauseTime = (this.hour * 120000) + (this.minute * 60000) + (this.second * 1000) + this.milisecond;
+    this.calendar.advanceDeltaTime(delta);
   }
 
   getCalendarTimeFromPauseTime( calendar = new ModuleCalendar ){
-    calendar.hour = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE / this.minutesPerHour | 0;
-    calendar.minute = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE % this.minutesPerHour | 0;
-    calendar.second = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND % ModuleCalendar.SECONDS_IN_MINUTE | 0;
+    calendar.hour       = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE / this.minutesPerHour | 0;
+    calendar.minute     = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE % this.minutesPerHour | 0;
+    calendar.second     = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND % ModuleCalendar.SECONDS_IN_MINUTE | 0;
     calendar.milisecond = this.pauseTime % ModuleCalendar.MILISECONDS_IN_SECOND | 0;
     return calendar;
   }
 
   getCalendarDateFromPauseDay( calendar = new ModuleCalendar ){
-    calendar.year = this.pauseDay / ModuleCalendar.DAYS_IN_MONTH / ModuleCalendar.MONTHS_IN_YEAR | 0;
-    calendar.month = this.pauseDay / ModuleCalendar.DAYS_IN_MONTH % ModuleCalendar.MONTHS_IN_YEAR + 1 | 0;
-    calendar.day = this.pauseDay % ModuleCalendar.DAYS_IN_MONTH + 1 | 0;
+    calendar.year   = this.pauseDay / ModuleCalendar.DAYS_IN_MONTH / ModuleCalendar.MONTHS_IN_YEAR | 0;
+    calendar.month  = this.pauseDay / ModuleCalendar.DAYS_IN_MONTH % ModuleCalendar.MONTHS_IN_YEAR + 1 | 0;
+    calendar.day    = this.pauseDay % ModuleCalendar.DAYS_IN_MONTH + 1 | 0;
     return calendar;
   }
 
   setMinutesPerHour(mph){
-    this.minutesPerHour = mph;
+    this.minutesPerHour = mph | 0;
   }
 
-  getHoursFromTime(){
-    return this.pauseTime / 1000 / 60 / this.minutesPerHour | 0;
+  getHoursFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE / this.minutesPerHour | 0;
   }
 
-  getMinutesFromTime(){
-    return this.pauseTime / 1000 / 60 % this.minutesPerHour | 0;
+  getMinutesFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE % this.minutesPerHour | 0;
   }
 
-  getSecondsFromTime(){
-    return this.pauseTime / 1000 % 60 | 0;
+  getSecondsFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND % ModuleCalendar.SECONDS_IN_MINUTE | 0;
   }
 
-  getMilisecondsFromTime(){
-    return this.pauseTime % 1000 | 0;
+  getMilisecondsFromPauseTime(){
+    return this.pauseTime % ModuleCalendar.MILISECONDS_IN_SECOND | 0;
+  }
+
+  getFutureTimeFromSeconds(seconds){
+    console.log('getFutureTimeFromSeconds', seconds);
+    let future = this.calendar.clone();
+    future.advanceDeltaTime(seconds);
+    console.log('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
+    return future;
   }
 
   toString(){
@@ -1160,9 +1122,94 @@ class ModuleTimeManager {
     }
   }
 
+  get MAX_DAY_TIME(){
+    return ModuleCalendar.HOURS_IN_DAY * (ModuleCalendar.SECONDS_IN_MINUTE * this.minutesPerHour) * ModuleCalendar.MILISECONDS_IN_SECOND;
+  }
+
+  get milisecond(){
+    return this.calendar.milisecond;
+  }
+
+  set milisecond(milisecond = 0){
+    this.calendar.milisecond = milisecond|0;
+  }
+
+  get second(){
+    return this.calendar.second;
+  }
+
+  set second(second = 0){
+    this.calendar.second = second|0;
+  }
+
+  get minute(){
+    return this.calendar.minute;
+  }
+
+  set minute(minute = 0){
+    this.calendar.minute = minute|0;
+  }
+
+  get hour(){
+    return this.calendar.hour;
+  }
+
+  set hour(hour = 0){
+    this.calendar.hour = hour|0;
+  }
+
+  get day(){
+    return this.calendar.day;
+  }
+
+  set day(day = 0){
+    this.calendar.day = day|0;
+  }
+
+  get month(){
+    return this.calendar.month;
+  }
+
+  set month(month = 0){
+    this.calendar.month = month|0;
+  }
+
+  get year(){
+    return this.calendar.year;
+  }
+
+  set year(year = 0){
+    this.calendar.year = year|0;
+  }
+
+  get pauseTime(){
+    return this.calendar.pauseTime|0;
+  }
+
+  set pauseTime(pauseTime = 0){
+    this.calendar.pauseTime = pauseTime|0;
+  }
+
+  get pauseDay(){
+    return this.calendar.pauseDay|0;
+  }
+
+  set pauseDay(pauseDay = 0){
+    this.calendar.pauseDay = pauseDay|0;
+  }
+
+  get minutesPerHour(){
+    return this.calendar.minutesPerHour;
+  }
+
+  set minutesPerHour(minutesPerHour = 0){
+    this.calendar.minutesPerHour = minutesPerHour|0;
+  }
+
 }
 
 class ModuleCalendar {
+  minutesPerHour = 2;
   year = 0;
   month = 0;
   day = 0;
@@ -1170,6 +1217,8 @@ class ModuleCalendar {
   minute = 0;
   second = 0;
   milisecond = 0;
+  pauseDay = 0;
+  pauseTime = 0;
 
   clone(){
     let calendar = new ModuleCalendar();
@@ -1179,8 +1228,94 @@ class ModuleCalendar {
     calendar.hour = this.hour;
     calendar.minute = this.minute;
     calendar.second = this.second;
-    this.milisecond = this.milisecond;
+    calendar.milisecond = this.milisecond;
+    calendar.pauseDay = this.pauseDay;
+    calendar.pauseTime = this.pauseTime;
+    calendar.minutesPerHour = this.minutesPerHour;
     return calendar;
+  }
+
+  advanceDeltaTime(delta = 0){
+    this.advanceDayAndTime(0, ( ModuleCalendar.MILISECONDS_IN_SECOND * delta ) | 0);
+  }
+
+  advanceDayAndTime(day = 0, milliseconds = 0){
+    let time = this.pauseTime + (milliseconds | 0);
+    if ( time >= this.MAX_DAY_TIME ) {
+      this.pauseDay++;
+      time -= this.MAX_DAY_TIME;
+    }
+    this.pauseTime = time;
+
+    this.milisecond = this.getMilisecondsFromPauseTime();
+    this.second = this.getSecondsFromPauseTime();
+    this.minute = this.getMinutesFromPauseTime();
+    this.hour = this.getHoursFromPauseTime();
+
+    this.pauseDay += day;
+    this.day = this.getDayFromPauseDay();
+    this.month = this.getMonthFromPauseDay();
+    this.year = this.getYearFromPauseDay();
+
+    //this.pauseTime  = (this.hour * 120000) + (this.minute * 60000) + (this.second * 1000) + this.milisecond;
+    //this.pauseDay   = (this.year * ModuleCalendar.MONTHS_IN_YEAR * ModuleCalendar.DAYS_IN_MONTH ) + ( (this.month - 1) * ModuleCalendar.DAYS_IN_MONTH) + (this.day - 1);
+  }
+
+  pauseTimeFromCalendar(){
+    return  ( this.hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+            ( this.minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+            ( this.second * ModuleCalendar.MILISECONDS_IN_SECOND ) + this.milisecond;
+  }
+
+  pauseDayFromCalendar(){
+    return  ( this.year * ModuleCalendar.MONTHS_IN_YEAR * ModuleCalendar.DAYS_IN_MONTH ) + 
+            ( ( this.month - 1 ) * ModuleCalendar.DAYS_IN_MONTH) + 
+            ( this.day - 1 );
+  }
+
+  updateCalendarDateTime(){
+    //Update calendar time
+    this.milisecond = this.getMilisecondsFromPauseTime();
+    this.second = this.getSecondsFromPauseTime();
+    this.minute = this.getMinutesFromPauseTime();
+    this.hour = this.getHoursFromPauseTime();
+
+    //Update calendar day/month/year
+    this.day = this.getDayFromPauseDay();
+    this.month = this.getMonthFromPauseDay();
+    this.year = this.getYearFromPauseDay();
+  }
+  
+  getHoursFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE / this.minutesPerHour | 0;
+  }
+
+  getMinutesFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE % this.minutesPerHour | 0;
+  }
+
+  getSecondsFromPauseTime(){
+    return this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND % ModuleCalendar.SECONDS_IN_MINUTE | 0;
+  }
+
+  getMilisecondsFromPauseTime(){
+    return this.pauseTime % ModuleCalendar.MILISECONDS_IN_SECOND | 0;
+  }
+
+  getDayFromPauseDay(){
+    return (this.pauseDay % ModuleCalendar.DAYS_IN_MONTH + 1) | 0;
+  }
+
+  getMonthFromPauseDay(){
+    return (this.pauseDay / ModuleCalendar.DAYS_IN_MONTH % ModuleCalendar.MONTHS_IN_YEAR + 1) | 0;
+  }
+
+  getYearFromPauseDay(){
+    return (this.pauseDay / ModuleCalendar.DAYS_IN_MONTH / ModuleCalendar.MONTHS_IN_YEAR) | 0;
+  }
+
+  get MAX_DAY_TIME(){
+    return ModuleCalendar.HOURS_IN_DAY * (ModuleCalendar.SECONDS_IN_MINUTE * this.minutesPerHour) * ModuleCalendar.MILISECONDS_IN_SECOND;
   }
 
   static get MILISECONDS_IN_SECOND() {

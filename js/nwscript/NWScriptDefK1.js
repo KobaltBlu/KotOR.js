@@ -104,11 +104,12 @@ NWScriptDefK1.Actions = {
       //console.log('NWScript: '+this.name, args);
 
       if(this.subRoutine instanceof NWScriptSubroutine){
+        let futureTime = Game.module.timeManager.getFutureTimeFromSeconds(args[0])
         let timedEvent = new EventTimedEvent();
         timedEvent.setCaller(this.caller);
         timedEvent.setObject(this.caller);
-        timedEvent.setDay(0);
-        timedEvent.setTime((Game.time + args[0]) * 1000);
+        timedEvent.setDay(futureTime.pauseDay);
+        timedEvent.setTime(futureTime.pauseTime);
         timedEvent.setNWScript(args[1].script);
         timedEvent.setInstructionPtr(args[1].offset);
         this.subRoutine.addDelayCommand(timedEvent);
