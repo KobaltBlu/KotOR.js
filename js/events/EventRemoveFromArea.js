@@ -28,7 +28,7 @@ class EventRemoveFromArea extends GameEvent {
   }
 
   export(){
-    let struct = new Struct( 0x9999 );
+    let struct = new Struct( 0xABCD );
 
     struct.AddField( new Field(GFFDataTypes.DWORD, 'CallerId') ).SetValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
     struct.AddField( new Field(GFFDataTypes.DWORD, 'Day') ).SetValue(this.day);
