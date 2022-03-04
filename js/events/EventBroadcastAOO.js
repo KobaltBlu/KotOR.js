@@ -20,7 +20,7 @@ class EventBroadcastAOO extends GameEvent {
   }
 
   saveEventData(){
-    let struct = new Struct(0x9999);
+    let struct = new Struct(0x3333);
     struct.AddField( new Field(GFFDataTypes.DWORD, 'Value' ) ).SetValue(this.value);
     return struct;
   }
