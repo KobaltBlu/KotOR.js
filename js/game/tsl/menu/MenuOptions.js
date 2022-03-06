@@ -56,6 +56,24 @@ class MenuOptions extends GameMenu {
           Game.MenuSound.Open();
         });
 
+        this.BTN_QUIT.addEventListener('click', () => {
+          Game.Mode = Game.MODES.MAINMENU;
+          Game.UnloadModule();
+          Game.State = Game.STATES.RUNNING;
+                
+          if(Game.module instanceof Module){
+            Game.module.dispose();
+            Game.module = undefined;
+          }
+
+          //Remove all cached scripts and kill all running instances
+          NWScript.Reload();
+
+          //Resets all keys to their default state
+          Game.controls.InitKeys();
+          Game.MainMenu.Open();
+        });
+
         if(typeof this.onLoad === 'function')
           this.onLoad();
 

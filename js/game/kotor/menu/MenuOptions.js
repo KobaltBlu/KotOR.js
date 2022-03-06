@@ -97,6 +97,24 @@ class MenuOptions extends GameMenu {
           this.LB_DESC.addItem(Global.kotorTLK.TLKStrings[42302].Value)
         });
 
+        this.BTN_QUIT.addEventListener('click', () => {
+          Game.Mode = Game.MODES.MAINMENU;
+          Game.UnloadModule();
+          Game.State = Game.STATES.RUNNING;
+                
+          if(Game.module instanceof Module){
+            Game.module.dispose();
+            Game.module = undefined;
+          }
+
+          //Remove all cached scripts and kill all running instances
+          NWScript.Reload();
+
+          //Resets all keys to their default state
+          Game.controls.InitKeys();
+          Game.MainMenu.Open();
+        });
+
         this.selectedControl = this.BTN_LOADGAME;
 
         if(typeof this.onLoad === 'function')
