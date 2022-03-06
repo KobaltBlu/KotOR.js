@@ -10,6 +10,7 @@ class NWScriptInstance {
     this.name = args.name;
     this.instructions = args.instructions;
     this.talent = undefined;
+    this.actionsMap = undefined;
 
     this.init();
     this.globalCache = null;
@@ -67,6 +68,13 @@ class NWScriptInstance {
       this.stack.dispose();
 
     this.stack = undefined;
+
+    
+    if(GameKey == 'TSL'){
+      this.actionsMap = NWScriptDefK2.Actions;
+    }else{
+      this.actionsMap = NWScriptDefK1.Actions;
+    }
 
   }
 

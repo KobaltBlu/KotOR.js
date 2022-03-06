@@ -464,18 +464,15 @@ NWScript.ByteCodes = {
     name: 'ACTION', 
     run: async function( scope = {} ){
 
-      let action = undefined;//NWScript.Definition.Actions[scope.instr.action];
-      if(GameKey == 'TSL'){
-        action = NWScriptDefK2.Actions[scope.instr.action];
-      }else{
-        action = NWScriptDefK1.Actions[scope.instr.action];
-      }
-
-      let args = [];
-
+      const action = this.actionsMap[scope.instr.action];
+      const args = [];
       for(let i = 0, len = action.args.length; i < len; i++){
         switch(action.args[i]){
           case 'object':
+            args.push( this.stack.pop().value );
+            //Test for and fix instances where an object id is pushed instead of an object reference
+            if(typeof args[i] == 'number') args[i] = ModuleObject.GetObjectById(args[i]);
+          break;
           case 'string':
           case 'int':
           case 'float':
@@ -498,32 +495,29 @@ NWScript.ByteCodes = {
           default:
             //Pop the function variables off the stack after we are done with them
             args.push(this.stack.pop().value);
-            console.warn('UKNOWN ARG', action, args);
+            console.warn('UNKNOWN ARG', action, args);
           break;
         }
-        
       }
-
-      let actionValue = undefined;
 
       if(this.isDebugging('action')){
         //console.log('action', action.name, args);
       }
 
       if(typeof action.action === 'function'){
-        actionValue = await action.action.call(this, args, scope.instr, action);
+        const actionValue = await action.action.call(this, args, scope.instr, action);
+        if(action.type != NWScript.DATATYPE.VOID){
+          this.stack.push( actionValue, action.type );
+        }
       }else{
         console.warn('NWScript Action '+action.name+' not found', action);
-      }
-
-      if(action.type != NWScript.DATATYPE.VOID){
-        this.stack.push( actionValue, action.type );
       }
 
     }, 
     parse: function( instr, reader ){
       instr.action = reader.ReadUInt16();
       instr.argCount = reader.ReadByte();
+      instr.arguments = [];
     }
   },
   6 : { 
