@@ -16,7 +16,7 @@ class ActionUnlockObject extends Action {
 
     this.target = this.getParameter(0);
 
-    if(!(this.target instanceof ModuleDoor) || !(this.target instanceof ModulePlaceable))
+    if(!(this.target instanceof ModuleDoor) && !(this.target instanceof ModulePlaceable))
       return Action.STATUS.FAILED;
 
     if(!this.shouted){
