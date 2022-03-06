@@ -178,7 +178,7 @@ class IngameControls {
       Game.mouse.leftDown = true;
 
     }).mousemove((event) => {
-      Game.scene_cursor.visible = true;
+      Game.scene_cursor_holder.visible = true;
 
       Game.mouse.x = Mouse.Vector.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       Game.mouse.y = Mouse.Vector.y = - ( event.clientY / window.innerHeight ) * 2 + 1; 
@@ -628,27 +628,27 @@ class IngameControls {
             followee.force = 1;
             followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + Game.followerCamera.facing + Math.PI/2 ) , false);
             followee.controlled = true;
-            Game.scene_cursor.visible = false;
+            Game.scene_cursor_holder.visible = false;
           }else{
             if((this.keys['w'].down || Game.autoRun ) && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing + Math.PI/2));
               followee.controlled = true;
-              Game.scene_cursor.visible = true;
+              Game.scene_cursor_holder.visible = true;
             }else if( this.keys['s'].down && !followee.isDead()){
               followee.clearAllActions(true);
               followee.force = 1;
               followee.setFacing(Utility.NormalizeRadian(Game.followerCamera.facing - Math.PI/2));
               followee.controlled = true;
-              Game.scene_cursor.visible = true;
+              Game.scene_cursor_holder.visible = true;
             }else{
               followee.force = 0;
             }
 
             if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
               followee.animState = ModuleCreature.AnimState.RUNNING;
-              Game.scene_cursor.visible = true;
+              Game.scene_cursor_holder.visible = true;
             }
           }
 
@@ -665,22 +665,22 @@ class IngameControls {
         if((this.keys['a'].down || this.gamePad.stick_r_x.value < 0) && !Game.MenuActive){
           turningCamera = true;
           if(this.gamePad.stick_r_x.value){
-            Game.scene_cursor.visible = false;
+            Game.scene_cursor_holder.visible = false;
             this.camDir = -this.gamePad.stick_r_x.value;
           }else{
             this.camDir = 1;
-            Game.scene_cursor.visible = true;
+            Game.scene_cursor_holder.visible = true;
           }
         }
     
         if((this.keys['d'].down || this.gamePad.stick_r_x.value > 0) && !Game.MenuActive){
           turningCamera = true;
           if(this.gamePad.stick_r_x.value){
-            Game.scene_cursor.visible = false;
+            Game.scene_cursor_holder.visible = false;
             this.camDir = -this.gamePad.stick_r_x.value;
           }else{
             this.camDir = -1;
-            Game.scene_cursor.visible = true;
+            Game.scene_cursor_holder.visible = true;
           }
         }
 

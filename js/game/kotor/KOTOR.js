@@ -72,8 +72,8 @@ class Game extends Engine {
     Game.activeMenu = undefined;
 
     Game.limiter = {
-      fps : 60,
-      fpsInterval: 1000/60,
+      fps : 30,
+      fpsInterval: 1000/30,
       startTime: Date.now(),
       now: 0,
       then: 0,
@@ -93,7 +93,6 @@ class Game extends Engine {
 
     Game.scene = new THREE.Scene();
     Game.scene_gui = new THREE.Scene();
-    Game.scene_cursor = new THREE.Scene();
     Game.frustumMat4 = new THREE.Matrix4();
     Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
 
@@ -205,7 +204,6 @@ class Game extends Engine {
     Game.camera_gui.position.z = 500;
     Game.camera_gui.updateProjectionMatrix();
     Game.scene_gui.add(new THREE.AmbientLight(0x60534A));
-    Game.scene_cursor.position.z = 450;
 
     Game.CameraMode = {
       EDITOR: 0,
@@ -335,7 +333,7 @@ class Game extends Engine {
     ];
 
     Game.scene_cursor_holder = new THREE.Group();
-    Game.scene_cursor.add(Game.scene_cursor_holder);
+    Game.scene_gui.add(Game.scene_cursor_holder);
 
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
@@ -425,12 +423,11 @@ class Game extends Engine {
 
     Game.composer = new THREE.EffectComposer(Game.renderer);
     Game.renderPass = new THREE.RenderPass(Game.scene, Game.currentCamera);
-    //Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
+    Game.renderPassAA = new THREE.SSAARenderPass (Game.scene, Game.currentCamera);
     Game.saturationPass = new THREE.ShaderPass(saturationShader);
     Game.colorPass = new THREE.ShaderPass(THREE.ColorCorrectionShader);
     Game.copyPass = new THREE.ShaderPass(THREE.CopyShader);
     Game.renderPassGUI = new THREE.RenderPass(Game.scene_gui, Game.camera_gui);
-    Game.renderPassCursor = new THREE.RenderPass(Game.scene_cursor, Game.camera_gui);
     
     Game.bloomPass = new THREE.BloomPass(0.5);
     Game.bokehPass = new THREE.BokehPass(Game.scene, Game.currentCamera, {
@@ -442,22 +439,20 @@ class Game extends Engine {
     });
     Game.filmPass = new THREE.FilmPass(1, 0.325, 512, false);
 
-    //Game.renderPassAA.sampleLevel = 1;
+    Game.renderPassAA.sampleLevel = 1;
 
-    Game.renderPass.renderToScreen = true;
+    Game.renderPass.renderToScreen = false;
     Game.copyPass.renderToScreen = false;
     Game.renderPassGUI.renderToScreen = false;
-    Game.renderPassCursor.renderToScreen = false;
 
     Game.renderPass.clear = true;
     Game.bloomPass.clear = false;
     Game.filmPass.clear = false;
     Game.colorPass.clear = false;
     Game.saturationPass.clear = false;
-    //Game.renderPassAA.clear = false;
+    Game.renderPassAA.clear = false;
     Game.copyPass.clear = false;
     Game.renderPassGUI.clear = false;
-    Game.renderPassCursor.clear = false;
     Game.renderPassGUI.clearDepth = true;
 
     Game.colorPass.uniforms.powRGB.value.set(1, 1, 1);
@@ -467,26 +462,22 @@ class Game extends Engine {
     Game.bokehPass.enabled = false;
 
     Game.composer.addPass(Game.renderPass);
-    //Game.composer.addPass(Game.bokehPass);
-    //Game.composer.addPass(Game.renderPassAA);
-    //Game.composer.addPass(Game.filmPass);
-    //Game.composer.addPass(Game.colorPass);
-    //Game.composer.addPass(Game.saturationPass);
-    //Game.composer.addPass(Game.bloomPass);
+    // Game.composer.addPass(Game.bokehPass);
+    // Game.composer.addPass(Game.renderPassAA);
+    // Game.composer.addPass(Game.filmPass);
+    // Game.composer.addPass(Game.colorPass);
+    // Game.composer.addPass(Game.saturationPass);
+    // Game.composer.addPass(Game.bloomPass);
 
     Game.composer.addPass(Game.renderPassGUI);
-    Game.composer.addPass(Game.renderPassCursor);
     Game.composer.addPass(Game.copyPass);
 
     Game.renderPass.clearDepth = true;
     Game.renderPassGUI.clearDepth = true;
-    Game.renderPassCursor.clearDepth = true;
     Game.renderPass.clear = true;
     Game.renderPassGUI.clear = false;
-    Game.renderPassCursor.clear = false;
     Game.renderPass.needsSwap = false;
     Game.renderPassGUI.needsSwap = false;
-    Game.renderPassCursor.needsSwap = false;
 
     window.addEventListener('resize', () => {
 
@@ -838,14 +829,14 @@ class Game extends Engine {
     }
   }
 
-  static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+  static UnloadModule(){
     MenuManager.ClearMenus();
     Game.deltaTime = 0;
-    Game.scene.visible = false;
-    Game.inDialog = false;
     Game.initTimers();
     ResourceLoader.clearCache();
-    
+
+    Game.scene.visible = false;
+    Game.inDialog = false;
     ModuleObject.COUNT = 1;
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
     Game.AlphaTest = 0;
@@ -858,13 +849,18 @@ class Game extends Engine {
     LightManager.clearLights();
 
     Game.selected = undefined;
+    Game.selectedObject = undefined;
     Game.hovered = undefined;
+    Game.hoveredObject = undefined;
 
     Game.staticCameras = [];
 
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
+  }
 
+  static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+    Game.UnloadModule();
     VideoPlayer.Load(sMovie1, () => {
       VideoPlayer.Load(sMovie2, () => {
         VideoPlayer.Load(sMovie3, () => {
@@ -1047,6 +1043,7 @@ class Game extends Engine {
       requestAnimationFrame( Game.Update );
       return;
     }*/
+    requestAnimationFrame( Game.Update );
 
     if(!Config.get('Game.debug.show_fps')){
       Game.stats.showPanel(false);
@@ -1059,48 +1056,41 @@ class Game extends Engine {
     Game.limiter.now = Date.now();
     Game.limiter.elapsed = Game.limiter.now - Game.limiter.then;
 
-    requestAnimationFrame( Game.Update );
-
     Game.UpdateVideoEffect();
     MenuManager.Update(delta);
 
     Game.scene_cursor_holder.visible = true;
 
-    // if enough time has elapsed, draw the next frame
-    if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
+    if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
+      //Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
+      Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
+      Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
+      Game.updateTime(delta);
 
-      if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
-        //Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
-        Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
-        Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
-        Game.updateTime(delta);
-
-        //PartyMember cleanup
-        for(let i = 0; i < Game.group.party.children.length; i++){
-          let pm = Game.group.party.children[i].moduleObject;
-          if(Game.player != pm){
-            if(PartyManager.party.indexOf(pm) == -1){
-              pm.destroy();
-            }
+      //PartyMember cleanup
+      for(let i = 0; i < Game.group.party.children.length; i++){
+        let pm = Game.group.party.children[i].moduleObject;
+        if(Game.player != pm){
+          if(PartyManager.party.indexOf(pm) == -1){
+            pm.destroy();
           }
         }
-
-        if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
-          if(Game.State != Game.STATES.PAUSED){
-            Game.module.tick(delta);
-          }else{
-            Game.module.tickPaused(delta);
-          }
-        }
-        
-        if(Game.inDialog){
-          if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
-            Game.scene_cursor_holder.visible = false;
-          }
-        }
-
       }
-      //Game.limiter.then = Game.limiter.now - (Game.limiter.elapsed % Game.limiter.fpsInterval);
+
+      if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
+        if(Game.State != Game.STATES.PAUSED){
+          Game.module.tick(delta);
+        }else{
+          Game.module.tickPaused(delta);
+        }
+      }
+      
+      if(Game.inDialog){
+        if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
+          Game.scene_cursor_holder.visible = false;
+        }
+      }
+
     }
 
     if(Game.Mode == Game.MODES.INGAME){
@@ -1130,8 +1120,6 @@ class Game extends Engine {
       LightManager.update(delta);
       //Game.InGameOverlay.Hide();
     }
-    
-    Game.updateCursor();
 
     if(Game.Mode == Game.MODES.INGAME){
       let obj = undefined;
@@ -1163,24 +1151,20 @@ class Game extends Engine {
     Game.camera_shake.update(delta);
 
     Game.updateCursorPosition();
-    if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
-      Game.renderPass.camera = Game.currentCamera;
-      //Game.renderPassAA.camera = Game.currentCamera;
-      Game.bokehPass.camera = Game.currentCamera;
+    Game.renderPass.camera = Game.currentCamera;
+    //Game.renderPassAA.camera = Game.currentCamera;
+    Game.bokehPass.camera = Game.currentCamera;
 
-      // render scene into target
-      //Game.renderer.setRenderTarget( Game.depthTarget );
-      //Game.renderer.render( Game.scene, Game.currentCamera );
-      // render post FX
-      //Game.renderer.setRenderTarget( null );
+    // render scene into target
+    //Game.renderer.setRenderTarget( Game.depthTarget );
+    //Game.renderer.render( Game.scene, Game.currentCamera );
+    // render post FX
+    //Game.renderer.setRenderTarget( null );
 
-      Game.composer.render(delta);
-    }
+    Game.composer.render(delta);
 
     if(typeof Game.onScreenShot === 'function'){
       console.log('Screenshot', Game.onScreenShot);
-      //Game.scene_gui.visible = false;
-      //Game.scene_cursor.visible = false;
       
       Game.renderer.clear();
       Game.renderer.render(Game.scene, Game.currentCamera);
@@ -1198,9 +1182,6 @@ class Game extends Engine {
       };
       
       Game.composer.render(delta);
-
-      //Game.scene_gui.visible = true;
-      //Game.scene_cursor.visible = true;
       Game.onScreenShot = undefined;
     }
 
@@ -1222,7 +1203,6 @@ class Game extends Engine {
     }
 
     Game.stats.update();
-    
   }
 
   static getCurrentPlayer(){
@@ -1280,7 +1260,7 @@ class Game extends Engine {
 
     if(!cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
       if(MenuManager.GetCurrentMenu() == Game.InGameOverlay){
-        if(Game.scene_cursor.visible){
+        if(Game.scene_cursor_holder.visible){
           //console.log(Game.scene_cursor_holder.position);
           let hoveredObject = false;
           Game.onMouseHitInteractive( (obj) => {

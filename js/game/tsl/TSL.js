@@ -80,7 +80,6 @@ class Game extends Engine {
 
     Game.scene = new THREE.Scene();
     Game.scene_gui = new THREE.Scene();
-    Game.scene_cursor = new THREE.Scene();
     Game.frustumMat4 = new THREE.Matrix4();
     Game.camera = Game.followerCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.1, 15000 );
     
@@ -192,7 +191,6 @@ class Game extends Engine {
     Game.camera_gui.position.z = 500;
     Game.camera_gui.updateProjectionMatrix();
     Game.scene_gui.add(new THREE.AmbientLight(0x60534A));
-    Game.scene_cursor.position.z = 450;
 
     Game.CameraMode = {
       EDITOR: 0,
@@ -325,7 +323,7 @@ class Game extends Engine {
     ];
 
     Game.scene_cursor_holder = new THREE.Group();
-    Game.scene_cursor.add(Game.scene_cursor_holder);
+    Game.scene_gui.add(Game.scene_cursor_holder);
 
     Game.controls = new IngameControls(Game.currentCamera, Game.canvas, Game);
 
@@ -431,7 +429,6 @@ class Game extends Engine {
     Game.colorPass = new THREE.ShaderPass(THREE.ColorCorrectionShader);
     Game.copyPass = new THREE.ShaderPass(THREE.CopyShader);
     Game.renderPassGUI = new THREE.RenderPass(Game.scene_gui, Game.camera_gui);
-    Game.renderPassCursor = new THREE.RenderPass(Game.scene_cursor, Game.camera_gui);
     
     Game.bloomPass = new THREE.BloomPass(0.5);
     Game.bokehPass = new THREE.BokehPass(Game.scene, Game.currentCamera, {
@@ -447,7 +444,6 @@ class Game extends Engine {
 
     Game.copyPass.renderToScreen = true;
     Game.renderPassGUI.renderToScreen = true;
-    Game.renderPassCursor.renderToScreen = true;
 
     Game.renderPass.clear = true;
     Game.bloomPass.clear = false;
@@ -457,7 +453,6 @@ class Game extends Engine {
     //Game.renderPassAA.clear = false;
     Game.copyPass.clear = false;
     Game.renderPassGUI.clear = false;
-    Game.renderPassCursor.clear = false;
     Game.renderPassGUI.clearDepth = true;
 
     Game.colorPass.uniforms.powRGB.value.set(1,1,1);
@@ -475,18 +470,14 @@ class Game extends Engine {
     Game.composer.addPass(Game.bloomPass);
 
     Game.composer.addPass(Game.renderPassGUI);
-    Game.composer.addPass(Game.renderPassCursor);
     Game.composer.addPass(Game.copyPass);
 
     Game.renderPass.clearDepth = true;
     Game.renderPassGUI.clearDepth = true;
-    Game.renderPassCursor.clearDepth = true;
     Game.renderPass.clear = true;
     Game.renderPassGUI.clear = false;
-    Game.renderPassCursor.clear = false;
     Game.renderPass.needsSwap = false;
     Game.renderPassGUI.needsSwap = false;
-    Game.renderPassCursor.needsSwap = false;
 
     //END: PostProcessing
 
@@ -849,7 +840,7 @@ class Game extends Engine {
     }
   }
 
-  static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+  static UnloadModule(){
     MenuManager.ClearMenus();
     Game.deltaTime = 0;
     Game.initTimers();
@@ -861,6 +852,7 @@ class Game extends Engine {
     Game.renderer.setClearColor(new THREE.Color(0, 0, 0));
     Game.AlphaTest = 0;
     clearTimeout(Game.Heartbeat);
+    Game.holdWorldFadeInForDialog = false;
     Game.audioEngine.stopBackgroundMusic();
     Game.audioEngine.Reset();
     CombatEngine.Reset();
@@ -876,6 +868,10 @@ class Game extends Engine {
 
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
+  }
+
+  static LoadModule(name = '', waypoint = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+    Game.UnloadModule();
 
     VideoPlayer.Load(sMovie1, () => {
       VideoPlayer.Load(sMovie2, () => {
@@ -1094,63 +1090,57 @@ class Game extends Engine {
 
     Game.scene_cursor_holder.visible = true;
 
-    // if enough time has elapsed, draw the next frame
-    if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
 
-      if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
-        //Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
-        Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
-        Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
-        Game.updateTime(delta);
+    if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){
+      //Game.viewportFrustum.setFromProjectionMatrix(Game.currentCamera.projectionMatrix);
+      Game.frustumMat4.multiplyMatrices( Game.currentCamera.projectionMatrix, Game.currentCamera.matrixWorldInverse )
+      Game.viewportFrustum.setFromProjectionMatrix(Game.frustumMat4);
+      Game.updateTime(delta);
 
-        //PartyMember cleanup
-        for(let i = 0; i < Game.group.party.children.length; i++){
-          let pm = Game.group.party.children[i].moduleObject;
-          if(Game.player != pm){
-            if(PartyManager.party.indexOf(pm) == -1){
-              pm.destroy();
-            }
+      //PartyMember cleanup
+      for(let i = 0; i < Game.group.party.children.length; i++){
+        let pm = Game.group.party.children[i].moduleObject;
+        if(Game.player != pm){
+          if(PartyManager.party.indexOf(pm) == -1){
+            pm.destroy();
           }
         }
+      }
 
-        if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
-          if(Game.State != Game.STATES.PAUSED){
-            Game.module.tick(delta);
-          }else{
-            Game.module.tickPaused(delta);
-          }
-        }
-        
-        if(Game.inDialog){
-          Game.InGameDialog.Update(delta);
-          if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
-            Game.scene_cursor_holder.visible = false;
-          }
-        }
-
-      }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
-        if(Game.MenuPartySelection.bVisible){
-          Game.MenuPartySelection.Update(delta);
-        } 
-      }else if(Game.Mode == Game.MODES.MAINMENU){
-        if(Game.CharGenClass.bVisible){
-          Game.CharGenClass.Update(delta);
-        /*}else if(Game.CharGenMain.bVisible){
-          Game.CharGenMain.Update(delta);
-        }else if(Game.CharGenPortCust.bVisible){
-          Game.CharGenPortCust.Update(delta);*/
+      if(Game.Mode == Game.MODES.MINIGAME || MenuManager.GetCurrentMenu() == Game.InGameOverlay || MenuManager.GetCurrentMenu() == Game.InGameDialog || MenuManager.GetCurrentMenu() == Game.InGameComputer){
+        if(Game.State != Game.STATES.PAUSED){
+          Game.module.tick(delta);
         }else{
-          Game.MainMenu.Update(delta);
+          Game.module.tickPaused(delta);
         }
-      }/*else if(Game.MenuCharacter.bVisible){
-        Game.MenuCharacter.Update(delta);
-      }else if(Game.MenuGalaxyMap.bVisible){
-        Game.MenuGalaxyMap.Update(delta);
-      }*/
-
-      //Game.limiter.then = Game.limiter.now - (Game.limiter.elapsed % Game.limiter.fpsInterval);
+      }
       
-    }
+      if(Game.inDialog){
+        Game.InGameDialog.Update(delta);
+        if(Game.InGameDialog.IsVisible() && !Game.InGameDialog.LB_REPLIES.isVisible() && Game.scene_cursor_holder.visible){
+          Game.scene_cursor_holder.visible = false;
+        }
+      }
+
+    }else if(Game.Mode == Game.MODES.INGAME && Game.MenuActive){
+      if(Game.MenuPartySelection.bVisible){
+        Game.MenuPartySelection.Update(delta);
+      } 
+    }else if(Game.Mode == Game.MODES.MAINMENU){
+      if(Game.CharGenClass.bVisible){
+        Game.CharGenClass.Update(delta);
+      /*}else if(Game.CharGenMain.bVisible){
+        Game.CharGenMain.Update(delta);
+      }else if(Game.CharGenPortCust.bVisible){
+        Game.CharGenPortCust.Update(delta);*/
+      }else{
+        Game.MainMenu.Update(delta);
+      }
+    }/*else if(Game.MenuCharacter.bVisible){
+      Game.MenuCharacter.Update(delta);
+    }else if(Game.MenuGalaxyMap.bVisible){
+      Game.MenuGalaxyMap.Update(delta);
+    }*/
 
     if(Game.Mode == Game.MODES.INGAME){
 
@@ -1178,8 +1168,6 @@ class Game extends Engine {
       LightManager.update(delta);
       Game.InGameOverlay.Hide();
     }
-    
-    Game.updateCursor();
 
     if(Game.Mode == Game.MODES.INGAME){
       let obj = undefined;
@@ -1210,23 +1198,19 @@ class Game extends Engine {
     Game.camera_shake.beforeRender();
     Game.camera_shake.update(delta);
 
-    if (Game.limiter.elapsed > Game.limiter.fpsInterval) {
-      Game.renderPass.camera = Game.currentCamera;
-      Game.bokehPass.camera = Game.currentCamera;
+    Game.renderPass.camera = Game.currentCamera;
+    Game.bokehPass.camera = Game.currentCamera;
 
-      // render scene into target
-      //Game.renderer.setRenderTarget( Game.depthTarget );
-      //Game.renderer.render( Game.scene, Game.currentCamera );
-      // render post FX
-      //Game.renderer.setRenderTarget( null );
+    // render scene into target
+    //Game.renderer.setRenderTarget( Game.depthTarget );
+    //Game.renderer.render( Game.scene, Game.currentCamera );
+    // render post FX
+    //Game.renderer.setRenderTarget( null );
 
-      Game.composer.render();
-    }
+    Game.composer.render();
 
     if(typeof Game.onScreenShot === 'function'){
       console.log('Screenshot', Game.onScreenShot);
-      //Game.scene_gui.visible = false;
-      //Game.scene_cursor.visible = false;
       
       Game.renderer.clear();
       Game.renderer.render(Game.scene, Game.currentCamera);
@@ -1244,9 +1228,6 @@ class Game extends Engine {
       };
       
       Game.composer.render(delta);
-
-      //Game.scene_gui.visible = true;
-      //Game.scene_cursor.visible = true;
       Game.onScreenShot = undefined;
     }
 
@@ -1258,7 +1239,6 @@ class Game extends Engine {
     Game.camera_shake.afterRender();
 
     Game.stats.update();
-    //requestAnimationFrame( Game.Update );
     
   }
 
@@ -1307,8 +1287,7 @@ class Game extends Engine {
       //}
     }
 
-    if(Game.scene_cursor.visible && !cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
-      //console.log(Game.scene_cursor_holder.position);
+    if(scene_cursor_holder.visible && !cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
       let hoveredObject = false;
       Game.onMouseHitInteractive( (obj) => {
         if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){

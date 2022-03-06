@@ -52,6 +52,10 @@ class MenuManager {
   }
 
   static Update(delta = 0){
+    Game.updateCursor();
+    CursorManager.cursor.material.depthTest = false;
+    CursorManager.cursor.material.depthWrite = false;
+    CursorManager.cursor.renderOrder = 9999999;
     MenuManager.pulse += delta;
     if(MenuManager.pulse > 2){
       MenuManager.pulse = 0;
@@ -74,6 +78,11 @@ class MenuManager {
     let activeMenus = MenuManager.activeMenus;
     for(let i = 0, len = activeMenus.length; i < len; i++){
       activeMenus[i].Update(delta);
+    }
+
+    if(Game.scene_gui.children.indexOf(Game.scene_cursor_holder) != Game.scene_gui.children.length){
+      Game.scene_cursor_holder.remove(Game.scene_gui);
+      Game.scene_gui.add(Game.scene_cursor_holder);
     }
 
   }
