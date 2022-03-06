@@ -1739,7 +1739,7 @@ class ModuleCreatureController extends ModuleObject {
 
   updateCollision(delta = 0){
 
-    if(!this.model)
+    if(!this.model || !Game.module || !Game.module.area)
       return;
 
     let _axisFront = this.AxisFront.clone();
