@@ -4,7 +4,7 @@ class EventBroadcastAOO extends GameEvent {
     super();
 
     //Event Type
-    this.type = GameEvent.Type.EventBroadcastAOO;
+    this.type = GameEvent.Type.EventBroadcastAOO; //Attack Of Opportunity
     this.value = 0;
 
   }
