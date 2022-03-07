@@ -333,10 +333,32 @@ class ModuleCreatureController extends ModuleObject {
       this.updateItems(delta);
     }
 
+    this.updateRegen(delta);
+
     this.collisionTimer -= delta;
     if(this.collisionTimer < 0)
       this.collisionTimer = 0;
 
+  }
+
+  updateRegen(delta = 0){
+    this.regenTimer -= delta;
+    if(this.regenTimer <= 0){
+      this.regenTimer = this.regenTimerMax;
+
+      const regen2DA = Global.kotor2DA['regeneration'].rows[this.combatState ? 0 : 1];
+      if(regen2DA){
+        const regen_force = parseFloat(regen2DA.forceregen);
+        if(!isNaN(regen_force)){
+          this.addFP(Math.abs(regen_force));
+        }
+
+        const regen_health = parseFloat(regen2DA.healthregen);
+        if(!isNaN(regen_health)){
+          this.addHP(Math.abs(regen_force));
+        }
+      }
+    }
   }
 
   updateActionQueue(delta = 0){

@@ -72,6 +72,8 @@ class ModuleCreature extends ModuleCreatureController {
     this.conversation = '';
     this.currentForce = 0;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
+    this.regenTimer = 0;
+    this.regenTimerMax = 6;
     this.deity = '';
     this.description = '';
     this.dec = 0;
