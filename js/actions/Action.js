@@ -165,6 +165,7 @@ class Action {
       default:
         throw 'setParameter: Invalid type: ('+type+')';
     }
+    return param.value;
   }
 
   static FromStruct( struct ){
