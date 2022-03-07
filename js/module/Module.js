@@ -1087,6 +1087,12 @@ class ModuleTimeManager {
     return future;
   }
 
+  getMilisecondsElapsed(day, time){
+    const days_since = (this.pauseDay - day)|0;
+    const time_since = (this.pauseTime - time) |0;
+    return (days_since * this.calendar.MAX_DAY_TIME)|0 + time_since;
+  }
+
   toString(){
     return `${('0000'+this.year).slice(-4)}-${('00'+this.month).slice(-2)}-${('00'+this.day).slice(-2)} ${('00'+this.hour).slice(-2)}:${('00'+this.minute).slice(-2)}:${('00'+this.second).slice(-2)}.${('0000'+this.milisecond).slice(-4)}`;
   }
