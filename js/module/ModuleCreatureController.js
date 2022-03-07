@@ -355,7 +355,7 @@ class ModuleCreatureController extends ModuleObject {
 
         const regen_health = parseFloat(regen2DA.healthregen);
         if(!isNaN(regen_health)){
-          this.addHP(Math.abs(regen_force));
+          this.addHP(Math.abs(regen_health));
         }
       }
     }
