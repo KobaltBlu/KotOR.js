@@ -179,7 +179,10 @@ NWScriptDefK1.Actions = {
     comment: "12: Set the time to the time specified.\n- nHour should be from 0 to 23 inclusive\n- nMinute should be from 0 to 59 inclusive\n- nSecond should be from 0 to 59 inclusive\n- nMillisecond should be from 0 to 999 inclusive\n1) Time can only be advanced forwards; attempting to set the time backwards\nwill result in the day advancing and then the time being set to that\nspecified, e.g. if the current hour is 15 and then the hour is set to 3,\nthe day will be advanced by 1 and the hour will be set to 3.\n2) If values larger than the max hour, minute, second or millisecond are\nspecified, they will be wrapped around and the overflow will be used to\nadvance the next field, e.g. specifying 62 hours, 250 minutes, 10 seconds\nand 10 milliseconds will result in the calendar day being advanced by 2\nand the time being set to 18 hours, 10 minutes, 10 milliseconds.\n",
     name: "SetTime",
     type: 0,
-    args: ["int", "int", "int", "int"]
+    args: ["int", "int", "int", "int"],
+    action: function(args, _instr, action){
+      Game.module.timeManager.setTime(args[0], args[1], args[2], args[3]);
+    }
   },
   13:{
     comment: "13: Sets (by NPC constant) which party member should be the controlled\ncharacter\n",
@@ -219,7 +222,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return parseInt(Game.getHours());
+      return Game.module.timeManager.hour | 0;
     }
   },
   17:{
@@ -228,7 +231,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return parseInt(Game.getMinutes());
+      return Game.module.timeManager.minute | 0;
     }
   },
   18:{
@@ -237,7 +240,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return parseInt(Game.getSeconds());
+      return Game.module.timeManager.second | 0;
     }
   },
   19:{
@@ -246,7 +249,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args, _instr, action){
-      return parseInt(Game.getMiliseconds());
+      return Game.module.timeManager.milisecond | 0;
     }
   },
   20:{

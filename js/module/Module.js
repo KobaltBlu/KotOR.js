@@ -1023,6 +1023,27 @@ class ModuleTimeManager {
     this.calendar.advanceDeltaTime(delta);
   }
 
+  setTime(hour = 0, minute = 0, second = 0, milisecond = 0){
+    hour = (hour % 24) | 0;
+    minute =  (this.minutesPerHour * ( ( ( minute % 60 ) +1 ) / 60 ) ) | 0;
+    second = (second % 60) | 0;
+    milisecond = (milisecond % 1000) | 0;
+
+    const time = ( hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+      ( minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+      ( second * ModuleCalendar.MILISECONDS_IN_SECOND ) + milisecond;
+
+    let advanceDay = 0;
+    let advanceTime = 0;
+    if(time <= this.pauseTime){
+      advanceTime = Math.abs((this.calendar.MAX_DAY_TIME - this.pauseTime) + time)|0;
+      advanceDay++;
+    }else{
+      advanceTime = Math.abs(this.pauseTime - time)|0;
+    }
+    this.calendar.advanceDayAndTime(advanceDay, advanceTime);
+  }
+
   getCalendarTimeFromPauseTime( calendar = new ModuleCalendar ){
     calendar.hour       = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE / this.minutesPerHour | 0;
     calendar.minute     = this.pauseTime / ModuleCalendar.MILISECONDS_IN_SECOND / ModuleCalendar.SECONDS_IN_MINUTE % this.minutesPerHour | 0;
