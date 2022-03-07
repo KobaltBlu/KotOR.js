@@ -9,6 +9,8 @@ class EffectTemporaryHitPoints extends GameEffect {
       return;
       
     super.onApply();
+    
+    this.object.addHP(this.getAmount(), true);
   }
 
 }
