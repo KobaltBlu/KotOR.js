@@ -103,18 +103,20 @@ NWScriptDefK1.Actions = {
     action: function(args, _instr, action){
       //console.log('NWScript: '+this.name, args);
 
+      let futureTime = Game.module.timeManager.getFutureTimeFromSeconds(args[0])
+      let timedEvent = new EventTimedEvent();
+      timedEvent.setCaller(this.caller);
+      timedEvent.setObject(this.caller);
+      timedEvent.setDay(futureTime.pauseDay);
+      timedEvent.setTime(futureTime.pauseTime);
+      timedEvent.setNWScript(args[1].script);
+      timedEvent.setInstructionPtr(args[1].offset);
+      
       if(this.subRoutine instanceof NWScriptSubroutine){
-        let futureTime = Game.module.timeManager.getFutureTimeFromSeconds(args[0])
-        let timedEvent = new EventTimedEvent();
-        timedEvent.setCaller(this.caller);
-        timedEvent.setObject(this.caller);
-        timedEvent.setDay(futureTime.pauseDay);
-        timedEvent.setTime(futureTime.pauseTime);
-        timedEvent.setNWScript(args[1].script);
-        timedEvent.setInstructionPtr(args[1].offset);
-        this.subRoutine.addDelayCommand(timedEvent);
+        this.delayCommands.push(timedEvent);
       }else{
-        console.error('tried to call DelayCommand outside of a NWScript Subroutine');
+        this.delayCommands.push(timedEvent);
+        //console.error('tried to call DelayCommand outside of a NWScript Subroutine');
       }
   
     }

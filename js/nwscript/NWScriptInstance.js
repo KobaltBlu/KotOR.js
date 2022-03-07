@@ -80,6 +80,9 @@ class NWScriptInstance {
 
   setCaller(obj){
     this.caller = obj;
+    if(typeof this.caller == 'number'){
+      this.caller = ModuleObject.GetObjectById(this.caller);
+    }
   }
 
   getSpellId(){
@@ -99,6 +102,7 @@ class NWScriptInstance {
       this.subRoutines = [];
       this.stack = new NWScriptStack();
       this.state = [];
+      this.delayCommands = [];
 
       this.lastSpeaker = undefined;
       this.persistentObjectIdx = 0;
@@ -107,7 +111,7 @@ class NWScriptInstance {
       if(this.globalCache != null){
         //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
         //Need to test the performance impact to see if it helps
-        this.caller = this.globalCache.caller;
+        //this.caller = this.globalCache.caller;
         this.enteringObject = this.globalCache.enteringObject;
         this.subRoutines = this.globalCache.subRoutines.slice();
 
@@ -180,6 +184,7 @@ class NWScriptInstance {
       instr: null,
       onComplete: null
     }, scope);
+    this.delayCommands = [];
 
     scope.iterations = 0;
 
@@ -229,6 +234,9 @@ class NWScriptInstance {
     }
 
     let returnValue = this.getReturnValue();
+    for(let i = 0, len = this.delayCommands.length; i < len; i++){
+      Game.module.eventQueue.push(this.delayCommands[i]);
+    }
     this.init();
 
     if(this.isStoreState){
