@@ -506,6 +506,7 @@ class LIPEditorTab extends EditorTab {
                     this.$lbl_audio_name.text(this.audio_name);
                     this.audio_buffer = buffer;
                     this.$lbl_audio_duration.text(this.audio_buffer.duration);
+                    this.DrawWaveform();
                     this.Play();
                   });
                 });
