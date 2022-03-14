@@ -482,43 +482,42 @@ class LIPEditorTab extends EditorTab {
     this.$btn_audio_browse = $('<a href="#" class="btn btn-default" style="width: 100%; padding: 5px; display: inline-block; margin: 0; margin-top: 5px;">Load Audio</a>');
     this.$btn_audio_browse.on('click', (e) => {
       e.preventDefault();
-      dialog.showOpenDialog(
+      let test = dialog.showOpenDialog(
         {
           title: 'Open Audio File',
           filters: [
             {name: 'Audio File', extensions: ['wav', 'mp3']}
           ],
           properties: ['createDirectory'],
-        }, 
-        (paths) => {
-          if(paths.length){
-            let filename = paths[0].split(path.sep).pop();
-            let fileParts = filename.split('.');
-            switch(fileParts[1]){
-              case 'mp3':
-              case 'wav':
-                new AudioFile(paths[0], (audio) => {
-                  console.log('audio', audio);
-                  audio.GetPlayableByteStream((data) => {
-                    Game.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
-                      this.Stop();
-                      this.audio_name = fileParts[0];
-                      this.$lbl_audio_name.text(this.audio_name);
-                      this.audio_buffer = buffer;
-                      this.$lbl_audio_duration.text(this.audio_buffer.duration);
-                      this.Play();
-                    });
+        }
+      ).then( (response) => {
+        if(response.filePaths.length){
+          let filename = response.filePaths[0].split(path.sep).pop();
+          let fileParts = filename.split('.');
+          switch(fileParts[1]){
+            case 'mp3':
+            case 'wav':
+              new AudioFile(response.filePaths[0], (audio) => {
+                console.log('audio', audio);
+                audio.GetPlayableByteStream((data) => {
+                  Game.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
+                    this.Stop();
+                    this.audio_name = fileParts[0];
+                    this.$lbl_audio_name.text(this.audio_name);
+                    this.audio_buffer = buffer;
+                    this.$lbl_audio_duration.text(this.audio_buffer.duration);
+                    this.Play();
                   });
                 });
-              break;
-              default:
+              });
+            break;
+            default:
 
-              break;
-            }
-            //console.log({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
+            break;
           }
+          //console.log({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
         }
-      );
+      })
     });
 
     this.$input_gain.val(this.preview_gain);
