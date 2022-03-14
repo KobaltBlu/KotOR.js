@@ -482,7 +482,7 @@ class LIPEditorTab extends EditorTab {
     this.$btn_audio_browse = $('<a href="#" class="btn btn-default" style="width: 100%; padding: 5px; display: inline-block; margin: 0; margin-top: 5px;">Load Audio</a>');
     this.$btn_audio_browse.on('click', (e) => {
       e.preventDefault();
-      let test = dialog.showOpenDialog(
+      dialog.showOpenDialog(
         {
           title: 'Open Audio File',
           filters: [
@@ -516,7 +516,7 @@ class LIPEditorTab extends EditorTab {
 
             break;
           }
-          //console.log({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
+          //console.log({path: response.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
         }
       })
     });
@@ -574,14 +574,13 @@ class LIPEditorTab extends EditorTab {
           {name: 'PHN File', extensions: ['phn']}
         ],
         properties: ['createDirectory'],
-      }, 
-      (paths) => {
-        if(paths.length){
-          let filename = paths[0].split(path.sep).pop();
+      }).then( (response) => {
+        if(response.filePaths.length){
+          let filename = response.filePaths[0].split(path.sep).pop();
           let fileParts = filename.split('.');
           switch(fileParts[1]){
             case 'phn':
-              this.ImportPHN(paths[0], () => {
+              this.ImportPHN(response.filePaths[0], () => {
                 console.log('PHN Loaded');
                 setTimeout(() => {
                   this.BuildKeyframes();
@@ -593,9 +592,9 @@ class LIPEditorTab extends EditorTab {
 
             break;
           }
-          //console.log({path: paths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
+          //console.log({path: response.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]})
         }
-      })
+      });
 
     });
 
