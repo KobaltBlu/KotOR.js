@@ -11,7 +11,7 @@ class UI3DRenderer {
 
   constructor( args = {} ){
 
-    this.args = $.extend({
+    this.args = Object.assign({
       width: 100,
       height: 100,
       camera: {

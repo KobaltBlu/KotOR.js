@@ -3,7 +3,7 @@ class ObjectPropertiesWizard extends Wizard {
   constructor(props = {}){
     super();
 
-    this.props = $.extend({
+    this.props = Object.assign({
       autoShow: false
     }, props);
 

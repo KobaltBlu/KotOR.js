@@ -172,11 +172,11 @@ $.layout.state = {
 	saveCookie: function (inst, keys, cookieOpts) {
 		var o	= inst.options
 		,	sm	= o.stateManagement
-		,	oC	= $.extend(true, {}, sm.cookie, cookieOpts || null)
+		,	oC	= Object.assign(true, {}, sm.cookie, cookieOpts || null)
 		,	data = inst.state.stateData = inst.readState( keys || sm.stateKeys ) // read current panes-state
 		;
 		$.ui.cookie.write( oC.name || o.name || "Layout", $.layout.state.encodeJSON(data), oC );
-		return $.extend(true, {}, data); // return COPY of state.stateData data
+		return Object.assign(true, {}, data); // return COPY of state.stateData data
 	}
 
 	/**
@@ -209,7 +209,7 @@ $.layout.state = {
 ,	loadCookie: function (inst) {
 		var c = $.layout.state.readCookie(inst); // READ the cookie
 		if (c && !$.isEmptyObject( c )) {
-			inst.state.stateData = $.extend(true, {}, c); // SET state.stateData
+			inst.state.stateData = Object.assign(true, {}, c); // SET state.stateData
 			inst.loadState(c); // LOAD the retrieved state
 		}
 		return c;
@@ -230,7 +230,7 @@ $.layout.state = {
 
 		// add missing/default state-restore options
 		var smo = inst.options.stateManagement;
-		opts = $.extend({
+		opts = Object.assign({
 			animateLoad:		false //smo.animateLoad
 		,	includeChildren:	smo.includeChildren
 		}, opts );
@@ -241,13 +241,13 @@ $.layout.state = {
 			 */
 			// MUST remove pane.children keys before applying to options
 			// use a copy so we don't remove keys from original data
-			var o = $.extend(true, {}, data);
+			var o = Object.assign(true, {}, data);
 			//delete o.center; // center has no state-data - only children
 			$.each($.layout.config.allPanes, function (idx, pane) {
 				if (o[pane]) delete o[pane].children;		   
 			 });
 			// update CURRENT layout-options with saved state data
-			$.extend(true, inst.options, o);
+			Object.assign(true, inst.options, o);
 		}
 		else {
 			/*
@@ -354,7 +354,7 @@ $.layout.state = {
 							branch.children[ key ] = $.layout.state.readState( child );
 						// if we have PREVIOUS (onLoad) state for this child-layout, KEEP IT!
 						else if ( ps && ps.children && ps.children[ key ] ) {
-							branch.children[ key ] = $.extend(true, {}, ps.children[ key ] );
+							branch.children[ key ] = Object.assign(true, {}, ps.children[ key ] );
 						}
 					});
 				}
@@ -404,7 +404,7 @@ $.layout.state = {
 		,	sm	= o.stateManagement
 		;
 		//	ADD State-Management plugin methods to inst
-		 $.extend( inst, {
+		 Object.assign( inst, {
 		//	readCookie - update options from cookie - returns hash of cookie data
 			readCookie:		function () { return s.readCookie(inst); }
 		//	deleteCookie

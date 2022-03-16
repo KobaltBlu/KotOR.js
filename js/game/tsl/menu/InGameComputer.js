@@ -10,7 +10,7 @@ class InGameComputer extends GameMenu {
   constructor( args = {} ){
     super(args);
 
-    this.args = $.extend({
+    this.args = Object.assign({
       //compscreen: 'black',
     }, this.args);
 

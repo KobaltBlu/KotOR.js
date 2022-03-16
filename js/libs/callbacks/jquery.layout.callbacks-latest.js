@@ -103,7 +103,7 @@ $.layout.callbacks.pseudoClose = function (pane, $Pane, paneState, paneOptions) 
 
 	var fN	= "pseudoClose"
 	,	o	= paneOptions
-	,	oFn	= $.extend({}, $.layout.defaults[pane][fN], o[fN]) // COPY the pseudoClose options
+	,	oFn	= Object.assign({}, $.layout.defaults[pane][fN], o[fN]) // COPY the pseudoClose options
 	;
 	if (oFn.skipIE && $.layout.browser.msie) return true; // ALLOW close
 	if (oFn.hideObject === "object") oFn.hideObject += ",embed"; // 'embedded objects' are often <EMBED> tags

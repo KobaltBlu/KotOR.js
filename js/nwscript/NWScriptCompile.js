@@ -2,7 +2,7 @@ class NWScriptCompile {
 
   constructor( args = {} ){
 
-    args = $.extend({
+    args = Object.assign({
       source: ''
     }, args);
 

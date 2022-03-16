@@ -2,10 +2,13 @@ class EditorTab {
 
   constructor(options = {}){
     this.isDestroyed = true;
-    options = $.extend({
+    options = Object.assign({
       toolbar: undefined,
-      closeable: true
+      closeable: true,
+      editorFile: undefined
     }, options);
+
+    this.editorFile = options.editorFile;
 
     this.id = EditorTabManager.GetNewTabID();
     this.tabManager = null;
@@ -46,6 +49,14 @@ class EditorTab {
       this.BuildToolbar();
     }
 
+    this.editorFileUpdated();
+
+  }
+
+  editorFileUpdated(){
+    if(this.editorFile instanceof EditorFile){
+      this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext}`);
+    }
   }
 
   InitDOMEvents(){

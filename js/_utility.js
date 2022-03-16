@@ -106,7 +106,7 @@ class UIItem {
 
   constructor (args) {
 
-    this.args = $.extend({
+    this.args = Object.assign({
       type: UIItem.TYPE.DEFAULT,
       name: '',
       icon: '',

@@ -10,7 +10,7 @@ class GameInitializer {
 
   static Init(props){
 
-    props = $.extend({
+    props = Object.assign({
       game: null,
       onLoad: null,
       onError: null
@@ -307,7 +307,7 @@ class GameInitializer {
 
   static LoadGameAudioResources( args = {} ){
 
-    args = $.extend({
+    args = Object.assign({
       folder: null,
       name: null,
       onSuccess: null,

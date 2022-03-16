@@ -2,7 +2,7 @@ class NWScriptBlock {
 
   constructor( args = {} ){
 
-    args = $.extend({
+    args = Object.assign({
       type: 'JSR',
       address: 0,
       firstInstr: null,

@@ -28,7 +28,7 @@ if ($.effects) {
 		$.layout.plugins.effects.slideOffscreen = true;
 
 	// dupe 'slide' effect defaults as new effect defaults
-	$.layout.effects.slideOffscreen = $.extend(true, {}, $.layout.effects.slide);
+	$.layout.effects.slideOffscreen = Object.assign(true, {}, $.layout.effects.slide);
 
 	// add new effect to jQuery UI
 	$.effects.slideOffscreen = function(o) {

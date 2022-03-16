@@ -9,7 +9,7 @@ class FileLoader {
 
   constructor( args = {} ){
 
-    this.args = $.extend({
+    this.args = Object.assign({
       file: null,
       onLoad: null,
       onError: null

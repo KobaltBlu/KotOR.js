@@ -591,7 +591,7 @@ $.layout = {
 				debugTitle	= null;
 			}
 			var t = debugTitle || "log( <object> )"
-			,	o = $.extend({ sort: false, returnHTML: false, display: false }, debugOpts);
+			,	o = Object.assign({ sort: false, returnHTML: false, display: false }, debugOpts);
 			if (popup === true || o.display)
 				debugData( info, t, o );
 			else if (window.console)
@@ -1006,7 +1006,7 @@ $.layout.backwardCompatibility = {
 		if (opts.defaults) {
 			if (typeof opts.panes !== "object")
 				opts.panes = {};
-			$.extend(true, opts.panes, opts.defaults);
+			Object.assign(true, opts.panes, opts.defaults);
 			delete opts.defaults;
 		}
 		// rename options in the the options.panes key
@@ -1044,8 +1044,8 @@ $.fn.layout = function (opts) {
 /**
  * options - populated by initOptions()
  */
-,	options = $.extend(true, {}, $.layout.defaults)
-,	effects	= options.effects = $.extend(true, {}, $.layout.effects)
+,	options = Object.assign(true, {}, $.layout.defaults)
+,	effects	= options.effects = Object.assign(true, {}, $.layout.effects)
 
 /**
  * layout-state object
@@ -1606,7 +1606,7 @@ $.fn.layout = function (opts) {
 		state.creatingLayout = true;
 
 		// update Container dims
-		$.extend(sC, elDims( $N, o.inset )); // passing inset means DO NOT include insetX values
+		Object.assign(sC, elDims( $N, o.inset )); // passing inset means DO NOT include insetX values
 
 		// initialize all layout elements
 		initPanes();	// size & position panes - calls initHandles() - which calls initResizable()
@@ -1687,7 +1687,7 @@ $.fn.layout = function (opts) {
 						if ( co_sm.autoLoad === true && childState ) {
 							co_sm.autoSave			= false; // disable autoSave because saving handled by parent-layout
 							co_sm.includeChildren	= true;  // cascade option - FOR NOW
-							co_sm.autoLoad = $.extend(true, {}, childState); // COPY the state-hash
+							co_sm.autoLoad = Object.assign(true, {}, childState); // COPY the state-hash
 						}
 					}
 
@@ -1871,14 +1871,14 @@ $.fn.layout = function (opts) {
 			// handle props like overflow different for BODY & HTML - has 'system default' values
 			if (sC.isBody) {
 				// SAVE <BODY> CSS
-				$N.data(css, $.extend( styles($N, props), {
+				$N.data(css, Object.assign( styles($N, props), {
 					height:		$N.css("height")
 				,	overflow:	$N.css("overflow")
 				,	overflowX:	$N.css("overflowX")
 				,	overflowY:	$N.css("overflowY")
 				}));
 				// ALSO SAVE <HTML> CSS
-				$H.data(css, $.extend( styles($H, 'padding'), {
+				$H.data(css, Object.assign( styles($H, 'padding'), {
 					height:		"auto" // FF would return a fixed px-size!
 				,	overflow:	$H.css("overflow")
 				,	overflowX:	$H.css("overflowX")
@@ -1963,7 +1963,7 @@ $.fn.layout = function (opts) {
 					$N.css( o.outset );
 				}
 				// set current layout-container dimensions
-				$.extend(sC, elDims( $N, o.inset )); // passing inset means DO NOT include insetX values
+				Object.assign(sC, elDims( $N, o.inset )); // passing inset means DO NOT include insetX values
 			}
 			else {
 				// container MUST have 'position'
@@ -1973,7 +1973,7 @@ $.fn.layout = function (opts) {
 
 				// set current layout-container dimensions
 				if ( $N.is(":visible") ) {
-					$.extend(sC, elDims( $N, o.inset )); // passing inset means DO NOT change insetX (padding) values
+					Object.assign(sC, elDims( $N, o.inset )); // passing inset means DO NOT change insetX (padding) values
 					if (sC.innerHeight < 1) // container has no 'height' - warn developer
 						_log( o.errors.noContainerHeight.replace(/CONTAINER/, sC.ref) );
 				}
@@ -2041,19 +2041,19 @@ $.fn.layout = function (opts) {
 			val = opts[key];
 			if ($.inArray(key, rootKeys) < 0 && $.inArray(key, data) < 0) {
 				if (!opts.panes[key])
-					opts.panes[key] = $.isPlainObject(val) ? $.extend(true, {}, val) : val;
+					opts.panes[key] = $.isPlainObject(val) ? Object.assign(true, {}, val) : val;
 				delete opts[key]
 			}
 		}
 
 		// START by updating ALL options from opts
-		$.extend(true, options, opts);
+		Object.assign(true, options, opts);
 
 		// CREATE final options (and config) for EACH pane
 		$.each(_c.allPanes, function (i, pane) {
 
 			// apply 'pane-defaults' to CONFIG.[PANE]
-			_c[pane] = $.extend(true, {}, _c.panes, _c[pane]);
+			_c[pane] = Object.assign(true, {}, _c.panes, _c[pane]);
 
 			d = options.panes;
 			o = options[pane];
@@ -2071,7 +2071,7 @@ $.fn.layout = function (opts) {
 			}
 			else {
 				// border-panes use ALL keys in defaults.panes branch
-				o = options[pane] = $.extend(true, {}, d, o); // re-apply pane-specific opts AFTER pane-defaults
+				o = options[pane] = Object.assign(true, {}, d, o); // re-apply pane-specific opts AFTER pane-defaults
 				createFxOptions( pane );
 				// ensure all border-pane-specific base-classes exist
 				if (!o.resizerClass)	o.resizerClass	= "ui-layout-resizer";
@@ -2133,7 +2133,7 @@ $.fn.layout = function (opts) {
 				||	null					// DEFAULT - let fxSetting.duration control speed
 				;
 				// create fxSettings[_open|_close|_size]
-				o[sSettings] = $.extend(
+				o[sSettings] = Object.assign(
 					true
 				,	{}
 				,	fx_all					// effects.slide.all
@@ -2828,7 +2828,7 @@ $.fn.layout = function (opts) {
 		var	c		= _c[pane]
 		,	panes	=  ["center"]
 		,	z		= options.zIndexes
-		,	a		= $.extend({
+		,	a		= Object.assign({
 						objectsOnly:	false
 					,	animation:		false
 					,	resizing:		true
@@ -3623,7 +3623,7 @@ $.fn.layout = function (opts) {
 		syncPinBtns(pane, !s.isSliding);
 
 		// update pane-state dimensions - BEFORE resizing content
-		$.extend(s, elDims($P));
+		Object.assign(s, elDims($P));
 
 		if (state.initialized) {
 			// resize resizer & toggler sizes for all panes
@@ -4048,7 +4048,7 @@ $.fn.layout = function (opts) {
 					// pane is NOT VISIBLE, so just update state data...
 					// when pane is *next opened*, it will have the new size
 					s.size = size;				// update state.size
-					//$.extend(s, elDims($P));	// update state dimensions - CANNOT do this when not visible!				}
+					//Object.assign(s, elDims($P));	// update state dimensions - CANNOT do this when not visible!				}
 				}
 				queueNext();
 			};
@@ -4104,7 +4104,7 @@ $.fn.layout = function (opts) {
 
 			// update pane-state dimensions
 			s.size	= size;
-			$.extend(s, elDims($P));
+			Object.assign(s, elDims($P));
 
 			if (s.isVisible && $P.is(":visible")) {
 				// reposition the resizer-bar
@@ -4163,7 +4163,7 @@ $.fn.layout = function (opts) {
 			;
 
 			// update pane-state dimensions
-			$.extend(s, elDims($P));
+			Object.assign(s, elDims($P));
 
 			if (pane === "center") {
 				if (!force && s.isVisible && newCenter.width === s.outerWidth && newCenter.height === s.outerHeight) {
@@ -4171,7 +4171,7 @@ $.fn.layout = function (opts) {
 					return true; // SKIP - pane already the correct size
 				}
 				// set state for makePaneFit() logic
-				$.extend(s, cssMinDims(pane), {
+				Object.assign(s, cssMinDims(pane), {
 					maxWidth:	newCenter.width
 				,	maxHeight:	newCenter.height
 				});
@@ -4219,7 +4219,7 @@ $.fn.layout = function (opts) {
 			else { // for east and west, set only the height, which is same as center height
 				// set state.min/maxWidth/Height for makePaneFit() logic
 				if (s.isVisible && !s.noVerticalRoom)
-					$.extend(s, elDims($P), cssMinDims(pane))
+					Object.assign(s, elDims($P), cssMinDims(pane))
 				if (!force && !s.noVerticalRoom && newCenter.height === s.outerHeight) {
 					$P.css(visCSS);
 					return true; // SKIP - pane already the correct size
@@ -4246,7 +4246,7 @@ $.fn.layout = function (opts) {
 				if (s.noRoom && !s.isClosed && !s.isHidden)
 					makePaneFit(pane); // will re-open/show auto-closed/hidden pane
 				if (s.isVisible) {
-					$.extend(s, elDims($P)); // update pane dimensions
+					Object.assign(s, elDims($P)); // update pane dimensions
 					if (state.initialized) sizeContent(pane); // also resize the contents, if exists
 				}
 			}
@@ -4309,7 +4309,7 @@ $.fn.layout = function (opts) {
 			$N.css( options.outset );
 		}
 		// UPDATE container dimensions
-		$.extend(sC, elDims( $N, options.inset ));
+		Object.assign(sC, elDims( $N, options.inset ));
 		if (!sC.outerHeight) return;
 
 		// if 'true' passed, refresh pane & handle positioning too
@@ -4776,8 +4776,8 @@ $.fn.layout = function (opts) {
 				pane:		n
 			,	P:			$P ? $P[0] : false
 			,	C:			$C ? $C[0] : false
-			,	state:		$.extend(true, {}, state[n])
-			,	options:	$.extend(true, {}, options[n])
+			,	state:		Object.assign(true, {}, state[n])
+			,	options:	Object.assign(true, {}, options[n])
 			}
 		};
 
@@ -4789,7 +4789,7 @@ $.fn.layout = function (opts) {
 			,	oldPane = oPane.pane
 			,	c		= _c[pane]
 			//	save pane-options that should be retained
-			,	s		= $.extend(true, {}, state[pane])
+			,	s		= Object.assign(true, {}, state[pane])
 			,	o		= options[pane]
 			//	RETAIN side-specific FX Settings - more below
 			,	fx		= { resizerCursor: o.resizerCursor }
@@ -4813,8 +4813,8 @@ $.fn.layout = function (opts) {
 			$Cs[pane] = C ? $(C) : false;
 
 			// set options and state
-			options[pane]	= $.extend(true, {}, oPane.options, fx);
-			state[pane]		= $.extend(true, {}, oPane.state);
+			options[pane]	= Object.assign(true, {}, oPane.options, fx);
+			state[pane]		= Object.assign(true, {}, oPane.state);
 
 			// change classNames on the pane, eg: ui-layout-pane-east ==> ui-layout-pane-west
 			re = new RegExp(o.paneClass +"-"+ oldPane, "g");
@@ -5306,11 +5306,11 @@ $.layout.state = {
 	saveCookie: function (inst, keys, cookieOpts) {
 		var o	= inst.options
 		,	sm	= o.stateManagement
-		,	oC	= $.extend(true, {}, sm.cookie, cookieOpts || null)
+		,	oC	= Object.assign(true, {}, sm.cookie, cookieOpts || null)
 		,	data = inst.state.stateData = inst.readState( keys || sm.stateKeys ) // read current panes-state
 		;
 		$.ui.cookie.write( oC.name || o.name || "Layout", $.layout.state.encodeJSON(data), oC );
-		return $.extend(true, {}, data); // return COPY of state.stateData data
+		return Object.assign(true, {}, data); // return COPY of state.stateData data
 	}
 
 	/**
@@ -5343,7 +5343,7 @@ $.layout.state = {
 ,	loadCookie: function (inst) {
 		var c = $.layout.state.readCookie(inst); // READ the cookie
 		if (c && !$.isEmptyObject( c )) {
-			inst.state.stateData = $.extend(true, {}, c); // SET state.stateData
+			inst.state.stateData = Object.assign(true, {}, c); // SET state.stateData
 			inst.loadState(c); // LOAD the retrieved state
 		}
 		return c;
@@ -5364,7 +5364,7 @@ $.layout.state = {
 
 		// add missing/default state-restore options
 		var smo = inst.options.stateManagement;
-		opts = $.extend({
+		opts = Object.assign({
 			animateLoad:		false //smo.animateLoad
 		,	includeChildren:	smo.includeChildren
 		}, opts );
@@ -5375,13 +5375,13 @@ $.layout.state = {
 			 */
 			// MUST remove pane.children keys before applying to options
 			// use a copy so we don't remove keys from original data
-			var o = $.extend(true, {}, data);
+			var o = Object.assign(true, {}, data);
 			//delete o.center; // center has no state-data - only children
 			$.each($.layout.config.allPanes, function (idx, pane) {
 				if (o[pane]) delete o[pane].children;		   
 			 });
 			// update CURRENT layout-options with saved state data
-			$.extend(true, inst.options, o);
+			Object.assign(true, inst.options, o);
 		}
 		else {
 			/*
@@ -5488,7 +5488,7 @@ $.layout.state = {
 							branch.children[ key ] = $.layout.state.readState( child );
 						// if we have PREVIOUS (onLoad) state for this child-layout, KEEP IT!
 						else if ( ps && ps.children && ps.children[ key ] ) {
-							branch.children[ key ] = $.extend(true, {}, ps.children[ key ] );
+							branch.children[ key ] = Object.assign(true, {}, ps.children[ key ] );
 						}
 					});
 				}
@@ -5538,7 +5538,7 @@ $.layout.state = {
 		,	sm	= o.stateManagement
 		;
 		//	ADD State-Management plugin methods to inst
-		 $.extend( inst, {
+		 Object.assign( inst, {
 		//	readCookie - update options from cookie - returns hash of cookie data
 			readCookie:		function () { return s.readCookie(inst); }
 		//	deleteCookie
@@ -5850,7 +5850,7 @@ $.layout.buttons = {
 
 ,	_load: function (inst) {
 		//	ADD Button methods to Layout Instance
-		$.extend( inst, {
+		Object.assign( inst, {
 			bindButton:		function (selector, action, pane) { return $.layout.buttons.bind(inst, selector, action, pane); }
 		//	DEPRECATED METHODS...
 		,	addToggleBtn:	function (selector, pane, slide) { return $.layout.buttons.addToggle(inst, selector, pane, slide); }
@@ -6010,7 +6010,7 @@ if ($.effects) {
 		$.layout.plugins.effects.slideOffscreen = true;
 
 	// dupe 'slide' effect defaults as new effect defaults
-	$.layout.effects.slideOffscreen = $.extend(true, {}, $.layout.effects.slide);
+	$.layout.effects.slideOffscreen = Object.assign(true, {}, $.layout.effects.slide);
 
 	// add new effect to jQuery UI
 	$.effects.slideOffscreen = function(o) {

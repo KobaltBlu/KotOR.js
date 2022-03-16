@@ -347,7 +347,7 @@ class UTCObject {
 
   LoadEquipmentItem(args = {}){
 
-    args = $.extend({
+    args = Object.assign({
       ResRef: null,
       Slot: 0x01,
       onLoad: null,

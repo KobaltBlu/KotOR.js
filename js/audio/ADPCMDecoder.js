@@ -9,7 +9,7 @@ class ADPCMDecoder {
 
   constructor( args = {} ){
 
-    args = $.extend({
+    args = Object.assign({
       data: null,
 			header: {
 				sampleRate: 14400,

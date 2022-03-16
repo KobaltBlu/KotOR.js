@@ -15,7 +15,7 @@ THREE.MDLLoader.prototype = {
 
 	load: function ( args ) {
 
-    args = $.extend({
+    args = Object.assign({
       file: null,
       options: null,
       onLoad: null,
@@ -82,7 +82,7 @@ THREE.MDLLoader.prototype = {
 
   loadSync: function ( args ) {
 
-    args = $.extend({
+    args = Object.assign({
       file: null,
       options: null
     }, args);

@@ -7,7 +7,7 @@
  */
 var Colorpicker = function(element, options) {
   this.element = $(element).addClass('colorpicker-element');
-  this.options = $.extend(true, {}, defaults, this.element.data(), options);
+  this.options = Object.assign(true, {}, defaults, this.element.data(), options);
   this.component = this.options.component;
   this.component = (this.component !== false) ? this.element.find(this.component) : false;
   if (this.component && (this.component.length === 0)) {
@@ -332,11 +332,11 @@ Colorpicker.prototype = {
     var sl = this.options.horizontal ? this.options.slidersHorz : this.options.sliders;
     if (!zone.is('.colorpicker')) {
       if (zone.is('.colorpicker-saturation')) {
-        this.currentSlider = $.extend({}, sl.saturation);
+        this.currentSlider = Object.assign({}, sl.saturation);
       } else if (zone.is('.colorpicker-hue')) {
-        this.currentSlider = $.extend({}, sl.hue);
+        this.currentSlider = Object.assign({}, sl.hue);
       } else if (zone.is('.colorpicker-alpha')) {
-        this.currentSlider = $.extend({}, sl.alpha);
+        this.currentSlider = Object.assign({}, sl.alpha);
       } else {
         return false;
       }

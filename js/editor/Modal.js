@@ -4,7 +4,7 @@ class Modal extends Wizard {
 
     super();
 
-    this.args = $.extend({
+    this.args = Object.assign({
       'title': '',
       'message': '',
       'onClose': null

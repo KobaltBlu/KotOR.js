@@ -341,7 +341,7 @@ class AudioEmitter {
 
   AddSound (options = {}) {
 
-    options = $.extend({
+    options = Object.assign({
       //Variables
       data: null,
       name: '',

@@ -9,7 +9,7 @@ class TGAObject {
 
   constructor ( args = {} ) {
 
-    args = $.extend({
+    args = Object.assign({
       file: null,
       filename: null
     }, args);

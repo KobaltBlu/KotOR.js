@@ -16,7 +16,7 @@ class TemplateLoader {
 
   static Load(args = {}){
 
-    args = $.extend({
+    args = Object.assign({
       ResRef: null,
       ResType: null,
       onLoad: null,
@@ -99,7 +99,7 @@ class TemplateLoader {
 
   static LoadFromProject ( args = null ) {
 
-    args = $.extend({
+    args = Object.assign({
       ResRef: null,
       ResType: null,
       onLoad: null,
@@ -132,7 +132,7 @@ class TemplateLoader {
 
   static LoadFromResources ( args = null ) {
 
-    args = $.extend({
+    args = Object.assign({
       ResRef: null,
       ResType: null,
       onLoad: null,

@@ -10,7 +10,7 @@ class MenuPartySelection extends GameMenu {
     constructor( args = {} ){
       super(args);
 
-      this.args = $.extend({
+      this.args = Object.assign({
         loadscreen: '',
       }, this.args);
 

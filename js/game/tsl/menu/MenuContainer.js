@@ -12,7 +12,7 @@ class MenuContainer extends GameMenu {
 
     this.isOverlayGUI = true;
 
-    this.args = $.extend({
+    this.args = Object.assign({
       loadscreen: '',
     }, this.args);
 

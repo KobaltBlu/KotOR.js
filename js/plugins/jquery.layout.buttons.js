@@ -242,7 +242,7 @@ $.layout.buttons = {
 
 ,	_load: function (inst) {
 		//	ADD Button methods to Layout Instance
-		$.extend( inst, {
+		Object.assign( inst, {
 			bindButton:		function (selector, action, pane) { return $.layout.buttons.bind(inst, selector, action, pane); }
 		//	DEPRECATED METHODS...
 		,	addToggleBtn:	function (selector, pane, slide) { return $.layout.buttons.addToggle(inst, selector, pane, slide); }

@@ -118,7 +118,7 @@ class AudioEngine {
 
   /*AddSound ( options = {} ) {
 
-    options = $.extend({
+    options = Object.assign({
       //Variables
       data: null,
       position: new THREE.Vector3(0),

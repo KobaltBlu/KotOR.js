@@ -14,7 +14,7 @@ var Color = function(val, predefinedColors) {
   };
   this.origFormat = null; // original string format
   if (predefinedColors) {
-    $.extend(this.colors, predefinedColors);
+    Object.assign(this.colors, predefinedColors);
   }
   if (val) {
     if (val.toLowerCase !== undefined) {

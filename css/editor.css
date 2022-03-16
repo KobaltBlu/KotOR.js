@@ -690,6 +690,7 @@ button, .btn-default {
     background-color: #1B1A1A;
     border-left: 3px solid #212121;
     color: #CCC;
+    display: inline-flex;
 }
 
 .tabs-menu li.btn.btn-tab {
@@ -698,13 +699,12 @@ button, .btn-default {
 
 .tabs-menu li.current {
     position: relative;
-		background-color: #333333;
-		border-left: 3px solid #128EC7;
+    background-color: #333333;
+    border-left: 3px solid #128EC7;
     z-index: 5;
 }
 
 .tabs-menu li a {
-    padding: 10px;
     text-transform: uppercase;
     color: #CCC;
     text-decoration: none;

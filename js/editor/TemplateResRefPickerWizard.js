@@ -3,7 +3,7 @@ class TemplateResRefPickerWizard extends Wizard {
   constructor(props = {}){
     super();
 
-    this.props = $.extend({
+    this.props = Object.assign({
       autoShow: true,
       selected: '',
       restype: 0,

@@ -4,7 +4,7 @@ class CExoLocSubStringWizard extends Wizard {
 
     super();
 
-    this.args = $.extend({
+    this.args = Object.assign({
       'CExoLocSubString': new CExoLocSubString(0, ''),
       'onSave': null,
       'onClose': null,

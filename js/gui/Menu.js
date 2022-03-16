@@ -11,7 +11,7 @@ class GameMenu {
 
   constructor(args = {}){
 
-    this.args = $.extend({
+    this.args = Object.assign({
       onLoad: null
     }, args);
 
@@ -35,7 +35,7 @@ class GameMenu {
   }
 
   LoadMenu(args={}){
-    args = $.extend({
+    args = Object.assign({
       name: '',
       scale: false,
       onLoad: null

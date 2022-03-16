@@ -9,7 +9,7 @@ class AppearanceLoader {
 
   constructor( args = {} ){
 
-    args = $.extend({
+    args = Object.assign({
       id: -1,
       context: Game,
       type: AppearanceLoader.TYPE.CREATURE
