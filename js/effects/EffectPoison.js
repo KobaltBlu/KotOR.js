@@ -5,6 +5,15 @@ class EffectPoison extends GameEffect {
     this.time = 0;
 
     //intList[0] : poison.2da id
+    //intList[1] : nLastDayApplied
+    //intList[2] : nLastTimeApplied
+    //intList[3] : nLastDayApplied ?Last Ticked
+    //intList[4] : nLastTimeApplied ?Last Ticked
+    //intList[5] : nPoisonDuration
+    //intList[6] : nPosionPeriod
+    //intList[7] : 
+    
+    //floatList[0] : tick count
 
   }
 
@@ -42,7 +51,7 @@ class EffectPoison extends GameEffect {
   }
 
   update(delta = 0){
-    this.object.animState = ModuleCreature.AnimState.PAUSE_DRUNK;
+    
   }
 
 }

@@ -1999,6 +1999,7 @@ class ModuleObject {
     switch( animation_constant ){
       case ModuleCreature.AnimState.PAUSE:
       case ModuleCreature.AnimState.PAUSE_ALT:
+        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
         if(this.isSimpleCreature()){
           return Global.kotor2DA.animations.rows[256];
         }else{
@@ -2006,6 +2007,7 @@ class ModuleObject {
         }
       break;
       case ModuleCreature.AnimState.PAUSE2:
+        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
         if(this.isSimpleCreature()){
           return Global.kotor2DA.animations.rows[257];
         }else{
@@ -2013,12 +2015,15 @@ class ModuleObject {
         }
       break;
       case ModuleCreature.AnimState.PAUSE3:
+        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
         return Global.kotor2DA.animations.rows[359];
       break;
       case ModuleCreature.AnimState.PAUSE4:
+        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
         return Global.kotor2DA.animations.rows[357];
       break;
       case ModuleCreature.AnimState.PAUSE_SCRATCH_HEAD:
+        if(this.isPoisoned()) return Global.kotor2DA.animations.rows[15];
         if(this.isSimpleCreature()){
           return Global.kotor2DA.animations.rows[12];
         }else{

@@ -12,7 +12,7 @@ class EffectDisease extends GameEffect {
   }
 
   update(delta = 0){
-    this.object.animState = ModuleCreature.AnimState.PAUSE_DRUNK;
+    
   }
 
 }

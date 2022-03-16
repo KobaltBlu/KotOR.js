@@ -481,6 +481,10 @@ class ModuleCreature extends ModuleCreatureController {
     return this.getHP() <= 0 && !this.min1HP;
   }
 
+  isDiseased(){
+    return this.hasEffect(GameEffect.Type.EffectDisease);
+  }
+
   isPoisoned(){
     return this.hasEffect(GameEffect.Type.EffectPoison);
   }
@@ -1936,7 +1940,7 @@ class ModuleCreature extends ModuleCreatureController {
 
   LoadEquipmentItem(args = {}){
 
-    args = $.extend({
+    args = Object.assign({
       item: new GFFObject(),
       Slot: 0x01,
       onLoad: null,
