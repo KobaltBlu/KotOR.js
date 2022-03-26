@@ -284,7 +284,6 @@ const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptS
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptSubroutine = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptSubroutine.js'));
 const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstance.js'));
-const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
 const NWScriptDef = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDef.js'));
 const NWScriptDefK1 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK1.js'));
 const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK2.js'));
