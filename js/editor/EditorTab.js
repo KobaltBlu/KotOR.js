@@ -49,13 +49,22 @@ class EditorTab {
       this.BuildToolbar();
     }
 
+    if(this.editorFile instanceof EditorFile){
+      this.editorFile.setOnSavedStateChanged( () => {
+        this.editorFileUpdated();
+      });
+    }
     this.editorFileUpdated();
 
   }
 
   editorFileUpdated(){
     if(this.editorFile instanceof EditorFile){
-      this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext}`);
+      if(this.editorFile.unsaved_changes){
+        this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext} *`);
+      }else{
+        this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext}`);
+      }
     }
   }
 
@@ -72,7 +81,26 @@ class EditorTab {
     if(typeof this._tabCloseClickEvent != 'function'){
       this._tabCloseClickEvent = (e) => {
         e.preventDefault();
-        this.Remove();
+        if(this.editorFile instanceof EditorFile){
+          if(this.editorFile.unsaved_changes){
+            dialog.showMessageBox(
+              remote.getCurrentWindow(), {
+                type: 'question',
+                buttons: ['Yes', 'No'],
+                title: 'You have unsaved changes',
+                message: 'Press Yes to close without saving'
+              }
+            ).then( (confirm) => {
+              if(!confirm.response){
+                this.Remove();
+              }
+            });
+          }else{
+            this.Remove();
+          }
+        }else{
+          this.Remove();
+        }
       };
     }
 

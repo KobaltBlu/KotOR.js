@@ -76,6 +76,8 @@
 
   $('#container').layout({
     applyDefaultStyles: false,
+    west__spacing_open:		8,		// no resizer-bar when open (zero height)
+    west__spacing_closed:		14,		// big resizer-bar when open (zero height)
     'onopen': (pane) => {
       switch(pane){
         case 'west':
@@ -188,6 +190,8 @@
             Game.depthTarget.depthBuffer = true;
             Game.depthTarget.depthTexture = new THREE.DepthTexture();
             Game.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+
+            ScriptEditorTab.InitNWScriptLanguage();
             
 
           });

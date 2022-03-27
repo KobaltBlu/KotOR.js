@@ -287,7 +287,8 @@ const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScri
 const NWScriptDef = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDef.js'));
 const NWScriptDefK1 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK1.js'));
 const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK2.js'));
-const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDecompiler.js'));
+const { NWScriptParser } = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptParser.js'));
+const { NWScriptCompiler } = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptCompiler.js'));
 
 /* Effects */
 const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));

@@ -1,5 +1,5 @@
 
-const util = require('util');
+//const util = require('util');
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;

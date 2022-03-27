@@ -1,6 +1,7 @@
-const util = require('util');
+//const util = require('util');
 const Jison = require("jison").Jison;
-const Lexer = require("jison").Lexer;
+const grammar = require('./AST/nwscript.jison.js').grammar;
+//const Lexer = require("jison").Lexer;
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -34,13 +35,17 @@ class NWScriptParser {
   errors = [];
 
   constructor(nwscript, script){
-    this.grammar = require('./nwscript.jison.js').grammar;
+    this.grammar = JSON.parse(JSON.stringify(grammar));
 
-    this.nwscript_source = nwscript;
-    this.initializeNWScript();
+    if(nwscript){
+      this.nwscript_source = nwscript;
+      this.initializeNWScript();
+    }
 
-    this.script = script;
-    this.parseScriptFile();
+    if(script){
+      this.script = script;
+      this.parseScript();
+    }
   }
 
   initializeNWScript(){
@@ -106,7 +111,10 @@ class NWScriptParser {
     //console.log(util.inspect(NWCompileDataTypes, {showHidden: false, depth: null, colors: true}));
   }
 
-  parseScriptFile(){
+  parseScript( script = undefined ){
+    this.script = script ? script : this.script;
+    if(!this.script) return;
+    
     this.nwscript_parser = this.nwscript_gen.createParser();
     const ast_script = this.nwscript_parser.parse(this.script);
     this.ast = ast_script;
@@ -116,32 +124,17 @@ class NWScriptParser {
     this.walkASTStatement(ast_script);
     if(!this.errors.length){
       ast_script.parsed = true;
-      console.log(` `);
-      console.log(` `);
-      console.log(` `);
       console.log(`Script parsed without errors`);
       //console.log(util.inspect(ast_script, {showHidden: false, depth: null, colors: true}));
-      console.log(` `);
-      console.log(` `);
-      console.log(` `);
     }else{
       ast_script.parsed = false;
-      console.log(` `);
-      console.log(` `);
-      console.log(` `);
       console.log(`Script parsed with errors (${this.errors.length})`);
       for(let i = 0; i < this.errors.length; i++){
         console.log(
           'Error', 
-          util.inspect(
-            this.errors[i], 
-            {showHidden: false, depth: null, colors: true}
-          )
+          this.errors[i]
         );
       }
-      console.log(` `);
-      console.log(` `);
-      console.log(` `);
     }
   }
 

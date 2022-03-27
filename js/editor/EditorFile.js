@@ -8,20 +8,44 @@ class EditorFile {
       restype: null,
       ext: null,
       archive_path: null,
-      location: EditorFile.LOCATION_TYPE.LOCAL,
+      location: EditorFile.LOCATION_TYPE.OTHER,
       buffer: []
     }, options);
 
+    console.log(options);
+
     this.resref = options.resref;
-    this.reskey = options.reskey;
     this.buffer = options.buffer;
     this.path = options.path;
     this.ext = options.ext;
+    this.reskey = options.reskey;
     this.archive_path = options.archive_path;
     this.location = options.location;
+    this.unsaved_changes = false;
 
+    if(!this.ext && this.reskey){
+      this.ext = ResourceTypes.getKeyByValue(this.reskey);
+    }
+
+    this.setPath(this.path);
+
+    if(!this.ext && this.reskey){
+      this.ext = ResourceTypes.getKeyByValue(this.reskey);
+    }
+
+    if(this.location == EditorFile.LOCATION_TYPE.OTHER)
+      this.unsaved_changes = true;
+
+    this.onSavedStateChanged = undefined;
+
+  }
+
+  setPath(filepath){
+    this.path = filepath;
     if(typeof this.path === 'string'){
       let path_obj = path.parse(this.path);
+
+      this.location = EditorFile.LOCATION_TYPE.LOCAL;
 
       //Test for archive file path
       if(this.path.indexOf('?') >= 0){
@@ -42,11 +66,6 @@ class EditorFile {
 
       this.ext = ResourceTypes.getKeyByValue(this.reskey);
     }
-
-    if(!this.ext && this.reskey){
-      this.ext = ResourceTypes.getKeyByValue(this.reskey);
-    }
-
   }
 
   getPath(){
@@ -335,6 +354,50 @@ class EditorFile {
 
   getFilename(){
     return this.resref+'.'+this.ext;
+  }
+
+  setOnSavedStateChanged( listener ){
+    if(typeof listener === 'function') this.onSavedStateChanged = listener;
+  }
+
+  get unsaved_changes(){
+    return this._unsaved_changes;
+  };
+
+  set unsaved_changes(value){
+    this._unsaved_changes = ( value || (this.location == EditorFile.LOCATION_TYPE.OTHER) ) ? true : false;
+    if(typeof this.onSavedStateChanged === 'function') this.onSavedStateChanged(this);
+  }
+
+  get resref(){
+    return this._resref;
+  }
+
+  set resref(value){
+    this._resref = value;
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+  }
+
+  get reskey(){
+    return this._reskey;
+  }
+
+  set reskey(value){
+    console.log('reskey', value);
+    this._reskey = value;
+    this._ext = ResourceTypes.getKeyByValue(this.reskey);
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+  }
+
+  get ext(){
+    return this._ext;
+  }
+
+  set ext(value){
+    console.log('ext', value);
+    this._ext = value;
+    this._reskey = ResourceTypes[value];
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
   }
 
 }

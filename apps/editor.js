@@ -260,11 +260,11 @@ const NWScriptStack = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptS
 const NWScriptSubroutine = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptSubroutine.js'));
 const NWScriptInstruction = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstruction.js'));
 const NWScriptInstance = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptInstance.js'));
-const NWScriptBlock = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptBlock.js'));
 const NWScriptDef = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDef.js'));
 const NWScriptDefK1 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK1.js'));
 const NWScriptDefK2 = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDefK2.js'));
-const NWScriptDecompiler = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptDecompiler.js'));
+const { NWScriptParser } = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptParser.js'));
+const { NWScriptCompiler } = require(path.join(app.getAppPath(), 'js/nwscript/NWScriptCompiler.js'));
 
 /* Effects */
 const GameEffect = require(path.join(app.getAppPath(), 'js/effects/GameEffect.js'));
@@ -285,6 +285,18 @@ for(let i = 0; i < odysseyGameEvents.length; i++){
   let controllerPath = path.parse(odysseyGameEvents[i]);
   try{
     global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/events', controllerPath.base));
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* Actions */
+const Action = require(path.join(app.getAppPath(), 'js/actions/Action.js'));
+let actions = fs.readdirSync(path.join(app.getAppPath(), 'js/actions'));
+for(let i = 0; i < actions.length; i++){
+  let controllerPath = path.parse(actions[i]);
+  try{
+    global[controllerPath.name] = require(path.join(app.getAppPath(), 'js/actions', controllerPath.base));
   }catch(e){
     console.error(e);
   }
@@ -537,18 +549,21 @@ if (typeof global.TopMenu == 'undefined') {
         }},
         {type: 'separator'},
         {name: 'New >', items: [
-          {name: 'Lip Sync File', onClick: function(){
-            tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
-          }},
           {name: 'Creature Template', onClick: function(){
             tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
           }},
           {name: 'Door Template', onClick: function(){
             tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
           }},
+          {name: 'Lip Sync File', onClick: function(){
+            tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
+          }},
           {name: 'Placeable Template', onClick: function(){
             tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_placeable', reskey: ResourceTypes.utp })));
-          }}
+          }},
+          {name: 'Script File', onClick: function(){
+            tabManager.AddTab(new ScriptEditorTab(new EditorFile({ resref: 'untitled', reskey: ResourceTypes.nss })));
+          }},
         ]},
         {name: 'Open File', onClick: function(){
           dialog.showOpenDialog(
@@ -576,6 +591,7 @@ if (typeof global.TopMenu == 'undefined') {
                 {name: 'Module File', extensions: ['git', 'ifo']},
                 {name: 'Area File', extensions: ['are']},
                 {name: 'Path File', extensions: ['pth']},
+                {name: 'Script File', extensions: ['nss', 'ncs']},
                 {name: 'VIS File', extensions: ['vis']},
                 {name: 'Layout File', extensions: ['lyt']},
                 {name: 'All Formats', extensions: ['*']},
@@ -600,6 +616,17 @@ if (typeof global.TopMenu == 'undefined') {
           if(tabManager.currentTab instanceof EditorTab){
             try{
               tabManager.currentTab.Save();
+            }catch(e){
+              console.error(e);
+            }
+          }
+
+        }},
+        {name: 'Compile File', onClick: function(){
+
+          if(tabManager.currentTab instanceof EditorTab){
+            try{
+              tabManager.currentTab.Compile();
             }catch(e){
               console.error(e);
             }
@@ -838,7 +865,20 @@ function removeClass(el, className) {
 
 
 
-
+$(window).on('keyup', (e) => {
+  if(e.keyCode == 83 && e.ctrlKey == true){
+    if(e.shiftKey == true){
+      const target = global.TopMenu.items[0].items.find( item => item.name == 'Save File As' );
+      if(target && typeof target.onClick == 'function') target.onClick(); 
+    }else{
+      const target = global.TopMenu.items[0].items.find( item => item.name == 'Save File' );
+      if(target && typeof target.onClick == 'function') target.onClick(); 
+    }
+  }else if(e.keyCode == 67 && e.ctrlKey == true && e.ctrlKey == true && e.shiftKey == true){
+    const target = global.TopMenu.items[0].items.find( item => item.name == 'Compile File' );
+    if(target && typeof target.onClick == 'function') target.onClick(); 
+  }
+});
 
 
 ;(function($) {

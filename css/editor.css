@@ -1862,3 +1862,43 @@ input[type=checkbox].ui:checked + label:before {
 .TSL .navbar.navbar-sidebar-wizard-horizontal a {
     color: #CCC;
 }
+
+.script-error {
+    padding: 5px;
+    /* border: 1px solid red;
+    background: rgba(255, 0, 0, 0.05); */
+    margin: 5px;
+    white-space: nowrap;
+    display: flex;
+}
+
+.script-error:hover {
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.script-error > .icon {
+    float: left;
+    margin-right: 5px;
+    color: red;
+    font-size: 14pt;
+}
+
+.script-error > .icon > i {
+    vertical-align: top;
+}
+
+.script-error > .message {
+    color: #FFFFFF;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: inline-block;
+}
+
+.script-error > .line-column {
+    color: #777777;
+    font-weight: bold;
+    margin-left: 5px;
+}

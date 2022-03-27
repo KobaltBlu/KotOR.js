@@ -90,11 +90,6 @@ exports.grammar = {
       ["OBJECT_SELF\\b", "return 'OBJECT_SELF'"],
       ["OBJECT_INVALID\\b", "return 'OBJECT_INVALID'"],
 
-      // ["effect\\b|EFFECT\\b", "return 'EFFECT'"],
-      // ["event\\b|EVENT\\b", "return 'EVENT'"],
-      // ["location\\b|LOCATION\\b", "return 'LOCATION'"],
-      // ["talent\\b|TALENT\\b", "return 'TALENT'"],
-
       ["#include\\b", "return 'INCLUDE'"],
       ["#define\\b", "return 'DEFINE'"],
       ["return\\b", "return 'RETURN'"],
@@ -232,8 +227,10 @@ exports.grammar = {
       ["NAME . NAME ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: null };`],
       ["NAME . NAME = NWExp ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: $5 };`],
       ["NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
+      ["NAME == NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
       ["NAME ++ ;", `$$ = { type: 'inc', is_const: false, datatype: null, name: $1, value: null };`],
       ["NAME -- ;", `$$ = { type: 'dec', is_const: false, datatype: null, name: $1, value: null };`],
+      ["NWDataType NWNameList ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null };`],
       // ["NAME += NWExp ;", `$$ = { type: 'addeq', is_const: false, datatype: null, name: $1, value: $3 };`],
       // ["NAME -= NWExp ;", `$$ = { type: 'subeq', is_const: false, datatype: null, name: $1, value: $3 };`],
     ],
@@ -268,8 +265,9 @@ exports.grammar = {
     //---------------------//
 
     "NWForVariable": [
-      ["INT NAME = NWExp", `$$ = { type: 'variable', is_const: false, datatype: {type: "datatype", unary: 3, value: $1}, name: $2, value: $4 };`],
+      //["INT NAME = NWExp", `$$ = { type: 'variable', is_const: false, datatype: {type: "datatype", unary: 3, value: $1}, name: $2, value: $4 };`],
       ["NAME = NWExp", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
+      ["NAME", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
     ],
 
     "NWForIncrementor": [
@@ -386,6 +384,11 @@ exports.grammar = {
     "NWExpList": [
       ["NWExp", `$$ = [$1]`],
       ["NWExpList , NWExp", `$$ = $1; $1.push($3)`],
+    ],
+    
+    "NWNameList": [
+      ["NAME", `$$ = [$1]`],
+      ["NWNameList , NAME", `$$ = $1; $1.push($3)`],
     ],
 
     "NWConstDataType": [
