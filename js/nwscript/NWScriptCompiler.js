@@ -702,12 +702,15 @@ class NWScriptCompiler {
     if(statement && statement.type == "function_call"){
       if(statement.function_reference.returntype){
         if(statement.function_reference.returntype.value != 'void'){
-          if(statement.function_reference.returntype.unary == NWCompileDataTypes.V){
-            buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
-            buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
-            buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
-          }else{
-            buffers.push( this.writeRSADD(statement.function_reference.returntype.unary) );
+          //only call RSADD if this function has a return value and it isn't an engine routine
+          if(!statement.function_reference.is_engine_action){
+            if(statement.function_reference.returntype.unary == NWCompileDataTypes.V){
+              buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
+              buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
+              buffers.push( this.writeRSADD(NWCompileDataTypes.F) );
+            }else{
+              buffers.push( this.writeRSADD(statement.function_reference.returntype.unary) );
+            }
           }
         }
       }
