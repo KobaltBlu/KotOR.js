@@ -196,22 +196,22 @@ class NWScriptCompiler {
         for(let i = 0; i < globalStatements.length; i++){
           buffers.push( this.compileStatement( globalStatements[i]) );
         }
+
+        this.basePointerWriting = false;
+        
+        this.basePointer = this.stackPointer;
+        this.stackPointer = 0;
       
         buffers.push( this.writeSAVEBP() );
         buffers.push( 
           this.writeJSR(
             this.getInstructionLength(OP_JSR) + 
             this.getInstructionLength(OP_RESTOREBP) + 
-            this.getInstructionLength(OP_MOVSP) + 
+            ( (this.basePointer > 0) ? this.getInstructionLength(OP_MOVSP) : 0 ) + 
             this.getInstructionLength(OP_RETN)
           ) 
         );
       }
-
-      this.basePointerWriting = false;
-      
-      this.basePointer = this.stackPointer;
-      this.stackPointer = 0;
 
       //this.ast.main.blockSize = this.getStatementLength( this.ast.main );
       //console.log('main', this.ast.main.name, this.getStatementLength( this.ast.main ) );
