@@ -58,7 +58,7 @@ class NWScriptParser {
     _parser.engine_types = this.engine_types;
     _parser.engine_constants = this.engine_constants;
     _parser.engine_actions = this.engine_actions;
-    _parser.nwscript_gen = new Jison.Generator(_parser.grammar);
+    _parser.nwscript_gen = this.nwscript_gen;
     return _parser;
   }
 
