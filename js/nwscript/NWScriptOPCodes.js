@@ -1,4 +1,6 @@
 
+//OPCodes & NCS info: http://web.archive.org/web/20040530002709/http://www.torlack.com/index.html?topics=nwndata_ncs
+
 // CPDOWNSP - Copy Down Stack Pointer
 // Copy the given number of bytes from the top of the stack down to the location specified.
 
