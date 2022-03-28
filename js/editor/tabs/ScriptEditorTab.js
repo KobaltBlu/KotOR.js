@@ -49,11 +49,15 @@ class ScriptEditorTab extends EditorTab {
     this.bottomTabManager = new EditorTabManager();
     this.bottomTabManager.AttachTo(this.$bottomPane);
 
-    this.errorLogTab = new ScriptErrorLogTab();
-    this.compileLogTab = new ScriptCompileLogTab();
+    this.errorLogTab = new ScriptErrorLogTab( this );
+    this.compileLogTab = new ScriptCompileLogTab( this );
+    this.ncsTab = new NCSInspectorTab( this );
     this.bottomTabManager.AddTab( this.errorLogTab );
     this.bottomTabManager.AddTab( this.compileLogTab );
+    this.bottomTabManager.AddTab( this.ncsTab );
     this.errorLogTab.Show();
+
+    this.nwScriptParser = ScriptEditorTab.nwScriptParser.clone();
 
     this.lastSavedState = '';
 
@@ -113,22 +117,37 @@ class ScriptEditorTab extends EditorTab {
     if(!this.loaded) return;
     const source_nss = this.editor.getModel().getValue();
     try{
-      ScriptEditorTab.nwScriptParser.parseScript( source_nss );
+      this.nwScriptParser.parseScript( source_nss );
       //console.clear();
-      console.log(ScriptEditorTab.nwScriptParser.errors);
-      var markers = [ ];
+      console.log(this.nwScriptParser.errors);
+      const markers = [ ];
+      for(let i = 0; i < this.nwScriptParser.errors.length; i++){
+        const error = this.nwScriptParser.errors[i];
+        if(error && error.offender && error.offender.source){
+          markers.push({
+            severity: monaco.MarkerSeverity.Error,
+            startLineNumber: error.offender.source.first_line,
+            startColumn: error.offender.source.first_column + 1,
+            endLineNumber: error.offender.source.last_line,
+            endColumn: error.offender.source.last_column + 1,
+            message: error.message
+          });
+        }else{
+          console.log('unhandled error', error);
+        }
+      }
       this.errorLogTab.setErrors(markers);
       monaco.editor.setModelMarkers(this.editor.getModel(), 'nwscript', markers);
     }catch(e){
       console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
       console.log(JSON.stringify(e));
       if(e.hash){
-        var markers = [{
+        const markers = [{
           severity: monaco.MarkerSeverity.Error,
           startLineNumber: e.hash.loc.first_line,
-          startColumn: e.hash.loc.first_column,
+          startColumn: e.hash.loc.first_column + 1,
           endLineNumber: e.hash.loc.last_line,
-          endColumn: e.hash.loc.last_column,
+          endColumn: e.hash.loc.last_column + 1,
           message: e.message
         }];
         this.errorLogTab.setErrors(markers);
@@ -300,16 +319,19 @@ class ScriptEditorTab extends EditorTab {
     NotificationManager.Notify(NotificationManager.Types.INFO, `Parsing...`);
     const source_nss = this.editor.getModel().getValue();
     try{
-      ScriptEditorTab.nwScriptParser.parseScript(source_nss);
+      this.nwScriptParser.parseScript(source_nss);
 
-      //console.log(util.inspect(ScriptEditorTab.nwScriptParser.ast, {showHidden: false, depth: null, colors: true}));
       const nss_path = path.parse(this.editorFile.path);
-
-      NotificationManager.Notify(NotificationManager.Types.INFO, `Compiling... - ${nss_path.name}.nss`);
-      const nwScriptCompiler = new NWScriptCompiler(ScriptEditorTab.nwScriptParser.ast);
-      const compiledBuffer = nwScriptCompiler.compile();
-      fs.writeFileSync(path.join(nss_path.dir, `${nss_path.name}.ncs`), compiledBuffer);
-      NotificationManager.Notify(NotificationManager.Types.SUCCESS, `Compile: Success! - ${nss_path.name}.ncs`);
+      if(!this.nwScriptParser.errors.length){
+        NotificationManager.Notify(NotificationManager.Types.INFO, `Compiling... - ${nss_path.name}.nss`);
+        const nwScriptCompiler = new NWScriptCompiler(this.nwScriptParser.ast);
+        const compiledBuffer = nwScriptCompiler.compile();
+        fs.writeFileSync(path.join(nss_path.dir, `${nss_path.name}.ncs`), compiledBuffer);
+        this.ncsTab.setNCSData(compiledBuffer);
+        NotificationManager.Notify(NotificationManager.Types.SUCCESS, `Compile: Success! - ${nss_path.name}.ncs`);
+      }else{
+        NotificationManager.Notify(NotificationManager.Types.ALERT, `Parse: Failed! - with errors (${this.nwScriptParser.errors.length})`);
+      }
     }catch(e){
       NotificationManager.Notify(NotificationManager.Types.ALERT, `Parser: Failed!`);
     }
@@ -335,7 +357,7 @@ class ScriptEditorTab extends EditorTab {
             ],
 
             functions: [
-              'GN_SetListeningPatterns'
+              //'GN_SetListeningPatterns'
             ],
 
             parenFollows: [
@@ -351,7 +373,7 @@ class ScriptEditorTab extends EditorTab {
             tokenizer: {
               root: [
                 // identifiers and keywords
-                [/\@?[a-zA-Z_]\w*/, {
+                [/\@?[a-zA-Z0-9_]\w*/, {
                   cases: {
                     //'@namespaceFollows': { token: 'keyword.$0', next: '@namespace' },
                     '@keywords': { token: 'keyword.$0', next: '@qualified' },
@@ -369,40 +391,6 @@ class ScriptEditorTab extends EditorTab {
                 [/0[bB][01_]+/, 'number.hex'], // binary: use same theme style as hex
                 [/[0-9_]+/, 'number'],
 
-                // [/0x[0-9A-Fa-f]+?\b/, 'HEXADECIMAL'],
-                // [/(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)(?:f)?\b/, 'FLOAT'],
-                // [/(?:[0-9]|[1-9][0-9]+)\b/, 'INTEGER'],
-                //[/\"[^\"]*\"/, 'TEXT'],
-
-                // [/switch\b/, 'SWITCH'], 
-                // [/case\b/, 'CASE'], 
-                // [/default\b/, 'DEFAULT'], 
-                // [/else if\b/, 'ELSEIF'], 
-                // [/if\b/, 'IF'], 
-                // [/else\b/, 'ELSE'], 
-                // [/while\b/, 'WHILE'], 
-                // [/do\b/, 'DO'], 
-                // [/for\b/, 'FOR'], 
-                // [/continue\b/, 'CONTINUE'], 
-                // [/const\b/, 'CONST'], 
-                // [/void\b|VOID\b/, 'VOID'], 
-                // [/int\b|INT\b/, 'INT'], 
-                // [/string\b|STRING\b/, 'STRING'], 
-                // [/float\b|FLOAT\b/, 'FLOAT'], 
-                // [/vector\b|VECTOR\b/, 'VECTOR'], 
-                // [/struct\b|STRUCT\b/, 'STRUCT'], 
-                // [/action\b|ACTION\b/, 'ACTION'], 
-                // [/object\b|OBJECT\b|object_id\b|OBJECT_ID\b/, 'OBJECT'], 
-
-                // [/OBJECT_SELF\b/, 'OBJECT_SELF'], 
-                // [/OBJECT_INVALID\b/, 'OBJECT_INVALID'], 
-
-                // [/\#include\b/, 'INCLUDE'], 
-                // [/\#define\b/, 'DEFINE'], 
-                // [/return\b/, 'RETURN'], 
-                // [/break\b/, 'BREAK'], 
-                // [/(?:[A-Za-z_]|[A-Za-z_][A-Za-z0-9_]+)\b/, 'NAME'], 
-
                 // strings
                 [/"([^"\\]|\\.)*$/, 'string.invalid'],  // non-teminated string
                 [/"/, { token: 'string.quote', next: '@string' }],
@@ -417,7 +405,7 @@ class ScriptEditorTab extends EditorTab {
               ],
 
               qualified: [
-                [/[a-zA-Z_][\w]*/, {
+                [/[a-zA-Z0-9_][\w]*/, {
                   cases: {
                     '@keywords': { token: 'keyword.$0' },
                     '@functions': { token: 'functions.$0' },
@@ -545,10 +533,11 @@ class ScriptEditorTab extends EditorTab {
             }
           });
 
-          const keywords = ['FALSE', 'TRUE', 'int', 'float', 'string', 'object', 'effect', 'event', 'location', 'talent', 'vector', 'void', 'struct'];
-          const nw_keywords = [];
+          const nw_suggestions = [];
+          const keywords = ['void', 'int', 'float', 'string', 'object', 'vector', 'struct', 'action'];
+
           for(let i = 0; i < keywords.length; i++){
-            nw_keywords.push({
+            nw_suggestions.push({
               label: keywords[i],
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: keywords[i],
@@ -556,30 +545,75 @@ class ScriptEditorTab extends EditorTab {
             });
           }
 
-          const nw_suggestions = [];
-          const nw_actions = Object.entries(NWScriptDefK1.Actions);
+          //Engine Types
+          const nw_types = ScriptEditorTab.nwScriptParser.engine_types.slice(0);
+          for(let i = 0; i < nw_types.length; i++){
+            const nw_type = nw_types[i];
+            console.log({
+              label: nw_type.name,
+              kind: monaco.languages.CompletionItemKind.Keyword,
+              insertText: `${nw_type.name}`,
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
+            });
+            nw_suggestions.push({
+              label: nw_type.name,
+              kind: monaco.languages.CompletionItemKind.Keyword,
+              insertText: `${nw_type.name}`,
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
+            });
+          }
 
+          //Engine Constants
+          const nw_constants = ScriptEditorTab.nwScriptParser.engine_constants.slice(0);
+          for(let i = 0; i < nw_constants.length; i++){
+            const nw_constant = nw_constants[i];
+            nw_suggestions.push({
+              label: nw_constant.name,
+              kind: monaco.languages.CompletionItemKind.Constant,
+              insertText: `${nw_constant.name}`,
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: `Engine Constant #${nw_constant.index+1}:\n\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)};`
+            });
+          }
+
+          //Engine Routines
+          const nw_actions = Object.entries(NWScriptDefK1.Actions);
           nw_actions.forEach( (entry) =>{
             const action = entry[1];
-            let args = '';
+            const args = [];
+            const args2 = [];
+            const action_definition = ScriptEditorTab.nwScriptParser.engine_actions[entry[0]];
             for(let i = 0; i < action.args.length; i++){
-              let arg = action.args[i];
-              if(i > 0) args += ', ';
-              args += `\${${(i+1)}:${arg}}`;
+              const arg = action.args[i];
+              const def_arg = action_definition.arguments[i];
+              // if(i > 0) args += ', ';
+              if(def_arg.value){
+                const value = arg_value_parser(def_arg.value);
+                args.push(`\${${(i+1)}:${arg} ${def_arg.name} = ${value}}`);
+                args2.push(`${arg} ${def_arg.name} = ${value}`);
+              }else{
+                args.push(`\${${(i+1)}:${arg} ${def_arg.name}}`);
+                args2.push(`${arg} ${def_arg.name}`);
+              }
             }
+            
             nw_suggestions.push({
               label: action.name,
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: `${action.name}(${args})`,
+              kind: monaco.languages.CompletionItemKind.Function,
+              insertText: `${action.name}(${args.join(', ')})`,
               insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: action.comment
+              documentation: `Engine Routine #${action_definition.index}:\n\n${action_definition.returntype.value} ${action.name}(${args2.join(', ')})\n\n`+action.comment
             });
           });
 
           // Register a completion item provider for the new language
           monaco.languages.registerCompletionItemProvider('nwscript', {
             provideCompletionItems: () => {
-              var suggestions = [
+              console.log('auto complete');
+
+              const local_suggestions = [
                 {
                   label: 'ifelse',
                   kind: monaco.languages.CompletionItemKind.Snippet,
@@ -587,25 +621,130 @@ class ScriptEditorTab extends EditorTab {
                   insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                   documentation: 'If-Else Statement'
                 }
-              ].concat(nw_suggestions, nw_keywords);
-              return { suggestions: suggestions };
+              ];
+
+              const parser = tabManager?.currentTab?.nwScriptParser;
+              if(parser){
+                //Local Variables
+                const l_variables = parser.local_variables;
+                for(let i = 0; i < l_variables.length; i++){
+                  const l_variable = l_variables[i];
+                  console.log(l_variable);
+                  const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
+                  local_suggestions.push({
+                    label: l_variable.name,
+                    kind: kind,
+                    insertText: `${l_variable.name}`,
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: `Variable:\n\n${l_variable.datatype.value} ${l_variable.name};`
+                  });
+                }
+              }
+
+              return { suggestions: local_suggestions.concat(nw_suggestions) };
             }
           });
 
           monaco.languages.registerHoverProvider('nwscript', {
             provideHover: function (model, position) {
-              console.log(model, position);
               const wordObject = model.getWordAtPosition(position);
               if(wordObject){
-                const action = nw_actions.find( obj => obj[1].name == wordObject.word );
-                if(action){
+                
+                //Engine Constants
+                const nw_constant = ScriptEditorTab.nwScriptParser.engine_constants.find( obj => obj.name == wordObject.word );
+                if(nw_constant){
                   return {
                     contents: [
                       { value: '**SOURCE**' },
-                      { value: '```nwscript\n' + action[1].name + '()\n/*\n' + action[1].comment.trim() + '\n*/ \n```' }
+                      { value: `\`\`\`nwscript\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)}\n \n\`\`\`` }
                     ]
                   };
                 }
+
+                const action = nw_actions.find( obj => obj[1].name == wordObject.word );
+                if(action){
+                  console.log(action);
+                  let args = '';
+                  const function_definition = ScriptEditorTab.nwScriptParser.engine_actions[action[0]];
+                  console.log(function_definition);
+                  for(let i = 0; i < action[1].args.length; i++){
+                    const arg = action[1].args[i];
+                    const def_arg = function_definition.arguments[i];
+                    if(i > 0) args += ', ';
+                    if(def_arg.value){
+                      const value = arg_value_parser(def_arg.value);
+                      args += `${arg} ${def_arg.name} = ${value}`;
+                    }else{
+                      args += `${arg} ${def_arg.name}`;
+                    }
+                  }
+                  return {
+                    contents: [
+                      { value: '**SOURCE**' },
+                      { value: `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n/*\n ${action[1].comment.trim()} '\n*/ \n\`\`\`` }
+                    ]
+                  };
+                }
+
+                const parser = tabManager?.currentTab?.nwScriptParser;
+                if(parser){
+
+                  const structPropertyMatches = model.getValue().matchAll(
+                    new RegExp("(?:[A-Za-z_]|[A-Za-z_][A-Za-z0-9_]+)\\b[\\s|\\t+]?\\.[\\s|\\t+]?"+wordObject.word+"\\b", 'g')
+                  );
+                  //model.getPositionAt(324); // return { lineNumber: Number, column: Number };
+                  const structProperty = structPropertyMatches?.next()?.value;
+                  if(structProperty){
+                    const parts = structProperty["0"].split('.');
+                    const structName = parts[0];
+                    const structPropertyName = parts[1];
+                    if(structName){
+                      //Local Variables
+                      const l_struct = parser.local_variables.find( obj => obj.name == structName );
+                      if(l_struct?.datatype?.value == 'struct'){
+                        const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
+                        for(let i = 0; i < struct_ref.properties.length; i++){
+                          const prop = struct_ref.properties[i];
+                          if(prop && prop.name == wordObject.word){
+                            return {
+                              contents: [
+                                { value: '**SOURCE**' },
+                                { value: `\`\`\`nwscript\n${prop.datatype.value} ${prop.name}\n \n\`\`\`` }
+                              ]
+                            };
+                          }
+                        }
+                      }
+                      console.log('struct', l_variable);
+                    }
+                  }
+
+
+                  //Local Variables
+                  const l_variable = parser.local_variables.find( obj => obj.name == wordObject.word );
+                  if(l_variable){
+                    console.log(l_variable);
+                    return {
+                      contents: [
+                        { value: '**SOURCE**' },
+                        { value: `\`\`\`nwscript\n${l_variable.datatype.value} ${l_variable.name}\n \n\`\`\`` }
+                      ]
+                    };
+                  }
+
+                  //Local Function
+                  const l_function = parser.local_functions.find( obj => obj.name == wordObject.word );
+                  if(l_function){
+                    console.log(l_function);
+                    return {
+                      contents: [
+                        { value: '**SOURCE**' },
+                        { value: `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}\n \n\`\`\`` }
+                      ]
+                    };
+                  }
+                }
+
               }
               return {
                 range: new monaco.Range(
@@ -628,12 +767,13 @@ class ScriptEditorTab extends EditorTab {
 
 class ScriptErrorLogTab extends EditorTab {
   errors = [];
-  constructor(){
+  tab = undefined;
+  constructor( tab ){
     super({ closeable: false });
 		this.$tabName.text(' PROBLEMS ');
-    this.$errorList = $('<div class="error-list" />');
+    this.$errorList = $('<div class="tab-pane-content scroll-y error-list" />');
     this.$tabContent.append(this.$errorList);
-
+    this.tab = tab;
   }
 
   update(){
@@ -646,6 +786,12 @@ class ScriptErrorLogTab extends EditorTab {
         <span class="message"></span>
         <span class="line-column">[0, 0]</span>
       </div>`);
+
+      $error.off('click').on('click', (e) => {
+        e.preventDefault();
+        this.tab.editor.setPosition({lineNumber: error.startLineNumber, column: error.startColumn});
+        this.tab.editor.revealLineInCenter(error.startLineNumber);
+      })
       
       $('.message', $error).text(error.message);
       $('.line-column', $error).text(`[${error.startLineNumber}, ${error.startColumn}]`);
@@ -667,12 +813,13 @@ class ScriptErrorLogTab extends EditorTab {
 
 class ScriptCompileLogTab extends EditorTab {
   logs = [];
-  constructor(){
+  tab = undefined;
+  constructor( tab ){
     super({ closeable: false });
 		this.$tabName.text('Compile Log');
-    this.$logList = $('<div class="log-list" />');
+    this.$logList = $('<div class="tab-pane-content scroll-y log-list" />');
     this.$tabContent.append(this.$logList);
-
+    this.tab = tab;
   }
 
   update(){
@@ -704,6 +851,73 @@ class ScriptCompileLogTab extends EditorTab {
     this.update();
   }
 
+}
+
+class NCSInspectorTab extends EditorTab {
+  logs = [];
+  tab = undefined;
+  constructor( tab ){
+    super({ closeable: false });
+		this.$tabName.text('NCS Viewer');
+    this.$logList = $('<div class="tab-pane-content scroll-y log-list" />');
+    this.$tabContent.append(this.$logList);
+    this.tab = tab;
+  }
+
+  update(){
+    this.$logList.html('');
+    const offset = 13;
+    this.script.instructions.forEach( (instruction, key, map) => {
+      const address = ('00000000' + (parseInt(instruction.address, 16) + offset).toString(16).toUpperCase()).substr(-8);
+      const code_hex = instruction.code_hex.toUpperCase();
+      const type_hex = instruction.type_hex.toUpperCase();
+      const padding = '                                  ';
+      const output = (`${address} ${code_hex} ${type_hex}` + padding).substr(0, 34);
+      console.log(output);
+    });
+  }
+
+  decompileInstriction( instruction ){
+    // switch(instruction.code){
+    //   //case 0x
+    // }
+  }
+
+  setNCSData( buffer ){
+    this.script = new NWScript(buffer);
+    console.log(this.script.instructions);
+    this.update();
+  }
+
+}
+
+
+
+function arg_value_parser( value ){
+  if(typeof value === 'undefined') return 'NULL';
+  if(typeof value == 'object'){
+    if(typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
+      return `[${value.x}, ${value.y}, ${value.z}]`;
+    }else if(value.type == 'neg'){
+      return '-'+arg_value_parser(value.value);
+    }else if(value?.datatype?.value == 'object'){
+      if(value.value == 0x7FFFFFFF) return 'OBJECT_INVALID';
+      if(value.value == 0) return 'OBJECT_SELF';
+      return arg_value_parser(value.value);
+    }else if(value?.datatype?.value == 'int'){
+      return arg_value_parser(value.value);
+    }else if(value?.datatype?.value == 'float'){
+      return arg_value_parser(value.value);
+    }else if(value?.datatype?.value == 'string'){
+      return arg_value_parser(value.value);
+    }else if(value?.datatype?.value == 'vector'){
+      return arg_value_parser(value.value);
+    }
+  }else if(typeof value == 'string'){
+    return value;
+  }else if(typeof value == 'number'){
+    return value;
+  }
 }
 
 module.exports = ScriptEditorTab;

@@ -220,17 +220,17 @@ exports.grammar = {
     //---------------------//
 
     "NWStatementVariable": [
-      ["STRUCT NAME NAME ;", `$$ = { type: 'variable', struct: $2, is_const: false, declare: true, datatype: { type: 'datatype', unary: -1, value: $1 }, name: $3, value: null };`],
-      ["CONST NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: true, declare: true, datatype: $2, name: $3, value: $5 };`],
-      ["NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: $4 };`],
-      ["NWDataType NAME ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null };`],
-      ["NAME . NAME ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: null };`],
-      ["NAME . NAME = NWExp ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: $5 };`],
-      ["NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
-      ["NAME == NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3 };`],
-      ["NAME ++ ;", `$$ = { type: 'inc', is_const: false, datatype: null, name: $1, value: null };`],
-      ["NAME -- ;", `$$ = { type: 'dec', is_const: false, datatype: null, name: $1, value: null };`],
-      ["NWDataType NWNameList ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null };`],
+      ["STRUCT NAME NAME ;", `$$ = { type: 'variable', struct: $2, is_const: false, declare: true, datatype: { type: 'datatype', unary: -1, value: $1 }, name: $3, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
+      ["CONST NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: true, declare: true, datatype: $2, name: $3, value: $5, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
+      ["NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: $4, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @4.last_line, last_column: @4.last_column } };`],
+      ["NWDataType NAME ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
+      ["NAME . NAME ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
+      ["NAME . NAME = NWExp ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: $5, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
+      ["NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
+      ["NAME == NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
+      ["NAME ++ ;", `$$ = { type: 'inc', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
+      ["NAME -- ;", `$$ = { type: 'dec', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
+      ["NWDataType NWNameList ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
       // ["NAME += NWExp ;", `$$ = { type: 'addeq', is_const: false, datatype: null, name: $1, value: $3 };`],
       // ["NAME -= NWExp ;", `$$ = { type: 'subeq', is_const: false, datatype: null, name: $1, value: $3 };`],
     ],
@@ -418,17 +418,17 @@ exports.grammar = {
     ],
 
     "NWFunctionCall": [
-      ["NAME ( )", `$$ = { type: 'function_call', arguments: [], name: $1 }`],
-      ["NAME ( NWExpList )", `$$ = { type: 'function_call', arguments: $3, name: $1 }`],
+      ["NAME ( )", `$$ = { type: 'function_call', arguments: [], name: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      ["NAME ( NWExpList )", `$$ = { type: 'function_call', arguments: $3, name: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @4.last_line, last_column: @4.last_column } }`],
     ],
 
     "NWName": [
-      [`NAME`, `$$ = { type: 'name', value: $1, source: { line: @1.first_line, column: @1.first_column } }`],
+      [`NAME`, `$$ = { type: 'name', value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } }`],
     ],
 
     "NWVar": [
-      ["NWName", `$$ = { type: 'variable', name: $1 }`],
-      ["NAME . NAME", `$$ = { type: 'variable', struct: $1, name: $3 }`],
+      ["NAME", `$$ = { type: 'variable', name: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } }`],
+      ["NAME . NAME", `$$ = { type: 'variable', struct: $1, name: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
     ],
 
     "NWFunctionExpList": [
@@ -445,8 +445,8 @@ exports.grammar = {
       [ "NWObjectSelfLiteral", "$$ = $1" ],
       [ "NWObjectInvalidLiteral", "$$ = $1" ],
       [ "NAME",  "$$ = $1" ],
-      [`- NWInteger`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 } }`],
-      [`- NWFloat`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 } }`],
+      [`- NWInteger`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } }`],
+      [`- NWFloat`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } }`],
     ],
 
     "NWFunctionExp": [
@@ -459,7 +459,7 @@ exports.grammar = {
     ],
 
     "NWExp": [
-      [`NWBinop ? NWBinop : NWExp`, `$$ = { type: "ternery", left: $3, right: $5, condition: $1 }`],
+      [`NWBinop ? NWBinop : NWExp`, `$$ = { type: "ternery", left: $3, right: $5, condition: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } }`],
       [`NWBinop`, `$$ = $1`],
     ],
 
@@ -468,46 +468,46 @@ exports.grammar = {
     ],
 
     "NWExpOr": [
-      [`NWExpOr || NWExpAnd`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
+      [`NWExpOr || NWExpAnd`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
       [`NWExpAnd`, `$$ = $1`],
     ],
 
     "NWExpAnd": [
-      [`NWExpAnd && NWExpComparison`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
+      [`NWExpAnd && NWExpComparison`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
       [`NWExpComparison`, `$$ = $1`],
     ],
 
     "NWExpComparison": [
-      [`NWExpComparison < NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpComparison > NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpComparison <= NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpComparison >= NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpComparison != NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpComparison == NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
+      [`NWExpComparison < NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpComparison > NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpComparison <= NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpComparison >= NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpComparison != NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpComparison == NWExpSum`, `$$ = { type: "compare", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
       [`NWExpSum`, `$$ = $1`],
     ],
 
     "NWExpSum": [
       //[`NWExpSum += NWExpProduct`, `$$ = { type: "addleft", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
       //[`NWExpSum -= NWExpProduct`, `$$ = { type: "subleft", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpSum + NWExpProduct`, `$$ = { type: "add", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpSum - NWExpProduct`, `$$ = { type: "sub", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
+      [`NWExpSum + NWExpProduct`, `$$ = { type: "add", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpSum - NWExpProduct`, `$$ = { type: "sub", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
       [`NWExpProduct`, `$$ = $1`],
     ],
     
     "NWExpProduct": [
-      [`NWExpProduct * NWExpUnary`, `$$ = { type: "mul", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpProduct / NWExpUnary`, `$$ = { type: "div", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpProduct % NWExpUnary`, `$$ = { type: "mod", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpProduct | NWExpUnary`, `$$ = { type: "incor", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
-      [`NWExpProduct & NWExpUnary`, `$$ = { type: "booland", left: $1, right: $3, operator: { type: "operator", value: $2 } }`],
+      [`NWExpProduct * NWExpUnary`, `$$ = { type: "mul", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpProduct / NWExpUnary`, `$$ = { type: "div", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpProduct % NWExpUnary`, `$$ = { type: "mod", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpProduct | NWExpUnary`, `$$ = { type: "incor", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
+      [`NWExpProduct & NWExpUnary`, `$$ = { type: "booland", left: $1, right: $3, operator: { type: "operator", value: $2 }, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } }`],
       [`NWExpUnary`, `$$ = $1`],
     ],
 
     "NWExpUnary": [
-      [`! NWExpPow`, `$$ = { type: "not", value: $2, operator: { type: "operator", value: $1 } }`],
-      [`- NWExpPow`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 } }`],
-      [`~ NWExpPow`, `$$ = { type: "comp", value: $2, operator: { type: "operator", value: $1 } }`],
+      [`! NWExpPow`, `$$ = { type: "not", value: $2, operator: { type: "operator", value: $1 }, source: { first_line: @2.first_line, first_column: @2.first_column, last_line: @2.last_line, last_column: @2.last_column } }`],
+      [`- NWExpPow`, `$$ = { type: "neg", value: $2, operator: { type: "operator", value: $1 }, source: { first_line: @2.first_line, first_column: @2.first_column, last_line: @2.last_line, last_column: @2.last_column } }`],
+      [`~ NWExpPow`, `$$ = { type: "comp", value: $2, operator: { type: "operator", value: $1 }, source: { first_line: @2.first_line, first_column: @2.first_column, last_line: @2.last_line, last_column: @2.last_column } }`],
       // [`NWExpPow --`, `$$ = { type: "subsub", value: $1, operator: { type: "operator", value: $1 } }`],
       // [`NWExpPow ++`, `$$ = { type: "addadd", value: $1, operator: { type: "operator", value: $1 } }`],
       [`NWExpPow`, `$$ = $1`],
@@ -524,13 +524,13 @@ exports.grammar = {
     ],
 
     "NWAtom": [
-      [ "NWString",         `$$ = { type: 'literal', datatype: {type: "datatype", unary: 5, value: "string"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWHexadecimal",    `$$ = { type: 'literal', datatype: {type: "datatype", unary: 3, value: "int"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWInteger",        `$$ = { type: 'literal', datatype: {type: "datatype", unary: 3, value: "int"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWFloat",          `$$ = { type: 'literal', datatype: {type: "datatype", unary: 4, value: "float"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWVectorLiteral",  `$$ = { type: 'literal', datatype: {type: "datatype", unary: 5, value: "vector"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWObjectSelfLiteral",     `$$ = { type: 'literal', datatype: {type: "datatype", unary: 6, value: "object"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
-      [ "NWObjectInvalidLiteral",  `$$ = { type: 'literal', datatype: {type: "datatype", unary: 6, value: "object"}, value: $1, source: { line: @1.first_line, column: @1.first_column } };` ],
+      [ "NWString",         `$$ = { type: 'literal', datatype: {type: "datatype", unary: 5, value: "string"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWHexadecimal",    `$$ = { type: 'literal', datatype: {type: "datatype", unary: 3, value: "int"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWInteger",        `$$ = { type: 'literal', datatype: {type: "datatype", unary: 3, value: "int"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWFloat",          `$$ = { type: 'literal', datatype: {type: "datatype", unary: 4, value: "float"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWVectorLiteral",  `$$ = { type: 'literal', datatype: {type: "datatype", unary: 5, value: "vector"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWObjectSelfLiteral",     `$$ = { type: 'literal', datatype: {type: "datatype", unary: 6, value: "object"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
+      [ "NWObjectInvalidLiteral",  `$$ = { type: 'literal', datatype: {type: "datatype", unary: 6, value: "object"}, value: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };` ],
       [ "NWPrefixExp",      `$$ = $1` ],
       [ `NWParenthesized`, `$$ = $1` ],
     ],

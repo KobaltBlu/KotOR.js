@@ -30,8 +30,12 @@ class NWScriptParser {
   ast = null;
   regex_define = /#define\s+([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
   
+  engine_types = [];
   engine_constants = [];
   engine_actions = [];
+
+  local_variables = [];
+  local_functions = [];
   errors = [];
 
   constructor(nwscript, script){
@@ -46,6 +50,16 @@ class NWScriptParser {
       this.script = script;
       this.parseScript();
     }
+  }
+
+  clone(){
+    const _parser = new NWScriptParser();
+    _parser.grammar = JSON.parse(JSON.stringify(this.grammar));
+    _parser.engine_types = this.engine_types;
+    _parser.engine_constants = this.engine_constants;
+    _parser.engine_actions = this.engine_actions;
+    _parser.nwscript_gen = new Jison.Generator(_parser.grammar);
+    return _parser;
   }
 
   initializeNWScript(){
@@ -71,6 +85,14 @@ class NWScriptParser {
         NWCompileDataTypes[engine_type_upper]                   = NWEngineTypeUnaryTypeOffset  + engine_type_index;
         NWCompileDataTypes[engine_type_upper+engine_type_upper] = NWEngineTypeBinaryTypeOffset + engine_type_index;
         engine_type_index++;
+
+        this.engine_types.push({
+          index: this.engine_types.length,
+          datatype: {type: 'datatype', unary: NWCompileDataTypes[engine_type_upper], value: engine_type_lower},
+          is_engine_type: true,
+          name: engine_type_lower,
+          value: null,
+        });
       }
     }
 
@@ -118,7 +140,12 @@ class NWScriptParser {
     this.nwscript_parser = this.nwscript_gen.createParser();
     const ast_script = this.nwscript_parser.parse(this.script);
     this.ast = ast_script;
-    this.errors = [];
+    this.engine_types = [];
+    this.engine_constants = [];
+    this.engine_actions = [];
+
+    this.local_variables = [];
+    this.local_functions = [];
 
     //post process ast object
     this.walkASTStatement(ast_script);
@@ -193,16 +220,20 @@ class NWScriptParser {
   }
 
   getValueDataType( value ){
-    if(typeof value == 'object'){
-      if(value.type == 'literal') return value.datatype.value;
-      if(value.type == 'variable') { return value.datatype.value || value?.variable_reference?.datatype?.value || value?.variable_reference?.datatype; }
-      if(value.type == 'argument') return value.datatype.value;
-      if(value.type == 'function_call') return value.function_reference.returntype.value;
-      if(value.type == 'add') return this.getValueDataType(value.left);
-      if(value.type == 'sub') return this.getValueDataType(value.left);
-      if(value.type == 'mul') return this.getValueDataType(value.left);
-      if(value.type == 'div') return this.getValueDataType(value.left);
-      if(value.type == 'compare') return this.getValueDataType(value.left);
+    try{
+      if(typeof value == 'object'){
+        if(value.type == 'literal') return value.datatype.value;
+        if(value.type == 'variable') { return value.datatype.value || value?.variable_reference?.datatype?.value || value?.variable_reference?.datatype; }
+        if(value.type == 'argument') return value.datatype.value;
+        if(value.type == 'function_call') return value.function_reference.returntype.value;
+        if(value.type == 'add') return this.getValueDataType(value.left);
+        if(value.type == 'sub') return this.getValueDataType(value.left);
+        if(value.type == 'mul') return this.getValueDataType(value.left);
+        if(value.type == 'div') return this.getValueDataType(value.left);
+        if(value.type == 'compare') return this.getValueDataType(value.left);
+      }
+    }catch(e){
+      return 'NULL'
     }
   }
 
@@ -213,11 +244,12 @@ class NWScriptParser {
     return false;
   }
 
-  throwError( message, statement ){
+  throwError( message, statement, offender ){
     this.errors.push({
       type: 'compile',
       message: message,
-      statement: statement
+      statement: statement,
+      offender: offender
     });
   }
 
@@ -269,9 +301,9 @@ class NWScriptParser {
 
         //validate presence of void main() and int StartingConditional()
         if(object.main && object.startingConditional){
-          this.throwError("You cannot have both `void main()` and `int StartingConditional()` declared in the same script", object);
+          this.throwError("You cannot have both `void main()` and `int StartingConditional()` declared in the same script", object, object);
         }else if(!object.main && !object.startingConditional){
-          this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", object);
+          this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", object, object);
         }
 
         //parse global statements
@@ -302,6 +334,7 @@ class NWScriptParser {
 
         if(!this.isNameInUse(object.name)){
           object.called = false;
+          this.local_functions.push(object);
           this.program.functions.push(object);
           this.scope = new NWScriptScope(this.program, object.returntype);
           this.scopes.push(this.scope);
@@ -312,7 +345,7 @@ class NWScriptParser {
 
           this.scopes.pop().popped();
         }else{
-          this.throwError("this function name is already in use", object);
+          this.throwError("this function name is already in use", object, object);
         }
 
       }else if(object.type == 'block'){
@@ -338,7 +371,7 @@ class NWScriptParser {
             if(!scriptFunction.called) scriptFunction.called = true;
             object.function_reference = scriptFunction;
           }else{
-            this.throwError("Tried to called an undefined function", object);
+            this.throwError("Tried to called an undefined function", object, object);
           }
         }
 
@@ -348,16 +381,16 @@ class NWScriptParser {
           const arg_ref = object.function_reference.arguments[i];
           this.walkASTStatement(arg);
           if(arg_ref && this.getValueDataType(arg_ref) != this.getValueDataType(arg) ){
-            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object);
+            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
           }else if(!arg_ref){
-            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object);
+            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
           }
         }
         
       }else if(object.type == 'struct'){
         //If this is a variable declaration and the name is available
         if(this.isNameInUse(object.name)){
-          this.throwError("Struct name is already in use", object);
+          this.throwError("Struct name is already in use", object, object);
         }
 
         this.program.structs.push(object);
@@ -365,13 +398,13 @@ class NWScriptParser {
       }else if(object.type == 'variable'){
         //If this is a variable declaration and the name is available
         if(object.declare && this.isNameInUse(object.name)){
-          this.throwError("Variable name is already in use", object);
+          this.throwError("Variable name is already in use", object, object);
         }
 
         //If this is a variable declaration and the name is available
         if(object.declare && object.is_const){
           if(!this.isValueLiteral(object.value) || (this.getValueDataType(object.value) != 'int' && this.getValueDataType(object.value) != 'float' && this.getValueDataType(object.value) != 'string') ){
-            this.throwError("Variables with declared with the keyword [const] must have a literal value of type [int], [float], or [string]", object);
+            this.throwError("Variables with declared with the keyword [const] must have a literal value of type [int], [float], or [string]", object, object.value);
           }
         }
 
@@ -383,10 +416,10 @@ class NWScriptParser {
               if(structVar.type == 'struct'){
                 object.struct_reference = structVar;
               }else{
-                this.throwError(`Tried to access a struct [${object.struct}], but the returned type was [${structVar.type}].`, object);
+                this.throwError(`Tried to access a struct [${object.struct}], but the returned type was [${structVar.type}].`, object, structVar);
               }
             }else{
-              this.throwError(`Tried to access a struct [${object.struct}] that is not in this scope.`, object);
+              this.throwError(`Tried to access a struct [${object.struct}] that is not in this scope.`, object, object);
             }
           }else{
             let structVar = this.getVariableByName(object.struct);
@@ -397,33 +430,34 @@ class NWScriptParser {
                     //object.struct_reference = structVar.struct_reference;
                     object.struct_reference = structVar;
                   }else{
-                    this.throwError(`Tried to access a variable [${object.struct}] expecting a type of [struct], but the returned type was [${structVar.datatype.value}].`, object);
+                    this.throwError(`Tried to access a variable [${object.struct}] expecting a type of [struct], but the returned type was [${structVar.datatype.value}].`, object, object);
                   }
                 }else{
-                  this.throwError(`Tried to access a variable [${object.struct}], but struct_reference is undefined.`, object);
+                  this.throwError(`Tried to access a variable [${object.struct}], but struct_reference is undefined.`, object, object);
                 }
               }else{
                 //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
-                this.throwError(`Tried to access a variable [${object.struct}] with a type of [${structVar.datatype.value}], but expected type of [struct].`, object);
+                this.throwError(`Tried to access a variable [${object.struct}] with a type of [${structVar.datatype.value}], but expected type of [struct].`, object, structVar);
               }
             }else{
               //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
-              this.throwError(`Tried to access a variable [${object.struct}] with a type of [struct] that is not in this scope.`, object);
+              this.throwError(`Tried to access a variable [${object.struct}] with a type of [struct] that is not in this scope.`, object, object);
             }
           }
         }else{
           //If this is a variable reference and the name is in scope
           if(!object.declare && !this.isNameInUse(object.name)){
-            this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object);
+            this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
           }
         }
 
         //Push this declared variable to the current scope
         if(object.declare){
+          this.local_variables.push(object);
           this.scope.addVariable(object);
         }else if(!object.struct){
           object.variable_reference = this.getVariableByName(object.name);
-          object.datatype = object.variable_reference.datatype;
+          object.datatype = object?.variable_reference?.datatype;
         }
 
         if(typeof object.value == 'object') this.walkASTStatement(object.value);
@@ -451,8 +485,8 @@ class NWScriptParser {
           }
         }
         
-        if(object.value && object.datatype.value != this.getValueDataType(object.value) ){
-          this.throwError(`Can't assign a value with a datatype type of [${this.getValueDataType(object.value)}] to ${object.datatype.value} ${object.name}`, object);
+        if(object.value && object.datatype && object?.datatype?.value != this.getValueDataType(object.value) ){
+          this.throwError(`Can't assign a value with a datatype type of [${this.getValueDataType(object.value)}] to ${object.datatype.value} ${object.name}`, object, object.value);
         }
 
       }else if(object.type == 'return'){
@@ -462,7 +496,7 @@ class NWScriptParser {
         if(scopeReturnType){
           const valueDataType = this.getValueDataType(object.value);
           if( scopeReturnType.value != valueDataType){
-            this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object);
+            this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object, object.value);
           }
         }
 
@@ -548,7 +582,7 @@ class NWScriptParser {
               && !(left_type == 'vector' && right_type == 'vector') 
             )
           {
-            this.throwError(`Can't add types of [${left_type}] and [${right_type}] together`, object);
+            this.throwError(`Can't add types of [${left_type}] and [${right_type}] together`, object, object.right);
           }
         }else if(object.type == 'sub'){
           if(    !(left_type == 'int'    && right_type == 'int')
@@ -558,7 +592,7 @@ class NWScriptParser {
               && !(left_type == 'vector' && right_type == 'vector') 
             )
           {
-            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object);
+            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object, object.right);
           }
         }else if(object.type == 'multiply'){
           if(    !(left_type == 'int'    && right_type == 'int')
@@ -568,7 +602,7 @@ class NWScriptParser {
               && !(left_type == 'vector' && right_type == 'vector') 
             )
           {
-            this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, object);
+            this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, object, object.right);
           }
         }else if(object.type == 'divide'){
           if(    !(left_type == 'int'    && right_type == 'int')
@@ -578,20 +612,20 @@ class NWScriptParser {
               && !(left_type == 'vector' && right_type == 'vector') 
             )
           {
-            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object);
+            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object, object.right);
           }
         }else if(object.type == 'modulus'){
           if(    !(left_type == 'int'    && right_type == 'int')
             )
           {
-            this.throwError(`Can't modulus types of [${left_type}] and [${right_type}] together`, object);
+            this.throwError(`Can't modulus types of [${left_type}] and [${right_type}] together`, object, object.right);
           }
         }else if(object.type == 'compare'){
           if(object.operator.value == '&&'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't AND types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't AND types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '=='){
             if(    !(left_type == 'int'    && right_type == 'int')
@@ -601,7 +635,7 @@ class NWScriptParser {
                 && !(left_type == 'struct' && right_type == 'struct')
               )
             {
-              this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '!='){
             if(    !(left_type == 'int'    && right_type == 'int')
@@ -611,83 +645,79 @@ class NWScriptParser {
                 && !(left_type == 'struct' && right_type == 'struct')
               )
             {
-              this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '>='){
             if(    !(left_type == 'int'    && right_type == 'int')
                 && !(left_type == 'float'  && right_type == 'float')
               )
             {
-              this.throwError(`Can't GEQ types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't GEQ types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '>'){
             if(    !(left_type == 'int'    && right_type == 'int')
                 && !(left_type == 'float'  && right_type == 'float')
               )
             {
-              this.throwError(`Can't GT types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't GT types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '<='){
             if(    !(left_type == 'int'    && right_type == 'int')
                 && !(left_type == 'float'  && right_type == 'float')
               )
             {
-              this.throwError(`Can't LEQ types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't LEQ types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '<'){
             if(    !(left_type == 'int'    && right_type == 'int')
                 && !(left_type == 'float'  && right_type == 'float')
               )
             {
-              this.throwError(`Can't LT types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't LT types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '<<'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Left Shift types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Left Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '>>'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Right Shift types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Right Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '>>>'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Unsigned Right Shift types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Unsigned Right Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '%'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Modulus types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Modulus types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '^'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Exclusive OR types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Exclusive OR types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '||'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't OR types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't OR types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }else if(object.operator.value == '|'){
             if(    !(left_type == 'int'    && right_type == 'int')
               )
             {
-              this.throwError(`Can't Inclusive OR types of [${left_type}] and [${right_type}] together`, object);
+              this.throwError(`Can't Inclusive OR types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }
-        }
-
-        if(left_type != right_type){
-          //this.throwError(`Can't assign a value with a datatype type of [${this.getValueDataType(object.value)}] to ${object.datatype.value} ${object.name}`, object);
         }
       }else if(object.type == 'not'
         || object.type == 'neg'
@@ -700,27 +730,27 @@ class NWScriptParser {
               && !(value_type == 'float')
             )
           {
-            this.throwError(`Can't negate a value of type [${value_type}]`, object);
+            this.throwError(`Can't negate a value of type [${value_type}]`, object, object.value);
           }
         }else if(object.type == 'comp'){
           if( !(value_type == 'int') )
           {
-            this.throwError(`Can't Ones Compliment a value of type [${value_type}]`, object);
+            this.throwError(`Can't Ones Compliment a value of type [${value_type}]`, object, object.value);
           }
         }else if(object.type == 'not'){
           if( !(value_type == 'int') )
           {
-            this.throwError(`Can't Not a value of type [${value_type}]`, object);
+            this.throwError(`Can't Not a value of type [${value_type}]`, object, object.value);
           }
         }else if(object.type == 'inc'){
           if( !(value_type == 'int') )
           {
-            this.throwError(`Can't Increment a value of type [${value_type}]`, object);
+            this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
           }
         }else if(object.type == 'dec'){
           if( !(value_type == 'int') )
           {
-            this.throwError(`Can't Decrement a value of type [${value_type}]`, object);
+            this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
           }
         }
       }else if(object.type == 'inc'){
@@ -728,14 +758,14 @@ class NWScriptParser {
         object.datatype = object.variable_reference.datatype;
         if( !(object.datatype.value == 'int') )
         {
-          this.throwError(`Can't Increment a value of type [${value_type}]`, object);
+          this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
         }
       }else if(object.type == 'dec'){
         object.variable_reference = this.getVariableByName(object.name);
         object.datatype = object.variable_reference.datatype;
         if( !(object.datatype.value == 'int') )
         {
-          this.throwError(`Can't Decrement a value of type [${value_type}]`, object);
+          this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
         }
       }
     }
