@@ -391,8 +391,14 @@ class NWScriptParser {
           if(arg){
             this.walkASTStatement(arg);
 
-            if(arg_ref && this.getValueDataType(arg_ref) != this.getValueDataType(arg) ){
-              this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+            if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
+              if(arg_ref.datatype.value == 'action'){
+                if(!arg.function_reference){
+                  this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+                }
+              }else{
+                this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+              }
             }else if(!arg_ref){
               this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
             }
