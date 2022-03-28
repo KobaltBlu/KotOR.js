@@ -190,9 +190,10 @@ class NWScriptCompiler {
       );
       buffers.push( this.writeRETN() );
 
-      this.basePointerWriting = true;
+      this.basePointerWriting = false;
 
       if(globalStatements.length){
+        this.basePointerWriting = true;
         for(let i = 0; i < globalStatements.length; i++){
           buffers.push( this.compileStatement( globalStatements[i]) );
         }
@@ -314,12 +315,13 @@ class NWScriptCompiler {
       );
       buffers.push( this.writeRETN() );
 
-      this.basePointerWriting = true;
+      this.basePointerWriting = false;
 
       this.basePointer = 0;
       this.stackPointer = 0;
 
       if(globalStatements.length){
+        this.basePointerWriting = true;
         let globalStatementsLength = 0;
         for(let i = 0; i < globalStatements.length; i++){
           //globalStatementsLength += this.getStatementLength(globalStatements[i]);
@@ -470,7 +472,7 @@ class NWScriptCompiler {
         case 'inc':           return this.compileINC( statement );
         case 'dec':           return this.compileDEC( statement );
         case 'continue':      return this.compileContinue( statement );
-        case 'break':         return Buffer.alloc(0);
+        case 'break':         return this.compileBreak( statement );
         default: console.error('unhandled statement', statement.type);
       }
     }
@@ -1304,6 +1306,37 @@ class NWScriptCompiler {
       }else{
         //console.log('no active loop');
         //can't use continue outside of a loop
+      }
+
+      statement.block_end = this.scope.bytes_written;
+    }
+    
+    return Buffer.concat(buffers);
+  }
+
+  compileBreak( statement = undefined ){
+    const buffers = [];
+    if(statement.type == 'break'){
+      statement.block_start = this.scope.bytes_written;
+
+      const active_loop = this.scope.getTopContinueableNestedState();
+      if(active_loop){
+        const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
+        if(stackOffset){
+          buffers.push( this.writeMOVSP( -stackOffset ) );
+          //return the stack pointer to it's previous state so that the outer loop is not affected
+          this.stackPointer += stackOffset;
+        }else{
+          //console.log('noting to remove')
+        }
+        buffers.push( 
+          this.writeJMP( 
+            active_loop.statement.block_end ? -(this.scope.bytes_written - active_loop.statement.block_end) : 0x7FFFFFFF 
+          )
+        );  
+      }else{
+        //console.log('no active loop');
+        //can't use break outside of a loop
       }
 
       statement.block_end = this.scope.bytes_written;
