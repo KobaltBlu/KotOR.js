@@ -325,38 +325,34 @@ class NWScriptCompiler {
           //globalStatementsLength += this.getStatementLength(globalStatements[i]);
           buffers.push( this.compileStatement( globalStatements[i]) );
         }
-
-        //console.log(this.stackPointer);
       
         buffers.push( this.writeSAVEBP() );
         buffers.push( this.writeRSADD(NWCompileDataTypes.I) );
+
+        this.basePointer = this.stackPointer - 4;
+        this.stackPointer = 8;
+        this.basePointerWriting = false;
+
         buffers.push( 
           this.writeJSR(
             this.getInstructionLength(OP_JSR) + 
             this.getInstructionLength(OP_CPDOWNSP) +   //
             this.getInstructionLength(OP_MOVSP) +      //
             this.getInstructionLength(OP_RESTOREBP) + 
-            this.getInstructionLength(OP_MOVSP) + 
+            ( (this.basePointer > 0) ? this.getInstructionLength(OP_MOVSP) : 0 ) + 
             this.getInstructionLength(OP_RETN)
           ) 
         );
-        this.basePointer = this.stackPointer - 4;
-        this.stackPointer = 8;
-        // console.log('bp', this.basePointer);
-        // console.log('sp', this.stackPointer);
-        this.basePointerWriting = false;
 
         buffers.push( this.writeCPDOWNSP( -(12 + this.basePointer) ) );
         buffers.push( this.writeMOVSP( -4 ) ); 
         buffers.push( this.writeRESTOREBP() );
-        buffers.push( this.writeMOVSP( -this.basePointer ) );
+        if(this.basePointer > 0) { buffers.push( this.writeMOVSP( -this.basePointer ) ); }
         buffers.push( this.writeRETN() );
 
       }else{
         this.basePointer = this.stackPointer - 4;
         this.stackPointer = 4;
-        //console.log('bp', this.basePointer);
-        //console.log('sp', this.stackPointer);
         this.basePointerWriting = false;
 
         // buffers.push( this.writeCPDOWNSP( -(12 + this.basePointer) ) );
