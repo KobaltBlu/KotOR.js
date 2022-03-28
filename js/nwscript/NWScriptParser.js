@@ -140,9 +140,6 @@ class NWScriptParser {
     this.nwscript_parser = this.nwscript_gen.createParser();
     const ast_script = this.nwscript_parser.parse(this.script);
     this.ast = ast_script;
-    this.engine_types = [];
-    this.engine_constants = [];
-    this.engine_actions = [];
 
     this.local_variables = [];
     this.local_functions = [];
