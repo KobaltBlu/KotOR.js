@@ -700,6 +700,7 @@ class NWScriptCompiler {
     
     //console.log('function_call', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
     if(statement && statement.type == "function_call"){
+      //RETURNTYPE
       if(statement.function_reference.returntype){
         if(statement.function_reference.returntype.value != 'void'){
           //only call RSADD if this function has a return value and it isn't an engine routine
@@ -715,30 +716,40 @@ class NWScriptCompiler {
         }
       }
 
+      //ARGUMENTS
       const _arguments = statement.arguments.slice(0).reverse();
       const __arguments = statement.function_reference.arguments.slice(0).reverse();
       let argumentsDataSize = 0;
-      for(let i = 0; i < _arguments.length; i++){
-        if(__arguments[i].datatype.value == 'action'){
+      for(let i = 0; i < __arguments.length; i++){
+        let arg = _arguments[i];
+        const arg_ref = __arguments[i];
+
+        if(!arg){
+          throw 'missing argument';
+        }
+
+        if(arg_ref.datatype.value == 'action'){
           buffers.push( this.writeSTORE_STATE( this.basePointer, this.stackPointer ) );
           buffers.push(
             this.writeJMP( 
               this.getInstructionLength(OP_JMP) + 
-              this.getStatementLength( _arguments[i] ) + 
+              this.getStatementLength( arg ) + 
               this.getInstructionLength(OP_RETN) 
             ) 
           );
-          buffers.push( this.compileStatement(_arguments[i]) );
+          buffers.push( this.compileStatement(arg) );
           buffers.push( this.writeRETN() );
         }else{
-          buffers.push( this.compileStatement(_arguments[i]) );
+          buffers.push( this.compileStatement(arg) );
         }
-        argumentsDataSize += this.getStatementDataTypeSize(_arguments[i]);
+        argumentsDataSize += this.getStatementDataTypeSize(arg_ref);
       }
-      if(statement.action_id >= 0){
+
+      //FUNCTIONCALL
+      if(statement.action_id >= 0){ //ENGINE ROUTINE
         const returnSize = this.getDataTypeStackLength(statement.function_reference.returntype);
         buffers.push( this.writeACTION(0x00, statement.action_id, statement.arguments.length, returnSize, argumentsDataSize) );
-      }else{
+      }else{ //LOCAL FUNCTION
         const jsrOffset = statement.function_reference.blockOffset - (this.program_bytes_written + this.scope.bytes_written);
         buffers.push( this.writeJSR(jsrOffset) );
       }

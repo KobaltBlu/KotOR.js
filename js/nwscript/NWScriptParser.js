@@ -374,14 +374,30 @@ class NWScriptParser {
         }
 
         //walk arguments passed to the function
-        for(let i = 0; i < object.arguments.length; i++){
-          const arg = object.arguments[i];
-          const arg_ref = object.function_reference.arguments[i];
-          this.walkASTStatement(arg);
-          if(arg_ref && this.getValueDataType(arg_ref) != this.getValueDataType(arg) ){
-            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
-          }else if(!arg_ref){
-            this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
+        const args = object.arguments;
+        const ref_args = object.function_reference.arguments;
+        for(let i = 0; i < ref_args.length; i++){
+          let arg = args[i];
+          const arg_ref = ref_args[i];
+
+          //Check to see if an argument was not supplied and the function reference 
+          //has a default argument value to use in place of unsupplied arguments
+          if(!arg && (typeof arg_ref.value !== 'undefined') ){
+            //generate a default argument if one is not supplied
+            arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
+            object.arguments.splice(i, 0, arg);
+          }
+
+          if(arg){
+            this.walkASTStatement(arg);
+
+            if(arg_ref && this.getValueDataType(arg_ref) != this.getValueDataType(arg) ){
+              this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+            }else if(!arg_ref){
+              this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
+            }
+          }else{
+            this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, object, arg);
           }
         }
         
