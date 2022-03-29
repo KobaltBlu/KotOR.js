@@ -744,7 +744,7 @@ class NWScriptCompiler {
         }else{
           buffers.push( this.compileStatement(arg) );
         }
-        argumentsDataSize += this.getStatementDataTypeSize(arg_ref);
+        argumentsDataSize += (this.getStatementDataTypeSize(arg));
       }
 
       //FUNCTIONCALL
