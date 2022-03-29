@@ -338,6 +338,11 @@ class NWScriptParser {
             this.scope = new NWScriptScope(this.program, object.returntype);
             this.scopes.push(this.scope);
 
+            for(let i = 0; i < object.arguments.length; i++){
+              this.walkASTStatement(object.arguments[i]);
+              this.scope.addVariable(object.arguments[i]);
+            }
+
             for(let i = 0; i < object.statements.length; i++){
               this.walkASTStatement(object.statements[i]);
             }
