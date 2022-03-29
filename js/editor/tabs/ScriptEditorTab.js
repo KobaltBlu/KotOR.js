@@ -615,6 +615,20 @@ class ScriptEditorTab extends EditorTab {
 
               const local_suggestions = [
                 {
+                  label: 'void main()',
+                  kind: monaco.languages.CompletionItemKind.Snippet,
+                  insertText: ['void main () {', '\t$0', '}'].join('\n'),
+                  insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  documentation: 'void main() Statement'
+                },
+                {
+                  label: 'int StartingConditional()',
+                  kind: monaco.languages.CompletionItemKind.Snippet,
+                  insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
+                  insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  documentation: 'int StartingConditional() Statement'
+                },
+                {
                   label: 'ifelse',
                   kind: monaco.languages.CompletionItemKind.Snippet,
                   insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
