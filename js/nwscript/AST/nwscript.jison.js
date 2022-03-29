@@ -240,20 +240,20 @@ exports.grammar = {
     //---------------------//
 
     "NWStatementFunction": [
-      ["NWDataType NAME ( ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, name: $2, arguments: [], statements: [] };`],
-      ["NWDataType NAME ( NWFunctionExpList ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, name: $2, arguments: $4, statements: [] };`],
-      ["NWDataType NAME ( ) { }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: [], statements: [] };`],
-      ["NWDataType NAME ( ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: [], statements: $6 };`],
-      ["NWDataType NAME ( NWFunctionExpList ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: $4, statements: $7 };`],
+      ["NWDataType NAME ( ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, name: $2, arguments: [], statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @4.last_line, last_column: @4.last_column } };`],
+      ["NWDataType NAME ( NWFunctionExpList ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, name: $2, arguments: $4, statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
+      ["NWDataType NAME ( ) { }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: [], statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @6.last_line, last_column: @6.last_column } };`],
+      ["NWDataType NAME ( ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: [], statements: $6, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @7.last_line, last_column: @7.last_column } };`],
+      ["NWDataType NAME ( NWFunctionExpList ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, name: $2, arguments: $4, statements: $7, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @8.last_line, last_column: @8.last_column } };`],
       ["NWStatementStructFunction", `$$ = $1`],
     ],
 
     "NWStatementStructFunction": [
-      ["STRUCT NAME NAME ( ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, struct: $2, name: $3, statements: [] };`],
-      ["STRUCT NAME NAME ( NWFunctionExpList ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, struct: $2, name: $3, arguments: $5, statements: [] };`],
-      ["STRUCT NAME NAME ( ) { }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, statements: [] };`],
-      ["STRUCT NAME NAME ( ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, statements: $7 };`],
-      ["STRUCT NAME NAME ( NWFunctionExpList ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, arguments: $5, statements: $8 };`],
+      ["STRUCT NAME NAME ( ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, struct: $2, name: $3, statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
+      ["STRUCT NAME NAME ( NWFunctionExpList ) ;", `$$ = { type: 'function', declare: true, header_only: true, returntype: $1, struct: $2, name: $3, arguments: $5, statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @6.last_line, last_column: @6.last_column } };`],
+      ["STRUCT NAME NAME ( ) { }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, statements: [], source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @7.last_line, last_column: @7.last_column } };`],
+      ["STRUCT NAME NAME ( ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, statements: $7, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @8.last_line, last_column: @8.last_column } };`],
+      ["STRUCT NAME NAME ( NWFunctionExpList ) { NWBlock }", `$$ = { type: 'function', declare: true, header_only: false, returntype: $1, struct: $2, name: $3, arguments: $5, statements: $8, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @9.last_line, last_column: @9.last_column } };`],
     ],
 
     "NWStatementFunctionCall": [
