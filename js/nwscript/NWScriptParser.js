@@ -28,7 +28,7 @@ const NWCompileDataTypes = {
 class NWScriptParser {
 
   ast = null;
-  regex_define = /#define\s+([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
+  regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
   
   engine_types = [];
   engine_constants = [];
@@ -321,7 +321,7 @@ class NWScriptParser {
           this.walkASTStatement(object.main);
           //remove startingConditional from the functions list if it got added to it
           object.functions.splice( object.functions.indexOf(object.main), 1 );
-        }else{
+        }else if(object.startingConditional){
           object.startingConditional.called = true;
           this.walkASTStatement(object.startingConditional);
           //remove startingConditional from the functions list if it got added to it
@@ -330,20 +330,25 @@ class NWScriptParser {
 
       }else if(object.type == 'function'){
 
-        if(!this.isNameInUse(object.name)){
-          object.called = false;
-          this.local_functions.push(object);
-          this.program.functions.push(object);
-          this.scope = new NWScriptScope(this.program, object.returntype);
-          this.scopes.push(this.scope);
+        if(this.scope.is_global){
+          if(!this.isNameInUse(object.name)){
+            object.called = false;
+            this.local_functions.push(object);
+            this.program.functions.push(object);
+            this.scope = new NWScriptScope(this.program, object.returntype);
+            this.scopes.push(this.scope);
 
-          for(let i = 0; i < object.statements.length; i++){
-            this.walkASTStatement(object.statements[i]);
+            for(let i = 0; i < object.statements.length; i++){
+              this.walkASTStatement(object.statements[i]);
+            }
+
+            this.scopes.pop().popped();
+            this.scope = this.scopes[this.scopes.length - 1];
+          }else{
+            this.throwError("this function name is already in use", object, object);
           }
-
-          this.scopes.pop().popped();
         }else{
-          this.throwError("this function name is already in use", object, object);
+          this.throwError("functions cannot be declared outside of the global scope", object, object);
         }
 
       }else if(object.type == 'block'){
@@ -355,6 +360,7 @@ class NWScriptParser {
         }
 
         this.scopes.pop().popped();
+        this.scope = this.scopes[this.scopes.length - 1];
       }else if(object.type == 'function_call'){
 
         object.function_reference = undefined;
