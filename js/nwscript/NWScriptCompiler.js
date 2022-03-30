@@ -244,8 +244,7 @@ class NWScriptCompiler {
         const global_function = this.ast.functions[i];
         if(global_function.called){
           global_function.blockOffset = this.functionBlockOffset;
-          global_function.blockSize = this.getStatementLength( global_function );
-
+          this.compileFunction( global_function );
           //console.log('global_function', global_function.name, this.functionBlockOffset, global_function.blockSize);
           this.functionBlockOffset += global_function.blockSize;
         }
@@ -365,27 +364,32 @@ class NWScriptCompiler {
 
       }
 
-      this.ast.startingConditional.blockSize = this.getStatementLength( this.ast.startingConditional );
+      //PASS 1 - Build Offsets
+      this.stackPointer = 0;
+      this.program_bytes_written = this.scope.bytes_written;
+      this.main_offset_start = this.program_bytes_written;
+      this.ast.startingConditional.blockOffset = this.program_bytes_written;
+      this.compileFunction( this.ast.startingConditional );
       //console.log('startingConditional', this.ast.startingConditional.name, this.scope.bytes_written, this.ast.startingConditional.blockSize );
 
-      this.program_bytes_written = this.scope.bytes_written;
-      this.main_offset_start = this.scope.bytes_written;
-      this.ast.startingConditional.blockOffset = this.main_offset_start;
+      this.program_bytes_written = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
       this.functionBlockStartOffset = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
 
-      this.functionBlockOffset = this.functionBlockStartOffset;
+      let functionBlockOffset = this.functionBlockStartOffset;
       for(let i = 0; i < this.ast.functions.length; i++){
         const global_function = this.ast.functions[i];
         if(global_function.called){
-          global_function.blockOffset = this.functionBlockOffset;
-          global_function.blockSize = this.getStatementLength( global_function );
-
-          //console.log('global_function', global_function.name, this.functionBlockOffset, global_function.blockSize);
-          this.functionBlockOffset += global_function.blockSize;
+          global_function.blockOffset = functionBlockOffset;
+          console.log('global_function', global_function.name, global_function.blockSize);
+          this.compileFunction( global_function );
+          console.log('global_function', global_function.name, global_function.blockSize);
+          functionBlockOffset += global_function.blockSize;
         }
       }
 
+      //PASS 2 - Write Blocks
       this.stackPointer = 0;
+      this.program_bytes_written = this.ast.startingConditional.blockOffset;
 
       //Compile MAIN
       buffers.push( this.compileFunction( this.ast.startingConditional ) );
@@ -395,7 +399,9 @@ class NWScriptCompiler {
       for(let i = 0; i < this.ast.functions.length; i++){
         const global_function = this.ast.functions[i];
         if(global_function.called){
+          console.log('global_function', global_function.name, global_function.blockSize);
           buffers.push( this.compileFunction( global_function ) );
+          console.log('global_function', global_function.name, global_function.blockSize);
           this.program_bytes_written += global_function.blockSize;
         }
       }
@@ -590,6 +596,10 @@ class NWScriptCompiler {
             }else{
               if(statement.variable_reference.is_engine_constant && statement.variable_reference.value.type == 'literal'){
                 buffers.push( this.compileLiteral( statement.variable_reference.value ) );
+              }else if(statement.variable_reference.type == 'argument'){
+                const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + statement.variable_reference.stackPointer;
+                //console.log('argument', arg_stack_pointer,  ( this.scope.block.preStatementsStackPointer - ( this.stackPointer + statement.variable_reference.stackPointer ) ) );
+                buffers.push( this.writeCPTOPSP( -arg_stack_pointer, this.getDataTypeStackLength(statement.datatype) ) );
               }else{
                 buffers.push( this.writeCPTOPSP( statement.variable_reference.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
               }
@@ -637,29 +647,42 @@ class NWScriptCompiler {
 
   compileReturn( statement = undefined ){
     const buffers = [];
+
+    //cache the stack pointer
+    const sp = this.stackPointer;
+
     //Get the size of the return value of this block
     const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
     //Push the return value to the stack if we have one
     if(statement.value){
       buffers.push( this.compileStatement( statement.value ) );
-      const returnStackOffset = this.scope.block.spLengthCache - nReturnDataSize;
-      const returnStackPointer = returnStackOffset - this.stackPointer;
+      const returnStackOffset = this.scope.block.returnStackPointer;
+      const blockStackOffset = (this.stackPointer - this.scope.block.preStatementsStackPointer);
+      const returnStackPointer = returnStackOffset - blockStackOffset;
       //Copy the return value down to the return value pointer of this block
       buffers.push( this.writeCPDOWNSP( returnStackPointer, nReturnDataSize ) );
     }
 
     //Clear the stack
-    const stackOffset = (this.stackPointer - this.scope.block.spLengthCache);
+    const stackOffset = (this.stackPointer - this.scope.block.preStatementsStackPointer);
     if(stackOffset){
-      const postMOVSPStackPointer = this.stackPointer - nReturnDataSize;
       buffers.push( this.writeMOVSP( -stackOffset ) );
-      this.stackPointer = postMOVSPStackPointer;
+      this.stackPointer += stackOffset;
     }
 
     //Jump to the end of the current executing block
-    const jmpOffset = (this.scope.block.jmp || 0) - this.scope.bytes_written;
+    const jmpOffset = ( this.scope.block.retn_jmp || 0 ) - ( this.scope.bytes_written + 0 );
     // console.log( jmpOffset.toString(16), 0x7FFFFFFF )
-    buffers.push( this.writeJMP( this.scope.block.jmp ? jmpOffset : 0x7FFFFFFF ) );
+    buffers.push( this.writeJMP( this.scope.block.retn_jmp ? jmpOffset : 0x7FFFFFFF ) );
+
+    //clear the return data off the stack
+    // - This is ignored because of the previous JMP, but this is how nwnnsscomp does things
+    if(nReturnDataSize){
+      buffers.push( this.writeMOVSP(-nReturnDataSize) );
+    }
+
+    //restore the stack pointer
+    this.stackPointer = sp;
 
     return Buffer.concat(buffers);
   }
@@ -668,31 +691,79 @@ class NWScriptCompiler {
     const buffers = [];
     this.scopePush( new NWScriptScope() );
     this.scope.block = block;
+    
+    //store the position of the stack pointer so it can be restored at the end of this block
+    const storeSP = this.stackPointer;
 
-    block.spLengthCache = this.stackPointer;
-    // console.log('spLengthCache', block.spLengthCache);
+    //byte offset to the start of this function block
+    block.block_start = this.scope.bytes_written;
+
+    //return data stack size
+    const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
+
+    //get the total stacksize of all the function arguments
+    let nArgumentDataSize = 0;
+    if(block.arguments.length){
+      for(let i = 0; i < block.arguments.length; i++){
+        nArgumentDataSize += (this.getStatementDataTypeSize(block.arguments[i])) || 4;
+      }
+
+      //Cache the argument stackpointer position relative to the start of the function block
+      let nArgumentDataSize2 = nArgumentDataSize;
+      for(let i = 0; i < block.arguments.length; i++){
+        const arg = block.arguments[i];
+        arg.index = 0;
+        arg.datasize = (this.getStatementDataTypeSize(arg)) || 4;
+        arg.stackPointer = nArgumentDataSize2;
+        nArgumentDataSize2 -= arg.datasize;
+      }
+
+      block.argumentsStackPointer = -nArgumentDataSize;
+    }else{
+      block.argumentsStackPointer = 0;
+    }
+    block.returnStackPointer = -(nArgumentDataSize + nReturnDataSize);
+
+    block.preStatementsStackPointer = 0;
+
+    //byte offset to the end of this function block
+    block.block_start_jmp = this.scope.bytes_written;
 
     for(let i = 0; i < block.statements.length; i++){
       buffers.push( this.compileStatement( block.statements[i] ) );
     }
 
-    //Clean up the block stack before exiting by 
+    block.postStatementsStackPointer = this.stackPointer;
+
+    //byte offset to the end of this function block
+    block.block_end_jmp = this.scope.bytes_written;
+
+    //-----------------------------------------//
+    // Clean up the block stack before exiting
+    //-----------------------------------------//
+
     //removing any left over local variables created by this function
-    const nStackOffset = (this.stackPointer - block.spLengthCache);
+    const nStackOffset = (block.postStatementsStackPointer - block.preStatementsStackPointer);
     if(nStackOffset){
       buffers.push( this.writeMOVSP(-nStackOffset));
     }
 
-    const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
-    if(nReturnDataSize){
-      buffers.push( this.writeMOVSP(-nReturnDataSize) );
+    //clear arguments off the stack after the jmp marker because RETURN statements don't clear the arguments off the stack it is done here
+    if(nArgumentDataSize){
+      buffers.push( this.writeMOVSP(-nArgumentDataSize) );
     }
 
-    block.jmp = this.scope.bytes_written;
+    //byte offset to the end of this function block
+    block.retn_jmp = this.scope.bytes_written;
 
     //Close out this function block with a RETN statement
     buffers.push( this.writeRETN() );
 
+    console.log('func', buffers, Buffer.concat(buffers).length);
+    block.blockSize = Buffer.concat(buffers).length;
+
+    //restore the stack pointer to where it was before this function was compiled
+    this.stackPointer = storeSP;
     this.scopePop();
     return Buffer.concat(buffers);
   }
@@ -752,8 +823,10 @@ class NWScriptCompiler {
         const returnSize = this.getDataTypeStackLength(statement.function_reference.returntype);
         buffers.push( this.writeACTION(0x00, statement.action_id, statement.arguments.length, returnSize, argumentsDataSize) );
       }else{ //LOCAL FUNCTION
+        console.log('function_call', statement.function_reference.blockOffset, statement.function_reference.blockSize, (this.program_bytes_written + this.scope.bytes_written + 13).toString(16), this.program_bytes_written, this.scope.bytes_written)
         const jsrOffset = statement.function_reference.blockOffset - (this.program_bytes_written + this.scope.bytes_written);
         buffers.push( this.writeJSR(jsrOffset) );
+        this.stackPointer -= argumentsDataSize;
       }
     }
     
