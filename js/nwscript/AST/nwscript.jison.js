@@ -542,6 +542,6 @@ exports.grammar = {
     "NWHexadecimal": [[ "HEXADECIMAL", "$$ = Number(yytext);" ]],
     "NWVectorLiteral": [[ "[ NWFloat , NWFloat , NWFloat ]", `$$ = {x: $2, y: $4, z: $6};` ]],
     "NWObjectSelfLiteral": [[ "OBJECT_SELF", "$$ = Number(0)" ]],
-    "NWObjectInvalidLiteral": [[ "OBJECT_INVALID", "$$ = Number(0x7f000000);" ]],
+    "NWObjectInvalidLiteral": [[ "OBJECT_INVALID", "$$ = Number(0x01);" ]],
   }
 };
