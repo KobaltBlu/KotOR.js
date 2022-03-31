@@ -578,6 +578,9 @@ class NWScriptCompiler {
             buffers.push( this.compileStatement(statement.value) );
             if(statement.variable_reference.is_global){
               buffers.push( this.writeCPDOWNBP( (statement.variable_reference.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
+            }else if(statement.variable_reference.type == 'argument'){
+              const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + statement.variable_reference.stackPointer;
+              buffers.push( this.writeCPDOWNSP( -arg_stack_pointer, this.getDataTypeStackLength(statement.datatype) ) );
             }else{
               buffers.push( this.writeCPDOWNSP( (statement.variable_reference.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
             }
