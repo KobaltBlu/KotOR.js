@@ -235,6 +235,24 @@ class NWScriptParser {
     }
   }
 
+  getValueDataTypeUnary( value ){
+    try{
+      if(typeof value == 'object'){
+        if(value.type == 'literal') return value.datatype.unary;
+        if(value.type == 'variable') { return value.datatype.unary || value?.variable_reference?.datatype?.unary; }
+        if(value.type == 'argument') return value.datatype.unary;
+        if(value.type == 'function_call') return value.function_reference.returntype.unary;
+        if(value.type == 'add') return this.getValueDataType(value.left);
+        if(value.type == 'sub') return this.getValueDataType(value.left);
+        if(value.type == 'mul') return this.getValueDataType(value.left);
+        if(value.type == 'div') return this.getValueDataType(value.left);
+        if(value.type == 'compare') return this.getValueDataType(value.left);
+      }
+    }catch(e){
+      return 'NULL'
+    }
+  }
+
   isValueLiteral( value = null ){
     if(typeof value == 'object' ){
       if(value.type == 'literal') return true;
@@ -602,7 +620,9 @@ class NWScriptParser {
         if(typeof object.right == 'object') this.walkASTStatement(object.right);
 
         const left_type = this.getValueDataType(object.left);
+        const left_type_unary = this.getValueDataTypeUnary(object.left);
         const right_type = this.getValueDataType(object.right);
+        const right_type_unary = this.getValueDataTypeUnary(object.right);
 
         if(object.type == 'add'){
           if(    !(left_type == 'int'    && right_type == 'int')
@@ -666,7 +686,11 @@ class NWScriptParser {
                 && !(left_type == 'struct' && right_type == 'struct')
               )
             {
-              this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
+              if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
+                //
+              }else{
+                this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
+              }
             }
           }else if(object.operator.value == '!='){
             if(    !(left_type == 'int'    && right_type == 'int')
@@ -676,7 +700,11 @@ class NWScriptParser {
                 && !(left_type == 'struct' && right_type == 'struct')
               )
             {
-              this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
+              if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
+                //
+              }else{
+                this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
+              }
             }
           }else if(object.operator.value == '>='){
             if(    !(left_type == 'int'    && right_type == 'int')

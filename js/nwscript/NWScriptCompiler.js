@@ -214,43 +214,37 @@ class NWScriptCompiler {
         );
       }
 
-      //this.ast.main.blockSize = this.getStatementLength( this.ast.main );
-      //console.log('main', this.ast.main.name, this.getStatementLength( this.ast.main ) );
-      // for(let i = 0; i < this.ast.functions.length; i++){
-      //   const global_function = this.ast.functions[i];
-      //   global_function.blockSize = this.getStatementLength( global_function );
-      //   console.log('global_function', global_function.name, global_function.blockSize);
-      // }
-
       if(globalStatements.length){
         buffers.push( this.writeRESTOREBP() );
-      }
-
-      if(this.basePointer > 0){
-        buffers.push( this.writeMOVSP( -this.basePointer ) );
+        if(this.basePointer > 0){
+          buffers.push( this.writeMOVSP( -this.basePointer ) );
+        }
         buffers.push( this.writeRETN() );
       }
 
-      this.ast.main.blockSize = this.getStatementLength( this.ast.main );
-      //console.log('main', this.ast.main.name, this.scope.bytes_written, this.ast.main.blockSize );
-
+      //PASS 1 - Build Offsets
+      this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
-      this.main_offset_start = this.scope.bytes_written;
-      this.ast.main.blockOffset = this.main_offset_start;
+      this.main_offset_start = this.program_bytes_written;
+      this.ast.main.blockOffset = this.program_bytes_written;
+      this.compileFunction( this.ast.main );
+
+      this.program_bytes_written = this.ast.main.blockOffset + this.ast.main.blockSize;
       this.functionBlockStartOffset = this.ast.main.blockOffset + this.ast.main.blockSize;
 
-      this.functionBlockOffset = this.functionBlockStartOffset;
+      let functionBlockOffset = this.functionBlockStartOffset;
       for(let i = 0; i < this.ast.functions.length; i++){
         const global_function = this.ast.functions[i];
         if(global_function.called){
-          global_function.blockOffset = this.functionBlockOffset;
+          global_function.blockOffset = functionBlockOffset;
           this.compileFunction( global_function );
-          //console.log('global_function', global_function.name, this.functionBlockOffset, global_function.blockSize);
-          this.functionBlockOffset += global_function.blockSize;
+          functionBlockOffset += global_function.blockSize;
         }
       }
 
+      //PASS 2 - Write Blocks
       this.stackPointer = 0;
+      this.program_bytes_written = this.ast.main.blockOffset;
 
       //Compile MAIN
       buffers.push( this.compileFunction( this.ast.main ) );
@@ -310,7 +304,7 @@ class NWScriptCompiler {
           //this.getInstructionLength(OP_RSADD) + 
           this.getInstructionLength(OP_JSR) + 
           this.getInstructionLength(OP_RETN)
-        ) 
+        )
       );
       buffers.push( this.writeRETN() );
 
@@ -370,7 +364,6 @@ class NWScriptCompiler {
       this.main_offset_start = this.program_bytes_written;
       this.ast.startingConditional.blockOffset = this.program_bytes_written;
       this.compileFunction( this.ast.startingConditional );
-      //console.log('startingConditional', this.ast.startingConditional.name, this.scope.bytes_written, this.ast.startingConditional.blockSize );
 
       this.program_bytes_written = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
       this.functionBlockStartOffset = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
@@ -954,7 +947,14 @@ class NWScriptCompiler {
         }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.O && this.getDataType(statement.right).unary == NWCompileDataTypes.O){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.OO) );
         }else{
-          //TODO: STRUCT support
+          const engine_type_left = this.getDataType(statement.left).unary;
+          const engine_type_right = this.getDataType(statement.left).unary;
+          if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
+            if(engine_type_left == engine_type_right){
+              const engine_type_index = engine_type_left - 0x10;
+              buffers.push( this.writeEQUAL(NWEngineTypeBinaryTypeOffset + engine_type_index) );
+            }
+          }
         }
       }else if(statement.operator.value == '!='){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
@@ -966,7 +966,14 @@ class NWScriptCompiler {
         }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.O && this.getDataType(statement.right).unary == NWCompileDataTypes.O){
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.OO) );
         }else{
-          //TODO: STRUCT support
+          const engine_type_left = this.getDataType(statement.left).unary;
+          const engine_type_right = this.getDataType(statement.left).unary;
+          if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
+            if(engine_type_left == engine_type_right){
+              const engine_type_index = engine_type_left - 0x10;
+              buffers.push( this.writeNEQUAL(NWEngineTypeBinaryTypeOffset + engine_type_index) );
+            }
+          }
         }
       }else if(statement.operator.value == '&&'){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
