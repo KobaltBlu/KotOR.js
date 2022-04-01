@@ -360,6 +360,26 @@ class EditorFile {
     if(typeof listener === 'function') this.onSavedStateChanged = listener;
   }
 
+  updateOpenedFiles(){
+    const recent_files = Config.getRecentFiles();
+    //Update the opened files list
+    if(this.getPath()){
+      const index = recent_files.indexOf(this.getPath());
+      if (index >= 0) {
+        recent_files.splice(index, 1);
+      }
+
+      //Append this file to the beginning of the list
+      recent_files.unshift(this.getPath());
+      Config.save(null, true); //Save the configuration silently
+
+      //Notify the project we have opened a new file
+      if(Global.Project instanceof Project){
+        Global.Project.addToOpenFileList(this);
+      }
+    }
+  }
+
   get unsaved_changes(){
     return this._unsaved_changes;
   };

@@ -22,24 +22,8 @@ class FileTypeManager {
       ext = ResourceTypes.getKeyByValue(res.reskey);
     }
 
-    let recent_files = Config.getRecentFiles();
-
     //Update the opened files list
-    if(res.getPath()){
-      let index = recent_files.indexOf(res.getPath());
-      if (index >= 0) {
-        recent_files.splice(index, 1);
-      }
-
-      //Append this file to the beginning of the list
-      recent_files.unshift(res.getPath());
-      Config.save(null, true); //Save the configuration silently
-
-      //Notify the project we have opened a new file
-      if(Global.Project instanceof Project){
-        Global.Project.addToOpenFileList(res);
-      }
-    }
+    res.updateOpenedFiles();
 
     console.log('FileTypeManager.onOpenResource', res, ext);
 
@@ -92,7 +76,7 @@ class FileTypeManager {
       case 'utp':
         let newUTPTab = tabManager.AddTab(new UTPEditorTab(res));
       break;
-      case 'bik':
+      case 'bik': 
         let newBIKTab = tabManager.AddTab(new MovieViewerTab(res));
       break;
       case 'wav':

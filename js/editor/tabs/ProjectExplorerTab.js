@@ -132,7 +132,7 @@ class ProjectExplorerTab extends EditorTab {
       let type = e.target.dataset.type;
       let archive = e.target.dataset.archive;
 
-      console.log(e.target.dataset);
+      // console.log(e.target.dataset);
 
       FileTypeManager.onOpenResource(
         new EditorFile({

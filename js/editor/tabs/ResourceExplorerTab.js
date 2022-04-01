@@ -129,7 +129,7 @@ class ResourceExplorerTab extends EditorTab {
 			if (Global.kotorRIM.hasOwnProperty(rim) && Global.kotorRIM[rim].group == "RIMs")
 				rims.push(Global.kotorRIM[rim]);
     }
-    console.log(rims);
+    // console.log(rims);
 
     const rimList = {
       name: 'RIMs',
