@@ -13,7 +13,7 @@ class EditorTab {
     this.id = EditorTabManager.GetNewTabID();
     this.tabManager = null;
     this.visible = false;
-    this.tabName = 'Script Editor';
+    this.tabName = 'Unnamed Tab';
     this.resource = null;
     this.$tab = $('<li class="btn btn-tab"><a href="#tab-'+this.id+'">'+this.tabName+'</a>&nbsp;</li>');
     this.$tabClose = $('<button type="button" class="close" data-dismiss="modal">×</button>');
@@ -60,6 +60,7 @@ class EditorTab {
 
   editorFileUpdated(){
     if(this.editorFile instanceof EditorFile){
+      console.log('editor file updated', this.editorFile.resref, this.editorFile.ext, this.editorFile)
       if(this.editorFile.unsaved_changes){
         this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext} *`);
       }else{

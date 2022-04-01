@@ -56,7 +56,7 @@ class EditorFile {
         path_obj = path.parse(this.path);
       }
 
-      if(!this.resref){
+      if(path_obj.name){
         this.resref = path_obj.name;
       }
 
@@ -380,6 +380,14 @@ class EditorFile {
     }
   }
 
+  save(){
+    //stub
+  }
+
+  saveAs(){
+    //stub
+  }
+
   get unsaved_changes(){
     return this._unsaved_changes;
   };
@@ -387,6 +395,7 @@ class EditorFile {
   set unsaved_changes(value){
     this._unsaved_changes = ( value || (this.location == EditorFile.LOCATION_TYPE.OTHER) ) ? true : false;
     if(typeof this.onSavedStateChanged === 'function') this.onSavedStateChanged(this);
+    if(!this.unsaved_changes) this.updateOpenedFiles();
   }
 
   get resref(){
