@@ -240,8 +240,11 @@ class NWScriptParser {
         if(value.type == 'sub') return this.getValueDataType(value.left);
         if(value.type == 'mul') return this.getValueDataType(value.left);
         if(value.type == 'div') return this.getValueDataType(value.left);
-        if(value.type == 'compare') return this.getValueDataType(value.left);
+        if(value.type == 'compare') return value.datatype.value;
         if(value.type == 'not') return this.getValueDataType(value.value);
+        if(value.type == 'neg') return this.getValueDataType(value.value);
+        if(value.type == 'inc') return this.getValueDataType(value.value);
+        if(value.type == 'dec') return this.getValueDataType(value.value);
       }
     }catch(e){
       return 'NULL'
@@ -255,11 +258,15 @@ class NWScriptParser {
         if(value.type == 'variable') { return value.datatype.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'argument') return value.datatype.unary;
         if(value.type == 'function_call') return value.function_reference.returntype.unary;
-        if(value.type == 'add') return this.getValueDataType(value.left);
-        if(value.type == 'sub') return this.getValueDataType(value.left);
-        if(value.type == 'mul') return this.getValueDataType(value.left);
-        if(value.type == 'div') return this.getValueDataType(value.left);
-        if(value.type == 'compare') return this.getValueDataType(value.left);
+        if(value.type == 'add') return this.getValueDataTypeUnary(value.left);
+        if(value.type == 'sub') return this.getValueDataTypeUnary(value.left);
+        if(value.type == 'mul') return this.getValueDataTypeUnary(value.left);
+        if(value.type == 'div') return this.getValueDataTypeUnary(value.left);
+        if(value.type == 'compare') return value.datatype.unary;
+        if(value.type == 'not') return this.getValueDataTypeUnary(value.value);
+        if(value.type == 'neg') return this.getValueDataTypeUnary(value.value);
+        if(value.type == 'inc') return this.getValueDataTypeUnary(value.value);
+        if(value.type == 'dec') return this.getValueDataTypeUnary(value.value);
       }
     }catch(e){
       return 'NULL'
@@ -325,6 +332,12 @@ class NWScriptParser {
         let global_functions = object.statements.filter( s => s.type == 'function' && !s.header_only );
         for(let i = 0; i < global_functions.length; i++){
           //remove function from the program's statement list
+          const function_header = global_functions_headers.find( f => f.name == global_functions[i].name );
+          if(function_header){
+            global_functions[i].arguments = function_header.arguments;
+          }
+          this.local_functions.push(global_functions[i]);
+          this.program.functions.push(global_functions[i]);
           object.statements.splice( object.statements.indexOf(global_functions[i]), 1 );
         }
 
@@ -362,10 +375,9 @@ class NWScriptParser {
       }else if(object.type == 'function'){
 
         if(this.scope.is_global){
-          if(!this.isNameInUse(object.name)){
+          if(!object.defined || !this.isNameInUse(object.name)){
             object.called = false;
-            this.local_functions.push(object);
-            this.program.functions.push(object);
+            object.defined = true;
             this.scope = new NWScriptScope(this.program, object.returntype);
             this.scopes.push(this.scope);
 
@@ -415,44 +427,48 @@ class NWScriptParser {
           }
         }
 
-        //walk arguments passed to the function
-        const args = object.arguments;
-        const ref_args = object.function_reference.arguments;
-        for(let i = 0; i < ref_args.length; i++){
-          let arg = args[i];
-          const arg_ref = ref_args[i];
+        if(object.function_reference){
+          //walk arguments passed to the function
+          const args = object.arguments;
+          const ref_args = object.function_reference.arguments;
+          for(let i = 0; i < ref_args.length; i++){
+            let arg = args[i];
+            const arg_ref = ref_args[i];
 
-          //Check to see if an argument was not supplied and the function reference 
-          //has a default argument value to use in place of unsupplied arguments
-          if(!arg && (typeof arg_ref.value !== 'undefined') ){
-            //generate a default argument if one is not supplied
-            const var_ref = this.getVariableByName(arg_ref.value);
-            if(var_ref){
-              arg = var_ref.value;
-              object.arguments.splice(i, 0, arg);
-            }else{
-              arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
-              object.arguments.splice(i, 0, arg);
-            }
-          }
-
-          if(arg){
-            this.walkASTStatement(arg);
-
-            if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
-              if(arg_ref.datatype.value == 'action'){
-                if(!arg.function_reference){
-                  this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
-                }
+            //Check to see if an argument was not supplied and the function reference 
+            //has a default argument value to use in place of unsupplied arguments
+            if(!arg && (typeof arg_ref.value !== 'undefined') ){
+              //generate a default argument if one is not supplied
+              const var_ref = this.getVariableByName(arg_ref.value);
+              if(var_ref){
+                arg = var_ref.value;
+                object.arguments.splice(i, 0, arg);
               }else{
-                this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+                arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
+                object.arguments.splice(i, 0, arg);
               }
-            }else if(!arg_ref){
-              this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
             }
-          }else{
-            this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, object, arg);
+
+            if(arg){
+              this.walkASTStatement(arg);
+
+              if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
+                if(arg_ref.datatype.value == 'action'){
+                  if(!arg.function_reference){
+                    this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+                  }
+                }else{
+                  this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+                }
+              }else if(!arg_ref){
+                this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
+              }
+            }else{
+              this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, object, arg);
+            }
           }
+        }else{
+          this.throwError(`Missing definition for function ${object.name}`, object, object);
         }
         
       }else if(object.type == 'struct'){
@@ -574,7 +590,9 @@ class NWScriptParser {
         let scopeReturnType = this.scopes.slice(0).reverse().find( sc => typeof sc.returntype !== 'undefined' )?.returntype;
         if(scopeReturnType){
           const valueDataType = this.getValueDataType(object.value);
-          if( scopeReturnType.value != valueDataType){
+          if(scopeReturnType.value == 'void'){
+            if(object.value != null) this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object, object.value);
+          }else if( scopeReturnType.value != valueDataType){
             this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object, object.value);
           }
         }
@@ -598,14 +616,22 @@ class NWScriptParser {
         for(let i = 0; i < object.statements.length; i++){
           this.walkASTStatement(object.statements[i]);
         }
+
+        this.scopes.pop().popped();
+        this.scope = this.scopes[this.scopes.length - 1];
+
         if(typeof object.else == 'object' && Array.isArray(object.else)){
           for(let i = 0; i < object.else.length; i++){
+            this.scope = new NWScriptScope(this.program);
+            this.scopes.push(this.scope);
+
             this.walkASTStatement(object.else[i]);
+
+            this.scopes.pop().popped();
+            this.scope = this.scopes[this.scopes.length - 1];
           }
         }
         
-        this.scopes.pop().popped();
-        this.scope = this.scopes[this.scopes.length - 1];
       }else if( object.type == 'for'){
 
         //walk initializer
@@ -828,10 +854,13 @@ class NWScriptParser {
         }
       }else if(object.type == 'not'
         || object.type == 'neg'
+        || object.type == 'comp'
       ){
         if(typeof object.value == 'object') this.walkASTStatement(object.value);
 
         let value_type = this.getValueDataType(object.value);
+        let value_type_unary = this.getValueDataTypeUnary(object.value);
+        object.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
         if(object.type == 'neg'){
           if(    !(value_type == 'int')
               && !(value_type == 'float')
@@ -848,16 +877,6 @@ class NWScriptParser {
           if( !(value_type == 'int') )
           {
             this.throwError(`Can't Not a value of type [${value_type}]`, object, object.value);
-          }
-        }else if(object.type == 'inc'){
-          if( !(value_type == 'int') )
-          {
-            this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
-          }
-        }else if(object.type == 'dec'){
-          if( !(value_type == 'int') )
-          {
-            this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
           }
         }
       }else if(object.type == 'inc'){

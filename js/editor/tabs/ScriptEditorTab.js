@@ -114,15 +114,23 @@ class ScriptEditorTab extends EditorTab {
             message: error.message
           });
         }else{
-          console.log('unhandled error', error);
+          markers.push({
+            severity: monaco.MarkerSeverity.Warning,
+            startLineNumber: 0,
+            startColumn: 0,
+            endLineNumber: 0,
+            endColumn: 0,
+            message: error.message
+          });
         }
       }
       this.errorLogTab.setErrors(markers);
       monaco.editor.setModelMarkers(this.editor.getModel(), 'nwscript', markers);
     }catch(e){
-      console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
-      console.log(JSON.stringify(e));
+      console.log(e);
       if(e.hash){
+        console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
+        console.log(JSON.stringify(e));
         const markers = [{
           severity: monaco.MarkerSeverity.Error,
           startLineNumber: e.hash.loc.first_line,
@@ -539,13 +547,13 @@ class ScriptEditorTab extends EditorTab {
       const nw_types = ScriptEditorTab.nwScriptParser.engine_types.slice(0);
       for(let i = 0; i < nw_types.length; i++){
         const nw_type = nw_types[i];
-        console.log({
-          label: nw_type.name,
-          kind: monaco.languages.CompletionItemKind.Keyword,
-          insertText: `${nw_type.name}`,
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
-        });
+        // console.log({
+        //   label: nw_type.name,
+        //   kind: monaco.languages.CompletionItemKind.Keyword,
+        //   insertText: `${nw_type.name}`,
+        //   insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        //   documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
+        // });
         nw_suggestions.push({
           label: nw_type.name,
           kind: monaco.languages.CompletionItemKind.Keyword,
@@ -601,7 +609,7 @@ class ScriptEditorTab extends EditorTab {
       // Register a completion item provider for the new language
       monaco.languages.registerCompletionItemProvider('nwscript', {
         provideCompletionItems: () => {
-          console.log('auto complete');
+          // console.log('auto complete');
 
           const local_suggestions = [
             {
@@ -633,7 +641,7 @@ class ScriptEditorTab extends EditorTab {
             const l_variables = parser.local_variables;
             for(let i = 0; i < l_variables.length; i++){
               const l_variable = l_variables[i];
-              console.log(l_variable);
+              // console.log(l_variable);
               const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
               local_suggestions.push({
                 label: l_variable.name,
@@ -667,10 +675,10 @@ class ScriptEditorTab extends EditorTab {
 
             const action = nw_actions.find( obj => obj[1].name == wordObject.word );
             if(action){
-              console.log(action);
+              // console.log(action);
               let args = '';
               const function_definition = ScriptEditorTab.nwScriptParser.engine_actions[action[0]];
-              console.log(function_definition);
+              // console.log(function_definition);
               for(let i = 0; i < action[1].args.length; i++){
                 const arg = action[1].args[i];
                 const def_arg = function_definition.arguments[i];
@@ -719,7 +727,7 @@ class ScriptEditorTab extends EditorTab {
                       }
                     }
                   }
-                  console.log('struct', l_variable);
+                  // console.log('struct', l_variable);
                 }
               }
 
@@ -727,7 +735,7 @@ class ScriptEditorTab extends EditorTab {
               //Local Variables
               const l_variable = parser.local_variables.find( obj => obj.name == wordObject.word );
               if(l_variable){
-                console.log(l_variable);
+                // console.log(l_variable);
                 return {
                   contents: [
                     { value: `**nwscript.nss**` },
@@ -739,7 +747,7 @@ class ScriptEditorTab extends EditorTab {
               //Local Function
               const l_function = parser.local_functions.find( obj => obj.name == wordObject.word );
               if(l_function){
-                console.log(l_function);
+                // console.log(l_function);
                 let args = [];
                 for(let i = 0; i < l_function.arguments.length; i++){
                   const def_arg = l_function.arguments[i];
