@@ -222,15 +222,15 @@ exports.grammar = {
     "NWStatementVariable": [
       ["STRUCT NAME NAME ;", `$$ = { type: 'variable', struct: $2, is_const: false, declare: true, datatype: { type: 'datatype', unary: -1, value: $1 }, name: $3, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
       ["CONST NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: true, declare: true, datatype: $2, name: $3, value: $5, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
-      ["NWDataType NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: $4, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @4.last_line, last_column: @4.last_column } };`],
-      ["NWDataType NAME ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
+      ["NWDataType NWNameList = NWExp ;", `$$ = { type: 'variableList', is_const: false, declare: true, datatype: $1, names: $2, value: $4, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @4.last_line, last_column: @4.last_column } };`],
+      ["NWDataType NWNameList ;", `$$ = { type: 'variableList', is_const: false, declare: true, datatype: $1, names: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
       ["NAME . NAME ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
       ["NAME . NAME = NWExp ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: $5, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
       ["NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
       ["NAME == NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
       ["NAME ++ ;", `$$ = { type: 'inc', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
       ["NAME -- ;", `$$ = { type: 'dec', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
-      ["NWDataType NWNameList ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
+      //["NWDataType NWNameList ;", `$$ = { type: 'variable', is_const: false, declare: true, datatype: $1, name: $2, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
       // ["NAME += NWExp ;", `$$ = { type: 'addeq', is_const: false, datatype: null, name: $1, value: $3 };`],
       // ["NAME -= NWExp ;", `$$ = { type: 'subeq', is_const: false, datatype: null, name: $1, value: $3 };`],
     ],
@@ -306,7 +306,7 @@ exports.grammar = {
 
     "NWStatementIf": [
       ["IF ( NWArgs ) NWIfBlockStatement NWStatementElseIfList", `$$ = { type: 'if', condition: $3, statements: $5, else: $6 };`],
-      ["IF ( NWArgs ) NWIfBlockStatement", `$$ = { type: 'if', condition: $3, statements: $5, else: null };`],
+      ["IF ( NWArgs ) NWIfBlockStatement", `$$ = { type: 'if', condition: $3, statements: $5, else: [] };`],
     ],
 
     // "IF_WITHOUT_ELSE": [
@@ -325,9 +325,9 @@ exports.grammar = {
 
     "NWStatementElseIfList": [
       //["NWStatementElse", `$$ = [$1]`],
-      ["NWStatementElseIf", `$$ = $1`],
+      ["NWStatementElseIf", `$$ = [$1]`],
       //["NWStatementElseIfList NWStatementElseIf", `$$ = $1; $1.push($2);`],
-      ["NWStatementElseIfList NWStatementElseIf", `$$ = $1; $1.else = $2;`],
+      ["NWStatementElseIfList NWStatementElseIf", `$$ = $1; $1.push($2);`],
     ],
 
     "NWStatementElse": [
@@ -337,7 +337,7 @@ exports.grammar = {
     "NWStatementElseIf": [
       //ELSE IF
       //["ELSEIF ( NWArgs ) NWIfBlockStatement NWStatementElseIf", `$$ = { type: 'elseif', condition: $3, statements: $5, else: $6 };`],
-      ["ELSEIF ( NWArgs ) NWIfBlockStatement", `$$ = { type: 'elseif', condition: $3, statements: $5, else: null };`],
+      ["ELSEIF ( NWArgs ) NWIfBlockStatement", `$$ = { type: 'elseif', condition: $3, statements: $5, else: [] };`],
 
       //ELSE
       ["NWStatementElse", `$$ = $1;`],
@@ -387,8 +387,8 @@ exports.grammar = {
     ],
     
     "NWNameList": [
-      ["NAME", `$$ = [$1]`],
-      ["NWNameList , NAME", `$$ = $1; $1.push($3)`],
+      ["NAME", `$$ = [{ name: $1, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } }]`],
+      ["NWNameList , NAME", `$$ = $1; $1.push({ name: $3, source: { first_line: @3.first_line, first_column: @3.first_column, last_line: @3.last_line, last_column: @3.last_column } })`],
     ],
 
     "NWConstDataType": [

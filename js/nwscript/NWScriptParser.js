@@ -113,15 +113,27 @@ class NWScriptParser {
           name: statement.name,
           arguments: statement.arguments
         });
-      } else if(statement.type == 'variable'){
-        this.engine_constants.push({
-          index: this.engine_constants.length,
-          datatype: statement.datatype,
-          is_const: true,
-          is_engine_constant: true,
-          name: statement.name,
-          value: statement.value,
-        });
+      } else if(statement.type == 'variable' || statement.type == 'variableList'){
+        if(statement.type == 'variableList'){
+          this.engine_constants.push({
+            index: this.engine_constants.length,
+            datatype: statement.datatype,
+            is_const: true,
+            is_engine_constant: true,
+            name: statement.names[0].name,
+            value: statement.value,
+            source: statement.names[0].source
+          });
+        }else{
+          this.engine_constants.push({
+            index: this.engine_constants.length,
+            datatype: statement.datatype,
+            is_const: true,
+            is_engine_constant: true,
+            name: statement.name,
+            value: statement.value,
+          });
+        }
       }
     }
     console.log(` `);
@@ -229,6 +241,7 @@ class NWScriptParser {
         if(value.type == 'mul') return this.getValueDataType(value.left);
         if(value.type == 'div') return this.getValueDataType(value.left);
         if(value.type == 'compare') return this.getValueDataType(value.left);
+        if(value.type == 'not') return this.getValueDataType(value.value);
       }
     }catch(e){
       return 'NULL'
@@ -413,8 +426,14 @@ class NWScriptParser {
           //has a default argument value to use in place of unsupplied arguments
           if(!arg && (typeof arg_ref.value !== 'undefined') ){
             //generate a default argument if one is not supplied
-            arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
-            object.arguments.splice(i, 0, arg);
+            const var_ref = this.getVariableByName(arg_ref.value);
+            if(var_ref){
+              arg = var_ref.value;
+              object.arguments.splice(i, 0, arg);
+            }else{
+              arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
+              object.arguments.splice(i, 0, arg);
+            }
           }
 
           if(arg){
@@ -444,6 +463,17 @@ class NWScriptParser {
 
         this.program.structs.push(object);
         this.scope.addVariable(object);
+      }else if(object.type == 'variableList'){
+        object.variables = [];
+        for(let i = 0; i < object.names.length; i++){
+          const _var = { type: 'variable', is_const: object.is_const, declare: object.declare, datatype: object.datatype, name: object.names[i].name, value: object.value, source: object.names[i].source };
+          object.variables[i] = _var;
+        }
+
+        for(let i = 0; i < object.variables.length; i++){
+          this.walkASTStatement(object.variables[i]);
+        }
+
       }else if(object.type == 'variable'){
         //If this is a variable declaration and the name is available
         if(object.declare && this.isNameInUse(object.name)){
@@ -555,15 +585,27 @@ class NWScriptParser {
                 object.type == 'do' || 
                 object.type == 'while'
               ){
+
         if(typeof object.condition == 'object' && object.condition.length){
           for(let i = 0; i < object.condition.length; i++){
             this.walkASTStatement(object.condition[i]);
           }
         } 
+
+        this.scope = new NWScriptScope(this.program);
+        this.scopes.push(this.scope);
+
         for(let i = 0; i < object.statements.length; i++){
           this.walkASTStatement(object.statements[i]);
         }
-        if(typeof object.else == 'object') this.walkASTStatement(object.else);
+        if(typeof object.else == 'object' && Array.isArray(object.else)){
+          for(let i = 0; i < object.else.length; i++){
+            this.walkASTStatement(object.else[i]);
+          }
+        }
+        
+        this.scopes.pop().popped();
+        this.scope = this.scopes[this.scopes.length - 1];
       }else if( object.type == 'for'){
 
         //walk initializer
@@ -578,10 +620,16 @@ class NWScriptParser {
 
         //walk incrementor
         if(object.incrementor) this.walkASTStatement(object.incrementor);
+        
+        this.scope = new NWScriptScope(this.program);
+        this.scopes.push(this.scope);
 
         for(let i = 0; i < object.statements.length; i++){
           this.walkASTStatement(object.statements[i]);
         }
+        
+        this.scopes.pop().popped();
+        this.scope = this.scopes[this.scopes.length - 1];
         
       }else if(object.type == 'switch'){
 

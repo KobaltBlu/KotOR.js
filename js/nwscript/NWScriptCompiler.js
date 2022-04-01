@@ -176,7 +176,7 @@ class NWScriptCompiler {
       this.scopePush( new NWScriptScope() );
 
       const globalStatements = this.ast.statements.filter( s => {
-        return (s.type == 'variable' && s.is_const == false) || s.type == 'struct';
+        return ((s.type == 'variable' || s.type == 'variableList') && s.is_const == false) || s.type == 'struct';
       });
 
       const hasGlobalBlock = globalStatements.length ? true : false;
@@ -291,7 +291,7 @@ class NWScriptCompiler {
       this.scopePush( new NWScriptScope() );
 
       const globalStatements = this.ast.statements.filter( s => {
-        return (s.type == 'variable' && s.is_const == false) || s.type == 'struct';
+        return ( (s.type == 'variable' || s.type == 'variableList') && s.is_const == false) || s.type == 'struct';
       });
 
       const hasGlobalBlock = globalStatements.length ? true : false;
@@ -443,6 +443,7 @@ class NWScriptCompiler {
       switch(statement.type){
         case 'literal':       return this.compileLiteral( statement );
         case 'variable':      return this.compileVariable( statement );
+        case 'variableList':      return this.compileVariableList( statement );
         case 'argument':      return this.compileArgument( statement );
         case 'struct':        return this.compileStruct( statement );
         case 'compare':       return this.compileCompare( statement );
@@ -491,6 +492,7 @@ class NWScriptCompiler {
     if(typeof value == 'object'){
       if(value.type == 'literal') return value.datatype;
       if(value.type == 'variable') { return value.datatype || value?.variable_reference?.datatype || value?.variable_reference?.datatype; }
+      if(value.type == 'variableList') { return value.datatype }
       if(value.type == 'argument') return value.datatype;
       if(value.type == 'property') return value.datatype;
       if(value.type == 'function_call') return value.function_reference.returntype;
@@ -499,7 +501,18 @@ class NWScriptCompiler {
       if(value.type == 'mul') return this.getDataType(value.left);
       if(value.type == 'div') return this.getDataType(value.left);
       if(value.type == 'compare') return this.getDataType(value.left);
+      if(value.type == 'not') return this.getDataType(value.value);
     }
+  }
+
+  compileVariableList( statement = undefined ){
+    const buffers = [];
+    if(statement && statement.type == 'variableList'){
+      for(let i = 0; i < statement.variables.length; i++){
+        buffers.push( this.compileStatement( statement.variables[i] ) );
+      }
+    }
+    return Buffer.concat(buffers);
   }
 
   compileVariable( statement = undefined ){
@@ -936,6 +949,21 @@ class NWScriptCompiler {
     const buffers = [];
     if(statement && statement.type == 'compare'){
       buffers.push( this.compileStatement(statement.left) );
+
+      console.log('right', statement.right);
+      if(statement.type == 'compare'){
+        if(statement.operator.value == '||'){
+          buffers.push( this.writeCPTOPSP(-4) );
+          buffers.push( this.writeJZ( statement.jz_1 ? statement.jz_1 - this.scope.bytes_written : 0x7FFFFFFF ) );
+          buffers.push( this.writeCPTOPSP(-4) );
+          buffers.push( this.writeJZ( statement.jz_2 ? statement.jz_2 - this.scope.bytes_written : 0x7FFFFFFF ) );
+          statement.jz_1 = this.scope.bytes_written;
+        }else if(statement.operator.value == '&&'){
+          buffers.push( this.writeCPTOPSP(-4) );
+          buffers.push( this.writeJZ( statement.jz_2 ? statement.jz_2 - this.scope.bytes_written : 0x7FFFFFFF ) );
+        }
+      }
+
       buffers.push( this.compileStatement(statement.right) );
       if(statement.operator.value == '=='){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
@@ -978,12 +1006,14 @@ class NWScriptCompiler {
       }else if(statement.operator.value == '&&'){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
           buffers.push( this.writeLOGANDII() );
+          statement.jz_2 = this.scope.bytes_written;
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: LOGANDII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '||'){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+          statement.jz_2 = this.scope.bytes_written;
           buffers.push( this.writeLOGORII() );
         }else{
           //ERROR: unsupported datatypes to compare
@@ -1035,17 +1065,8 @@ class NWScriptCompiler {
     const buffers = [];
 
     if(statement && statement.type == 'if'){
-      const ifelses = [];
-      let current_ifelse = statement;
-
-      //Flatten the ifelse tree into a flat array
-      while(true){
-        ifelses.push(current_ifelse);
-        current_ifelse = current_ifelse.else;
-        if(!current_ifelse){
-          break;
-        }
-      }
+      const ifelses = [].concat([statement], statement.else);
+      console.log('ifelses', ifelses);
 
       for(let i = 0; i < ifelses.length; i++){
         const ifelse = ifelses[i];
@@ -1068,9 +1089,16 @@ class NWScriptCompiler {
         //the offset prior to writing the statements
         ifelse.block_start = this.scope.bytes_written;
 
+        const sp_cache = this.stackPointer;
+
         //Compile if statements
         for(let j = 0; j < ifelse.statements.length; j++){
           buffers.push( this.compileStatement( ifelse.statements[j] ) );
+        }
+
+        const sp_offset = this.stackPointer - sp_cache;
+        if(sp_offset){
+          buffers.push( this.writeMOVSP(-sp_offset) );
         }
         
         //the offset prior to writing the JMP statement
