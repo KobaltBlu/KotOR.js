@@ -333,6 +333,7 @@ class ScriptEditorTab extends EditorTab {
         NotificationManager.Notify(NotificationManager.Types.ALERT, `Parse: Failed! - with errors (${this.nwScriptParser.errors.length})`);
       }
     }catch(e){
+      console.error(e);
       NotificationManager.Notify(NotificationManager.Types.ALERT, `Parser: Failed!`);
     }
 
@@ -349,7 +350,7 @@ class ScriptEditorTab extends EditorTab {
           // Register a new language
           monaco.languages.register({ id: 'nwscript' });
 
-          monaco.languages.setMonarchTokensProvider( 'nwscript', {
+          const tokenConfig = {
             keywords: [
               'int', 'float', 'object', 'vector', 'string', 'void', 'action', 
               'default', 'const', 'if', 'else', 'switch', 'case',
@@ -463,7 +464,16 @@ class ScriptEditorTab extends EditorTab {
                 [/"/, { token: 'string.quote', next: '@pop' }]
               ],
             }
-          });
+          };
+
+          //Engine Types
+          const _nw_types = ScriptEditorTab.nwScriptParser.engine_types.slice(0);
+          for(let i = 0; i < _nw_types.length; i++){
+            const nw_type = _nw_types[i];
+            tokenConfig.keywords.push(nw_type.name);
+          }
+
+          monaco.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
 
           monaco.languages.setLanguageConfiguration('nwscript', {
             comments: {
@@ -669,7 +679,7 @@ class ScriptEditorTab extends EditorTab {
                 if(nw_constant){
                   return {
                     contents: [
-                      { value: '**SOURCE**' },
+                      { value: `**nwscript.nss**` },
                       { value: `\`\`\`nwscript\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)}\n \n\`\`\`` }
                     ]
                   };
@@ -694,7 +704,7 @@ class ScriptEditorTab extends EditorTab {
                   }
                   return {
                     contents: [
-                      { value: '**SOURCE**' },
+                      { value: `**nwscript.nss**` },
                       { value: `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n/*\n ${action[1].comment.trim()} '\n*/ \n\`\`\`` }
                     ]
                   };
@@ -723,7 +733,7 @@ class ScriptEditorTab extends EditorTab {
                             return {
                               contents: [
                                 { value: '**SOURCE**' },
-                                { value: `\`\`\`nwscript\n${prop.datatype.value} ${prop.name}\n \n\`\`\`` }
+                                { value: `\`\`\`nwscript\n${prop.datatype.value} ${prop.name} \n\`\`\`` }
                               ]
                             };
                           }
@@ -740,8 +750,8 @@ class ScriptEditorTab extends EditorTab {
                     console.log(l_variable);
                     return {
                       contents: [
-                        { value: '**SOURCE**' },
-                        { value: `\`\`\`nwscript\n${l_variable.datatype.value} ${l_variable.name}\n \n\`\`\`` }
+                        { value: `**nwscript.nss**` },
+                        { value: `\`\`\`nwscript\n${l_variable.datatype.value} ${l_variable.name} \n\`\`\`` }
                       ]
                     };
                   }
@@ -750,10 +760,20 @@ class ScriptEditorTab extends EditorTab {
                   const l_function = parser.local_functions.find( obj => obj.name == wordObject.word );
                   if(l_function){
                     console.log(l_function);
+                    let args = [];
+                    for(let i = 0; i < l_function.arguments.length; i++){
+                      const def_arg = l_function.arguments[i];
+                      if(def_arg.value){
+                        const value = arg_value_parser(def_arg.value);
+                        args.push(`${def_arg.datatype.value} ${def_arg.name} = ${value}`);
+                      }else{
+                        args.push(`${def_arg.datatype.value} ${def_arg.name}`);
+                      }
+                    }
                     return {
                       contents: [
                         { value: '**SOURCE**' },
-                        { value: `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}\n \n\`\`\`` }
+                        { value: `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}(${args.join(', ')}) \n\`\`\`` }
                       ]
                     };
                   }
@@ -774,6 +794,42 @@ class ScriptEditorTab extends EditorTab {
         });
       });
     }
+  }
+
+  static includeMap = new Map();
+
+  static async resolveScriptIncludes( source = '', includes = [] ){ 
+    const regex_include = /#include[\s+]?\"(.+)\"/g;
+    const include_matches = Array.from(source.matchAll(regex_include));
+    const include_count = include_matches.length;
+
+    const list = [];
+    for(let i = 0; i < include_count; i++){
+      const include_source = await ScriptEditorTab.resolveInclude(include_matches[1]);
+      const include_ref = { name: include_matches[i], source: include_source };
+      includes.unshift(include_ref);
+    }
+    const list_clone = list.slice(0);
+    for(let i = 0; i < list_clone.length; i++){
+      
+      await ScriptEditorTab.resolveScriptIncludes(list_clone[i].source, includes); 
+    }
+    return includes;
+  }
+
+  static resolveInclude( name = '' ){
+    return new Promise( (resolve, reject) => {
+      if(ScriptEditorTab.includeMap.has(name)){
+        resolve(this.includeMap.get(name));
+      }else {
+        ResourceLoader.loadResource(ResourceTypes.nss, name, (d) => {
+          ScriptEditorTab.includeMap.set(name, d.toString());
+          resolve(this.includeMap.get(name));
+        }, () => {
+          reject(null);
+        });
+      }
+    });
   }
 
 }
@@ -908,6 +964,7 @@ class NCSInspectorTab extends EditorTab {
 
 
 function arg_value_parser( value ){
+
   if(typeof value === 'undefined') return 'NULL';
   if(typeof value == 'object'){
     if(typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
