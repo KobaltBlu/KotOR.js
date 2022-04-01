@@ -131,31 +131,33 @@
   }
 
   function initialize(){
-    verifyGame({
-      directory: app_profile.directory,
-      onVerify: () => {
-        initializeProfile();
-      },
-      onError: () => {
-        console.log('Failed to verify the path for', GameKey);
-        dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory', 'createDirectory']}).then(result => {
-          console.log(result.canceled);
-          console.log(result.filePaths);
-          if(result.filePaths.length && !result.canceled){
-            Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
-            app_profile = Config.get(['Profiles', app_profile.key]);
-            initializeProfile();
-          }else{
-            alert('Can\'t continue without locating the game directory');
+    initMonaco().then( () => {
+      verifyGame({
+        directory: app_profile.directory,
+        onVerify: () => {
+          initializeProfile();
+        },
+        onError: () => {
+          console.log('Failed to verify the path for', GameKey);
+          dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory', 'createDirectory']}).then(result => {
+            console.log(result.canceled);
+            console.log(result.filePaths);
+            if(result.filePaths.length && !result.canceled){
+              Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
+              app_profile = Config.get(['Profiles', app_profile.key]);
+              initializeProfile();
+            }else{
+              alert('Can\'t continue without locating the game directory');
+              window.close();
+            }
+
+          }).catch(err => {
+            alert(err);
             window.close();
-          }
+          });
 
-        }).catch(err => {
-          alert(err);
-          window.close();
-        });
-
-      }
+        }
+      });
     });
   }
 
@@ -278,6 +280,20 @@
           args.onError();
     }
 
+  }
+
+  function initMonaco(){
+    return new Promise( (resolve, reject) => {
+      if(typeof monaco === 'undefined'){
+        console.log('monaco: loading');
+        amdRequire(['vs/editor/editor.main'], () => {
+          console.log('monaco: loaded');
+          resolve();
+        });
+      }else{
+        resolve();
+      }
+    });
   }
 
   initialize();

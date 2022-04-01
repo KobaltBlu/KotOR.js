@@ -27,6 +27,27 @@ const BitBuffer = require('bit-buffer');
 const dxt = require('dxt');
 
 
+//BEGIN MONACO LOADER
+const amdLoader = require('../node_modules/monaco-editor/min/vs/loader.js');
+const amdRequire = amdLoader.require;
+const amdDefine = amdLoader.require.define;
+
+function uriFromPath(_path) {
+  var pathName = path.resolve(_path).replace(/\\/g, '/');
+  if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+    pathName = '/' + pathName;
+  }
+  return encodeURI('file://' + pathName);
+}
+
+amdRequire.config({
+  baseUrl: uriFromPath(path.join(__dirname, '../node_modules/monaco-editor/min'))
+});
+
+// workaround monaco-css not understanding the environment
+self.module = undefined;
+//END MONACO LOADER
+
 
 const APP_MODE = 'FORGE';
 
@@ -570,7 +591,7 @@ if (typeof global.TopMenu == 'undefined') {
             {
               title: 'Open File',
               filters: [
-                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
                 {name: 'TPC Image', extensions: ['tpc']},
                 {name: 'TGA Image', extensions: ['tga']},
                 {name: 'GFF', extensions: ['gff']},
@@ -591,7 +612,8 @@ if (typeof global.TopMenu == 'undefined') {
                 {name: 'Module File', extensions: ['git', 'ifo']},
                 {name: 'Area File', extensions: ['are']},
                 {name: 'Path File', extensions: ['pth']},
-                {name: 'Script File', extensions: ['nss', 'ncs']},
+                {name: 'Script Source File', extensions: ['ncs']},
+                {name: 'Script Compiled File', extensions: ['nss']},
                 {name: 'VIS File', extensions: ['vis']},
                 {name: 'Layout File', extensions: ['lyt']},
                 {name: 'All Formats', extensions: ['*']},
