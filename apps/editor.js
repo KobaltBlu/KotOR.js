@@ -569,21 +569,35 @@ if (typeof global.TopMenu == 'undefined') {
 
         }},
         {type: 'separator'},
-        {name: 'New >', items: [
-          {name: 'Creature Template', onClick: function(){
-            tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
-          }},
-          {name: 'Door Template', onClick: function(){
-            tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
-          }},
+        {name: 'New', items: [
+          {type: 'title', name: 'Engine Resource'},
           {name: 'Lip Sync File', onClick: function(){
             tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
           }},
-          {name: 'Placeable Template', onClick: function(){
+          {name: 'NW Script Source File', onClick: function(){
+            tabManager.AddTab(new ScriptEditorTab(new EditorFile({ resref: 'untitled', reskey: ResourceTypes.nss })));
+          }},
+          {type: 'title', name: 'Blueprints'},
+          {name: '.UTC - Creature', onClick: function(){
+            tabManager.AddTab(new UTCEditorTab(new EditorFile({ resref: 'new_creature', reskey: ResourceTypes.utc })));
+          }},
+          {name: '.UTD - Door', onClick: function(){
+            tabManager.AddTab(new UTDEditorTab(new EditorFile({ resref: 'new_door', reskey: ResourceTypes.utd })));
+          }},
+          {name: '.UTP - Placeable', onClick: function(){
             tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_placeable', reskey: ResourceTypes.utp })));
           }},
-          {name: 'Script File', onClick: function(){
-            tabManager.AddTab(new ScriptEditorTab(new EditorFile({ resref: 'untitled', reskey: ResourceTypes.nss })));
+          {name: '.UTS - Sound', onClick: function(){
+            // tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_sound', reskey: ResourceTypes.uts })));
+          }},
+          {name: '.UTM - Store', onClick: function(){
+            // tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_store', reskey: ResourceTypes.utm })));
+          }},
+          {name: '.UTT - Trigger', onClick: function(){
+            // tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_trigger', reskey: ResourceTypes.utt })));
+          }},
+          {name: '.UTW - Waypoint', onClick: function(){
+            // tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_waypoint', reskey: ResourceTypes.utw })));
           }},
         ]},
         {name: 'Open File', onClick: function(){
@@ -633,7 +647,7 @@ if (typeof global.TopMenu == 'undefined') {
             console.log(result.filePaths);
           });
         }},
-        {name: 'Save File', onClick: function(){
+        {name: 'Save File', accelerator: 'Ctrl+S', onClick: function(){
 
           if(tabManager.currentTab instanceof EditorTab){
             try{
@@ -644,7 +658,7 @@ if (typeof global.TopMenu == 'undefined') {
           }
 
         }},
-        {name: 'Compile File', onClick: function(){
+        {name: 'Compile File', accelerator: 'Ctrl+Shift+C', onClick: function(){
 
           if(tabManager.currentTab instanceof EditorTab){
             try{
@@ -655,7 +669,7 @@ if (typeof global.TopMenu == 'undefined') {
           }
 
         }},
-        {name: 'Save File As', onClick: function(){
+        {name: 'Save File As', accelerator: 'Ctrl+Shift+S', onClick: function(){
 
           if(tabManager.currentTab instanceof EditorTab){
             try{
@@ -712,27 +726,27 @@ if (typeof global.TopMenu == 'undefined') {
 
 function BuildTopMenu() {
 
-  let $newMenu = $('<nav class="top-menu navbar navbar-default" role="navigation">'+
-    '<div class="menu-accent"><span class="inner"></span></div>'+
-    '<b id="app-title"></b>'+
-    '<div class="navbar-header">'+
-      '<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">'+
-        '<span class="icon-bar"></span>'+
-        '<span class="icon-bar"></span>'+
-        '<span class="icon-bar"></span>'+
-      '</button>'+
-    '</div>'+
-    '<div class="navbar-collapse collapse">'+
-      '<ul id="topmenu-left" class="nav navbar-nav navbar-left">'+
-      '</ul>'+
-      '<ul id="topmenu-right" class="nav navbar-nav navbar-right">'+
-        '<li><a href="#" id="devtools-toggle"><span class="glyphicon glyphicon-cog"></span></a></li>'+
-        '<li><a href="#" id="minimize-toggle"><span class="glyphicon glyphicon-minus"></span></a></li>'+
-        '<li><a href="#" id="maximize-toggle"><span class="glyphicon glyphicon-resize-full"></span></a></li>'+
-        '<li><a href="#" id="close-toggle"><span class="glyphicon glyphicon-remove"></span></a></li>'+
-      '</ul>'+
-    '</div>'+
-  '</nav>');
+  let $newMenu = $(`<nav class="top-menu navbar navbar-default" role="navigation">
+    <div class="menu-accent"><span class="inner"></span></div>
+    <b id="app-title"></b>
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse">
+      <ul id="topmenu-left" class="nav navbar-nav navbar-left">
+      </ul>
+      <ul id="topmenu-right" class="nav navbar-nav navbar-right">
+        <li><a href="#" id="devtools-toggle"><span class="glyphicon glyphicon-cog"></span></a></li>
+        <li><a href="#" id="minimize-toggle"><span class="glyphicon glyphicon-minus"></span></a></li>
+        <li><a href="#" id="maximize-toggle"><span class="glyphicon glyphicon-resize-full"></span></a></li>
+        <li><a href="#" id="close-toggle"><span class="glyphicon glyphicon-remove"></span></a></li>
+      </ul>
+    </div>
+  </nav>`);
 
   if (typeof global.TopMenu.title == 'undefined') {
     global.TopMenu.title = 'KotOR Modding Suite';
@@ -775,11 +789,22 @@ function BuildMenuItem(item, $parent){
 
   //Build Item
   if(item.type === 'separator' || item.type === 'sep')
-    $item = $('<li role="separator" class="divider" />');
+    $item = $(`<li role="d-flex separator" class="divider" ></li>`);
   else if(item.type === 'title')
-    $item = $('<li class="title">'+item.name+'</li>');
+    $item = $(`<li class="title"><span class="d-flex "><span class="flex-grow-1">${item.name}</span></span></li>`);
   else
-    $item = $('<li><a href="#">'+item.name+'</a></li>');
+    $item = $(
+    `<li class="dropdown-item">
+      <a href="#">
+        <span class="dropdown-item-name-wrapper d-flex">
+          <span class="flex-grow-1 dropdown-item-name">${item.name}</span>
+          <span class="dropdown-item-action">${item.accelerator ? item.accelerator : ''}</span>
+          <span class="dropdown-item-more">
+            <span class="glyphicon glyphicon-chevron-right"></span>
+          </span>
+        </span>
+      </a>
+    </li>`);
 
   $parent.append($item);
 
@@ -806,9 +831,9 @@ function BuildMenuItem(item, $parent){
       $('a', $item).addClass('dropdown-toggle').attr('data-toggle','dropdown').attr('role','button').attr('aria-haspopup','true').attr('aria-expanded','false');
     }
 
-    $.each(item.items, function(i, cItem){
-      BuildMenuItem(cItem, $parent)
-    });
+    for(let i = 0; i < item.items.length; i++){
+      BuildMenuItem(item.items[i], $parent)
+    }
   }
 
 }
