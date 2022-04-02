@@ -2477,6 +2477,7 @@ NWScriptDefK1.Actions = {
         args[0].x, args[0].y, args[0].z
       );
       location.setBearing(args[1]);
+      return location;
     }
   },
   216:{
