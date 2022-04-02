@@ -1116,7 +1116,7 @@ class ModuleArea extends ModuleObject {
             player.LoadCamera( () => {
               player.LoadModel( (model) => {
                 player.LoadGunBanks( () => {
-                  let track = this.tracks.find(o => o.track === player.track);
+                  let track = this.tracks.find(o => o.track === player.trackName);
                   /*let spawnLoc = this.getSpawnLocation();
         
                   model.translateX(spawnLoc.XPosition);
@@ -1256,16 +1256,17 @@ class ModuleArea extends ModuleObject {
     return new Promise( (resolve, reject) => {
 
       if(this.MiniGame){
+        let trackIndex = 0;
         let loop = new AsyncLoop({
           array: this.tracks,
           onLoop: (track, asyncLoop) => {
             console.log('Loading MG Track', track);
             track.Load( () => {
-    
               track.LoadModel( (model) => {
                 track.model = model;
                 console.log(model);
                 model.moduleObject = track;
+                model.index = trackIndex;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
                 //model.buildSkeleton();
                 model.hasCollision = true;
@@ -1273,6 +1274,7 @@ class ModuleArea extends ModuleObject {
       
                 track.computeBoundingBox();
                 track.getCurrentRoom();
+                trackIndex++;
                 asyncLoop.next();
               });
             });
@@ -1308,7 +1310,7 @@ class ModuleArea extends ModuleObject {
               enemy.LoadScripts( () => {
                 enemy.LoadModel( (model) => {
                   enemy.LoadGunBanks( () => {
-                    let track = this.tracks.find(o => o.track === enemy.track);
+                    let track = this.tracks.find(o => o.track === enemy.trackName);
                     model.moduleObject = enemy;
                     model.hasCollision = true;
                     enemy.setTrack(track.model);

@@ -89,6 +89,9 @@ class ModuleMGEnemy extends ModuleObject {
       this.track.update(delta);
     }
 
+    this.sphere.radius = this.sphere_radius;
+    this.model.getWorldPosition(this.sphere.center);
+
     switch(Game.module.area.MiniGame.Type){
       case 1:
 
@@ -413,7 +416,7 @@ class ModuleMGEnemy extends ModuleObject {
       this.sphere_radius = this.template.GetFieldByLabel('Sphere_Radius').GetValue();
 
     if(this.template.RootNode.HasField('Track'))
-      this.track = this.template.GetFieldByLabel('Track').GetValue();
+      this.trackName = this.template.GetFieldByLabel('Track').GetValue();
 
 
     if(this.template.RootNode.HasField('Models')){

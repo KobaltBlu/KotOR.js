@@ -17,6 +17,7 @@ class ModuleMGTrack extends ModuleObject {
       z: 0
     }, args);
 
+    this.index = 0;
     this.track = args.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
     this.position = new THREE.Vector3(parseFloat(args.x), parseFloat(args.y), parseFloat(args.z));
 

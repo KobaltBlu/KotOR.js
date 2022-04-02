@@ -23,6 +23,20 @@ class ModuleMGPlayer extends ModuleObject {
 
     this.no_rotate = new THREE.Group();
 
+
+    //HUD 1
+    this.sithLoop2_AnimationManager = new AuroraModelAnimationManager();
+    this.sithLoop3_AnimationManager = new AuroraModelAnimationManager();
+    this.sithLoop4_AnimationManager = new AuroraModelAnimationManager();
+    this.sithLoop5_AnimationManager = new AuroraModelAnimationManager();
+    this.sithLoop6_AnimationManager = new AuroraModelAnimationManager();
+    this.sithLoop7_AnimationManager = new AuroraModelAnimationManager();
+    this.hudRotation_AnimationManager = new AuroraModelAnimationManager();
+
+    //HUD 2
+    this.hudHealth_AnimationManager = new AuroraModelAnimationManager();
+
+
     this.speed = 0;
     this.speed_min = 0;
     this.speed_max = 0;
@@ -43,12 +57,20 @@ class ModuleMGPlayer extends ModuleObject {
 
     this.setTrack(this.track);
 
-    this._heartbeatTimerOffset = -2900;
+    //this._heartbeatTimerOffset = -2900;
 
   }
 
   canMove(){
     return false;
+  }
+
+  getHP(){
+    return this.hit_points;
+  }
+
+  getMaxHP(){
+    return this.max_hps;
   }
 
   setTrack(model = new THREE.Object3D()){
@@ -92,6 +114,9 @@ class ModuleMGPlayer extends ModuleObject {
         Game.controls.UpdateMiniGameControls(delta);
     }
 
+    this.sphere.radius = this.sphere_radius;
+    this.model.getWorldPosition(this.sphere.center);
+
     if(this.camera instanceof THREE.AuroraModel && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
     }else if(!this.camera){
@@ -101,8 +126,87 @@ class ModuleMGPlayer extends ModuleObject {
     }
 
     for(let i = 0; i < this.model.children.length; i++){
-      if(this.model.children[i] instanceof THREE.AuroraModel && this.model.children[i].bonesInitialized && this.model.children[i].visible){
-        this.model.children[i].update(delta);
+      const model = this.model.children[i];
+
+      //HUD Rotation Animation
+      let hud_rotation_number = Math.abs(THREE.MathUtils.radToDeg(this.rotation.z) + 180) | 0;
+      if(hud_rotation_number > 359) hud_rotation_number = 0;
+      if(hud_rotation_number < 0) hud_rotation_number = 0;
+      const hud_animation_name = 'HudRot_' + ( '000' + hud_rotation_number ).substr(-3);
+
+      //HUD Health Bar Animation
+      const hp_animation_number = ( 12 * ( this.getHP() / this.getMaxHP() ) ) | 0;
+      const hp_animation_name = 'Health' + ( '00' + hp_animation_number ).substr(-2);
+
+      if(model instanceof THREE.AuroraModel && model.bonesInitialized && model.visible){
+        if(model.name == 'mgf_hud01'){
+
+          //update enemy HUD
+          for(let j = 0; j < Game.module.area.MiniGame.Enemies.length; j++){
+            const enemy = Game.module.area.MiniGame.Enemies[j];
+            if(enemy.track){
+              const track_id = enemy.track.index + 1;
+              const animationManager = this[`sithLoop${track_id}_AnimationManager`];
+              const enemy_hud_anim_name = 'SithLoop' + ( '00' + track_id ).substr(-2) + (!enemy.alive ? 'd' : '');
+              if(animationManager){
+                animationManager.model = model;
+                if(animationManager?.currentAnimation?.name != enemy_hud_anim_name){
+                  const anim = model.getAnimationByName(enemy_hud_anim_name);
+                  if(anim){
+                    const data = {
+                      loop: false,
+                      blend: true,
+                      cFrame: 0,
+                      elapsed: enemy.track.animationManager?.currentAnimation?.data?.elapsed || 0,
+                      lastTime: 0,
+                      delta: 0,
+                      lastEvent: -1,
+                      events: [],
+                      callback: undefined
+                    };
+                    if(animationManager.currentAnimation){
+                      animationManager.lastAnimation = animationManager.currentAnimation;
+                    }
+                    animationManager.currentAnimation = anim;
+                    anim.data = data;
+                  }
+                }
+                animationManager.update(delta);
+              }
+            }
+          }
+
+          //update rotation HUD
+          this.hudRotation_AnimationManager.model = model;
+          if(this.hudRotation_AnimationManager?.currentAnimation?.name != hud_animation_name){
+            const anim = model.getAnimationByName(hud_animation_name);
+            if(anim){
+              const data = {
+                loop: false,
+                blend: true,
+                cFrame: 0,
+                elapsed: 0,
+                lastTime: 0,
+                delta: 0,
+                lastEvent: -1,
+                events: [],
+                callback: undefined
+              };
+              if(this.hudRotation_AnimationManager.currentAnimation){
+                this.hudRotation_AnimationManager.lastAnimation = this.hudRotation_AnimationManager.currentAnimation;
+              }
+              this.hudRotation_AnimationManager.currentAnimation = anim;
+              anim.data = data;
+            }
+          }
+          this.hudRotation_AnimationManager.update(delta);
+        }
+        if(model.name == 'mgf_hud02'){
+          if(model?.animationManager?.currentAnimation?.name != hp_animation_name){
+            model.playAnimation(hp_animation_name);
+          }
+        }
+        model.update(delta);
       }
     }
 
@@ -219,7 +323,7 @@ class ModuleMGPlayer extends ModuleObject {
 
             for(let j = 0; j < enemies.length; j++){
               let enemy = enemies[j];
-              if(enemy.box.containsPoint(bullet.position)){
+              if(enemy.sphere.containsPoint(bullet.position)){
                 enemy.damage(bullet.damage);
                 //Set the life to Infinity so it will be culled on the next pass
                 bullet.life = Infinity;
@@ -311,12 +415,10 @@ class ModuleMGPlayer extends ModuleObject {
                 }
                 
                 let bullet_hook = gun.model.getObjectByName('bullethook0');
-                let position = bullet_hook.getWorldPosition();
-                let quaternion = bullet_hook.getWorldQuaternion();
-
-                bullet_model.direction = bullet_hook.getWorldDirection();
-                bullet_model.position.copy(position);
-                bullet_model.quaternion.copy(quaternion);
+                bullet_hook.getWorldPosition(bullet_model.position);
+                bullet_hook.getWorldQuaternion(bullet_model.quaternion);
+                //bullet_model.direction = new THREE.Vector3();
+                //bullet_hook.getWorldDirection(bullet_model.direction);
 
                 Game.group.placeables.add(bullet_model);
                 this.bullets.push(bullet_model);
@@ -1029,7 +1131,7 @@ class ModuleMGPlayer extends ModuleObject {
       this.sphere_radius = this.template.GetFieldByLabel('Sphere_Radius').GetValue();
 
     if(this.template.RootNode.HasField('Track'))
-      this.track = this.template.GetFieldByLabel('Track').GetValue();
+      this.trackName = this.template.GetFieldByLabel('Track').GetValue();
 
     if(this.template.RootNode.HasField('TunnelXNeg'))
       this.tunnel.neg.x = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelXNeg').GetValue());
