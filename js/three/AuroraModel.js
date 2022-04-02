@@ -638,7 +638,7 @@ THREE.AuroraModel = function () {
           break;
           case AuroraModel.ControllerType.SelfIllumColor:
             if(modelNode.mesh){
-              if(modelNode.mesh.material.type instanceof THREE.ShaderMaterial){
+              if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
                 modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
                   data.r, 
                   data.g, 
