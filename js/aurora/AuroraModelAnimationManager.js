@@ -250,8 +250,11 @@ class AuroraModelAnimationManager {
               fl = 0;
             }
             
-            if(fl == Infinity)
-              fl = 1.0;
+            if(fl == Infinity) fl = 1.0;
+            if(isNaN(fl)) fl = 0;
+
+            if(fl > 1) fl = 1;
+            if(fl < 0) fl = 0;
 
             controller.animate(this, anim, controller, last, next, fl);
 
@@ -328,8 +331,11 @@ class AuroraModelAnimationManager {
             last = controller.data[this.lastFrame - 1] || controller.data[this.lastFrame];
           }
           
-          if(fl == Infinity)
-            fl = 1.0;
+          if(fl == Infinity) fl = 1.0;
+          if(isNaN(fl)) fl = 0;
+
+          if(fl > 1) fl = 1;
+          if(fl < 0) fl = 0;
 
           controller.animate(this, anim, controller, last, next, fl);
 

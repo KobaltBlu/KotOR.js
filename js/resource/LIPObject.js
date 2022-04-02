@@ -135,9 +135,10 @@ class LIPObject {
       let fl = 0;
       if(last){
         fl = Math.abs((this.elapsed - last.time) / (next.time - last.time));
-        if(fl == Infinity)
-          fl = 1;
       }
+
+      if(fl == Infinity) fl = 1;
+      if(isNaN(fl)) fl = 0;
       
       if(fl > 1){
         fl = 1;
@@ -172,7 +173,7 @@ class LIPObject {
               }
 
               //Only interpolate keyframes if there is a previos frame and it isn't the same shape as the current
-              if(last_frame && (last.shape != next.shape)){
+              if(last_frame){
                 switch(controller.type){
                   case AuroraModel.ControllerType.Position:
                     if(modelNode.controllers.get(AuroraModel.ControllerType.Position)){
