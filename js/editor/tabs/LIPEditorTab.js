@@ -436,7 +436,8 @@ class LIPEditorTab extends EditorTab {
     this.$select_anim.val('tlknorm');
     this.$select_anim.on('change', (e) => {
       let anim_name = this.$select_anim.val().toLowerCase();
-      this.head.poseAnimation(anim_name);
+      //this.head.poseAnimation(anim_name);
+      //this.head.bonedInitialized = true;
       this.head.playAnimation(anim_name, true);
     });
 
