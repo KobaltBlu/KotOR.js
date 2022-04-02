@@ -158,6 +158,45 @@ class LIPEditorTab extends EditorTab {
 
   }
 
+  onKeyUp(e){
+    super.onKeyUp(e);
+    console.log(e);
+    if(
+      !(e.originalEvent.target instanceof HTMLInputElement) && 
+      !(e.originalEvent.target instanceof HTMLTextAreaElement) && 
+      !(e.originalEvent.target instanceof HTMLSelectElement)
+    ){
+
+      if(e.keyCode == 32){ // space
+        this.btnPlayPause();
+      }
+
+      if(e.keyCode == 37){ //left
+        if(!e.shiftKey){
+          this.btnPreviousKeyFrame();
+        }else{
+          this.btnSeekPrevious();
+        }
+      }
+
+      if(e.keyCode == 38){ //up
+        this.btnShapePrevious();
+      }
+
+      if(e.keyCode == 39){ //right
+        if(!e.shiftKey){
+          this.btnNextKeyFrame();
+        }else{
+          this.btnSeekNext();
+        }
+      }
+
+      if(e.keyCode == 40){ //down
+        this.btnShapeNext();
+      }
+    }
+  }
+
   UpdateUI(){
     this.$ui_controls.html('');
     this.$ui_keyframe_options[0].$content.html('');
@@ -179,18 +218,12 @@ class LIPEditorTab extends EditorTab {
 
     this.$btn_play.on('click', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('$btn_play', this.playing);
-      if(this.playing){
-        this.Pause();
-      }else{
-        this.Play();
-      }
+      this.btnPlayPause();
     });
 
     this.$btn_stop.on('click', (e) => {
       e.preventDefault();
-      this.Stop();
+      this.btnStop();
     });
 
     this.$ui_controls.append(this.$btn_key_delete)
@@ -258,7 +291,7 @@ class LIPEditorTab extends EditorTab {
     //Keyframe Controls
     this.$ui_keyframe_options.hide();
     this.$select_keyframe_shape = $('<select></select>');
-    this.$select_keyframe_time = $('<input type="number" step="0.005" />');
+    this.$select_keyframe_time = $('<input type="number" step="0.005" min="1" />');
 
     for(let i = 0; i < 16; i++){
       let text = 'N/A';
@@ -345,90 +378,22 @@ class LIPEditorTab extends EditorTab {
 
     this.$btn_key_left.on('click', (e) => {
       e.preventDefault();
-      let index = this.lip.keyframes.indexOf(this.selected_frame);
-      if(index > 0){
-        index--;
-      }
-
-      if(index < 0){
-        index = 0;
-      }
-
-      this.selected_frame = this.lip.keyframes[index];
-
-      if(this.lip instanceof LIPObject){
-        this.UpdateKeyframeOptions();
-      }
-
+      this.btnPreviousKeyFrame();
     });
 
     this.$btn_key_right.on('click', (e) => {
       e.preventDefault();
-      if(this.lip instanceof LIPObject){
-        let index = this.lip.keyframes.indexOf(this.selected_frame);
-        if(index < this.lip.keyframes.length-1){
-          index++;
-        }
-
-        if(index > this.lip.keyframes.length){
-          index = this.lip.keyframes.length-1;
-        }
-
-        this.selected_frame = this.lip.keyframes[index];
-
-        this.UpdateKeyframeOptions();
-        
-      }
-
+      this.btnNextKeyFrame();
     });
 
     this.$btn_key_add.on('click', (e) => {
       e.preventDefault();
-      let keyframe = {
-        time: this.lip.elapsed,
-        shape: 6
-      };
-      this.lip.keyframes.push(keyframe);
-      this.lip.reIndexKeyframes();
-
-      this.BuildKeyframes();
-
-      this.selected_frame = keyframe;
-
-      if(this.lip instanceof LIPObject){
-        this.UpdateKeyframeOptions();
-      }
-
+      this.btnAddKeyFrame();
     });
 
     this.$btn_key_delete.on('click', (e) => {
       e.preventDefault();
-
-      let result = confirm("Are you sure you want to delete this keyframe?");
-      if(result){
-        if(this.selected_frame){
-          let index = this.lip.keyframes.indexOf(this.selected_frame);
-          this.lip.keyframes.splice(index, 1)
-          this.lip.reIndexKeyframes();
-
-          if(index > this.lip.keyframes.length){
-            index = this.lip.keyframes.length - 1;
-          }
-
-          if(index < 0){
-            index = 0;
-          }
-
-          this.selected_frame = this.lip.keyframes[index];
-
-          this.BuildKeyframes();
-
-          if(this.lip instanceof LIPObject){
-            this.UpdateKeyframeOptions();
-          }
-        }
-      }
-
+      this.btnDeleteKeyFrame();
     });
 
     //Head Appearance Picker
@@ -603,6 +568,156 @@ class LIPEditorTab extends EditorTab {
     this.InitWindowEventHandlers();
     this.DrawWaveform();
 
+  }
+
+  btnPlayPause(){
+    console.log('$btn_play', this.playing);
+    if(this.playing){
+      this.Pause();
+    }else{
+      this.Play();
+    }
+  }
+
+  btnStop(){
+    this.Stop();
+  }
+
+  btnPreviousKeyFrame(){
+    let index = this.lip.keyframes.indexOf(this.selected_frame);
+    if(index > 0){
+      index--;
+    }
+
+    if(index < 0){
+      index = 0;
+    }
+
+    this.selected_frame = this.lip.keyframes[index];
+
+    if(this.lip instanceof LIPObject){
+      this.UpdateKeyframeOptions();
+    }
+  }
+
+  btnNextKeyFrame(){
+    if(this.lip instanceof LIPObject){
+      let index = this.lip.keyframes.indexOf(this.selected_frame);
+      if(index < this.lip.keyframes.length-1){
+        index++;
+      }
+
+      if(index > this.lip.keyframes.length){
+        index = this.lip.keyframes.length-1;
+      }
+
+      this.selected_frame = this.lip.keyframes[index];
+
+      this.UpdateKeyframeOptions();
+      
+    }
+  }
+
+  btnAddKeyFrame(){
+    let keyframe = {
+      time: this.lip.elapsed,
+      shape: 6
+    };
+    this.lip.keyframes.push(keyframe);
+    this.lip.reIndexKeyframes();
+
+    this.BuildKeyframes();
+
+    this.selected_frame = keyframe;
+
+    if(this.lip instanceof LIPObject){
+      this.UpdateKeyframeOptions();
+    }
+  }
+
+  btnDeleteKeyFrame(){
+    let result = confirm("Are you sure you want to delete this keyframe?");
+    if(result){
+      if(this.selected_frame){
+        let index = this.lip.keyframes.indexOf(this.selected_frame);
+        this.lip.keyframes.splice(index, 1)
+        this.lip.reIndexKeyframes();
+
+        if(index > this.lip.keyframes.length){
+          index = this.lip.keyframes.length - 1;
+        }
+
+        if(index < 0){
+          index = 0;
+        }
+
+        this.selected_frame = this.lip.keyframes[index];
+
+        this.BuildKeyframes();
+
+        if(this.lip instanceof LIPObject){
+          this.UpdateKeyframeOptions();
+        }
+      }
+    }
+  }
+
+  btnSeekPrevious(){
+    this.Pause();
+    if(this.lip instanceof LIPObject){
+      this.lip.elapsed -= 0.01;
+      if(this.lip.elapsed < 0) this.lip.elapsed = 0;
+    }
+    
+    this.SeekAudio(this.lip.elapsed);
+    // this.Play();
+    this.$btn_play.removeClass('glyphicon-pause').removeClass('glyphicon-play').addClass('glyphicon-play');
+    // setTimeout( () => {
+    //   this.Pause();
+    // }, 25);
+    
+    this.updateLip(0);
+  }
+
+  btnSeekNext(){
+    this.Pause();
+    if(this.lip instanceof LIPObject){
+      this.lip.elapsed += 0.01;
+      if(this.lip.elapsed > this.lip.Header.Length) this.lip.elapsed = this.lip.Header.Length;
+    }
+    
+    this.SeekAudio(this.lip.elapsed);
+    // this.Play();
+    this.$btn_play.removeClass('glyphicon-pause').removeClass('glyphicon-play').addClass('glyphicon-play');
+    // setTimeout( () => {
+    //   this.Pause();
+    // }, 25);
+    
+    this.updateLip(0);
+  }
+
+  btnShapePrevious(){
+    if(this.lip instanceof LIPObject){
+      const keyframe = this.selected_frame;
+      if(keyframe){
+        keyframe.shape -= 1;
+        if(keyframe.shape < 0) keyframe.shape = 0;
+        this.poseFrame = true;
+        this.$select_keyframe_shape.val(keyframe.shape);
+      }
+    }
+  }
+
+  btnShapeNext(){
+    if(this.lip instanceof LIPObject){
+      const keyframe = this.selected_frame;
+      if(keyframe){
+        keyframe.shape += 1;
+        if(keyframe.shape > 15) keyframe.shape = 15;
+        this.poseFrame = true;
+        this.$select_keyframe_shape.val(keyframe.shape);
+      }
+    }
   }
 
   UpdateKeyframeOptions(){
@@ -951,6 +1066,12 @@ class LIPEditorTab extends EditorTab {
     }, 100);
   }
 
+  updateLip(delta = 0){
+    if(this.lip instanceof LIPObject && this.head instanceof THREE.AuroraModel){
+      this.lip.update(delta, this.head);
+    }
+  }
+
   Render(){
     requestAnimationFrame( () => { this.Render(); } );
     if(!this.visible)
@@ -970,7 +1091,7 @@ class LIPEditorTab extends EditorTab {
       let last_time = this.lip.elapsed;
 
       if(this.playing || this.seeking || this.poseFrame)
-        this.lip.update(delta, this.head);
+        this.updateLip(delta, this.head);
       
       if(this.poseFrame){
         this.poseFrame = false;

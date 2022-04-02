@@ -156,6 +156,9 @@ class EditorTab {
     this.$tabContent.attr('id', 'tab-'+this.id);
 
     this.InitDOMEvents();
+    this.$tabContent.off('keyup').on('keyup', (e) => this.onKeyUp(e) );
+    this.$tabContent.off('keydown').on('keydown', (e) => this.onKeyDown(e) );
+    this.$tabContent.off('keypress').on('keypress', (e) => this.onKeyPress(e) );
   }
 
 
@@ -284,6 +287,9 @@ class EditorTab {
     if(Global.Project instanceof Project){
       Global.Project.removeFromOpenFileList(this.file);
     }
+    this.$tabContent.off('keyup');
+    this.$tabContent.off('keydown');
+    this.$tabContent.off('keypress');
     this.onDestroy();
   }
 
@@ -454,6 +460,18 @@ class EditorTab {
 
   ElementId(str){
     return str+'-'+this.id;
+  }
+
+  onKeyUp(e){
+    //
+  }
+
+  onKeyDown(e){
+    //
+  }
+
+  onKeyPress(e){
+    //
   }
 
 
