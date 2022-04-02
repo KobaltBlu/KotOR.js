@@ -410,6 +410,11 @@ select {
   width: 100%;
 }
 
+select:focus {
+    border-color: #2196F3;
+    outline: none;
+}
+
 button[disabled], html input[disabled], textarea[disabled] {
     cursor: default;
     background: #364550;
@@ -1829,6 +1834,11 @@ input[type=checkbox].ui:checked + label:before {
     border: 2px solid rgb(26, 178, 140);
     outline-color: rgb(26, 178, 140);
     box-shadow: 2px 2px 10px #1d1d1d;
+}
+
+.TSL select:focus {
+    border-color: rgb(27, 195, 153);
+    outline: none;
 }
 
 .TSL button[disabled], html .TSL input[disabled], .TSL textarea[disabled] {
