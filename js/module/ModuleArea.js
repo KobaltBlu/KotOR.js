@@ -1903,7 +1903,7 @@ class ModuleArea extends ModuleObject {
       }
 
       let loop = new AsyncLoop({
-        array: this.area.MiniGame.Enemies,
+        array: this.MiniGame.Enemies,
         onLoop: (enemy, asyncLoop) => {
           if(enemy.scripts.onCreate instanceof NWScriptInstance){
             enemy.scripts.onCreate.run(enemy, 0, () => {

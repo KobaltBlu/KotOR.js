@@ -47,6 +47,10 @@ class ModuleMGPlayer extends ModuleObject {
 
   }
 
+  canMove(){
+    return false;
+  }
+
   setTrack(model = new THREE.Object3D()){
     console.log('track', model);
     this.track = model;
