@@ -57,20 +57,20 @@ class AuroraModelAnimationManager {
     }
 
     //MiniGame Animations
-    if(this.model.bonesInitialized && this.model.mgAnims.length){
-      let dead_animations = [];
-      for(let i = 0, mgL = this.model.mgAnims.length; i < mgL; i++){
-        this.updateAnimation(this.model.mgAnims[i], delta);
-        if(this.model.mgAnims[i].data.elapsed >= this.model.mgAnims[i].length){
-          dead_animations.push(i);
-        }
-      }
-      let old_anims = dead_animations.length;
-      while (old_anims--) {
-        let anim_index = dead_animations[old_anims];
-        this.model.mgAnims.splice(anim_index, 1);
-      }
-    }
+    // if(this.model.bonesInitialized && this.model.mgAnims.length){
+    //   let dead_animations = [];
+    //   for(let i = 0, mgL = this.model.mgAnims.length; i < mgL; i++){
+    //     this.updateAnimation(this.model.mgAnims[i], delta);
+    //     if(this.model.mgAnims[i].data.elapsed >= this.model.mgAnims[i].length){
+    //       dead_animations.push(i);
+    //     }
+    //   }
+    //   let old_anims = dead_animations.length;
+    //   while (old_anims--) {
+    //     let anim_index = dead_animations[old_anims];
+    //     this.model.mgAnims.splice(anim_index, 1);
+    //   }
+    // }
 
   }
 

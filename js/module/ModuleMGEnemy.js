@@ -17,6 +17,8 @@ class ModuleMGEnemy extends ModuleObject {
     this.model = new THREE.Object3D();
     this.track = new THREE.Object3D();
 
+    this.animationManagers = [];
+
     this.setTrack(this.track);
 
     this.gear = -1;
@@ -50,6 +52,11 @@ class ModuleMGEnemy extends ModuleObject {
 
   update(delta){
 
+    for(let i = 0; i < this.animationManagers.length; i++){
+      const aManager = this.animationManagers[i];
+      aManager.updateAnimation(aManager.currentAnimation, delta);
+    }
+
     for(let i = 0; i < this.model.children.length; i++){
       let child_model = this.model.children[i];
       if(child_model instanceof THREE.AuroraModel && child_model.bonesInitialized && child_model.visible){
@@ -58,11 +65,12 @@ class ModuleMGEnemy extends ModuleObject {
           if(!child_model.animationManager.currentAnimation || (child_model.animationManager.currentAnimation.name != 'Ready_01' && child_model.animationManager.currentAnimation.name != 'damage')){
             child_model.playAnimation('Ready_01', false);
           }
-        }else if(this.alive){
+        }else if(!this.alive && !this.died){
           child_model.playAnimation('die', false);
+          this.died = true;
         }else{
           if(!child_model.animationManager.currentAnimation){
-            child_model.visible = false;
+            //child_model.visible = false;
           }
         }
 
@@ -115,24 +123,32 @@ class ModuleMGEnemy extends ModuleObject {
   }
 
   PlayAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
-    //console.log('anim', name);
     //I think n3 may be loop
-    //console.log('PlayAnimation', name, n1, n2, n3);
-    for(let i = 0; i < this.model.children.length; i++){
-      let model = this.model.children[i];
-      let anim = model.getAnimationByName(name);
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      const anim = model.getAnimationByName(name);
       if(anim){
         if(n3){
-          if(model.mgAnims.indexOf(anim) == -1){
-            model.mgAnims.push(anim);
-          }
+          console.log(anim);
+          const animManager = new AuroraModelAnimationManager(model);
+          animManager.currentAnimation = anim;
+          anim.data = {
+            loop: true,
+            blend: true,
+            cFrame: 0,
+            elapsed: 0,
+            lastTime: 0,
+            delta: 0,
+            lastEvent: -1,
+            events: [],
+            callback: undefined
+          };
+          this.animationManagers.push(animManager);
         }else{
-          model.poseAnimation(anim);
+          model.playAnimation(anim, false);
         }
       }
-
     }
-
   }
 
   RemoveAnimation(name = ''){

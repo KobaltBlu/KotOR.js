@@ -27,6 +27,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string"],
     action: function(args, _instr, action){
+      console.log('PrintString', args[0]);
       if(this.isDebugging()){
         //console.log('NWScript: '+this.name, 'PrintString', args[0]);
       }
@@ -6110,7 +6111,21 @@ NWScriptDefK1.Actions = {
     comment: "585: gets an object by its name (duh!)\nSWMG_GetObjectByName\n",
     name: "SWMG_GetObjectByName",
     type: 6,
-    args: ["string"]
+    args: ["string"],
+    action: function(args, _instr, action){
+      for(let i = 0, len = Game.module.area.MiniGame.Obstacles.length; i < len; i++){
+        const obstacle = Game.module.area.MiniGame.Obstacles[i];
+        if(obstacle.name == args[0]){
+          return obstacle;
+        }
+      }
+      for(let i = 0, len = Game.module.area.MiniGame.Enemies.length; i < len; i++){
+        const enemy = Game.module.area.MiniGame.Enemies[i];
+        if(enemy.name == args[0]){
+          return enemy;
+        }
+      }
+    }
   },
   586:{
     comment: "586: plays an animation on an object\nSWMG_PlayAnimation\n",
@@ -6119,7 +6134,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "string", "int", "int", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-      args[0].PlayAnimation(args[1], args[2], args[3], args[4]);
+        args[0].PlayAnimation(args[1], args[2], args[3], args[4]);
       }
     }
   },
@@ -6151,25 +6166,41 @@ NWScriptDefK1.Actions = {
     comment: "591: the default implementation of OnBulletHit\nSWMG_OnBulletHit\n",
     name: "SWMG_OnBulletHit",
     type: 0,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      if(this.caller instanceof ModuleObject){
+        return this.caller.onBulletHit();
+      }
+    }
   },
   592:{
     comment: "592: the default implementation of OnObstacleHit\nSWMG_OnObstacleHit\n",
     name: "SWMG_OnObstacleHit",
     type: 0,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      if(this.caller instanceof ModuleObject){
+        return this.caller.onObstacleHit();
+      }
+    }
   },
   593:{
     comment: "593: returns the last follower and obstacle hit\nSWMG_GetLastFollowerHit\n",
     name: "SWMG_GetLastFollowerHit",
     type: 6,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.lastFollowerHit || undefined;
+    }
   },
   594:{
     comment: "594: SWMG_GetLastObstacleHit\n",
     name: "SWMG_GetLastObstacleHit",
     type: 6,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.lastObstacleHit || undefined;
+    }
   },
   595:{
     comment: "595: gets information about the last bullet fired\nSWMG_GetLastBulletFiredDamage\n",
@@ -6187,7 +6218,13 @@ NWScriptDefK1.Actions = {
     comment: "597: gets an objects name\nSWMG_GetObjectName\n",
     name: "SWMG_GetObjectName",
     type: 5,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        return args[0].name || '';
+      }
+      return '';
+    }
   },
   598:{
     comment: "598: the default implementation of OnDeath\nSWMG_OnDeath\n",
@@ -6195,51 +6232,77 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(args, _instr, action){
-      //Default SWMG_OnDeath stuff not sure what the devs had here...
-      //
+      if(this.caller instanceof ModuleObject){
+        //this.caller.onDeath();
+      }
     }
   },
   599:{
     comment: "599: a bunch of Is functions for your pleasure\nSWMG_IsFollower\n",
     name: "SWMG_IsFollower",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      return (Game.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0) ? 1 : 0;
+    }
   },
   600:{
     comment: "600: SWMG_IsPlayer\n",
     name: "SWMG_IsPlayer",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.Player == args[0] ? 1 : 0;
+    }
   },
   601:{
     comment: "601: SWMG_IsEnemy\n",
     name: "SWMG_IsEnemy",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+    }
   },
   602:{
     comment: "602: SWMG_IsTrigger\n",
     name: "SWMG_IsTrigger",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      //return Game.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+    }
   },
   603:{
     comment: "603: SWMG_IsObstacle\n",
     name: "SWMG_IsObstacle",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.Obstacles.indexOf(args[0]) >= 0;
+    }
   },
   604:{
     comment: "604: SWMG_SetFollowerHitPoints\n",
     name: "SWMG_SetFollowerHitPoints",
     type: 0,
-    args: ["object", "int"]
+    args: ["object", "int"],
+    action: function(args, _instr, action){
+      if(this.caller instanceof ModuleObject){
+        this.caller.onDamage();
+      }
+    }
   },
   605:{
     comment: "605: SWMG_OnDamage\n",
     name: "SWMG_OnDamage",
     type: 0,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      if(this.caller instanceof ModuleObject){
+        this.caller.onDamage();
+      }
+    }
   },
   606:{
     comment: "606: SWMG_GetLastHPChange\n",
@@ -6300,32 +6363,50 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["int"],
     action: function(args, _instr, action){
-    return Game.module.area.MiniGame.Enemies[ args[0] ];
+      return Game.module.area.MiniGame.Enemies[ args[0] ];
     }
   },
   614:{
     comment: "614: SWMG_GetObstacleCount\n",
     name: "SWMG_GetObstacleCount",
     type: 3,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.Obstacles.length;
+    }
   },
   615:{
     comment: "615: SWMG_GetObstacle\n",
     name: "SWMG_GetObstacle",
     type: 6,
-    args: ["int"]
+    args: ["int"],
+    action: function(args, _instr, action){
+      return Game.module.area.MiniGame.Obstacles[args[0]];
+    }
   },
   616:{
     comment: "616: SWMG_GetHitPoints\n",
     name: "SWMG_GetHitPoints",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        return args[0].hit_points;
+      }
+      return 0;
+    }
   },
   617:{
     comment: "617: SWMG_GetMaxHitPoints\n",
     name: "SWMG_GetMaxHitPoints",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        return args[0].max_hps;
+      }
+      return 0;
+    }
   },
   618:{
     comment: "618: SWMG_SetMaxHitPoints\n",
@@ -6364,7 +6445,9 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-        return args[0].position;
+        const vec3 = new THREE.Vector3();
+        args[0].model.getWorldPosition(vec3)
+        return vec3;
       }
       return {x: 0, y: 0, z: 0};
     }
@@ -6477,7 +6560,16 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.Player.position;
+      if(Game.module.area.MiniGame.Type == 2){
+        const rot = Game.module.area.MiniGame.Player.rotation;
+        return new THREE.Vector3(
+          THREE.Math.radToDeg(rot.x),
+          THREE.Math.radToDeg(rot.y),
+          THREE.Math.radToDeg(rot.z)
+        );
+      }else{
+        return Game.module.area.MiniGame.Player.position;
+      }
     }
   },
   642:{
@@ -6863,7 +6955,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "location"],
     action: function(args, _instr, action){
-      Game.getGlobalLocation(args[0], args[1]);
+      Game.setGlobalLocation(args[0], args[1]);
     }
   },
   694:{

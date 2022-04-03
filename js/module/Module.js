@@ -365,7 +365,7 @@ class Module {
   }
 
   initScripts(onComplete = null){
-
+    console.log('initScripts');
     let initScripts = [];
 
     if(this.scripts.onModLoad != ''){
@@ -381,6 +381,7 @@ class Module {
       array: initScripts,
       onLoop: async (key, asyncLoop) => {
         let _script = this.scripts[key];
+        console.log(key, _script);
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
