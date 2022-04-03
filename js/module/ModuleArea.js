@@ -1117,31 +1117,14 @@ class ModuleArea extends ModuleObject {
               player.LoadModel( (model) => {
                 player.LoadGunBanks( () => {
                   let track = this.tracks.find(o => o.track === player.trackName);
-                  /*let spawnLoc = this.getSpawnLocation();
-        
-                  model.translateX(spawnLoc.XPosition);
-                  model.translateY(spawnLoc.YPosition);
-                  model.translateZ(spawnLoc.ZPosition + 1);*/
-                  
                   model.moduleObject = player;
-                  //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-                  //model.buildSkeleton();
                   model.hasCollision = true;
-                  //track.model.getObjectByName('modelhook').add( model );
-                  //Game.group.party.add( track.model );
-
                   player.setTrack(track.model);
-
-                  /*player.model = track.model;
-                  player.position = player.model.position;
-                  player.rotation = player.model.rotation;
-                  player.quaternion = player.model.quaternion;*/
         
                   player.getCurrentRoom();
                   player.computeBoundingBox();
         
                   resolve();
-
                 });
               });
             });
@@ -1875,6 +1858,22 @@ class ModuleArea extends ModuleObject {
       if(PartyManager.party[i] instanceof ModuleObject){
         await PartyManager.party[i].onSpawn(runSpawnScripts);
       }
+    }
+
+    if(this.MiniGame){
+      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+        if(this.MiniGame.Enemies[i] instanceof ModuleObject){
+          await this.MiniGame.Enemies[i].onCreate();
+        }
+      }
+
+      for(let i = 0; i < this.MiniGame.Obstacles.length; i++){
+        if(this.MiniGame.Obstacles[i] instanceof ModuleObject){
+          await this.MiniGame.Obstacles[i].onCreate();
+        }
+      }
+
+      await this.MiniGame.Player.onCreate();
     }
 
     await this.runStartScripts();

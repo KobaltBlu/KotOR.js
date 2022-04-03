@@ -11,6 +11,30 @@ class ModuleMGObstacle extends ModuleObject {
     this.name = '';
   }
 
+  onAnimEvent(){
+    if(this.scripts.onAnimEvent instanceof NWScriptInstance){
+      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onCreate(){
+    if(this.scripts.onCreate instanceof NWScriptInstance){
+      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitBullet(){
+    if(this.scripts.onHitBullet instanceof NWScriptInstance){
+      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitFollower(){
+    if(this.scripts.onHitFollower instanceof NWScriptInstance){
+      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
+    }
+  }
+
   LoadScripts (onLoad = null){
     this.scripts = {
       onAnimEvent: undefined,

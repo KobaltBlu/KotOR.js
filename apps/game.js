@@ -356,6 +356,8 @@ const ModulePath = require(path.join(app.getAppPath(), 'js/module/ModulePath.js'
 /* Module MiniGame Objects */
 
 const ModuleMGTrack = require(path.join(app.getAppPath(), 'js/module/ModuleMGTrack.js'));
+const ModuleMGGunBank = require(path.join(app.getAppPath(), 'js/module/ModuleMGGunBank.js'));
+const ModuleMGGunBullet = require(path.join(app.getAppPath(), 'js/module/ModuleMGGunBullet.js'));
 const ModuleMGPlayer = require(path.join(app.getAppPath(), 'js/module/ModuleMGPlayer.js'));
 const ModuleMGEnemy = require(path.join(app.getAppPath(), 'js/module/ModuleMGEnemy.js'));
 const ModuleMGObstacle = require(path.join(app.getAppPath(), 'js/module/ModuleMGObstacle.js'));

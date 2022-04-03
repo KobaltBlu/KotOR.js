@@ -37,6 +37,7 @@ class ModuleMGPlayer extends ModuleObject {
     this.jumpVelcolity = 0;
     this.boostVelocity = 0;
     this.falling = true;
+    this.alive = true;
 
     this.tunnel = {
       neg: {x: 0, y: 0, z: 0},
@@ -143,30 +144,6 @@ class ModuleMGPlayer extends ModuleObject {
 
         //if(this.gear > -1){
 
-          /*this.timer += 1 * delta;
-          //console.log(this.timer);
-          let minutes = Math.floor(this.timer / 60);
-          let seconds = this.timer - minutes * 60;
-          let milSeconds = Math.floor( (seconds - Math.floor(seconds)) * 100);
-
-          let minTens = Math.floor(minutes / 10);
-          let minOnes = minutes - minTens * 10;
-
-          let secTens = Math.floor(seconds / 10);
-          let secOnes = seconds - secTens * 10;
-
-          let milTens = Math.floor(milSeconds / 10);
-          let milOnes = milSeconds - milTens * 10;
-
-          this.camera.poseAnimation('MinTen'+minTens);
-          this.camera.poseAnimation('MinOne'+Math.floor(minOnes));
-
-          this.camera.poseAnimation('SecTen'+secTens);
-          this.camera.poseAnimation('SecOne'+Math.floor(secOnes));
-
-          this.camera.poseAnimation('MilSecTen'+milTens);
-          this.camera.poseAnimation('MilSecOne'+Math.floor(milOnes));*/
-
           if(this.speed){
 
             if(this.speed < this.speed_min){
@@ -205,74 +182,26 @@ class ModuleMGPlayer extends ModuleObject {
 
       break;
       case 2:
-        
-
-        for(let i = 0; i < this.gunBanks.length; i++){
-
-          let gun = this.gunBanks[i];
-          //Update the gun timer
-          if(gun.bullet.fire_timer > 0){
-            gun.bullet.fire_timer -= 1 * delta;
-            if(gun.bullet.fire_timer < 0){
-              gun.bullet.fire_timer = 0;
-            }
-          }else{
-            gun.bullet.fire_timer = 0;
-          }
-
-          if(gun.model)
-            gun.model.update(delta);
-
-        }
-
-        let old_bullet_indexes = [];
-
-        for(let i = 0; i < this.bullets.length; i++){
-          let bullet = this.bullets[i];
-          bullet.life += 1*delta;
-
-          if(bullet.life >= bullet.lifespan){
-            bullet.dispose();
-
-            if(bullet.parent)
-              bullet.parent.remove(bullet);
-
-            old_bullet_indexes.push(i);
-
-          }else{
-            let velocity = new THREE.Vector3(0, bullet.speed * delta, 0);
-            velocity.applyQuaternion(bullet.quaternion);
-            bullet.position.add(
-              velocity
-            );
-            bullet.update(delta);
-            
-            let enemies = Game.module.area.MiniGame.Enemies;
-
-            for(let j = 0; j < enemies.length; j++){
-              let enemy = enemies[j];
-              if(enemy.sphere.containsPoint(bullet.position)){
-                enemy.damage(bullet.damage);
-                //Set the life to Infinity so it will be culled on the next pass
-                bullet.life = Infinity;
-                break;
-              }
-            }
-
-          }
-
-        }
-
-        let old_bullets = old_bullet_indexes.length;
-        while(old_bullets--){
-          let bullet_index = old_bullet_indexes[old_bullets];
-          this.bullets.splice(bullet_index, 1);
-        }
 
       break;
     }
+        
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i].update(delta);
+    }
     
+  }
 
+  damage(damage = 0){
+    if(this.alive){
+      this.hit_points -= damage;
+      for(let i = 0; i < this.model.children.length; i++){
+        if(this.model.children[i] instanceof THREE.AuroraModel && this.model.children[i].bonesInitialized && this.model.children[i].visible){
+          this.model.children[i].playAnimation('damage', false);
+        }
+      }
+      this.onDamage();
+    }
   }
 
   Jump(){
@@ -299,69 +228,12 @@ class ModuleMGPlayer extends ModuleObject {
   }
 
   FireGun(){
-
-    if(this.scripts.onAccelerate instanceof NWScriptInstance){
-      this.scripts.onAccelerate.run(this, 0, () => {
-
-      });
-    }
-
-    if(this.scripts.onFire instanceof NWScriptInstance){
-      this.scripts.onFire.run(this, 0, () => {
-
-      });
-    }
-
     if(this.gunBanks.length){
-        
       for(let i = 0; i < this.gunBanks.length; i++){
-        let gun = this.gunBanks[i];
-
-        if(!gun.bullet.fire_timer){
-          gun.bullet.fire_timer = gun.bullet.rate_of_fire;
-
-          if(gun.fire_sound){
-            Game.audioEmitter.PlaySound(gun.fire_sound);
-          }
-          if(gun.model instanceof THREE.AuroraModel){
-            gun.model.playAnimation('fire', false);
-          }
-
-          if(gun.bullet.model){
-
-            THREE.AuroraModel.FromMDL(gun.bullet.model, {
-              onComplete: (bullet_model) => {
-                
-                bullet_model.life = 0;
-                bullet_model.lifespan = gun.bullet.lifespan;
-                bullet_model.damage = gun.bullet.damage;
-                bullet_model.speed = gun.bullet.speed;
-
-                //TSL speed needs to be increased
-                if(bullet_model.speed < 1){
-                  bullet_model.speed *= 1000;
-                }
-                
-                let bullet_hook = gun.model.getObjectByName('bullethook0');
-                bullet_hook.getWorldPosition(bullet_model.position);
-                bullet_hook.getWorldQuaternion(bullet_model.quaternion);
-                //bullet_model.direction = new THREE.Vector3();
-                //bullet_hook.getWorldDirection(bullet_model.direction);
-
-                Game.group.placeables.add(bullet_model);
-                this.bullets.push(bullet_model);
-
-              }
-            });
-
-          }
-
-
-        }
-
+        this.gunBanks[i].fire();
       }
-
     }
+    this.onFire();
   }
 
   Rotate(axis = 'x', amount = 0){
@@ -749,52 +621,15 @@ class ModuleMGPlayer extends ModuleObject {
   }
 
   LoadGunBanks(onLoad = null){
-    //.model.children[1].getObjectByName('gunbank0').add(model)
     let loop = new AsyncLoop({
       array: this.gunBanks,
       onLoop: (gunbank, asyncLoop) => {
-        Game.ModelLoader.load({
-          file: gunbank.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl) => {
-            THREE.AuroraModel.FromMDL(mdl, {
-              onComplete: (model) => {
-                try{
-                  gunbank.model = model;
-                  let gun_hook = this.model.getObjectByName('gunbank'+gunbank.id);
-                  if(gun_hook instanceof THREE.Object3D){
-                    gun_hook.add(model);
-                  }
-
-                  if(gunbank.bullet.model_name){
-                    Game.ModelLoader.load({
-                      file: gunbank.bullet.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-                      onLoad: (bullet_mdl) => {
-                        gunbank.bullet.model = bullet_mdl;
-                        asyncLoop.next();
-                        /*THREE.AuroraModel.FromMDL(bullet_mdl, {
-                          onComplete: (bullet_model) => {
-                            
-                            asyncLoop.next();
-                          }
-                        });*/
-                      }
-                    });
-                  }else{
-                    asyncLoop.next();
-                  }
-
-
-                  
-                }catch(e){
-                  console.error(e);
-                  asyncLoop.next();
-                }
-              },
-              context: this.context,
-              castShadow: true,
-              receiveShadow: true
-            });
+        gunbank.Load().then( () => {
+          this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
+          if(this.gun_hook instanceof THREE.Object3D){
+            this.gun_hook.add(gunbank.model);
           }
+          asyncLoop.next();
         });
       }
     });
@@ -802,6 +637,60 @@ class ModuleMGPlayer extends ModuleObject {
       if(typeof onLoad === 'function')
         onLoad();
     });
+  }
+
+  onAnimEvent(){
+    if(this.scripts.onAnimEvent instanceof NWScriptInstance){
+      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onCreate(){
+    if(this.scripts.onCreate instanceof NWScriptInstance){
+      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onDamage(){
+    if(this.scripts.onDamage instanceof NWScriptInstance){
+      this.scripts.onDamage.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onFire(){
+    if(this.scripts.onFire instanceof NWScriptInstance){
+      this.scripts.onFire.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onAccelerate(){
+    if(this.scripts.onAccelerate instanceof NWScriptInstance){
+      this.scripts.onAccelerate.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitBullet(){
+    if(this.scripts.onHitBullet instanceof NWScriptInstance){
+      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitFollower(){
+    if(this.scripts.onHitFollower instanceof NWScriptInstance){
+      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitObstacle(){
+    if(this.scripts.onHitObstacle instanceof NWScriptInstance){
+      this.scripts.onHitObstacle.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onTrackLoop(){
+    if(this.scripts.onTrackLoop instanceof NWScriptInstance){
+      this.scripts.onTrackLoop.nwscript.newInstance().run(this, 0);
+    }
   }
 
   LoadScripts (onLoad = null){
@@ -954,42 +843,18 @@ class ModuleMGPlayer extends ModuleObject {
     }
 
     if(this.template.RootNode.HasField('Gun_Banks')){
-      let gun_banks = this.template.GetFieldByLabel('Gun_Banks').GetChildStructs();
+      const gun_banks = this.template.GetFieldByLabel('Gun_Banks').GetChildStructs();
       for(let i = 0; i < gun_banks.length; i++){
-        let gunStruct = gun_banks[i];
-        let bulletStruct = gunStruct.GetFieldByLabel('Bullet').GetChildStructs()[0];
-        let gbObject = {
-          id: gunStruct.GetFieldByLabel('BankID').GetValue(),
-          fire_sound: gunStruct.GetFieldByLabel('Fire_Sound').GetValue(),
-          model_name: gunStruct.GetFieldByLabel('Gun_Model').GetValue(),
-          model: null,
-          bullet: {
-            model_name: '',
-            collision_sound: '',
-            damage: 0,
-            lifespan: 0,
-            rate_of_fire: 0,
-            fire_timer: 0,
-            speed: 0,
-            target_type: 0
-          }
-        };
-
-        if(bulletStruct){
-          gbObject.bullet.model_name = bulletStruct.GetFieldByLabel('Bullet_Model').GetValue();
-          gbObject.bullet.collision_sound = bulletStruct.GetFieldByLabel('Collision_Sound').GetValue();
-          gbObject.bullet.damage = bulletStruct.GetFieldByLabel('Damage').GetValue();
-          gbObject.bullet.lifespan = bulletStruct.GetFieldByLabel('Lifespan').GetValue();
-          gbObject.bullet.rate_of_fire = bulletStruct.GetFieldByLabel('Rate_Of_Fire').GetValue();
-          gbObject.bullet.speed = bulletStruct.GetFieldByLabel('Speed').GetValue();
-          gbObject.bullet.target_type = bulletStruct.GetFieldByLabel('Target_Type').GetValue();
-        }
-
-        this.gunBanks.push(gbObject);
+        this.gunBanks.push(
+          new ModuleMGGunBank(
+            GFFObject.FromStruct(gun_banks[i]),
+            this,
+            true
+          )
+        );
       }
 
       this.initialized = true;
-      
     }
 
 

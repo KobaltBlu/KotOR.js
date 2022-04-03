@@ -6169,7 +6169,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        return this.caller.onBulletHit();
+        //return this.caller.onBulletHit();
       }
     }
   },
@@ -6180,7 +6180,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        return this.caller.onObstacleHit();
+        //return this.caller.onObstacleHit();
       }
     }
   },
@@ -6300,7 +6300,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(args, _instr, action){
       if(this.caller instanceof ModuleObject){
-        this.caller.onDamage();
+        //this.caller.onDamage();
       }
     }
   },
@@ -6789,7 +6789,10 @@ NWScriptDefK1.Actions = {
     comment: "671: BarkString\nthis will cause a creature to bark the strRef from the talk table\nIf creature is specefied as OBJECT_INVALID a general bark is made.\n",
     name: "BarkString",
     type: 0,
-    args: ["object"]
+    args: ["object", 'int'],
+    action: function(args, _instr, action){
+      console.log('BarkString', args[1]);
+    }
   },
   672:{
     comment: "672: DeleteJournalWorldAllEntries\nNuke's 'em all, user entered or otherwise.\n",

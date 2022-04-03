@@ -365,7 +365,6 @@ class Module {
   }
 
   initScripts(onComplete = null){
-    console.log('initScripts');
     let initScripts = [];
 
     if(this.scripts.onModLoad != ''){
@@ -375,6 +374,7 @@ class Module {
     if(this.scripts.onClientEntr != ''){
       initScripts.push('onClientEntr');
     }
+    console.log('initScripts', initScripts);
 
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({

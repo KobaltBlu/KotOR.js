@@ -108,6 +108,17 @@ class ModuleMGEnemy extends ModuleObject {
 
       break;
     }
+        
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i].update(delta);
+      if(this.alive){
+        this.model.getWorldPosition(Game.raycaster.ray.origin);
+        this.model.getWorldDirection(Game.raycaster.ray.direction);
+        if(Game.raycaster.ray.intersectsSphere(Game.module.area.MiniGame.Player.sphere)){
+          this.gunBanks[i].fire();
+        }
+      }
+    }
 
   }
 
@@ -119,6 +130,7 @@ class ModuleMGEnemy extends ModuleObject {
           this.model.children[i].playAnimation('damage', false);
         }
       }
+      this.onDamage();
     }
   }
 
@@ -174,70 +186,7 @@ class ModuleMGEnemy extends ModuleObject {
   }
 
   updateCollision(delta = 0){
-
-    this.getCurrentRoom();
-
-    //START Gravity
-
-    Game.raycaster.far = 20;
-    let falling = true;
-
-    let scratchVec3 = new THREE.Vector3(0, 0, .25);
-
-    let playerFeetRay = new THREE.Vector3().copy( this.track.position.clone().add( ( scratchVec3 ) ) );
-    Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-
-    Game.raycaster.ray.direction.set(0, 0,-1);
-
-    let meshesSearch = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-    let intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
-    //let intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
-    if ( intersects.length > 0 ) {
-      if(intersects[ 0 ].distance < 6) {
-        //let faceIdx = intersects[0].faceIndex;
-        //let walkableType = intersects[0].object.wok.walkTypes[faceIdx];
-        //let pDistance = 0.5 - intersects[ 0 ].distance;
-        this.track.position.z = intersects[ 0 ].point.z + 5.75;
-        this.surfaceId = intersects[0].face.walkIndex;
-        falling = false;
-      }
-    }
-
-    if(falling){
-      //console.log('Falling');
-      this.track.position.z -= 20*delta;
-    }
-
-    //START: PLAYER WORLD COLLISION
-    scratchVec3.set(0, 0, 0.25);
-    playerFeetRay = new THREE.Vector3().copy( this.track.position.clone().add( ( scratchVec3 ) ) );
-
-    for(let i = 0; i < 360; i += 30) {
-      Game.raycaster.ray.direction.set(Math.cos(i), Math.sin(i),-1);
-      Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-
-      meshesSearch = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
-      intersects = Game.raycaster.intersectOctreeObjects( meshesSearch );
-
-      //intersects = Game.raycaster.intersectObjects( Game.walkmeshList );
-      if ( intersects.length > 0 ) {
-        if(intersects[ 0 ].distance < 5){
-          if(intersects[0].face.walkIndex == 7 || intersects[0].face.walkIndex == 2){
-            //let pDistance = 0.5 - intersects[ 0 ].distance;
-            let pDistance = (5 - intersects[ 0 ].distance) * 0.1;
-            scratchVec3.set(pDistance * Math.cos(i), pDistance * Math.sin(i), 0)
-            this.track.position.sub( scratchVec3 );
-          }
-        }
-      }
-    }
-
-    //END: PLAYER WORLD COLLISION
-
-    //END Gravity
-    Game.raycaster.far = Infinity;
     this.track.updateMatrixWorld();
-
   }
 
 
@@ -283,28 +232,15 @@ class ModuleMGEnemy extends ModuleObject {
   }
 
   LoadGunBanks(onLoad = null){
-    //.model.children[1].getObjectByName('gunbank0').add(model)
     let loop = new AsyncLoop({
       array: this.gunBanks,
-      onLoop: (item, asyncLoop) => {
-        Game.ModelLoader.load({
-          file: item.model.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl) => {
-            THREE.AuroraModel.FromMDL(mdl, {
-              onComplete: (model) => {
-                try{
-                  this.model.getObjectByName('gunbank'+item.id).add(model) 
-                  asyncLoop.next();
-                }catch(e){
-                  console.error(e);
-                  asyncLoop.next();
-                }
-              },
-              context: this.context,
-              castShadow: true,
-              receiveShadow: true
-            });
+      onLoop: (gunbank, asyncLoop) => {
+        gunbank.Load().then( () => {
+          this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
+          if(this.gun_hook instanceof THREE.Object3D){
+            this.gun_hook.add(gunbank.model);
           }
+          asyncLoop.next();
         });
       }
     });
@@ -312,6 +248,60 @@ class ModuleMGEnemy extends ModuleObject {
       if(typeof onLoad === 'function')
         onLoad();
     });
+  }
+
+  onAnimEvent(){
+    if(this.scripts.onAnimEvent instanceof NWScriptInstance){
+      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onCreate(){
+    if(this.scripts.onCreate instanceof NWScriptInstance){
+      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onDamage(){
+    if(this.scripts.onDamage instanceof NWScriptInstance){
+      this.scripts.onDamage.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onFire(){
+    if(this.scripts.onFire instanceof NWScriptInstance){
+      this.scripts.onFire.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onAccelerate(){
+    if(this.scripts.onAccelerate instanceof NWScriptInstance){
+      this.scripts.onAccelerate.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitBullet(){
+    if(this.scripts.onHitBullet instanceof NWScriptInstance){
+      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitFollower(){
+    if(this.scripts.onHitFollower instanceof NWScriptInstance){
+      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onHitObstacle(){
+    if(this.scripts.onHitObstacle instanceof NWScriptInstance){
+      this.scripts.onHitObstacle.nwscript.newInstance().run(this, 0);
+    }
+  }
+
+  onTrackLoop(){
+    if(this.scripts.onTrackLoop instanceof NWScriptInstance){
+      this.scripts.onTrackLoop.nwscript.newInstance().run(this, 0);
+    }
   }
 
   LoadScripts (onLoad = null){
@@ -447,14 +437,15 @@ class ModuleMGEnemy extends ModuleObject {
     }
 
     if(this.template.RootNode.HasField('Gun_Banks')){
-      let gun_banks = this.template.GetFieldByLabel('Gun_Banks').GetChildStructs();
+      const gun_banks = this.template.GetFieldByLabel('Gun_Banks').GetChildStructs();
       for(let i = 0; i < gun_banks.length; i++){
-        let gunStruct = gun_banks[i];
-        this.gunBanks.push({
-          id: gunStruct.GetFieldByLabel('BankID').GetValue(),
-          fire_sound: gunStruct.GetFieldByLabel('Fire_Sound').GetValue(),
-          model: gunStruct.GetFieldByLabel('Gun_Model').GetValue()
-        });
+        this.gunBanks.push(
+          new ModuleMGGunBank(
+            GFFObject.FromStruct(gun_banks[i]),
+            this,
+            false
+          )
+        );
       }
     }
 
