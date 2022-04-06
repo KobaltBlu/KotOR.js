@@ -1625,9 +1625,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectParalyze();
+      let effect = new EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 5); // Sleep State
       return effect.initialize();
     }
   },
@@ -1839,9 +1840,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectStunned();
+      let effect = new EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 4); // Stunned State
       return effect.initialize();
     }
   },
@@ -7635,6 +7637,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 8); // Horrified State
+      effect.setInt(1, 1); // is cutscene effect?
       return effect.initialize();
     }
   },
@@ -7648,6 +7651,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 5); // Paralyze State
+      effect.setInt(1, 1); // is cutscene effect?
       return effect.initialize();
     }
   },
@@ -7661,6 +7665,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 4); // Stun State
+      effect.setInt(1, 1); // is cutscene effect?
       return effect.initialize();
     }
   },
