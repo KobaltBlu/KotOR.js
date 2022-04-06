@@ -85,6 +85,14 @@ class NWScriptStack {
     return this.stack[(this.basePointer + index) / 4];
   }
 
+  copyAtBasePointer(index = -4, copyLength = 4){
+    return this.stack.slice((this.basePointer + index) / 4, ((this.basePointer + index) / 4) + (copyLength / 4));
+  }
+
+  copyAtPointer(index = -4, copyLength = 4){
+    return this.stack.slice((this.pointer + index) / 4, ((this.pointer + index) / 4) + (copyLength / 4));
+  }
+
   replace(index = -4, data){
 
     /*if(!(data instanceof Uint8Array))

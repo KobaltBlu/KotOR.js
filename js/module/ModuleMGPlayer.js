@@ -22,6 +22,7 @@ class ModuleMGPlayer extends ModuleObject {
     this.bullets = [];
 
     this.no_rotate = new THREE.Group();
+    this.position = new THREE.Vector3();
 
     this.animationManagers = [];
 
@@ -30,6 +31,8 @@ class ModuleMGPlayer extends ModuleObject {
     this.speed_max = 0;
     this.accel_secs = 0;
     this.accel_lateral_secs = 0;
+    this.lateralForce = 0;
+    this.invince = 0;
 
     this.gear = -1;
     //this.timer = 0;
@@ -48,6 +51,12 @@ class ModuleMGPlayer extends ModuleObject {
 
     this._heartbeatTimerOffset = -2900;
 
+    const geometry = new THREE.SphereGeometry( 1, 16, 16 );
+    const material = new THREE.MeshBasicMaterial( { color: 0x0000FF } );
+    material.transparent = true;
+    material.opacity = 0.15;
+    this.sphere_geom = new THREE.Mesh( geometry, material );
+
   }
 
   canMove(){
@@ -65,15 +74,15 @@ class ModuleMGPlayer extends ModuleObject {
   setTrack(model = new THREE.Object3D()){
     console.log('track', model);
     this.track = model;
-    this.position = model.position;
+    //this.position = model.position;
     this.rotation = model.rotation;
     this.quaternion = model.quaternion;
 
     this.rotation.reorder('YZX');
 
-    this.Rotate('x', 0);
-    this.Rotate('y', 0);
-    this.Rotate('z', 0);
+    this.rotate('x', 0);
+    this.rotate('y', 0);
+    this.rotate('z', 0);
 
     if(this.model.parent)
       this.model.parent.remove(this.model);
@@ -98,36 +107,30 @@ class ModuleMGPlayer extends ModuleObject {
 
   update(delta){
 
+    this.invince -= delta;
+    if(this.invince < 0) this.invince = 0;
+
     //super.update(delta);
     //Process the heartbeat timer
-    if(this._heartbeatTimeout <= 0){
-      if(Game.module){
-        this.triggerHeartbeat();
-      }
-      this._heartbeatTimeout = 100;
-    }else{
-      this._heartbeatTimeout -= 1000*delta;
-    }
-
     if(Game.module){
-      if(this === PartyManager.party[0])
-        Game.controls.UpdateMiniGameControls(delta);
+      this.triggerHeartbeat();
     }
 
     this.sphere.radius = this.sphere_radius;
-    this.model.getWorldPosition(this.sphere.center);
+    this.model.parent.getWorldPosition(this.position);
+    this.sphere.center.copy(this.position);
 
-    if(this.camera instanceof THREE.AuroraModel && this.camera.bonesInitialized && this.camera.visible){
-      this.camera.update(delta);
-    }else if(!this.camera){
-      let camerahook = this.model.getObjectByName('camerahook');
-      if(camerahook)
-        this.camera = camerahook.parent.parent;
-    }
+    this.sphere_geom.scale.setScalar(this.sphere_radius);
+    this.sphere_geom.position.copy(this.sphere.center);
 
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
-      aManager.updateAnimation(aManager.currentAnimation, delta);
+      if(
+        aManager.currentAnimation.data.loop || 
+        ( !aManager.currentAnimation.data.loop && !aManager.currentAnimation.data.elapsedCount )
+      ){
+        aManager.updateAnimation(aManager.currentAnimation, delta);
+      }
     }
 
     for(let i = 0; i < this.model.children.length; i++){
@@ -138,35 +141,46 @@ class ModuleMGPlayer extends ModuleObject {
     }
 
     //this.animationManagers
+    this.AxisFront.set(0, 0, 0);
 
     switch(Game.module.area.MiniGame.Type){
       case 1:
 
-        //if(this.gear > -1){
+        if(this.speed_min || this.speed){
 
-          if(this.speed){
-
-            if(this.speed < this.speed_min){
-              this.speed = this.speed_min;
-            }
-
-            this.speed += 1 * delta;
-
-            if(this.speed >= this.speed_max){
-              this.speed = this.speed_max + 1;
-            }
-
-            this.track.position.y += (this.speed + this.accel_secs) * delta;
-          
-            this.model.position.z = this.jumpVelcolity;
-
+          if(this.speed < this.speed_min){
+            this.speed = this.speed_min;
           }
 
-        //}
+          this.speed += (this.accel_secs * delta);
+
+          if(this.speed_max && (this.speed >= this.speed_max)){
+            this.speed = this.speed_max;
+          }
+
+          this.AxisFront.set( this.lateralForce * delta, this.speed * delta, 0 );
+
+          //this.track.position.y += ;
+          //this.model.position.z = this.jumpVelcolity;
+
+        }
 
 
         this.track.updateMatrixWorld();
-        this.updateCollision(delta);
+        //this.updateCollision(delta);
+        this.track.position.add(this.AxisFront);
+        //this.model.box.setFromObject(this.model);
+
+        const enemies = Game.module.area.MiniGame.Enemies;
+        for(let i = 0; i < enemies.length; i++){
+          const enemy = enemies[i];
+          if(enemy.sphere.containsPoint(this.sphere.center)){
+            if(!enemy.collided){
+              enemy.collided = true;
+              this.onHitFollower(enemy);
+            }
+          }
+        }
 
         if(this.jumpVelcolity > 0){
           this.jumpVelcolity -= (2 *delta);
@@ -190,6 +204,23 @@ class ModuleMGPlayer extends ModuleObject {
       this.gunBanks[i].update(delta);
     }
     
+    this.model.parent.getWorldPosition(this.position);
+
+    this.sphere.center.copy(this.position);
+    this.sphere_geom.position.copy(this.sphere.center);
+
+    if(this.camera instanceof THREE.AuroraModel && this.camera.bonesInitialized && this.camera.visible){
+      this.camera.update(delta);
+    }else if(!this.camera){
+      let camerahook = this.model.getObjectByName('camerahook');
+      if(camerahook)
+        this.camera = camerahook.parent.parent;
+    }
+    
+  }
+
+  updatePaused(delta){
+
   }
 
   damage(damage = 0){
@@ -204,7 +235,15 @@ class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  Jump(){
+  adjustHitPoints(nHP = 0, nAbsolute = 0){
+    this.hit_points += nHP;
+  }
+
+  startInvulnerability(){
+    this.invince = this.invince_period || 0;
+  }
+
+  jump(){
     this.jumpVelcolity = 0.4;
     /*if(this.gear > -1 && !this.falling){
       this.jumpVelcolity = 0.4;
@@ -213,21 +252,7 @@ class ModuleMGPlayer extends ModuleObject {
     }*/
   }
 
-  Boost(){
-    if(this.gear > -1){
-      this.boostVelocity = 0.8
-    }else{
-      this.boostVelocity = 0;
-    }
-  }
-
-  ChangeGear(){
-    this.gear++;
-    if(this.gear >= 5)
-      this.gear = -1;
-  }
-
-  FireGun(){
+  fire(){
     if(this.gunBanks.length){
       for(let i = 0; i < this.gunBanks.length; i++){
         this.gunBanks[i].fire();
@@ -236,7 +261,7 @@ class ModuleMGPlayer extends ModuleObject {
     this.onFire();
   }
 
-  Rotate(axis = 'x', amount = 0){
+  rotate(axis = 'x', amount = 0){
 
     switch(axis){
       case 'x':
@@ -280,35 +305,25 @@ class ModuleMGPlayer extends ModuleObject {
 
   }
 
-  GetOffset(){
-
-    switch(Game.module.area.MiniGame.Type){
-      case 1:
-        return this.position.clone();
-      case 2:
-        let _rot = new THREE.Vector3(
-          THREE.Math.radToDeg(this.rotation.x), 
-          THREE.Math.radToDeg(this.rotation.y), 
-          THREE.Math.radToDeg(this.rotation.z)
-        );
-
-        return _rot;
-    }
-
-  }
-
-  PlayAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
-    //I think n3 may be loop
+  playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
+    const padding = '                                             ';
+    //console.log(`play: ${name}${padding}`.substring(0, 20), `bLooping: ${bLooping ? 'true' : 'false'}${padding}`.substring(0, 20), `bQueue: ${bQueue ? 'true' : 'false'}${padding}`.substring(0, 20), `bOverlay: ${bOverlay ? 'true' : 'false'}${padding}`.substring(0, 20));
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
       const anim = model.getAnimationByName(name);
       if(anim){
-        if(n3){
-          console.log(anim);
+
+        //Check if this animation has already been applied
+        const existingIndex = this.animationManagers.findIndex( am => am?.currentAnimation?.name == name );
+        if(existingIndex >= 0){
+          this.animationManagers.splice(existingIndex, 1);
+        }
+
+        if(bOverlay){
           const animManager = new AuroraModelAnimationManager(model);
           animManager.currentAnimation = anim;
           anim.data = {
-            loop: true,
+            loop: bLooping ? true : false,
             blend: true,
             cFrame: 0,
             elapsed: 0,
@@ -326,31 +341,16 @@ class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  RemoveAnimation(name = ''){
-    console.log('RemoveAnimation', name);
-    return;
-    for(let i = 0; i < this.models.length; i++){
-      let model = this.models[i];
-      let anim = model.getAnimationByName(name);
-
-      if(anim){
-        let animLoopIdx = model.animLoops.indexOf(anim);
-        if(animLoopIdx >= 0){
-          model.animLoops.splice(animLoopIdx, 1);
-        }
-
-        if(model.animationManager.currentAnimation == anim){
-          model.stopAnimation();
-        }
-
-      }
-
+  removeAnimation(name = ''){
+    const padding = '                                             ';
+    //console.log( `remove: ${name}${padding}`.substring(0, 20) );
+    const existingIndex = this.animationManagers.findIndex( am => am?.currentAnimation?.name == name );
+    if(existingIndex >= 0){
+      this.animationManagers.splice(existingIndex, 1);
     }
-
   }
 
   updateCollision(delta = 0){
-    return;
 
     if(!this.model || !Game.module || !Game.module.area)
       return;
@@ -359,17 +359,14 @@ class ModuleMGPlayer extends ModuleObject {
     let _oPosition = this.position.clone();
 
     //this.getCurrentRoom();
-    let hitdist = this.getAppearance().hitdist;
-    let hitdist_half = hitdist/2;
-    
-    let box = new THREE.Box3()
-    
-    if(this.model && this.model.box){
-      this.model.box.setFromObject(this.model);
-      this.model.sphere = this.model.box.getBoundingSphere(this.model.sphere);
-      box = this.model.box.clone();
-      box.translate(_axisFront);
-    }
+    const hitdist = this.sphere_radius;
+    const hitdist_half = hitdist/2;
+
+    this.box.set(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1));
+    this.box.translate(this.position);
+    this.box.translate(_axisFront);
+
+    const box = this.box.clone();
 
     //START Gravity
     Game.raycaster.far = 10;
@@ -380,7 +377,7 @@ class ModuleMGPlayer extends ModuleObject {
 
     let obj = undefined;
 
-    //END: CREATURE COLLISION
+    if(!this.room) this.getCurrentRoom();
 
     if(this.room){
 
@@ -515,7 +512,7 @@ class ModuleMGPlayer extends ModuleObject {
         //DETECT: GROUND FACE
         this.lastRoom = this.room;
         this.lastGroundFace = this.groundFace;
-        this.groundFace = undefined;
+        //this.groundFace = undefined;
         if(this.room){
           let face = this.room.findWalkableFace(this);
           if(!face){
@@ -537,10 +534,96 @@ class ModuleMGPlayer extends ModuleObject {
     Game.raycaster.far = Infinity;
     this.track.updateMatrixWorld();
 
+    this.box.set(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1));
+    this.box.translate(this.position);
+    this.box.translate(this.AxisFront);
+
+  }
+
+  getCurrentRoom(){
+    if(this instanceof ModuleObject){
+      this.room = undefined;
+      let aabbFaces = [];
+      let meshesSearch;// = Game.octree_walkmesh.search( Game.raycaster.ray.origin, 10, true, Game.raycaster.ray.direction );
+      let intersects;// = Game.raycaster.intersectOctreeObjects( meshesSearch );
+      const box = this.box.clone();
+
+      this.rooms = [];
+      for(let i = 0; i < Game.module.area.rooms.length; i++){
+        let room = Game.module.area.rooms[i];
+        let model = room.model;
+        if(model instanceof THREE.AuroraModel){
+          if(model.box.containsPoint(this.position)){
+            this.rooms.push(i);
+          }
+        }
+      }
+
+      if(box){
+        for(let j = 0, jl = this.rooms.length; j < jl; j++){
+          let room = Game.module.area.rooms[this.rooms[j]];
+          if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+            aabbFaces.push({
+              object: room, 
+              faces: room.walkmesh.getAABBCollisionFaces(box)
+            });
+          }
+        }
+      }
+      
+      let scratchVec3 = new THREE.Vector3(0, 0, 2);
+      let playerFeetRay = this.position.clone().add(scratchVec3);
+      Game.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+      Game.raycaster.ray.direction.set(0, 0,-1);
+      
+      for(let j = 0, jl = aabbFaces.length; j < jl; j++){
+        let castableFaces = aabbFaces[j];
+        intersects = castableFaces.object.walkmesh.raycast(Game.raycaster, castableFaces.faces) || [];
+        
+        if(intersects.length){
+          if(this == Game.player){
+            //console.log(intersects);
+          }
+          if(intersects[0].object.moduleObject){
+            this.attachToRoom(intersects[0].object.moduleObject);
+            return;
+          }
+        }
+      }
+      if(this.rooms.length){
+        this.attachToRoom(Game.module.area.rooms[this.rooms[0]]);
+        return;
+      }
+    }else{
+      this.findWalkableFace();
+    }
+  }
+
+  findWalkableFace(){
+    let face;
+    let room;
+    for(let i = 0, il = Game.module.area.rooms.length; i < il; i++){
+      room = Game.module.area.rooms[i];
+      if(room.walkmesh){
+        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
+          face = room.walkmesh.walkableFaces[j];
+          if(face.triangle.containsPoint(this.position)){
+            this.groundFace = face;
+            this.lastGroundFace = this.groundFace;
+            this.surfaceId = this.groundFace.walkIndex;
+            this.attachToRoom(room);
+            face.triangle.closestPointToPoint(this.position, this.wm_c_point);
+            this.position.z = this.wm_c_point.z + .005;
+          }
+        }
+      }
+    }
+    return face;
   }
 
   Load( onLoad = null ){
     this.InitProperties();
+    Game.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
   }
@@ -669,21 +752,27 @@ class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onHitBullet(){
+  onHitBullet( bullet = undefined ){
     if(this.scripts.onHitBullet instanceof NWScriptInstance){
-      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
+      const instance = this.scripts.onHitBullet.nwscript.newInstance();
+      instance.mgBullet = bullet;
+      instance.run(this, 0);
     }
   }
 
-  onHitFollower(){
+  onHitFollower( follower = undefined ){
     if(this.scripts.onHitFollower instanceof NWScriptInstance){
-      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
+      const instance = this.scripts.onHitFollower.nwscript.newInstance();
+      instance.mgFollower = follower;
+      instance.run(this, 0);
     }
   }
 
-  onHitObstacle(){
+  onHitObstacle( obstacle = undefined ){
     if(this.scripts.onHitObstacle instanceof NWScriptInstance){
-      this.scripts.onHitObstacle.nwscript.newInstance().run(this, 0);
+      const instance = this.scripts.onHitObstacle.nwscript.newInstance();
+      instance.mgObstacle = obstacle;
+      instance.run(this, 0);
     }
   }
 

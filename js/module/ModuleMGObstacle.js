@@ -9,6 +9,30 @@ class ModuleMGObstacle extends ModuleObject {
 
   constructor(){
     this.name = '';
+    this.invince = 0;
+  }
+
+  update(delta){
+
+    this.invince -= delta;
+    if(this.invince < 0) this.invince = 0;
+
+  }
+
+  updatePaused(delta){
+    
+  }
+
+  damage(damage = 0){
+
+  }
+
+  adjustHitPoints(nHP = 0, nAbsolute = 0){
+    this.hit_points += nHP;
+  }
+
+  startInvulnerability(){
+    this.invince = this.invince_period || 0;
   }
 
   onAnimEvent(){

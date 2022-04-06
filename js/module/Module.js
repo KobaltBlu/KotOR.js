@@ -280,8 +280,10 @@ class Module {
   }
 
   tickPaused(delta = 0){
-    if(this.area){
-      this.area.updatePaused(delta);
+    if(this.readyToProcessEvents){
+      if(this.area){
+        this.area.updatePaused(delta);
+      }
     }
   }
 

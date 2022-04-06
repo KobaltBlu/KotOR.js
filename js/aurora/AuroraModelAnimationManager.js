@@ -77,6 +77,8 @@ class AuroraModelAnimationManager {
   updateAnimation(anim = undefined, delta = 0, onEnd = undefined){
     anim.data.delta = delta;
 
+    if(!anim.data.elapsedCount) anim.data.elapsedCount = 0;
+
     this.trans = (anim.transition && this.lastAnimation && this.lastAnimation.name != anim.name);
     this.lastFrame = 0;
 
@@ -126,6 +128,7 @@ class AuroraModelAnimationManager {
 
       anim.data.lastTime = anim.length;
       anim.data.elapsed = 0;
+      anim.data.elapsedCount++;
 
       if(typeof anim.data.callback === 'function')
         anim.data.callback();

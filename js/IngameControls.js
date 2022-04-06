@@ -734,41 +734,41 @@ class IngameControls {
     switch(Game.module.area.MiniGame.Type){
       case 1: //SWOOPRACE
         if(Game.mouse.leftClick){
-          Game.module.area.MiniGame.Player.FireGun();
+          Game.module.area.MiniGame.Player.fire();
         }
         if(this.keys['a'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.position.x += -Game.module.area.MiniGame.Player.accel_lateral_secs * delta;
-        }
-    
-        if(this.keys['d'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.position.x += Game.module.area.MiniGame.Player.accel_lateral_secs * delta;
+          Game.module.area.MiniGame.Player.lateralForce = -Game.module.area.MiniGame.Player.accel_lateral_secs;
+        }else if(this.keys['d'].down && !Game.MenuActive){
+          Game.module.area.MiniGame.Player.lateralForce = Game.module.area.MiniGame.Player.accel_lateral_secs;
+        }else {
+          Game.module.area.MiniGame.Player.lateralForce = 0;
         }
 
         if(this.keys['space'].pressed){
-          Game.module.area.MiniGame.Player.Jump();
+          //Game.module.area.MiniGame.Player.jump();
         }
 
       break;
       case 2: //TURRET
 
         if(Game.mouse.leftClick || Mouse.MouseDown){
-          Game.module.area.MiniGame.Player.FireGun();
+          Game.module.area.MiniGame.Player.fire();
         }
 
         if(this.keys['a'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.Rotate('z', 1 * delta);
+          Game.module.area.MiniGame.Player.rotate('z', 1 * delta);
         }
     
         if(this.keys['d'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.Rotate('z', -1 * delta);
+          Game.module.area.MiniGame.Player.rotate('z', -1 * delta);
         }
 
         if(this.keys['w'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.Rotate('x', 1 * delta);
+          Game.module.area.MiniGame.Player.rotate('x', 1 * delta);
         }
     
         if(this.keys['s'].down && !Game.MenuActive){
-          Game.module.area.MiniGame.Player.Rotate('x', -1 * delta);
+          Game.module.area.MiniGame.Player.rotate('x', -1 * delta);
         }
 
       break;

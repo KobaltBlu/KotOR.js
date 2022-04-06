@@ -1996,6 +1996,7 @@ class ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ){
+    if(this.isSleeping()) return Global.kotor2DA.animations.rows[76];
     switch( animation_constant ){
       case ModuleCreature.AnimState.PAUSE:
       case ModuleCreature.AnimState.PAUSE_ALT:

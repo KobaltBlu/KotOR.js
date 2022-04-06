@@ -9,7 +9,6 @@ class ModuleMGEnemy extends ModuleObject {
 
   constructor(template = null){
     super();
-    console.log('ModuleMGEnemy', template, this);
     this.template = template;
 
     this.gunBanks = [];
@@ -25,12 +24,19 @@ class ModuleMGEnemy extends ModuleObject {
     this.timer = 0;
     this.jumpVelcolity = 0;
     this.boostVelocity = 0;
+    this.invince = 0;
 
     this.box = new THREE.Box3();
 
     this.alive = true;
 
     //this.model.children[2].rotation.y = .1
+
+    const geometry = new THREE.SphereGeometry( 1, 16, 16 );
+    const material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
+    material.transparent = true;
+    material.opacity = 0.15;
+    this.sphere_geom = new THREE.Mesh( geometry, material );
 
   }
 
@@ -51,6 +57,16 @@ class ModuleMGEnemy extends ModuleObject {
   }
 
   update(delta){
+
+    this.invince -= delta;
+    if(this.invince < 0) this.invince = 0;
+
+    this.sphere.radius = this.sphere_radius;
+    this.model.getWorldPosition(this.position);
+    this.sphere.center.copy(this.position);
+
+    this.sphere_geom.scale.setScalar(this.sphere_radius);
+    this.sphere_geom.position.copy(this.sphere.center);
 
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
@@ -96,18 +112,6 @@ class ModuleMGEnemy extends ModuleObject {
       }
       this.track.update(delta);
     }
-
-    this.sphere.radius = this.sphere_radius;
-    this.model.getWorldPosition(this.sphere.center);
-
-    switch(Game.module.area.MiniGame.Type){
-      case 1:
-
-      break;
-      case 2:
-
-      break;
-    }
         
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
@@ -122,6 +126,10 @@ class ModuleMGEnemy extends ModuleObject {
 
   }
 
+  updatePaused(delta){
+    
+  }
+
   damage(damage = 0){
     if(this.alive){
       this.hit_points -= damage;
@@ -134,7 +142,15 @@ class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  PlayAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
+  adjustHitPoints(nHP = 0, nAbsolute = 0){
+    this.hit_points += nHP;
+  }
+
+  startInvulnerability(){
+    this.invince = this.invince_period || 0;
+  }
+
+  playAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
     //I think n3 may be loop
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
@@ -163,7 +179,7 @@ class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  RemoveAnimation(name = ''){
+  removeAnimation(name = ''){
 
     for(let i = 0; i < this.model.children.length; i++){
       let model = this.model.children[i];
@@ -189,9 +205,9 @@ class ModuleMGEnemy extends ModuleObject {
     this.track.updateMatrixWorld();
   }
 
-
   Load( onLoad = null ){
     this.InitProperties();
+    Game.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
   }
@@ -448,22 +464,6 @@ class ModuleMGEnemy extends ModuleObject {
         );
       }
     }
-
-
-    /*if(this.template.RootNode.HasField('CameraRotate'))
-      this.cameraRotate = this.template.GetFieldByLabel('CameraRotate').GetValue();
-
-    if(this.template.RootNode.HasField('Hit_Points'))
-      this.hit_points = this.template.GetFieldByLabel('Hit_Points').GetValue();
-
-    if(this.template.RootNode.HasField('Invince_Period'))
-      this.invince_period = this.template.GetFieldByLabel('Invince_Period').GetValue();
-
-    if(this.template.RootNode.HasField('Max_HPs'))
-      this.max_hps = this.template.GetFieldByLabel('Max_HPs').GetValue();
-
-    if(this.template.RootNode.HasField('Maximum_Speed'))
-      this.maximum_speed = this.template.GetFieldByLabel('Maximum_Speed').GetValue();*/
 
     this.initialized = true;
 

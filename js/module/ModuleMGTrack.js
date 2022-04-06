@@ -23,6 +23,14 @@ class ModuleMGTrack extends ModuleObject {
 
   }
 
+  update(delta){
+
+  }
+
+  updatePaused(delta){
+    
+  }
+
   Load( onLoad = null ){
     if(typeof onLoad == 'function')
       onLoad();

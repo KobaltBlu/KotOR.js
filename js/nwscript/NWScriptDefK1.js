@@ -1686,9 +1686,13 @@ NWScriptDefK1.Actions = {
     name: "EffectSleep",
     type: 16,
     args: [],
-    // action: function(args, _instr, action){
-    //   return {type: 30};
-    // }
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 6); // Sleep State
+      return effect.initialize();
+    }
   },
   155:{
     comment: "155: Get the object which is in oCreature's specified inventory slot\n- nInventorySlot: INVENTORY_SLOT_*\n- oCreature\n* Returns OBJECT_INVALID if oCreature is not a valid creature or there is no\nitem in nInventorySlot.\n",
@@ -6134,7 +6138,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "string", "int", "int", "int"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-        args[0].PlayAnimation(args[1], args[2], args[3], args[4]);
+        args[0].playAnimation(args[1], args[2], args[3], args[4]);
       }
     }
   },
@@ -6160,7 +6164,12 @@ NWScriptDefK1.Actions = {
     comment: "590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints\n",
     name: "SWMG_AdjustFollowerHitPoints",
     type: 3,
-    args: ["object", "int", "int"]
+    args: ["object", "int", "int"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        args[0].adjustHitPoints(args[1], args[2]);
+      }
+    }
   },
   591:{
     comment: "591: the default implementation of OnBulletHit\nSWMG_OnBulletHit\n",
@@ -6190,7 +6199,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.lastFollowerHit || undefined;
+      return this.mgFollower || undefined;
     }
   },
   594:{
@@ -6199,7 +6208,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(args, _instr, action){
-      return Game.module.area.MiniGame.lastObstacleHit || undefined;
+      return this.mgObstacle || undefined;
     }
   },
   595:{
@@ -6317,7 +6326,7 @@ NWScriptDefK1.Actions = {
     args: ["object", "string"],
     action: function(args, _instr, action){
       if(args[0] instanceof ModuleMGPlayer || args[0] instanceof ModuleMGEnemy){
-      args[0].RemoveAnimation(args[1]);
+      args[0].removeAnimation(args[1]);
       }
     }
   },
@@ -6747,13 +6756,24 @@ NWScriptDefK1.Actions = {
     comment: "665: GetIsInvulnerable\nThis returns whether the follower object is currently invulnerable to damage\n",
     name: "SWMG_GetIsInvulnerable",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        return (args[0].invince > 0) ? 1 : 0;
+      }
+      return 0;
+    }
   },
   666:{
     comment: "666: StartInvulnerability\nThis will begin a period of invulnerability (as defined by Invincibility)\n",
     name: "SWMG_StartInvulnerability",
     type: 0,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleObject){
+        args[0].startInvulnerability();
+      }
+    }
   },
   667:{
     comment: "667: GetPlayerMaxSpeed\nThis returns the player character's max speed\n",

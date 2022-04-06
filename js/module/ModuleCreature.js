@@ -505,6 +505,10 @@ class ModuleCreature extends ModuleCreatureController {
     return this.hasEffect(GameEffect.Type.EffectFrightened);
   }
 
+  isSleeping(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 6) ? true : false;
+  }
+
   isHorrified(){
     return this.hasEffect(GameEffect.Type.EffectHorrified);
   }

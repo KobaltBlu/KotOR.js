@@ -45,6 +45,10 @@ class ModuleMGGunBank extends ModuleObject {
     }
   }
 
+  updatePaused(delta){
+    
+  }
+
   fire(){
     if(!this.proto_bullet.fire_timer){
       this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;

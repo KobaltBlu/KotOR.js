@@ -198,7 +198,11 @@ class ModuleArea extends ModuleObject {
     let partyCount = PartyManager.party.length;
     let animTexCount = AnimatedTextures.length;
 
-    Game.controls.UpdatePlayerControls(delta);
+    if(!Game.module.area.MiniGame){
+      Game.controls.UpdatePlayerControls(delta);
+    }else{
+      Game.controls.UpdateMiniGameControls(delta);
+    }
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -267,7 +271,11 @@ class ModuleArea extends ModuleObject {
     let doorCount = this.doors.length;
     let partyCount = PartyManager.party.length;
 
-    Game.controls.UpdatePlayerControls(delta);
+    if(!Game.module.area.MiniGame){
+      Game.controls.UpdatePlayerControls(delta);
+    }else{
+      //Game.controls.UpdateMiniGameControls(delta);
+    }
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -299,11 +307,11 @@ class ModuleArea extends ModuleObject {
       this.doors[i].updatePaused(delta);
     }
 
-    // if(Game.Mode == Game.MODES.MINIGAME){
-    //   for(let i = 0; i < this.MiniGame.Enemies.length; i++){
-    //     this.MiniGame.Enemies[i].update(delta);
-    //   }
-    // }
+    if(Game.Mode == Game.MODES.MINIGAME){
+      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+        this.MiniGame.Enemies[i].update(delta);
+      }
+    }
 
     //update rooms
     for(let i = 0; i < roomCount; i++){
@@ -1243,11 +1251,9 @@ class ModuleArea extends ModuleObject {
         let loop = new AsyncLoop({
           array: this.tracks,
           onLoop: (track, asyncLoop) => {
-            console.log('Loading MG Track', track);
             track.Load( () => {
               track.LoadModel( (model) => {
                 track.model = model;
-                console.log(model);
                 model.moduleObject = track;
                 model.index = trackIndex;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
@@ -1282,9 +1288,8 @@ class ModuleArea extends ModuleObject {
         let loop = new AsyncLoop({
           array: this.MiniGame.Enemies,
           onLoop: (enemy, asyncLoop) => {
-            console.log('Loading MG Enemy', enemy);
             enemy.Load( ( object ) => {
-          
+
               if(typeof object == 'undefined'){
                 asyncLoop.next();
                 return;

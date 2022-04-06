@@ -413,6 +413,9 @@ class GameEffect {
         case GameEffect.Type.EffectForceShield: //ForceShield
           effect = new EffectForceShield();
         break;
+        case GameEffect.Type.EffectSetState: //EffectSetState
+          effect = new EffectSetState();
+        break;
       }
 
       let eSkipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();

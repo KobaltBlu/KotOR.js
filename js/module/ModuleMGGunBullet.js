@@ -62,6 +62,10 @@ class ModuleMGGunBullet extends ModuleObject {
     return true;
   }
 
+  updatePaused(delta){
+    
+  }
+
   Load(){
     this.InitProperties();
     return new Promise( (resolve, reject) => {
