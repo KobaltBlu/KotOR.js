@@ -35,6 +35,7 @@ class ActionPlayAnimation extends Action {
         this.time = 0;
         return Action.STATUS.COMPLETE;
       }
+      return Action.STATUS.IN_PROGRESS;
     }else{
       return Action.STATUS.COMPLETE;
     }
