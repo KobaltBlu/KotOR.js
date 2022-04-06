@@ -72,12 +72,6 @@ class NWScript {
   }
 
   init (data = null, progSize = null){
-
-    
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name, 'NWScript', 'Run');
-    }
-
     this.prevByteCode = 0;
     this.instructions = new Map();
     let reader = new BinaryReader(data);
@@ -103,19 +97,12 @@ class NWScript {
     }
 
     //PASS 1: Create a listing of all of the instructions in order as they occur
-    
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name, 'NCS Decompile', 'Pass 1: Started');
-    }
 
     this._lastOffset = -1;
     while ( reader.position < this.progSize ){
       this.parseIntr(reader);
     };
     
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name, 'NCS Decompile', 'Pass 1: Complete');
-    }
     reader.position = 0;
 
   }
@@ -327,23 +314,11 @@ NWScript.ByteCodes = {
   1 : { 
     name: 'CPDOWNSP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.pointer)
-        console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(scope.instr.offset), this.stack.peek());
-      }
-
-      //this.stack.replace(scope.instr.offset, this.stack.peek());
-      
-      //Calculate the number of stack elements that are going to be copied down
-      let count = scope.instr.size / 4;
-      for(let i = 0; i < count; i++){
-        //Replace the target stack element with the appropriate element relative to the top of the stack
-        this.stack.replace(scope.instr.offset + (4 * i), this.stack.peek(4 * i));
-      }
-      
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'CPDOWNSP', this.stack.getAtPointer(scope.instr.offset), this.stack.peek());
-      }
+      //Replace the target stack element with the appropriate element relative to the top of the stack
+      this.stack.stack.copyWithin(
+        (this.stack.pointer + scope.instr.offset)/4,
+        (this.stack.pointer - scope.instr.size)/4,
+      );
     }, 
     parse: function( instr, reader ){
       instr.offset = reader.ReadUInt32();
@@ -392,21 +367,13 @@ NWScript.ByteCodes = {
   3 : { 
     name: 'CPTOPSP', 
     run: function( scope = {} ){
-      let tmp_values = [];
-      //Calculate the number of stack elements that are going to be copied to the top of the stack
-      let count = scope.instr.size / 4;
-      for(let i = 0; i < count; i++){
-        tmp_values.push(
-          this.stack.getAtPointer( scope.instr.pointer + (4 * i) )
-        );
-      }     
-      
-      for(let i = 0; i < tmp_values.length; i++){
-        this.stack.push(tmp_values[i].value, tmp_values[i].type);
+      const elements = this.stack.copyAtPointer( scope.instr.pointer, scope.instr.size );
+      if(elements.length == (scope.instr.size / 4)){
+        this.stack.stack.push( ...elements );
+        this.stack.pointer += scope.instr.size;
+      }else{
+        throw new Error(`CPTOPSP: copy size miss-match, expected: ${scope.instr.size} | received: ${elements.length*4}`);
       }
-
-      //this.var1 = this.stack.getAtPointer( scope.instr.pointer );
-      //this.stack.push( this.var1.value, this.var1.type );
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();
@@ -445,7 +412,7 @@ NWScript.ByteCodes = {
     parse: function( instr, reader ){
       switch(instr.type){
         case 3:
-          instr.integer = parseInt(reader.ReadUInt32());
+          instr.integer = parseInt(reader.ReadInt32());
         break;
         case 4:
           instr.float = parseFloat(reader.ReadSingle());
@@ -455,7 +422,7 @@ NWScript.ByteCodes = {
           instr.string = reader.ReadChars(instr.strLen);
         break;
         case 6:
-          instr.object = reader.ReadUInt32();
+          instr.object = reader.ReadInt32();
         break;
       }
     }
@@ -498,10 +465,6 @@ NWScript.ByteCodes = {
             console.warn('UNKNOWN ARG', action, args);
           break;
         }
-      }
-
-      if(this.isDebugging('action')){
-        //console.log('action', action.name, args);
       }
 
       if(typeof action.action === 'function'){
@@ -602,8 +565,6 @@ NWScript.ByteCodes = {
           this.struct1.push(this.stack.pop().value);
         }
 
-        console.log('EQUALTT', struct1, struct2);
-
         let areStructuresEqual = true;
         //Check for equality between the structures variables
         for(let i = 0; i < count; i++){
@@ -611,6 +572,8 @@ NWScript.ByteCodes = {
             areStructuresEqual = false;
           }
         }
+
+        // console.log('EQUALTT', areStructuresEqual, this.struct1, this.struct2);
 
         if(areStructuresEqual)
           this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
@@ -683,17 +646,17 @@ NWScript.ByteCodes = {
           this.struct1.push(this.stack.pop().value);
         }
 
-        console.log('NEQUALTT', struct1, struct2);
-
-        let areStructuresNEqual = false;
-        //Check for non equality between the structures variables
+        let areStructuresEqual = true;
+        //Check for equality between the structures variables
         for(let i = 0; i < count; i++){
           if(this.struct1[i] != this.struct2[i]){
-            areStructuresEqual = true;
+            areStructuresEqual = false;
           }
         }
 
-        if(areStructuresNEqual)
+        // console.log('NEQUALTT', !areStructuresEqual, this.struct1, this.struct2);
+
+        if(!areStructuresEqual)
           this.stack.push( NWScript.TRUE, NWScript.DATATYPE.INTEGER )//TRUE
         else
           this.stack.push( NWScript.FALSE, NWScript.DATATYPE.INTEGER )//FALSE
@@ -861,7 +824,9 @@ NWScript.ByteCodes = {
   17 : { 
     name: 'SHLEFTII', 
     run: function( scope = {} ){
-
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
+      this.stack.push( this.var1 << this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -870,7 +835,9 @@ NWScript.ByteCodes = {
   18 : { 
     name: 'SHRIGHTII', 
     run: function( scope = {} ){
-
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
+      this.stack.push( this.var1 >> this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -879,7 +846,9 @@ NWScript.ByteCodes = {
   19 : { 
     name: 'USHRIGHTII', 
     run: function( scope = {} ){
-
+      this.var2 = this.stack.pop().value;
+      this.var1 = this.stack.pop().value;
+      this.stack.push( this.var1 >>> this.var2, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -1003,7 +972,7 @@ NWScript.ByteCodes = {
 
       switch(NWScript.Types[scope.instr.type]){
         case 'II':
-          this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.INTEGER );
+          this.stack.push( (this.var1 / this.var2) | 0, NWScript.DATATYPE.INTEGER );
         break;
         case 'IF':
           this.stack.push( this.var1 / this.var2, NWScript.DATATYPE.FLOAT );
@@ -1074,7 +1043,7 @@ NWScript.ByteCodes = {
   26 : { 
     name: 'COMPI', 
     run: function( scope = {} ){
-      throw 'Unsupported code: COMPI';
+      this.stack.push( ~this.stack.pop().value, NWScript.DATATYPE.INTEGER );
     }, 
     parse: function( instr, reader ){
 
@@ -1083,26 +1052,13 @@ NWScript.ByteCodes = {
   27 : { 
     name: 'MOVSP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'MOVSP', this.stack.pointer)
-        console.log('NWScript: '+this.name, 'MOVSP', this.stack.getAtPointer(scope.instr.offset), this.stack.getPointer());
-      }
-
-      //this.stack.setPointer(scope.instr.offset);
-      if(this.isDebugging()){
-        console.log('MOVSP', this.stack.pointer, this.stack.length, scope.instr.offset, Math.abs(scope.instr.offset)/4);
-      }
-
-      for(let i = 0, len = (Math.abs(scope.instr.offset)/4); i < len; i++){
-        this.stack.stack.splice((this.stack.pointer -= 4) / 4, 1)[0];
-      }
-      
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'MOVSP', this.stack.getAtPointer(scope.instr.offset), this.stack.getPointer());
-      }
+      this.stack.stack.splice(
+        (this.stack.pointer += scope.instr.offset) / 4, 
+        (Math.abs(scope.instr.offset)/4)
+      );
     }, 
     parse: function( instr, reader ){
-      instr.offset = reader.ReadUInt32();
+      instr.offset = reader.ReadInt32();
     }
   },
   28 : { 
@@ -1126,9 +1082,6 @@ NWScript.ByteCodes = {
   30 : { 
     name: 'JSR', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'JSR');
-      }
       let pos = scope.instr.address;
       scope.seek = pos + scope.instr.offset;
       this.subRoutine = new NWScriptSubroutine(scope.instr.nextInstr.address);
@@ -1158,40 +1111,26 @@ NWScript.ByteCodes = {
     run: function( scope = {} ){
       
       if(this.subRoutines.length){
-        let subRoutine = this.subRoutines.pop();
+        const subRoutine = this.subRoutines.pop();
         subRoutine.onEnd();
 
         this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
 
         if(subRoutine.returnAddress == -1){
-          if(this.isDebugging()){
-            console.error('RETN');
-          }
           scope.seek = null;
           scope.instr.eof = true;
         }else{
-          if(this.isDebugging()){
-            console.log('NWScript: '+this.name, 'RETN', subRoutine.returnAddress, this.subRoutines.length);
-          }
           scope.seek = subRoutine.returnAddress; //Resume the code just after our pervious jump
           if(!scope.seek){
-            if(this.isDebugging()){
-              console.log('NWScript: seek '+this.name, scope.seek, 'RETN');
-            }
+            //
           }
         }
       }else{
-        if(this.isDebugging()){
-          console.log('NWScript: '+this.name, 'RETN', 'END')
-        }
         //let subRoutine = this.subRoutines.pop();
         //scope.seek = subRoutine.returnAddress;
         this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
         scope.instr.eof = true;
         scope.running = false;
-        if(this.isDebugging()){
-          console.log('NWScript: '+this.name, scope.instr)
-        }
       }
     }, 
     parse: function( instr, reader ){
@@ -1204,19 +1143,30 @@ NWScript.ByteCodes = {
   33 : { 
     name: 'DESTRUCT', 
     run: function( scope = {} ){
-      // sizeOfElementToSave
-      // sizeToDestroy
-      // offsetToSaveElement
-
-      let destroyed = [];
-      for(let i = 0, len = (Math.abs(scope.instr.sizeToDestroy)/4); i < len; i++){
-        destroyed.push(this.stack.stack.splice((this.stack.pointer -= 4) / 4, 1)[0]);
-      }
-
-      let saved = destroyed[scope.instr.offsetToSaveElement/scope.instr.sizeOfElementToSave];
-      this.stack.push( saved.value, saved.type );
-
-      //console.log('DESTRUCT', destroyed, saved);
+      //retrieve the elements to save from the stack by popping them off of the stack
+      const elements = this.stack.stack.splice(
+        //offset of the first element to retrieve
+        ( ( this.stack.pointer - scope.instr.sizeToDestroy ) + scope.instr.offsetToSaveElement ) / 4,
+        //count of elements to save
+        scope.instr.sizeOfElementToSave / 4
+      );
+      //push the saved elements back onto the stack
+      this.stack.stack.push(
+        //the spread operator (...) merges the returned array elements back onto the stack array instead 
+        //of pushing the array itself back onto the stack 
+        ...elements
+      );
+      
+      //destroy the remaing elements off the stack
+      this.stack.stack.splice(
+        //offset of the first element to destory
+        ( this.stack.pointer - scope.instr.sizeToDestroy ) / 4,
+        //count of elements to destroy
+        ( scope.instr.sizeToDestroy - scope.instr.sizeOfElementToSave ) / 4
+      )
+      
+      //Adjust the stack pointer accoringly
+      this.stack.pointer -= (scope.instr.sizeToDestroy - scope.instr.sizeOfElementToSave);
     }, 
     parse: function( instr, reader ){
       instr.sizeToDestroy = reader.ReadInt16();
@@ -1239,9 +1189,6 @@ NWScript.ByteCodes = {
   35 : { 
     name: 'DECISP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'DECISP', this.stack.getAtPointer( scope.instr.offset));
-      }
       this.var1 = (this.stack.getAtPointer( scope.instr.offset));
       this.var1.value -= 1;
     }, 
@@ -1252,9 +1199,6 @@ NWScript.ByteCodes = {
   36 : { 
     name: 'INCISP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'INCISP', this.stack.getAtPointer( scope.instr.offset));
-      }
       this.var1 = (this.stack.getAtPointer( scope.instr.offset));
       this.var1.value += 1;
     }, 
@@ -1266,9 +1210,6 @@ NWScript.ByteCodes = {
     name: 'JNZ', //I believe this is used in SWITCH statements
     run: function( scope = {} ){
       let jnzTOS = this.stack.pop().value
-      if(this.isDebugging()){
-        console.log('JNZ', jnzTOS, scope.instr.address + scope.instr.offset);
-      }
       if(jnzTOS != 0){
         scope.seek = scope.instr.address + scope.instr.offset;
       }
@@ -1280,43 +1221,26 @@ NWScript.ByteCodes = {
   38 : { 
     name: 'CPDOWNBP', 
     run: function( scope = {} ){
-      //this.stack.replaceBP(scope.instr.offset, this.stack.peek());
-      //Calculate the number of stack elements that are going to be copied down
-      let count = scope.instr.size / 4;
-      for(let i = 0; i < count; i++){
-        //Replace the target stack element with the appropriate element relative to the top of the stack
-        this.stack.replaceBP(scope.instr.offset + (4 * i), this.stack.peek(4 * i));
-      }
+      this.stack.stack.copyWithin(
+        (this.stack.basePointer + scope.instr.offset)/4,
+        (this.stack.pointer     - scope.instr.size)/4,
+      );
     }, 
     parse: function( instr, reader ){
-      instr.offset = reader.ReadUInt32();
+      instr.offset = reader.ReadInt32();
       instr.size = reader.ReadUInt16();
     }
   },
   39 : { 
     name: 'CPTOPBP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'CPTOPBP', scope.instr);
+      const elements = this.stack.copyAtBasePointer( scope.instr.pointer, scope.instr.size );
+      if(elements.length == (scope.instr.size / 4)){
+        this.stack.stack.push( ...elements );
+        this.stack.pointer += scope.instr.size;
+      }else{
+        throw new Error(`CPTOPBP: copy size miss-match, expected: ${scope.instr.size} | received: ${elements.length*4}`);
       }
-      let tmp_values = [];
-      //Calculate the number of stack elements that are going to be copied to the top of the stack
-      let count = scope.instr.size / 4;
-      for(let i = 0; i < count; i++){
-        tmp_values.push(
-          this.stack.getAtBasePointer( scope.instr.pointer + (4 * i) )
-        );
-      }     
-      
-      for(let i = 0; i < tmp_values.length; i++){
-        this.stack.push(tmp_values[i].value, tmp_values[i].type);
-      }
-
-      // let stackBaseEle = this.stack.getAtBasePointer( scope.instr.pointer );
-      // if(stackBaseEle == null){
-      //   let i = 0;
-      // }
-      // this.stack.push( stackBaseEle );
     }, 
     parse: function( instr, reader ){
       instr.pointer = reader.ReadUInt32();
@@ -1327,9 +1251,6 @@ NWScript.ByteCodes = {
   40 : { 
     name: 'DECIBP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'DECIBP', this.stack.getAtBasePointer( scope.instr.offset));
-      }
       this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
       this.var1.value -= 1;
     }, 
@@ -1340,9 +1261,6 @@ NWScript.ByteCodes = {
   41 : { 
     name: 'INCIBP', 
     run: function( scope = {} ){
-      if(this.isDebugging()){
-        console.log('NWScript: '+this.name, 'INCIBP', this.stack.getAtBasePointer( scope.instr.offset));
-      }
       this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
       this.var1.value += 1;
     }, 
@@ -1355,26 +1273,6 @@ NWScript.ByteCodes = {
     run: function( scope = {} ){
       this.stack.saveBP();
       this.currentBlock = 'global';
-
-      /*this.globalCache = {
-        scope.instr: scope.instr.nextInstr,
-        caller: this.caller,
-        enteringObject: this.enteringObject,
-        subRoutines: this.subRoutines.slice(),
-        objectPointers: this.objectPointers.slice(),
-        stringPointers: this.stringPointers.slice(),
-        integerPointers: this.integerPointers.slice(),
-        floatPointers: this.floatPointers.slice(),
-        locationPointers: this.locationPointers.slice(),
-        effectPointers: this.effectPointers.slice(),
-        eventPointers: this.eventPointers.slice(),
-        actionPointers: this.actionPointers.slice(),
-        stack: {
-          basePointer: this.stack.basePointer,
-          pointer: this.stack.pointer,
-          stack: this.stack.stack.slice()
-        }
-      };*/
     }, 
     parse: function( instr, reader ){
 
@@ -1484,7 +1382,7 @@ NWScript.Types = {
   4: 'F',
   5: 'S',
   6: 'O',
-  12: 'LOC',
+  
   16: 'Effect',
   17: 'Event',
   18: 'Location',
