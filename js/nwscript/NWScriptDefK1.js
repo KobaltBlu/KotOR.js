@@ -1790,9 +1790,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectConfused();
+      let effect = new EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 1); // Confused State
       return effect.initialize();
     }
   },
@@ -1802,9 +1803,10 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectFrightened();
+      let effect = new EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 2); // Frightened State
       return effect.initialize();
     }
   },
@@ -1814,10 +1816,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [],
     action: function(args, _instr, action){
-      let effect = new EffectChoke();
+      let effect = new EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
-      return effect;
+      effect.setInt(0, 7); // Choke State
+      return effect.initialize();
     }
   },
   160:{
@@ -4426,7 +4429,14 @@ NWScriptDefK1.Actions = {
     comment: "391: Stunn the droid\n",
     name: "EffectDroidStun",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 3); // Droid Stun State
+      return effect.initialize();
+    }
   },
   392:{
     comment: "392: Force push the creature...\n",
@@ -7099,7 +7109,14 @@ NWScriptDefK1.Actions = {
     comment: "703.\ncreates the effect of a whirl wind.\n",
     name: "EffectWhirlWind",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 10); // Whirlwind State
+      return effect.initialize();
+    }
   },
   704:{
     comment: "704.\nReturns the party ai style\n",
@@ -7612,19 +7629,40 @@ NWScriptDefK1.Actions = {
     comment: "754: EffectCutSceneHorrified\nGet a horrified effect for cutscene purposes (ie. this effect will ignore immunities).\n",
     name: "EffectCutSceneHorrified",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 8); // Horrified State
+      return effect.initialize();
+    }
   },
   755:{
     comment: "755: EffectCutSceneParalyze\nGet a paralyze effect for cutscene purposes (ie. this effect will ignore immunities).\n",
     name: "EffectCutSceneParalyze",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 5); // Paralyze State
+      return effect.initialize();
+    }
   },
   756:{
     comment: "756: EffectCutSceneStunned\nGet a stun effect for cutscene purposes (ie. this effect will ignore immunities).\n",
     name: "EffectCutSceneStunned",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 4); // Stun State
+      return effect.initialize();
+    }
   },
   757:{
     comment: "757: CancelPostDialogCharacterSwitch()\nIf a dialog has been started by an NPC on a Non PartyMemeberCanInteract object\ncalling this function will cancel the Post Dialog switching back to the NPC\nthat did the initiating.\n",

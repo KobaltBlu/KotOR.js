@@ -1996,7 +1996,36 @@ class ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ){
-    if(this.isSleeping()) return Global.kotor2DA.animations.rows[76];
+
+    const debilitatedEffect = this.effects.find( e => e.type == GameEffect.Type.EffectSetState );
+    if(debilitatedEffect){
+      switch(debilitatedEffect.getInt(0)){
+        case 1: //Confused
+          return Global.kotor2DA.animations.rows[15];
+        case 2: //Frightened
+          return Global.kotor2DA.animations.rows[73];
+        case 3: //Droid Stun
+          return Global.kotor2DA.animations.rows[270];
+        case 4: //Stunned
+          return Global.kotor2DA.animations.rows[78];
+        case 5: //Paralyzed
+          return Global.kotor2DA.animations.rows[78];
+        case 6: //Sleep
+          return Global.kotor2DA.animations.rows[76];
+        case 7: //Choke
+          if(this.isSimpleCreature()){
+            return Global.kotor2DA.animations.rows[264];
+          }else{
+            return Global.kotor2DA.animations.rows[72];
+          }
+        break;
+        case 8: //Horrified
+          return Global.kotor2DA.animations.rows[74];
+        case 10: //Whirlwind
+          return Global.kotor2DA.animations.rows[75];
+      }
+    }
+    
     switch( animation_constant ){
       case ModuleCreature.AnimState.PAUSE:
       case ModuleCreature.AnimState.PAUSE_ALT:

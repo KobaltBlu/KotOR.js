@@ -489,36 +489,44 @@ class ModuleCreature extends ModuleCreatureController {
     return this.hasEffect(GameEffect.Type.EffectPoison);
   }
 
-  isParalyzed(){
-    return this.hasEffect(GameEffect.Type.EffectParalyze);
-  }
-
-  isStunned(){
-    return this.hasEffect(GameEffect.Type.EffectStunned);
-  }
-
-  isDroidStunned(){
-    return this.hasEffect(GameEffect.Type.EffectDroidStun);
+  isConfused(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 1) ? true : false;
   }
 
   isFrightened(){
-    return this.hasEffect(GameEffect.Type.EffectFrightened);
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 2) ? true : false;
+  }
+
+  isDroidStunned(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 3) ? true : false;
+  }
+
+  isStunned(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 4) ? true : false;
+  }
+
+  isParalyzed(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 5) ? true : false;
   }
 
   isSleeping(){
     return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 6) ? true : false;
   }
 
-  isHorrified(){
-    return this.hasEffect(GameEffect.Type.EffectHorrified);
+  isChoking(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 7) ? true : false;
   }
 
-  isChoking(){
-    return this.hasEffect(GameEffect.Type.EffectChoke);
+  isHorrified(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 8) ? true : false;
+  }
+
+  isWhirlwind(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 10) ? true : false;
   }
 
   isDebilitated(){
-    return this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isHorrified();
+    return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isHorrified();
   }
 
   resistForce(oCaster = undefined){
