@@ -634,6 +634,12 @@ class ModuleObject {
     this.spawned = true;
 
     if(this instanceof ModuleCreature){
+      const eRacialType = new EffectRacialType();
+      eRacialType.setSubType(GameEffect.DurationType.INNATE);
+      eRacialType.setSkipOnLoad(true);
+      eRacialType.setInt(0, this.getRace());
+      this.addEffect(eRacialType);
+      
       this.initPerceptionList();
       this.updateCollision();
     }
