@@ -131,6 +131,14 @@ class TwoDAObject {
     }
   }
 
+  getRowByColumnAndValue(column = '', value = undefined){
+    for (let key of Object.keys(this.rows)) {
+      if(this.rows[key][column] == value){
+        return this.rows[key];
+      }
+    }
+  }
+
   static cellParser(cell){
     if(cell === '****'){
       return null;

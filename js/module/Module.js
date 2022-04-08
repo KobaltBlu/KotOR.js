@@ -588,7 +588,9 @@ class Module {
         sav.addResource(area._name, ResourceTypes['git'], area.git.GetExportBuffer());
       }
 
-      await sav.export( path.join(CurrentGame.gameinprogress_dir, this.filename+'.sav') );
+      if(this.includeInSave()){
+        await sav.export( path.join(CurrentGame.gameinprogress_dir, this.filename+'.sav') );
+      }
       
       console.log('Current Module Exported', this.filename);
 
@@ -602,6 +604,14 @@ class Module {
 
     });
 
+  }
+
+  includeInSave(){
+    const moduleSave = Global.kotor2DA.modulesave.getRowByColumnAndValue('modulename', this.filename);
+    if(moduleSave){
+      return parseInt(moduleSave.includeInSave) == 0 ? false : true;
+    }
+    return true;
   }
 
   static async GetModuleMod(modName = ''){
