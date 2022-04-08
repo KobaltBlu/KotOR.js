@@ -535,19 +535,12 @@ class ModuleItem extends ModuleObject {
       let propertiesList = this.template.GetFieldByLabel('PropertiesList').GetChildStructs();
       this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
-        let property = propertiesList[i];
-        this.properties.push(new ItemProperty({
-          propertyName: property.GetFieldByLabel('PropertyName')?.GetValue(),
-          subType: property.GetFieldByLabel('Subtype')?.GetValue(),
-          costTable: property.GetFieldByLabel('CostTable')?.GetValue(),
-          costValue: property.GetFieldByLabel('CostValue')?.GetValue(),
-          param1: property.GetFieldByLabel('Param1')?.GetValue(),
-          param1Value: property.GetFieldByLabel('Param1Value')?.GetValue(),
-          chanceAppear: property.GetFieldByLabel('ChanceAppear')?.GetValue(),
-          usesPerDay: property.GetFieldByLabel('UsesPerDay')?.GetValue(),
-          useable: property.GetFieldByLabel('Useable')?.GetValue(),
-          upgradeType: property.GetFieldByLabel('UpgradeType')?.GetValue(),
-        }, this));
+        this.properties.push( 
+          new ItemProperty( 
+            GFFObject.FromStruct( propertiesList[i] ), 
+            this 
+          ) 
+        );
       }
     }
 
@@ -674,24 +667,14 @@ class ModuleItem extends ModuleObject {
     return itemStruct;
   }
 
-
 }
 
 class ItemProperty {
 
-  constructor(props = {}, item = undefined){
-    this.propertyName = props.propertyName == 255 ? -1 : props.propertyName;
-    this.subType = props.subType == 255 ? -1 : props.subType;
-    this.costTable = props.costTable == 255 ? -1 : props.costTable;
-    this.costValue = props.costValue == 255 ? -1 : props.costValue;
-    this.param1 = props.param1 == 255 ? -1 : props.param1;
-    this.param1Value = props.param1Value == 255 ? -1 : props.param1Value;
-    this.chanceAppear = props.chanceAppear == 255 ? -1 : props.chanceAppear;
-    this.usesPerDay = props.usesPerDay == 255 ? -1 : props.usesPerDay;
-    this.useable = props.useable == 255 ? -1 : props.useable;
-    this.upgradeType = props.upgradeType == 255 ? -1 : props.upgradeType;
-
+  constructor(template = undefined, item = undefined){
+    this.template = template;
     this.item = item;
+    this.InitProperties();
   }
 
   getProperty(){
@@ -699,47 +682,43 @@ class ItemProperty {
   }
 
   getPropertyName(){
-    let property;
-    if(property = this.getProperty()){
+    const property = this.getProperty();
+    if(property){
       if(property.name != '****'){
         return Global.kotorTLK.GetStringById(property.name);
       }else{
         return Global.kotorTLK.GetStringById(0);
       }
     }
-    return 'ERROR!!!';
+    return new Error(`Invalid Item Property`);
   }
 
   getSubType(){
-    let property;
-    if(property = this.getProperty()){
-      if(property && property.subtyperesref != '****'){
-        return Global.kotor2DA[property.subtyperesref.toLowerCase()].rows[this.subType];
-      }
+    const property = this.getProperty();
+    if(property && property.subtyperesref != '****'){
+      return Global.kotor2DA[property.subtyperesref.toLowerCase()].rows[this.subType];
     }
   }
 
   getSubtypeName(){
-    let subType;
-    if(subType = this.getSubType()){
-      if(subType){
-        if(subType.name != '****'){
-          return Global.kotorTLK.GetStringById(subType.name);
-        }else{
-          return Global.kotorTLK.GetStringById(0);
-        }
+    const subType = this.getSubType();
+    if(subType){
+      if(subType.name != '****'){
+        return Global.kotorTLK.GetStringById(subType.name);
+      }else{
+        return Global.kotorTLK.GetStringById(0);
       }
     }
-    return 'ERROR!!!';
+    return new Error(`Invalid Item Property Sub Type`);
   }
 
   getCostTable(){
-    let costTableName = Global.kotor2DA.iprp_costtable.rows[this.costTable].name.toLowerCase();
+    const costTableName = Global.kotor2DA.iprp_costtable.rows[this.costTable].name.toLowerCase();
     return Global.kotor2DA[costTableName];
   }
 
   getCostTableRow(){
-    let costTable = this.getCostTable();
+    const costTable = this.getCostTable();
     if(costTable){
       return costTable.rows[this.costValue];
     }
@@ -748,7 +727,7 @@ class ItemProperty {
 
   //Determine if the property requires an upgrade to use, or if it is always useable
   isUseable(){
-    let upgrade_flag = (1 << this.upgradeType);
+    const upgrade_flag = (1 << this.upgradeType);
     //If no upgrade is required or the upgrade is present on the item
     if(this.upgradeType == -1 || ((this.item.upgrades & upgrade_flag) == upgrade_flag)){
       return true;
@@ -845,6 +824,38 @@ class ItemProperty {
     }
 
     return 0;
+  }
+
+  InitProperties(){
+    if(this.template.RootNode.HasField('PropertyName'))
+      this.propertyName = this.template.RootNode.GetFieldByLabel('PropertyName').GetValue();
+    
+    if(this.template.RootNode.HasField('Subtype'))
+      this.subType = this.template.RootNode.GetFieldByLabel('Subtype').GetValue();
+
+    if(this.template.RootNode.HasField('CostTable'))
+      this.costTable = this.template.RootNode.GetFieldByLabel('CostTable').GetValue();
+
+    if(this.template.RootNode.HasField('CostValue'))
+      this.costValue = this.template.RootNode.GetFieldByLabel('CostValue').GetValue();
+
+    if(this.template.RootNode.HasField('Param1'))
+      this.param1 = this.template.RootNode.GetFieldByLabel('Param1').GetValue();
+
+    if(this.template.RootNode.HasField('Param1Value'))
+      this.param1Value = this.template.RootNode.GetFieldByLabel('Param1Value').GetValue();
+
+    if(this.template.RootNode.HasField('ChanceAppear'))
+      this.chanceAppear = this.template.RootNode.GetFieldByLabel('ChanceAppear').GetValue();
+
+    if(this.template.RootNode.HasField('UsesPerDay'))
+      this.usesPerDay = this.template.RootNode.GetFieldByLabel('UsesPerDay').GetValue();
+
+    if(this.template.RootNode.HasField('Useable'))
+      this.useable = this.template.RootNode.GetFieldByLabel('Useable').GetValue();
+
+    if(this.template.RootNode.HasField('UpgradeType'))
+      this.upgradeType = this.template.RootNode.GetFieldByLabel('UpgradeType').GetValue();
   }
 
   save(){
