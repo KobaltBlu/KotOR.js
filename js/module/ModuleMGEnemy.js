@@ -42,7 +42,7 @@ class ModuleMGEnemy extends ModuleObject {
 
   setTrack(model = new THREE.Object3D()){
     this.track = model;
-    this.position = model.position;
+    //this.position = model.position;
     this.rotation = model.rotation;
     this.quaternion = model.quaternion;
     if(this.model.parent)
