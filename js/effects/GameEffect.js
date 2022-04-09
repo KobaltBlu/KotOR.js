@@ -410,6 +410,12 @@ class GameEffect {
         case GameEffect.Type.EffectHealForcePoints: //EffectHealForcePoints
           effect = new EffectHealForcePoints();
         break;
+        case GameEffect.Type.EffectForceResisted:
+          effect = new EffectForceResisted();
+        break;
+        case GameEffect.Type.EffectForceFizzle:
+          effect = new EffectForceFizzle();
+        break;
         case GameEffect.Type.EffectForceShield: //ForceShield
           effect = new EffectForceShield();
         break;

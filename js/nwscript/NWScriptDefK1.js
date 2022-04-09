@@ -4629,7 +4629,15 @@ NWScriptDefK1.Actions = {
     comment: "402:\nEffect that will play an animation and display a visual effect to indicate the\ntarget has resisted a force power.\n",
     name: "EffectForceResisted",
     type: 16,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      const effect = new EffectForceResisted();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setObject(0, args[0]);
+      effect.initialize();
+      return effect;
+    }
   },
   403:{
     comment: "403: Expose the entire map of oArea to oPlayer.\n",
@@ -4758,7 +4766,13 @@ NWScriptDefK1.Actions = {
     comment: "420:\nEffect that will display a visual effect on the specified object's hand to\nindicate a force power has fizzled out.\n",
     name: "EffectForceFizzle",
     type: 16,
-    args: []
+    args: [],
+    action: function(args, _instr, action){
+      let effect = new EffectForceFizzle();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   421:{
     comment: "421: SetLightsaberPowered\nAllows a script to set the state of the lightsaber.  This will override any\ngame determined lightsaber powerstates.\n",
@@ -5275,7 +5289,12 @@ NWScriptDefK1.Actions = {
     comment: "479: Get the size (CREATURE_SIZE_*) of oCreature.\n",
     name: "GetCreatureSize",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        return parseInt(args[0].getAppearance().sizecategory);
+      }
+    }
   },
   480:{
     comment: "480:\nAward the stealth xp to the given oTarget.  This will only work on creatures.\n",
@@ -5964,7 +5983,17 @@ NWScriptDefK1.Actions = {
     comment: "566: This function returns a value that matches one of the MOVEMENT_SPEED_... constants\nif the OID passed in is not found or not a creature then it will return\nMOVEMENT_SPEED_IMMOBILE.\n",
     name: "GetCreatureMovmentType",
     type: 3,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(args[0] instanceof ModuleCreature){
+        if(args[0].isDebilitated()){
+          return 1; //IMMOBILE
+        }else{
+          return 0; //PC
+        }
+      }
+      return 1; //IMMOBILE
+    }
   },
   567:{
     comment: "567: Set the ambient day volume for oArea to nVolume.\n- oArea\n- nVolume: 0 - 100\n",
