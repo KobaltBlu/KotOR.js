@@ -78,6 +78,7 @@ class EffectForcePushed extends GameEffect {
       eSetState.setFloat(3, this.getFloat(0));
       eSetState.setFloat(4, this.getFloat(1));
       eSetState.setFloat(5, this.getFloat(2));
+      eSetState.setFloat(6, Math.sqrt( Math.abs( this.object.position.x - this.getFloat(0) ) + Math.abs( this.object.position.y - this.getFloat(1) ) ) );
       eSetState.initialize();
       this.object.addEffect(eSetState);
 
