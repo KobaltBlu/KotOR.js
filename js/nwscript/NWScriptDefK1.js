@@ -3204,8 +3204,6 @@ NWScriptDefK1.Actions = {
     args: ["location", "int"],
     action: function(args, _instr, action){
       let effect = new EffectForcePushed();
-      effect.location = args[0];
-      effect.ignoreCollision = args[1] ? true : false;
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 1);

@@ -2027,6 +2027,14 @@ class ModuleObject {
         break;
         case 8: //Horrified
           return Global.kotor2DA.animations.rows[74];
+        case 9: //Force Pushed
+          if(!this.fp_push_played)
+            return Global.kotor2DA.animations.rows[84];
+          if(!this.fp_land_played)
+            return Global.kotor2DA.animations.rows[85];
+          if(!this.fp_getup_played)
+            return Global.kotor2DA.animations.rows[86];
+        break;
         case 10: //Whirlwind
           return Global.kotor2DA.animations.rows[75];
       }
@@ -2194,7 +2202,7 @@ class ModuleObject {
             case 7:
               return Global.kotor2DA.animations.rows[245];
             case 9:
-              return Global.kotor2DA.animations.rows[245];
+              return Global.kotor2DA.animations.rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
             default:
               return Global.kotor2DA.animations.rows[249];
           }

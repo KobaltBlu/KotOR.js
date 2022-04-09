@@ -174,6 +174,10 @@ class ModuleCreature extends ModuleCreatureController {
     this.lastAttackAction = -1;
     this.blockingTimer = 0;
 
+    this.fp_push_played = false;
+    this.fp_land_played = false;
+    this.fp_getup_played = false;
+
     this.groundFace = undefined;
     this.groundTilt = new THREE.Vector3();
     this.up = new THREE.Vector3(0, 0, 1);
@@ -521,12 +525,16 @@ class ModuleCreature extends ModuleCreatureController {
     return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 8) ? true : false;
   }
 
+  isForcePushed(){
+    return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 9) ? true : false;
+  }
+
   isWhirlwind(){
     return this.effects.find( e => e.type == GameEffect.Type.EffectSetState && e.getInt(0) == 10) ? true : false;
   }
 
   isDebilitated(){
-    return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isHorrified();
+    return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isForcePushed() || this.isHorrified();
   }
 
   resistForce(oCaster = undefined){
