@@ -268,8 +268,8 @@ class GUIScrollBar extends GUIControl{
         scaleY = 1;
         this.thumb.scale.y = this.extent.height * scaleY;
       }else{
-        if(scaleY < 0.25)
-          scaleY = 0.25;
+        if(scaleY < 0.01)
+          scaleY = 0.01;
         this.thumb.scale.y = this.extent.height * scaleY;
       }
 
