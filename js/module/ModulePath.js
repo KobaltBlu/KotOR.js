@@ -197,7 +197,7 @@ class ComputedPath {
       const child_path = this.clone();
       if(connection == this.ending_point){
         //We have reached the end point
-        child_path.addPoint(connection);
+        child_path.addToClosedList(connection);
         child_path.close();
         child_paths.push(child_path);
       }else if(child_path.isPointValid(connection)){

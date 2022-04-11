@@ -10,7 +10,6 @@ class ActionFollowLeader extends Action {
   }
 
   update(delta){
-    //let targetPos = PartyManager.GetFollowPosition(this);
     if(this.owner instanceof ModuleCreature){
       if(Game.inDialog){
         this.owner.animState = ModuleCreature.AnimState.IDLE;
@@ -19,15 +18,15 @@ class ActionFollowLeader extends Action {
 
       this.target = PartyManager.party[0];
 
-      let distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
+      const follow_destination = PartyManager.GetFollowPosition(this.owner);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
       if(distance > 5){
-
         this.path_realtime = true;
         this.owner.openSpot = undefined;
         let actionMoveToTarget = new ActionMoveToPoint();
-        actionMoveToTarget.setParameter(0, Action.Parameter.TYPE.FLOAT, this.target.position.x);
-        actionMoveToTarget.setParameter(1, Action.Parameter.TYPE.FLOAT, this.target.position.y);
-        actionMoveToTarget.setParameter(2, Action.Parameter.TYPE.FLOAT, this.target.position.z);
+        actionMoveToTarget.setParameter(0, Action.Parameter.TYPE.FLOAT, follow_destination.x);
+        actionMoveToTarget.setParameter(1, Action.Parameter.TYPE.FLOAT, follow_destination.y);
+        actionMoveToTarget.setParameter(2, Action.Parameter.TYPE.FLOAT, follow_destination.z);
         actionMoveToTarget.setParameter(3, Action.Parameter.TYPE.DWORD, Game.module.area.id);
         actionMoveToTarget.setParameter(4, Action.Parameter.TYPE.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, Action.Parameter.TYPE.INT, 1);
