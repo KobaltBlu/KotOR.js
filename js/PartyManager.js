@@ -541,6 +541,9 @@ class PartyManager {
         0
       )
     );
+    if(Game.module.area.isPointWalkable(targetPos)){
+      return targetPos;
+    }
     return Game.module.area.getNearestWalkablePoint(targetPos);
   }
 
