@@ -82,7 +82,8 @@ class TalentSpell extends TalentObject {
     
     //I'm assuming that usertype: 1 means force powers
     //if(this.usertype == 1){
-
+      oCaster.lastSpellTarget = oTarget;
+      oTarget.lastSpellAttacker = oCaster;
       if(this.hostilesetting == 1){
         oCaster.resetExcitedDuration();
       }
@@ -131,7 +132,7 @@ class TalentSpell extends TalentObject {
                   if(oCaster.model.rhand){
                     Game.group.effects.add(model);
                     this.projectileHook = oCaster.model.rhand;
-                    TextureLoader.LoadQueue();
+                    //TextureLoader.LoadQueue();
                   }else{
                     this.projectile.dispose();
                   }
@@ -251,7 +252,7 @@ class TalentSpell extends TalentObject {
               if(oCaster.model){
                 if(oCaster.model.lhand){
                   oCaster.model.lhand.add(this.casthandmodel);
-                  TextureLoader.LoadQueue();
+                  //TextureLoader.LoadQueue();
                   this.casthandmodel.playAnimation('cast01', {}, () => {
                     //Clean up the impact effect
                     this.casthandmodel.dispose();

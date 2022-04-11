@@ -1024,7 +1024,7 @@ class ModuleCreature extends ModuleCreatureController {
   }
 
   getMovementSpeed(){
-    return this.walk ? this.getWalkSpeed() : this.getRunSpeed()
+    return (this.walk ? this.getWalkSpeed() : this.getRunSpeed()) * this.movementSpeed;
   }
 
   getHitDistance(){
@@ -1248,6 +1248,24 @@ class ModuleCreature extends ModuleCreatureController {
 
   }
 
+  getSpells(){
+    const spells = [];
+
+    for(let i = 0, len = this.classes.length; i < len; i++){
+      spells.push(...this.classes[i].getSpells());
+    }
+
+    if(typeof this.equipment.RIGHTARMBAND != 'undefined'){
+      spells.push(...this.equipment.RIGHTARMBAND.getSpells());
+    }
+
+    if(typeof this.equipment.LEFTARMBAND != 'undefined'){
+      spells.push(...this.equipment.LEFTARMBAND.getSpells());
+    }
+
+    return spells;
+  }
+
   getRandomTalent(category = 0, category2 = 0){
 
     let talents = this.getTalents().filter( talent => talent.category == category || talent.category == category2 );
@@ -1380,13 +1398,13 @@ class ModuleCreature extends ModuleCreatureController {
     //this.LoadEquipment( () => {
       this.LoadBody( () => {
         this.LoadHead( () => {
-          TextureLoader.LoadQueue(() => {
+          //TextureLoader.LoadQueue(() => {
             this.isReady = true;
             this.updateCollision(0.0000000000000000000001);
             this.update(0.0000000000000000000001);
             if(onLoad != null)
               onLoad(this.model);
-          });
+          //});
         });
       });
     //});

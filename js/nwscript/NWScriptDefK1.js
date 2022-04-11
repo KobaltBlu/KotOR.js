@@ -1028,7 +1028,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["object", "effect"],
     action: function(args, _instr, action){
-      if(args[0] instanceof ModuleCreature && typeof args[1] == 'object' && typeof args[1].type != 'undefined'){
+      if(args[0] instanceof ModuleCreature && args[1] instanceof GameEffect){
         args[0].removeEffect(args[1]);
       }
     }
@@ -2538,6 +2538,11 @@ NWScriptDefK1.Actions = {
         if(args[1] instanceof GameEffect){
           args[1].setDurationType(args[0]);
           args[1].setDuration(args[3]);
+          if(args[0] == GameEffect.DurationType.TEMPORARY){
+            const future = Game.module.timeManager.getFutureTimeFromSeconds(args[3]);
+            args[1].setExpireDay(future.pauseDay);
+            args[1].setExpireTime(future.pauseTime);
+          }
           args[2].addEffect(args[1], args[0], args[3]);
           //console.log('ApplyEffectToObject', args[2], this.caller);
         }else{
@@ -3532,6 +3537,14 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["int", "object"],
     action: function(args, _instr, action){
+      if(args[1] instanceof ModuleObject){
+        for(let i = 0, len = args[1].effects.length; i < len; i++){
+          const effect = args[1].effects[i];
+          if(effect.getSpellId() == args[0]){
+            return 1;
+          }
+        }
+      }
       return 0;
     }
   },
@@ -3541,7 +3554,10 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["effect"],
     action: function(args, _instr, action){
-      return args[0].getSpellId();
+      if(args[0] instanceof GameEffect){
+        return args[0].getSpellId();
+      }
+      return -1;
     }
   },
   306:{

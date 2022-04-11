@@ -149,24 +149,24 @@ class AppearanceLoader {
                               this.model.headhook.head = head;
                               this.model.headhook.add(head);
 
-                              TextureLoader.LoadQueue(() => {
-                                if(onLoad != null)
+                              //TextureLoader.LoadQueue(() => {
+                              //  if(onLoad != null)
                                   onLoad(this.model);
-                              });
+                              //});
                             }catch(e){
                               console.error(e);
-                              TextureLoader.LoadQueue(() => {
-                                if(typeof onLoad === 'function')
+                              //TextureLoader.LoadQueue(() => {
+                              //  if(typeof onLoad === 'function')
                                   onLoad(this.model);
-                              });
+                              //});
                             }
                           }
                         });
                       }else{
-                        TextureLoader.LoadQueue(() => {
-                          if(typeof onLoad === 'function')
+                        //TextureLoader.LoadQueue(() => {
+                        //  if(typeof onLoad === 'function')
                             onLoad(this.model);
-                        });
+                        //});
                       }
                     },
                     onError: (e) => {
@@ -177,10 +177,10 @@ class AppearanceLoader {
                   });
 
                 }else{
-                  TextureLoader.LoadQueue(() => {
-                    if(onLoad != null)
+                  //TextureLoader.LoadQueue(() => {
+                  //  if(onLoad != null)
                       onLoad(this.model);
-                  });
+                  //});
                 }
               }
             });
@@ -232,13 +232,13 @@ class AppearanceLoader {
             this.model.rotation.set(rotation.x, rotation.y, rotation.z);
           }
 
-          TextureLoader.LoadQueue(() => {
+          //TextureLoader.LoadQueue(() => {
             //console.log(this.model);
             if(onLoad != null)
               onLoad(this.model);
-          }, (texName) => {
+          //}, (texName) => {
             //loader.SetMessage('Loading Textures: '+texName);
-          });
+          //});
 
         },
         onError: (e) => {
@@ -283,13 +283,13 @@ class AppearanceLoader {
             this.model.rotation.set(rotation.x, rotation.y, rotation.z);
           }
 
-          TextureLoader.LoadQueue(() => {
+          //TextureLoader.LoadQueue(() => {
             //console.log(this.model);
             if(onLoad != null)
               onLoad(this.model);
-          }, (texName) => {
+          //}, (texName) => {
             //loader.SetMessage('Loading Textures: '+texName);
-          });
+          //});
 
         },
         onError: (e) => {

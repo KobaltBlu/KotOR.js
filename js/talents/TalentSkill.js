@@ -10,6 +10,15 @@ class TalentSkill extends TalentObject {
       Object.assign(this, Global.kotor2DA.skills.rows[this.id]);
     }
   }
+  useTalentOnObject(oTarget, oCaster){
+    this.oCaster = oCaster;
+    this.oTarget = oTarget;
+    if(this.id == 6){ //Security
+      const action = new ActionUnlockObject();
+      action.setParameter(0, Action.Parameter.TYPE.DWORD, this.oTarget.id || ModuleObject.OBJECT_INVALID);
+      this.oCaster.actionQueue.add(action);
+    }
+  }
 
   setId( value = 0 ){
     this.id = value;

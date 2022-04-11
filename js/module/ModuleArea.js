@@ -1796,11 +1796,11 @@ class ModuleArea extends ModuleObject {
 
   async loadTextures(){
     return new Promise( (resolve, reject) => {
-      TextureLoader.LoadQueue(() => {
+      //TextureLoader.LoadQueue(() => {
         resolve();
-      }, (texName) => {
+      //}, (texName) => {
         
-      });
+      //});
     });
   }
 
@@ -2498,7 +2498,7 @@ class AreaWeather {
                 this.model = model;
                 Game.weather_effects.push(model);
                 Game.group.weather_effects.add(model);
-                TextureLoader.LoadQueue();
+                //TextureLoader.LoadQueue();
                 resolve();
               },
               manageLighting: false
@@ -2517,7 +2517,7 @@ class AreaWeather {
                 this.model = model;
                 Game.weather_effects.push(model);
                 Game.group.weather_effects.add(model);
-                TextureLoader.LoadQueue();
+                //TextureLoader.LoadQueue();
                 resolve();
               },
               manageLighting: false

@@ -193,23 +193,23 @@ class ModuleRoom extends ModuleObject {
                     this.walkmesh.mesh.position.z += 0.001;
                     this.buildGrass();
                     
-                    TextureLoader.LoadQueue( () => {
-                      if(typeof onComplete == 'function')
+                    //TextureLoader.LoadQueue( () => {
+                    //  if(typeof onComplete == 'function')
                         onComplete(this);
-                    });
+                    //});
                   }else{
-                    TextureLoader.LoadQueue( () => {
-                      if(typeof onComplete == 'function')
+                    //TextureLoader.LoadQueue( () => {
+                    //  if(typeof onComplete == 'function')
                         onComplete(this);
-                    });
+                    //});
                   }
                 });
 
               }else{
-                TextureLoader.LoadQueue( () => {
-                  if(typeof onComplete == 'function')
+                //TextureLoader.LoadQueue( () => {
+                //  if(typeof onComplete == 'function')
                     onComplete(this);
-                });
+                //});
               }
 
               //Disable matrix update for static objects

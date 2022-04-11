@@ -1059,6 +1059,13 @@ class Game extends Engine {
     Game.UpdateVideoEffect();
     MenuManager.Update(delta);
 
+    if(!Game.loadingTextures && TextureLoader.queue.length){
+      Game.loadingTextures = true;
+      TextureLoader.LoadQueue( () => {
+        Game.loadingTextures = false;
+      });
+    } 
+
     Game.scene_cursor_holder.visible = true;
 
     if(Game.Mode == Game.MODES.MINIGAME || (Game.Mode == Game.MODES.INGAME && !Game.MenuActive && !Game.InGameConfirm.bVisible)){

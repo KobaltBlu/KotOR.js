@@ -374,10 +374,10 @@ class ModuleItem extends ModuleObject {
           onComplete: (model) => {
             this.model = model;
             //this.model.buildSkeleton();
-            TextureLoader.LoadQueue(() => {
+            //TextureLoader.LoadQueue(() => {
               if(typeof onLoad === 'function')
                 onLoad(model);
-            });
+            //});
           },
           context: this.context,
           lighting: true,

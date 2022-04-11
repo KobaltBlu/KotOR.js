@@ -764,7 +764,7 @@ THREE.AuroraModel = function () {
     }
 
     //Load the Texture Queue
-    TextureLoader.LoadQueue();
+    //TextureLoader.LoadQueue();
   };
 
   this.disposeForceShieldGeometry = function(){

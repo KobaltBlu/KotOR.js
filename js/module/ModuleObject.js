@@ -30,6 +30,7 @@ class ModuleObject {
     this.facingTweenTime = 0;
     this.force = 0;
     this.speed = 0;
+    this.movementSpeed = 1;
     this.room = undefined;
     this.rooms = [];
     this.roomSize = new THREE.Vector3();
@@ -216,6 +217,23 @@ class ModuleObject {
 
   getHitDistance(){
     return 1;
+  }
+
+  updateMovementSpeed(){
+    let movementSpeed = 1.0;
+
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      const effect = this.effects[i];
+      let rate = 0;
+      if(effect.type == GameEffect.Type.EffectMovementSpeedIncrease){
+        rate = (effect.getInt(0) / 100);
+      }else if(effect.type == GameEffect.Type.EffectMovementSpeedDecrease){
+        rate = (effect.getInt(0) / -100);
+      }
+      movementSpeed += rate;
+    }
+
+    this.movementSpeed = movementSpeed;
   }
 
   update(delta = 0){
@@ -873,7 +891,7 @@ class ModuleObject {
             onComplete: (effectMDL) => {
               this.model.effects.push(effectMDL);
               this.model.add(effectMDL);
-              TextureLoader.LoadQueue();
+              //TextureLoader.LoadQueue();
               effectMDL.playAnimation(0, false, () => {
                 effectMDL.stopAnimation();
                 this.model.remove(effectMDL);

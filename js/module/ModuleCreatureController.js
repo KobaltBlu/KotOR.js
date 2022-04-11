@@ -230,9 +230,16 @@ class ModuleCreatureController extends ModuleObject {
       this.updateItems(delta);
       
       if(this.model instanceof THREE.AuroraModel && this.model.bonesInitialized){
-        this.model.update(delta);
-        if(this.lipObject instanceof LIPObject){
-          this.lipObject.update(delta, this.head ? this.head : this.model);
+        if(!Game.inDialog){
+          this.model.update( this.movementSpeed * delta );
+          if(this.lipObject instanceof LIPObject){
+            this.lipObject.update(delta, this.head ? this.head : this.model);
+          }
+        }else{
+          this.model.update( delta );
+          if(this.lipObject instanceof LIPObject){
+            this.lipObject.update(delta, this.head ? this.head : this.model);
+          }
         }
       }
 
@@ -1335,7 +1342,7 @@ class ModuleCreatureController extends ModuleObject {
       case 1: //FEAT
         action = new ActionPhysicalAttacks();
         action.setParameter(0, Action.Parameter.TYPE.INT, 0);
-        action.setParameter(1, Action.Parameter.TYPE.DWORD, oTarget.position.y);
+        action.setParameter(1, Action.Parameter.TYPE.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
         action.setParameter(2, Action.Parameter.TYPE.INT, 1);
         action.setParameter(3, Action.Parameter.TYPE.INT, 25);
         action.setParameter(4, Action.Parameter.TYPE.INT, -36);
@@ -1347,7 +1354,11 @@ class ModuleCreatureController extends ModuleObject {
         this.actionQueue.add(action);
       break;
       case 2: //SKILL
-
+        if(talent.id == 6){ //Security
+          action = new ActionUnlockObject();
+          action.setParameter(0, Action.Parameter.TYPE.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
+          this.actionQueue.add(action);
+        }
       break;
       case 0: //SPELL
         action = new ActionCastSpell();

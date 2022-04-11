@@ -520,13 +520,13 @@ class ModulePlaceable extends ModuleObject {
 
             this.model.disableMatrixUpdate();
 
-            TextureLoader.LoadQueue(() => {
+            //TextureLoader.LoadQueue(() => {
               //console.log(this.model);
               if(onLoad != null)
                 onLoad(this.model);
-            }, (texName) => {
+            //}, (texName) => {
               //loader.SetMessage('Loading Textures: '+texName);
-            });
+            //});
           },
           context: this.context,
           castShadow: true,
