@@ -43,16 +43,19 @@ class ActionMoveToPoint extends Action {
     this.run = this.getParameter(5);
 
     this.distance = Utility.Distance2D(this.owner.position, this.target_position);
-    if(this.distance > this.range){
+    if(this.distance > (this.path?.length > 1 ? 0.5 : this.range)){
 
       let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
       if(this.path == undefined){
         if(this.owner.openSpot){
           this.path_realtime = true;
           this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
-          this.path.unshift(this.target.position.clone());
+          //this.path.unshift(this.target.position.clone());
         }else{
           this.path = Game.module.area.path.traverseToPoint(this.owner.position, this.target_position);
+          if(this.target instanceof ModuleCreature){
+            this.path_realtime = true;
+          }
         }
         distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
         this.path_timer = 20;
@@ -69,14 +72,11 @@ class ActionMoveToPoint extends Action {
         this.owner.collisionTimer = 0;
       }
   
-      if(point == undefined)
-        point = this.target_position;
-  
       if(!(point instanceof THREE.Vector3))
         point = point.vector;
   
       let pointDistance = Utility.Distance2D(this.owner.position, point);
-      if(pointDistance > this.range){
+      if(pointDistance > (this.path?.length > 1 ? 0.5 : this.range)){
         let tangent = point.clone().sub(this.owner.position.clone());
         let atan = Math.atan2(-tangent.y, -tangent.x);
         this.owner.setFacing(atan + Math.PI/2, false);
