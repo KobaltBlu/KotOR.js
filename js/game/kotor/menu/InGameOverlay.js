@@ -13,13 +13,6 @@ class InGameOverlay extends GameMenu {
       this.args = Object.assign({
         loadscreen: '',
       }, this.args);
-
-      this.lastTarget = undefined;
-      this.lastCurrentPlayer = undefined;
-      this.targetSkills = undefined;
-      this.target0_idx = 0;
-      this.target1_idx = 0;
-      this.target2_idx = 0;
   
       this.LoadMenu({
         name: 'mipc28x6',
@@ -344,18 +337,22 @@ class InGameOverlay extends GameMenu {
             Game.getCurrentPlayer().combatQueue.splice(2, 1);
           });
 
-          for(let i = 0; i < 3; i++){
-            
-            //this['BTN_TARGET'+i]
+          for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
 
             this['LBL_TARGET'+i].addEventListener('click', (e) => {
               e.stopPropagation();
-              let action = this.targetSkills['target'+i][this['target'+i+'_idx']];
+              const action = ActionMenuManager.ActionPanels.targetPanels[i].getSelectedAction();
 
               if(action){
                 if(i==0){
-                  Game.getCurrentPlayer().attackCreature(action.action.object, action.action.feat);
-                }else{
+                  if(!action.talent){
+                    Game.getCurrentPlayer().attackCreature(action.target, undefined);
+                  }else if(action.talent instanceof TalentObject){
+                    action.talent.useTalentOnObject(action.target, Game.getCurrentPlayer());
+                  }
+                }else if(action.talent){
+                  action.talent.useTalentOnObject(action.target, Game.getCurrentPlayer());
+                }else if(action.action){
                   Game.getCurrentPlayer().actionQueue.add(
                     action.action
                   );
@@ -366,26 +363,38 @@ class InGameOverlay extends GameMenu {
 
             this['BTN_TARGETUP'+i].addEventListener('click', (e) => {
               e.stopPropagation();
-              
-              this['target'+i+'_idx'] -= 1;
-              if(this['target'+i+'_idx'] < 0){
-                this['target'+i+'_idx'] = this.targetSkills['target'+i].length - 1;
-              }
-
+              ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
               this.UpdateTargetUIIcon(i);
-
             });
 
             this['BTN_TARGETDOWN'+i].addEventListener('click', (e) => {
               e.stopPropagation();
-
-              this['target'+i+'_idx'] += 1;
-              if(this['target'+i+'_idx'] >= this.targetSkills['target'+i].length){
-                this['target'+i+'_idx'] = 0;
-              }
-
+              ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
               this.UpdateTargetUIIcon(i);
+            });
 
+          }
+
+          for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
+
+            this['LBL_ACTION'+i].addEventListener('click', (e) => {
+              e.stopPropagation();
+              const action = ActionMenuManager.ActionPanels.selfPanels[i].getSelectedAction();
+              if(action){
+                Game.getCurrentPlayer().useTalentOnObject(action.talent, action.target);
+              }
+            });
+
+            this['BTN_ACTIONUP'+i].addEventListener('click', (e) => {
+              e.stopPropagation();
+              ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
+              this.UpdateSelfUIIcon(i);
+            });
+
+            this['BTN_ACTIONDOWN'+i].addEventListener('click', (e) => {
+              e.stopPropagation();
+              ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
+              this.UpdateSelfUIIcon(i);
             });
 
           }
@@ -407,7 +416,9 @@ class InGameOverlay extends GameMenu {
       this.LBL_COMBATBG2.show();
       this.LBL_COMBATBG3.show();
       this.LBL_QUEUE0.show();
-      this.LBL_QUEUE1.show()
+      this.LBL_QUEUE1.show();
+      this.LBL_QUEUE2.show();
+      this.LBL_QUEUE3.show();
 
       /*this.LBL_TARGET0.show();
       this.BTN_TARGET0.show();
@@ -433,7 +444,9 @@ class InGameOverlay extends GameMenu {
       this.LBL_COMBATBG2.hide();
       this.LBL_COMBATBG3.hide();
       this.LBL_QUEUE0.hide();
-      this.LBL_QUEUE1.hide()
+      this.LBL_QUEUE1.hide();
+      this.LBL_QUEUE2.hide();
+      this.LBL_QUEUE3.hide();
 
       /*this.LBL_TARGET0.hide();
       this.BTN_TARGET0.hide();
@@ -517,250 +530,6 @@ class InGameOverlay extends GameMenu {
       }catch(e){}
     }
 
-    UpdateTargetUISkills(){
-
-      let currentPlayer = Game.getCurrentPlayer();
-      
-      this.target0_idx = 0;
-      this.target1_idx = 0;
-      this.target2_idx = 0;
-
-      let skills = {
-        target0: [],
-        target1: [],
-        target2: []
-      }
-
-      if(Game.selectedObject instanceof ModuleObject){
-
-        if(Game.selectedObject instanceof ModulePlaceable){
-
-        }else if(Game.selectedObject instanceof ModuleDoor){
-          if(Game.selectedObject.isLocked() && !Game.selectedObject.requiresKey()){
-            let action1 = new ActionUnlockObject();
-            action1.setParameter(0, Action.Parameter.TYPE.DWORD, Game.selectedObject.id)
-            skills.target1.push({
-              action: action1,
-              icon: 'isk_security'
-            });
-
-            skills.target0.push({
-              action: {
-                type: Action.TYPE.ActionPhysicalAttacks,
-                object:Game.selectedObject,
-                feat: undefined
-              },
-              icon: 'i_attack'
-            });
-          }
-        }else if(Game.selectedObject instanceof ModuleCreature && Game.selectedObject.isHostile(Game.player)){
-          skills.target0.push({
-            action: {
-              type: Action.TYPE.ActionPhysicalAttacks,
-              object: Game.selectedObject,
-              feat: undefined
-            },
-            icon: 'i_attack'
-          });
-
-          if(currentPlayer.getEquippedWeaponType() == 1){
-
-            //Critical
-            if(currentPlayer.getFeat(81)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(81)
-                },
-                icon: currentPlayer.getFeat(81).icon
-              });
-            }else if(currentPlayer.getFeat(19)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(19)
-                },
-                icon: currentPlayer.getFeat(19).icon
-              });
-            }else if(currentPlayer.getFeat(8)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(8)
-                },
-                icon: currentPlayer.getFeat(8).icon
-              });
-            }
-
-            //Powerstrike
-            if(currentPlayer.getFeat(83)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(83)
-                },
-                icon: currentPlayer.getFeat(83).icon
-              });
-            }else if(currentPlayer.getFeat(17)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(17)
-                },
-                icon: currentPlayer.getFeat(17).icon
-              });
-            }else if(currentPlayer.getFeat(28)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(28)
-                },
-                icon: currentPlayer.getFeat(28).icon
-              });
-            }
-
-            //Flurry
-            if(currentPlayer.getFeat(53)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(53)
-                },
-                icon: currentPlayer.getFeat(53).icon
-              });
-            }else if(currentPlayer.getFeat(91)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(91)
-                },
-                icon: currentPlayer.getFeat(91).icon
-              });
-            }else if(currentPlayer.getFeat(11)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(11)
-                },
-                icon: currentPlayer.getFeat(11).icon
-              });
-            }
-
-          }
-
-          if(currentPlayer.getEquippedWeaponType() == 4){
-
-            //Snipershot
-            if(currentPlayer.getFeat(77)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(77)
-                },
-                icon: currentPlayer.getFeat(77).icon
-              });
-            }else if(currentPlayer.getFeat(20)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(20)
-                },
-                icon: currentPlayer.getFeat(20).icon
-              });
-            }else if(currentPlayer.getFeat(31)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(31)
-                },
-                icon: currentPlayer.getFeat(31).icon
-              });
-            }
-
-
-            //Powerblast
-            if(currentPlayer.getFeat(82)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(82)
-                },
-                icon: currentPlayer.getFeat(82).icon
-              });
-            }else if(currentPlayer.getFeat(18)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(18)
-                },
-                icon: currentPlayer.getFeat(18).icon
-              });
-            }else if(currentPlayer.getFeat(29)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(29)
-                },
-                icon: currentPlayer.getFeat(29).icon
-              });
-            }
-
-
-            //Rapidshot
-            if(currentPlayer.getFeat(26)){ //Master
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(26)
-                },
-                icon: currentPlayer.getFeat(26).icon
-              });
-            }else if(currentPlayer.getFeat(92)){ //Imporved
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(92)
-                },
-                icon: currentPlayer.getFeat(92).icon
-              });
-            }else if(currentPlayer.getFeat(30)){ //Basic
-              skills.target0.push({
-                action: {
-                  type: Action.TYPE.ActionPhysicalAttacks,
-                  object: Game.selectedObject,
-                  feat: currentPlayer.getFeat(30)
-                },
-                icon: currentPlayer.getFeat(30).icon
-              });
-            }
-
-          }
-
-        }
-
-      }
-
-      return (!skills.target0.length && !skills.target1.length && !skills.target2.length) ? null : skills;
-
-    }
-
     _canShowTargetUI(){
       if(Game.selectedObject instanceof ModuleCreature && Game.selectedObject.isDead())
         return false;
@@ -769,11 +538,11 @@ class InGameOverlay extends GameMenu {
     }
 
     UpdateTargetUIIcon(index = 0){
-      let guiControl = this['LBL_TARGET'+index];
-      if(this.targetSkills['target'+index].length){
-        let action = this.targetSkills['target'+index][this['target'+index+'_idx']];
+      const guiControl = this['LBL_TARGET'+index];
+      if(ActionMenuManager.ActionPanels.targetPanels[index].actions.length){
+        const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
 
-        if(guiControl.getFillTextureName() != action.icon){
+        if(action && guiControl.getFillTextureName() != action.icon){
           guiControl.setFillTextureName(action.icon);
           TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
             guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
@@ -782,6 +551,9 @@ class InGameOverlay extends GameMenu {
             guiControl.highlight.fill.material.transparent = true;
             guiControl.widget.position.z = 1;
           });
+        }else if(!action){
+          guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+          guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
         }
         
       }else{
@@ -790,14 +562,34 @@ class InGameOverlay extends GameMenu {
       }
     }
 
-    UpdateTargetUI(){
+    UpdateSelfUIIcon(index = 0){
+      const guiControl = this['LBL_ACTION'+index];
+      if(ActionMenuManager.ActionPanels.selfPanels[index].actions.length){
+        const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
+
+        if(action && guiControl.getFillTextureName() != action.icon){
+          guiControl.setFillTextureName(action.icon);
+          TextureLoader.tpcLoader.fetch(action.icon, (texture) => {
+            guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
+            guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
+            guiControl.border.fill.material.transparent = true;
+            guiControl.highlight.fill.material.transparent = true;
+            guiControl.widget.position.z = 1;
+          });
+        }else if(!action){
+          guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+          guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+        }
+        
+      }else{
+        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      }
+    }
+
+    UpdateTargetUIPanels(){
 
       if(this._canShowTargetUI()){
-
-        if(this.lastTarget != Game.selectedObject || this.lastCurrentPlayer != Game.getCurrentPlayer()){
-          this.lastCurrentPlayer = Game.getCurrentPlayer();
-          this.targetSkills = this.UpdateTargetUISkills();
-        }
 
         if(Game.selectedObject instanceof ModuleCreature){
           if(Game.selectedObject.isHostile(Game.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar'){
@@ -826,19 +618,14 @@ class InGameOverlay extends GameMenu {
         
         //if(Game.selectedObject instanceof ModuleObject){
           let health = 100 * Math.min(Math.max(Game.selectedObject.getHP() / Game.selectedObject.getMaxHP(), 0.0), 1.0);
-          if(health > 100)
-            health = 100;
+          if(health > 100) health = 100;
           this.PB_HEALTH.setProgress(health)
         //}
 
         let maxBoundsX = (window.innerWidth / 2 + 640/2) - 125;
         let maxBoundsX2 = (window.innerWidth / 2) - (640/2) - 125;
 
-        let targetScreenPosition = new THREE.Vector3(
-          640/2,
-          480/2,
-          0
-        );
+        let targetScreenPosition = new THREE.Vector3( 640/2, 480/2, 0 );
 
         let pos = new THREE.Vector3();
         if(Game.selectedObject instanceof ModuleCreature){
@@ -849,8 +636,8 @@ class InGameOverlay extends GameMenu {
         }
         pos.project(Game.currentCamera);
         
-        let widthHalf = window.innerWidth / 2;
-        let heightHalf = window.innerHeight / 2;
+        const widthHalf = window.innerWidth / 2;
+        const heightHalf = window.innerHeight / 2;
 
         pos.x = (pos.x * widthHalf);
         pos.y = - (pos.y * heightHalf);
@@ -859,19 +646,19 @@ class InGameOverlay extends GameMenu {
         targetScreenPosition.add(pos);
         
         if(targetScreenPosition.x > maxBoundsX){
-              targetScreenPosition.x = maxBoundsX;
+          targetScreenPosition.x = maxBoundsX;
         }
 
         if(targetScreenPosition.x < -maxBoundsX2){
-              targetScreenPosition.x = -maxBoundsX2;
+          targetScreenPosition.x = -maxBoundsX2;
         }
 
         if(targetScreenPosition.y > (640/2)){
-            targetScreenPosition.y = (640/2);
+          targetScreenPosition.y = (640/2);
         }
 
         if(targetScreenPosition.y < 100){
-            targetScreenPosition.y = 100;
+          targetScreenPosition.y = 100;
         }
 
 
@@ -901,10 +688,10 @@ class InGameOverlay extends GameMenu {
         this.PB_HEALTH.recalculate();
         this.LBL_HEALTHBG.recalculate();
 
-        if(this.targetSkills){
+        if(!!ActionMenuManager.targetActionCount()){
 
-          for(let i = 0; i < 3; i++){
-            let xPos = ((this['BTN_TARGET'+i].extent.width + 5) *i) + 20;
+          for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
+            let xPos = ((this['BTN_TARGET'+i].extent.width + 5) * i) + 20;
 
             this['BTN_TARGET'+i].scale = false;
             this['BTN_TARGET'+i].extent.left = targetScreenPosition.x + xPos;
@@ -948,11 +735,8 @@ class InGameOverlay extends GameMenu {
           }
         }
 
-        this.lastTarget = Game.selectedObject;
-
       }else{
-        this.targetSkills = undefined;
-        this.lastTarget = undefined;
+        ActionMenuManager.SetTarget(undefined);
         this.LBL_NAME.hide();
         this.LBL_NAMEBG.hide();
         this.PB_HEALTH.hide();
@@ -967,6 +751,12 @@ class InGameOverlay extends GameMenu {
 
     }
 
+    UpdateSelfUIPanels(delta = 0){
+      for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
+        this.UpdateSelfUIIcon(i);
+      }
+    }
+
     Update(delta = 0){
       
       super.Update(delta);
@@ -975,7 +765,12 @@ class InGameOverlay extends GameMenu {
 
       if(!Game.module.area.MiniGame){
 
-        this.UpdateTargetUI();
+        ActionMenuManager.SetPC(Game.getCurrentPlayer());
+        ActionMenuManager.SetTarget(Game.selectedObject);
+        ActionMenuManager.UpdateMenuActions();
+
+        this.UpdateTargetUIPanels();
+        this.UpdateSelfUIPanels();
 
         let mapTexture = this.LBL_MAPVIEW.getFillTexture();
         if(mapTexture){
@@ -1037,7 +832,7 @@ class InGameOverlay extends GameMenu {
 
         }
 
-        if((Game.selectedObject && Game.selectedObject.isHostile()) || (Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){
+        if((Game.getCurrentPlayer().combatAction || Game.getCurrentPlayer().combatQueue.length)){
           this.showCombatUI();
 
           let action0 = Game.getCurrentPlayer().combatAction;

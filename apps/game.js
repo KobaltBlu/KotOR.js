@@ -1,5 +1,5 @@
 'use strict';
-require('v8-compile-cache');
+//require('v8-compile-cache');
 const obj_undefined = 2130706432;
 const partySlot0 = 2147483647;
 const partySlot1 = 2147483646;
@@ -53,7 +53,7 @@ const Int64 = require('node-int64');
 const recursive = require('recursive-readdir');
 const StringDecoder = require('string_decoder').StringDecoder;
 const objectHash = require('object-hash');
-var Promise = require("bluebird");
+//var Promise = require("bluebird");
 const Reverb = require('soundbank-reverb');
 const BitBuffer = require('bit-buffer');
 //const beamcoder = require('beamcoder');
@@ -409,6 +409,7 @@ const GameMenu = require(path.join(app.getAppPath(), 'js/gui/Menu.js'));
 const MenuManager = require(path.join(app.getAppPath(), 'js/gui/MenuManager.js')); 
 
 /* MISC Managers */
+const ActionMenuManager = require(path.join(app.getAppPath(), 'js/ActionMenuManager.js'));
 const InventoryManager = require(path.join(app.getAppPath(), 'js/InventoryManager.js')); 
 const CursorManager = require(path.join(app.getAppPath(), 'js/CursorManager.js'));
 const PartyManager = require(path.join(app.getAppPath(), 'js/PartyManager.js'));
