@@ -1111,6 +1111,13 @@ class GUIControl {
       texture.updateMatrix();
       texture.needsUpdate = true;
     }
+
+    texture = this.highlight.fill.material.uniforms.map.value;
+    if(texture instanceof THREE.Texture){
+      texture.repeat.y = flip ? -1 : 1;
+      texture.updateMatrix();
+      texture.needsUpdate = true;
+    }
   }
 
   calculatePosition(){
