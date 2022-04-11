@@ -47,7 +47,7 @@ class ModulePath {
           connections: [],
           first_connection: _pnt.fields.First_Conection.value,
           num_connections: _pnt.fields.Conections.value,
-          vector: new THREE.Vector2(_pnt.fields.X.value, _pnt.fields.Y.value)
+          vector: new THREE.Vector3(_pnt.fields.X.value, _pnt.fields.Y.value, 0)
         };
         this.points.push(point);
       }
@@ -95,179 +95,133 @@ class ModulePath {
     this.line.visible = state;
   }
 
-  getStartingPoint(origin = new THREE.Vector3, target = new THREE.Vector3){
-    let starting = new THREE.Vector2().copy(origin);
-    let ending = new THREE.Vector2().copy(target);
-    let startingPoint = target;
+  getClosestPathPointData(target = new THREE.Vector3){
+    const targetPoint = new THREE.Vector3().copy(target);
+    targetPoint.z = 0;
+    const line3 = new THREE.Line3();
+    const closestPoint = new THREE.Vector3(0, 0, 0);
+    let startingPoint = undefined;
+    let endingPoint = undefined;
     let distance = Infinity;
-    let tdistance = Infinity;
-    
-    //Max distance from target
-    let maxDistance = starting.distanceTo(ending);
+    let pDistance = 0;
 
-    //console.log('getStartingPoint', starting, startingPoint, distance);
+    const _tempPoint = new THREE.Vector3(0, 0, 0);
     for(let i = 0; i < this.points.length; i++){
-      let point = this.points[i];
-      let pDistance = starting.distanceTo(point.vector);
-      let tDistance = point.vector.distanceTo(ending);
-
-      //Don't target anything that is further away from the destination than we already are
-      let distanceToTarget = point.vector.distanceTo(ending);
-      if(pDistance < distance && distanceToTarget < maxDistance){
-        //If this point is closer than the current point update the current point
-        //if(pDistance < distance){
+      const point = this.points[i];
+      for(let j = 0; j < point.num_connections; j++){
+        const connection = point.connections[j];
+        line3.set(point.vector, connection.vector);
+        line3.closestPointToPoint(targetPoint, true, _tempPoint);
+        pDistance = targetPoint.distanceTo(_tempPoint);
+        if(pDistance < distance){
           distance = pDistance;
-          //tdistance = tDistance;
           startingPoint = point;
-        //}
-      }
-    }
-    //console.log('getStartingPoint end', starting, startingPoint, distance);
-    return startingPoint;
-  }
-
-  getStartingPoints(origin = new THREE.Vector3, target = new THREE.Vector3){
-    let starting = new THREE.Vector2().copy(origin);
-    let ending = new THREE.Vector2().copy(target);
-    let startingPoint = target;
-    let distance = Infinity;
-    let tdistance = Infinity;
-    
-    //Max distance from target
-    let maxDistance = starting.distanceTo(ending);
-
-    //console.log('getStartingPoint', starting, startingPoint, distance);
-    for(let i = 0; i < this.points.length; i++){
-      let point = this.points[i];
-      let pDistance = starting.distanceTo(point.vector);
-      let tDistance = point.vector.distanceTo(ending);
-
-      //Don't target anything that is further away from the destination than we already are
-      let distanceToTarget = point.vector.distanceTo(ending)*.5;
-      if(pDistance < distance && distanceToTarget < maxDistance){
-        //If this point is closer than the current point update the current point
-        //if(pDistance < distance){
-          distance = pDistance;
-          //tdistance = tDistance;
-          startingPoint = point;
-        //}
-      }
-    }
-    //console.log('getStartingPoint end', starting, startingPoint, distance);
-    return startingPoint;
-  }
-
-  getNextPoint(cpoint, target = new THREE.Vector3, path){
-    //console.log('getNextPoint', cpoint, target);
-    let starting = cpoint.vector.clone();
-    
-    /*if(cpoint instanceof THREE.Vector2 || cpoint instanceof THREE.Vector3){
-      starting.copy(cpoint);
-    }else{
-      starting.copy(cpoint.vector);
-    }*/
-    
-    let ending = new THREE.Vector2().copy(target);
-    let nextPoint = target;
-    
-    //Max distance from target
-    let maxDistance = Infinity;
-    let distance = maxDistance = starting.distanceTo(ending);
-
-    for(let i = 0; i < cpoint.connections.length; i++){
-      let point = cpoint.connections[i];
-      if(path.closed_list.indexOf(point.id) == -1){
-        //let pDistance = starting.distanceTo(point.vector);
-        //let tDistance = point.vector.distanceTo(ending);
-
-        //Don't target anything that is further away from the destination than we already are
-        let distanceToTarget = point.vector.distanceTo(ending);
-        if(distanceToTarget < maxDistance){
-          //If this point is closer than the current point update the current point
-          distance = distanceToTarget;
-          nextPoint = point;
+          endingPoint = connection;
+          closestPoint.copy(_tempPoint);
         }
       }
     }
-    //console.log('getNextPoint end', starting, nextPoint, distance);
-    return {point: nextPoint, distance: distance};
-
+    
+    return { startingPoint: startingPoint, endingPoint: endingPoint, closestPoint: closestPoint };
   }
 
   traverseToPoint(origin, dest){
 
-    if(!this.points.length){
-      return [dest];
-    }
+    if(!this.points.length) return [dest];
 
-    let points = [];
+    const startingPoint = this.getClosestPathPointData(origin);
+    const endingPoint = this.getClosestPathPointData(dest);
 
-    let originVec2 = new THREE.Vector2(origin.x, origin.y);
+    if(startingPoint.startingPoint == endingPoint.endingPoint) return [dest];
 
-    let paths = [];
-    for(let i = 0, il = this.points.length; i < il; i++){
-      let con_point = this.points[i];
+    if(!startingPoint.startingPoint || !endingPoint.endingPoint) return [dest];
 
-      let distance = originVec2.distanceTo(con_point.vector);
+    const path = new ComputedPath(startingPoint.startingPoint, endingPoint.endingPoint);
+    const bestPath = path.walkConnections(startingPoint.startingPoint);
 
-      if(distance > 30)
-        continue;
+    bestPath.points[0] = startingPoint.closestPoint;
+    bestPath.points[bestPath.points.length-1] = endingPoint.closestPoint;
+    bestPath.points.push(dest);
 
-      let path = {
-        cost: distance,
-        points: [con_point],
-        closed_list: [con_point.id]
-      };
-
-      let loops = 0;
-      let foundEnd = false;
-
-      while(!foundEnd){
-        let last = path.points[path.points.length-1];
-        let next = this.getNextPoint(last, dest, path);
-        /*if(next == last){
-          foundEnd = false;
-        }else */if(next.point instanceof THREE.Vector3){
-          foundEnd = true;
-          path.cost += next.distance;
-          path.points.push(next.point);
-        }else{
-          foundEnd = false;
-          path.cost += next.distance;
-          path.points.push(next.point);
-          path.closed_list.push(next.point.id);
-        }
-        
-        if(loops > 1000){
-          foundEnd = true;
-        }
-        loops++
-  
-      }
-
-      //console.log(path);
-
-      paths.push(path)
-
-    }
-
-    let bestPathCost = Infinity;
-
-    for(let i = 0, il = paths.length; i < il; i++){
-      if(paths[i].cost < bestPathCost){
-        bestPathCost = paths[i].cost;
-        points = paths[i].points;
-      }
-    }
-
-    if(points.length <= 2){
+    if(bestPath.points.length <= 2){
       return [dest];
     }else{
-      return points;
+      return bestPath.points;
     }
 
-    
+  }
 
+}
+
+class ComputedPath {
+  cost = 0;
+  points = [];
+  closed_list = [];
+  starting_point = undefined;
+  ending_point = undefined;
+  complete = false;
+
+  constructor(starting_point = undefined, ending_point = undefined){
+    this.starting_point = starting_point;
+    this.ending_point = ending_point;
+    if(this.starting_point){
+      this.points = [this.starting_point];
+      this.closed_list[0] = this.starting_point.id;
+    }
+  }
+
+  isPointValid( point ){
+    return (this.closed_list.indexOf(point.id) == -1);
+  }
+
+  addPoint( point ){
+    this.points.push(point);
+    this.addToClosedList( point );
+    this.cost += this.getCost(point);
+  }
+
+  addToClosedList( point ){
+    if(this.isPointValid(point)){
+      this.closed_list.push(point.id);
+    }
+  }
+
+  close(){
+    this.complete = true;
+  }
+
+  walkConnections( point ){
+    const child_paths = [];
+    for(let i = 0; i < point.num_connections; i++){
+      const connection = point.connections[i];
+      const child_path = this.clone();
+      if(connection == this.ending_point){
+        //We have reached the end point
+        child_path.addPoint(connection);
+        child_path.close();
+        child_paths.push(child_path);
+      }else if(child_path.isPointValid(connection)){
+        child_path.addPoint(connection);
+        child_paths.push(
+          child_path.walkConnections(connection)
+        );
+      }
+    }
+    return child_paths.sort( (a, b) => { return (a.cost - b.cost) } )[0];
+  }
+
+  getCost( point ){
+    return point.vector.distanceTo( this.ending_point.vector );
+  }
+
+  clone(){
+    const clone = new ComputedPath();
+    clone.cost = this.cost;
+    clone.points = this.points.slice(0);
+    clone.closed_list = this.closed_list.slice(0);
+    clone.starting_point = this.starting_point;
+    clone.ending_point = this.ending_point;
+    return clone;
   }
 
 }
