@@ -2864,7 +2864,7 @@ NWScriptDefK1.Actions = {
                       model.moduleObject = creature;
                       model.hasCollision = true;
                       model.name = creature.getTag();
-                      model.buildSkeleton();
+                      //model.buildSkeleton();
                       Game.group.creatures.add( model );
                       creature.getCurrentRoom();
                       creature.onSpawn();
@@ -2898,7 +2898,7 @@ NWScriptDefK1.Actions = {
                       
                       model.hasCollision = true;
                       model.name = plc.getTag();
-                      model.buildSkeleton();
+                      //model.buildSkeleton();
                       Game.group.placeables.add( model );
                       Game.module.area.placeables.push(plc);
       
@@ -3873,10 +3873,9 @@ NWScriptDefK1.Actions = {
     name: "GetBlockingDoor",
     type: 6,
     args: [],
-    action: function(args, _instr, action){ //GetBlockingDoor
-      //console.log('GetBlockingDoor', args);
-      if(this.caller instanceof ModuleCreature){
-        return this.caller.blocking;
+    action: function(args, _instr, action){
+      if(this.blocking instanceof ModuleDoor){
+        return this.blocking;
       }
       return undefined;
     }
@@ -5389,7 +5388,13 @@ NWScriptDefK1.Actions = {
     comment: "490: this function returns the bloking creature for the k_def_CBTBlk01 script\n",
     name: "GetBlockingCreature",
     type: 6,
-    args: ["object"]
+    args: ["object"],
+    action: function(args, _instr, action){
+      if(this.blocking instanceof ModuleCreature){
+        return this.blocking;
+      }
+      return undefined;
+    }
   },
   491:{
     comment: "491: Get oTarget's base fortitude saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
@@ -7801,7 +7806,7 @@ NWScriptDefK1.Actions = {
                 item.model.moduleObject = item;
                 
                 model.name = item.getTag();
-                model.buildSkeleton();
+                //model.buildSkeleton();
                 Game.group.placeables.add( model );
                 Game.module.area.items.push(item);
 
