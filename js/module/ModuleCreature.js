@@ -1513,11 +1513,6 @@ class ModuleCreature extends ModuleCreatureController {
       }
     }
 
-    //Hack to get bastilla's model working properly
-    if(this.bodyModel == 'p_bastilabb'){
-      this.bodyModel = 'p_bastilabb02';
-    }
-
     if(this.bodyModel == '****'){
       this.model = new THREE.Object3D();
       if(typeof onLoad === 'function')

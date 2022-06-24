@@ -514,21 +514,20 @@ THREE.AuroraModel = function () {
 
     for(let i = 0; i < this.skins.length; i++){
       let skinNode = this.skins[i];
-      if(typeof skinNode.bone_parts !== 'undefined'){
+      if(typeof skinNode._node.bone_parts !== 'undefined'){
         let bones = [];
         let inverses = [];
-        for(let j = 0; j < skinNode.bone_parts.length; j++){
-          let boneNode = this.nodes.get(skinNode.bone_parts[j]);
+        let parts = Array.from(this.nodes.values());
+        for(let j = 0; j < skinNode._node.bone_parts.length; j++){
+          let boneNode = parts[skinNode._node.bone_parts[j]];
           if(typeof boneNode != 'undefined'){
-            //boneNode.updateMatrixWorld(new THREE.Matrix4());
             bones[j] = boneNode;
-            inverses[j] = boneNode.matrixInverse;
+            inverses[j] = skinNode._node.bone_matrix[j];
           }
         }
         skinNode.geometry.bones = bones;
         skinNode.bind(new THREE.Skeleton( bones, inverses ));
         skinNode.skeleton.update();
-        //skinNode.updateMatrix();
         skinNode.updateMatrixWorld();
       }
     }
@@ -1307,12 +1306,8 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
 
           let bones = [];
           bones.length = _node.bone_parts.length;
-          for(let i = 0; i < _node.bone_parts.length; i++){
-            bones[i] = auroraModel.names[_node.bone_parts[i]];
-          }
           material.skinning = true;
           mesh = new THREE.SkinnedMesh( geometry , material );
-          mesh.bone_parts = bones;
           auroraModel.skins.push(mesh);
 
         }
