@@ -373,7 +373,6 @@ class ModuleItem extends ModuleObject {
         THREE.AuroraModel.FromMDL(mdl, {
           onComplete: (model) => {
             this.model = model;
-            //this.model.buildSkeleton();
             //TextureLoader.LoadQueue(() => {
               if(typeof onLoad === 'function')
                 onLoad(model);

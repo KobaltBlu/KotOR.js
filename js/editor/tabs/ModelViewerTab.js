@@ -318,7 +318,6 @@ class ModelViewerTab extends EditorTab {
             context: this, 
             onComplete: (model) => {
               this.model = model;
-              //this.model.buildSkeleton();
               this.selectable.add(model);
               model.position.set(0, 0, 0);
               TextureLoader.LoadQueue(() => {

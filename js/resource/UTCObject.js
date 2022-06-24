@@ -256,7 +256,6 @@ class UTCObject {
               try{
                 this.model.headhook.head = head;
                 this.model.headhook.add(head);
-                //head.buildSkeleton();
 
                 if(typeof onLoad === 'function')
                   onLoad();

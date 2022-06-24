@@ -193,10 +193,7 @@ class CharGenClass extends GameMenu {
                 if(typeof onLoad === 'function')
                   onLoad();
                 //setTimeout( () => {
-                  //control._3dViewModel.buildSkeleton();
-                  //control.objectCreature.head.buildSkeleton();
                   control._3dViewModel.playAnimation(0, true);
-                  //control.char.buildSkeleton();
                   //control.char.playAnimation('pause1', false);
                 //}, 100);
               });

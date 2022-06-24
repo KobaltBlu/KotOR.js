@@ -93,7 +93,6 @@ class MenuCharacter extends GameMenu {
                         this.onLoad();
   
                       //setTimeout( () => {
-                      //  this._3dViewModel.buildSkeleton();
                         this._3dViewModel.playAnimation(0, true);
                       //}, 1000)
                 
@@ -166,7 +165,6 @@ class MenuCharacter extends GameMenu {
       this._3dViewModel.children[0].children[1].add(this.char);
       TextureLoader.LoadQueue(() => {
         setTimeout( () => {
-          //this.char.buildSkeleton();
           this.char.playAnimation('good', true);
         }, 100);
       }, (texName) => { });

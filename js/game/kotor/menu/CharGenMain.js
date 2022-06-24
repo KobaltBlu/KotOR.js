@@ -89,7 +89,6 @@ class CharGenMain extends GameMenu {
           control.camerahook.quaternion.w
         );
 
-        //control._3dViewModel.buildSkeleton();
         control._3dViewModel.playAnimation(0, true);
 
       },

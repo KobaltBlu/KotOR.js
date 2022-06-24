@@ -107,7 +107,6 @@ class MainMenu extends GameMenu {
                       if(typeof this.onLoad === 'function')
                         this.onLoad();
   
-                      //this._3dViewModel.buildSkeleton();
                       this._3dViewModel.playAnimation(0, true);
                 
                     }, () => {

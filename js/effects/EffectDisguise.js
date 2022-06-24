@@ -25,10 +25,6 @@ class EffectDisguise extends GameEffect {
     
     if(this.object instanceof ModuleCreature){
       //this.object.LoadModel(() => {
-        
-        //if(this.getModel())
-        //  this.getModel().buildSkeleton();
-
         //console.log('Disguise applied', this.object, this);
       //});
     }

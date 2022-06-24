@@ -115,7 +115,6 @@ class MenuGalaxyMap extends GameMenu {
                       this.onLoad();
 
                     //setTimeout( () => {
-                      //this._3dViewModel.buildSkeleton();
                       //this._3dViewModel.playAnimation(0, true);
                     //}, 1000)
   

@@ -1196,7 +1196,6 @@ class ModuleEditorTab extends EditorTab {
   
               model.hasCollision = true;
               model.name = crt.getTag();
-              //try{ model.buildSkeleton(); }catch(e){}
               this.group.creatures.add( model );
               asyncLoop.next();
             });

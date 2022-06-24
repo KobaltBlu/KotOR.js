@@ -90,7 +90,6 @@ class CharGenMain extends GameMenu {
 
         control._3dView.camera.position.z = 1;
 
-        //control._3dViewModel.buildSkeleton();
         control._3dViewModel.playAnimation(0, true);
 
       },

@@ -2864,7 +2864,6 @@ NWScriptDefK1.Actions = {
                       model.moduleObject = creature;
                       model.hasCollision = true;
                       model.name = creature.getTag();
-                      //model.buildSkeleton();
                       Game.group.creatures.add( model );
                       creature.getCurrentRoom();
                       creature.onSpawn();
@@ -2898,7 +2897,6 @@ NWScriptDefK1.Actions = {
                       
                       model.hasCollision = true;
                       model.name = plc.getTag();
-                      //model.buildSkeleton();
                       Game.group.placeables.add( model );
                       Game.module.area.placeables.push(plc);
       
@@ -7806,7 +7804,6 @@ NWScriptDefK1.Actions = {
                 item.model.moduleObject = item;
                 
                 model.name = item.getTag();
-                //model.buildSkeleton();
                 Game.group.placeables.add( model );
                 Game.module.area.items.push(item);
 

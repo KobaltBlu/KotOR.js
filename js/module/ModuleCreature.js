@@ -1694,7 +1694,6 @@ class ModuleCreature extends ModuleCreatureController {
           case UTCObject.SLOT.ARMOR:
             this.equipment.ARMOR = item;
             this.LoadModel( () => {
-              //this.getModel().buildSkeleton()
               if(typeof onLoad == 'function')
                 onLoad();
             });
@@ -1779,9 +1778,7 @@ class ModuleCreature extends ModuleCreatureController {
           }catch(e){}
 
           this.equipment.HEAD = undefined;
-          this.LoadModel( () => {
-            this.getModel().buildSkeleton()
-          });
+          this.LoadModel();
         break;
         case UTCObject.SLOT.ARMS:
           try{
@@ -1823,9 +1820,7 @@ class ModuleCreature extends ModuleCreatureController {
           }
 
           this.equipment.ARMOR = undefined;
-          this.LoadModel( () => {
-            this.getModel().buildSkeleton()
-          });
+          this.LoadModel();
         break;
         case UTCObject.SLOT.RIGHTARMBAND:
           try{

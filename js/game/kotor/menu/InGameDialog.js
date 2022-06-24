@@ -602,7 +602,6 @@ class MenuDialog extends GameMenu {
 
     for(let actor in this.dialog.stunt){
       try{
-        //this.dialog.stunt[actor].model.buildSkeleton();
         if(this.dialog.stunt[actor].model.skins){
           for(let i = 0; i < this.dialog.stunt[actor].model.skins.length; i++){
             this.dialog.stunt[actor].model.skins[i].frustumCulled = true;
