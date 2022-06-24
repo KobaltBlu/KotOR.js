@@ -621,11 +621,25 @@ class NWScriptParser {
         this.scope = this.scopes[this.scopes.length - 1];
 
         if(typeof object.else == 'object' && Array.isArray(object.else)){
+          let else_declared = false;
           for(let i = 0; i < object.else.length; i++){
             this.scope = new NWScriptScope(this.program);
             this.scopes.push(this.scope);
 
-            this.walkASTStatement(object.else[i]);
+            const elseIf = object.else[i];
+            if(elseIf.type == 'else'){
+              if(else_declared){
+                this.throwError('Only one else statement can be chained in an If Else statement', object, elseIf);
+              }
+
+              if(i != (object.else.length-1)){
+                this.throwError('Else statements can only be declared at the end of an If Else statement', object, elseIf);
+              }
+
+              else_declared = true;
+            }
+
+            this.walkASTStatement(elseIf);
 
             this.scopes.pop().popped();
             this.scope = this.scopes[this.scopes.length - 1];

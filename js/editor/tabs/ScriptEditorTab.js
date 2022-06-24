@@ -547,13 +547,6 @@ class ScriptEditorTab extends EditorTab {
       const nw_types = ScriptEditorTab.nwScriptParser.engine_types.slice(0);
       for(let i = 0; i < nw_types.length; i++){
         const nw_type = nw_types[i];
-        // console.log({
-        //   label: nw_type.name,
-        //   kind: monaco.languages.CompletionItemKind.Keyword,
-        //   insertText: `${nw_type.name}`,
-        //   insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        //   documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
-        // });
         nw_suggestions.push({
           label: nw_type.name,
           kind: monaco.languages.CompletionItemKind.Keyword,
@@ -610,50 +603,56 @@ class ScriptEditorTab extends EditorTab {
       monaco.languages.registerCompletionItemProvider('nwscript', {
         provideCompletionItems: () => {
           // console.log('auto complete');
-
-          const local_suggestions = [
-            {
-              label: 'void main()',
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: ['void main () {', '\t$0', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'void main() Statement'
-            },
-            {
-              label: 'int StartingConditional()',
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'int StartingConditional() Statement'
-            },
-            {
-              label: 'ifelse',
-              kind: monaco.languages.CompletionItemKind.Snippet,
-              insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'If-Else Statement'
-            }
-          ];
-
-          const parser = tabManager?.currentTab?.nwScriptParser;
-          if(parser){
-            //Local Variables
-            const l_variables = parser.local_variables;
-            for(let i = 0; i < l_variables.length; i++){
-              const l_variable = l_variables[i];
-              // console.log(l_variable);
-              const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
-              local_suggestions.push({
-                label: l_variable.name,
-                kind: kind,
-                insertText: `${l_variable.name}`,
+          try{
+            const local_suggestions = [
+              {
+                label: 'void main()',
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: ['void main () {', '\t$0', '}'].join('\n'),
                 insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                documentation: `Variable:\n\n${l_variable.datatype.value} ${l_variable.name};`
-              });
-            }
-          }
+                documentation: 'void main() Statement'
+              },
+              {
+                label: 'int StartingConditional()',
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: 'int StartingConditional() Statement'
+              },
+              {
+                label: 'ifelse',
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: 'If-Else Statement'
+              }
+            ];
 
-          return { suggestions: local_suggestions.concat(nw_suggestions) };
+            const parser = tabManager?.currentTab?.nwScriptParser;
+            if(parser){
+              //Local Variables
+              const l_variables = parser.local_variables;
+              for(let i = 0; i < l_variables.length; i++){
+                const l_variable = l_variables[i];
+                // console.log(l_variable);
+                const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
+                local_suggestions.push({
+                  label: l_variable.name,
+                  kind: kind,
+                  insertText: `${l_variable.name}`,
+                  insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                  documentation: `Variable:\n\n${l_variable.datatype.value} ${l_variable.name};`
+                });
+              }
+            }
+            console.log('Autocomplete', [].concat(local_suggestions, nw_suggestions))
+            return { 
+              incomplete: true, 
+              suggestions: [].concat(local_suggestions, nw_suggestions) 
+            };
+          }catch(e){
+            console.error(e);
+          }
         }
       });
 
