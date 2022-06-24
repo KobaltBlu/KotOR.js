@@ -522,7 +522,7 @@ THREE.AuroraModel = function () {
           let boneNode = parts[skinNode._node.bone_parts[j]];
           if(typeof boneNode != 'undefined'){
             bones[j] = boneNode;
-            inverses[j] = skinNode._node.bone_matrix[j];
+            inverses[j] = skinNode._node.bone_inverse_matrix[j];
           }
         }
         skinNode.geometry.bones = bones;
@@ -534,7 +534,6 @@ THREE.AuroraModel = function () {
 
     this.bonesInitialized = true;
     this.animationManager.currentAnimation = this.oldAnim;
-
   }
 
   this.pose = function(node = this){
@@ -1303,13 +1302,9 @@ THREE.AuroraModel.NodeMeshBuilder = function(auroraModel, node, options){
         // SKIN MESH
         //-----------//
         if ((_node.NodeType & AuroraModel.NODETYPE.Skin) == AuroraModel.NODETYPE.Skin) {
-
-          let bones = [];
-          bones.length = _node.bone_parts.length;
           material.skinning = true;
           mesh = new THREE.SkinnedMesh( geometry , material );
           auroraModel.skins.push(mesh);
-
         }
 
         //------------//
