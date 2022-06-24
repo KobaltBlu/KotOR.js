@@ -10,11 +10,11 @@ class MenuGraphics extends GameMenu {
   constructor( args = {} ){
     super(args);
 
-    this.background = '1600x1200back';
+    this.background = 'blackfill';
     this.voidFill = true;
 
     this.LoadMenu({
-      name: 'optgraphics',
+      name: 'optgraphics_p',
       onLoad: () => {
 
         this.LBL_TITLE = this.getControlByName('LBL_TITLE');

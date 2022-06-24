@@ -736,6 +736,7 @@ class Game extends Engine {
           'MenuSound',
           'MenuSoundAdvanced',
           'MenuGraphics',
+          'MenuGraphicsAdvanced',
           'MenuResolutions',
           'LoadScreen',
           'InGameOverlay',
@@ -1034,6 +1035,12 @@ class Game extends Engine {
       Game.saturationPass.enabled = false;
       Game.filmPass.enabled = false;
       Game.colorPass.enabled = false;
+    }
+  }
+
+  static ReloadTextureCache(){
+    if(Game.module && Game.module.area){
+      Game.module.area.reloadTextures();
     }
   }
 

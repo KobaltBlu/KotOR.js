@@ -727,6 +727,8 @@ class Game extends Engine {
           'CharGenClass',
           'MainOptions',
           'MenuOptions',
+          'MenuGraphics',
+          'MenuGraphicsAdvanced',
           'MenuMap',
           'MenuInventory',
           'MenuAbilities',
@@ -755,7 +757,6 @@ class Game extends Engine {
           'MainOptions',
           'MainMovies',
           'MenuSound',
-          'MenuGraphics',
           'MenuResolutions',
           'InGameOverlay',
           'InGameAreaTransition',
@@ -1069,6 +1070,12 @@ class Game extends Engine {
     }
   }
 
+  static ReloadTextureCache(){
+    if(Game.module && Game.module.area){
+      Game.module.area.reloadTextures();
+    }
+  }
+
   static Update(){
     
     /*if(!Game.visible){
@@ -1294,7 +1301,7 @@ class Game extends Engine {
       //}
     }
 
-    if(scene_cursor_holder.visible && !cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
+    if(Game.scene_cursor_holder.visible && !cursorCaptured && Game.Mode == Game.MODES.INGAME && !Game.inDialog && !Game.MenuActive){
       let hoveredObject = false;
       Game.onMouseHitInteractive( (obj) => {
         if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){

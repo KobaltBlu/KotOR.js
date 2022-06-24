@@ -65,19 +65,35 @@ THREE.TPCLoader.prototype.findTPC = function ( tex, onComplete = null, onError =
     //console.log('GUI', tex, resKey)
     if (typeof onComplete === 'function') {
       Global.kotorERF.swpc_tex_gui.getRawResource(tex, ResourceTypes['tpc'], (buffer) => {
-        onComplete(buffer);
+        onComplete(buffer, 0);
       });
     }
 
     return;
   }
 
-  resKey = Global.kotorERF.swpc_tex_tpa.getResourceByKey(tex, ResourceTypes['tpc']);
+  let activeTexturePack;
+  switch(TextureLoader.TextureQuality){
+    case 2:
+      activeTexturePack = Global.kotorERF.swpc_tex_tpa;
+    break;
+    case 1:
+      activeTexturePack = Global.kotorERF.swpc_tex_tpb;
+    break;
+    case 0:
+      activeTexturePack = Global.kotorERF.swpc_tex_tpc;
+    break;
+    default:
+      activeTexturePack = Global.kotorERF.swpc_tex_tpa;
+    break;
+  }
+
+  resKey = activeTexturePack.getResourceByKey(tex, ResourceTypes['tpc']);
   if(resKey){
 
     if (typeof onComplete === 'function') {
-      Global.kotorERF.swpc_tex_tpa.getRawResource(tex, ResourceTypes['tpc'], (buffer) => {
-        onComplete(buffer);
+      activeTexturePack.getRawResource(tex, ResourceTypes['tpc'], (buffer) => {
+        onComplete(buffer, TextureLoader.TextureQuality || 2);
       });
     }
 
@@ -89,7 +105,7 @@ THREE.TPCLoader.prototype.findTPC = function ( tex, onComplete = null, onError =
 
     if (typeof onComplete === 'function') {
       Global.kotorERF.swpc_tex_tpb.getRawResource(resKey, (buffer) => {
-        onComplete(buffer);
+        onComplete(buffer, 2);
       });
     }
 
@@ -101,7 +117,7 @@ THREE.TPCLoader.prototype.findTPC = function ( tex, onComplete = null, onError =
 
     if (typeof onComplete === 'function') {
       Global.kotorERF.swpc_tex_tpc.getRawResource(resKey, (buffer) => {
-        onComplete(buffer);
+        onComplete(buffer, 3);
       });
     }
 
@@ -147,11 +163,12 @@ THREE.TPCLoader.prototype.loadTexture = function(texName, onLoad = null, onProgr
   // compressed cubemap texture stored in a single DDS file
   //console.log('Texture', texName);
 
-  this.findTPC(texName, (buffer) => {
+  this.findTPC(texName, (buffer, pack) => {
 
     let tpc = new TPCObject({
       filename: texName,
-      file: buffer
+      file: buffer,
+      pack: pack,
     });
 
     let texture = tpc.toCompressedTexture();
@@ -215,13 +232,14 @@ THREE.TPCLoader.prototype.load = function ( name, isLocal = false, onLoad = null
 	if(!isLocal){
 		//console.log('Image searching');
 
-    this.findTPC(name, (buffer) => {
+    this.findTPC(name, (buffer, pack) => {
 
       if ( onLoad != null ){
         onLoad(
           new TPCObject({
             filename: name,
-            file: buffer
+            file: buffer,
+            pack: pack,
           })
         );
       }

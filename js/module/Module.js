@@ -447,15 +447,10 @@ class Module {
       }
     }
 
-    //Cleanup texture cache ignoring GUI & LBL textures
-    Object.keys(TextureLoader.textures).forEach( (key) => {
-
-      if(key.substr(0, 3) == 'lbl' || key.substr(0, 3) == 'gui')
-        return;
-
-      TextureLoader.textures[key].dispose();
-      delete TextureLoader.textures[key]; 
-
+    //Cleanup texture cache
+    Array.from(TextureLoader.textures.keys()).forEach( (key) => {
+      TextureLoader.textures.get(key).dispose();
+      TextureLoader.textures.delete(key); 
     });
 
     //Clear walkmesh list

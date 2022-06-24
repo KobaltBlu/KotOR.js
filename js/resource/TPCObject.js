@@ -33,11 +33,13 @@ class TPCObject {
 
     args = Object.assign({
       file: null,
-      filename: null
+      filename: null,
+      pack: null,
     }, args);
 
     this.file = args.file;
     this.filename = args.filename;
+    this.pack = args.pack;
     this.header = this.readHeader();
     this.txi = null;
 
@@ -482,6 +484,7 @@ class TPCObject {
   toCompressedTexture(){
     let images = [];
     let texture = new THREE.CompressedTexture();
+    texture.pack = this.pack;
     texture.txi = null;
 
     texture.clone = function () {

@@ -194,12 +194,12 @@ class ModuleRoom extends ModuleObject {
                     this.buildGrass();
                     
                     //TextureLoader.LoadQueue( () => {
-                    //  if(typeof onComplete == 'function')
+                      if(typeof onComplete == 'function')
                         onComplete(this);
                     //});
                   }else{
                     //TextureLoader.LoadQueue( () => {
-                    //  if(typeof onComplete == 'function')
+                      if(typeof onComplete == 'function')
                         onComplete(this);
                     //});
                   }
@@ -207,7 +207,7 @@ class ModuleRoom extends ModuleObject {
 
               }else{
                 //TextureLoader.LoadQueue( () => {
-                //  if(typeof onComplete == 'function')
+                  if(typeof onComplete == 'function')
                     onComplete(this);
                 //});
               }

@@ -51,10 +51,12 @@ class AsyncLoop {
 
   next(){
     if(this.index < this.array.length){
+      const index = this.index;
+      const count = this.array.length;
       let obj = this.array[this.index++];
 
       if(typeof this.onLoop === 'function')
-        this.onLoop(obj, this);
+        this.onLoop(obj, this, index, count);
         
     }else if(typeof this.onComplete === 'function'){
       this.onComplete();

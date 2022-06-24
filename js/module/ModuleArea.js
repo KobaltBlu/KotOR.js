@@ -473,6 +473,77 @@ class ModuleArea extends ModuleObject {
     Game.followerCamera.updateProjectionMatrix();
   }
 
+  reloadTextures(){
+    Game.LoadScreen.Open();
+    Game.LoadScreen.lbl_hint.setText('');
+    Game.loadingTextures = true;
+    //Cleanup texture cache
+    Array.from(TextureLoader.textures.keys()).forEach( (key) => {
+      TextureLoader.textures.get(key).dispose();
+      TextureLoader.textures.delete(key); 
+    });
+
+
+    for(let i = 0; i < this.rooms.length; i++){
+      const room = this.rooms[i];
+      //room.LoadModel();
+    }
+
+    new AsyncLoop({
+      array: this.creatures,
+      onLoop: (creature, asyncLoop) => {
+        creature.LoadModel(() => {
+          asyncLoop.next();
+        });
+      }
+    }).iterate(() => {
+      new AsyncLoop({
+        array: PartyManager.party,
+        onLoop: (partyMember, asyncLoop) => {
+          partyMember.LoadModel(() => {
+            asyncLoop.next();
+          });
+        }
+      }).iterate(() => {
+        new AsyncLoop({
+          array: this.placeables,
+          onLoop: (placeable, asyncLoop) => {
+            placeable.LoadModel(() => {
+              asyncLoop.next();
+            });
+          }
+        }).iterate(() => {
+          new AsyncLoop({
+            array: this.doors,
+            onLoop: (door, asyncLoop) => {
+              door.LoadModel(() => {
+                asyncLoop.next();
+              });
+            }
+          }).iterate(() => {
+            new AsyncLoop({
+              array: this.rooms,
+              onLoop: (room, asyncLoop) => {
+                room.load(() => {
+                  asyncLoop.next();
+                });
+              }
+            }).iterate(() => {
+              TextureLoader.LoadQueue(() => {
+                Game.LoadScreen.Close();
+                Game.loadingTextures = false;
+              }, (textureName, index, count) => {
+                Game.LoadScreen.setProgress((index/count + 1) * 100);
+                Game.LoadScreen.lbl_hint.setText('Loading: '+textureName);
+                //console.log('tex', textureName, index, count);
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+
   SetTransitionWaypoint(sTag = ''){
     this.transWP = sTag;
   }
@@ -756,9 +827,9 @@ class ModuleArea extends ModuleObject {
 
     Game.audioEngine.SetReverbProfile(this.audio.EnvAudio);
 
-    this.loadPath( () => {
-      this.LoadVis( () => {
-        this.LoadLayout( () => {
+    this.LoadVis( () => {
+      this.LoadLayout( () => {
+        this.loadPath( () => {
           this.LoadScripts( () => {
             Game.scene.fog = this.fog;
             if(typeof onLoad == 'function')
@@ -1257,7 +1328,6 @@ class ModuleArea extends ModuleObject {
                 model.moduleObject = track;
                 model.index = trackIndex;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-                //model.buildSkeleton();
                 model.hasCollision = true;
                 Game.group.creatures.add( model );
       
@@ -1698,7 +1768,6 @@ class ModuleArea extends ModuleObject {
     
                 model.hasCollision = true;
                 model.name = crt.getTag();
-                //try{ model.buildSkeleton(); }catch(e){}
                 Game.group.creatures.add( model );
     
                 crt.getCurrentRoom();

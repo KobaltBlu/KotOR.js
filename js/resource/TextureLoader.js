@@ -13,10 +13,10 @@ class TextureLoader {
   static Load(name, onLoad = null, noCache = false){
     name = name.toLowerCase();
     //console.log('texture-load', name);
-    if(TextureLoader.textures.has(name) && !noCache){
+    if(TextureLoader.textures.has(name) || TextureLoader.guiTextures.has(name) && !noCache){
       //console.log('fetch-', TextureLoader.textures.get(name), name, onLoad, noCache);
       if(onLoad != null)
-        onLoad(TextureLoader.textures.get(name) ? TextureLoader.textures.get(name) : undefined);
+        onLoad(TextureLoader.textures.has(name) ? TextureLoader.textures.get(name) : TextureLoader.guiTextures.has(name) ? TextureLoader.guiTextures.get(name) : undefined);
 
     }else{
 
@@ -36,8 +36,13 @@ class TextureLoader {
               //console.log('fetch', texture);
               texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-              if(!noCache)
-                TextureLoader.textures.set(name, texture);
+              if(!noCache){
+                if(texture.pack === 0){
+                  TextureLoader.guiTextures.set(name, texture);
+                }else{
+                  TextureLoader.textures.set(name, texture);
+                }
+              }
 
               if(onLoad != null)
                 onLoad(texture);
@@ -230,10 +235,11 @@ class TextureLoader {
     
     let loop = new AsyncLoop({
       array: TextureLoader.queue.slice(0),
-      onLoop: (tex, asyncLoop) => {
+      onLoop: (tex, asyncLoop, index, count) => {
 
-        if(onProgress != null)
-          onProgress(tex.name);
+        if(typeof onProgress == 'function'){
+          onProgress(tex.name, index, count);
+        }
 
         //console.log('loadTex', tex.name);
 
@@ -633,10 +639,12 @@ class TextureLoader {
 TextureLoader.tpcLoader = new THREE.TPCLoader();
 TextureLoader.tgaLoader = new THREE.TGALoader();
 TextureLoader.textures = new Map();
+TextureLoader.guiTextures = new Map();
 TextureLoader.lightmaps = {};
 TextureLoader.particles = {};
 TextureLoader.queue = [];
 TextureLoader.Anisotropy = 8;
+TextureLoader.TextureQuality = 2;
 
 TextureLoader.onAnisotropyChanged = () => {
   TextureLoader.textures.forEach( tex => {
