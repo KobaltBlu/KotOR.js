@@ -28,7 +28,7 @@
 
     this.bone_parts = [];
 
-    for(let i = 0; i < 16; i++){
+    for(let i = 0; i < 17; i++){
       this.bone_parts[i] = this.auroraModel.mdlReader.ReadUInt16();
     }
 
