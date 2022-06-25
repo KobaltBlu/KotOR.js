@@ -1109,14 +1109,17 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
   }
 
   switch(node.name){
+    case 'talkdummy':
+      auroraModel.talkdummy = node;
+    break;
+    case 'cutscenedummy':
+      auroraModel.cutscenedummy = node;  
+    break;
+    case 'rootdummy':
+      auroraModel.rootdummy = node;
+    break;
     case 'headhook':
       auroraModel.headhook = node;
-    break;
-    case 'rhand':
-      auroraModel.rhand = node;
-    break;
-    case 'lhand':
-      auroraModel.lhand = node;
     break;
     case 'camerahook':
       auroraModel.camerahook = node;  
@@ -1133,6 +1136,18 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
     case 'deflecthook':
       auroraModel.deflecthook = node;
     break;
+    case 'maskhook':
+      auroraModel.maskhook = node;
+    break;
+    case 'gogglehook':
+      auroraModel.gogglehook = node;
+    break;
+    case 'rhand':
+      auroraModel.rhand = node;
+    break;
+    case 'lhand':
+      auroraModel.lhand = node;
+    break;
     case 'impact':
       auroraModel.impact = node;
     break;
@@ -1145,11 +1160,8 @@ THREE.AuroraModel.NodeParser = function(auroraModel, _node, options){
     case 'handconjure':
       auroraModel.handconjure = node;
     break;
-    case 'maskhook':
-      auroraModel.maskhook = node;
-    break;
-    case 'gogglehook':
-      auroraModel.gogglehook = node;
+    case 'trans':
+      auroraModel.trans = node;
     break;
   }
 
