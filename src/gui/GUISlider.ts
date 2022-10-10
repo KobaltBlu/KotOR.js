@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { TextureType } from "../enums/loaders/TextureType";
 import { GameState } from "../GameState";
-import { Mouse } from "../Mouse";
+import { Mouse } from "../controls/Mouse";
 
 /* @file
  * The GUISlider class.
@@ -85,7 +85,7 @@ export class GUISlider extends GUIControl{
     })
 
     this.addEventListener('click', () =>{
-      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
+      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
 
       let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
@@ -94,7 +94,7 @@ export class GUISlider extends GUIControl{
 
     this.addEventListener('mouseDown', (e: any) => {
       e.stopPropagation();
-      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
+      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
       let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
     });
@@ -114,7 +114,7 @@ export class GUISlider extends GUIControl{
 
   mouseInside(){
 
-    let mouseX = Mouse.Client.x - (window.innerWidth / 2);
+    let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
     let scrollBarWidth = this.extent.width;
     let threshold = (this.extent.width - 8)/2;
     this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;

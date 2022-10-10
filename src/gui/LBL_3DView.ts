@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey";
 import { GUIControl } from "./GUIControl";
 
 /* @file
@@ -114,7 +115,7 @@ export class LBL_3DView {
 
     for(let i = 0; i < this.scene.children.length; i++){
       let element = this.scene.children[i];
-      if(element instanceof THREE.AuroraModel){
+      if(element instanceof OdysseyModel3D){
         element.update(delta);
       }
     }

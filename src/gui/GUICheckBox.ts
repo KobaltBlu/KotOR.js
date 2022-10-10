@@ -105,8 +105,7 @@ export class GUICheckBox extends GUIControl{
     });
     //this.borderSelected.fill.material.defines.USE_MAP = '';
     this.borderSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    // @ts-expect-error
-    this.borderSelected.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+    this.borderSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.borderSelected.fill.mesh = new THREE.Mesh( this.borderSelected.fill.geometry, this.borderSelected.fill.material );
 
     this.widget.userData.selected.add( this.borderSelected.fill.mesh );
@@ -183,8 +182,7 @@ export class GUICheckBox extends GUIControl{
     });
     //this.highlightSelected.fill.material.defines.USE_MAP = '';
     this.highlightSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    // @ts-expect-error
-    this.highlightSelected.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+    this.highlightSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.highlightSelected.fill.mesh = new THREE.Mesh( this.highlightSelected.fill.geometry, this.highlightSelected.fill.material );
 
     this.widget.userData.highlightSelected.add( this.highlightSelected.fill.mesh );

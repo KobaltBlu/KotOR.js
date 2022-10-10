@@ -8,6 +8,7 @@ import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The base GameMenu class.

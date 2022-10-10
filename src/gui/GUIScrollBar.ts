@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
-import { Mouse } from "../Mouse";
+import { Mouse } from "../controls/Mouse";
 import { GameState } from "../GameState";
 
 /* @file
@@ -203,8 +203,8 @@ export class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('click', () =>{
-      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-      let mouseY = Mouse.Client.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
 
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
@@ -219,8 +219,8 @@ export class GUIScrollBar extends GUIControl{
 
     this.addEventListener('mouseDown', (e: any) => {
       e.stopPropagation();
-      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-      let mouseY = Mouse.Client.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
       this.upArrow.userData.updateBox();
@@ -228,8 +228,8 @@ export class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('mouseUp', () => {
-      let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-      let mouseY = Mouse.Client.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
       //console.log('GUIScrollBar', 'blah');
@@ -255,8 +255,8 @@ export class GUIScrollBar extends GUIControl{
 
   mouseInside(){
 
-    let mouseX = Mouse.Client.x - (window.innerWidth / 2);
-    let mouseY = Mouse.Client.y - (window.innerHeight / 2);
+    let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+    let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
     //console.log(mouseY);
     //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
 

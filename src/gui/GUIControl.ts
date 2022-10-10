@@ -291,7 +291,7 @@ export class GUIControl {
     //this.border.fill.material.defines.USE_MAP = '';
     this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     // @ts-expect-error
-    this.border.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 ) as BufferGeometry;
+    this.border.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 ) as BufferGeometry;
     this.border.fill.mesh = new THREE.Mesh( this.border.fill.geometry, this.border.fill.material );
 
     this.widget.userData.border.add( this.border.fill.mesh );
@@ -368,8 +368,7 @@ export class GUIControl {
     });
     //this.highlight.fill.material.defines.USE_MAP = '';
     this.highlight.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    // @ts-expect-error
-    this.highlight.fill.geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+    this.highlight.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.highlight.fill.mesh = new THREE.Mesh( this.highlight.fill.geometry, this.highlight.fill.material );
 
     this.widget.userData.highlight.add( this.highlight.fill.mesh );
@@ -1668,55 +1667,47 @@ export class GUIControl {
       switch(i){
         case 0: //top-border
           extent = this.getBorderExtent('top');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 1: //right-border
           extent = this.getBorderExtent('right');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(-Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 2: //bottom-border
           extent = this.getBorderExtent('bottom');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 3: //left-border
           extent = this.getBorderExtent('left');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 4: //top-left-corner
           extent = this.getBorderExtent('topLeft');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 5: //top-right-corner
           extent = this.getBorderExtent('topRight');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(-Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 6: //bottom-right-corner
           extent = this.getBorderExtent('bottomRight');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 7: //bottom-left-corner
           extent = this.getBorderExtent('bottomLeft');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
@@ -1762,55 +1753,47 @@ export class GUIControl {
       switch(i){
         case 0: //top-border
           extent = this.getHighlightExtent('top');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 1: //right-border
           extent = this.getHighlightExtent('right');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(-Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 2: //bottom-border
           extent = this.getHighlightExtent('bottom');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 3: //left-border
           extent = this.getHighlightExtent('left');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 4: //top-left-corner
           extent = this.getHighlightExtent('topLeft');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 5: //top-right-corner
           extent = this.getHighlightExtent('topRight');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(-Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 6: //bottom-right-corner
           extent = this.getHighlightExtent('bottomRight');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
         break;
         case 7: //bottom-left-corner
           extent = this.getHighlightExtent('bottomLeft');
-          // @ts-expect-error
-          planes[i] = new THREE.PlaneBufferGeometry(extent.width, extent.height, 1, 1);
+          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI/2);
           planes[i].translate(extent.left, extent.top, 0);
         break;

@@ -103,8 +103,7 @@ export class GUIListBox extends GUIControl {
     //this.targetMaterial.blendSrcAlpha = THREE.OneFactor;
     //this.targetMaterial.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
 
-    // @ts-expect-error
-    this.targetGeometry = new THREE.PlaneBufferGeometry(this.width, this.height, 1, 1);
+    this.targetGeometry = new THREE.PlaneGeometry(this.width, this.height, 1, 1);
     this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
     this.targetMaterial.map = this.texture.texture;
     this.targetMesh.position.z = 4;
