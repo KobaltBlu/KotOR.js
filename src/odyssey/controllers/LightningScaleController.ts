@@ -19,4 +19,3 @@ export class LightningScaleController extends OdysseyController {
 
 }
 
-module.exports = LightningScaleController;

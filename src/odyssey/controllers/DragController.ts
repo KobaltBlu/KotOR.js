@@ -19,4 +19,3 @@ export class DragController extends OdysseyController {
 
 }
 
-module.exports = DragController;
