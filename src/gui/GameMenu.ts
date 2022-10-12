@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { GUIControl, GUIProtoItem, MenuManager } from "./";
+import { GUIControl, GUIProtoItem, MenuManager } from ".";
 import * as THREE from "THREE";
 import { GFFObject } from "../resource/GFFObject";
 import { TextureLoader } from "../loaders/TextureLoader";
@@ -9,114 +9,115 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { OdysseyObject3D } from "../three/odyssey";
+import { AudioEmitter } from "../audio/AudioEmitter";
 
 /* @file
  * The base GameMenu class.
  */
 
 export class GameMenu {
-
-  tGuiPanel: GUIControl;
-  menuGFF: GFFObject;
-  width: number;
-  height: number;
-  voidFill: boolean;
+  args: any;
+  _button_a: any;
+  _button_b: any;
+  _button_x: any;
+  _button_y: any;
   bVisible: boolean;
+  gui_resref: string;
   scale: number;
-  background: string;
+  enablePositionScaling: boolean = false;
+  isOverlayGUI: boolean;
+
+  background: any;
+  backgroundSprite: any;
   canCancel: boolean;
-  childMenu: GameMenu;
+  childMenu: any;
   activeWidget: any[];
+  tGuiPanel: any;
+  menuGFF: any;
+  width: any;
+  height: any;
+  voidFill: any;
+  backgroundVoidMaterial: any;
+  backgroundMaterial: any;
+  backgroundVoidSprite: any;
+  audioEmitter: AudioEmitter;
 
-  onLoad: Function;
-
-  _button_a: GUIControl;
-  _button_b: GUIControl;
-  _button_x: GUIControl;
-  _button_y: GUIControl;
-  backgroundVoidSprite: THREE.Mesh;
-  backgroundVoidMaterial: THREE.MeshBasicMaterial;
-  backgroundMaterial: THREE.MeshBasicMaterial;
-  backgroundSprite: THREE.Mesh;
-  isOverlayGUI: any;
-
-  constructor(args = {} as any){
-
-    args = Object.assign({
-      onLoad: null
-    }, args);
-
-    // this._button_a = undefined;
-    // this._button_b = undefined;
-    // this._button_x = undefined;
-    // this._button_y = undefined;
+  constructor(){
+    this._button_a = undefined;
+    this._button_b = undefined;
+    this._button_x = undefined;
+    this._button_y = undefined;
 
     this.bVisible = false;
     this.scale = 1;
-    this.background = '';
+    this.background = null;
+    this.backgroundSprite = new OdysseyObject3D();
     this.canCancel = true;
 
-    //this.childMenu = undefined; //This is for MenuTop
+    this.childMenu = undefined; //This is for MenuTop
 
     this.activeWidget = [];//undefined; //Used for hoverstate tracking
-
-    //Callbacks
-    this.onLoad = args.onLoad;
   }
 
-  LoadMenu(args = {} as any){
-    args = Object.assign({
-      name: '',
-      scale: false,
-      onLoad: null
-    }, args);
+  async Load(): Promise<GameMenu> {
+    await this.LoadMenu();
+    return this;
+  }
 
-    //mainmenu16x12
-    this.LoadBackground( () => {
-      
-      ResourceLoader.loadResource(ResourceTypes['gui'], args.name, (guiBuffer: Buffer) => {
+  LoadMenu(): Promise<GameMenu> {
+    return new Promise( (resolve: Function, reject: Function) => {
+      this.tGuiPanel = null;
+  
+      //mainmenu16x12
+      this.LoadBackground( () => {
         
-        this.menuGFF = new GFFObject(guiBuffer);
-        
-        this.tGuiPanel = new GUIControl(this, this.menuGFF.RootNode, undefined, args.scale);
-        this.tGuiPanel.allowClick = false;
-        
-        let extent = this.tGuiPanel.extent;
-        this.width = extent.width;
-        this.height = extent.height;
-
-        let panelControl = this.tGuiPanel.createControl();
-
-        if(this.voidFill){
-          this.tGuiPanel.widget.add(this.backgroundVoidSprite);
-        }
-
-        this.tGuiPanel.widget.add(this.backgroundSprite);
-        
-        panelControl.position.x = 0;//tGuiPanel.extent.left - ( ($(window).innerWidth() - tGuiPanel.extent.width) / 2 );
-        panelControl.position.y = 0;//-tGuiPanel.extent.top + ( ($(window).innerHeight() - tGuiPanel.extent.height) / 2 );
-
-        //This auto assigns references for the controls to the menu object.
-        //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-        //You can just use this.CONTROL_NAME 
-        this.AssignChildControlsToMenu(this.tGuiPanel);
-
-        TextureLoader.LoadQueue(() => {
-          if(typeof args.onLoad === 'function')
-            args.onLoad();
-        }, (texName: string) => {
+        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref, (buffer: Buffer) => {
           
+          this.menuGFF = new GFFObject(buffer);
+          
+          this.tGuiPanel = new GUIControl(this, this.menuGFF.RootNode, undefined, this.enablePositionScaling);
+          this.tGuiPanel.allowClick = false;
+          
+          let extent = this.tGuiPanel.extent;
+          this.width = extent.width;
+          this.height = extent.height;
+  
+          let panelControl = this.tGuiPanel.createControl();
+  
+          if(this.voidFill){
+            this.tGuiPanel.widget.add(this.backgroundVoidSprite);
+          }
+  
+          this.tGuiPanel.widget.add(this.backgroundSprite);
+          
+          panelControl.position.x = 0;//tGuiPanel.extent.left - ( (jQuery(window).innerWidth() - tGuiPanel.extent.width) / 2 );
+          panelControl.position.y = 0;//-tGuiPanel.extent.top + ( (jQuery(window).innerHeight() - tGuiPanel.extent.height) / 2 );
+  
+          //This auto assigns references for the controls to the menu object.
+          //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
+          //You can just use this.CONTROL_NAME 
+          this.AssignChildControlsToMenu(this.tGuiPanel);
+  
+          TextureLoader.LoadQueue(() => {
+            resolve(this);
+          });
+  
         });
-
+  
       });
-
     });
   }
+
+  async MenuControlInitializer(): Promise<any> {
+    return;
+  };
 
   AssignChildControlsToMenu(object: GUIControl){
     if(object instanceof GUIControl){
       for(let i = 0, len = object.children.length; i < len; i++){
         let ctrl = object.children[i];
+        if(!isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
         (this as any)[ctrl.name] = ctrl;
         this.AssignChildControlsToMenu(ctrl);
       }
@@ -162,7 +163,7 @@ export class GameMenu {
 
   getControlByName(name: string): GUIControl {
     try{
-      return this.tGuiPanel.getControl().getObjectByName(name).userData.control;
+      return this.tGuiPanel.getControl().getObjectByName(name).control;
     }catch(e){
       console.error('getControlByName', 'Control not found', name);
     }
@@ -198,11 +199,15 @@ export class GameMenu {
     this.Show();
   }
 
+  Remove(){
+    //TODO
+  }
+
   IsVisible(){
     return this.bVisible;
   }
 
-  Update(delta = 0){
+  Update(delta: number = 0){
     //Only update if the Menu is visible
     if(!this.bVisible)
       return;
@@ -251,7 +256,7 @@ export class GameMenu {
   }
 
   GetActiveControls(){
-    let controls: GUIControl[] = [];
+    let controls = [];
     if(this.tGuiPanel){
       controls = this.tGuiPanel.getActiveControls();
     }

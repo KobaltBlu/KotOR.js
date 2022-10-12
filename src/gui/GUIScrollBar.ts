@@ -247,10 +247,10 @@ export class GUIScrollBar extends GUIControl{
 
   }
   scrollUp() {
-    throw new Error("Method not implemented.");
+    // throw new Error("Method not implemented.");
   }
   scrollDown() {
-    throw new Error("Method not implemented.");
+    // throw new Error("Method not implemented.");
   }
 
   mouseInside(){

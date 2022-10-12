@@ -11,5 +11,5 @@ export * from "./GUIProtoItem";
 export * from "./GUIScrollBar";
 export * from "./GUISlider";
 export * from "./LBL_3DView";
-export * from "./Menu";
+export * from "./GameMenu";
 export * from "../managers/MenuManager";

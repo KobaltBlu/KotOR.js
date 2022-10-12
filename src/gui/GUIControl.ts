@@ -16,10 +16,11 @@ import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox
 
 import { createQuadElements as createIndicies } from "../utility/QuadIndices";
 import { TLKManager } from "../managers/TLKManager";
-import { GameEngineType, GameState } from "../GameState";
+import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -30,11 +31,12 @@ const box = { min: [0, 0], max: [0, 0] }
 
 export class GUIControl {
   position: any;
+  _3dViewModel: any;
   node(node: any) {
-    throw new Error("Method not implemented.");
+    // throw new Error("Method not implemented.");
   }
   calculateBox() {
-    throw new Error("Method not implemented.");
+    return;
   }
 
   static colors = {

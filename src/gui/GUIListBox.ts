@@ -6,7 +6,8 @@ import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
-import { GameEngineType, GameState } from "../GameState";
+import { GameState } from "../GameState";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 /* @file
  * The GUIListBox class.
