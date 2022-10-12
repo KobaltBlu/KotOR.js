@@ -22,11 +22,11 @@ export class BinaryWriter {
     this.buffer = Buffer.allocUnsafe(0);
   }
 
-  Seek(pos){
+  Seek(pos: number){
     this.position = pos;
   }
 
-  MovePointerForward(num){
+  MovePointerForward(num: number){
     this.position += num;
   }
 
@@ -34,7 +34,7 @@ export class BinaryWriter {
     return this.position;
   }
 
-  EnlargeBuffer(buffer){
+  EnlargeBuffer(buffer: Buffer){
     //Check to see if we need to enlarge the buffer size
     let targetLength = this.position + buffer.length;
     if(targetLength > this.buffer.length){
@@ -91,31 +91,31 @@ export class BinaryWriter {
 
   }
 
-  WriteInt8(int8){
+  WriteInt8(int8: number){
     let tmpBuffer = Buffer.alloc(1);
     tmpBuffer.writeInt8(int8);
     this.AppendData(tmpBuffer);
   }
 
-  WriteUInt8(uint8){
+  WriteUInt8(uint8: number){
     let tmpBuffer = Buffer.alloc(1);
     tmpBuffer.writeUInt8(uint8);
     this.AppendData(tmpBuffer);
   }
 
-  WriteInt16(int16){
+  WriteInt16(int16: number){
     let tmpBuffer = Buffer.alloc(2);
     tmpBuffer.writeInt16LE(int16);
     this.AppendData(tmpBuffer);
   }
 
-  WriteUInt16(uint16){
+  WriteUInt16(uint16: number){
     let tmpBuffer = Buffer.alloc(2);
     tmpBuffer.writeUInt16LE(uint16);
     this.AppendData(tmpBuffer);
   }
 
-  WriteInt32(int32){
+  WriteInt32(int32: number){
     let tmpBuffer = Buffer.alloc(4);
     tmpBuffer.writeInt32LE(int32);
     this.AppendData(tmpBuffer);
@@ -127,10 +127,10 @@ export class BinaryWriter {
     this.AppendData(tmpBuffer);
   }
 
-  WriteChar(char, encoding='ascii'){
+  WriteChar(char: string, encoding='ascii'){
     if(char.length){
       let tmpBuffer = Buffer.alloc(1);
-      tmpBuffer.writeUInt8(char.charCodeAt());
+      tmpBuffer.writeUInt8(char.charCodeAt(0));
       this.AppendData(tmpBuffer);
     }
   }
@@ -148,11 +148,11 @@ export class BinaryWriter {
     }
   }
 
-  WriteString(string, encoding='ascii'){
+  WriteString(string: string, encoding='ascii'){
     this.WriteChars(string, encoding);
   }
 
-  WriteByte(byte){
+  WriteByte(byte: number){
     this.WriteUInt8(byte);
   }
 
@@ -169,25 +169,25 @@ export class BinaryWriter {
     this.AppendData(tmpBuffer);
   }
 
-  WriteSingle(single){
+  WriteSingle(single: number){
     let tmpBuffer = Buffer.alloc(4);
     tmpBuffer.writeFloatLE(single);
     this.AppendData(tmpBuffer);
   }
 
-  WriteDouble(double){
+  WriteDouble(double: number){
     let tmpBuffer = Buffer.alloc(8);
     tmpBuffer.writeDoubleLE(double);
     this.AppendData(tmpBuffer);
   }
 
-  WriteUInt64(uint64){
+  WriteUInt64(uint64: number){
     let tmpBuffer = Buffer.alloc(8);
     tmpBuffer.writeDoubleLE(uint64);
     this.AppendData(tmpBuffer);
   }
 
-  WriteInt64(int64){
+  WriteInt64(int64: number){
     let tmpBuffer = Buffer.alloc(8);
     tmpBuffer.writeDoubleLE(int64);
     this.AppendData(tmpBuffer);
