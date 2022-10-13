@@ -1,18 +1,30 @@
+import { GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleCreature, ModuleObject } from "../module";
+
 export class EffectDisguise extends GameEffect {
-  constructor( disguise_id = undefined ){
+  appearance: any;
+  constructor( disguise_id: number = 0 ){
     super();
     this.type = GameEffectType.EffectDisguise;
 
     //intList[0] : appearance.2da id / disguise id
     this.setInt(0, disguise_id);
-    this.appearance = Global.kotor2DA.appearance.rows[this.getInt(0)];
+    const appearance2DA = TwoDAManager.datatables.get('appearance');
+    if(appearance2DA){
+      this.appearance = appearance2DA.rows[this.getInt(0)];
+    }
     
   }
 
-  initialize(){
+  async initialize(){
     super.initialize();
 
-    this.appearance = Global.kotor2DA.appearance.rows[this.getInt(0)];
+    const appearance2DA = TwoDAManager.datatables.get('appearance');
+    if(appearance2DA){
+      this.appearance = appearance2DA.rows[this.getInt(0)];
+    }
 
     return this;
   }

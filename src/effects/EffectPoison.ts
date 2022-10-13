@@ -1,4 +1,11 @@
+import { EffectVisualEffect, GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleObject } from "../module";
+
 export class EffectPoison extends GameEffect {
+  time: number;
+  poison: any;
   constructor(){
     super();
     this.type = GameEffectType.EffectPoison;
@@ -17,10 +24,12 @@ export class EffectPoison extends GameEffect {
 
   }
 
-  initialize(){
+  async initialize(){
     super.initialize();
-
-    this.poison = Global.kotor2DA.poison.rows[this.getPoisionId()];
+    const poison2DA = TwoDAManager.datatables.get('poison');
+    if(poison2DA){
+      this.poison = poison2DA.rows[this.getPoisionId()];
+    }
 
     return this;
   }

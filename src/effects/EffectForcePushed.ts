@@ -1,3 +1,10 @@
+import { EffectSetState, GameEffect } from ".";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreature, ModuleObject } from "../module";
+import * as THREE from 'three';
+import { GameState } from "../GameState";
+
 export class EffectForcePushed extends GameEffect {
   constructor(){
     super();

@@ -1,8 +1,24 @@
+import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameState } from "../GameState";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleCreature } from "../module";
+import { OdysseyModel } from "../odyssey";
+import { OdysseyModel3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
 import { GameEffect } from "./GameEffect";
 
 export class EffectVisualEffect extends GameEffect {
+  visualEffect: any;
+  model: OdysseyModel3D;
+  impact_model: OdysseyModel3D;
+  impact_root_model: OdysseyModel3D;
+  impact_head_model: OdysseyModel3D;
+  impactTimer: number;
+  impactRootTimer: number;
+  impactHeadTimer: number;
 
   constructor(){
     super();
@@ -12,10 +28,13 @@ export class EffectVisualEffect extends GameEffect {
 
   }
 
-  initialize(){
+  async initialize(){
     super.initialize();
-    
-    this.visualEffect = Global.kotor2DA.visualeffects.getByID(this.getInt(0));
+
+    const visualeffects2DA = TwoDAManager.datatables.get('visualeffects');
+    if(visualeffects2DA){
+      this.visualEffect = visualeffects2DA.getByID(this.getInt(0));
+    }
 
     return this;
   }
@@ -178,10 +197,10 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.imp_impact_node != '****'){
       GameState.ModelLoader.load({
         file: this.visualEffect.imp_impact_node,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.object.context,
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.impact_model = model;
               if(this.object.model){
                 if(this.object.model.impact){
@@ -214,10 +233,10 @@ export class EffectVisualEffect extends GameEffect {
     if(this.getImpactRootModel() != '****'){
       GameState.ModelLoader.load({
         file: this.getImpactRootModel(),
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.object.context,
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.impact_root_model = model;
               if(this.object.model){
                 this.object.model.add(this.impact_root_model);
@@ -236,10 +255,10 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.imp_headcon_node != '****'){
       GameState.ModelLoader.load({
         file: this.visualEffect.imp_headcon_node,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.object.context,
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.impact_head_model = model;
               if(this.object.model.headconjure){
                 this.object.model.headconjure.add(this.impact_head_model);
@@ -267,7 +286,7 @@ export class EffectVisualEffect extends GameEffect {
         if(fxNumber >= 13)
           fxNumber += 1;
 
-        return 'fx_tex_' + pad(fxNumber, 2);
+        return 'fx_tex_' + Utility.PadInt(fxNumber, 2);
     }
   }
 
@@ -283,12 +302,12 @@ export class EffectVisualEffect extends GameEffect {
       if(this.object instanceof ModuleCreature){
         GameState.ModelLoader.load({
           file: this.object.bodyModel,
-          onLoad: (mdl) => {
+          onLoad: (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
               textureVar: fx_tex,
               isForceShield: true,
               context: this.object.context,
-              onComplete: (model) => {
+              onComplete: (model: OdysseyModel3D) => {
                 this.model = model;
                 GameState.scene.add(model);
                 model.position.copy(this.object.position);
@@ -299,12 +318,12 @@ export class EffectVisualEffect extends GameEffect {
                 if(this.object.headModel){
                   GameState.ModelLoader.load({
                     file: this.object.headModel,
-                    onLoad: (mdl) => {
+                    onLoad: (mdl: OdysseyModel) => {
                       OdysseyModel3D.FromMDL(mdl, {
                         textureVar: fx_tex,
                         context: this.object.context,
                         isForceShield: true,
-                        onComplete: (head) => {
+                        onComplete: (head: OdysseyModel3D) => {
                           this.model.headhook.head = head;
                           this.model.headhook.add(head);
                           //head.disableMatrixUpdate();
@@ -337,12 +356,12 @@ export class EffectVisualEffect extends GameEffect {
       if(this.object instanceof ModuleCreature){
         GameState.ModelLoader.load({
           file: this.object.bodyModel,
-          onLoad: (mdl) => {
+          onLoad: (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
               textureVar: fx_tex,
               isForceShield: true,
               context: this.object.context,
-              onComplete: (model) => {
+              onComplete: (model: OdysseyModel3D) => {
                 this.model = model;
                 GameState.scene.add(model);
                 model.position.copy(this.object.position);
@@ -353,12 +372,12 @@ export class EffectVisualEffect extends GameEffect {
                 if(this.object.headModel){
                   GameState.ModelLoader.load({
                     file: this.object.headModel,
-                    onLoad: (mdl) => {
+                    onLoad: (mdl: OdysseyModel) => {
                       OdysseyModel3D.FromMDL(mdl, {
                         textureVar: fx_tex,
                         context: this.object.context,
                         isForceShield: true,
-                        onComplete: (head) => {
+                        onComplete: (head: OdysseyModel3D) => {
                           this.model.headhook.head = head;
                           this.model.headhook.add(head);
                           //head.disableMatrixUpdate();

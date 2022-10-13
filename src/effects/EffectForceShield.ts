@@ -1,4 +1,10 @@
+import { EffectDamageResistance, EffectVisualEffect, GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleObject } from "../module";
+
 export class EffectForceShield extends GameEffect {
+  forceShield: any;
   constructor(){
     super();
     this.type = GameEffectType.EffectForceShield;
@@ -7,10 +13,13 @@ export class EffectForceShield extends GameEffect {
     
   }
 
-  initialize(){
+  async initialize(){
     super.initialize();
 
-    this.forceShield = Global.kotor2DA.forceshields.rows[this.getInt(0)];
+    const forceShield2DA = TwoDAManager.datatables.get('forceshields');
+    if(forceShield2DA){
+      this.forceShield = forceShield2DA.rows[this.getInt(0)];
+    }
 
     return this;
   }
@@ -33,7 +42,7 @@ export class EffectForceShield extends GameEffect {
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
-    let eDamageResistEffect = new EffectDamageResistance(this.forceShield.damageflags, this.forceShield.resistance, this.forceShield.amount, this.forceShield.vulnerflags);
+    let eDamageResistEffect = new EffectDamageResistance();
     eDamageResistEffect.setCreator(this.getCreator());
     eDamageResistEffect.setSpellId(this.getSpellId());
     eDamageResistEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
@@ -43,6 +52,11 @@ export class EffectForceShield extends GameEffect {
     eDamageResistEffect.initialize();
     this.object.addEffect(eDamageResistEffect);
     eDamageResistEffect.setSkipOnLoad(true);
+
+    eDamageResistEffect.setInt(0, this.forceShield.damageflags);
+    eDamageResistEffect.setInt(1, this.forceShield.resistance);
+    eDamageResistEffect.setInt(2, this.forceShield.amount);
+    eDamageResistEffect.setInt(3, this.forceShield.vulnerflags);
 
   }
 

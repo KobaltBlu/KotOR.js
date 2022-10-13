@@ -1,3 +1,7 @@
+import { GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObject } from "../module";
+
 export class EffectBlasterDeflectionIncrease extends GameEffect {
   constructor(){
     super();

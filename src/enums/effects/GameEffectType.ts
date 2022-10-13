@@ -8,7 +8,7 @@ export enum GameEffectType {
   EffectHaste =                      0x01,
   EffectDamageResistance =           0x02,
   EffectSlow =                       0x03,
-  EffectRessurection =               0x04,
+  EffectResurrection =               0x04,
   EffectDisease =                    0x05,
   EffectSummonCreature =             0x06,
   EffectRegenerate =                 0x07,

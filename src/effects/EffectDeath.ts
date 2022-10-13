@@ -1,3 +1,8 @@
+import { GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObject } from "../module";
+
 export class EffectDeath extends GameEffect {
   constructor(){
     super();

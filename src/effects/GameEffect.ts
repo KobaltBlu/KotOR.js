@@ -1,3 +1,4 @@
+import { EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectDisease, EffectEntangle, EffectFeat, EffectForceFizzle, EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, EffectImmunity, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRacialType, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSlow, EffectSpellImmunity, EffectTemporaryHitPoints, EffectVisualEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
@@ -5,6 +6,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ModuleObject } from "../module/ModuleObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import { EffectDisguise } from "./EffectDisguise";
 
 //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
 
@@ -47,7 +49,7 @@ export class GameEffect {
 
   }
 
-  initialize(){
+  async initialize(){
     if(this.initialized)
       return this;
 
@@ -215,7 +217,7 @@ export class GameEffect {
   ///////////////
 
   //Called when the effect is applied ingame
-  onApply(){
+  onApply(object?: ModuleObject){
     if(this.applied)
       return;
 
@@ -287,8 +289,8 @@ export class GameEffect {
         case GameEffectType.EffectSlow: //Slow
           effect = new EffectSlow();
         break;
-        case GameEffectType.EffectRessurection: //Resurrection
-          effect = new EffectRessurection();
+        case GameEffectType.EffectResurrection: //Resurrection
+          effect = new EffectResurrection();
         break;
         case GameEffectType.EffectDisease: //Disease
           effect = new EffectDisease();

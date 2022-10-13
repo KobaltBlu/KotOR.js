@@ -1,5 +1,11 @@
+import { GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObject } from "../module";
+
 export class EffectLink extends GameEffect {
-  constructor(effect1 = undefined, effect2 = undefined){
+  effect1: GameEffect;
+  effect2: GameEffect;
+  constructor(effect1: GameEffect = undefined, effect2: GameEffect = undefined){
     super();
     this.type = GameEffectType.EffectLink;
     this.effect1 = effect1;

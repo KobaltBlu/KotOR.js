@@ -1,4 +1,11 @@
+import { GameEffect } from ".";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObject } from "../module";
+import * as THREE from "three";
+
 export class EffectSetState extends GameEffect {
+  elapsed: number;
+  fp_distance: number;
   constructor(){
     super();
     this.type = GameEffectType.EffectSetState;

@@ -1,4 +1,16 @@
+import { GameEffect } from ".";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameState } from "../GameState";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleObject } from "../module";
+import { OdysseyModel } from "../odyssey";
+import { OdysseyModel3D } from "../three/odyssey";
+
 export class EffectBeam extends GameEffect {
+  modelName: string;
+  model: OdysseyModel3D;
+  visualEffect: any;
 
   constructor(){
     super();
@@ -10,16 +22,19 @@ export class EffectBeam extends GameEffect {
 
     //objectList[0] : caster
 
-    this.modelName = undefined;
-    this.model = undefined;
+    // this.modelName = undefined;
+    // this.model = undefined;
 
   }
 
-  initialize(){
+  async initialize(){
     if(this.initialized)
       return this;
-
-    this.visualEffect = Global.kotor2DA.visualeffects.getByID(this.getInt(0));
+      
+    const visualeffects2DA = TwoDAManager.datatables.get('visualeffects');
+    if(visualeffects2DA){
+      this.visualEffect = visualeffects2DA.getByID(this.getInt(0));
+    }
 
     super.initialize();
 
@@ -74,9 +89,9 @@ export class EffectBeam extends GameEffect {
 
       GameState.ModelLoader.load({
         file: this.modelName,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.model = model;
               resolve(this);
             }
