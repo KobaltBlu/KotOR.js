@@ -1,11 +1,56 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleCreature, ModuleObject } from ".";
+import { CombatEngine } from "../CombatEngine";
+import { EffectDisguise } from "../effects/EffectDisguise";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
+import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { InventoryManager } from "../managers/InventoryManager";
+import { PartyManager } from "../managers/PartyManager";
+import { TLKManager } from "../managers/TLKManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { OdysseyModel } from "../odyssey";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel3D } from "../three/odyssey";
+
 /* @file
  * The ModuleItem class.
  */
 
 export class ModuleItem extends ModuleObject {
+  equippedRes: any;
+  baseItem: number;
+  addCost: number;
+  cost: number;
+  modelVariation: number;
+  textureVariation: number;
+  palleteID: number;
+  loaded: boolean;
+  properties: any[];
+  upgradeItems: any = {};
+  possessor: any;
+  descIdentified: any;
+  stolen: any;
+  infinite: any;
+  inventoryRes: any;
+  stackSize: any;
+  charges: any;
+  deleting: any;
+  dropable: any;
+  identified: any;
+  maxCharges: any;
+  newItem: any;
+  nonEquippable: any;
+  pickpocketable: any;
+  upgrades: any;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -58,7 +103,10 @@ export class ModuleItem extends ModuleObject {
   }
 
   getBaseItem(){
-    return Global.kotor2DA['baseitems'].rows[this.getBaseItemId()];
+    const _2DA = TwoDAManager.datatables.get('baseitems');
+    if(_2DA){
+      return _2DA.rows[this.getBaseItemId()];
+    }
   }
 
   getBodyVariation(){
@@ -107,7 +155,7 @@ export class ModuleItem extends ModuleObject {
   isDisguise(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return true;
       }
     }
@@ -117,7 +165,7 @@ export class ModuleItem extends ModuleObject {
   getDisguiseAppearance(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return property.getValue();
       }
     }
@@ -127,7 +175,7 @@ export class ModuleItem extends ModuleObject {
   getDisguiseAppearanceId(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Disguise)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return property.subType;
       }
     }
@@ -150,8 +198,8 @@ export class ModuleItem extends ModuleObject {
     return this.stackSize;
   }
 
-  setStackSize(num){
-    return this.stackSize = num;
+  setStackSize(value: number){
+    return this.stackSize = value;
   }
 
   getLocalizedName(){
@@ -170,7 +218,7 @@ export class ModuleItem extends ModuleObject {
     let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Armor)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Armor)){
         bonus += property.getValue();
       }
     }
@@ -179,7 +227,7 @@ export class ModuleItem extends ModuleObject {
 
   getDexBonus(){
     if(this.baseItem){
-      return parseInt(this.baseItem.dexbonus) || 0;
+      return parseInt(this.getBaseItem().dexbonus) || 0;
     }
     return 0;
   }
@@ -187,7 +235,7 @@ export class ModuleItem extends ModuleObject {
   getAttackBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.AttackBonus)){
+      if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
         return property.getValue();
       }
     }
@@ -204,7 +252,7 @@ export class ModuleItem extends ModuleObject {
   getMonsterDamage(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Monster_Damage)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Monster_Damage)){
         return property.getValue();
       }
     }
@@ -214,7 +262,7 @@ export class ModuleItem extends ModuleObject {
   getDamageBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Damage)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
         return property.getValue();
       }
     }
@@ -228,7 +276,7 @@ export class ModuleItem extends ModuleObject {
   getSTRBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 0)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 0)){
         return property.getValue();
       }
     }
@@ -238,7 +286,7 @@ export class ModuleItem extends ModuleObject {
   getDEXBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 1)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 1)){
         return property.getValue();
       }
     }
@@ -248,7 +296,7 @@ export class ModuleItem extends ModuleObject {
   getCONBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 2)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 2)){
         return property.getValue();
       }
     }
@@ -258,7 +306,7 @@ export class ModuleItem extends ModuleObject {
   getINTBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 3)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 3)){
         return property.getValue();
       }
     }
@@ -268,7 +316,7 @@ export class ModuleItem extends ModuleObject {
   getWISBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 4)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 4)){
         return property.getValue();
       }
     }
@@ -278,27 +326,30 @@ export class ModuleItem extends ModuleObject {
   getCHABonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.isUseable() && property.is(ModuleItem.PROPERTY.Ability, 5)){
+      if(property.isUseable() && property.is(ModuleItemProperty.Ability, 5)){
         return property.getValue();
       }
     }
     return 0;
   }
 
-  castAmmunitionAtTarget(oCaster = undefined, oTarget = undefined){
+  castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
       let ammunitiontype = parseInt(this.getBaseItem().ammunitiontype);
       if( ammunitiontype >= 1 ){
-        let ammunition = Global.kotor2DA.ammunitiontypes.rows[ammunitiontype];
-        if(typeof ammunition != 'undefined'){
-          
+        const _2DA = TwoDAManager.datatables.get('ammunitiontypes');
+        if(_2DA){
+          let ammunition = _2DA.rows[ammunitiontype];
+          if(typeof ammunition != 'undefined'){
+            
+          }
         }
       }
 
     }
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
 
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
@@ -306,7 +357,7 @@ export class ModuleItem extends ModuleObject {
       TemplateLoader.Load({
         ResRef: this.getEquippedRes(),
         ResType: ResourceTypes.uti,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           //console.log('ModuleItem', 'Template Loaded')
           this.template.Merge(gff);
           this.InitProperties();
@@ -327,7 +378,7 @@ export class ModuleItem extends ModuleObject {
       TemplateLoader.Load({
         ResRef: this.getInventoryRes(),
         ResType: ResourceTypes.uti,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           //console.log('ModuleItem', 'Template Loaded')
           this.template.Merge(gff);
           this.InitProperties();
@@ -354,7 +405,7 @@ export class ModuleItem extends ModuleObject {
     }
   }
 
-  LoadModel(onLoad = null){
+  LoadModel(onLoad?: Function){
     let itemclass = this.getBaseItem()['itemclass'];
     let DefaultModel = this.getBaseItem()['defaultmodel'];
     itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
@@ -369,9 +420,9 @@ export class ModuleItem extends ModuleObject {
 
     GameState.ModelLoader.load({
       file: DefaultModel,
-      onLoad: (mdl) => {
+      onLoad: (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (model) => {
+          onComplete: (model: OdysseyModel3D) => {
             this.model = model;
             //TextureLoader.LoadQueue(() => {
               if(typeof onLoad === 'function')
@@ -388,17 +439,17 @@ export class ModuleItem extends ModuleObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    nth = nth.toString();
-    name = name.substr(0, name.length - nth.length);
-    return name + nth;
+    let value = nth.toString();
+    name = name.substr(0, name.length - value.length);
+    return name + value;
   }
 
-  static FromResRef(sResRef, onLoad = null){
+  static FromResRef(sResRef: string, onLoad?: Function){
     
     TemplateLoader.Load({
       ResRef: sResRef.toLowerCase(),
       ResType: ResourceTypes.uti,
-      onLoad: (gff) => {
+      onLoad: (gff: GFFObject) => {
         let item = new ModuleItem(gff);
         item.InitProperties();
         if(typeof onLoad === 'function')
@@ -447,7 +498,7 @@ export class ModuleItem extends ModuleObject {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       //Activate Item
-      if(property.propertyName == ModuleItem.PROPERTY.CastSpell){
+      if(property.propertyName == ModuleItemProperty.CastSpell){
         spells.push(new TalentSpell(property.subType));
       }
     }
@@ -584,7 +635,7 @@ export class ModuleItem extends ModuleObject {
 
   }
 
-  setPossessor( oCreature = undefined){
+  setPossessor( oCreature: ModuleCreature){
     this.possessor = oCreature;
   }
 
@@ -592,7 +643,7 @@ export class ModuleItem extends ModuleObject {
     return this.possessor;
   }
 
-  onEquip(oCreature = undefined){
+  onEquip(oCreature: ModuleCreature){
     console.log('ModuleItem.onEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       if(this.isDisguise()){
@@ -611,7 +662,7 @@ export class ModuleItem extends ModuleObject {
     this.setPossessor(oCreature);
   }
 
-  onUnEquip(oCreature = undefined){
+  onUnEquip(oCreature: ModuleCreature){
     console.log('ModuleItem.onUnEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       oCreature.removeEffectsByCreator(this);
@@ -668,16 +719,31 @@ export class ModuleItem extends ModuleObject {
 
 }
 
-class ItemProperty {
+export class ItemProperty {
+  template: any;
+  item: any;
+  propertyName: any;
+  subType: any;
+  costTable: any;
+  costValue: any;
+  upgradeType: number;
+  param1: any;
+  param1Value: any;
+  chanceAppear: any;
+  usesPerDay: any;
+  useable: any;
 
-  constructor(template = undefined, item = undefined){
+  constructor(template: any, item: any){
     this.template = template;
     this.item = item;
     this.InitProperties();
   }
 
   getProperty(){
-    return Global.kotor2DA.itempropdef.rows[this.propertyName];
+    const _2DA = TwoDAManager.datatables.get('itempropdef');
+    if(_2DA){
+      return _2DA.rows[this.propertyName];
+    }
   }
 
   getPropertyName(){
@@ -695,7 +761,10 @@ class ItemProperty {
   getSubType(){
     const property = this.getProperty();
     if(property && property.subtyperesref != '****'){
-      return Global.kotor2DA[property.subtyperesref.toLowerCase()].rows[this.subType];
+      const _2DA = TwoDAManager.datatables.get(property.subtyperesref.toLowerCase());
+      if(_2DA){
+        return _2DA.rows[this.subType];
+      }
     }
   }
 
@@ -712,8 +781,16 @@ class ItemProperty {
   }
 
   getCostTable(){
-    const costTableName = Global.kotor2DA.iprp_costtable.rows[this.costTable].name.toLowerCase();
-    return Global.kotor2DA[costTableName];
+    const iprp_costtable2DA = TwoDAManager.datatables.get('iprp_costtable');
+    if(iprp_costtable2DA){
+      const costTableName = iprp_costtable2DA.rows[this.costTable].name.toLowerCase();
+      if(costTableName){
+        const costtable2DA = TwoDAManager.datatables.get(costTableName);
+        if(costtable2DA){
+          return costtable2DA;
+        }
+      }
+    }
   }
 
   getCostTableRow(){
@@ -734,7 +811,7 @@ class ItemProperty {
     return false;
   }
 
-  is(property = undefined, subType = undefined){
+  is(property: any, subType: any){
     if(typeof property != 'undefined' && typeof subType != 'undefined'){
       return this.propertyName == property && this.subType == subType;
     }else{
@@ -743,6 +820,7 @@ class ItemProperty {
   }
 
   costTableRandomCheck(){
+    let costTable = this.getCostTable();
     //Random Cost Check
     if(this.costValue == 0){
       let rowCount = costTable.rows.length - 1;
@@ -757,27 +835,27 @@ class ItemProperty {
     let costTableRow = this.getCostTableRow();
     if(costTableRow){
       switch(this.costTable){
-        case ModuleItem.COSTTABLE.Base1:
+        case ModuleItemCostTable.Base1:
 
         break;
-        case ModuleItem.COSTTABLE.Bonus:
+        case ModuleItemCostTable.Bonus:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
           return parseInt(costTableRow.value);
         break;
-        case ModuleItem.COSTTABLE.Melee:
+        case ModuleItemCostTable.Melee:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
           return parseInt(costTableRow.value);
         break;
-        case ModuleItem.COSTTABLE.SpellUse:
+        case ModuleItemCostTable.SpellUse:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
         break;
-        case ModuleItem.COSTTABLE.Damage:
+        case ModuleItemCostTable.Damage:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
@@ -787,30 +865,30 @@ class ItemProperty {
             return parseInt(costTableRow.label);
           }
         break;
-        case ModuleItem.COSTTABLE.Immune:
+        case ModuleItemCostTable.Immune:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
           return parseInt(costTableRow.value);
         break;
-        case ModuleItem.COSTTABLE.DamageSoak:
+        case ModuleItemCostTable.DamageSoak:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
           return parseInt(costTableRow.amount);
         break;
-        case ModuleItem.COSTTABLE.DamageResist:
+        case ModuleItemCostTable.DamageResist:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
           return parseInt(costTableRow.amount);
         break;
-        case ModuleItem.COSTTABLE.DancingScimitar:
+        case ModuleItemCostTable.DancingScimitar:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
         break;
-        case ModuleItem.COSTTABLE.Slots:
+        case ModuleItemCostTable.Slots:
           
         break;
-        case ModuleItem.COSTTABLE.Monster_Cost:
+        case ModuleItemCostTable.Monster_Cost:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
 
@@ -874,95 +952,4 @@ class ItemProperty {
     return propStruct;
   }
 
-}
-
-ModuleItem.PROPERTY = {
-  Ability: 0,
-  Armor: 1,
-  ArmorAlignmentGroup: 2,
-  ArmorDamageType: 3,
-  ArmorRacialGroup: 4,
-  AttackBonus: 38,
-  AttackBonusAlignmentGroup: 39,
-  AttackBonusRacialGroup: 40,
-  AttackPenalty: 8,
-  Blaster_Bolt_Defect_Decrease: 56,
-  Blaster_Bolt_Deflect_Increase: 55,
-  BonusFeats: 9,
-  CastSpell: 10,
-  Computer_Spike: 53,
-  Damage: 11,
-  DamageAlignmentGroup: 12,
-  DamageImmunity: 14,
-  DamageMelee: 22,
-  DamageNone: 31,
-  DamagePenalty: 15,
-  DamageRacialGroup: 13,
-  DamageRanged: 23,
-  DamageReduced: 16,
-  DamageResist: 17,
-  Damage_Vulnerability: 18,
-  DecreaseAC: 20,
-  DecreaseAbilityScore: 19,
-  DecreasedSkill: 21,
-  Disguise: 59,
-  Droid_Repair_Kit: 58,
-  Enhancement: 5,
-  EnhancementAlignmentGroup: 6,
-  EnhancementRacialGroup: 7,
-  Freedom_of_Movement: 50,
-  Immunity: 24,
-  ImprovedMagicResist: 25,
-  ImprovedSavingThrows: 26,
-  ImprovedSavingThrowsSpecific: 27,
-  Keen: 28,
-  Light: 29,
-  Massive_Criticals: 49,
-  Mighty: 30,
-  Monster_Damage: 51,
-  OnHit: 32,
-  OnMonsterHit: 48,
-  ReducedSavingThrows: 33,
-  ReducedSpecificSavingThrow: 34,
-  Regeneration: 35,
-  Regeneration_Force_Points: 54,
-  Skill: 36,
-  Special_Walk: 52,
-  ThievesTools: 37,
-  ToHitPenalty: 41,
-  Trap: 46,
-  True_Seeing: 47,
-  UnlimitedAmmo: 42,
-  UseLimitationAlignmentGroup: 43,
-  UseLimitationClass: 44,
-  UseLimitationRacial: 45,
-  Use_Limitation_Feat: 57,
-};
-
-ModuleItem.COSTTABLE = {
-  Ammo: 14,
-  Base1: 0,
-  Bonus: 1,
-  Damage: 4,
-  DamageResist: 7,
-  DamageSoak: 6,
-  Damage_vulnerability: 22,
-  DancingScimitar: 8,
-  Immune: 5,
-  Light: 18,
-  Melee: 2,
-  Monster_Cost: 19,
-  Negative_Modifiers: 21,
-  OnHitCosts: 24,
-  OnHitDC_saves: 25,
-  Slots: 9,
-  SpellLevel: 13,
-  SpellResist: 11,
-  SpellUse: 3,
-  Spell_Level_Immunity: 23,
-  Spells: 16,
-  Stamina: 12,
-  Traps: 17,
-  Weight: 10,
-  WeightReduction: 15,
 }

@@ -1,6 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { GFFObject } from "../resource/GFFObject";
 import { ModuleArea } from "./ModuleArea";
 import { ModuleTimeManager } from "./ModuleTimeManager";
 
@@ -10,6 +11,46 @@ import { ModuleTimeManager } from "./ModuleTimeManager";
 
 export class Module {
   area: ModuleArea;
+  timeManager: ModuleTimeManager;
+  scripts: {};
+  archives: any[];
+  effects: any[];
+  eventQueue: any[];
+  customTokens: Map<any, any>;
+  Expansion_Pack: any;
+  Mod_Area_list: any[];
+  Mod_Creator_ID: number;
+  Mod_CutSceneList: any[];
+  Mod_DawnHour: any;
+  Mod_Description: any;
+  Mod_DuskHour: any;
+  Mod_Entry_Area: any;
+  Mod_Entry_Dir_X: any;
+  Mod_Entry_Dir_Y: any;
+  Mod_Entry_X: any;
+  Mod_Entry_Y: any;
+  Mod_Entry_Z: any;
+  Mod_Expan_List: any[];
+  Mod_GVar_List: any[];
+  Mod_Hak: any;
+  Mod_ID: Buffer;
+  Mod_IsSaveGame: number;
+  Mod_Name: any;
+  Mod_NextCharId0: number;
+  Mod_NextCharId1: number;
+  Mod_NextObjId0: number;
+  Mod_NextObjId1: number;
+  Mod_Tag: any;
+  Mod_VO_ID: string;
+  Mod_Version: any;
+  Mod_XPScale: any;
+  ifo: any;
+  Area_Name: any;
+  Mod_StartMovie: any;
+  readyToProcessEvents: any;
+  transWP: any;
+  filename: string;
+  static path: any;
 
   constructor(onLoad?: Function){
     this.scripts = {};
@@ -82,7 +123,7 @@ export class Module {
     this.Mod_XPScale;
   }
 
-  setFromIFO( ifo = undefined, isLoadingSave = false ){
+  setFromIFO( ifo: GFFObject, isLoadingSave = false ){
     if(ifo instanceof GFFObject){
       this.ifo = ifo;
 
@@ -603,6 +644,12 @@ export class Module {
 
     });
 
+  }
+  Mod_Effect_NxtId(Mod_Effect_NxtId: any) {
+    throw new Error("Method not implemented.");
+  }
+  Mod_Transition(Mod_Transition: any) {
+    throw new Error("Method not implemented.");
   }
 
   includeInSave(){

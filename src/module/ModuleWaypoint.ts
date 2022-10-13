@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleObject } from ".";
+
 /* @file
  * The ModuleWaypoint class.
  */

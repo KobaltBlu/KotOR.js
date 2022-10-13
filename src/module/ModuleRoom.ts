@@ -1,11 +1,24 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleCreature, ModuleDoor, ModuleEncounter, ModuleObject, ModulePlaceable, ModuleTrigger } from ".";
+
 /* @file
  * The ModuleRoom class.
  */
 
 export class ModuleRoom extends ModuleObject {
+  ambientScale: any;
+  envAudio: any;
+  roomName: any;
+  linked_rooms: any;
+  hasVISObject: boolean;
+  doors: ModuleDoor[];
+  placeables: ModulePlaceable[];
+  creatures: ModuleCreature[];
+  triggers: ModuleTrigger[];
+  encounters: ModuleEncounter[];
+  grass: any;
 
   constructor( args = {} ){
     super();

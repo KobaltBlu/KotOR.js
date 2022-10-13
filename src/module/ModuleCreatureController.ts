@@ -1,16 +1,35 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import THREE from "three";
+import { ModuleCreature, ModuleDoor, ModuleItem, ModuleObject, ModuleRoom } from ".";
+import { Action, ActionMoveToPoint, ActionJumpToObject, ActionJumpToPoint, ActionPhysicalAttacks, ActionUnlockObject, ActionCastSpell, ActionItemCastSpell } from "../actions";
+import { CombatEngine } from "../CombatEngine";
+import EngineLocation from "../engine/EngineLocation";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GameState } from "../GameState";
+import { SSFObjectType } from "../interface/resource/SSFType";
+import { PartyManager } from "../managers/PartyManager";
+import { OdysseyModelAnimation } from "../odyssey";
+import { GFFObject } from "../resource/GFFObject";
+import { LIPObject } from "../resource/LIPObject";
+import { TalentFeat } from "../talents/TalentFeat";
+import { TalentObject } from "../talents/TalentObject";
+import { OdysseyModel3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 
 /* @file
  * The ModuleCreatureController class.
  */
 
-export class ModuleCreatureController extends ModuleObject {
+export abstract class ModuleCreatureController extends ModuleObject {
+  lipObject: LIPObject;
+  equipment: { HEAD: any; ARMOR: any; ARMS: any; RIGHTHAND: any; LEFTHAND: any; LEFTARMBAND: any; RIGHTARMBAND: any; IMPLANT: any; BELT: any; CLAW1: any; CLAW2: any; CLAW3: any; HIDE: any; };
 
-  constructor(){
-    super();
+  constructor(gff: GFFObject){
+    super(gff);
     this.deferEventUpdate = true;
     //this.combat
 
@@ -634,10 +653,10 @@ export class ModuleCreatureController extends ModuleObject {
     //CombatEngine.RemoveCombatant(this);
   }
 
-  actionInRange(action = undefined){
+  actionInRange(action: Action){
     if(action){
       if(action.type == ActionType.ActionCastSpell){
-        return action.spell.inRange(action.target, this);
+        return (action as ActionCastSpell|ActionItemCastSpell).spell.inRange(action.target, this);
       }else{
         let distance = this.position.distanceTo(action.target.position);
         //console.log('actionInRange', distance, action.target.position);
@@ -648,7 +667,7 @@ export class ModuleCreatureController extends ModuleObject {
   }
 
   //Return the best point surrounding this object for the attacker to move towards
-  getBestAttackPoint(targeter = undefined){
+  getBestAttackPoint(targeter: ModuleObject){
     if(targeter instanceof ModuleCreature){
       
     }
@@ -703,339 +722,10 @@ export class ModuleCreatureController extends ModuleObject {
       console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
       this.animState = ModuleCreatureAnimState.PAUSE;
     }
-    return;
-
-    
-    let modeltype = this.getAppearance().modeltype;
-    
-    let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
-
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let bothHands = (lWeapon instanceof ModuleItem) && (rWeapon instanceof ModuleItem);
-    let randomPauseIdx = 0;
-    let isSimple = this.isSimpleCreature();
-    let weaponType = this.getCombatAnimationWeaponType();
-
-    let idleAnimations = ['pause1', 'pause1', 'pause1', 'pause2'];//, 'pause3', 'hturnl', 'hturnr'];
-    let idleAnimationsS = ['cpause1', 'cpause1','cpause1','cpause2', 'cpause3'];
-
-    /*if(this.anim && currentAnimation && GameState.inDialog){
-      return;
-    }*/
-
-    if(this.model instanceof OdysseyModel3D && !this.model.bonesInitialized){
-      return;
-    }
-
-    if(this.casting.length  && this.casting[0].spell){
-      if(this.casting[0].conjuring){
-        if(currentAnimation != this.casting[0].spell.getConjureAnimation()){
-          this.getModel().playAnimation(this.casting[0].spell.getConjureAnimation(), false);
-        }
-      }else if(this.casting[0].casting){
-        if(currentAnimation != this.casting[0].spell.getCastingAnimation()){
-          this.getModel().playAnimation(this.casting[0].spell.getCastingAnimation(), false);
-        }
-      }
-    }else if( this.combatAction == undefined || !this.combatAction.ready || !this.hasWeapons() || !currentAnimation ){
-
-      switch(this.animState){
-        case ModuleCreatureAnimState.IDLE:
-            if(this.isParalyzed()){
-              if(currentAnimation != 'paralyzed'){
-                this.getModel().playAnimation('paralyzed', false);
-              }
-            }else if(this.isStunned()){
-              if(currentAnimation != 'sleep'){
-                this.getModel().playAnimation('sleep', false);
-              }
-            }else if(this.isDroidStunned()){
-              if(currentAnimation != 'disabled'){
-                this.getModel().playAnimation('disabled', false);
-              }
-            }else if(this.isFrightened() || this.isHorrified()){
-              if(currentAnimation != 'horror'){
-                this.getModel().playAnimation('horror', false);
-              }
-            }else if(this.isChoking()){
-              if(currentAnimation != 'choke'){
-                this.getModel().playAnimation('choke', false);
-              }
-            }else if(this.combatState){
-              if(!isSimple){
-                //weaponType
-                if(currentAnimation != 'g'+weaponType+'r1'){
-                  this.getModel().playAnimation('g'+weaponType+'r1', false);
-                }
-              }else{
-                if(currentAnimation != 'creadyr'){
-                  this.getModel().playAnimation('creadyr', false);
-                }
-              }
-            }else{
-              switch(modeltype){
-                case 'S':
-                case 'L':if(idleAnimationsS.indexOf(currentAnimation) == -1){
-                    this.getModel().playAnimation(idleAnimationsS[Math.round(Math.random()*(idleAnimationsS.length-1))], false);
-                  }
-                break;
-                default:
-                  
-                  if(this.turning){
-                    if(this.turning == 1 && currentAnimation != 'turnleft'){
-                      this.getModel().playAnimation('turnleft', false);
-                    }else if(this.turning == -1 && currentAnimation != 'turnright'){
-                      this.getModel().playAnimation('turnright', false);
-                    }
-                  }else{
-                    if(this.getHP()/this.getMaxHP() > .15){
-                      if(idleAnimations.indexOf(currentAnimation) == -1){
-                        this.getModel().playAnimation(idleAnimations[Math.round(Math.random()*(idleAnimations.length-1))], false);
-                      }
-                    }else{
-                      if(currentAnimation != 'pauseinj'){
-                        this.getModel().playAnimation('pauseinj', false);
-                      }
-                    }
-                  }
-                break;
-              }
-            }
-        break;
-        case ModuleCreatureAnimState.WALKING:
-          if(this.combatState){
-            switch(modeltype){
-              case 'S':
-              case 'L':
-                if(currentAnimation != 'cwalk'){
-                  this.getModel().playAnimation('cwalk', false);
-                }
-              break;
-              default:
-                if(this.getHP()/this.getMaxHP() > .15){
-                  if(currentAnimation != 'walk'){
-                    this.getModel().playAnimation('walk', false);
-                  }
-                }else{
-                  if(currentAnimation != 'walkinj'){
-                    this.getModel().playAnimation('walkinj', false);
-                  }
-                }
-              break;
-            }
-          }else{
-            switch(modeltype){
-              case 'S':
-              case 'L':
-                if(currentAnimation != 'cwalk'){
-                  this.getModel().playAnimation('cwalk', false);
-                }
-              break;
-              default:
-                if(this.getHP()/this.getMaxHP() > .15){
-                  if(currentAnimation != 'walk'){
-                    this.getModel().playAnimation('walk', false);
-                  }
-                }else{
-                  if(currentAnimation != 'walkinj'){
-                    this.getModel().playAnimation('walkinj', false);
-                  }
-                }
-              break;
-            }
-          }
-        break;
-        case ModuleCreatureAnimState.RUNNING:
-          switch(modeltype){
-            case 'S':
-            case 'L':
-              if(currentAnimation != 'crun'){
-                this.getModel().playAnimation('crun', false);
-              }
-            break;
-            default:
-              if(this.combatState){
-                if(hasHands && bothHands){
-                  switch(parseInt(rWeapon.getWeaponWield())){
-                    case 2:
-                      if(currentAnimation != 'runds')
-                        this.getModel().playAnimation('runds', false);
-                    break;
-                    case 4:
-                      if(currentAnimation != 'runst')
-                        this.getModel().playAnimation('runst', false);
-                    break;
-                    case 5:
-                      if(currentAnimation != 'runrf')
-                        this.getModel().playAnimation('runrf', false);
-                    break;
-                    default:
-                      if(currentAnimation != 'run')
-                        this.getModel().playAnimation('run', false);
-                    break;
-                  }
-                }else{
-                  if(hasHands && rWeapon){
-                    switch(parseInt(rWeapon.getWeaponWield())){
-                      case 2:
-                      case 3:
-                        if(currentAnimation != 'runss')
-                          this.getModel().playAnimation('runss', false);
-                      break;
-                      case 4:
-                        if(currentAnimation != 'runst')
-                          this.getModel().playAnimation('runst', false);
-                      break;
-                      case 5:
-                        if(currentAnimation != 'runrf')
-                          this.getModel().playAnimation('runrf', false);
-                      break;
-                      default:
-                        if(currentAnimation != 'run')
-                          this.getModel().playAnimation('run', false);
-                      break;
-                    }
-                  }else{
-                    if(currentAnimation != 'run')
-                      this.getModel().playAnimation('run', false);
-                  }
-                }
-              }else{
-                if(currentAnimation != 'run'){
-                  if(hasHands && bothHands){
-                    if(this.getHP() / this.getMaxHP() > .15){
-                      switch(parseInt(rWeapon.getWeaponWield())){
-                        case 2:
-                          if(currentAnimation != 'runds')
-                            this.getModel().playAnimation('runds', false);
-                        break;
-                        case 4:
-                          if(currentAnimation != 'runst')
-                            this.getModel().playAnimation('runst', false);
-                        break;
-                        case 5:
-                          if(currentAnimation != 'runrf')
-                            this.getModel().playAnimation('runrf', false);
-                        break;
-                        default:
-                          if(currentAnimation != 'run')
-                            this.getModel().playAnimation('run', false);
-                        break;
-                      }
-                    }else{
-                      if(this.model.getAnimationByName('runinj') && currentAnimation != 'runinj'){
-                        this.getModel().playAnimation('runinj', false);
-                      }
-                    }
-                  }else{
-                    if(hasHands && rWeapon){
-                      if(this.getHP() / this.getMaxHP() > .15){
-                        switch(parseInt(rWeapon.getWeaponWield())){
-                          case 2:
-                          case 3:
-                            if(currentAnimation != 'runss')
-                              this.getModel().playAnimation('runss', false);
-                          break;
-                          case 4:
-                            if(currentAnimation != 'runst')
-                              this.getModel().playAnimation('runst', false);
-                          break;
-                          case 5:
-                            if(currentAnimation != 'runrf')
-                              this.getModel().playAnimation('runrf', false);
-                          break;
-                          default:
-                            if(currentAnimation != 'run')
-                              this.getModel().playAnimation('run', false);
-                          break;
-                        }
-                      }else{
-                        if(this.model.getAnimationByName('runinj') && currentAnimation != 'runinj'){
-                          this.getModel().playAnimation('runinj', false);
-                        }
-                      }
-                    }else{
-                      if(this.getHP() / this.getMaxHP() > .15){
-                        if(!this.walk && this.model.getAnimationByName('run') && currentAnimation != 'run'){
-                          this.getModel().playAnimation('run', false);
-                        }else if(this.walk && this.model.getAnimationByName('walk') && currentAnimation != 'walk'){
-                          this.getModel().playAnimation('walk', false);
-                        }
-                      }else{
-                        if(!this.walk && this.model.getAnimationByName('runinj') && currentAnimation != 'runinj'){
-                          this.getModel().playAnimation('runinj', false);
-                        }else if(this.walk && this.model.getAnimationByName('walkinj') && currentAnimation != 'walkinj'){
-                          this.getModel().playAnimation('walkinj', false);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            break;
-          }
-        break;
-        case ModuleCreatureAnimState.DEAD:
-          switch(modeltype){
-            case 'S':
-            case 'L':
-            if(!this.deathAnimationPlayed){
-              this.deathAnimationPlayed = true;
-              this.getModel().playAnimation('cdie', false, () => {
-                this.getModel().playAnimation('cdead', true);
-              });
-            }
-            break;
-            default:
-              if(!this.deathAnimationPlayed){
-                this.deathAnimationPlayed = true;
-                this.getModel().playAnimation('die', false, () => {
-                  this.getModel().playAnimation('dead', true);
-                });
-              }
-            break;
-          }
-        break;
-        case ModuleCreatureAnimState.DIE:
-          switch(modeltype){
-            case 'S':
-            case 'L':
-              if(currentAnimation != 'cdie'){
-                this.getModel().playAnimation('cdie', false);
-              }
-            break;
-            default:
-              if(currentAnimation != 'die'){
-                this.getModel().playAnimation('die', false);
-              }
-            break;
-          }
-        break;
-      }
-
-    }else{
-      if(this.combatAction.type == ActionType.ActionCastSpell){
-        if(this.combatAction.conjuring){
-          if(currentAnimation != 'castout1'){
-            this.getModel().playAnimation('castout1', false);
-          }
-        }else if(this.combatAction.impact){
-          if(currentAnimation != 'castoutlp1'){
-            this.getModel().playAnimation('castoutlp1', false);
-          }
-        }
-      }else{
-        if(currentAnimation != this.combatAction.animation && this.combatAction.ready && !this.combatAction.animPlayed){
-          this.combatAction.animPlayed = true;
-          //Moved old combat logic to CombatEngine.CalculateAttackDamage()
-        }
-      }
-    }
 
   }
 
-  damage(amount = 0, oAttacker = undefined, delayTime = 0){
+  damage(amount = 0, oAttacker: ModuleObject, delayTime = 0){
     if(delayTime){
       this.damageList.push({amount: amount, delay: delayTime});
     }else{
@@ -1062,7 +752,7 @@ export class ModuleCreatureController extends ModuleObject {
     return 65535;
   }
 
-  moveToObject(target = undefined, bRun = true, distance = 1.0){
+  moveToObject(target: ModuleObject, bRun = true, distance = 1.0){
 
     if(target instanceof ModuleObject){
         
@@ -1083,9 +773,9 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  moveToLocation(target = undefined, bRun = true){
+  moveToLocation(target: ModuleObject, bRun = true){
 
-    if(target instanceof GameState.Location || target instanceof ModuleObject){
+    if(target instanceof EngineLocation || target instanceof ModuleObject){
 
       let distance = 0.1;
       let creatures = GameState.module.area.creatures;
@@ -1122,7 +812,7 @@ export class ModuleCreatureController extends ModuleObject {
       action.setParameter(1, ActionParameterType.FLOAT, target_position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target_position.z);
       action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      action.setParameter(4, ActionParameterType.DWORD, target instanceof GameState.Location ? ModuleObject.OBJECT_INVALID : target.id );
+      action.setParameter(4, ActionParameterType.DWORD, target instanceof EngineLocation ? ModuleObject.OBJECT_INVALID : target.id );
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
@@ -1133,7 +823,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  jumpToObject(target = undefined){
+  jumpToObject(target: ModuleObject){
     console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
 
@@ -1146,9 +836,9 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  jumpToLocation(target = undefined){
+  jumpToLocation(target: ModuleObject){
     console.log('jumpToLocation', target, this);
-    if(target instanceof GameState.Location){
+    if(target instanceof EngineLocation){
       let action = new ActionJumpToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
@@ -1194,11 +884,11 @@ export class ModuleCreatureController extends ModuleObject {
     return (this.lastAttackTarget?.lastAttackTarget == this && this.lastAttackTarget?.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
   }
 
-  isDuelingObject( oObject = undefined ){
+  isDuelingObject( oObject: ModuleObject ){
     return (oObject instanceof ModuleObject && this.lastAttackTarget == oObject && oObject.lastAttackTarget == this && oObject.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
   }
 
-  attackCreature(target = undefined, feat = undefined, isCutsceneAttack = false, attackDamage = 0, attackAnimation = null, attackResult = undefined){
+  attackCreature(target: ModuleObject, feat: any, isCutsceneAttack = false, attackDamage = 0, attackAnimation: any, attackResult: any){
 
     //console.log('attackCreature', this, target, feat);
 
@@ -1329,7 +1019,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  useTalentOnObject(talent, oTarget){
+  useTalentOnObject(talent: any, oTarget: ModuleObject){
     if(talent instanceof TalentObject){
 
       /*this.actionQueue.addFront({
@@ -1424,7 +1114,7 @@ export class ModuleCreatureController extends ModuleObject {
     this.overlayAnimation = undefined;
   }
 
-  getDamageAnimation( attackAnim = undefined ){
+  getDamageAnimation( attackAnim: any ){
     
     let attackAnimIndex = -1;
 
@@ -1475,7 +1165,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  getDodgeAnimation( attackAnim = undefined ){
+  getDodgeAnimation( attackAnim: any ){
 
     let attackAnimIndex = -1;
 
@@ -1536,7 +1226,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  getParryAnimation( attackAnim = undefined ){
+  getParryAnimation( attackAnim: any ){
 
     let attackAnimIndex = -1;
 
@@ -1807,7 +1497,7 @@ export class ModuleCreatureController extends ModuleObject {
     
     //Check creature collision
     let creature = undefined;
-    if(Config.options.GameState.debug.creature_collision){
+    if(Config.options.Game.debug.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
         if(creature){
@@ -1841,7 +1531,7 @@ export class ModuleCreatureController extends ModuleObject {
     }
 
     //Check party collision
-    if(Config.options.GameState.debug.creature_collision){
+    if(Config.options.Game.debug.creature_collision){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         creature = PartyManager.party[i];
         if(creature){
@@ -1877,7 +1567,7 @@ export class ModuleCreatureController extends ModuleObject {
 
       //START: DOOR COLLISION
 
-      if(Config.options.GameState.debug.door_collision){
+      if(Config.options.Game.debug.door_collision){
         for(let j = 0, jl = this.room.doors.length; j < jl; j++){
           obj = this.room.doors[j];
           if(obj && obj.walkmesh && !obj.isOpen()){
@@ -2128,7 +1818,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-  playEvent(event){
+  playEvent(event: any){
     this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
     let appearance = this.getAppearance();
@@ -2404,9 +2094,7 @@ export class ModuleCreatureController extends ModuleObject {
 
   }
 
-
-
-  setLIP(lip){
+  setLIP(lip: LIPObject){
     //console.log(lip);
     this.lipObject = lip;
   }

@@ -1,11 +1,23 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleObject } from ".";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+
 /* @file
  * The ModuleCamera class.
  */
 
 export class ModuleCamera extends ModuleObject {
+  cameraID: any;
+  fov: any;
+  height: any;
+  micRange: any;
+  orientation: any;
+  pitch: any;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -13,7 +25,7 @@ export class ModuleCamera extends ModuleObject {
     this.template = gff;
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
 
     this.InitProperties( () => {
 
@@ -25,7 +37,7 @@ export class ModuleCamera extends ModuleObject {
     
   }
 
-  InitProperties( onLoad = undefined ){
+  InitProperties( onLoad?: Function ){
 
     if(this.template.RootNode.HasField('CameraID'))
       this.cameraID = this.template.GetFieldByLabel('CameraID').GetValue();

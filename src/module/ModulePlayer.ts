@@ -1,6 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleCreature } from ".";
+import { PartyManager } from "../managers/PartyManager";
+import { GFFObject } from "../resource/GFFObject";
+
 /* @file
  * The ModulePlayer class.
  */

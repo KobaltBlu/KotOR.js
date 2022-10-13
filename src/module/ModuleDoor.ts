@@ -1,11 +1,66 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleCreature, ModuleItem, ModuleObject } from ".";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { GameState } from "../GameState";
+import { SSFObjectType } from "../interface/resource/SSFType";
+import { PartyManager } from "../managers/PartyManager";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyModel3D } from "../three/odyssey";
+
+import * as THREE from "three";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { NWScript } from "../nwscript/NWScript";
+import { BinaryReader } from "../BinaryReader";
+import { GameEffect } from "../effects";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { InventoryManager } from "../managers/InventoryManager";
+
 /* @file
  * The ModuleDoor class.
  */
 
 export class ModuleDoor extends ModuleObject {
+  openState: boolean;
+  lastObjectEntered: any;
+  lastObjectExited: any;
+  lastObjectOpened: any;
+  lastObjectClosed: any;
+  lastUsedBy: any;
+  animationState: number;
+  closeLockDC: number;
+  conversation: string;
+  disarmDC: number;
+  fort: number;
+  genericType: number;
+  hardness: number;
+  interruptable: boolean;
+  keyRequired: boolean;
+  lockable: boolean;
+  locked: boolean;
+  openLockDC: number;
+  paletteID: number;
+  portraitId: number;
+  ref: number;
+  static: boolean;
+  trapDetectDC: number;
+  trapFlag: number;
+  will: number;
+  x: number;
+  y: number;
+  z: number;
+  audioEmitter: AudioEmitter;
+  boxHelper: THREE.Box3Helper;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -91,15 +146,15 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getX(){
-    return this.x;
+    return this.position.x;
   }
 
   getY(){
-    return this.y;
+    return this.position.y;
   }
 
   getZ(){
-    return this.z;
+    return this.position.z;
   }
 
   getBearing(){
@@ -110,16 +165,12 @@ export class ModuleDoor extends ModuleObject {
     return this.locked;
   }
 
-  setLocked(iValue){
-    this.locked = iValue ? true : false;
+  setLocked(value: boolean){
+    this.locked = value ? true : false;
   }
 
   requiresKey(){
     return this.keyRequired ? true : false;
-  }
-
-  keyName(){
-    return this.keyName;
   }
 
   getName(){
@@ -131,14 +182,20 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getDoorAppearance(){
-    return Global.kotor2DA['genericdoors'].rows[this.getGenericType()];
+    const genericdoors2DA = TwoDAManager.datatables.get('genericdoors');
+    if(genericdoors2DA){
+      return genericdoors2DA.rows[this.getGenericType()];
+    }
   }
 
   getObjectSounds(){
     let door = this.getDoorAppearance();
     let soundIdx = parseInt(door.soundapptype.replace(/\0[\s\S]*$/g,''));
     if(!isNaN(soundIdx)){
-      return Global.kotor2DA['placeableobjsnds'].rows[soundIdx];
+      const placeableobjsnds2DA = TwoDAManager.datatables.get('placeableobjsnds');
+      if(placeableobjsnds2DA){
+        return placeableobjsnds2DA.rows[soundIdx];
+      }
     }
     return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
   }
@@ -163,7 +220,7 @@ export class ModuleDoor extends ModuleObject {
     return this.openState;
   }
 
-  onClick(callee = null){
+  onClick2(callee: ModuleObject){
 
     //You can't interact with yourself
     if(this === GameState.player && GameState.getCurrentPlayer() === this){
@@ -174,7 +231,7 @@ export class ModuleDoor extends ModuleObject {
     
   }
 
-  use(object = undefined){
+  use(object: ModuleObject){
 
     this.lastUsedBy = object;
 
@@ -222,7 +279,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  attemptUnlock(object = undefined){
+  attemptUnlock(object: ModuleObject){
     if(object instanceof ModuleObject){
       
       let d20 = 20;//d20 rolls are auto 20's outside of combat
@@ -245,7 +302,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  openDoor(object = undefined){
+  openDoor(object: ModuleObject){
 
     /*
     Door Animations:
@@ -302,7 +359,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  closeDoor(object = undefined){
+  closeDoor(object: ModuleObject){
 
     if(object instanceof ModuleCreature){
       object.lastDoorExited = this;
@@ -364,7 +421,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onSpawn(runScript = true){
+  async onSpawn(runScript = true){
     super.onSpawn(runScript);
 
     if(this.model instanceof OdysseyModel3D){
@@ -375,7 +432,7 @@ export class ModuleDoor extends ModuleObject {
       this.box.setFromObject(this.model);
 
       this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
-      this.boxHelper = new THREE.Box3Helper( this.box, 0xff0000 );
+      this.boxHelper = new THREE.Box3Helper( this.box, (new THREE.Color()).setHex(0xff0000) );
       GameState.group.light_helpers.add( this.boxHelper );
     }
 
@@ -458,7 +515,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  onEnter(object = undefined){
+  onEnter(object: ModuleObject){
     if(this.getLinkedToModule() && !GameState.inDialog && this.isOpen()){
       if(object == GameState.getCurrentPlayer() && object.controlled){
         GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase(), () => { 
@@ -472,18 +529,18 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onExit(object = undefined){
+  onExit(object: ModuleObject){
     
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       //console.log('Door', this.template);
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.utd,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
 
           this.template.Merge(gff);
           //console.log(this.template, gff, this)
@@ -512,17 +569,18 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  LoadModel ( onLoad = null ){
+  LoadModel ( onLoad?: Function ){
     let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
     GameState.ModelLoader.load({
       file: modelName,
-      onLoad: (mdl) => {
+      onLoad: (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (door) => {
+          onComplete: (door: OdysseyModel3D) => {
 
+            let scene;
             if(this.model != null){
-              let scene = this.model.parent;
+              scene = this.model.parent;
               scene.remove(this.model);
               GameState.octree.remove( this.model );
               this.model.dispose();
@@ -578,7 +636,7 @@ export class ModuleDoor extends ModuleObject {
     });
   }
 
-  LoadScripts( onLoad = null ){
+  LoadScripts( onLoad?: Function ){
 
     this.scripts = {
       onClick: undefined,
@@ -652,7 +710,7 @@ export class ModuleDoor extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -671,11 +729,11 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  LoadWalkmesh(ResRef = '', onLoad = null ){
+  LoadWalkmesh(ResRef = '', onLoad?: Function ){
     
     let wokKey = Global.kotorKEY.GetFileKey(ResRef+'0', ResourceTypes['dwk']);
     if(wokKey != null){
-      Global.kotorKEY.GetFileData(wokKey, (buffer) => {
+      Global.kotorKEY.GetFileData(wokKey, (buffer: Buffer) => {
 
         this.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.walkmesh.mesh.name = this.walkmesh.name = ResRef;
@@ -956,6 +1014,12 @@ export class ModuleDoor extends ModuleObject {
     this.template = gff;
     return gff;
   }
+  bodyBag(bodyBag: any) {
+    throw new Error("Method not implemented.");
+  }
+  useable(useable: any) {
+    throw new Error("Method not implemented.");
+  }
 
   toToolsetInstance(){
 
@@ -1007,32 +1071,21 @@ export class ModuleDoor extends ModuleObject {
 
   animationConstantToAnimation( animation_constant = 10000 ){
     switch( animation_constant ){
-      case ModuleDoor.AnimState.DEFAULT:       //10000, //327 - 
+      case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
         return Global.kotor2DA.animations.rows[327];
-      case ModuleDoor.AnimState.CLOSED:        //10022, //333 - 
+      case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
         return Global.kotor2DA.animations.rows[333];
-      case ModuleDoor.AnimState.OPENED1:       //10050, //331 - 
+      case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
         return Global.kotor2DA.animations.rows[331];
-      case ModuleDoor.AnimState.OPENED2:       //10051, //332 - 
+      case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
         return Global.kotor2DA.animations.rows[332];
-      case ModuleDoor.AnimState.BUSTED:        //10153, //366 - 
+      case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
         return Global.kotor2DA.animations.rows[366];
-      case ModuleDoor.AnimState.TRANS:         //10269, //344 - 
+      case ModuleDoorAnimState.TRANS:         //10269, //344 - 
         return Global.kotor2DA.animations.rows[344];
     }
 
     return super.animationConstantToAnimation( animation_constant );
   }
 
-}
-
-ModuleDoor.AnimState = {
-  DAMAGE:          10014, // 328 - damage
-  CLOSED:          10022, // 333 - closed
-  OPENED1:         10050, // 331 - opened1
-  OPENED2:         10051, // 332 - opened2
-  DEFAULT:         10072, // 327 - default
-  CONST1:          10077, // 328 - damage
-  BUSTED:          10153, // 366 - busted
-  TRANS:           10269, // 344 - trans
 }

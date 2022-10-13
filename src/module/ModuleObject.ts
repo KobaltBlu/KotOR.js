@@ -2,15 +2,200 @@
  */
 
 import * as THREE from "three";
-import { ActionQueue } from "../actions/ActionQueue";
+import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { CombatEngine } from "../CombatEngine";
+import { GameEffect } from "../effects/GameEffect";
+import EngineLocation from "../engine/EngineLocation";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
+import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { PartyManager } from "../managers/PartyManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { OdysseyModel } from "../odyssey";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
+import { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
 
 /* @file
  * The ModuleObject class.
  */
 
 export class ModuleObject {
+  controlled: boolean;
+  id: number;
+  initialized: boolean;
+
+  AxisFront: THREE.Vector3;
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  quaternion: THREE.Quaternion;
+  _triangle: THREE.Triangle;
+  wm_c_point: THREE.Vector3;
+  box: THREE.Box3;
+  sphere: THREE.Sphere;
+  v20: THREE.Vector2;
+  v21: THREE.Vector2;
+
+  audioEmitter: AudioEmitter;
+  footstepEmitter: AudioEmitter;
+
+  facing: number;
+  wasFacing: number;
+  facingTweenTime: number;
+  force: number;
+  speed: number;
+  movementSpeed: number;
+
+  //Room
+  room: any;
+  rooms: number[];
+  roomSize: THREE.Vector3;
+
+  inventory: ModuleItem[];
+
+  model: OdysseyObject3D;
+  xPosition: number;
+  yPosition: number;
+  zPosition: number;
+  xOrientation: number;
+  yOrientation: number;
+  zOrientation: number;
+
+  dialogAnimation: any;
+  template: any;
+  plot: boolean;
+  scripts: any = { };
+  tag: string;
+  templateResRef: string;
+  bearing: number;
+  collisionTimer: number;
+  perceptionTimer: number;
+  tweakColor: number;
+  useTweakColor: number;
+  hp: number;
+  currentHP: number;
+  faction: number;
+  effects: any[] = [];
+  casting: any[] = [];
+  damageList: any[] = [];
+  _locals: { Booleans: any[]; Numbers: {}; };
+  objectsInside: any[];
+  lockDialogOrientation: boolean;
+  context: any;
+  heartbeatTimer: any;
+  _heartbeatTimerOffset: number;
+  _heartbeatTimeout: any;
+  _lastAttackObject: any;
+  _lastAttackAction: number;
+  _lastForcePowerUsed: number;
+  _lastForcePowerSuccess: number;
+  _healTarget: any;
+  perceptionList: any[] = [];
+  isListening: boolean;
+  listeningPatterns: any = {};
+  initiative: number;
+  spawned: boolean;
+  _inventoryPointer: number;
+  fortitudeSaveThrow: number;
+  reflexSaveThrow: number;
+  willSaveThrow: number;
+  deferEventUpdate: any;
+  distanceToCamera: any;
+  roomCheckTimer: any;
+  combatQueue: any[];
+  combatAction: any;
+  facingAnim: boolean;
+  lastDamager: any;
+  lastAttacker: any;
+  groundFace: any;
+  lastGroundFace: any;
+  surfaceId: any;
+  mesh: THREE.Mesh;
+  walkmesh: any;
+  placedInWorld: any;
+  linkedToModule: any;
+  linkedToFlags: any;
+  linkedTo: any;
+  transitionDestin: CExoLocString;
+  min1HP: boolean;
+  perceptionRange: any;
+  animState: any;
+  appearance: any;
+  description: any;
+  autoRemoveKey: any;
+  commandable: any;
+  cursor: any;
+  geometry: any;
+  vertices: any;
+  hasMapNote: any;
+  highlightHeight: any;
+  keyName: any;
+  loadScreenID: any;
+  locName: any;
+  localizedName: any;
+  mapNote: any;
+  mapNoteEnabled: any;
+  portraidId: any;
+  setByPlayerParty: any;
+  trapDetectable: any;
+  trapDisarmable: any;
+  trapOneShot: any;
+  trapType: any;
+  type: any;
+  fp_push_played: any;
+  fp_land_played: any;
+  fp_getup_played: any;
+
+  //Actions
+  actionQueue: ActionQueue;
+  action: Action;
+
+  static List = new Map();
+  static COUNT: number = 1;
+  static PLAYER_ID: number = 0x7fffffff;
+  static OBJECT_INVALID: number = 0x7f000000;
+
+  static ResetPlayerId(){
+    ModuleObject.PLAYER_ID = 0x7fffffff;
+  };
+
+  static GetNextPlayerId(){
+    console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
+    return ModuleObject.PLAYER_ID--;
+  }
+
+  static GetObjectById(id: ModuleObject|number = -1){
+
+    if(id == ModuleObject.OBJECT_INVALID)
+      return undefined;
+
+    if(id instanceof ModuleObject){
+      if(id.id >= 1){
+        return id;
+      }
+    }
+
+    if(ModuleObject.List.has(id)){
+      return ModuleObject.List.get(id);
+    }
+    return undefined;
+
+  }
+
+  static DX_LIST: number[] = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
+  static DY_LIST: number[] = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
 
   constructor (gff = new GFFObject) {
 
@@ -42,7 +227,7 @@ export class ModuleObject {
     this.model = null;
     this.dialogAnimation = null;
     this.template = undefined;
-    this.plot = 0;
+    this.plot = false;
     this.inventory = [];
     this.scripts = {
       onAttacked: undefined,
@@ -95,7 +280,7 @@ export class ModuleObject {
     this.objectsInside = [];
     this.lockDialogOrientation = false;
 
-    this.context = Game;
+    this.context = GameState;
     this.heartbeatTimer = null;
     this._heartbeatTimerOffset = Math.floor(Math.random() * 600) + 100;
     this._heartbeatTimeout = GameState.HeartbeatTimer + this._heartbeatTimerOffset;
@@ -147,7 +332,7 @@ export class ModuleObject {
     }
 	}
 
-  attachToRoom(room){
+  attachToRoom(room: ModuleRoom){
     if(room instanceof ModuleRoom){
       this.detachFromRoom(this.room);
       this.room = room;
@@ -161,7 +346,7 @@ export class ModuleObject {
     }
   }
 
-  detachFromRoom(room){
+  detachFromRoom(room: ModuleRoom){
     if(!room) room = this.room;
     if(room instanceof ModuleRoom){
       let index = -1;
@@ -184,7 +369,7 @@ export class ModuleObject {
     }
   }
 
-  setContext(ctx = Game){
+  setContext(ctx = GameState){
     this.context = ctx;
   }
 
@@ -267,7 +452,7 @@ export class ModuleObject {
 
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     if(this.spawned){
       this.setModelVisibility();
     }
@@ -336,7 +521,7 @@ export class ModuleObject {
     }
   }
 
-  actionDialogObject( target = undefined, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
+  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
     let action = new ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
@@ -348,7 +533,7 @@ export class ModuleObject {
     this.actionQueue.add(action);
   }
 
-  actionUseObject( object = undefined ){
+  actionUseObject( object: ModuleObject ){
     if(object instanceof ModuleObject){
       let action = new ActionUseObject();
       action.setParameter(0, ActionParameterType.DWORD, object.id);
@@ -356,7 +541,7 @@ export class ModuleObject {
     }
   }
 
-  actionOpenDoor( door = undefined ){
+  actionOpenDoor( door: ModuleObject ){
     if(door instanceof ModuleDoor){
       let action = new ActionOpenDoor();
       action.setParameter(0, ActionParameterType.DWORD, door.id);
@@ -365,7 +550,7 @@ export class ModuleObject {
     }
   }
 
-  actionCloseDoor( door = undefined ){
+  actionCloseDoor( door: ModuleObject ){
     if(door instanceof ModuleDoor){
       let action = new ActionCloseDoor();
       action.setParameter(0, ActionParameterType.DWORD, door.id);
@@ -504,33 +689,33 @@ export class ModuleObject {
 
       // Placeable animation constants
       case 200: 
-        return ModulePlaceable.AnimState.ACTIVATE;
+        return ModulePlaceableAnimState.ACTIVATE;
       case 201: 
-        return ModulePlaceable.AnimState.DEACTIVATE;
+        return ModulePlaceableAnimState.DEACTIVATE;
       case 202: 
-        return ModulePlaceable.AnimState.OPEN;
+        return ModulePlaceableAnimState.OPEN;
       case 203: 
-        return ModulePlaceable.AnimState.CLOSE;
+        return ModulePlaceableAnimState.CLOSE;
       case 204: 
-        return ModulePlaceable.AnimState.ANIMLOOP01;
+        return ModulePlaceableAnimState.ANIMLOOP01;
       case 205: 
-        return ModulePlaceable.AnimState.ANIMLOOP02;
+        return ModulePlaceableAnimState.ANIMLOOP02;
       case 206: 
-        return ModulePlaceable.AnimState.ANIMLOOP03;
+        return ModulePlaceableAnimState.ANIMLOOP03;
       case 207: 
-        return ModulePlaceable.AnimState.ANIMLOOP04;
+        return ModulePlaceableAnimState.ANIMLOOP04;
       case 208: 
-        return ModulePlaceable.AnimState.ANIMLOOP05;
+        return ModulePlaceableAnimState.ANIMLOOP05;
       case 209: 
-        return ModulePlaceable.AnimState.ANIMLOOP06;
+        return ModulePlaceableAnimState.ANIMLOOP06;
       case 210: 
-        return ModulePlaceable.AnimState.ANIMLOOP07;
+        return ModulePlaceableAnimState.ANIMLOOP07;
       case 211: 
-        return ModulePlaceable.AnimState.ANIMLOOP08;
+        return ModulePlaceableAnimState.ANIMLOOP08;
       case 212: 
-        return ModulePlaceable.AnimState.ANIMLOOP09;
+        return ModulePlaceableAnimState.ANIMLOOP09;
       case 213: 
-        return ModulePlaceable.AnimState.ANIMLOOP10;
+        return ModulePlaceableAnimState.ANIMLOOP10;
 
     }
 
@@ -555,11 +740,11 @@ export class ModuleObject {
     
   }
 
-  onClick(){
+  onClick(callee: ModuleObject){
 
   }
 
-  triggerUserDefinedEvent( event = undefined ){
+  triggerUserDefinedEvent( event: NWScriptEvent ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
@@ -573,7 +758,7 @@ export class ModuleObject {
     }
   }
 
-  triggerSpellCastAtEvent( event = undefined ){
+  triggerSpellCastAtEvent( event: NWScriptEvent ){
     if(this instanceof ModuleArea || this instanceof Module){
       //return;
     }
@@ -589,7 +774,7 @@ export class ModuleObject {
     }
   }
 
-  scriptEventHandler( event = undefined ){
+  scriptEventHandler( event: NWScriptEvent ){
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEventType.EventUserDefined:
@@ -661,9 +846,15 @@ export class ModuleObject {
     }
 
   }
+  getName(): any {
+    throw new Error("Method not implemented.");
+  }
+  getRace(): any {
+    throw new Error("Method not implemented.");
+  }
 
-  addItem(template = new GFFObject(), onLoad = null){
-    let item = undefined;
+  addItem(template: GFFObject|ModuleItem, onLoad?: Function){
+    let item: ModuleItem;
     if(template instanceof GFFObject){
       item = new ModuleItem(template);
     }else if(template instanceof ModuleItem){
@@ -689,7 +880,7 @@ export class ModuleObject {
     }
   }
 
-  removeItem(resRef = '', nCount = 1){
+  removeItem(resRef = '', nCount = 1): void {
     let item = this.getItem(resRef);
     let idx = this.inventory.indexOf(item);
     if(item){
@@ -701,13 +892,13 @@ export class ModuleObject {
     }
   }
 
-  getItem(resRef = ''){
+  getItem(resRef = ''): ModuleItem {
     for(let i = 0; i<this.inventory.length; i++){
       let item = this.inventory[i];
       if(item.getTag() == resRef)
         return item;
     }
-    return false;
+    return;
   }
 
   updateCollision(delta=0){
@@ -756,7 +947,7 @@ export class ModuleObject {
     */
   }
 
-  doCommand(script){
+  doCommand(script: NWScriptInstance){
     //console.log('doCommand', this.getTag(), script, action, instruction);
     let action = new ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
@@ -767,7 +958,7 @@ export class ModuleObject {
     return this.getHP() <= 0;
   }
 
-  damage(amount = 0, oAttacker = undefined){
+  damage(amount = 0, oAttacker?: ModuleObject){
     this.subtractHP(amount);
     this.lastDamager = oAttacker;
     this.lastAttacker = oAttacker;
@@ -877,9 +1068,9 @@ export class ModuleObject {
     if(this.model instanceof OdysseyModel3D){
       GameState.ModelLoader.load({
         file: resref,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (effectMDL) => {
+            onComplete: (effectMDL: OdysseyModel3D) => {
               this.model.effects.push(effectMDL);
               this.model.add(effectMDL);
               //TextureLoader.LoadQueue();
@@ -919,7 +1110,7 @@ export class ModuleObject {
           this.mesh.parent.remove(this.mesh);
         }
 
-        this.mesh.material.dispose();
+        (this.mesh.material as THREE.Material).dispose();
         this.mesh.geometry.dispose();
 
         this.mesh.material = undefined;
@@ -1015,7 +1206,7 @@ export class ModuleObject {
     }
   }
 
-  setPosition(x = 0, y = 0, z = 0){
+  setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
 
     if(x instanceof THREE.Vector3){
       z = x.z;
@@ -1063,7 +1254,7 @@ export class ModuleObject {
     }
   }
 
-  setFacingObject( target = undefined ){
+  setFacingObject( target: ModuleObject ){
 
   }
 
@@ -1071,19 +1262,26 @@ export class ModuleObject {
     return Math.floor(this.GetFacing() * 180) + 180;
   }
 
+  // GetRotation(){
+  //   if(this.model){
+  //     return Math.floor(this.model.rotation.z * 180) + 180
+  //   }
+  //   return 0;
+  // }
+
   GetLocation(){
     let rotation = this.GetRotationFromBearing();
 
-    let location = new GameState.Location(
+    let location = new EngineLocation(
       this.position.x, this.position.y, this.position.z,
       rotation.x, rotation.y, rotation.z,
-      Game?.module?.area
+      GameState?.module?.area
     );
 
     return location;
   }
 
-  GetRotationFromBearing( bearing = undefined ){
+  GetRotationFromBearing( bearing: number = 0 ){
     let theta = this.rotation.z * Math.PI;
 
     if(typeof bearing == 'number')
@@ -1096,8 +1294,8 @@ export class ModuleObject {
     );
   }
 
-  lookAt(){
-    return false;
+  lookAt(oObject: ModuleObject){
+    return;
   }
 
   isStatic(){
@@ -1142,7 +1340,7 @@ export class ModuleObject {
     return this.willSaveThrow;
   }
 
-  fortitudeSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = CombatEngine.DiceRoll(1, 'd20');
     let bonus = CombatEngine.GetMod(this.getCON());
     
@@ -1152,8 +1350,11 @@ export class ModuleObject {
 
     return 0;
   }
+  getCON(): any {
+    throw new Error("Method not implemented.");
+  }
 
-  reflexSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = CombatEngine.DiceRoll(1, 'd20');
     let bonus = CombatEngine.GetMod(this.getDEX());
     
@@ -1163,8 +1364,11 @@ export class ModuleObject {
 
     return 0;
   }
+  getDEX(): any {
+    throw new Error("Method not implemented.");
+  }
 
-  willSave(nDC = 0, nSaveType = 0, oVersus = undefined){
+  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = CombatEngine.DiceRoll(1, 'd20');
     let bonus = CombatEngine.GetMod(this.getWIS());
 
@@ -1174,8 +1378,11 @@ export class ModuleObject {
 
     return 0;
   }
+  getWIS(): any {
+    throw new Error("Method not implemented.");
+  }
 
-  addEffect(effect, type = 0, duration = 0){
+  addEffect(effect: GameEffect, type = 0, duration = 0){
     if(effect instanceof GameEffect){
       if(effect instanceof EffectLink){
         //EFFECT LEFT
@@ -1220,7 +1427,7 @@ export class ModuleObject {
     return this.getEffect(type) ? true : false;
   }
 
-  removeEffectsByCreator( oCreator = undefined ){
+  removeEffectsByCreator( oCreator: ModuleObject ){
     if(oCreator instanceof ModuleObject){
       let eIndex = this.effects.length - 1;
       let effect = this.effects[eIndex];
@@ -1236,7 +1443,7 @@ export class ModuleObject {
     }
   }
 
-  removeEffectsByType(type = -1){
+  removeEffectsByType(type: number = -1){
     let effect = this.getEffect(type);
     while(effect){
       let index = this.effects.indexOf(effect);
@@ -1247,7 +1454,7 @@ export class ModuleObject {
     }
   }
 
-  removeEffect(type = -1){
+  removeEffect(type: number|GameEffect = -1){
     if(type instanceof GameEffect){
       let arrIdx = this.effects.indexOf(type);
       if(arrIdx >= 0){
@@ -1258,7 +1465,7 @@ export class ModuleObject {
     }
   }
 
-  JumpToLocation(lLocation){
+  JumpToLocation(lLocation: EngineLocation){
     console.log('JumpToLocation', lLocation, this);
     if(typeof lLocation === 'object'){
       if(this.model instanceof OdysseyModel3D){
@@ -1323,13 +1530,6 @@ export class ModuleObject {
     return 0;
   }
 
-  GetRotation(){
-    if(this.model){
-      return Math.floor(this.model.rotation.z * 180) + 180
-    }
-    return 0;
-  }
-
   getLinkedToModule(){
     return this.linkedToModule;
   }
@@ -1343,7 +1543,7 @@ export class ModuleObject {
   }
 
   getTransitionDestin(){
-    if(this.transitionDestin instanceof CEXoLocString){
+    if(this.transitionDestin instanceof CExoLocString){
       return this.transitionDestin.GetValue();
     }
     return '';
@@ -1502,39 +1702,39 @@ export class ModuleObject {
 
 
 
-  getLocalBoolean(iNum){
-    return this._locals.Booleans[iNum] ? 1 : 0;
+  getLocalBoolean(index: number){
+    return this._locals.Booleans[index] ? true : false;
   }
 
-  getLocalNumber(iNum){
-    return this._locals.Numbers[iNum] ? this._locals.Numbers[iNum] : 0;
+  getLocalNumber(index: number){
+    return this._locals.Numbers[index] ? this._locals.Numbers[index] as number : 0;
   }
 
-  setLocalBoolean(iNum, bVal){
-    this._locals.Booleans[iNum] = bVal ? 1 : 0;
+  setLocalBoolean(index: number, bool: boolean){
+    this._locals.Booleans[index] = bool ? true : false;
   }
 
-  setLocalNumber(iNum, iVal){
-    this._locals.Numbers[iNum] = iVal;
+  setLocalNumber(index: number, value: number){
+    this._locals.Numbers[index] = value;
   }
 
   AssignCommand(command = 0){
 
   }
 
-  isHostile(target = undefined){
+  isHostile(target: ModuleObject){
     return FactionManager.IsHostile(this, target);
   }
 
-  isNeutral(target = undefined){
+  isNeutral(target: ModuleObject){
     return FactionManager.IsNeutral(this, target);
   }
 
-  isFriendly(target = undefined){
+  isFriendly(target: ModuleObject){
     return FactionManager.IsFriendly(this, target);
   }
 
-  getReputation(target){
+  getReputation(target: ModuleObject){
     return FactionManager.GetReputation(this, target);
   }
 
@@ -1569,7 +1769,7 @@ export class ModuleObject {
     }
   }
 
-  notifyPerceptionHeardObject(object = undefined, heard = false){
+  notifyPerceptionHeardObject(object: ModuleObject, heard = false){
     if(object instanceof ModuleCreature){
       let triggerOnNotice = false;
       let perceptionObject;
@@ -1606,7 +1806,7 @@ export class ModuleObject {
     }
   }
 
-  notifyPerceptionSeenObject(object = undefined, seen = false){
+  notifyPerceptionSeenObject(object: ModuleObject, seen = false){
     if(object instanceof ModuleCreature){
       let triggerOnNotice = false;
       let perceptionObject;
@@ -1643,7 +1843,7 @@ export class ModuleObject {
     }
   }
 
-  hasLineOfSight(oTarget = null, max_distance = 30){
+  hasLineOfSight(oTarget: ModuleObject, max_distance = 30){
     if(!this.spawned || !GameState.module.readyToProcessEvents)
       return false;
     //return false;
@@ -1958,7 +2158,7 @@ export class ModuleObject {
     return swVarTableStruct;
   }
 
-  static TemplateFromJSON(json={}){
+  static TemplateFromJSON(json: any = {}){
     let gff = new GFFObject();
     for(let key in json){
       let field = json[key];
@@ -2012,572 +2212,553 @@ export class ModuleObject {
 
   animationConstantToAnimation( animation_constant = 10000 ){
 
-    const debilitatedEffect = this.effects.find( e => e.type == GameEffectType.EffectSetState );
-    if(debilitatedEffect){
-      switch(debilitatedEffect.getInt(0)){
-        case 1: //Confused
-          return Global.kotor2DA.animations.rows[15];
-        case 2: //Frightened
-          return Global.kotor2DA.animations.rows[73];
-        case 3: //Droid Stun
-          return Global.kotor2DA.animations.rows[270];
-        case 4: //Stunned
-          return Global.kotor2DA.animations.rows[78];
-        case 5: //Paralyzed
-          return Global.kotor2DA.animations.rows[78];
-        case 6: //Sleep
-          return Global.kotor2DA.animations.rows[76];
-        case 7: //Choke
-          if(this.isSimpleCreature()){
-            return Global.kotor2DA.animations.rows[264];
-          }else{
-            return Global.kotor2DA.animations.rows[72];
-          }
-        break;
-        case 8: //Horrified
-          return Global.kotor2DA.animations.rows[74];
-        case 9: //Force Pushed
-          if(!this.fp_push_played)
-            return Global.kotor2DA.animations.rows[84];
-          if(!this.fp_land_played)
-            return Global.kotor2DA.animations.rows[85];
-          if(!this.fp_getup_played)
-            return Global.kotor2DA.animations.rows[86];
-        break;
-        case 10: //Whirlwind
-          return Global.kotor2DA.animations.rows[75];
+    const animations2DA = TwoDAManager.datatables.get('animations');
+    if(animations2DA){
+
+      const debilitatedEffect = this.effects.find( e => e.type == GameEffectType.EffectSetState );
+      if(debilitatedEffect){
+        switch(debilitatedEffect.getInt(0)){
+          case 1: //Confused
+            return animations2DA.rows[15];
+          case 2: //Frightened
+            return animations2DA.rows[73];
+          case 3: //Droid Stun
+            return animations2DA.rows[270];
+          case 4: //Stunned
+            return animations2DA.rows[78];
+          case 5: //Paralyzed
+            return animations2DA.rows[78];
+          case 6: //Sleep
+            return animations2DA.rows[76];
+          case 7: //Choke
+            if(this.isSimpleCreature()){
+              return animations2DA.rows[264];
+            }else{
+              return animations2DA.rows[72];
+            }
+          break;
+          case 8: //Horrified
+            return animations2DA.rows[74];
+          case 9: //Force Pushed
+            if(!this.fp_push_played)
+              return animations2DA.rows[84];
+            if(!this.fp_land_played)
+              return animations2DA.rows[85];
+            if(!this.fp_getup_played)
+              return animations2DA.rows[86];
+          break;
+          case 10: //Whirlwind
+            return animations2DA.rows[75];
+        }
       }
-    }
-    
-    switch( animation_constant ){
-      case ModuleCreatureAnimState.PAUSE:
-      case ModuleCreatureAnimState.PAUSE_ALT:
-        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[256];
-        }else{
-          return Global.kotor2DA.animations.rows[6];
-        }
-      break;
-      case ModuleCreatureAnimState.PAUSE2:
-        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[257];
-        }else{
-          return Global.kotor2DA.animations.rows[7];
-        }
-      break;
-      case ModuleCreatureAnimState.PAUSE3:
-        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
-        return Global.kotor2DA.animations.rows[359];
-      break;
-      case ModuleCreatureAnimState.PAUSE4:
-        if(this.isPoisoned() || this.isDiseased()) return Global.kotor2DA.animations.rows[15];
-        return Global.kotor2DA.animations.rows[357];
-      break;
-      case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
-        if(this.isPoisoned()) return Global.kotor2DA.animations.rows[15];
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[12];
-        }else{
-          return Global.kotor2DA.animations.rows[7];
-        }
-      break;
-      case ModuleCreatureAnimState.PAUSE_BORED:
-        return Global.kotor2DA.animations.rows[13];
-      break;
-      case ModuleCreatureAnimState.PAUSE_TIRED:
-        return Global.kotor2DA.animations.rows[14];
-      break;
-      case ModuleCreatureAnimState.PAUSE_DRUNK:
-        return Global.kotor2DA.animations.rows[15];
-      break;
-      case ModuleCreatureAnimState.PAUSE_INJ:
-        return Global.kotor2DA.animations.rows[8];
-      break;
-      case ModuleCreatureAnimState.DEAD:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[275];
-        }else{
-          return Global.kotor2DA.animations.rows[81];
-        }
-      break;
-      case ModuleCreatureAnimState.DEAD1:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[275];
-        }else{
-          return Global.kotor2DA.animations.rows[83];
-        }
-      break;
-      case ModuleCreatureAnimState.DIE:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[274];
-        }else{
-          return Global.kotor2DA.animations.rows[80];
-        }
-      break;
-      case ModuleCreatureAnimState.DIE1:
-        return Global.kotor2DA.animations.rows[82];
-      break;
-      case ModuleCreatureAnimState.GET_UP_DEAD:
-        return Global.kotor2DA.animations.rows[381];
-      break;
-      case ModuleCreatureAnimState.GET_UP_DEAD1:
-        return Global.kotor2DA.animations.rows[382];
-      break;
-      case ModuleCreatureAnimState.WALK_INJ:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[254];
-        }else{
-          return Global.kotor2DA.animations.rows[1];
-        }
-      break;
-      case ModuleCreatureAnimState.WALKING:
-        if(this.isSimpleCreature()){
-          if(this.getHP()/this.getMaxHP() > .15){
-            return Global.kotor2DA.animations.rows[253];
+      
+      switch( animation_constant ){
+        case ModuleCreatureAnimState.PAUSE:
+        case ModuleCreatureAnimState.PAUSE_ALT:
+          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[256];
           }else{
-            return Global.kotor2DA.animations.rows[254];
+            return animations2DA.rows[6];
           }
-        }else{
-          if(this.getHP()/this.getMaxHP() > .15){
-            switch(this.getCombatAnimationWeaponType()){
-              case 2:
-                return Global.kotor2DA.animations.rows[338];
-              case 3:
-                return Global.kotor2DA.animations.rows[341];
-              case 4:
-                return Global.kotor2DA.animations.rows[339];
-              case 7:
-                return Global.kotor2DA.animations.rows[340];
-              case 9:
-                return Global.kotor2DA.animations.rows[340];
-              default:
-                return Global.kotor2DA.animations.rows[0];
+        break;
+        case ModuleCreatureAnimState.PAUSE2:
+          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[257];
+          }else{
+            return animations2DA.rows[7];
+          }
+        break;
+        case ModuleCreatureAnimState.PAUSE3:
+          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          return animations2DA.rows[359];
+        break;
+        case ModuleCreatureAnimState.PAUSE4:
+          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          return animations2DA.rows[357];
+        break;
+        case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
+          if(this.isPoisoned()) return animations2DA.rows[15];
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[12];
+          }else{
+            return animations2DA.rows[7];
+          }
+        break;
+        case ModuleCreatureAnimState.PAUSE_BORED:
+          return animations2DA.rows[13];
+        break;
+        case ModuleCreatureAnimState.PAUSE_TIRED:
+          return animations2DA.rows[14];
+        break;
+        case ModuleCreatureAnimState.PAUSE_DRUNK:
+          return animations2DA.rows[15];
+        break;
+        case ModuleCreatureAnimState.PAUSE_INJ:
+          return animations2DA.rows[8];
+        break;
+        case ModuleCreatureAnimState.DEAD:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[275];
+          }else{
+            return animations2DA.rows[81];
+          }
+        break;
+        case ModuleCreatureAnimState.DEAD1:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[275];
+          }else{
+            return animations2DA.rows[83];
+          }
+        break;
+        case ModuleCreatureAnimState.DIE:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[274];
+          }else{
+            return animations2DA.rows[80];
+          }
+        break;
+        case ModuleCreatureAnimState.DIE1:
+          return animations2DA.rows[82];
+        break;
+        case ModuleCreatureAnimState.GET_UP_DEAD:
+          return animations2DA.rows[381];
+        break;
+        case ModuleCreatureAnimState.GET_UP_DEAD1:
+          return animations2DA.rows[382];
+        break;
+        case ModuleCreatureAnimState.WALK_INJ:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[254];
+          }else{
+            return animations2DA.rows[1];
+          }
+        break;
+        case ModuleCreatureAnimState.WALKING:
+          if(this.isSimpleCreature()){
+            if(this.getHP()/this.getMaxHP() > .15){
+              return animations2DA.rows[253];
+            }else{
+              return animations2DA.rows[254];
             }
           }else{
-            return Global.kotor2DA.animations.rows[1];
+            if(this.getHP()/this.getMaxHP() > .15){
+              switch(this.getCombatAnimationWeaponType()){
+                case 2:
+                  return animations2DA.rows[338];
+                case 3:
+                  return animations2DA.rows[341];
+                case 4:
+                  return animations2DA.rows[339];
+                case 7:
+                  return animations2DA.rows[340];
+                case 9:
+                  return animations2DA.rows[340];
+                default:
+                  return animations2DA.rows[0];
+              }
+            }else{
+              return animations2DA.rows[1];
+            }
           }
-        }
-      break;
-      case ModuleCreatureAnimState.RUNNING:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[255];
-        }else{
-          if(this.getHP()/this.getMaxHP() > .15){
+        break;
+        case ModuleCreatureAnimState.RUNNING:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[255];
+          }else{
+            if(this.getHP()/this.getMaxHP() > .15){
+              switch(this.getCombatAnimationWeaponType()){
+                case 1:
+                  return animations2DA.rows[343];
+                case 2:
+                  return animations2DA.rows[345];
+                case 3:
+                  return animations2DA.rows[345];
+                case 4:
+                  return animations2DA.rows[3];
+                case 7:
+                  return animations2DA.rows[340];
+                case 9:
+                  return animations2DA.rows[340];
+                default:
+                  return animations2DA.rows[2];
+              }
+            }else{
+              return animations2DA.rows[4];
+            }
+          }
+        break;
+        case ModuleCreatureAnimState.RUN_INJ:
+          return animations2DA.rows[4];
+        break;
+        //COMBAT READY
+        case ModuleCreatureAnimState.READY:
+        case ModuleCreatureAnimState.READY_ALT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[278];
+          }else{
             switch(this.getCombatAnimationWeaponType()){
               case 1:
-                return Global.kotor2DA.animations.rows[343];
+                return animations2DA.rows[92];
               case 2:
-                return Global.kotor2DA.animations.rows[345];
+                return animations2DA.rows[133];
               case 3:
-                return Global.kotor2DA.animations.rows[345];
+                return animations2DA.rows[174];
               case 4:
-                return Global.kotor2DA.animations.rows[3];
+                return animations2DA.rows[215];
+              case 5:
+                return animations2DA.rows[223];
+              case 6:
+                return animations2DA.rows[237];
               case 7:
-                return Global.kotor2DA.animations.rows[340];
+                return animations2DA.rows[245];
               case 9:
-                return Global.kotor2DA.animations.rows[340];
+                return animations2DA.rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
               default:
-                return Global.kotor2DA.animations.rows[2];
+                return animations2DA.rows[249];
             }
+          }
+        break;
+        case ModuleCreatureAnimState.DODGE:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[281];
           }else{
-            return Global.kotor2DA.animations.rows[4];
+            return animations2DA.rows[302];
           }
-        }
-      break;
-      case ModuleCreatureAnimState.RUN_INJ:
-        return Global.kotor2DA.animations.rows[4];
-      break;
-      //COMBAT READY
-      case ModuleCreatureAnimState.READY:
-      case ModuleCreatureAnimState.READY_ALT:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[278];
-        }else{
-          switch(this.getCombatAnimationWeaponType()){
+        break;
+        case ModuleCreatureAnimState.SPASM:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[268];
+          }else{
+            return animations2DA.rows[77];
+          }
+        break;
+        case ModuleCreatureAnimState.TAUNT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[263];
+          }else{
+            return animations2DA.rows[33];
+          }
+        break;
+        case ModuleCreatureAnimState.GREETING:
+          return animations2DA.rows[31];
+        break;
+        case ModuleCreatureAnimState.LISTEN:
+          return animations2DA.rows[18];
+        break;
+        case ModuleCreatureAnimState.LISTEN_INJURED:
+          return animations2DA.rows[371];
+        break;
+        case ModuleCreatureAnimState.TALK_NORMAL:
+          return animations2DA.rows[25];
+        break;
+        case ModuleCreatureAnimState.TALK_PLEADING:
+          return animations2DA.rows[27];
+        break;
+        case ModuleCreatureAnimState.TALK_FORCEFUL:
+          return animations2DA.rows[26];
+        break;
+        case ModuleCreatureAnimState.TALK_LAUGHING:
+          return animations2DA.rows[29];
+        break;
+        case ModuleCreatureAnimState.TALK_SAD:
+          return animations2DA.rows[28];
+        break;
+        case ModuleCreatureAnimState.TALK_INJURED:
+          return animations2DA.rows[370];
+        break;
+        case ModuleCreatureAnimState.SALUTE:
+          return animations2DA.rows[16];
+        break;
+        case ModuleCreatureAnimState.BOW:
+          return animations2DA.rows[19];
+        break;
+        case ModuleCreatureAnimState.VICTORY:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[260];
+          }else{
+            return animations2DA.rows[17];
+          }
+        break;
+        case ModuleCreatureAnimState.HEAD_TURN_LEFT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[258];
+          }else{
+            return animations2DA.rows[11];
+          }
+        break;
+        case ModuleCreatureAnimState.HEAD_TURN_RIGHT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[259];
+          }else{
+            return animations2DA.rows[10];
+          }
+        break;
+        case ModuleCreatureAnimState.GET_LOW:
+          return animations2DA.rows[40];
+        break;
+        case ModuleCreatureAnimState.GET_MID:
+          return animations2DA.rows[41];
+        break;
+        case ModuleCreatureAnimState.INJECT:
+          return animations2DA.rows[37];
+        break;
+        case ModuleCreatureAnimState.DAMAGE:
+          return animations2DA.rows[303];
+        break;
+        case ModuleCreatureAnimState.USE_COMPUTER_LP:
+          return animations2DA.rows[44];
+        break;
+        case ModuleCreatureAnimState.WHIRLWIND:
+          return animations2DA.rows[75];
+        break;
+        case ModuleCreatureAnimState.DEACTIVATE:
+          return animations2DA.rows[270];
+        break;
+        case ModuleCreatureAnimState.FLIRT:
+          return animations2DA.rows[32];
+        break;
+        case ModuleCreatureAnimState.USE_COMPUTER:
+          return animations2DA.rows[43];
+        break;
+        case ModuleCreatureAnimState.DANCE:
+          return animations2DA.rows[53];
+        break;
+        case ModuleCreatureAnimState.DANCE1:
+          return animations2DA.rows[54];
+        break;
+        case ModuleCreatureAnimState.HORROR:
+          return animations2DA.rows[74];
+        break;
+        case ModuleCreatureAnimState.USE_COMPUTER1:
+          return animations2DA.rows[43];
+        break;
+        case ModuleCreatureAnimState.PERSUADE:
+          return animations2DA.rows[68];
+        break;
+        case ModuleCreatureAnimState.ACTIVATE_ITEM:
+          return animations2DA.rows[38];
+        break;
+        case ModuleCreatureAnimState.UNLOCK_DOOR:
+          return animations2DA.rows[47];
+        break;
+        case ModuleCreatureAnimState.THROW_HIGH:
+          return animations2DA.rows[57];
+        break;
+        case ModuleCreatureAnimState.THROW_LOW:
+          return animations2DA.rows[58];
+        break;
+        case ModuleCreatureAnimState.UNLOCK_CONTAINER:
+          return animations2DA.rows[48];
+        break;
+        case ModuleCreatureAnimState.DISABLE_MINE:
+          return animations2DA.rows[51];
+        break;
+        case ModuleCreatureAnimState.WALK_STEALTH:
+          return animations2DA.rows[5];
+        break;
+        case ModuleCreatureAnimState.UNLOCK_DOOR2:
+          return animations2DA.rows[47];
+        break;
+        case ModuleCreatureAnimState.UNLOCK_CONTAINER2:
+          return animations2DA.rows[48];
+        break;
+        case ModuleCreatureAnimState.ACTIVATE_ITEM2:
+          return animations2DA.rows[38];
+        break;
+        case ModuleCreatureAnimState.SLEEP:
+          return animations2DA.rows[76];
+        break;
+        case ModuleCreatureAnimState.PARALYZED:
+          return animations2DA.rows[78];
+        break;
+        case ModuleCreatureAnimState.PRONE:
+          return animations2DA.rows[79];
+        break;
+        case ModuleCreatureAnimState.SET_MINE:
+          return animations2DA.rows[52];
+        break;
+        case ModuleCreatureAnimState.DISABLE_MINE2:
+          return animations2DA.rows[51];
+        break;
+        case ModuleCreatureAnimState.CUSTOM01:
+          return animations2DA.rows[346];
+        break;
+        case ModuleCreatureAnimState.FBLOCK:
+          return animations2DA.rows[355];
+        break;
+        case ModuleCreatureAnimState.CHOKE:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[264];
+          }else{
+            return animations2DA.rows[72];
+          }
+        break;
+        case ModuleCreatureAnimState.WELD:
+          return animations2DA.rows[360];
+        break;
+        case ModuleCreatureAnimState.TREAT_INJURED:
+          return animations2DA.rows[34];
+        break;
+        case ModuleCreatureAnimState.TREAT_INJURED_LP:
+          return animations2DA.rows[35];
+        break;
+        case ModuleCreatureAnimState.CATCH_SABER:
+          return animations2DA.rows[71];
+        break;
+        case ModuleCreatureAnimState.THROW_SABER_LP:
+          return animations2DA.rows[70];
+        break;
+        case ModuleCreatureAnimState.THROW_SABER:
+          return animations2DA.rows[69];
+        break;
+        case ModuleCreatureAnimState.KNEEL_TALK_ANGRY:
+          return animations2DA.rows[384];
+        break;
+        case ModuleCreatureAnimState.KNEEL_TALK_SAD:
+          return animations2DA.rows[385];
+        break;
+        case ModuleCreatureAnimState.KNOCKED_DOWN:
+          return animations2DA.rows[85];
+        break;
+        case ModuleCreatureAnimState.KNOCKED_DOWN2:
+          return animations2DA.rows[85];
+        break;
+        case ModuleCreatureAnimState.DEAD_PRONE:
+          return animations2DA.rows[375];
+        break;
+        case ModuleCreatureAnimState.KNEEL:
+          return animations2DA.rows[23];
+        break;
+        case ModuleCreatureAnimState.KNEEL1:
+          return animations2DA.rows[23];
+        break;
+        case ModuleCreatureAnimState.FLOURISH:
+          switch( this.getCombatAnimationWeaponType() ){
             case 1:
-              return Global.kotor2DA.animations.rows[92];
+              return animations2DA.rows[91];
             case 2:
-              return Global.kotor2DA.animations.rows[133];
+              return animations2DA.rows[132];
             case 3:
-              return Global.kotor2DA.animations.rows[174];
+              return animations2DA.rows[173];
             case 4:
-              return Global.kotor2DA.animations.rows[215];
+              return animations2DA.rows[214];
             case 5:
-              return Global.kotor2DA.animations.rows[223];
+              return animations2DA.rows[222];
             case 6:
-              return Global.kotor2DA.animations.rows[237];
+              return animations2DA.rows[136];
             case 7:
-              return Global.kotor2DA.animations.rows[245];
+              return animations2DA.rows[244];
+            case 8:
+              return animations2DA.rows[373];
             case 9:
-              return Global.kotor2DA.animations.rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
+              return animations2DA.rows[244];
             default:
-              return Global.kotor2DA.animations.rows[249];
+              return animations2DA.rows[373];
           }
-        }
-      break;
-      case ModuleCreatureAnimState.DODGE:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[281];
-        }else{
-          return Global.kotor2DA.animations.rows[302];
-        }
-      break;
-      case ModuleCreatureAnimState.SPASM:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[268];
-        }else{
-          return Global.kotor2DA.animations.rows[77];
-        }
-      break;
-      case ModuleCreatureAnimState.TAUNT:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[263];
-        }else{
-          return Global.kotor2DA.animations.rows[33];
-        }
-      break;
-      case ModuleCreatureAnimState.GREETING:
-        return Global.kotor2DA.animations.rows[31];
-      break;
-      case ModuleCreatureAnimState.LISTEN:
-        return Global.kotor2DA.animations.rows[18];
-      break;
-      case ModuleCreatureAnimState.LISTEN_INJURED:
-        return Global.kotor2DA.animations.rows[371];
-      break;
-      case ModuleCreatureAnimState.TALK_NORMAL:
-        return Global.kotor2DA.animations.rows[25];
-      break;
-      case ModuleCreatureAnimState.TALK_PLEADING:
-        return Global.kotor2DA.animations.rows[27];
-      break;
-      case ModuleCreatureAnimState.TALK_FORCEFUL:
-        return Global.kotor2DA.animations.rows[26];
-      break;
-      case ModuleCreatureAnimState.TALK_LAUGHING:
-        return Global.kotor2DA.animations.rows[29];
-      break;
-      case ModuleCreatureAnimState.TALK_SAD:
-        return Global.kotor2DA.animations.rows[28];
-      break;
-      case ModuleCreatureAnimState.TALK_INJURED:
-        return Global.kotor2DA.animations.rows[370];
-      break;
-      case ModuleCreatureAnimState.SALUTE:
-        return Global.kotor2DA.animations.rows[16];
-      break;
-      case ModuleCreatureAnimState.BOW:
-        return Global.kotor2DA.animations.rows[19];
-      break;
-      case ModuleCreatureAnimState.VICTORY:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[260];
-        }else{
-          return Global.kotor2DA.animations.rows[17];
-        }
-      break;
-      case ModuleCreatureAnimState.HEAD_TURN_LEFT:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[258];
-        }else{
-          return Global.kotor2DA.animations.rows[11];
-        }
-      break;
-      case ModuleCreatureAnimState.HEAD_TURN_RIGHT:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[259];
-        }else{
-          return Global.kotor2DA.animations.rows[10];
-        }
-      break;
-      case ModuleCreatureAnimState.GET_LOW:
-        return Global.kotor2DA.animations.rows[40];
-      break;
-      case ModuleCreatureAnimState.GET_MID:
-        return Global.kotor2DA.animations.rows[41];
-      break;
-      case ModuleCreatureAnimState.INJECT:
-        return Global.kotor2DA.animations.rows[37];
-      break;
-      case ModuleCreatureAnimState.DAMAGE:
-        return Global.kotor2DA.animations.rows[303];
-      break;
-      case ModuleCreatureAnimState.USE_COMPUTER_LP:
-        return Global.kotor2DA.animations.rows[44];
-      break;
-      case ModuleCreatureAnimState.WHIRLWIND:
-        return Global.kotor2DA.animations.rows[75];
-      break;
-      case ModuleCreatureAnimState.DEACTIVATE:
-        return Global.kotor2DA.animations.rows[270];
-      break;
-      case ModuleCreatureAnimState.FLIRT:
-        return Global.kotor2DA.animations.rows[32];
-      break;
-      case ModuleCreatureAnimState.USE_COMPUTER:
-        return Global.kotor2DA.animations.rows[43];
-      break;
-      case ModuleCreatureAnimState.DANCE:
-        return Global.kotor2DA.animations.rows[53];
-      break;
-      case ModuleCreatureAnimState.DANCE1:
-        return Global.kotor2DA.animations.rows[54];
-      break;
-      case ModuleCreatureAnimState.HORROR:
-        return Global.kotor2DA.animations.rows[74];
-      break;
-      case ModuleCreatureAnimState.USE_COMPUTER1:
-        return Global.kotor2DA.animations.rows[43];
-      break;
-      case ModuleCreatureAnimState.PERSUADE:
-        return Global.kotor2DA.animations.rows[68];
-      break;
-      case ModuleCreatureAnimState.ACTIVATE_ITEM:
-        return Global.kotor2DA.animations.rows[38];
-      break;
-      case ModuleCreatureAnimState.UNLOCK_DOOR:
-        return Global.kotor2DA.animations.rows[47];
-      break;
-      case ModuleCreatureAnimState.THROW_HIGH:
-        return Global.kotor2DA.animations.rows[57];
-      break;
-      case ModuleCreatureAnimState.THROW_LOW:
-        return Global.kotor2DA.animations.rows[58];
-      break;
-      case ModuleCreatureAnimState.UNLOCK_CONTAINER:
-        return Global.kotor2DA.animations.rows[48];
-      break;
-      case ModuleCreatureAnimState.DISABLE_MINE:
-        return Global.kotor2DA.animations.rows[51];
-      break;
-      case ModuleCreatureAnimState.WALK_STEALTH:
-        return Global.kotor2DA.animations.rows[5];
-      break;
-      case ModuleCreatureAnimState.UNLOCK_DOOR2:
-        return Global.kotor2DA.animations.rows[47];
-      break;
-      case ModuleCreatureAnimState.UNLOCK_CONTAINER2:
-        return Global.kotor2DA.animations.rows[48];
-      break;
-      case ModuleCreatureAnimState.ACTIVATE_ITEM2:
-        return Global.kotor2DA.animations.rows[38];
-      break;
-      case ModuleCreatureAnimState.SLEEP:
-        return Global.kotor2DA.animations.rows[76];
-      break;
-      case ModuleCreatureAnimState.PARALYZED:
-        return Global.kotor2DA.animations.rows[78];
-      break;
-      case ModuleCreatureAnimState.PRONE:
-        return Global.kotor2DA.animations.rows[79];
-      break;
-      case ModuleCreatureAnimState.SET_MINE:
-        return Global.kotor2DA.animations.rows[52];
-      break;
-      case ModuleCreatureAnimState.DISABLE_MINE2:
-        return Global.kotor2DA.animations.rows[51];
-      break;
-      case ModuleCreatureAnimState.CUSTOM01:
-        return Global.kotor2DA.animations.rows[346];
-      break;
-      case ModuleCreatureAnimState.FBLOCK:
-        return Global.kotor2DA.animations.rows[355];
-      break;
-      case ModuleCreatureAnimState.CHOKE:
-        if(this.isSimpleCreature()){
-          return Global.kotor2DA.animations.rows[264];
-        }else{
-          return Global.kotor2DA.animations.rows[72];
-        }
-      break;
-      case ModuleCreatureAnimState.WELD:
-        return Global.kotor2DA.animations.rows[360];
-      break;
-      case ModuleCreatureAnimState.TREAT_INJURED:
-        return Global.kotor2DA.animations.rows[34];
-      break;
-      case ModuleCreatureAnimState.TREAT_INJURED_LP:
-        return Global.kotor2DA.animations.rows[35];
-      break;
-      case ModuleCreatureAnimState.CATCH_SABER:
-        return Global.kotor2DA.animations.rows[71];
-      break;
-      case ModuleCreatureAnimState.THROW_SABER_LP:
-        return Global.kotor2DA.animations.rows[70];
-      break;
-      case ModuleCreatureAnimState.THROW_SABER:
-        return Global.kotor2DA.animations.rows[69];
-      break;
-      case ModuleCreatureAnimState.KNEEL_TALK_ANGRY:
-        return Global.kotor2DA.animations.rows[384];
-      break;
-      case ModuleCreatureAnimState.KNEEL_TALK_SAD:
-        return Global.kotor2DA.animations.rows[385];
-      break;
-      case ModuleCreatureAnimState.KNOCKED_DOWN:
-        return Global.kotor2DA.animations.rows[85];
-      break;
-      case ModuleCreatureAnimState.KNOCKED_DOWN2:
-        return Global.kotor2DA.animations.rows[85];
-      break;
-      case ModuleCreatureAnimState.DEAD_PRONE:
-        return Global.kotor2DA.animations.rows[375];
-      break;
-      case ModuleCreatureAnimState.KNEEL:
-        return Global.kotor2DA.animations.rows[23];
-      break;
-      case ModuleCreatureAnimState.KNEEL1:
-        return Global.kotor2DA.animations.rows[23];
-      break;
-      case ModuleCreatureAnimState.FLOURISH:
-        switch( this.getCombatAnimationWeaponType() ){
-          case 1:
-            return Global.kotor2DA.animations.rows[91];
-          case 2:
-            return Global.kotor2DA.animations.rows[132];
-          case 3:
-            return Global.kotor2DA.animations.rows[173];
-          case 4:
-            return Global.kotor2DA.animations.rows[214];
-          case 5:
-            return Global.kotor2DA.animations.rows[222];
-          case 6:
-            return Global.kotor2DA.animations.rows[136];
-          case 7:
-            return Global.kotor2DA.animations.rows[244];
-          case 8:
-            return Global.kotor2DA.animations.rows[373];
-          case 9:
-            return Global.kotor2DA.animations.rows[244];
-          default:
-            return Global.kotor2DA.animations.rows[373];
-        }
-      break;
-      
-      //BEGIN TSL ANIMATIONS
-      case ModuleCreatureAnimState.TOUCH_HEART:
-        return Global.kotor2DA.animations.rows[462];
-      break;
-      case ModuleCreatureAnimState.ROLL_EYES:
-        return Global.kotor2DA.animations.rows[463];
-      break;
-      case ModuleCreatureAnimState.USE_ITEM_ON_OTHER:
-        return Global.kotor2DA.animations.rows[464];
-      break;
-      case ModuleCreatureAnimState.STAND_ATTENTION:
-        return Global.kotor2DA.animations.rows[465];
-      break;
-      case ModuleCreatureAnimState.NOD_YES:
-        return Global.kotor2DA.animations.rows[466];
-      break;
-      case ModuleCreatureAnimState.NOD_NO:
-        return Global.kotor2DA.animations.rows[467];
-      break;
-      case ModuleCreatureAnimState.POINT:
-        return Global.kotor2DA.animations.rows[468];
-      break;
-      case ModuleCreatureAnimState.POINT_LP:
-        return Global.kotor2DA.animations.rows[469];
-      break;
-      case ModuleCreatureAnimState.POINT_DOWN:
-        return Global.kotor2DA.animations.rows[470];
-      break;
-      case ModuleCreatureAnimState.SCANNING:
-        return Global.kotor2DA.animations.rows[471];
-      break;
-      case ModuleCreatureAnimState.SHRUG:
-        return Global.kotor2DA.animations.rows[472];
-      break;
-      case ModuleCreatureAnimState.SIT_CHAIR:
-        return Global.kotor2DA.animations.rows[316];
-      break;
-      case ModuleCreatureAnimState.SIT_CHAIR_DRUNK:
-        return Global.kotor2DA.animations.rows[317];
-      break;
-      case ModuleCreatureAnimState.SIT_CHAIR_PAZAAK:
-        return Global.kotor2DA.animations.rows[318];
-      break;
-      case ModuleCreatureAnimState.SIT_CHAIR_COMP1:
-        return Global.kotor2DA.animations.rows[316];
-      break;
-      case ModuleCreatureAnimState.SIT_CHAIR_COMP2:
-        return Global.kotor2DA.animations.rows[316];
-      break;
-      case ModuleCreatureAnimState.CUT_HANDS:
-        return Global.kotor2DA.animations.rows[557];
-      break;
-      case ModuleCreatureAnimState.L_HAND_CHOP:
-        return Global.kotor2DA.animations.rows[558];
-      break;
-      case ModuleCreatureAnimState.COLLAPSE:
-        return Global.kotor2DA.animations.rows[559];
-      break;
-      case ModuleCreatureAnimState.COLLAPSE_LP:
-        return Global.kotor2DA.animations.rows[560];
-      break;
-      case ModuleCreatureAnimState.COLLAPSE_STAND:
-        return Global.kotor2DA.animations.rows[561];
-      break;
-      case ModuleCreatureAnimState.BAO_DUR_POWER_PUNCH:
-        return Global.kotor2DA.animations.rows[562];
-      break;
-      case ModuleCreatureAnimState.POINT_UP:
-        return Global.kotor2DA.animations.rows[563];
-      break;
-      case ModuleCreatureAnimState.POINT_UP_LOWER:
-        return Global.kotor2DA.animations.rows[564];
-      break;
-      case ModuleCreatureAnimState.HOOD_OFF:
-        return Global.kotor2DA.animations.rows[565];
-      break;
-      case ModuleCreatureAnimState.HOOD_ON:
-        return Global.kotor2DA.animations.rows[566];
-      break;
-      case ModuleCreatureAnimState.DIVE_ROLL:
-        return Global.kotor2DA.animations.rows[567];
-      break;
-      //END TSL ANIMATIONS
+        break;
+        
+        //BEGIN TSL ANIMATIONS
+        case ModuleCreatureAnimState.TOUCH_HEART:
+          return animations2DA.rows[462];
+        break;
+        case ModuleCreatureAnimState.ROLL_EYES:
+          return animations2DA.rows[463];
+        break;
+        case ModuleCreatureAnimState.USE_ITEM_ON_OTHER:
+          return animations2DA.rows[464];
+        break;
+        case ModuleCreatureAnimState.STAND_ATTENTION:
+          return animations2DA.rows[465];
+        break;
+        case ModuleCreatureAnimState.NOD_YES:
+          return animations2DA.rows[466];
+        break;
+        case ModuleCreatureAnimState.NOD_NO:
+          return animations2DA.rows[467];
+        break;
+        case ModuleCreatureAnimState.POINT:
+          return animations2DA.rows[468];
+        break;
+        case ModuleCreatureAnimState.POINT_LP:
+          return animations2DA.rows[469];
+        break;
+        case ModuleCreatureAnimState.POINT_DOWN:
+          return animations2DA.rows[470];
+        break;
+        case ModuleCreatureAnimState.SCANNING:
+          return animations2DA.rows[471];
+        break;
+        case ModuleCreatureAnimState.SHRUG:
+          return animations2DA.rows[472];
+        break;
+        case ModuleCreatureAnimState.SIT_CHAIR:
+          return animations2DA.rows[316];
+        break;
+        case ModuleCreatureAnimState.SIT_CHAIR_DRUNK:
+          return animations2DA.rows[317];
+        break;
+        case ModuleCreatureAnimState.SIT_CHAIR_PAZAAK:
+          return animations2DA.rows[318];
+        break;
+        case ModuleCreatureAnimState.SIT_CHAIR_COMP1:
+          return animations2DA.rows[316];
+        break;
+        case ModuleCreatureAnimState.SIT_CHAIR_COMP2:
+          return animations2DA.rows[316];
+        break;
+        case ModuleCreatureAnimState.CUT_HANDS:
+          return animations2DA.rows[557];
+        break;
+        case ModuleCreatureAnimState.L_HAND_CHOP:
+          return animations2DA.rows[558];
+        break;
+        case ModuleCreatureAnimState.COLLAPSE:
+          return animations2DA.rows[559];
+        break;
+        case ModuleCreatureAnimState.COLLAPSE_LP:
+          return animations2DA.rows[560];
+        break;
+        case ModuleCreatureAnimState.COLLAPSE_STAND:
+          return animations2DA.rows[561];
+        break;
+        case ModuleCreatureAnimState.BAO_DUR_POWER_PUNCH:
+          return animations2DA.rows[562];
+        break;
+        case ModuleCreatureAnimState.POINT_UP:
+          return animations2DA.rows[563];
+        break;
+        case ModuleCreatureAnimState.POINT_UP_LOWER:
+          return animations2DA.rows[564];
+        break;
+        case ModuleCreatureAnimState.HOOD_OFF:
+          return animations2DA.rows[565];
+        break;
+        case ModuleCreatureAnimState.HOOD_ON:
+          return animations2DA.rows[566];
+        break;
+        case ModuleCreatureAnimState.DIVE_ROLL:
+          return animations2DA.rows[567];
+        break;
+        //END TSL ANIMATIONS
+
+      }
 
     }
 
   }
 
-}
-
-ModuleObject.List = new Map();
-
-ModuleObject.GetObjectById = function(id = -1){
-
-  if(id == ModuleObject.OBJECT_INVALID)
-    return undefined;
-
-  if(id instanceof ModuleObject){
-    if(id.id >= 1){
-      return id;
-    }
+  isPoisoned() {
+    return false;
   }
 
-  if(ModuleObject.List.has(id)){
-    return ModuleObject.List.get(id);
+  isDiseased(): any {
+    return false;
   }
-  return undefined;
+
+  getCombatAnimationWeaponType() {
+    return 0
+  }
 
 }
-
-ModuleObject.COUNT = 1;
-ModuleObject.PLAYER_ID = 0x7fffffff;
-ModuleObject.OBJECT_INVALID = 0x7f000000;
-
-ModuleObject.ResetPlayerId = function(){
-  ModuleObject.PLAYER_ID = 0x7fffffff;
-};
-
-ModuleObject.GetNextPlayerId = function(){
-  console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
-  return ModuleObject.PLAYER_ID--;
-}
-
-ModuleObject.DX_LIST = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
-ModuleObject.DY_LIST = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];

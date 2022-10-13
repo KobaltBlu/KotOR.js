@@ -3,12 +3,143 @@
 
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
+import { Action, ActionFollowLeader } from "../actions";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { CombatEngine } from "../CombatEngine";
+import { CreatureClass } from "../CreatureClass";
+import { GameEffect } from "../effects";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { InventoryManager } from "../managers/InventoryManager";
+import { PartyManager } from "../managers/PartyManager";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { SSFObject } from "../resource/SSFObject";
+import { TalentFeat } from "../talents/TalentFeat";
+import { TalentObject } from "../talents/TalentObject";
+import { TalentSkill } from "../talents/TalentSkill";
+import { TalentSpell } from "../talents/TalentSpell";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { ModuleObject, ModuleItem, ModuleCreatureController } from "./";
+import { OdysseyModel } from "../odyssey";
+import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
+import { TwoDAManager } from "../managers/TwoDAManager";
 
 /* @file
  * The ModuleCreature class.
  */
 
 export class ModuleCreature extends ModuleCreatureController {
+  pm_IsDisguised: any;
+  pm_Appearance: any;
+  isReady: boolean;
+  anim: any;
+  head: any;
+  deathAnimationPlayed: boolean;
+  aiStyle: number;
+  isCommandable: boolean;
+  lookAtObject: any;
+  lookAtMatrix: THREE.Matrix4;
+  lastTriggerEntered: any;
+  lastTriggerExited: any;
+  lastAreaEntered: any;
+  lastAreaExited: any;
+  lastModuleEntered: any;
+  lastModuleExited: any;
+  lastDoorEntered: any;
+  lastDoorExited: any;
+  lastPlaceableEntered: any;
+  lastPlaceableExited: any;
+  lastAoeEntered: any;
+  lastAoeExited: any;
+  lastAttemptedAttackTarget: any;
+  lastAttackTarget: any;
+  lastSpellTarget: any;
+  lastAttemptedSpellTarget: any;
+  lastSpellAttacker: any;
+  lastCombatFeatUsed: any;
+  lastForcePowerUsed: any;
+  lastAttackResult: any;
+  excitedDuration: number;
+  bodyBag: number;
+  bodyVariation: number;
+  cha: number;
+  challengeRating: number;
+  classes: any[];
+  comment: string;
+  con: number;
+  conversation: string;
+  currentForce: number;
+  currentHitPoints: number;
+  regenTimer: number;
+  regenTimerMax: number;
+  deity: string;
+  dec: number;
+  disarmable: number;
+  isHologram: boolean;
+  overlayAnimation: any;
+  experience: number;
+  feats: any[];
+  firstName: string;
+  forcePoints: number;
+  gender: number;
+  goodEvil: number;
+  hitPoints: number;
+  int: number;
+  interruptable: number;
+  isPC: number;
+  lastName: string;
+  maxHitPoints: number;
+  naturalAC: number;
+  noPermDeath: number;
+  notReorienting: number;
+  palletID: number;
+  partyInteract: number;
+  phenotype: number;
+  race: number;
+  skills: any[];
+  soundSetFile: number;
+  specialAbilities: any[];
+  str: number;
+  subrace: number;
+  subraceIndex: number;
+  templateList: any[];
+  textureVar: number;
+  walkRate: number;
+  wis: number;
+  fortbonus: number;
+  refbonus: number;
+  willbonus: number;
+  combatActionTimer: number;
+  combatState: boolean;
+  lastAttackAction: number;
+  blockingTimer: number;
+  groundTilt: THREE.Vector3;
+  up: THREE.Vector3;
+  lipObject: any;
+  walk: boolean;
+  heardStrings: any[];
+  targetPositions: any[];
+  audioEmitter: AudioEmitter;
+  footstepEmitter: AudioEmitter;
+  props: any;
+  maxForcePoints: any;
+  dex: any;
+  bodyModel: any;
+  bodyTexture: any;
+  headModel: any;
+  ssf: SSFObject;
+  joiningXP: any;
+  skillPoints: any;
+  // appearance: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -114,7 +245,7 @@ export class ModuleCreature extends ModuleCreatureController {
     this.isPC = 0;
     this.lastName = '';
     this.maxHitPoints = 0; //Maximum Hit Points, after considering all bonuses and penalties.
-    this.min1HP = 0;
+    this.min1HP = false;
     this.naturalAC = 0;
     this.noPermDeath = 0;
     this.notReorienting = 0;
@@ -122,7 +253,7 @@ export class ModuleCreature extends ModuleCreatureController {
     this.partyInteract = 0;
     this.perceptionRange = 0;
     this.phenotype = 0;
-    this.plot = 0;
+    this.plot = false;
     this.portraidId = 0;
     this.race = 0;
 
@@ -260,7 +391,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  getClosesetOpenSpot(oObject = undefined){
+  getClosesetOpenSpot(oObject: ModuleObject){
     let maxDistance = Infinity;
     let radius = parseInt(this.getAppearance().hitdist);
     let closest = undefined;
@@ -312,7 +443,7 @@ export class ModuleCreature extends ModuleCreatureController {
     return closest;
   }
 
-  removeObjectFromTargetPositions(oObject = undefined){
+  removeObjectFromTargetPositions(oObject: ModuleObject){
     if(typeof oObject != 'undefined'){
       for(let i = 0, len = this.targetPositions.length; i < len; i++){
         if(this.targetPositions[i].object == oObject){
@@ -327,17 +458,17 @@ export class ModuleCreature extends ModuleCreatureController {
     this.props['XOrientation'] = facing.x;
     this.props['YOrientation'] = facing.y;
 
-      if(this.model != OdysseyModel3D)
-        this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.props['XOrientation'], this.props['YOrientation']));
+    if(this.model instanceof OdysseyModel3D)
+      this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.props['XOrientation'], this.props['YOrientation']));
 
   }
 
   GetFacingVector(){
-      if(this.model != OdysseyModel3D){
-        let facing = new THREE.Vector3(0, 1, 0);
-        facing.applyQuaternion(this.model.quaternion);
-        return facing;
-      }
+    if((this.model instanceof OdysseyModel3D)){
+      let facing = new THREE.Vector3(0, 1, 0);
+      facing.applyQuaternion(this.model.quaternion);
+      return facing;
+    }
     return new THREE.Vector3(0, 0, 0);
   }
 
@@ -349,7 +480,7 @@ export class ModuleCreature extends ModuleCreatureController {
     return this.rotation.z;
   }
 
-  setFacingObject( target = undefined ){
+  setFacingObject( target: ModuleObject ){
     if(target instanceof ModuleObject){
       this.setFacing(
         Math.atan2(
@@ -361,13 +492,13 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  lookAt(oObject = undefined){
+  lookAt(oObject: ModuleObject){
     if(oObject instanceof ModuleCreature){
       this.lookAtObject = oObject;
     }
   }
 
-  onClick(callee = null){
+  onClick(callee: ModuleObject){
 
     //You can't interact with yourself
     if(this === GameState.player && GameState.getCurrentPlayer() === this){
@@ -418,7 +549,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  onDialog(oSpeaker = undefined, listenPatternNumber = -1){
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1){
     if(this.scripts.onDialog instanceof NWScriptInstance){
       let instance = this.scripts.onDialog.nwscript.newInstance();
       instance.listenPatternNumber = listenPatternNumber;
@@ -464,7 +595,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   
 
-  use(object = null){
+  use(object: ModuleObject){
     if(this.hasInventory()){
       GameState.MenuContainer.Open(this);
     }
@@ -540,7 +671,7 @@ export class ModuleCreature extends ModuleCreatureController {
     return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isForcePushed() || this.isHorrified();
   }
 
-  resistForce(oCaster = undefined){
+  resistForce(oCaster: ModuleObject){
     if(oCaster instanceof ModuleCreature){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
@@ -560,40 +691,40 @@ export class ModuleCreature extends ModuleCreatureController {
 
   getItemInSlot(slot = 0){
     switch(slot){
-      case UTCObject.SLOT.IMPLANT:
+      case ModuleCreatureArmorSlot.IMPLANT:
         return this.equipment.IMPLANT;
       break;
-      case UTCObject.SLOT.HEAD:
+      case ModuleCreatureArmorSlot.HEAD:
         return this.equipment.HEAD;
       break;
-      case UTCObject.SLOT.ARMS:
+      case ModuleCreatureArmorSlot.ARMS:
         return this.equipment.ARMS;
       break;
-      case UTCObject.SLOT.LEFTARMBAND:
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
         return this.equipment.LEFTARMBAND;
       break;
-      case UTCObject.SLOT.ARMOR:
+      case ModuleCreatureArmorSlot.ARMOR:
         return this.equipment.ARMOR;
       break;
-      case UTCObject.SLOT.RIGHTARMBAND:
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
         return this.equipment.RIGHTARMBAND;
       break;
-      case UTCObject.SLOT.LEFTHAND:
+      case ModuleCreatureArmorSlot.LEFTHAND:
         return this.equipment.LEFTHAND;
       break;
-      case UTCObject.SLOT.BELT:
+      case ModuleCreatureArmorSlot.BELT:
         return this.equipment.BELT;
       break;
-      case UTCObject.SLOT.RIGHTHAND:
+      case ModuleCreatureArmorSlot.RIGHTHAND:
         return this.equipment.RIGHTHAND;
       break;
-      case UTCObject.SLOT.CLAW1:
+      case ModuleCreatureArmorSlot.CLAW1:
         return this.equipment.CLAW1;
       break;
-      case UTCObject.SLOT.CLAW2:
+      case ModuleCreatureArmorSlot.CLAW2:
         return this.equipment.CLAW2;
       break;
-      case UTCObject.SLOT.CLAW3:
+      case ModuleCreatureArmorSlot.CLAW3:
         return this.equipment.CLAW3;
       break;
       default:
@@ -604,12 +735,12 @@ export class ModuleCreature extends ModuleCreatureController {
 
   hasItemInSlot(sTag='', slot = 0, ){
     switch(slot){
-      case UTCObject.SLOT.ARMOR:
+      case ModuleCreatureArmorSlot.ARMOR:
         if(this.equipment.ARMOR){
 
         }
       break;
-      case UTCObject.SLOT.RIGHTHAND:
+      case ModuleCreatureArmorSlot.RIGHTHAND:
         try{
           if(this.getAppearance().modeltype != 'S'){
             if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
@@ -620,7 +751,7 @@ export class ModuleCreature extends ModuleCreatureController {
           
         }
       break;
-      case UTCObject.SLOT.LEFTHAND:
+      case ModuleCreatureArmorSlot.LEFTHAND:
         try{
           if(this.getAppearance().modeltype != 'S' && this.getAppearance().modeltype != 'L'){
             if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
@@ -693,12 +824,12 @@ export class ModuleCreature extends ModuleCreatureController {
     return this.experience;
   }
 
-  setXP(iValue = 0){
-    this.experience = iValue;
+  setXP(value = 0){
+    this.experience = value;
   }
 
-  addXP(iValue = 0){
-    this.experience += parseInt(iValue);
+  addXP(value = 0){
+    this.experience += parseInt(value.toString());
   }
 
   getGoodEvil(){
@@ -965,27 +1096,30 @@ export class ModuleCreature extends ModuleCreatureController {
   }
 
   getPortraitResRef(){
-    let portrait = Global.kotor2DA.portraits.rows[this.getPortraitId()];
-    if(portrait){
+    const _2DA = TwoDAManager.datatables.get('portraits');
+    if(_2DA){
+      let portrait = _2DA.rows[this.getPortraitId()];
+      if(portrait){
 
-      if(this.getGoodEvil() >= 41){
+        if(this.getGoodEvil() >= 41){
+          return portrait.baseresref;
+        }else if(this.getGoodEvil() >= 31 && this.getGoodEvil() <= 40){
+          if(portrait.baseresrefe != '****')
+            return portrait.baseresrefe;
+        }else if(this.getGoodEvil() >= 21 && this.getGoodEvil() <= 30){
+          if(portrait.baseresrefve != '****')
+            return portrait.baseresrefve;
+        }else if(this.getGoodEvil() >= 11 && this.getGoodEvil() <= 20){
+          if(portrait.baseresrefvve != '****')
+            return portrait.baseresrefvve;
+        }else if(this.getGoodEvil() >= 0 && this.getGoodEvil() <= 10){
+          if(portrait.baseresrefvvve != '****')
+            return portrait.baseresrefvvve;
+        }
+
         return portrait.baseresref;
-      }else if(this.getGoodEvil() >= 31 && this.getGoodEvil() <= 40){
-        if(portrait.baseresrefe != '****')
-          return portrait.baseresrefe;
-      }else if(this.getGoodEvil() >= 21 && this.getGoodEvil() <= 30){
-        if(portrait.baseresrefve != '****')
-          return portrait.baseresrefve;
-      }else if(this.getGoodEvil() >= 11 && this.getGoodEvil() <= 20){
-        if(portrait.baseresrefvve != '****')
-          return portrait.baseresrefvve;
-      }else if(this.getGoodEvil() >= 0 && this.getGoodEvil() <= 10){
-        if(portrait.baseresrefvvve != '****')
-          return portrait.baseresrefvvve;
+
       }
-
-      return portrait.baseresref;
-
     }
     return '';
   }
@@ -1157,7 +1291,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  getHasFeat(id){
+  getHasFeat(id: number = 0){
     let feats = this.getFeats();
     for(let i = 0, len = feats.length; i < len; i++){
       if(feats[i].id == id){
@@ -1174,12 +1308,12 @@ export class ModuleCreature extends ModuleCreatureController {
     return this.skills;
   }
 
-  getHasSkill(iSkill){
-    return this.skills[iSkill].rank > 0;
+  getHasSkill(value: number){
+    return this.skills[value].rank > 0;
   }
 
-  getSkillLevel(iSkill){
-    return this.skills[iSkill].rank;
+  getSkillLevel(value: number){
+    return this.skills[value].rank;
   }
 
   getHasSpell(id = 0){
@@ -1235,7 +1369,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   getTalents(){
 
-    let talents = [];
+    let talents: any[] = [];
 
     //Merge Spell Talents from all classs
     for(let i = 0; i < this.classes.length; i++){
@@ -1301,11 +1435,9 @@ export class ModuleCreature extends ModuleCreatureController {
     return this.getAppearance().modeltype === 'S' || this.getAppearance().modeltype === 'L';
   }
 
-  hasPerceived(creature = null){
+  hasPerceived(creature: ModuleObject){
     if(creature == null)
       return false;
-
-
     
   }
 
@@ -1321,13 +1453,13 @@ export class ModuleCreature extends ModuleCreatureController {
     return parseFloat(this.getAppearance()['perspace']);
   }
 
-  Load( onLoad = null ){
+  Load( onLoad: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.utc,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           this.template.Merge(gff);
           this.InitProperties( () => {
             FactionManager.AddCreatureToFaction(this);
@@ -1355,7 +1487,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  LoadScripts (onLoad = null){
+  LoadScripts (onLoad: Function){
 
     this.scripts.onAttacked = this.template.GetFieldByLabel('ScriptAttacked').GetValue();
     this.scripts.onDamaged = this.template.GetFieldByLabel('ScriptDamaged').GetValue();
@@ -1375,7 +1507,7 @@ export class ModuleCreature extends ModuleCreatureController {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -1394,7 +1526,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  LoadModel ( onLoad = null ){
+  LoadModel ( onLoad: Function ){
 
     this.isReady = false;
 
@@ -1414,7 +1546,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  LoadBody( onLoad = null ){
+  LoadBody( onLoad: Function ){
     let appearance = this.getAppearance();
     this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
     this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -1523,15 +1655,14 @@ export class ModuleCreature extends ModuleCreatureController {
     }else{
       GameState.ModelLoader.load({
         file: this.bodyModel,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             castShadow: true,
             receiveShadow: true,
             textureVar: this.bodyTexture,
             isHologram: this.isHologram,
             context: this.context,
-            onComplete: (model) => {
-
+            onComplete: (model: OdysseyModel3D) => {
               let scene = null, position = null, rotation = null;
 
               if(this.model instanceof OdysseyModel3D && this.model.parent){
@@ -1546,7 +1677,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
                 //Remove weapons from model before dispose
                 try{
-                  if(this.model.lhand instanceof THREE.Object3D){
+                  if(this.model.lhand instanceof OdysseyObject3D){
                     if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
                       this.model.lhand.remove(this.equipment.LEFTHAND.model);
                     }
@@ -1555,7 +1686,7 @@ export class ModuleCreature extends ModuleCreatureController {
                 
                 //Remove weapons from model before dispose
                 try{
-                  if(this.model.rhand instanceof THREE.Object3D){
+                  if(this.model.rhand instanceof OdysseyObject3D){
                     if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
                       this.model.rhand.remove(this.equipment.RIGHTHAND.model);
                     }
@@ -1573,10 +1704,10 @@ export class ModuleCreature extends ModuleCreatureController {
               }
 
               this.model = model;
-              this.model.moduleObject = this;
+              this.model.userData.moduleObject = this;
 
               try{
-                if(this.model.lhand instanceof THREE.Object3D){
+                if(this.model.lhand instanceof OdysseyObject3D){
                   if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
                     this.model.lhand.add(this.equipment.LEFTHAND.model);
                   }
@@ -1586,7 +1717,7 @@ export class ModuleCreature extends ModuleCreatureController {
               }
 
               try{
-                if(this.model.rhand instanceof THREE.Object3D){
+                if(this.model.rhand instanceof OdysseyObject3D){
                   if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
                     this.model.rhand.add(this.equipment.RIGHTHAND.model);
                   }
@@ -1620,7 +1751,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  LoadHead( onLoad = null ){
+  LoadHead( onLoad: Function ){
     let appearance = this.getAppearance();
     let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
     this.headModel = undefined;
@@ -1686,22 +1817,22 @@ export class ModuleCreature extends ModuleCreatureController {
     return [];
   }*/
 
-  equipItem(slot = 0x1, item = '', onLoad = null){
+  equipItem(slot = 0x1, item: string|ModuleItem = '', onLoad: Function){
 
     this.unequipSlot(slot);
 
     if(item instanceof ModuleItem){
-      item.onEquip(this, slot);
+      item.onEquip(this, slot: any);
       item.LoadModel( () => {
         switch(slot){
-          case UTCObject.SLOT.ARMOR:
+          case ModuleCreatureArmorSlot.ARMOR:
             this.equipment.ARMOR = item;
             this.LoadModel( () => {
               if(typeof onLoad == 'function')
                 onLoad();
             });
           break;
-          case UTCObject.SLOT.RIGHTHAND:
+          case ModuleCreatureArmorSlot.RIGHTHAND:
             this.equipment.RIGHTHAND = item;
             item.LoadModel( () => {
 
@@ -1712,7 +1843,7 @@ export class ModuleCreature extends ModuleCreatureController {
                 onLoad();
             });
           break;
-          case UTCObject.SLOT.LEFTHAND:
+          case ModuleCreatureArmorSlot.LEFTHAND:
             this.equipment.LEFTHAND = item;
             item.LoadModel( () => {
               if(item.model instanceof OdysseyModel3D)
@@ -1722,13 +1853,13 @@ export class ModuleCreature extends ModuleCreatureController {
                 onLoad();
             });
           break;
-          case UTCObject.SLOT.CLAW1:
+          case ModuleCreatureArmorSlot.CLAW1:
             this.equipment.CLAW1 = item;
           break;
-          case UTCObject.SLOT.CLAW2:
+          case ModuleCreatureArmorSlot.CLAW2:
             this.equipment.CLAW2 = item;
           break;
-          case UTCObject.SLOT.CLAW3:
+          case ModuleCreatureArmorSlot.CLAW3:
             this.equipment.CLAW3 = item;
           break;
         }
@@ -1738,7 +1869,7 @@ export class ModuleCreature extends ModuleCreatureController {
       TemplateLoader.Load({
         ResRef: item,
         ResType: ResourceTypes.uti,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           this.LoadEquipmentItem({
             item: new ModuleItem(gff),
             Slot: slot,
@@ -1759,7 +1890,7 @@ export class ModuleCreature extends ModuleCreatureController {
   unequipSlot(slot = 0x1){
     try{
       switch(slot){
-        case UTCObject.SLOT.IMPLANT:
+        case ModuleCreatureArmorSlot.IMPLANT:
           try{
             if(this.equipment.IMPLANT instanceof ModuleItem){
               this.equipment.IMPLANT.onUnEquip(this, slot);
@@ -1770,7 +1901,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.HEAD:
+        case ModuleCreatureArmorSlot.HEAD:
 
           if(this.equipment.HEAD instanceof ModuleItem){
             this.equipment.HEAD.onUnEquip(this, slot);
@@ -1783,7 +1914,7 @@ export class ModuleCreature extends ModuleCreatureController {
           this.equipment.HEAD = undefined;
           this.LoadModel();
         break;
-        case UTCObject.SLOT.ARMS:
+        case ModuleCreatureArmorSlot.ARMS:
           try{
             if(this.equipment.ARMS instanceof ModuleItem){
               this.equipment.ARMS.onUnEquip(this, slot);
@@ -1794,7 +1925,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.RIGHTARMBAND:
+        case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
             if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
               this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
@@ -1805,7 +1936,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.LEFTARMBAND:
+        case ModuleCreatureArmorSlot.LEFTARMBAND:
           try{
             if(this.equipment.LEFTARMBAND instanceof ModuleItem){
               this.equipment.LEFTARMBAND.onUnEquip(this, slot);
@@ -1816,7 +1947,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.ARMOR:
+        case ModuleCreatureArmorSlot.ARMOR:
 
           if(this.equipment.ARMOR instanceof ModuleItem){
             this.equipment.ARMOR.onUnEquip(this, slot);
@@ -1825,7 +1956,7 @@ export class ModuleCreature extends ModuleCreatureController {
           this.equipment.ARMOR = undefined;
           this.LoadModel();
         break;
-        case UTCObject.SLOT.RIGHTARMBAND:
+        case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
             if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
               this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
@@ -1837,7 +1968,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.RIGHTHAND:
+        case ModuleCreatureArmorSlot.RIGHTHAND:
           try{
             if(this.equipment.RIGHTHAND instanceof ModuleItem){
               this.equipment.RIGHTHAND.onUnEquip(this, slot);
@@ -1849,7 +1980,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.BELT:
+        case ModuleCreatureArmorSlot.BELT:
           try{
             if(this.equipment.BELT instanceof ModuleItem){
               this.equipment.BELT.onUnEquip(this, slot);
@@ -1861,7 +1992,7 @@ export class ModuleCreature extends ModuleCreatureController {
             
           }
         break;
-        case UTCObject.SLOT.LEFTHAND:
+        case ModuleCreatureArmorSlot.LEFTHAND:
           try{
             if(this.equipment.LEFTHAND instanceof ModuleItem){
               this.equipment.LEFTHAND.onUnEquip(this, slot);
@@ -1879,7 +2010,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }
 
-  LoadEquipment( onLoad = null){
+  LoadEquipment( onLoad: Function){
     if(typeof onLoad === 'function')
       onLoad();
     /*this.ParseEquipmentSlots( () => {
@@ -1889,55 +2020,55 @@ export class ModuleCreature extends ModuleCreatureController {
   }
 
   UnequipItems(){
-    //this.unequipSlot(UTCObject.SLOT.ARMOR);
-    this.unequipSlot(UTCObject.SLOT.LEFTHAND);
-    this.unequipSlot(UTCObject.SLOT.RIGHTHAND);
+    //this.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
+    this.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    this.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
   }
 
   UnequipHeadItem(){
-    this.unequipSlot(UTCObject.SLOT.HEAD);
+    this.unequipSlot(ModuleCreatureArmorSlot.HEAD);
   }
 
   GetItemInSlot(slot = 0){
 
     switch(slot){
-      case UTCObject.SLOT.IMPLANT:
+      case ModuleCreatureArmorSlot.IMPLANT:
         return this.equipment.IMPLANT;
       break;
-      case UTCObject.SLOT.HEAD:
+      case ModuleCreatureArmorSlot.HEAD:
         return this.equipment.HEAD;
       break;
-      case UTCObject.SLOT.ARMS:
+      case ModuleCreatureArmorSlot.ARMS:
         return this.equipment.ARMS;
       break;
-      case UTCObject.SLOT.LEFTARMBAND:
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
         return this.equipment.LEFTARMBAND;
       break;
-      case UTCObject.SLOT.ARMOR:
+      case ModuleCreatureArmorSlot.ARMOR:
         return this.equipment.ARMOR;
       break;
-      case UTCObject.SLOT.RIGHTARMBAND:
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
         return this.equipment.RIGHTARMBAND;
       break;
-      case UTCObject.SLOT.LEFTHAND:
+      case ModuleCreatureArmorSlot.LEFTHAND:
         return this.equipment.LEFTHAND;
       break;
-      case UTCObject.SLOT.BELT:
+      case ModuleCreatureArmorSlot.BELT:
         return this.equipment.BELT;
       break;
-      case UTCObject.SLOT.RIGHTHAND:
+      case ModuleCreatureArmorSlot.RIGHTHAND:
         return this.equipment.RIGHTHAND;
       break;
-      case UTCObject.SLOT.HIDE:
+      case ModuleCreatureArmorSlot.HIDE:
         return this.equipment.HIDE;
       break;
-      case UTCObject.SLOT.CLAW1:
+      case ModuleCreatureArmorSlot.CLAW1:
         return this.equipment.CLAW1;
       break;
-      case UTCObject.SLOT.CLAW2:
+      case ModuleCreatureArmorSlot.CLAW2:
         return this.equipment.CLAW2;
       break;
-      case UTCObject.SLOT.CLAW3:
+      case ModuleCreatureArmorSlot.CLAW3:
         return this.equipment.CLAW3;
       break;
       default:
@@ -1969,7 +2100,7 @@ export class ModuleCreature extends ModuleCreatureController {
     }
   }*/
 
-  LoadEquipmentItem(args = {}){
+  LoadEquipmentItem(args: any = {}){
 
     args = Object.assign({
       item: new GFFObject(),
@@ -1984,50 +2115,50 @@ export class ModuleCreature extends ModuleCreatureController {
       uti = new ModuleItem(uti);
 
     switch(args.Slot){
-      case UTCObject.SLOT.IMPLANT:
+      case ModuleCreatureArmorSlot.IMPLANT:
         this.equipment.IMPLANT = uti;
       break;
-      case UTCObject.SLOT.HEAD:
+      case ModuleCreatureArmorSlot.HEAD:
         this.equipment.HEAD = uti;
       break;
-      case UTCObject.SLOT.ARMS:
+      case ModuleCreatureArmorSlot.ARMS:
         this.equipment.ARMS = uti;
       break;
-      case UTCObject.SLOT.ARMOR:
+      case ModuleCreatureArmorSlot.ARMOR:
         this.equipment.ARMOR = uti;
       break;
-      case UTCObject.SLOT.RIGHTHAND:
+      case ModuleCreatureArmorSlot.RIGHTHAND:
         this.equipment.RIGHTHAND = uti;
       break;
-      case UTCObject.SLOT.LEFTHAND:
+      case ModuleCreatureArmorSlot.LEFTHAND:
         this.equipment.LEFTHAND = uti;
       break;
-      case UTCObject.SLOT.BELT:
+      case ModuleCreatureArmorSlot.BELT:
         this.equipment.BELT = uti;
       break;
-      case UTCObject.SLOT.RIGHTARMBAND:
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
         this.equipment.RIGHTARMBAND = uti;
       break;
-      case UTCObject.SLOT.LEFTARMBAND:
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
         this.equipment.LEFTARMBAND = uti;
       break;
-      case UTCObject.SLOT.HIDE:
+      case ModuleCreatureArmorSlot.HIDE:
         this.equipment.HIDE = uti;
       break;
-      case UTCObject.SLOT.CLAW1:
+      case ModuleCreatureArmorSlot.CLAW1:
         this.equipment.CLAW1 = uti;
       break;
-      case UTCObject.SLOT.CLAW2:
+      case ModuleCreatureArmorSlot.CLAW2:
         this.equipment.CLAW2 = uti;
       break;
-      case UTCObject.SLOT.CLAW3:
+      case ModuleCreatureArmorSlot.CLAW3:
         this.equipment.CLAW3 = uti;
       break;
     }
     
     uti.Load( () => {
       uti.LoadModel( () => {
-        if(args.Slot == UTCObject.SLOT.RIGHTHAND || args.Slot == UTCObject.SLOT.LEFTHAND){
+        if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
           uti.model.playAnimation('off', true);
         }
         if(typeof args.onLoad == 'function')
@@ -2037,7 +2168,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  InitProperties( onLoad = null ){
+  InitProperties( onLoad: Function ){
 
     this.classes = [];
     this.feats = [];
@@ -2324,45 +2455,45 @@ export class ModuleCreature extends ModuleCreatureController {
         }
         
         switch(slot_type){
-          case UTCObject.SLOT.HEAD:
+          case ModuleCreatureArmorSlot.HEAD:
             this.equipment.HEAD = equipped_item;
           break;
-          case UTCObject.SLOT.ARMS:
+          case ModuleCreatureArmorSlot.ARMS:
             this.equipment.ARMS = equipped_item;
           break;
-          case UTCObject.SLOT.ARMOR:
+          case ModuleCreatureArmorSlot.ARMOR:
             this.equipment.ARMOR = equipped_item;
           break;
-          case UTCObject.SLOT.LEFTHAND:
+          case ModuleCreatureArmorSlot.LEFTHAND:
             this.equipment.LEFTHAND = equipped_item;
           break;
-          case UTCObject.SLOT.RIGHTHAND:
+          case ModuleCreatureArmorSlot.RIGHTHAND:
             this.equipment.RIGHTHAND = equipped_item;
           break;
-          case UTCObject.SLOT.LEFTARMBAND:
+          case ModuleCreatureArmorSlot.LEFTARMBAND:
             this.equipment.LEFTARMBAND = equipped_item;
           break;
-          case UTCObject.SLOT.RIGHTARMBAND:
+          case ModuleCreatureArmorSlot.RIGHTARMBAND:
             this.equipment.RIGHTARMBAND = equipped_item;
           break;
-          case UTCObject.SLOT.IMPLANT:
+          case ModuleCreatureArmorSlot.IMPLANT:
           this.equipment.IMPLANT = equipped_item;
           break;
-          case UTCObject.SLOT.BELT:
+          case ModuleCreatureArmorSlot.BELT:
             this.equipment.BELT = equipped_item;
           break;
 
           //Simple Creature Slots
-          case UTCObject.SLOT.HIDE:
+          case ModuleCreatureArmorSlot.HIDE:
             this.equipment.HIDE = equipped_item;
           break;
-          case UTCObject.SLOT.CLAW1:
+          case ModuleCreatureArmorSlot.CLAW1:
             this.equipment.CLAW1 = equipped_item;
           break;
-          case UTCObject.SLOT.CLAW2:
+          case ModuleCreatureArmorSlot.CLAW2:
             this.equipment.CLAW2 = equipped_item;
           break;
-          case UTCObject.SLOT.CLAW3:
+          case ModuleCreatureArmorSlot.CLAW3:
             this.equipment.CLAW3 = equipped_item;
           break;
         }
@@ -2376,7 +2507,7 @@ export class ModuleCreature extends ModuleCreatureController {
         let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
         let loop = new AsyncLoop({
           array: inventory,
-          onLoop: (item, asyncLoop) => {
+          onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
             this.LoadItem(GFFObject.FromStruct(item), () => {
               asyncLoop.next();
             });
@@ -2460,13 +2591,13 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  ParseEquipmentSlots( onLoad = null ){
+  ParseEquipmentSlots( onLoad: Function ){
 
     let loop = new AsyncLoop({
       array: Object.keys(this.equipment),
-      onLoop: (slot_key, asyncLoop) => {
-        let slot = this.equipment[slot_key];
-        if(slot instanceof ModuleObject){
+      onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
+        let slot = (this.equipment as any)[slot_key];
+        if(slot instanceof ModuleItem){
           slot.setPossessor(this);
           slot.Load( () => {
             slot.LoadModel( () => {
@@ -2488,7 +2619,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  LoadSoundSet( onLoad = null ){
+  LoadSoundSet( onLoad: Function ){
 
     let ss_row = Global.kotor2DA.soundset.rows[this.soundSetFile];
 
@@ -2498,7 +2629,7 @@ export class ModuleCreature extends ModuleCreatureController {
         //SSF found
         if(typeof onLoad === 'function')
           onLoad();
-      }, (err) => {
+      }, () => {
         //SSF not found
         if(typeof onLoad === 'function')
           onLoad();
@@ -2511,7 +2642,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  LoadItem( template, onLoad = null){
+  LoadItem( template: GFFObject, onLoad: Function ){
 
     let item = new ModuleItem(template);
     item.InitProperties();
@@ -2614,79 +2745,79 @@ export class ModuleCreature extends ModuleCreatureController {
 
     if(this.equipment.ARMOR instanceof ModuleItem){
       let equipItem = this.equipment.ARMOR.save();
-      equipItem.SetType(UTCObject.SLOT.ARMOR);
+      equipItem.SetType(ModuleCreatureArmorSlot.ARMOR);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.ARMS instanceof ModuleItem){
       let equipItem = this.equipment.ARMS.save();
-      equipItem.SetType(UTCObject.SLOT.ARMS);
+      equipItem.SetType(ModuleCreatureArmorSlot.ARMS);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.BELT instanceof ModuleItem){
       let equipItem = this.equipment.BELT.save();
-      equipItem.SetType(UTCObject.SLOT.BELT);
+      equipItem.SetType(ModuleCreatureArmorSlot.BELT);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW1 instanceof ModuleItem){
       let equipItem = this.equipment.CLAW1.save();
-      equipItem.SetType(UTCObject.SLOT.CLAW1);
+      equipItem.SetType(ModuleCreatureArmorSlot.CLAW1);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW2 instanceof ModuleItem){
       let equipItem = this.equipment.CLAW2.save();
-      equipItem.SetType(UTCObject.SLOT.CLAW2);
+      equipItem.SetType(ModuleCreatureArmorSlot.CLAW2);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW3 instanceof ModuleItem){
       let equipItem = this.equipment.CLAW3.save();
-      equipItem.SetType(UTCObject.SLOT.CLAW3);
+      equipItem.SetType(ModuleCreatureArmorSlot.CLAW3);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.HEAD instanceof ModuleItem){
       let equipItem = this.equipment.HEAD.save();
-      equipItem.SetType(UTCObject.SLOT.HEAD);
+      equipItem.SetType(ModuleCreatureArmorSlot.HEAD);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.HIDE instanceof ModuleItem){
       let equipItem = this.equipment.HIDE.save();
-      equipItem.SetType(UTCObject.SLOT.HIDE);
+      equipItem.SetType(ModuleCreatureArmorSlot.HIDE);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.IMPLANT instanceof ModuleItem){
       let equipItem = this.equipment.IMPLANT.save();
-      equipItem.SetType(UTCObject.SLOT.IMPLANT);
+      equipItem.SetType(ModuleCreatureArmorSlot.IMPLANT);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTARMBAND instanceof ModuleItem){
       let equipItem = this.equipment.LEFTARMBAND.save();
-      equipItem.SetType(UTCObject.SLOT.LEFTARMBAND);
+      equipItem.SetType(ModuleCreatureArmorSlot.LEFTARMBAND);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTHAND instanceof ModuleItem){
       let equipItem = this.equipment.LEFTHAND.save();
-      equipItem.SetType(UTCObject.SLOT.LEFTHAND);
+      equipItem.SetType(ModuleCreatureArmorSlot.LEFTHAND);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
       let equipItem = this.equipment.RIGHTARMBAND.save();
-      equipItem.SetType(UTCObject.SLOT.RIGHTARMBAND);
+      equipItem.SetType(ModuleCreatureArmorSlot.RIGHTARMBAND);
       equipItemList.AddChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTHAND instanceof ModuleItem){
       let equipItem = this.equipment.RIGHTHAND.save();
-      equipItem.SetType(UTCObject.SLOT.RIGHTHAND);
+      equipItem.SetType(ModuleCreatureArmorSlot.RIGHTHAND);
       equipItemList.AddChildStruct(equipItem)
     }
 

@@ -1,27 +1,44 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { GameState } from "../GameState";
+import { PartyManager } from "../managers/PartyManager";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyModel3D } from "../three/odyssey";
+import { AreaMap } from "./AreaMap";
+import { AreaWeather } from "./AreaWeather";
+import * as THREE from "three";
+import { Module, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGPlayer, ModuleObject, ModulePlaceable, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger } from ".";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScript } from "../nwscript/NWScript";
+
 /* @file
  * The ModuleArea class.
  */
 
 export class ModuleArea extends ModuleObject {
 
-  cameras = [];
-  creatures = [];
-  doorhooks = [];
-  doors = [];
-  encounters = [];
-  obstacles = [];
-  items = [];
-  party = [];
-  placeables = [];
-  rooms = [];
-  sounds = [];
-  stores = [];
-  tracks = [];
-  triggers = [];
-  waypoints = [];
+  cameras: any[] = [];
+  creatures: any[] = [];
+  doorhooks: any[] = [];
+  doors: any[] = [];
+  encounters: any[] = [];
+  obstacles: any[] = [];
+  items: any[] = [];
+  party: any[] = [];
+  placeables: any[] = [];
+  rooms: any[] = [];
+  sounds: any[] = [];
+  stores: any[] = [];
+  tracks: any[] = [];
+  triggers: any[] = [];
+  waypoints: any[] = [];
 
   audio = {
     AmbientSndDay: 0,
@@ -45,7 +62,7 @@ export class ModuleArea extends ModuleObject {
   DayNightCycle = 0;
   DefaultEnvMap = '';
   DynAmbientColor = 6312778;
-  Expansion_List = [];
+  Expansion_List: any[] = [];
   Flags = 1;
 
   Grass = {
@@ -109,9 +126,30 @@ export class ModuleArea extends ModuleObject {
   SunFogOn = 0;
   SunShadows = 0;
   Tag = '';
-  Unescapable = 0;
+  Unescapable: boolean = false;
   Version = 1;
   WindPower = 0;
+  module: Module;
+  _name: any;
+  are: GFFObject;
+  git: GFFObject;
+  transWP: string|GFFField;
+  weather: AreaWeather;
+  MiniGame: any;
+  cameraBoundingBox: any;
+  Alphatest: any;
+  onEnter: any;
+  onExit: any;
+  onHeartbeat: any;
+  onUserDefined: any;
+  scripts: { onEnter: any; onExit: any; onHeartbeat: any; onUserDefined: any; };
+  fog: any;
+  // _locals: any;
+  path: any;
+  visObject: any;
+  layout: any;
+  walkmesh_rooms: any[];
+  restrictMode: number;
 
   constructor(name = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
@@ -262,7 +300,7 @@ export class ModuleArea extends ModuleObject {
     this.weather.update(delta);
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     let roomCount = this.rooms.length;
     let trigCount = this.triggers.length;
     let encounterCount = this.encounters.length;
@@ -322,7 +360,7 @@ export class ModuleArea extends ModuleObject {
     this.updateFollowerCamera(delta);
   }
 
-  updateRoomVisibility(delta){
+  updateRoomVisibility(delta: number = 0){
     let rooms = [];
     let room = undefined;
     let model = undefined;
@@ -364,7 +402,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  updateFollowerCamera(delta){
+  updateFollowerCamera(delta: number = 0){
     let followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
@@ -491,7 +529,7 @@ export class ModuleArea extends ModuleObject {
 
     new AsyncLoop({
       array: this.creatures,
-      onLoop: (creature, asyncLoop) => {
+      onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
         creature.LoadModel(() => {
           asyncLoop.next();
         });
@@ -499,7 +537,7 @@ export class ModuleArea extends ModuleObject {
     }).iterate(() => {
       new AsyncLoop({
         array: PartyManager.party,
-        onLoop: (partyMember, asyncLoop) => {
+        onLoop: (partyMember: ModuleCreature, asyncLoop: AsyncLoop) => {
           partyMember.LoadModel(() => {
             asyncLoop.next();
           });
@@ -507,7 +545,7 @@ export class ModuleArea extends ModuleObject {
       }).iterate(() => {
         new AsyncLoop({
           array: this.placeables,
-          onLoop: (placeable, asyncLoop) => {
+          onLoop: (placeable, asyncLoop: AsyncLoop) => {
             placeable.LoadModel(() => {
               asyncLoop.next();
             });
@@ -515,7 +553,7 @@ export class ModuleArea extends ModuleObject {
         }).iterate(() => {
           new AsyncLoop({
             array: this.doors,
-            onLoop: (door, asyncLoop) => {
+            onLoop: (door, asyncLoop: AsyncLoop) => {
               door.LoadModel(() => {
                 asyncLoop.next();
               });
@@ -523,7 +561,7 @@ export class ModuleArea extends ModuleObject {
           }).iterate(() => {
             new AsyncLoop({
               array: this.rooms,
-              onLoop: (room, asyncLoop) => {
+              onLoop: (room, asyncLoop: AsyncLoop) => {
                 room.load(() => {
                   asyncLoop.next();
                 });
@@ -532,7 +570,7 @@ export class ModuleArea extends ModuleObject {
               TextureLoader.LoadQueue(() => {
                 GameState.LoadScreen.Close();
                 GameState.loadingTextures = false;
-              }, (textureName, index, count) => {
+              }, (textureName: string, index: number, count: number) => {
                 GameState.LoadScreen.setProgress((index/count + 1) * 100);
                 GameState.LoadScreen.lbl_hint.setText('Loading: '+textureName);
                 //console.log('tex', textureName, index, count);
@@ -548,7 +586,7 @@ export class ModuleArea extends ModuleObject {
     this.transWP = sTag;
   }
 
-  Load(onLoad = null){
+  Load(onLoad?: Function){
 
     //BEGIN AREA LOAD
 
@@ -1041,7 +1079,7 @@ export class ModuleArea extends ModuleObject {
   getSpawnLocation(){
 
     if(GameState.isLoadingSave){
-      return new GameState.Location(
+      return new EngineLocation(
         PartyManager.Player.RootNode.GetFieldByLabel('XPosition').GetValue(),
         PartyManager.Player.RootNode.GetFieldByLabel('YPosition').GetValue(),
         PartyManager.Player.RootNode.GetFieldByLabel('ZPosition').GetValue(),
@@ -1051,7 +1089,7 @@ export class ModuleArea extends ModuleObject {
       );
     }else if(this.transWP){
       console.log('TransWP', this.transWP);
-      return new GameState.Location(
+      return new EngineLocation(
         this.transWP.RootNode.GetFieldByLabel('XPosition').GetValue(),
         this.transWP.RootNode.GetFieldByLabel('YPosition').GetValue(),
         this.transWP.RootNode.GetFieldByLabel('ZPosition').GetValue(),
@@ -1061,7 +1099,7 @@ export class ModuleArea extends ModuleObject {
       );
     }else{
       console.log('No TransWP');
-      return new GameState.Location(
+      return new EngineLocation(
         GameState.module['Mod_Entry_X'],
         GameState.module['Mod_Entry_Y'],
         GameState.module['Mod_Entry_Z'],
@@ -1080,14 +1118,14 @@ export class ModuleArea extends ModuleObject {
     }else{
       let pTPL = new GFFObject();
 
-      pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(GameKey == 'TSL' ? 134 : 177);
-      pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameKey == 'TSL' ? 'Leia Organa' : 'Galen Urso');
+      pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(GameState.GameKey == 'TSL' ? 134 : 177);
+      pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Galen Urso');
       pTPL.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).SetValue(10);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(0);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).SetValue(0);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') ).SetValue(0);
-      pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraitId') ).SetValue(GameKey == 'TSL' ? 10 : 26);
+      pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraitId') ).SetValue(GameState.GameKey == 'TSL' ? 10 : 26);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'HitPoints') ).SetValue(100);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'MaxHitPoints') ).SetValue(100);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'CurrentHitPoints') ).SetValue(70);
@@ -1151,9 +1189,9 @@ export class ModuleArea extends ModuleObject {
         skillList.AddChildStruct(_skill);
       }
   
-      let armorStruct = new GFFStruct(UTCObject.SLOT.ARMOR);
+      let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
       armorStruct.AddField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).SetValue('g_a_jedirobe01');
-      let rhStruct = new GFFStruct(UTCObject.SLOT.RIGHTHAND);
+      let rhStruct = new GFFStruct(ModuleCreatureArmorSlot.RIGHTHAND);
       rhStruct.AddField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).SetValue('g_w_lghtsbr01');
   
       equipment.AddChildStruct( armorStruct );
@@ -1176,7 +1214,7 @@ export class ModuleArea extends ModuleObject {
 
   async loadMGPlayer(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
 
       if(this.MiniGame){
 
@@ -1184,16 +1222,16 @@ export class ModuleArea extends ModuleObject {
         let player = this.MiniGame.Player;
         player.partyID = -1;
         PartyManager.party.push(player);
-        player.Load( ( object ) => {
+        player.Load( ( object: ModuleMGPlayer ) => {
           
           if(typeof object == 'undefined'){
-            asyncLoop.next();
+            // asyncLoop.next();
             return;
           }
 
           player.LoadScripts( () => {
             player.LoadCamera( () => {
-              player.LoadModel( (model) => {
+              player.LoadModel( (model: OdysseyModel3D) => {
                 player.LoadGunBanks( () => {
                   let track = this.tracks.find(o => o.track === player.trackName);
                   model.moduleObject = player;
@@ -1220,7 +1258,7 @@ export class ModuleArea extends ModuleObject {
 
   async loadPlayer(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
 
       console.log('Loading Player', GameState.player)
 
@@ -1315,13 +1353,13 @@ export class ModuleArea extends ModuleObject {
 
   async loadMGTracks(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
 
       if(this.MiniGame){
         let trackIndex = 0;
         let loop = new AsyncLoop({
           array: this.tracks,
-          onLoop: (track, asyncLoop) => {
+          onLoop: (track, asyncLoop: AsyncLoop) => {
             track.Load( () => {
               track.LoadModel( (model) => {
                 track.model = model;
@@ -1352,12 +1390,12 @@ export class ModuleArea extends ModuleObject {
 
   async loadMGEnemies(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
     
       if(this.MiniGame){
         let loop = new AsyncLoop({
           array: this.MiniGame.Enemies,
-          onLoop: (enemy, asyncLoop) => {
+          onLoop: (enemy, asyncLoop: AsyncLoop) => {
             enemy.Load( ( object ) => {
 
               if(typeof object == 'undefined'){
@@ -1394,11 +1432,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadParty(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Party Member')
       let loop = new AsyncLoop({
         array: PartyManager.CurrentMembers,
-        onLoop: (currentMember, asyncLoop) => {
+        onLoop: (currentMember, asyncLoop: AsyncLoop) => {
           PartyManager.LoadPartyMember(asyncLoop.index-1, () => {
             asyncLoop.next();
           });
@@ -1413,11 +1451,11 @@ export class ModuleArea extends ModuleObject {
   }
   async loadRooms( ){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Rooms');
       let loop = new AsyncLoop({
         array: this.rooms,
-        onLoop: (room, asyncLoop) => {
+        onLoop: (room, asyncLoop: AsyncLoop) => {
           room.load( (room) => {
             if(room.model instanceof OdysseyModel3D){
 
@@ -1481,11 +1519,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadDoors() {
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Doors');
       let loop = new AsyncLoop({
         array: this.doors,
-        onLoop: (door, asyncLoop) => {
+        onLoop: (door, asyncLoop: AsyncLoop) => {
           door.Load( ( object ) => {
           
             if(typeof object == 'undefined'){
@@ -1547,11 +1585,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadPlaceables(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Placeables');
       let loop = new AsyncLoop({
         array: this.placeables,
-        onLoop: (plc, asyncLoop) => {
+        onLoop: (plc, asyncLoop: AsyncLoop) => {
           plc.Load( ( object ) => {
           
             if(typeof object == 'undefined'){
@@ -1595,11 +1633,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadWaypoints(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Waypoints');
       let loop = new AsyncLoop({
         array: this.waypoints,
-        onLoop: (waypnt, asyncLoop) => {
+        onLoop: (waypnt, asyncLoop: AsyncLoop) => {
           waypnt.Load( ( object ) => {
           
             if(typeof object == 'undefined'){
@@ -1646,11 +1684,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadEncounters(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Encounters');
       let loop = new AsyncLoop({
         array: this.encounters,
-        onLoop: (encounter, asyncLoop) => {
+        onLoop: (encounter, asyncLoop: AsyncLoop) => {
           try{
             encounter.InitProperties();
             encounter.Load( ( object ) => {
@@ -1695,11 +1733,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadTriggers(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Triggers');
       let loop = new AsyncLoop({
         array: this.triggers,
-        onLoop: (trig, asyncLoop) => {
+        onLoop: (trig, asyncLoop: AsyncLoop) => {
           try{
             trig.InitProperties();
             trig.Load( ( object ) => {
@@ -1744,11 +1782,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadCreatures(){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Creatures');
       let loop = new AsyncLoop({
         array: this.creatures,
-        onLoop: (crt, asyncLoop) => {
+        onLoop: (crt, asyncLoop: AsyncLoop) => {
           crt.Load( ( object ) => {
           
             if(typeof object == 'undefined'){
@@ -1788,11 +1826,11 @@ export class ModuleArea extends ModuleObject {
   }
 
   async loadStores(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Stores');
       let loop = new AsyncLoop({
         array: this.stores,
-        onLoop: (crt, asyncLoop) => {
+        onLoop: (crt, asyncLoop: AsyncLoop) => {
           crt.Load( ( object ) => {
           
             if(typeof object == 'undefined'){
@@ -1813,11 +1851,11 @@ export class ModuleArea extends ModuleObject {
 
   async loadSoundTemplates (){
 
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       console.log('Loading Sound Emitter');
       let loop = new AsyncLoop({
         array: this.sounds,
-        onLoop: (sound, asyncLoop) => {
+        onLoop: (sound, asyncLoop: AsyncLoop) => {
           sound.Load( () => {
             sound.LoadSound( () => {
               asyncLoop.next();
@@ -1834,7 +1872,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   loadAudio( ){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       let ambientDay = Global.kotor2DA['ambientsound'].rows[this.audio.AmbientSndDay].resource;
 
       AudioLoader.LoadAmbientSound(ambientDay, (data) => {
@@ -1849,7 +1887,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   loadBackgroundMusic(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       let bgMusic = Global.kotor2DA['ambientmusic'].rows[this.audio.MusicDay].resource;
 
       AudioLoader.LoadMusic(bgMusic, (data) => {
@@ -1864,7 +1902,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   async loadTextures(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       //TextureLoader.LoadQueue(() => {
         resolve();
       //}, (texName) => {
@@ -1873,12 +1911,12 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  LoadScripts(onLoad = null){
+  LoadScripts(onLoad?: Function){
     console.log('ModuleArea.LoadScripts');
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: any, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -1955,7 +1993,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   runOnEnterScripts(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       if(this.scripts.onEnter instanceof NWScriptInstance){
         console.log('onEnter', this.scripts.onEnter, GameState.player)
         this.scripts.onEnter.enteringObject = GameState.player;
@@ -1970,7 +2008,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   runMiniGameScripts(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
 
       if(!this.MiniGame){
         resolve();
@@ -1979,7 +2017,7 @@ export class ModuleArea extends ModuleObject {
 
       let loop = new AsyncLoop({
         array: this.MiniGame.Enemies,
-        onLoop: (enemy, asyncLoop) => {
+        onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
           if(enemy.scripts.onCreate instanceof NWScriptInstance){
             enemy.scripts.onCreate.run(enemy, 0, () => {
               asyncLoop.next();
@@ -2008,7 +2046,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  isPointWalkable(point){
+  isPointWalkable(point: any){
     for(let i = 0, len = this.rooms.length; i < len; i++){
       if(this.rooms[i].walkmesh && this.rooms[i].walkmesh.isPointWalkable(point)){
         return true;
@@ -2017,7 +2055,7 @@ export class ModuleArea extends ModuleObject {
     return false;
   }
 
-  getNearestWalkablePoint(point){
+  getNearestWalkablePoint(point: any){
     let nearest = Infinity;
     let nearest_point = undefined;
 
@@ -2374,6 +2412,9 @@ export class ModuleArea extends ModuleObject {
 
     return {git: git, are: this.are};
   }
+  getSWVarTableSaveStruct(): import("../resource/GFFStruct").GFFStruct {
+    throw new Error("Method not implemented.");
+  }
 
   toolsetExportGIT(){
     let git = new GFFObject();
@@ -2457,5 +2498,3 @@ export class ModuleArea extends ModuleObject {
   }
 
 }
-
-ModuleArea.AreaMap = AreaMap;

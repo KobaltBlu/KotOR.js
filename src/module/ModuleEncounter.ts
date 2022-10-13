@@ -1,11 +1,58 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import * as THREE from "three";
+import { EncounterCreatureEntry, ModuleObject, SpawnEntry, SpawnPointEntry } from ".";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { PartyManager } from "../managers/PartyManager";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyFace3 } from "../three/odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
+
 /* @file
  * The ModuleEncounter class.
  */
 
 export class ModuleEncounter extends ModuleObject {
+  creatureList: EncounterCreatureEntry[];
+  spawnPointList: SpawnPointEntry[];
+  spawnList: SpawnEntry[];
+  active: number;
+  difficulty: number;
+  difficultyIndex: number;
+  maxCreatures: number;
+  playerOnly: number;
+  recCreatures: number;
+  reset: number;
+  resetTime: number;
+  spawnOption: number;
+  started: number;
+  objectsInsideIdx: number;
+  lastObjectEntered: any;
+  lastObjectExited: any;
+  triggered: boolean;
+  areaPoints: any;
+  paletteId: any;
+  respawns: any;
+  numberSpawned: any;
+  heartbeatDay: any;
+  heartbeatTime: any;
+  lastSpawnDay: any;
+  lastSpawnTime: any;
+  lastEntered: any;
+  lastLeft: any;
+  exhausted: any;
+  currentSpawns: any;
+  customScriptId: any;
+  areaListMaxSize: any;
+  spawnPoolActive: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -114,7 +161,7 @@ export class ModuleEncounter extends ModuleObject {
 
   }
 
-  onEnter(object = undefined){
+  onEnter(object: ModuleObject){
     if(this.scripts.onEnter instanceof NWScriptInstance){
       let instance = this.scripts.onEnter.nwscript.newInstance();
       instance.enteringObject = object;
@@ -122,7 +169,7 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  onExit(object = undefined){
+  onExit(object: ModuleObject){
     if(this.scripts.onExit instanceof NWScriptInstance){
       let instance = this.scripts.onExit.nwscript.newInstance();
       instance.exitingObject = object;
@@ -130,14 +177,14 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.ute,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
 
           this.template.Merge(gff);
           this.InitProperties();
@@ -194,20 +241,21 @@ export class ModuleEncounter extends ModuleObject {
     this.box.min.z -= 100;
     this.box.max.z += 100;
 
-    this.mesh.moduleObject = this;
+    this.mesh.userData.moduleObject = this;
     this.mesh.visible = false;
     GameState.group.triggers.add(this.mesh);
   }
 
   getGeometry(){
-    let trigGeom = new THREE.Geometry();
-    trigGeom.vertices = this.vertices.slice();
+    let trigGeom = new THREE.BufferGeometry();
+    let vertices = this.vertices.slice();
+    let faces: any[] = [];
 
     try{
-      let holes = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( trigGeom.vertices, holes );
+      let holes: any = [];
+      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
       for( let i = 0; i < triangles.length; i++ ){
-        trigGeom.faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
+        faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
       }
     }catch(e){
       console.error('ModuleTrigger', 'Failed to generate faces', {
@@ -216,7 +264,7 @@ export class ModuleEncounter extends ModuleObject {
       })
     }
 
-    trigGeom.computeFaceNormals();
+    // trigGeom.computeFaceNormals();
     trigGeom.computeVertexNormals();
     trigGeom.computeBoundingSphere();
 
@@ -224,7 +272,7 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   LoadScripts(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       this.scripts.onEntered = this.template.GetFieldByLabel('OnEntered').GetValue();
       this.scripts.onExhausted = this.template.GetFieldByLabel('OnExhausted').GetValue();
       this.scripts.onExit = this.template.GetFieldByLabel('OnExit').GetValue();
@@ -234,7 +282,7 @@ export class ModuleEncounter extends ModuleObject {
       let keys = Object.keys(this.scripts);
       let loop = new AsyncLoop({
         array: keys,
-        onLoop: async (key, asyncLoop) => {
+        onLoop: async (key: string, asyncLoop: AsyncLoop) => {
           let _script = this.scripts[key];
           if(_script != '' && !(_script instanceof NWScriptInstance)){
             //let script = await NWScript.Load(_script);
@@ -518,116 +566,6 @@ export class ModuleEncounter extends ModuleObject {
 
     this.template = gff;
     return gff;
-  }
-
-}
-
-class EncounterCreatureEntry{
-
-  appearance = 0;
-  resref = '';
-  cr = 0;
-  singleSpawn = 0;
-
-  save(){
-    let struct = new GFFStruct();
-
-    //struct.AddField( new GFFField(GFFDataType.INT, 'Appearance') ).SetValue(this.appearance);
-    struct.AddField( new GFFField(GFFDataType.RESREF, 'ResRef') ).SetValue(this.resref);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'CR') ).SetValue(this.cr);
-    struct.AddField( new GFFField(GFFDataType.BYTE, 'SingleSpawn') ).SetValue(this.singleSpawn);
-
-    return struct;
-  }
-
-  static FromStruct( struct = undefined ){
-    if(struct instanceof Struct){
-      let entry = new EncounterCreatureEntry();
-      if(struct.HasField('Appearance'))
-        entry.appearance = struct.GetFieldByLabel('Appearance').GetValue();
-
-      if(struct.HasField('ResRef'))
-        entry.resref = struct.GetFieldByLabel('ResRef').GetValue();
-
-      if(struct.HasField('CR'))
-        entry.cr = struct.GetFieldByLabel('CR').GetValue();
-  
-      if(struct.HasField('SingleSpawn'))
-        entry.singleSpawn = struct.GetFieldByLabel('SingleSpawn').GetValue();
-
-      return entry;
-    }
-    return undefined;
-  }
-
-}
-
-class SpawnEntry{
-
-  spawnResref = '';
-  spawnCR = 0;
-
-  save(){
-    let struct = new GFFStruct();
-
-    struct.AddField( new GFFField(GFFDataType.RESREF, 'SpawnResRef') ).SetValue(this.spawnResref);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'SpawnCR') ).SetValue(this.spawnCR);
-
-    return struct;
-  }
-
-  static FromStruct( struct = undefined ){
-    if(struct instanceof Struct){
-      let entry = new SpawnEntry();
-
-      if(struct.HasField('SpawnResRef'))
-        entry.spawnResref = struct.GetFieldByLabel('SpawnResRef').GetValue();
-
-      if(struct.HasField('SpawnCR'))
-        entry.spawnCR = struct.GetFieldByLabel('SpawnCR').GetValue();
-
-
-      return entry;
-    }
-    return undefined;
-  }
-
-}
-
-class SpawnPointEntry{
-
-  position = new THREE.Vector3();
-  orientation = 0.0;
-
-  save(){
-    let struct = new GFFStruct();
-
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'X') ).SetValue(this.position.x);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Y') ).SetValue(this.position.y);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Z') ).SetValue(this.position.z);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Orientation') ).SetValue(this.orientation);
-
-    return struct;
-  }
-
-  static FromStruct( struct = undefined ){
-    if(struct instanceof Struct){
-      let entry = new SpawnPointEntry();
-      if(struct.HasField('X'))
-        entry.position.x = struct.GetFieldByLabel('X').GetValue();
-
-      if(struct.HasField('Y'))
-        entry.position.y = struct.GetFieldByLabel('Y').GetValue();
-
-      if(struct.HasField('Z'))
-        entry.position.z = struct.GetFieldByLabel('Z').GetValue();
-  
-      if(struct.HasField('Orientation'))
-        entry.orientation = struct.GetFieldByLabel('Orientation').GetValue();
-
-      return entry;
-    }
-    return undefined;
   }
 
 }
