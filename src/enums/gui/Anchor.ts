@@ -6,4 +6,5 @@ export enum Anchor {
   TopLeft = "tl",
   TopCenter = "tc",
   TopRight = "tr",
+  User = "user"
 }
