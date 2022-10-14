@@ -3,6 +3,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameState } from "../GameState";
 import { PartyManager } from "../managers/PartyManager";
+import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ActionParameter } from "./ActionParameter";
@@ -16,6 +17,7 @@ export class Action {
   parameters: any[];
   path: any;
   openSpot: any;
+  clearable: boolean = true;
   constructor( groupId = 0 ){
     this.type = 0;
     this.groupId = groupId;
@@ -33,7 +35,7 @@ export class Action {
     return ActionStatus.FAILED;
   }
 
-  setOwner( owner = undefined ){
+  setOwner( owner: ModuleObject ){
     this.owner = owner;
   }
 
@@ -41,7 +43,7 @@ export class Action {
     return this.owner;
   }
 
-  setTarget( target = undefined ){
+  setTarget( target: ModuleObject ){
     this.target = target;
   }
 
@@ -151,7 +153,7 @@ export class Action {
     }
   }
 
-  setParameter( index = 0, type = 0, value = 0 ){
+  setParameter( index = 0, type = 0, value: any = 0 ){
     let param = this.parameters[index];
 
     if(typeof param == 'undefined'){

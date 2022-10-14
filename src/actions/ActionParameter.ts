@@ -18,7 +18,7 @@ export class ActionParameter {
   }
 
   static FromStruct( struct ){
-    if(struct instanceof Struct){
+    if(struct instanceof GFFStruct){
       let type = struct.GetFieldByLabel('Type').GetValue();
       let value = undefined;
       switch(type){

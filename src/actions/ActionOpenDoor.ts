@@ -1,10 +1,14 @@
+import { ActionMoveToPoint } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
+import { ModuleCreature, ModuleDoor } from "../module";
+import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
-class OpenDoor extends Action {
+export class ActionOpenDoor extends Action {
 
   constructor( groupId = 0 ){
     super(groupId);

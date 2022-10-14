@@ -4,6 +4,8 @@ import { Action } from "./Action";
 
 export class ActionItemCastSpell extends Action {
 
+  spell: any = {}
+
   constructor( groupId = 0 ){
     super(groupId);
     this.type = ActionType.ActionItemCastSpell;
