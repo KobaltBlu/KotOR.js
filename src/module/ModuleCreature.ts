@@ -42,7 +42,6 @@ import { Utility } from "../utility/Utility";
 export class ModuleCreature extends ModuleCreatureController {
   pm_IsDisguised: any;
   pm_Appearance: any;
-  isReady: boolean;
   anim: any;
   head: any;
   deathAnimationPlayed: boolean;
@@ -274,9 +273,6 @@ export class ModuleCreature extends ModuleCreatureController {
     this.refbonus = 0;
     this.willbonus = 0;
 
-    this.xPosition = 0;
-    this.yPosition = 0;
-    this.zPosition = 0;
     this.xOrientation = 0;
     this.yOrientation = 0;
     this.zOrientation = 0;
@@ -580,7 +576,8 @@ export class ModuleCreature extends ModuleCreatureController {
 
   use(object: ModuleObject){
     if(this.hasInventory()){
-      GameState.MenuContainer.Open(this);
+      GameState.MenuContainer.AttachContainer(this);
+      GameState.MenuContainer.Open();
     }
   }
 
@@ -758,18 +755,6 @@ export class ModuleCreature extends ModuleCreatureController {
       return this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
     }
     return [];*/
-  }
-
-  getXPosition(){
-    return this.xPosition;
-  }
-
-  getYPosition(){
-    return this.yPosition;
-  }
-
-  getZPosition(){
-    return this.zPosition;
   }
 
   getXOrientation(){
@@ -1283,9 +1268,15 @@ export class ModuleCreature extends ModuleCreatureController {
     return null;
   }
 
-  addFeat(nFeat = 0){
-    if(!this.getFeat(nFeat)){
-      this.feats.push(nFeat);
+  addFeat(feat: number|TalentFeat = 0){
+    if(feat instanceof TalentFeat){
+      if(!this.getFeat(feat.id)){
+        this.feats.push(feat);
+      }
+    }else{
+      if(!this.getFeat(feat)){
+        this.feats.push(new TalentFeat(feat));
+      }
     }
   }
 
@@ -1367,7 +1358,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   getTalents(){
 
-    let talents: any[] = [];
+    let talents: TalentObject[] = [];
 
     //Merge Spell Talents from all classs
     for(let i = 0; i < this.classes.length; i++){
@@ -1403,7 +1394,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   getRandomTalent(category = 0, category2 = 0){
 
-    let talents = this.getTalents().filter( talent => talent.category == category || talent.category == category2 );
+    let talents = this.getTalents().filter( (talent: any) => talent.category == category || talent.category == category2 );
     let talent = talents[Math.floor(Math.random()*talents.length)];
     //console.log('getRandomTalent', talent);
     return talent;
@@ -1411,8 +1402,8 @@ export class ModuleCreature extends ModuleCreatureController {
   }
 
   getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
-    let talents = this.getTalents().filter( talent => ( talent.category != '****' && ( (talent.category & nCategory) == nCategory ) && talent.maxcr <= nCRMax ) );
-    talents.sort((a, b) => (a.maxcr > b.maxcr) ? 1 : -1);
+    let talents = this.getTalents().filter( (talent: any) => ( talent.category != '****' && ( (talent.category & nCategory) == nCategory ) && talent.maxcr <= nCRMax ) );
+    talents.sort((a: any, b: any) => (a.maxcr > b.maxcr) ? 1 : -1);
     //console.log('getTalentBest', talents);
     if(talents.length){
       return talents[0];
@@ -2386,13 +2377,13 @@ export class ModuleCreature extends ModuleCreatureController {
       this.int = this.template.GetFieldByLabel('Int').GetValue();
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.xPosition = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.yPosition = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.zPosition = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('XOrientation'))
       this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();

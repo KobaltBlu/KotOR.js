@@ -40,18 +40,6 @@ export class ModuleWaypoint extends ModuleObject {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  getXPosition(){
-    return this.position.x;
-  }
-
-  getYPosition(){
-    return this.position.y;
-  }
-
-  getZPosition(){
-    return this.position.z;
-  }
-
   getXOrientation(){
     return this.xOrientation;
   }

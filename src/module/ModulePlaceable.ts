@@ -155,6 +155,7 @@ export class ModulePlaceable extends ModuleObject {
   onClick(callee: ModuleObject){
 
     //You can't interact with yourself
+    //@ts-expect-error
     if(this === GameState.player && GameState.getCurrentPlayer() === this){
       return;
     }
@@ -459,7 +460,8 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.hasInventory){
-      GameState.MenuContainer.Open(this);
+      GameState.MenuContainer.AttachContainer(this);
+      GameState.MenuContainer.Open();
     }else if(this.GetConversation() != ''){
       GameState.InGameDialog.StartConversation(this.GetConversation(), object);
     }

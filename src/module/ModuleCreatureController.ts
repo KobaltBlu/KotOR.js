@@ -8,6 +8,7 @@ import { CombatEngine } from "../CombatEngine";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";
+import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
@@ -25,7 +26,21 @@ import { Utility } from "../utility/Utility";
  */
 
 export abstract class ModuleCreatureController extends ModuleObject {
-  equipment: { HEAD: any; ARMOR: any; ARMS: any; RIGHTHAND: any; LEFTHAND: any; LEFTARMBAND: any; RIGHTARMBAND: any; IMPLANT: any; BELT: any; CLAW1: any; CLAW2: any; CLAW3: any; HIDE: any; };
+  equipment: { 
+    HEAD: ModuleItem; 
+    ARMOR: ModuleItem; 
+    ARMS: ModuleItem; 
+    RIGHTHAND: ModuleItem; 
+    LEFTHAND: ModuleItem; 
+    LEFTARMBAND: ModuleItem; 
+    RIGHTARMBAND: ModuleItem; 
+    IMPLANT: ModuleItem; 
+    BELT: ModuleItem; 
+    CLAW1: ModuleItem; 
+    CLAW2: ModuleItem; 
+    CLAW3: ModuleItem; 
+    HIDE: ModuleItem; 
+  };
 
   constructor(gff: GFFObject){
     super(gff);
@@ -64,7 +79,6 @@ export abstract class ModuleCreatureController extends ModuleObject {
       //Get the first action in the queue
       this.action = this.actionQueue[0];
 
-      this.areas = [];
       this.area = GameState.module.area;
 
       /*if(this == GameState.getCurrentPlayer() && this.room instanceof ModuleRoom){
@@ -555,74 +569,11 @@ export abstract class ModuleCreatureController extends ModuleObject {
     }
 
     if(this.combatState){
-    
       //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
       if((GameState.getCurrentPlayer() == this) && this.lastAttackTarget && !this.lastAttackTarget.isDead() && !this.combatAction && !this.combatQueue.length){
         this.attackCreature(this.lastAttackTarget, undefined);
       }
-
-      /*if(this.action && (this.action.type == ActionType.ActionPhysicalAttacks || this.action.type == ActionType.ActionCastSpell)){
-        if(this.action.object.getHP() <= 0){
-          this.clearTarget();
-          this.actionQueue.shift();
-          return;
-        }
-      }else{
-        return;
-      }*/
-
       CombatEngine.AddCombatant(this);
-
-      return;
-
-      if(this.combatQueue.length){
-        if(this.combatAction == undefined && this.combatQueue.length){
-          this.combatAction = this.combatQueue.shift();
-          this.combatAction.ready = false;
-          //this.combatActionTimer = 0;
-        }
-      }else{
-        //this.combatActionTimer = 3;
-      }
-
-      if(this.combatAction != undefined){
-        if(this.combatAction != undefined && this.combatAction.target != this){
-          if(!this.actionQueue.length || this.actionQueue[0].type != ActionType.ActionPhysicalAttacks){
-            /*this.actionQueue.addFront(
-              {object: this.combatAction.target, type: ActionType.ActionPhysicalAttacks, isCutsceneAttack: this.combatAction.isCutsceneAttack}
-            )*/
-          }
-          
-        }
-
-        this.lastAttackTarget = this.combatAction.target;
-
-        if(this.combatAction.isCutsceneAttack){
-          this.combatAction.ready = true;
-        }/*else if(this.combatRoundTimer >= 1.5){
-          if(this.actionInRange(this.combatAction)){
-            this.combatAction.ready = true;
-          }else{
-            //console.log('Player target not in range!');
-          }
-        }else{
-          this.combatRoundTimer += delta;
-        }*/
-        /*else if(PartyManager.party.indexOf(this) >= 0 && CombatEngine.roundType == CombatEngine.ROUNDTYPES.PLAYER && !this.combatAction.ready){
-          if(this.actionInRange(this.combatAction)){
-            this.combatAction.ready = true;
-          }else{
-            //console.log('Player target not in range!');
-          }
-        }else if(PartyManager.party.indexOf(this) == -1 && CombatEngine.roundType == CombatEngine.ROUNDTYPES.CREATURE && !this.combatAction.ready){
-          if(this.actionInRange(this.combatAction)){
-            this.combatAction.ready = true;
-          }
-        }else{
-          //this.combatActionTimer += delta;
-        }*/
-      }
-
     }
   }
 

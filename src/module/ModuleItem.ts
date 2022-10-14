@@ -612,13 +612,13 @@ export class ModuleItem extends ModuleObject {
     }
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.xPosition = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.yPosition = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.zPosition = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('XOrientation'))
       this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
@@ -705,9 +705,9 @@ export class ModuleItem extends ModuleObject {
       propertiesList.AddChildStruct( this.properties[i].save() );
     }
 
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.xPosition);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.yPosition);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.zPosition);
+    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);
+    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.position.y);
+    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.position.z);
     itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue(this.xOrientation);
     itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue(this.yOrientation);
     itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).SetValue(this.zOrientation);

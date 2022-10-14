@@ -58,18 +58,6 @@ export class ModuleTrigger extends ModuleObject {
   getTemplateResRef(){
     return this.templateResRef;
   }
-  
-  getXPosition(){
-    return this.position.x;
-  }
-
-  getYPosition(){
-    return this.position.y;
-  }
-
-  getZPosition(){
-    return this.position.z;
-  }
 
   getXOrientation(){
     return this.xOrientation;
@@ -202,7 +190,7 @@ export class ModuleTrigger extends ModuleObject {
     }
 
     this.mesh = new THREE.Mesh( trigGeom, material );
-    this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
+    this.mesh.position.copy(this.position);
     this.box.setFromObject(this.mesh);
     this.box.min.z -= 100;
     this.box.max.z += 100;
@@ -528,13 +516,13 @@ export class ModuleTrigger extends ModuleObject {
       this.type = this.template.GetFieldByLabel('Type').GetValue();
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.xPosition = this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.yPosition = this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.zPosition = this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('XOrientation'))
       this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();

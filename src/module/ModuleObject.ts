@@ -16,12 +16,13 @@ import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimSta
 import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { SSFObjectType } from "../interface/resource/SSFType";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../odyssey";
+import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -36,6 +37,9 @@ import { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, Module
  */
 
 export class ModuleObject {
+  setCommadable(arg0: any) {
+    throw new Error("Method not implemented.");
+  }
   controlled: boolean;
   id: number;
   initialized: boolean;
@@ -62,6 +66,8 @@ export class ModuleObject {
   speed: number;
   movementSpeed: number;
 
+  area: ModuleArea;
+
   //Room
   room: any;
   rooms: number[];
@@ -70,9 +76,6 @@ export class ModuleObject {
   inventory: ModuleItem[];
 
   model: OdysseyModel3D;
-  xPosition: number;
-  yPosition: number;
-  zPosition: number;
   xOrientation: number;
   yOrientation: number;
   zOrientation: number;
@@ -101,66 +104,91 @@ export class ModuleObject {
   heartbeatTimer: any;
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: any;
+  _healTarget: any;
+
+  //combat
+  
+  lastAttemptedAttackTarget: ModuleObject;
+  lastAttackTarget: ModuleObject;
+  lastSpellTarget: ModuleObject;
+  lastAttemptedSpellTarget: ModuleObject;
+  lastSpellAttacker: ModuleObject;
+
+  lastCombatFeatUsed: any;
+  lastForcePowerUsed: any;
+  lastAttackResult: any;
+  combatQueue: any[];
+  combatAction: any;
   _lastAttackObject: any;
   _lastAttackAction: number;
   _lastForcePowerUsed: number;
   _lastForcePowerSuccess: number;
-  _healTarget: any;
+  initiative: number;
+  lastDamager: any;
+  lastAttacker: any;
+
+  //Perception
   perceptionList: any[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
-  initiative: number;
+  perceptionRange: any;
+  
   spawned: boolean;
   _inventoryPointer: number;
+
+  //stats
   fortitudeSaveThrow: number;
   reflexSaveThrow: number;
   willSaveThrow: number;
-  deferEventUpdate: any;
-  distanceToCamera: any;
-  roomCheckTimer: any;
-  combatQueue: any[];
-  combatAction: any;
-  facingAnim: boolean;
-  lastDamager: any;
-  lastAttacker: any;
+  min1HP: boolean;
+
+  //collision
+  walkmesh: OdysseyWalkMesh;
+  surfaceId: any;
   groundFace: any;
   lastGroundFace: any;
-  surfaceId: any;
-  mesh: THREE.Mesh;
-  walkmesh: any;
+
+  //attributes
   placedInWorld: any;
   linkedToModule: any;
   linkedToFlags: any;
   linkedTo: any;
   transitionDestin: CExoLocString;
-  min1HP: boolean;
-  perceptionRange: any;
-  animState: any;
-  appearance: any;
   description: any;
-  autoRemoveKey: any;
   commandable: any;
-  cursor: any;
-  geometry: any;
-  vertices: any;
-  hasMapNote: any;
-  highlightHeight: any;
+  autoRemoveKey: any;
+  animState: any;
   keyName: any;
   loadScreenID: any;
   locName: any;
   localizedName: any;
+  hasMapNote: any;
   mapNote: any;
   mapNoteEnabled: any;
-  portraidId: any;
-  setByPlayerParty: any;
   trapDetectable: any;
   trapDisarmable: any;
   trapOneShot: any;
   trapType: any;
-  type: any;
+  portraidId: any;
+  setByPlayerParty: any;
+  highlightHeight: any;
+  appearance: any;
+  cursor: any;
+
+  //complex animation varaibles
   fp_push_played: any;
   fp_land_played: any;
   fp_getup_played: any;
+
+  deferEventUpdate: any;
+  distanceToCamera: any;
+  roomCheckTimer: any;
+  facingAnim: boolean;
+  mesh: THREE.Mesh;
+  geometry: any;
+  vertices: any;
+  type: any;
+  isReady: boolean = false;
 
   //Actions
   actionQueue: ActionQueue;
@@ -173,6 +201,7 @@ export class ModuleObject {
   static PLAYER_ID: number = 0x7fffffff;
   static OBJECT_INVALID: number = 0x7f000000;
 
+  //last object effected
   lastTriggerEntered: ModuleObject;
   lastTriggerExited: ModuleObject;
   lastAreaEntered: ModuleObject;
@@ -185,15 +214,6 @@ export class ModuleObject {
   lastPlaceableExited: ModuleObject;
   lastAoeEntered: ModuleObject;
   lastAoeExited: ModuleObject;
-  lastAttemptedAttackTarget: ModuleObject;
-  lastAttackTarget: ModuleObject;
-  lastSpellTarget: ModuleObject;
-  lastAttemptedSpellTarget: ModuleObject;
-  lastSpellAttacker: ModuleObject;
-
-  lastCombatFeatUsed: any;
-  lastForcePowerUsed: any;
-  lastAttackResult: any;
 
   static ResetPlayerId(){
     ModuleObject.PLAYER_ID = 0x7fffffff;
@@ -276,9 +296,6 @@ export class ModuleObject {
     this.tag = '';
     this.templateResRef = '';
 
-    this.xPosition = 0;
-    this.yPosition = 0;
-    this.zPosition = 0;
     this.xOrientation = 0;
     this.yOrientation = 0;
     this.zOrientation = 0;
@@ -1530,27 +1547,6 @@ export class ModuleObject {
     this.setFacing(atan + Math.PI/2, true);
   }
 
-  getXPosition(){
-    if(this.template.RootNode.HasField('XPosition')){
-      return this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
-    }
-    return 0;
-  }
-
-  getYPosition(){
-    if(this.template.RootNode.HasField('YPosition')){
-      return this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
-    }
-    return 0;
-  }
-
-  getZPosition(){
-    if(this.template.RootNode.HasField('ZPosition')){
-      return this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
-    }
-    return 0;
-  }
-
   getXOrientation(){
     if(this.template.RootNode.HasField('XOrientation')){
       return this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
@@ -1970,6 +1966,7 @@ export class ModuleObject {
     throw new Error("Method not implemented.");
   }
 
+  PlaySoundSet(ssfType: SSFObjectType){}
 
 
 
@@ -2118,13 +2115,13 @@ export class ModuleObject {
       this.type = this.template.GetFieldByLabel('Type').GetValue();
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.xPosition = this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.yPosition = this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.zPosition = this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('XOrientation'))
       this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();

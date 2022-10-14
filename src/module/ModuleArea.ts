@@ -1659,7 +1659,7 @@ export class ModuleArea extends ModuleObject {
   
             let wpObj = new THREE.Object3D();
             wpObj.name = waypnt.getTag();
-            wpObj.position.set(waypnt.getXPosition(), waypnt.getYPosition(), waypnt.getZPosition());
+            wpObj.position.copy(waypnt.position);
             wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
             waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
             GameState.group.waypoints.add(wpObj);
@@ -1809,9 +1809,6 @@ export class ModuleArea extends ModuleObject {
             crt.LoadScripts( () => {
               crt.LoadModel( (model: OdysseyModel3D) => {
                 crt.model.moduleObject = crt;
-                crt.position.x = (crt.getXPosition());
-                crt.position.y = (crt.getYPosition());
-                crt.position.z = (crt.getZPosition());
                 
                 //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
                 crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);

@@ -237,7 +237,7 @@ export class ModuleEncounter extends ModuleObject {
     });
 
     this.mesh = new THREE.Mesh( trigGeom, material );
-    this.mesh.position.set(this.getXPosition(), this.getYPosition(), this.getZPosition());
+    this.mesh.position.copy(this.position);
     this.box.setFromObject(this.mesh);
     this.box.min.z -= 100;
     this.box.max.z += 100;
