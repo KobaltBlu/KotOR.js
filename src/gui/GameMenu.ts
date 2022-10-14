@@ -27,6 +27,8 @@ export class GameMenu {
   scale: number;
   enablePositionScaling: boolean = false;
   isOverlayGUI: boolean;
+  textNeedsUpdate: boolean = false;
+  selectedControl: GUIControl;
 
   background: any;
   backgroundSprite: any;

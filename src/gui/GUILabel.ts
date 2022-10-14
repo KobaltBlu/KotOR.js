@@ -55,7 +55,7 @@ export class GUILabel extends GUIControl {
     }
   }
 
-  setText(str='', renderOrder = 5){
+  setText(str: any = '', renderOrder = 5){
 
     if(this.editable){
       super.setText(str+'_', renderOrder);

@@ -31,10 +31,7 @@ const box = { min: [0, 0], max: [0, 0] }
 
 export class GUIControl {
   position: any;
-  _3dViewModel: any;
-  node(node: any) {
-    // throw new Error("Method not implemented.");
-  }
+  node: any;
   calculateBox() {
     return;
   }
@@ -148,6 +145,8 @@ export class GUIControl {
   editable: boolean;
   selected: boolean;
   onSelect: any;
+
+  userData: any = {};
   
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl|undefined, scale: boolean = false){
 
@@ -1160,7 +1159,7 @@ export class GUIControl {
     }
   }*/
 
-  getFill(){
+  getFill(): THREE.Mesh {
     return this.border.fill.mesh;
   }
 
@@ -2117,7 +2116,9 @@ export class GUIControl {
     return {width: window.innerWidth, height: window.innerHeight};
   }
 
-  setText(str='', renderOrder = 5){
+  setText(str: any = '', renderOrder = 5){
+    if(typeof str != 'string')
+      str = str.toString();
 
     let oldText = this.text.text;
     this.text.text = (str).toString().replace(/\s*\{.*?\}\s*/gi, '');
