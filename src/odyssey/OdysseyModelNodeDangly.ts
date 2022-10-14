@@ -15,7 +15,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   danglyPeriod: number;
   danglyMDLOffset: number;
   constraints: number[];
-  danglyVec4: THREE.Vector4[];
+  danglyVec4: number[];
 
   constructor(parent: OdysseyModelNode){
     super(parent);
@@ -37,7 +37,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
     this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.danglyMDLOffset);
     this.danglyVec4 = new Array(contraintArray.count);
     for(let i = 0; i < contraintArray.count; i++){
-      this.danglyVec4[i] = new THREE.Vector4(
+      this.danglyVec4.push(
         this.odysseyModel.mdlReader.ReadSingle(), 
         this.odysseyModel.mdlReader.ReadSingle(), 
         this.odysseyModel.mdlReader.ReadSingle(), 

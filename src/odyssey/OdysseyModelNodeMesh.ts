@@ -13,9 +13,9 @@ import { OdysseyFace3 } from "../three/odyssey";
 
 export class OdysseyModelNodeMesh extends OdysseyModelNode {
   vertices: any[];
-  normals: any[];
-  colors: any[];
-  tvectors: any[][];
+  normals: number[];
+  colors: number[];
+  tvectors: number[][];
   texCords: any[][];
   tangents: any[][];
   indexArray: any[];
@@ -244,26 +244,26 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
       // Normal
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.NORMAL){
         this.odysseyModel.mdxReader.position = basePosition + MDXVertexNormalsOffset;
-        this.normals[i] = new THREE.Vector3(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
       }
 
       // Color
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.COLOR){
         this.odysseyModel.mdxReader.position = basePosition + MDXVertexColorsOffset;
-        this.colors[i] = new THREE.Color(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.colors.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
       }
       
       // TexCoords1
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV1){
         this.odysseyModel.mdxReader.position = basePosition + MDXUVOffset1;
-        this.tvectors[0][i] = (new THREE.Vector2(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle()));
-        this.tvectors[1][i] = this.tvectors[0][i];
+        this.tvectors[0].push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        // this.tvectors[1][i] = this.tvectors[0][i];
       }
 
       // TexCoords2
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2){
         this.odysseyModel.mdxReader.position = basePosition + MDXUVOffset2;
-        this.tvectors[1][i] = (new THREE.Vector2(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle()));
+        this.tvectors[1].push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
       }
 
       // TexCoords3
@@ -312,6 +312,13 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
         //this.computeTangent(this.tangent4, i);
       }
 
+    }
+
+    if(
+      this.MDXDataBitmap & OdysseyModelMDXFlag.UV1 && 
+      !(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2)
+    ){
+      this.tvectors[1] = this.tvectors[0];
     }
 
     if(this.VertexLocArrayDef.count){

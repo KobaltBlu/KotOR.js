@@ -19,6 +19,11 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
   GenerateFlareFlag: number;
   FadingLightFlag: number;
   flare: OdysseyModelFlare;
+  color: THREE.Color;
+  radius: number;
+  intensity: number;
+  multiplier: number;
+  light: THREE.Light;
 
   constructor(parent: OdysseyModelNode){
     super(parent);

@@ -7,6 +7,7 @@ import { BinaryReader } from "../BinaryReader";
 import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
 import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode";
 import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey";
 
 /* @file
@@ -15,12 +16,14 @@ import { OdysseyFace3 } from "../three/odyssey";
 
 export class OdysseyWalkMesh {
   static SURFACEMATERIALS: any;
+  name: string;
+  moduleObject: ModuleObject;
   header: any = { };
   walkableFaces: any[];
   walkableFacesWithEdge: any[];
   grassFaces: any[];
   rootNode: any;
-  mesh: THREE.Object3D;
+  mesh: THREE.Mesh;
   box: THREE.Box3;
   mat4: THREE.Matrix4;
   faces: any[];
@@ -44,7 +47,7 @@ export class OdysseyWalkMesh {
   aabbGroup: THREE.Object3D;
   aabbRoot: any;
   
-  constructor( wokReader: BinaryReader, onLoad?: Function, onError?: Function ){
+  constructor( wokReader?: BinaryReader, onLoad?: Function, onError?: Function ){
 
     this.header = {
       walkMeshType: OdysseyWalkMeshType.NONE
@@ -54,7 +57,7 @@ export class OdysseyWalkMesh {
     this.walkableFacesWithEdge = [];
     this.grassFaces = [];
     this.rootNode = null;
-    this.mesh = new THREE.Object3D();
+    this.mesh = new THREE.Mesh();
     this.box = new THREE.Box3();
     this.mat4 = new THREE.Matrix4();
     this.faces = [];
