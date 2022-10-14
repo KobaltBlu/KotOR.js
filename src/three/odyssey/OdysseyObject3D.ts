@@ -2,15 +2,25 @@ import * as THREE from "three";
 import { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import { OdysseyController } from "../../odyssey/controllers/OdysseyController";
 import { GUIControl } from "../../gui/GUIControl";
-import { OdysseyEmitter3D } from "./";
+import { OdysseyEmitter3D, OdysseyModel3D } from "./";
+import { ModuleObject } from "../../module";
 export class OdysseyObject3D extends THREE.Object3D {
-  odysseyModel: OdysseyModelNode;
+  odysseyModel: OdysseyModel3D;
+  odysseyModelNode: OdysseyModelNode;
+  moduleObject: ModuleObject;
   NodeType: number;
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;
   controllerCache: any;
+  controllerHelpers: any = {
+    hasOrientation: false,
+    hasPosition: false,
+    hasScale: false,
+  };
   emitter: OdysseyEmitter3D;
   matrixInverse: THREE.Matrix4;
+  wasOffscreen: boolean = false;
+  box: THREE.Box3;
   // trans: {
   //   position: THREE.Vector3,
   //   quaternion: THREE.Quaternion,
@@ -22,9 +32,10 @@ export class OdysseyObject3D extends THREE.Object3D {
   onMouseUp: (e: any) => void;
   onHover: (e: any) => void;
   getControl: () => GUIControl;
+  head: any;
   constructor( node: OdysseyModelNode = undefined ){
     super();
-    this.odysseyModel = node;
+    this.odysseyModelNode = node;
     this.controllers = node.controllers;
     this.controllerCache = {};
     // this.trans = {
@@ -34,6 +45,23 @@ export class OdysseyObject3D extends THREE.Object3D {
   }
   
   getControllerByType(type = -1){
-    return this.auroraNode.controllers.get(type);
+    return this.controllers.get(type);
   }
+
+  disableMatrixUpdate() {
+    throw new Error("Method not implemented.");
+  }
+
+  dispose() {
+    throw new Error("Method not implemented.");
+  }
+
+  update(delta: number) {
+    throw new Error("Method not implemented.");
+  }
+
+  playAnimation(arg0: any, aLooping: boolean, arg2: () => void) {
+    throw new Error("Method not implemented.");
+  }
+  
 }

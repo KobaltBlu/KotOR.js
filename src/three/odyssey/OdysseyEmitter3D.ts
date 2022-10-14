@@ -756,7 +756,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   };
 
-  node = auroraNode;
+  node = odysseyNode;
 
   material = undefined;
   mesh = undefined;
@@ -796,7 +796,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   colorMid = new THREE.Color(1, 1, 1);
   colorEnd = new THREE.Color(1, 1, 1);
 
-  if(auroraNode instanceof OdysseyModelNode){
+  if(odysseyNode instanceof OdysseyModelNode){
 
     this.updateType = this.node.Update;
 

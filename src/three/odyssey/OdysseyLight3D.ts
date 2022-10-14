@@ -1,4 +1,4 @@
-import { Forge } from "../../Forge";
+// import { Forge } from "../../Forge";
 import { GameState } from "../../GameState";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { OdysseyObject3D } from "./";
@@ -11,9 +11,19 @@ import { OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
 export class OdysseyLight3D extends OdysseyObject3D {
 
   _node: OdysseyModelNodeLight;
-  auroraModel: OdysseyModel;
+  // odysseyModel: OdysseyModel;
   worldPosition: THREE.Vector3;
   sphere: THREE.Sphere;
+  isAnimated: boolean;
+  parentUUID: string;
+  priority: number;
+  isAmbient: boolean;
+  isDynamic: boolean;
+  affectDynamic: boolean;
+  genFlare: boolean;
+  isFading: number;
+  maxIntensity: number;
+  color: THREE.Color;
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
@@ -39,25 +49,25 @@ export class OdysseyLight3D extends OdysseyObject3D {
   }
 
   isOnScreen( frustum = GameState.viewportFrustum ){
-    if(ApplicationProfile.MODE == 'FORGE'){
-      if(Forge.tabManager.currentTab instanceof ModuleEditorTab){
-        if(!this.auroraModel.visible)
-          return false;
+    // if(ApplicationProfile.MODE == 'FORGE'){
+    //   if(Forge.tabManager.currentTab instanceof ModuleEditorTab){
+    //     if(!this.odysseyModel.visible)
+    //       return false;
         
-        frustum = Forge.tabManager.currentTab.viewportFrustum;
-        this.sphere.center.copy(this.worldPosition);
-        this.sphere.radius = this.getRadius();
-        return frustum.intersectsSphere(this.sphere);
-      }
-      return false;
-    }else{
-      if(!this.auroraModel.visible)
+    //     frustum = Forge.tabManager.currentTab.viewportFrustum;
+    //     this.sphere.center.copy(this.worldPosition);
+    //     this.sphere.radius = this.getRadius();
+    //     return frustum.intersectsSphere(this.sphere);
+    //   }
+    //   return false;
+    // }else{
+      if(!this.odysseyModel.visible)
         return false;
 
       this.sphere.center.copy(this.worldPosition);
       this.sphere.radius = this.getRadius();
       return frustum.intersectsSphere(this.sphere);
-    }
+    // }
   }
 
 }
