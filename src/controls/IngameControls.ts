@@ -817,7 +817,7 @@ export class IngameControls {
 
   plChangeCallback(e: any){
     if(document.pointerLockElement === this.element) {
-      this.element.addEventListener("mousemove", this.plMoveEvent = (e) => { this.plMouseMove(e); }, true);
+      this.element.addEventListener("mousemove", this.plMoveEvent = (e: any) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;
     } else {
       //console.log('The pointer lock status is now unlocked');
