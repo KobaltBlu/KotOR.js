@@ -10,7 +10,7 @@ import { GFFObject } from "../resource/GFFObject";
  */
 
 export class ModulePlayer extends ModuleCreature {
-
+  isPlayer: boolean = true;
   constructor ( gff = new GFFObject() ) {
     super(gff);
   }

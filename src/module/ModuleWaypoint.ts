@@ -2,6 +2,15 @@
  */
 
 import { ModuleObject } from ".";
+import { GFFObject } from "../resource/GFFObject";
+import * as THREE from "three";
+import { OdysseyModel3D } from "../three/odyssey";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { CExoLocString } from "../resource/CExoLocString";
 
 /* @file
  * The ModuleWaypoint class.
@@ -18,12 +27,12 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   SetFacingVector(facing = new THREE.Vector3()){
-    if(this.model != OdysseyModel3D)
+    if(this.model instanceof OdysseyModel3D)
       this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.getXOrientation(), this.getYOrientation()));
   }
 
   GetFacingVector(){
-    if(this.model != OdysseyModel3D){
+    if(this.model instanceof OdysseyModel3D){
       let facing = new THREE.Vector3(0, 1, 0);
       facing.applyQuaternion(this.model.quaternion);
       return facing;
@@ -63,14 +72,14 @@ export class ModuleWaypoint extends ModuleObject {
     return this.templateResRef;
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.utw,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           this.template.Merge(gff);
           this.InitProperties();
           if(onLoad != null)

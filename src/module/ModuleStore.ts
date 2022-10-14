@@ -1,7 +1,15 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleObject } from ".";
+import { ModuleItem, ModuleObject } from ".";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { AsyncLoop } from "../utility/AsyncLoop";
 
 /* @file
  * The ModuleStore class.
@@ -10,6 +18,11 @@ import { ModuleObject } from ".";
 
 
 export class ModuleStore extends ModuleObject {
+  buySellFlag: number;
+  markDown: number;
+  markUp: number;
+  onOpenStore: any;
+  resref: any;
 
   constructor( gff = new GFFObject() ){
     super(gff);
@@ -36,20 +49,20 @@ export class ModuleStore extends ModuleObject {
     return this.markUp * .01;
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getResRef()){
       //Load template and merge fields
 
       TemplateLoader.Load({
         ResRef: this.getResRef(),
         ResType: ResourceTypes.utm,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           this.template.Merge(gff);
           this.InitProperties();
           if(onLoad != null)
             onLoad(this);     
         },
-        onFail: (e) => {
+        onFail: () => {
           console.error('Failed to load merchant template', this.getResRef());
           if(onLoad != null)
             onLoad(undefined);
@@ -64,7 +77,7 @@ export class ModuleStore extends ModuleObject {
     }
   }
 
-  InitProperties( onLoad = null ){
+  InitProperties( onLoad?: Function ){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){
@@ -142,7 +155,7 @@ export class ModuleStore extends ModuleObject {
 
       let loop = new AsyncLoop({
         array: items,
-        onLoop: (item, asyncLoop) => {
+        onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
           let moduleItem = new ModuleItem(GFFObject.FromStruct(item));
           this.inventory.push(moduleItem)
           moduleItem.Load( () => {
@@ -178,7 +191,7 @@ export class ModuleStore extends ModuleObject {
 
     let itemList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      itemList.AddChildStruct( this.inventory[i].save().RootNode );
+      itemList.AddChildStruct( this.inventory[i].save() );
     }
 
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);

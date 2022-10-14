@@ -2,14 +2,29 @@
  */
 
 import { ModuleObject } from ".";
+import { GFFObject } from "../resource/GFFObject";
+import * as THREE from "three";
+import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel } from "../odyssey";
 
 /* @file
  * The ModuleMGGunBullet class.
  */
 
 export class ModuleMGGunBullet extends ModuleObject {
+  owner: ModuleObject;
+  life: number;
+  direction: THREE.Vector3;
+  velocity: THREE.Vector3;
+  lifespan: any;
+  model_name: any;
+  collision_sound: any;
+  rate_of_fire: any;
+  target_type: any;
+  damage_amt: number;
 
-  constructor( template = undefined, owner = undefined ){
+  constructor( template: GFFObject, owner: ModuleObject ){
     super();
     this.template = template;
     this.owner = owner;
@@ -44,7 +59,7 @@ export class ModuleMGGunBullet extends ModuleObject {
         for(let i = 0, len = enemies.length; i < len; i++){
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.position)){
-            enemy.damage(this.damage);
+            enemy.damage(this.damage_amt);
             //Set the life to Infinity so it will be culled on the next pass
             this.life = Infinity;
             break;
@@ -53,7 +68,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       }else{
         const player = GameState.module.area.MiniGame.Player;
         if(player.sphere.containsPoint(this.position)){
-          player.damage(this.damage);
+          player.damage(this.damage_amt);
           //Set the life to Infinity so it will be culled on the next pass
           this.life = Infinity;
         }
@@ -64,13 +79,13 @@ export class ModuleMGGunBullet extends ModuleObject {
     return true;
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     
   }
 
   Load(){
     this.InitProperties();
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       this.LoadModel().then( () => {
         resolve();
       });
@@ -78,12 +93,12 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   LoadModel(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       GameState.ModelLoader.load({
         file: this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.model = model;
               resolve();
             }
@@ -96,7 +111,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   InitProperties(){
     this.model_name = this.template.RootNode.GetFieldByLabel('Bullet_Model').GetValue();
     this.collision_sound = this.template.RootNode.GetFieldByLabel('Collision_Sound').GetValue();
-    this.damage = this.template.RootNode.GetFieldByLabel('Damage').GetValue();
+    this.damage_amt = this.template.RootNode.GetFieldByLabel('Damage').GetValue();
     this.lifespan = this.template.RootNode.GetFieldByLabel('Lifespan').GetValue();
     this.rate_of_fire = this.template.RootNode.GetFieldByLabel('Rate_Of_Fire').GetValue();
     this.speed = this.template.RootNode.GetFieldByLabel('Speed').GetValue();

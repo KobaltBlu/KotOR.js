@@ -25,6 +25,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { InventoryManager } from "../managers/InventoryManager";
+import { KEYManager } from "../managers/KEYManager";
 
 /* @file
  * The ModuleDoor class.
@@ -59,7 +60,7 @@ export class ModuleDoor extends ModuleObject {
   x: number;
   y: number;
   z: number;
-  audioEmitter: AudioEmitter;
+  declare audioEmitter: AudioEmitter;
   boxHelper: THREE.Box3Helper;
 
   constructor ( gff = new GFFObject() ) {
@@ -518,9 +519,7 @@ export class ModuleDoor extends ModuleObject {
   onEnter(object: ModuleObject){
     if(this.getLinkedToModule() && !GameState.inDialog && this.isOpen()){
       if(object == GameState.getCurrentPlayer() && object.controlled){
-        GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase(), () => { 
-          //console.log('Module Loaded', tthis.getLinkedToModule().toLowerCase());
-        });
+        GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
       }else{
         object.lastDoorEntered = undefined;
       }
@@ -705,7 +704,7 @@ export class ModuleDoor extends ModuleObject {
       this.tweakColor = this.template.GetFieldByLabel('TweakColor').GetValue();
     
     if(this.template.RootNode.HasField('UseTweakColor'))
-      this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue();
+      this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue() ? true : false;
 
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
@@ -731,9 +730,9 @@ export class ModuleDoor extends ModuleObject {
 
   LoadWalkmesh(ResRef = '', onLoad?: Function ){
     
-    let wokKey = Global.kotorKEY.GetFileKey(ResRef+'0', ResourceTypes['dwk']);
-    if(wokKey != null){
-      Global.kotorKEY.GetFileData(wokKey, (buffer: Buffer) => {
+    let wokKey = KEYManager.Key.GetFileKey(ResRef+'0', ResourceTypes['dwk']);
+    if(wokKey){
+      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
 
         this.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.walkmesh.mesh.name = this.walkmesh.name = ResRef;
@@ -941,7 +940,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(1);
     gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation);
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue();
+    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue('');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).SetValue(this.disarmDC);
 
     //Effects
@@ -1070,22 +1069,25 @@ export class ModuleDoor extends ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ){
-    switch( animation_constant ){
-      case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
-        return Global.kotor2DA.animations.rows[327];
-      case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
-        return Global.kotor2DA.animations.rows[333];
-      case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
-        return Global.kotor2DA.animations.rows[331];
-      case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
-        return Global.kotor2DA.animations.rows[332];
-      case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
-        return Global.kotor2DA.animations.rows[366];
-      case ModuleDoorAnimState.TRANS:         //10269, //344 - 
-        return Global.kotor2DA.animations.rows[344];
-    }
+    const animations2DA = TwoDAManager.datatables.get('animations');
+    if(animations2DA){
+      switch( animation_constant ){
+        case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
+          return animations2DA.rows[327];
+        case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
+          return animations2DA.rows[333];
+        case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
+          return animations2DA.rows[331];
+        case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
+          return animations2DA.rows[332];
+        case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
+          return animations2DA.rows[366];
+        case ModuleDoorAnimState.TRANS:         //10269, //344 - 
+          return animations2DA.rows[344];
+      }
 
-    return super.animationConstantToAnimation( animation_constant );
+      return super.animationConstantToAnimation( animation_constant );
+    }
   }
 
 }

@@ -2,14 +2,44 @@
  */
 
 import { ModuleObject } from ".";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { AudioEngine } from "../audio/AudioEngine";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
 
 /* @file
  * The ModuleSound class.
  */
 
 export class ModuleSound extends ModuleObject {
+  audioEngine: AudioEngine;
+  active: number;
+  continuous: number;
+  fixedVariance: number;
+  generatedType: number;
+  hours: number;
+  interval: number;
+  intervalVariation: number;
+  looping: number;
+  maxDistance: number;
+  minDistance: number;
+  pitchVariation: number;
+  positional: number;
+  random: number;
+  randomPosition: number;
+  randomRangeX: number;
+  randomRangeY: number;
+  sounds: any[];
+  times: number;
+  volume: number;
+  volumeVariation: number;
+  emitter: AudioEmitter;
 
-  constructor ( gff = null, audioEngine = null ) {
+  constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
     super(gff);
 
@@ -40,14 +70,14 @@ export class ModuleSound extends ModuleObject {
 
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       //console.log('ModuleSound.Load',this.getTemplateResRef())
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.uts,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
 
           this.template.Merge(gff);
           this.InitProperties();
@@ -70,40 +100,42 @@ export class ModuleSound extends ModuleObject {
     }
   }
 
-  LoadModel (onLoad = null) {
+  LoadModel ( onLoad?: Function ) {
+    if(typeof onLoad === 'function')
+      onLoad(this.mesh);
 
-    let mdlLoader = new THREE.MDLLoader();
+    // let mdlLoader = new THREE.MDLLoader();
 
-    if(this.getRandom()){
-      mdlLoader.load({
-        file: 'gi_sound_rndm',
-        onLoad: (mesh) => {
-          this.mesh = mesh;
-          if(onLoad != null)
-            onLoad(this.mesh);
-        }
-      });
-    }else{
-      if(this.getPositional()){
-        mdlLoader.load({
-          file: 'gi_sound_pos',
-          onLoad: (mesh) => {
-            this.mesh = mesh;
-            if(onLoad != null)
-              onLoad(this.mesh);
-          }
-        });
-      }else{
-        mdlLoader.load({
-          file: 'gi_sound_area',
-          onLoad: (mesh) => {
-            this.mesh = mesh;
-            if(onLoad != null)
-              onLoad(this.mesh);
-          }
-        });
-      }
-    }
+    // if(this.getRandom()){
+    //   mdlLoader.load({
+    //     file: 'gi_sound_rndm',
+    //     onLoad: (mesh) => {
+    //       this.mesh = mesh;
+    //       if(onLoad != null)
+    //         onLoad(this.mesh);
+    //     }
+    //   });
+    // }else{
+    //   if(this.getPositional()){
+    //     mdlLoader.load({
+    //       file: 'gi_sound_pos',
+    //       onLoad: (mesh) => {
+    //         this.mesh = mesh;
+    //         if(onLoad != null)
+    //           onLoad(this.mesh);
+    //       }
+    //     });
+    //   }else{
+    //     mdlLoader.load({
+    //       file: 'gi_sound_area',
+    //       onLoad: (mesh) => {
+    //         this.mesh = mesh;
+    //         if(onLoad != null)
+    //           onLoad(this.mesh);
+    //       }
+    //     });
+    //   }
+    // }
 
   }
 
@@ -148,9 +180,9 @@ export class ModuleSound extends ModuleObject {
   }
 
 
-  LoadSound(onLoad = null){
+  LoadSound(onLoad?: Function){
 
-    let template = {
+    let template: any = {
       sounds: [],//this.gff.GetFieldByLabel('Sounds').GetChildStructs(),
       isActive: this.getActive(),
       isLooping: this.getLooping(),
@@ -337,6 +369,12 @@ export class ModuleSound extends ModuleObject {
 
     this.template = gff;
     return gff;
+  }
+  cameraID(cameraID: any) {
+    throw new Error("Method not implemented.");
+  }
+  micRange(micRange: any) {
+    throw new Error("Method not implemented.");
   }
   
   toToolsetInstance(){

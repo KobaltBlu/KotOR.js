@@ -2,6 +2,19 @@
  */
 
 import { ModuleCreature, ModuleDoor, ModuleEncounter, ModuleObject, ModulePlaceable, ModuleTrigger } from ".";
+import * as THREE from "three";
+import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
+import { OdysseyModel, OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
+import { KEYManager } from "../managers/KEYManager";
+import { BinaryReader } from "../BinaryReader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
 
 /* @file
  * The ModuleRoom class.
@@ -20,7 +33,7 @@ export class ModuleRoom extends ModuleObject {
   encounters: ModuleEncounter[];
   grass: any;
 
-  constructor( args = {} ){
+  constructor( args: any = {} ){
     super();
     args = Object.assign({
       ambientScale: 0,
@@ -72,7 +85,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  setLinkedRooms(array = []){
+  setLinkedRooms(array: any[] = []){
     this.linked_rooms = array;
   }
 
@@ -143,7 +156,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  link_rooms(rooms = []){
+  link_rooms(rooms: any[] = []){
     for(let i = 0; i < this.linked_rooms.length; i++){
       for(let j = 0; j < rooms.length; j++){
         if(this.linked_rooms[i] == rooms[j].roomName.toLowerCase()){
@@ -153,18 +166,18 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  load( onComplete = null ){
+  load( onComplete?: Function ){
     
     if(!Utility.is2daNULL(this.roomName)){
 
       GameState.ModelLoader.load({
 
         file: this.roomName,
-        onLoad: (roomFile) => {
+        onLoad: (roomFile: OdysseyModel) => {
 
           OdysseyModel3D.FromMDL(roomFile, {
 
-            onComplete: (room) => {
+            onComplete: (room: OdysseyModel3D) => {
 
               let scene;
               if(this.model instanceof OdysseyModel3D && this.model.parent){
@@ -184,12 +197,11 @@ export class ModuleRoom extends ModuleObject {
               this.model.moduleObject = this;
               this.model.position.copy(this.position);
 
-              if(this.model.animations.length){
-
-                for(let animI = 0; animI < this.model.animations.length; animI++){
-                  if(this.model.animations[animI].name.indexOf('animloop') >= 0){
+              if(this.model.odysseyAnimations.length){
+                for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
+                  if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
                     this.model.animLoops.push(
-                      this.model.animations[animI]
+                      this.model.odysseyAnimations[animI]
                     );
                   }
                 }
@@ -200,7 +212,7 @@ export class ModuleRoom extends ModuleObject {
 
               if(!(this.walkmesh instanceof OdysseyWalkMesh)){
 
-                this.loadWalkmesh(this.roomName, (wok) => {
+                this.loadWalkmesh(this.roomName, (wok: OdysseyWalkMesh) => {
                   if(wok){
                     this.walkmesh = wok;
                     this.walkmesh.mesh.position.z += 0.001;
@@ -250,11 +262,11 @@ export class ModuleRoom extends ModuleObject {
 
   }
 
-  loadWalkmesh(ResRef = '', onLoad = null ){
+  loadWalkmesh(ResRef = '', onLoad?: Function ){
     
-    let wokKey = Global.kotorKEY.GetFileKey(ResRef, ResourceTypes['wok']);
+    let wokKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['wok']);
     if(wokKey != null){
-      Global.kotorKEY.GetFileData(wokKey, (buffer) => {
+      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
 
         let wok = new OdysseyWalkMesh(new BinaryReader(buffer));
         wok.name = ResRef;
@@ -284,7 +296,7 @@ export class ModuleRoom extends ModuleObject {
 
             //Build the grass instance
             let grassGeometry = undefined;
-            let lm_texture = null;
+            let lm_texture: any = null;
             
             for(let i = 0; i < 4; i++){
               let blade = new THREE.PlaneGeometry(GameState.module.area.Grass.QuadSize, GameState.module.area.Grass.QuadSize, 1, 1);
@@ -327,7 +339,7 @@ export class ModuleRoom extends ModuleObject {
             let offsets = [];
             let grassUVs = [];
             let lmUVs = [];
-            let vector = new THREE.Vector4();
+            let vector = new THREE.Vector3();
 
             let grass_material = new THREE.ShaderMaterial({
               uniforms: THREE.UniformsUtils.merge([
@@ -336,7 +348,7 @@ export class ModuleRoom extends ModuleObject {
                   map: { value: null },
                   lightMap: { value: null },
                   time: { value: 0 },
-                  ambientColor: { value: new THREE.Color().setHex('0x'+(GameState.module.area.SunFogColor).toString(16)) },
+                  ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(GameState.module.area.SunFogColor).toString(16))) },
                   windPower: { value: GameState.module.area.WindPower },
                   playerPosition: { value: new THREE.Vector3 },
                   alphaTest: { value: GameState.module.area.AlphaTest }
@@ -348,7 +360,7 @@ export class ModuleRoom extends ModuleObject {
               side: THREE.DoubleSide,
               transparent: false,
               fog: true,
-              visible: iniConfig.getProperty('Graphics Options.Grass'),
+              visible: GameState.iniConfig.getProperty('Graphics Options.Grass'),
               //blending: 5
             });
         
@@ -379,7 +391,7 @@ export class ModuleRoom extends ModuleObject {
               }
 
               for(let j = 0; j < grassCount; j++){
-                let instance = {
+                let instance: any = {
                   position: {x: 0, y: 0, z: 0},
                   orientation: {x: 0, y: 0, z: 0, w: 0},
                   uvs: {uv1: this.getRandomGrassUVIndex(), uv2: this.getRandomGrassUVIndex(), uv3: this.getRandomGrassUVIndex(), uv4: this.getRandomGrassUVIndex()}
@@ -431,7 +443,7 @@ export class ModuleRoom extends ModuleObject {
             GameState.group.grass.add(this.grass);
 
             //Load in the grass texture
-            TextureLoader.Load(GameState.module.area.Grass.TexName, (grassTexture) => {
+            TextureLoader.Load(GameState.module.area.Grass.TexName, (grassTexture: OdysseyTexture) => {
               if(grassTexture){
                 grassTexture.minFilter = THREE.LinearFilter;
                 grassTexture.magFilter = THREE.LinearFilter;
@@ -439,7 +451,7 @@ export class ModuleRoom extends ModuleObject {
                 grass_material.uniformsNeedUpdate = true;
                 grass_material.needsUpdate = true;
                 //Load in the grass lm texture
-                TextureLoader.Load(lm_texture, (lmTexture) => {
+                TextureLoader.Load(lm_texture, (lmTexture: OdysseyTexture) => {
                   if(lmTexture){
                     lmTexture.minFilter = THREE.LinearFilter;
                     lmTexture.magFilter = THREE.LinearFilter;
@@ -470,7 +482,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
   
-  containsPoint2d(point){
+  containsPoint2d(point: any){
 
     if(!this.model)
       return false;
@@ -479,7 +491,7 @@ export class ModuleRoom extends ModuleObject {
       point.y < this.model.box.min.y || point.y > this.model.box.max.y ? false : true;
   }
   
-  containsPoint3d(point){
+  containsPoint3d(point: any){
 
     if(!this.model)
       return false;
@@ -489,7 +501,7 @@ export class ModuleRoom extends ModuleObject {
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
   }
 
-  findWalkableFace( object = undefined ){
+  findWalkableFace( object?: ModuleObject ){
     let face;
     if(object instanceof ModuleObject && this.walkmesh){
       for(let j = 0, jl = this.walkmesh.walkableFaces.length; j < jl; j++){

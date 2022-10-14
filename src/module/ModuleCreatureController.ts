@@ -25,7 +25,6 @@ import { Utility } from "../utility/Utility";
  */
 
 export abstract class ModuleCreatureController extends ModuleObject {
-  lipObject: LIPObject;
   equipment: { HEAD: any; ARMOR: any; ARMS: any; RIGHTHAND: any; LEFTHAND: any; LEFTARMBAND: any; RIGHTARMBAND: any; IMPLANT: any; BELT: any; CLAW1: any; CLAW2: any; CLAW3: any; HIDE: any; };
 
   constructor(gff: GFFObject){
@@ -47,7 +46,7 @@ export abstract class ModuleCreatureController extends ModuleObject {
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
-    if(GameState.Mode == GameState.MODES.INGAME || GameState.Mode == GameState.MODES.MINIGAME){
+    if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME){
 
       if(this.animState == ModuleCreatureAnimState.IDLE){
         this.footstepEmitter.Stop();
@@ -93,7 +92,7 @@ export abstract class ModuleCreatureController extends ModuleObject {
           if(this.damageList[i].delay <= 0){
             this.subtractHP(this.damageList[i].amount);
 
-            let painsound = THREE.Math.randInt(0, 1);
+            let painsound = THREE.MathUtils.randInt(0, 1);
             switch(painsound){
               case 1:
                 this.PlaySoundSet(SSFObjectType.PAIN_2);
@@ -888,7 +887,7 @@ export abstract class ModuleCreatureController extends ModuleObject {
     return (oObject instanceof ModuleObject && this.lastAttackTarget == oObject && oObject.lastAttackTarget == this && oObject.getEquippedWeaponType() == 1 && this.getEquippedWeaponType() == 1);
   }
 
-  attackCreature(target: ModuleObject, feat: any, isCutsceneAttack = false, attackDamage = 0, attackAnimation: any, attackResult: any){
+  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack = false, attackDamage = 0, attackAnimation?: any, attackResult?: any){
 
     //console.log('attackCreature', this, target, feat);
 

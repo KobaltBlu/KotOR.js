@@ -1,3 +1,5 @@
+import { ModuleCalendar } from ".";
+import { GFFObject } from "../resource/GFFObject";
 
 
 export class ModuleTimeManager {
@@ -16,6 +18,7 @@ export class ModuleTimeManager {
   duskHour = 18;
 
   enabled = true;
+  calendar: ModuleCalendar;
 
   constructor(){
     this.calendar = new ModuleCalendar();
@@ -66,7 +69,7 @@ export class ModuleTimeManager {
     return calendar;
   }
 
-  setMinutesPerHour(mph){
+  setMinutesPerHour(mph: number = 0){
     this.minutesPerHour = mph | 0;
   }
 
@@ -86,7 +89,7 @@ export class ModuleTimeManager {
     return this.pauseTime % ModuleCalendar.MILISECONDS_IN_SECOND | 0;
   }
 
-  getFutureTimeFromSeconds(seconds){
+  getFutureTimeFromSeconds(seconds: number = 0){
     console.log('getFutureTimeFromSeconds', seconds);
     let future = this.calendar.clone();
     future.advanceDeltaTime(seconds);
@@ -94,7 +97,7 @@ export class ModuleTimeManager {
     return future;
   }
 
-  getMilisecondsElapsed(day, time){
+  getMilisecondsElapsed(day: number = 0, time: number = 0){
     const days_since = (this.pauseDay - day)|0;
     const time_since = (this.pauseTime - time) |0;
     return (days_since * this.calendar.MAX_DAY_TIME)|0 + time_since;
@@ -104,7 +107,7 @@ export class ModuleTimeManager {
     return `${('0000'+this.year).slice(-4)}-${('00'+this.month).slice(-2)}-${('00'+this.day).slice(-2)} ${('00'+this.hour).slice(-2)}:${('00'+this.minute).slice(-2)}:${('00'+this.second).slice(-2)}.${('0000'+this.milisecond).slice(-4)}`;
   }
 
-  setFromIFO(ifo){
+  setFromIFO(ifo: GFFObject){
     if(ifo instanceof GFFObject){
       if(ifo.RootNode.HasField('Mod_PauseDay')){
         this.pauseDay = ifo.GetFieldByLabel('Mod_PauseDay').GetValue();
@@ -164,7 +167,7 @@ export class ModuleTimeManager {
     return this.calendar.milisecond;
   }
 
-  set milisecond(milisecond = 0){
+  set milisecond(milisecond: number){
     this.calendar.milisecond = milisecond|0;
   }
 
@@ -172,7 +175,7 @@ export class ModuleTimeManager {
     return this.calendar.second;
   }
 
-  set second(second = 0){
+  set second(second: number){
     this.calendar.second = second|0;
   }
 
@@ -180,7 +183,7 @@ export class ModuleTimeManager {
     return this.calendar.minute;
   }
 
-  set minute(minute = 0){
+  set minute(minute: number){
     this.calendar.minute = minute|0;
   }
 
@@ -188,7 +191,7 @@ export class ModuleTimeManager {
     return this.calendar.hour;
   }
 
-  set hour(hour = 0){
+  set hour(hour: number){
     this.calendar.hour = hour|0;
   }
 
@@ -196,7 +199,7 @@ export class ModuleTimeManager {
     return this.calendar.day;
   }
 
-  set day(day = 0){
+  set day(day: number){
     this.calendar.day = day|0;
   }
 
@@ -204,7 +207,7 @@ export class ModuleTimeManager {
     return this.calendar.month;
   }
 
-  set month(month = 0){
+  set month(month: number){
     this.calendar.month = month|0;
   }
 
@@ -212,7 +215,7 @@ export class ModuleTimeManager {
     return this.calendar.year;
   }
 
-  set year(year = 0){
+  set year(year: number){
     this.calendar.year = year|0;
   }
 
@@ -220,7 +223,7 @@ export class ModuleTimeManager {
     return this.calendar.pauseTime|0;
   }
 
-  set pauseTime(pauseTime = 0){
+  set pauseTime(pauseTime: number){
     this.calendar.pauseTime = pauseTime|0;
   }
 
@@ -228,7 +231,7 @@ export class ModuleTimeManager {
     return this.calendar.pauseDay|0;
   }
 
-  set pauseDay(pauseDay = 0){
+  set pauseDay(pauseDay: number){
     this.calendar.pauseDay = pauseDay|0;
   }
 
@@ -236,7 +239,7 @@ export class ModuleTimeManager {
     return this.calendar.minutesPerHour;
   }
 
-  set minutesPerHour(minutesPerHour = 0){
+  set minutesPerHour(minutesPerHour: number){
     this.calendar.minutesPerHour = minutesPerHour|0;
   }
 

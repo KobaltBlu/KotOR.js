@@ -2,14 +2,20 @@
  */
 
 import { ModuleObject } from ".";
+import * as THREE from "three";
+import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel } from "../odyssey";
 
 /* @file
  * The ModuleMGTrack class.
  */
 
 export class ModuleMGTrack extends ModuleObject {
+  index: number;
+  track: any;
 
-  constructor(args={}){
+  constructor(args: any = {}){
     super();
 
     args = Object.assign({
@@ -29,21 +35,21 @@ export class ModuleMGTrack extends ModuleObject {
 
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(typeof onLoad == 'function')
       onLoad();
   }
 
-  LoadModel (onLoad = null){
+  LoadModel (onLoad?: Function){
     GameState.ModelLoader.load({
       file: this.track,
-      onLoad: (mdl) => {
+      onLoad: (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (model) => {
+          onComplete: (model: OdysseyModel3D) => {
             try{
               console.log('track', model);
               this.model = model;

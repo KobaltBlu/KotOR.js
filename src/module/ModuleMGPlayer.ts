@@ -1,15 +1,59 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleObject } from ".";
+import { ModuleMGEnemy, ModuleMGGunBank, ModuleMGGunBullet, ModuleMGObstacle, ModuleObject } from ".";
+import { GFFObject } from "../resource/GFFObject";
+import * as THREE from "three";
+import { GameState } from "../GameState";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
+import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScript } from "../nwscript/NWScript";
 
 /* @file
  * The ModuleMGPlayer class.
  */
 
 export class ModuleMGPlayer extends ModuleObject {
+  camera: any;
+  gunBanks: any[];
+  models: any[];
+  modelProps: any[];
+  track: OdysseyObject3D;
+  bullets: any[];
+  no_rotate: THREE.Group;
+  animationManagers: any[];
+  speed_min: number;
+  speed_max: number;
+  accel_secs: number;
+  accel_lateral_secs: number;
+  lateralForce: number;
+  invince: number;
+  gear: number;
+  gunTimer: number;
+  jumpVelcolity: number;
+  boostVelocity: number;
+  falling: boolean;
+  alive: boolean;
+  tunnel: { neg: { x: number; y: number; z: number; }; pos: { x: number; y: number; z: number; }; };
+  sphere_geom: THREE.Mesh;
+  hit_points: any;
+  max_hps: any;
+  onCreateRun: boolean;
+  sphere_radius: number;
+  invince_period: number;
+  tmpPos: THREE.Vector3;
+  lastRoom: any;
+  cameraName: any;
+  gun_hook: THREE.Object3D;
+  bump_damage: any;
+  cameraRotate: any;
+  num_loops: any;
+  trackName: any;
 
-  constructor(template = null){
+  constructor(template: GFFObject){
     super();
     console.log('ModuleMGPlayer', template, this);
     this.template = template;
@@ -18,8 +62,8 @@ export class ModuleMGPlayer extends ModuleObject {
     this.gunBanks = [];
     this.models = [];
     this.modelProps = [];
-    this.model = new THREE.Object3D();
-    this.track = new THREE.Object3D();
+    this.model = new OdysseyModel3D();
+    this.track = new OdysseyObject3D();
 
     this.bullets = [];
 
@@ -73,7 +117,7 @@ export class ModuleMGPlayer extends ModuleObject {
     return this.max_hps;
   }
 
-  setTrack(model = new THREE.Object3D()){
+  setTrack(model = new OdysseyObject3D()){
     console.log('track', model);
     this.track = model;
     //this.position = model.position;
@@ -221,16 +265,20 @@ export class ModuleMGPlayer extends ModuleObject {
     
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
 
   }
 
   damage(damage = 0){
     if(this.alive){
       this.hit_points -= damage;
+      let model: OdysseyModel3D;
       for(let i = 0; i < this.model.children.length; i++){
-        if(this.model.children[i] instanceof OdysseyModel3D && this.model.children[i].bonesInitialized && this.model.children[i].visible){
-          this.model.children[i].playAnimation('damage', false);
+        model = (this.model.children[i] as OdysseyModel3D);
+        if(model instanceof OdysseyModel3D){
+          if(model.bonesInitialized && model.visible){
+            model.playAnimation('damage', false);
+          }
         }
       }
       this.onDamage();
@@ -453,7 +501,7 @@ export class ModuleMGPlayer extends ModuleObject {
           let average = new THREE.Vector3();
           let edgeLine = undefined;
           let distanceOffset = 0;
-          let force = 0;
+          let force: THREE.Vector3;
           for(let i = 0, len = plcEdgeLines.length; i < len; i++){
             edgeLine = plcEdgeLines[i];
             distanceOffset = edgeLine.maxDistance - edgeLine.distance;
@@ -596,7 +644,6 @@ export class ModuleMGPlayer extends ModuleObject {
         this.attachToRoom(GameState.module.area.rooms[this.rooms[0]]);
         return;
       }
-    }else{
       this.findWalkableFace();
     }
   }
@@ -623,20 +670,20 @@ export class ModuleMGPlayer extends ModuleObject {
     return face;
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     this.InitProperties();
     GameState.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
   }
 
-  LoadCamera( onLoad = null ){
+  LoadCamera( onLoad?: Function ){
     if(this.cameraName){
       GameState.ModelLoader.load({
         file: this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               try{
                 this.camera = model;
                 model.name = this.cameraName;
@@ -662,16 +709,16 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  LoadModel (onLoad = null){
+  LoadModel (onLoad?: Function){
 
     let loop = new AsyncLoop({
       array: this.modelProps,
-      onLoop: (item, asyncLoop) => {
+      onLoop: (item: any, asyncLoop: AsyncLoop) => {
         GameState.ModelLoader.load({
           file: item.model.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl) => {
+          onLoad: (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
-              onComplete: (model) => {
+              onComplete: (model: OdysseyModel3D) => {
                 try{
                   if(item.isRotating){
                     this.model.add(model);
@@ -705,10 +752,10 @@ export class ModuleMGPlayer extends ModuleObject {
 
   }
 
-  LoadGunBanks(onLoad = null){
+  LoadGunBanks(onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.gunBanks,
-      onLoop: (gunbank, asyncLoop) => {
+      onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
         gunbank.Load().then( () => {
           this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
@@ -736,10 +783,11 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onDamage(){
+  onDamage(): boolean{
     if(this.scripts.onDamage instanceof NWScriptInstance){
       this.scripts.onDamage.nwscript.newInstance().run(this, 0);
     }
+    return true;
   }
 
   onFire(){
@@ -754,7 +802,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onHitBullet( bullet = undefined ){
+  onHitBullet( bullet: ModuleMGGunBullet ){
     if(this.scripts.onHitBullet instanceof NWScriptInstance){
       const instance = this.scripts.onHitBullet.nwscript.newInstance();
       instance.mgBullet = bullet;
@@ -762,7 +810,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onHitFollower( follower = undefined ){
+  onHitFollower( follower: ModuleMGEnemy ){
     if(this.scripts.onHitFollower instanceof NWScriptInstance){
       const instance = this.scripts.onHitFollower.nwscript.newInstance();
       instance.mgFollower = follower;
@@ -770,7 +818,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onHitObstacle( obstacle = undefined ){
+  onHitObstacle( obstacle: ModuleMGObstacle ){
     if(this.scripts.onHitObstacle instanceof NWScriptInstance){
       const instance = this.scripts.onHitObstacle.nwscript.newInstance();
       instance.mgObstacle = obstacle;
@@ -784,7 +832,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  LoadScripts (onLoad = null){
+  LoadScripts (onLoad?: Function){
     this.scripts = {
       onAccelerate: undefined,
       onAnimEvent: undefined,
@@ -848,7 +896,7 @@ export class ModuleMGPlayer extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -905,22 +953,22 @@ export class ModuleMGPlayer extends ModuleObject {
       this.trackName = this.template.GetFieldByLabel('Track').GetValue();
 
     if(this.template.RootNode.HasField('TunnelXNeg'))
-      this.tunnel.neg.x = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelXNeg').GetValue());
+      this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelXNeg').GetValue());
 
     if(this.template.RootNode.HasField('TunnelXPos'))
-      this.tunnel.pos.x = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelXPos').GetValue());
+      this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelXPos').GetValue());
     
     if(this.template.RootNode.HasField('TunnelYNeg'))
-      this.tunnel.neg.y = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelYNeg').GetValue());
+      this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelYNeg').GetValue());
 
     if(this.template.RootNode.HasField('TunnelYPos'))
-      this.tunnel.pos.y = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelYPos').GetValue());
+      this.tunnel.pos.y = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelYPos').GetValue());
 
     if(this.template.RootNode.HasField('TunnelZNeg'))
-      this.tunnel.neg.z = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelZNeg').GetValue());
+      this.tunnel.neg.z = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelZNeg').GetValue());
 
     if(this.template.RootNode.HasField('TunnelZPos'))
-      this.tunnel.pos.z = THREE.Math.degToRad(this.template.GetFieldByLabel('TunnelZPos').GetValue());
+      this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelZPos').GetValue());
 
     if(this.template.RootNode.HasField('Models')){
       let models = this.template.GetFieldByLabel('Models').GetChildStructs();

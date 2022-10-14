@@ -1,15 +1,33 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleObject } from ".";
+import { ModuleMGGunBullet, ModuleObject } from ".";
+import { GameState } from "../GameState";
+import { OdysseyModel } from "../odyssey";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyModel3D } from "../three/odyssey";
 
 /* @file
  * The ModuleMGGunBank class.
  */
 
 export class ModuleMGGunBank extends ModuleObject {
+  bullets: ModuleMGGunBullet[];
+  owner: ModuleObject;
+  isPlayer: boolean = false;
+  proto_bullet: any;
+  fire_sound: any;
+  bulletTemplate: any;
+  bullet_hook: any;
+  gunModel: any;
+  bankID: any;
+  fireSound: any;
+  horizSpread: any;
+  inaccuracy: any;
+  sensingRadius: any;
+  vertSpread: any;
 
-  constructor( template = undefined, owner = undefined, isPlayer = false ){
+  constructor( template: GFFObject, owner: ModuleObject, isPlayer: boolean = false ){
     super();
     this.template = template;
     this.bullets = [];
@@ -47,7 +65,7 @@ export class ModuleMGGunBank extends ModuleObject {
     }
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     
   }
 
@@ -78,7 +96,7 @@ export class ModuleMGGunBank extends ModuleObject {
 
   Load(){
     this.InitProperties();
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       this.LoadModel().then( () => {
         resolve();
       });
@@ -86,12 +104,12 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   LoadModel(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       GameState.ModelLoader.load({
         file: this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.model = model;
               this.bullet_hook = this.model.getObjectByName('bullethook0');
               resolve();

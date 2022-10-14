@@ -1,22 +1,69 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleObject, ModuleRoom } from ".";
+import { ModuleCreature, ModuleItem, ModuleObject, ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
+import { BinaryReader } from "../BinaryReader";
+import { GameEffect } from "../effects";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { SSFObjectType } from "../interface/resource/SSFType";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { InventoryManager } from "../managers/InventoryManager";
+import { KEYManager } from "../managers/KEYManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
 
 /* @file
  * The ModulePlaceable class.
  */
 
 export class ModulePlaceable extends ModuleObject {
+  openState: boolean;
+  _state: ModulePlaceableState;
+  lastUsedBy: any;
+  animationState: number;
+  bodyBag: number;
+  closeLockDC: number;
+  conversation: string;
+  disarmDC: number;
+  fort: number;
+  genericType: number;
+  hasInventory: boolean;
+  hardness: number;
+  interruptable: boolean;
+  keyRequired: boolean;
+  lockable: boolean;
+  locked: boolean;
+  name: string;
+  openLockDC: number;
+  paletteID: number;
+  partyInteract: boolean;
+  portraitId: number;
+  ref: number;
+  static: boolean;
+  trapDetectDC: number;
+  trapFlag: number;
+  will: number;
+  x: number;
+  y: number;
+  z: number;
+  defaultAnimPlayed: boolean;
+  useable: any;
+  isBodyBag: any;
+  lightState: any;
 
   constructor ( gff = new GFFObject()) {
     super(gff);
@@ -142,7 +189,7 @@ export class ModulePlaceable extends ModuleObject {
 
       this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
 
-      /*if(this.model.animations.length){
+      /*if(this.model.odysseyAnimations.length){
 
         let animState = this.getAnimationState();
 
@@ -183,7 +230,7 @@ export class ModulePlaceable extends ModuleObject {
                 }
               break;
               default:
-                this.model.playAnimation(this.model.animations[0], false);
+                this.model.playAnimation(this.model.odysseyAnimations[0], false);
               break;
             }
 
@@ -262,23 +309,19 @@ export class ModulePlaceable extends ModuleObject {
     return this.locked;
   }
 
-  setLocked(iValue){
-    this.locked = iValue ? true : false;
+  setLocked(value: boolean){
+    this.locked = value ? true : false;
   }
 
   requiresKey(){
     return this.keyRequired ? true : false;
   }
 
-  keyName(){
-    return this.keyName;
-  }
-
   getAnimationState(){
     return this.animationState;
   }
 
-  setAnimationState(state){
+  setAnimationState(state: ModulePlaceableState){
     this.animationState = state;
   }
 
@@ -340,13 +383,14 @@ export class ModulePlaceable extends ModuleObject {
     return [];
   }
 
-  getItem(resRef = ''){
+  getItem(resRef = ''): ModuleItem {
     for(let i = 0; i<this.inventory.length; i++){
       let item = this.inventory[i];
-      if(item.getTag().toLowerCase() == resRef.toLowerCase())
+      if(item.getTag().toLowerCase() == resRef.toLowerCase()){
         return item;
+      }
     }
-    return false;
+    return;
   }
 
   getInventory(){
@@ -361,10 +405,13 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   getAppearance(){
-    if(GameKey == 'TSL'){
-      return Global.kotor2DA['placeables'].getRowByIndex(this.getAppearanceId());
-    }else{
-      return Global.kotor2DA['placeables'].rows[this.getAppearanceId()];
+    const plc2DA = TwoDAManager.datatables.get('placeables');
+    if(plc2DA){
+      if(GameState.GameKey == GameEngineType.TSL){
+        return plc2DA.getRowByIndex(this.getAppearanceId());
+      }else{
+        return plc2DA.rows[this.getAppearanceId()];
+      }
     }
   }
 
@@ -372,7 +419,10 @@ export class ModulePlaceable extends ModuleObject {
     let plc = this.getAppearance();
     let soundIdx = parseInt(plc.soundapptype.replace(/\0[\s\S]*$/g,''));
     if(!isNaN(soundIdx)){
-      return Global.kotor2DA['placeableobjsnds'].rows[soundIdx];
+      const plcSnd2DA = TwoDAManager.datatables.get('placeableobjsnds');
+      if(plcSnd2DA){
+        return plcSnd2DA.rows[soundIdx];
+      }
     }
     return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
   }
@@ -392,7 +442,7 @@ export class ModulePlaceable extends ModuleObject {
     return this.model;
   }
 
-  use(object = undefined){
+  use(object: ModuleObject){
 
     this.lastUsedBy = object;
 
@@ -421,8 +471,8 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  attemptUnlock(object = undefined){
-    if(object instanceof ModuleObject){
+  attemptUnlock(object: ModuleObject){
+    if(object instanceof ModuleCreature){
       let d20 = 20;//d20 rolls are auto 20's outside of combat
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
@@ -442,7 +492,7 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  close(object = null){
+  close(object: ModuleObject){
     if(this.scripts.onClosed instanceof NWScriptInstance){
       //console.log('Running script', this.scripts.onUsed)
       this.scripts.onClosed.run(this);
@@ -461,14 +511,14 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.utp,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
           this.template.Merge(gff);
           this.InitProperties();
           this.LoadInventory( () => {
@@ -498,15 +548,15 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  LoadModel ( onLoad = null ){
+  LoadModel ( onLoad: Function ){
     let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     //console.log('modelName', modelName);
 
     GameState.ModelLoader.load({
       file: modelName,
-      onLoad: (mdl) => {
+      onLoad: (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (plc) => {
+          onComplete: (plc: OdysseyModel3D) => {
 
             let scene;
             if(this.model != null){
@@ -551,7 +601,7 @@ export class ModulePlaceable extends ModuleObject {
     });
   }
 
-  LoadScripts (onLoad = null){
+  LoadScripts (onLoad?: Function){
     this.scripts = {
       onClosed: undefined,
       onDamaged: undefined,
@@ -624,7 +674,7 @@ export class ModulePlaceable extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -643,7 +693,7 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  LoadInventory( onLoad = null ){
+  LoadInventory( onLoad?: Function ){
 
     let inventory = this.getItemList();
 
@@ -661,7 +711,7 @@ export class ModulePlaceable extends ModuleObject {
     itemLoop(0);
   }
 
-  LoadItem( template, onLoad = null){
+  LoadItem( template: GFFObject, onLoad?: Function){
 
     let item = new ModuleItem(template);
     item.InitProperties();
@@ -680,11 +730,10 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  LoadWalkmesh(ResRef = '', onLoad = null ){
-    
-    let wokKey = Global.kotorKEY.GetFileKey(ResRef, ResourceTypes['pwk']);
+  LoadWalkmesh(ResRef = '', onLoad?: Function){
+    let wokKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['pwk']);
     if(wokKey != null){
-      Global.kotorKEY.GetFileData(wokKey, (buffer) => {
+      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
 
         this.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.walkmesh.name = ResRef;
@@ -844,13 +893,13 @@ export class ModulePlaceable extends ModuleObject {
       this.will = this.template.GetFieldByLabel('Will').GetValue();
 
     if(this.template.RootNode.HasField('X'))
-      this.x = this.position.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
+      this.position.x = this.template.RootNode.GetFieldByLabel('X').GetValue();
 
     if(this.template.RootNode.HasField('Y'))
-      this.y = this.position.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
+      this.position.y = this.template.RootNode.GetFieldByLabel('Y').GetValue();
 
     if(this.template.RootNode.HasField('Z'))
-      this.z = this.position.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
+      this.position.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
 
     if(this.template.RootNode.HasField('Bearing'))
       this.bearing = this.rotation.z = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
@@ -896,7 +945,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(0);
     gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation);
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue();
+    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue('');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).SetValue( this.isBodyBag ? 1 : 0 );
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).SetValue(this.disarmDC);
 
@@ -1011,48 +1060,51 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ){
-    switch( animation_constant ){
-      case ModulePlaceableAnimState.DEFAULT:        //10000, //304 - 
-        return Global.kotor2DA.animations.rows[304];
-      case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
-        return Global.kotor2DA.animations.rows[305];
-      case ModulePlaceableAnimState.DEAD: 	    //10072, //307
-        return Global.kotor2DA.animations.rows[307];
-      case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
-        return Global.kotor2DA.animations.rows[308];
-      case ModulePlaceableAnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
-        return Global.kotor2DA.animations.rows[309];
-      case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
-        return Global.kotor2DA.animations.rows[310];
-      case ModulePlaceableAnimState.CLOSE: 			  //10076, //311 - NWSCRIPT Constant: 203
-        return Global.kotor2DA.animations.rows[311];
-      case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
-        return Global.kotor2DA.animations.rows[312];
-      case ModulePlaceableAnimState.OPEN_CLOSE:    //10078, //313
-        return Global.kotor2DA.animations.rows[313];
-      case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
-        return Global.kotor2DA.animations.rows[316];
-      case ModulePlaceableAnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
-        return Global.kotor2DA.animations.rows[317];
-      case ModulePlaceableAnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
-        return Global.kotor2DA.animations.rows[318];
-      case ModulePlaceableAnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
-        return Global.kotor2DA.animations.rows[319];
-      case ModulePlaceableAnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
-        return Global.kotor2DA.animations.rows[320];
-      case ModulePlaceableAnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
-        return Global.kotor2DA.animations.rows[321];
-      case ModulePlaceableAnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
-        return Global.kotor2DA.animations.rows[322];
-      case ModulePlaceableAnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
-        return Global.kotor2DA.animations.rows[323];
-      case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
-        return Global.kotor2DA.animations.rows[324];
-      case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213 
-        return Global.kotor2DA.animations.rows[325];
-    }
+    const animations2DA = TwoDAManager.datatables.get('animations');
+    if(animations2DA){
+      switch( animation_constant ){
+        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 - 
+          return animations2DA.rows[304];
+        case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
+          return animations2DA.rows[305];
+        case ModulePlaceableAnimState.DEAD: 	    //10072, //307
+          return animations2DA.rows[307];
+        case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
+          return animations2DA.rows[308];
+        case ModulePlaceableAnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
+          return animations2DA.rows[309];
+        case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
+          return animations2DA.rows[310];
+        case ModulePlaceableAnimState.CLOSE: 			  //10076, //311 - NWSCRIPT Constant: 203
+          return animations2DA.rows[311];
+        case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
+          return animations2DA.rows[312];
+        case ModulePlaceableAnimState.OPEN_CLOSE:    //10078, //313
+          return animations2DA.rows[313];
+        case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
+          return animations2DA.rows[316];
+        case ModulePlaceableAnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
+          return animations2DA.rows[317];
+        case ModulePlaceableAnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
+          return animations2DA.rows[318];
+        case ModulePlaceableAnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
+          return animations2DA.rows[319];
+        case ModulePlaceableAnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
+          return animations2DA.rows[320];
+        case ModulePlaceableAnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
+          return animations2DA.rows[321];
+        case ModulePlaceableAnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
+          return animations2DA.rows[322];
+        case ModulePlaceableAnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
+          return animations2DA.rows[323];
+        case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
+          return animations2DA.rows[324];
+        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213 
+          return animations2DA.rows[325];
+      }
 
-    return super.animationConstantToAnimation( animation_constant );
+      return super.animationConstantToAnimation( animation_constant );
+    }
   }
 
 }

@@ -1,11 +1,23 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { GFFObject } from "../resource/GFFObject";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import * as THREE from "three";
+import { GameState } from "../GameState";
+
 /* @file
  * The ModulePath class.
  */
 
 export class ModulePath {
+  _tmpVector: THREE.Vector3;
+  points: any[];
+  template: GFFObject;
+  name: string;
+  line: THREE.LineSegments;
+  initialized: boolean;
 
   constructor(pathName = ''){
     this._tmpVector = new THREE.Vector3(0, 0, 0);
@@ -15,11 +27,11 @@ export class ModulePath {
 
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     TemplateLoader.Load({
       ResRef: this.name,
       ResType: ResourceTypes.pth,
-      onLoad: (gff) => {
+      onLoad: (gff: GFFObject) => {
 
         this.template = gff;
         //console.log(this.template, gff, this)
@@ -42,7 +54,7 @@ export class ModulePath {
       for(let i = 0; i < _points.length; i++){
 
         let _pnt = _points[i];
-        let point = {
+        let point: any = {
           id: i,
           connections: [],
           first_connection: _pnt.fields.First_Conection.value,
@@ -56,7 +68,8 @@ export class ModulePath {
         color: 0x0000ff
       });
 
-      let geometry = new THREE.Geometry();
+      let geometry = new THREE.BufferGeometry();
+      const points: number[] =[];
 
       for(let i = 0; i < this.points.length; i++){
         let point = this.points[i];
@@ -73,13 +86,15 @@ export class ModulePath {
 
         for(let i = 0; i < this.points.length; i++){
           let point = this.points[i];
-          geometry.vertices.push(
-            new THREE.Vector3( point.vector.x, point.vector.y, -100 ),
-            new THREE.Vector3( point.vector.x, point.vector.y, 100 )
-          );
+          points.push(
+            point.vector.x, point.vector.y, -100,
+            point.vector.x, point.vector.y, 100
+          )
         }
 
       }
+
+      geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
           
       this.line = new THREE.LineSegments( geometry, material );
       GameState.scene.add( this.line );
@@ -125,7 +140,7 @@ export class ModulePath {
     return { startingPoint: startingPoint, endingPoint: endingPoint, closestPoint: closestPoint };
   }
 
-  traverseToPoint(origin, dest){
+  traverseToPoint(origin: any, dest: any){
 
     if(!this.points.length) return [dest];
 
@@ -155,13 +170,13 @@ export class ModulePath {
 
 class ComputedPath {
   cost = 0;
-  points = [];
-  closed_list = [];
-  starting_point = undefined;
-  ending_point = undefined;
+  points: any[] = [];
+  closed_list: any[] = [];
+  starting_point: any = undefined;
+  ending_point: any = undefined;
   complete = false;
 
-  constructor(starting_point = undefined, ending_point = undefined){
+  constructor(starting_point: any = undefined, ending_point: any = undefined){
     this.starting_point = starting_point;
     this.ending_point = ending_point;
     if(this.starting_point){
@@ -170,17 +185,17 @@ class ComputedPath {
     }
   }
 
-  isPointValid( point ){
+  isPointValid( point: any ){
     return (this.closed_list.indexOf(point.id) == -1);
   }
 
-  addPoint( point ){
+  addPoint( point: any ){
     this.points.push(point);
     this.addToClosedList( point );
     this.cost += this.getCost(point);
   }
 
-  addToClosedList( point ){
+  addToClosedList( point: any ){
     if(this.isPointValid(point)){
       this.closed_list.push(point.id);
     }
@@ -190,7 +205,7 @@ class ComputedPath {
     this.complete = true;
   }
 
-  walkConnections( point ){
+  walkConnections( point: any ): any {
     const child_paths = [];
     for(let i = 0; i < point.num_connections; i++){
       const connection = point.connections[i];
@@ -210,7 +225,7 @@ class ComputedPath {
     return child_paths.sort( (a, b) => { return (a.cost - b.cost) } )[0];
   }
 
-  getCost( point ){
+  getCost( point: any ){
     return point.vector.distanceTo( this.ending_point.vector );
   }
 

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CombatEngine } from "../CombatEngine";
+import { EffectLink, EffectRacialType } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
@@ -15,6 +16,7 @@ import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimSta
 import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
@@ -24,6 +26,7 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
@@ -36,6 +39,7 @@ export class ModuleObject {
   controlled: boolean;
   id: number;
   initialized: boolean;
+  isPlayer: boolean = false;
 
   AxisFront: THREE.Vector3;
   position: THREE.Vector3;
@@ -65,7 +69,7 @@ export class ModuleObject {
 
   inventory: ModuleItem[];
 
-  model: OdysseyObject3D;
+  model: OdysseyModel3D;
   xPosition: number;
   yPosition: number;
   zPosition: number;
@@ -83,7 +87,7 @@ export class ModuleObject {
   collisionTimer: number;
   perceptionTimer: number;
   tweakColor: number;
-  useTweakColor: number;
+  useTweakColor: boolean;
   hp: number;
   currentHP: number;
   faction: number;
@@ -161,11 +165,35 @@ export class ModuleObject {
   //Actions
   actionQueue: ActionQueue;
   action: Action;
+  
+  lipObject: LIPObject;
 
   static List = new Map();
   static COUNT: number = 1;
   static PLAYER_ID: number = 0x7fffffff;
   static OBJECT_INVALID: number = 0x7f000000;
+
+  lastTriggerEntered: ModuleObject;
+  lastTriggerExited: ModuleObject;
+  lastAreaEntered: ModuleObject;
+  lastAreaExited: ModuleObject;
+  lastModuleEntered: ModuleObject;
+  lastModuleExited: ModuleObject;
+  lastDoorEntered: ModuleObject;
+  lastDoorExited: ModuleObject;
+  lastPlaceableEntered: ModuleObject;
+  lastPlaceableExited: ModuleObject;
+  lastAoeEntered: ModuleObject;
+  lastAoeExited: ModuleObject;
+  lastAttemptedAttackTarget: ModuleObject;
+  lastAttackTarget: ModuleObject;
+  lastSpellTarget: ModuleObject;
+  lastAttemptedSpellTarget: ModuleObject;
+  lastSpellAttacker: ModuleObject;
+
+  lastCombatFeatUsed: any;
+  lastForcePowerUsed: any;
+  lastAttackResult: any;
 
   static ResetPlayerId(){
     ModuleObject.PLAYER_ID = 0x7fffffff;
@@ -214,7 +242,6 @@ export class ModuleObject {
 
     this.box = new THREE.Box3();
     this.sphere = new THREE.Sphere();
-    this.sphere.moduleObject = this;
     this.facing = 0;
     this.wasFacing = 0;
     this.facingTweenTime = 0;
@@ -260,7 +287,7 @@ export class ModuleObject {
     this.perceptionTimer = 0;
 
     this.tweakColor = 0;
-    this.useTweakColor = 0;
+    this.useTweakColor = false;
 
     this.hp = 0;
     this.currentHP = 0;
@@ -384,7 +411,7 @@ export class ModuleObject {
     if(this.model instanceof THREE.Object3D)
       return this.model;
     else
-      return this.model = new THREE.Object3D()
+      return this.model = new OdysseyModel3D();
   }
 
   isVisible(){
@@ -807,6 +834,10 @@ export class ModuleObject {
     }
   }
 
+  getAppearance(): any {
+    
+  }
+
   initEffects(){
     for(let i = 0, len = this.effects.length; i < len; i++){
       let effect = this.effects[i];
@@ -1034,7 +1065,7 @@ export class ModuleObject {
     }
   }
 
-  findWalkableFace(){
+  findWalkableFace(object?: ModuleObject){
     let face;
     let room;
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
@@ -1071,19 +1102,23 @@ export class ModuleObject {
         onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, { 
             onComplete: (effectMDL: OdysseyModel3D) => {
-              this.model.effects.push(effectMDL);
-              this.model.add(effectMDL);
-              //TextureLoader.LoadQueue();
-              effectMDL.playAnimation(0, false, () => {
-                effectMDL.stopAnimation();
-                this.model.remove(effectMDL);
-                effectMDL.disableEmitters();
-                setTimeout( () => {
-                  let index = this.model.effects.indexOf(effectMDL);
-                  effectMDL.dispose();
-                  this.model.effects.splice(index, 1);
-                }, 5000);
-              })
+              if(this.model instanceof OdysseyModel3D){
+                this.model.effects.push(effectMDL);
+                this.model.add(effectMDL);
+                //TextureLoader.LoadQueue();
+                effectMDL.playAnimation(0, false, () => {
+                  effectMDL.stopAnimation();
+                  this.model.remove(effectMDL);
+                  effectMDL.disableEmitters();
+                  setTimeout( () => {
+                    if(this.model instanceof OdysseyModel3D){
+                      let index = this.model.effects.indexOf(effectMDL);
+                      effectMDL.dispose();
+                      this.model.effects.splice(index, 1);
+                    }
+                  }, 5000);
+                })
+              }
             },
             manageLighting: false
           });
@@ -1336,10 +1371,6 @@ export class ModuleObject {
     return this.reflexSaveThrow;
   }
 
-  getWillSave(){
-    return this.willSaveThrow;
-  }
-
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = CombatEngine.DiceRoll(1, 'd20');
     let bonus = CombatEngine.GetMod(this.getCON());
@@ -1350,8 +1381,9 @@ export class ModuleObject {
 
     return 0;
   }
-  getCON(): any {
-    throw new Error("Method not implemented.");
+
+  getCON(): number {
+    return 0;;
   }
 
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -1364,8 +1396,13 @@ export class ModuleObject {
 
     return 0;
   }
-  getDEX(): any {
-    throw new Error("Method not implemented.");
+
+  getDEX(): number {
+    return 0;
+  }
+
+  getWillSave(){
+    return this.willSaveThrow;
   }
 
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -1378,8 +1415,13 @@ export class ModuleObject {
 
     return 0;
   }
-  getWIS(): any {
-    throw new Error("Method not implemented.");
+
+  getWIS(): number {
+    return 0;
+  }
+
+  getSkillLevel(value: number = 0): number {
+    return 0;
   }
 
   addEffect(effect: GameEffect, type = 0, duration = 0){
@@ -1596,16 +1638,16 @@ export class ModuleObject {
     
   }
 
-  setHP(nVal = 0){
-    this.currentHP = nVal;
+  setHP(value = 0){
+    this.currentHP = value;
   }
 
-  addHP(nVal = 0){
-    this.currentHP = (this.getHP() + nVal);
+  addHP(value = 0){
+    this.currentHP = (this.getHP() + value);
   }
 
-  subtractHP(nVal = 0){
-    this.setHP(this.getHP() - nVal);
+  subtractHP(value = 0){
+    this.setHP(this.getHP() - value);
   }
 
   getHP(){
@@ -1616,12 +1658,12 @@ export class ModuleObject {
     return this.hp;
   }
 
-  setMaxHP(nVal = 0){
-    return this.hp = nVal;
+  setMaxHP(value = 0){
+    return this.hp = value;
   }
 
-  setMinOneHP(iVal){
-    this.min1HP = iVal ? true : false;
+  setMinOneHP(value: boolean = false){
+    this.min1HP = value;
   }
 
   isPartyMember(){
@@ -1668,17 +1710,17 @@ export class ModuleObject {
       }
     }
 
-    if(APP_MODE == 'FORGE'){
-      if(tabManager.currentTab instanceof ModuleEditorTab){
-        frustum = tabManager.currentTab.viewportFrustum;
-        this.box.getBoundingSphere(this.sphere);
-        return frustum.intersectsSphere(this.sphere);
-      }
-      return false;
-    }else{
+    // if(APP_MODE == 'FORGE'){
+    //   if(tabManager.currentTab instanceof ModuleEditorTab){
+    //     frustum = tabManager.currentTab.viewportFrustum;
+    //     this.box.getBoundingSphere(this.sphere);
+    //     return frustum.intersectsSphere(this.sphere);
+    //   }
+    //   return false;
+    // }else{
       this.box.getBoundingSphere(this.sphere);
       return frustum.intersectsSphere(this.sphere);
-    }
+    // }
   }
 
 
@@ -1707,7 +1749,7 @@ export class ModuleObject {
   }
 
   getLocalNumber(index: number){
-    return this._locals.Numbers[index] ? this._locals.Numbers[index] as number : 0;
+    return (this._locals.Numbers as any)[index] ? (this._locals.Numbers as any)[index] as number : 0;
   }
 
   setLocalBoolean(index: number, bool: boolean){
@@ -1715,7 +1757,7 @@ export class ModuleObject {
   }
 
   setLocalNumber(index: number, value: number){
-    this._locals.Numbers[index] = value;
+    (this._locals.Numbers as any)[index] = value;
   }
 
   AssignCommand(command = 0){
@@ -1739,17 +1781,23 @@ export class ModuleObject {
   }
 
   getPerceptionRangePrimary(){
-    let range = Global.kotor2DA.ranges.rows[this.perceptionRange];
-    if(range){
-      return parseInt(range.primaryrange);
+    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      let range = ranges2DA.rows[this.perceptionRange];
+      if(range){
+        return parseInt(range.primaryrange);
+      }
     }
     return 1;
   }
 
   getPerceptionRangeSecondary(){
-    let range = Global.kotor2DA.ranges.rows[this.perceptionRange];
-    if(range){
-      return parseInt(range.secondaryrange);
+    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      let range = ranges2DA.rows[this.perceptionRange];
+      if(range){
+        return parseInt(range.secondaryrange);
+      }
     }
     return 1;
   }
@@ -1918,6 +1966,9 @@ export class ModuleObject {
 
 
 
+  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
+    throw new Error("Method not implemented.");
+  }
 
 
 
@@ -2531,7 +2582,7 @@ export class ModuleObject {
         case ModuleCreatureAnimState.HORROR:
           return animations2DA.rows[74];
         break;
-        case ModuleCreatureAnimState.USE_COMPUTER1:
+        case ModuleCreatureAnimState.USE_COMPUTER2:
           return animations2DA.rows[43];
         break;
         case ModuleCreatureAnimState.PERSUADE:

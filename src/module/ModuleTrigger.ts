@@ -2,12 +2,30 @@
  */
 
 import { ModuleObject } from ".";
+import { GFFObject } from "../resource/GFFObject";
+import * as THREE from "three";
+import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
+import { GameState } from "../GameState";
+import { TemplateLoader } from "../loaders/TemplateLoader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { PartyManager } from "../managers/PartyManager";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScript } from "../nwscript/NWScript";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 
 /* @file
  * The ModuleTrigger class.
  */
 
 export class ModuleTrigger extends ModuleObject {
+  objectsInsideIdx: number;
+  lastObjectEntered: any;
+  lastObjectExited: any;
+  triggered: boolean;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -89,14 +107,15 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   getGeometry(){
-    let trigGeom = new THREE.Geometry();
-    trigGeom.vertices = this.vertices.slice();
+    let trigGeom = new THREE.BufferGeometry();
+    let vertices = this.vertices.slice();
 
     try{
-      let holes = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( trigGeom.vertices, holes );
+      let holes: THREE.Vec2[][] = [];
+      let faces: OdysseyFace3[] = [];
+      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
       for( let i = 0; i < triangles.length; i++ ){
-        trigGeom.faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
+        faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
       }
     }catch(e){
       console.error('ModuleTrigger', 'Failed to generate faces', {
@@ -105,21 +124,21 @@ export class ModuleTrigger extends ModuleObject {
       })
     }
 
-    trigGeom.computeFaceNormals();
+    // trigGeom.computeFaceNormals();
     trigGeom.computeVertexNormals();
     trigGeom.computeBoundingSphere();
 
     return trigGeom;
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
 
       TemplateLoader.Load({
         ResRef: this.getTemplateResRef(),
         ResType: ResourceTypes.utt,
-        onLoad: (gff) => {
+        onLoad: (gff: GFFObject) => {
 
           this.template.Merge(gff);
           this.InitProperties();
@@ -171,13 +190,13 @@ export class ModuleTrigger extends ModuleObject {
     });
 
     switch(this.getType()){
-      case UTTObject.Type.GENERIC:
+      case ModuleTriggerType.GENERIC:
         material.color.setHex(0xFF0000)
       break;
-      case UTTObject.Type.TRANSITION:
+      case ModuleTriggerType.TRANSITION:
         material.color.setHex(0x00FF00)
       break;
-      case UTTObject.Type.TRAP:
+      case ModuleTriggerType.TRAP:
         material.color.setHex(0xFFEB00)
       break;
     }
@@ -194,7 +213,7 @@ export class ModuleTrigger extends ModuleObject {
      * // this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
      */
 
-    this.mesh.moduleObject = this;
+    this.mesh.userData.moduleObject = this;
     this.mesh.visible = false;
     GameState.group.triggers.add(this.mesh);
   }
@@ -322,17 +341,15 @@ export class ModuleTrigger extends ModuleObject {
       }
     }
 
-    this.mesh.visible = Config.get('GameState.debug.trigger_geometry_show') ? true : false;
+    this.mesh.visible = Config.get('Game.debug.trigger_geometry_show') ? true : false;
 
   }
 
-  onEnter(object = undefined){
+  onEnter(object?: ModuleObject){
     console.log('ModuleTrigger', this.getTag(), 'enter 2')
     if(this.linkedToModule && !GameState.inDialog){
       if(object == GameState.getCurrentPlayer()){
-        GameState.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase(), () => { 
-          //console.log('Module Lded', this.getLinkedToModule().toLowerCase());
-        });
+        GameState.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }
     }else{
       console.log('ModuleTrigger', this.getTag(), 'enter 1')
@@ -350,7 +367,7 @@ export class ModuleTrigger extends ModuleObject {
     }
   }
 
-  onExit(object = undefined){
+  onExit(object?: ModuleObject){
     if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.onExit != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
@@ -360,7 +377,7 @@ export class ModuleTrigger extends ModuleObject {
     }
   }
 
-  LoadScripts( onLoad = null ){
+  LoadScripts( onLoad?: Function ){
 
     this.scripts = {
       onClick: undefined,
@@ -396,7 +413,7 @@ export class ModuleTrigger extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
@@ -609,6 +626,12 @@ export class ModuleTrigger extends ModuleObject {
 
     this.template = gff;
     return gff;
+  }
+  trapDetectDC(trapDetectDC: any) {
+    throw new Error("Method not implemented.");
+  }
+  trapFlag(trapFlag: any) {
+    throw new Error("Method not implemented.");
   }
 
   toToolsetInstance(){

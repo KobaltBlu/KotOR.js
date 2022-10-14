@@ -1,9 +1,38 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { GameEffect } from "../effects";
+import EngineLocation from "../engine/EngineLocation";
+import { GameState } from "../GameState";
+import { PartyManager } from "../managers/PartyManager";
+import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
 import { ModuleArea } from "./ModuleArea";
 import { ModuleTimeManager } from "./ModuleTimeManager";
+import * as THREE from "three";
+import { CombatEngine } from "../CombatEngine";
+import { MenuManager } from "../gui";
+import { TLKManager } from "../managers/TLKManager";
+import { ModuleObject, ModulePlayer } from ".";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScript } from "../nwscript/NWScript";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ERFObject } from "../resource/ERFObject";
+import { CurrentGame } from "../CurrentGame";
+import { InventoryManager } from "../managers/InventoryManager";
+import * as path from "path";
+import * as fs from "fs";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { RIMObject } from "../resource/RIMObject";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { ResourceLoader } from "../resource/ResourceLoader";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEvent } from "../events";
 
 /* @file
  * The Module class.
@@ -12,15 +41,15 @@ import { ModuleTimeManager } from "./ModuleTimeManager";
 export class Module {
   area: ModuleArea;
   timeManager: ModuleTimeManager;
-  scripts: {};
-  archives: any[];
-  effects: any[];
-  eventQueue: any[];
+  scripts: any = {};
+  archives: any[] = [];
+  effects: any[] = [];
+  eventQueue: any[] = [];
   customTokens: Map<any, any>;
   Expansion_Pack: any;
-  Mod_Area_list: any[];
+  Mod_Area_list: any[] = [];
   Mod_Creator_ID: number;
-  Mod_CutSceneList: any[];
+  Mod_CutSceneList: any[] = [];
   Mod_DawnHour: any;
   Mod_Description: any;
   Mod_DuskHour: any;
@@ -30,8 +59,8 @@ export class Module {
   Mod_Entry_X: any;
   Mod_Entry_Y: any;
   Mod_Entry_Z: any;
-  Mod_Expan_List: any[];
-  Mod_GVar_List: any[];
+  Mod_Expan_List: any[] = [];
+  Mod_GVar_List: any[] = [];
   Mod_Hak: any;
   Mod_ID: Buffer;
   Mod_IsSaveGame: number;
@@ -140,7 +169,7 @@ export class Module {
       //KOTOR modules should only ever have one area. But just incase lets loop through the list
       for(let i = 0; i < Mod_Area_listLen; i++){
         let Mod_Area = Mod_Area_list.ChildStructs[0];
-        let area = {};
+        let area: any = {};
 
         if(Mod_Area.HasField('Area_Name'))
           area.Area_Name = Mod_Area.GetFieldByLabel('Area_Name').GetValue()
@@ -240,16 +269,16 @@ export class Module {
     }
   }
 
-  addEffect(effect = undefined, lLocation = undefined){
+  addEffect(effect?: GameEffect, lLocation?: EngineLocation){
     if(effect instanceof GameEffect){
-      let object = {
+      let object: any = {
         model: new THREE.Object3D(),
         position: lLocation.position,
         dispose: function(){
           this.onRemove();
           this.removeEffect(this);
         },
-        removeEffect: function(effect){
+        removeEffect: function(effect: GameEffect){
           let index = GameState.module.effects.indexOf(effect);
           if(index >= 0){
             GameState.module.effects.splice(index, 1);
@@ -333,25 +362,25 @@ export class Module {
   }
 
   setReturnStrRef(enabled = false, str1 = -1, str2 = -1){
-    GameState.MenuMap.BTN_RETURN.setText(TLKManager.GetStringById(str1));
+    MenuManager.MenuMap.BTN_RETURN.setText(TLKManager.GetStringById(str1).Value);
   }
 
-  loadScene( onLoad = null, onProgress = null ){
+  loadScene( onLoad?: Function, onProgress?: Function ){
 
     PartyManager.party = [];
     
     ModuleObject.ResetPlayerId();
 
     if(this.area.SunFogOn && this.area.SunFogColor){
-      GameState.globalLight.color.setHex('0x'+this.area.SunFogColor.toString(16));
+      GameState.globalLight.color.setHex(parseInt('0x'+this.area.SunFogColor.toString(16)));
     }else{
-      GameState.globalLight.color.setHex('0x'+this.area.DynAmbientColor.toString(16));
+      GameState.globalLight.color.setHex(parseInt('0x'+this.area.DynAmbientColor.toString(16)));
     }
     
     GameState.globalLight.color.setRGB(
-      THREE.Math.clamp(GameState.globalLight.color.r, 0.2, 1),
-      THREE.Math.clamp(GameState.globalLight.color.g, 0.2, 1),
-      THREE.Math.clamp(GameState.globalLight.color.b, 0.2, 1),
+      THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
+      THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
+      THREE.MathUtils.clamp(GameState.globalLight.color.b, 0.2, 1),
     );
 
     GameState.camera.position.setX(this['Mod_Entry_X']);
@@ -359,45 +388,45 @@ export class Module {
     GameState.camera.position.setZ(this['Mod_Entry_Z'] + 2);
     GameState.camera.rotation.set(Math.PI / 2, -Math.atan2(this['Mod_Entry_Dir_X'], this['Mod_Entry_Dir_Y']), 0);
 
-    //this.camera.pitch = THREE.Math.radToDeg(this.camera.rotation.y) * -1;
-    //this.camera.yaw = THREE.Math.radToDeg(this.camera.rotation.x);
+    //this.camera.pitch = THREE.MathUtils.radToDeg(this.camera.rotation.y) * -1;
+    //this.camera.yaw = THREE.MathUtils.radToDeg(this.camera.rotation.x);
 
     let ypr = this.toEulerianAngle(GameState.camera.quaternion);
 
-    GameState.camera.pitch = THREE.Math.radToDeg(ypr.pitch);
-    GameState.camera.yaw = THREE.Math.radToDeg(ypr.yaw) * -1;
+    GameState.camera.userData.pitch = THREE.MathUtils.radToDeg(ypr.pitch);
+    GameState.camera.userData.yaw = THREE.MathUtils.radToDeg(ypr.yaw) * -1;
 
-    if (GameState.camera.pitch > 89.0)
-      GameState.camera.pitch = 89.0;
-    if (GameState.camera.pitch < -89.0)
-      GameState.camera.pitch = -89.0;
+    if (GameState.camera.userData.pitch > 89.0)
+      GameState.camera.userData.pitch = 89.0;
+    if (GameState.camera.userData.pitch < -89.0)
+      GameState.camera.userData.pitch = -89.0;
 
     for(let i = 0, len = this.area.cameras.length; i < len; i++){
       let cam = this.area.cameras[i];
       cam.InitProperties();
-      let camera = new THREE.PerspectiveCamera(cam.fov, $(window).innerWidth() / $(window).innerHeight(), 0.1, 1500);
+      let camera = new THREE.PerspectiveCamera(cam.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
       camera.up = new THREE.Vector3( 0, 1, 0 );
       camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
       camera.rotation.reorder('YZX');
       let quat = new THREE.Quaternion().copy(cam.orientation);
       let rot = quat.multiplyVector3(new THREE.Vector3(1, 1, 0));
-      camera.rotation.x = THREE.Math.degToRad(cam.pitch);
+      camera.rotation.x = THREE.MathUtils.degToRad(cam.pitch);
       camera.rotation.z = -Math.atan2(cam.orientation.w, -cam.orientation.x)*2;
 
       //Clipping hack
       camera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(camera.rotation));
 
-      camera.ingameID = cam.cameraID;
+      camera.userData.ingameID = cam.cameraID;
       GameState.staticCameras.push(camera);
 
-      camera._cam = cam;
+      camera.userData._cam = cam;
     }
 
     GameState.LoadScreen.setProgress(0);
 
     try{
-      GameState.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
-      GameState.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+      MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+      MenuManager.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
     }catch(e){
 
     }
@@ -411,7 +440,7 @@ export class Module {
 
   }
 
-  initScripts(onComplete = null){
+  initScripts(onComplete?: Function){
     let initScripts = [];
 
     if(this.scripts.onModLoad != ''){
@@ -426,7 +455,7 @@ export class Module {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: initScripts,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         console.log(key, _script);
         if(_script != '' && !(_script instanceof NWScriptInstance)){
@@ -455,14 +484,17 @@ export class Module {
   }
 
   getCameraStyle(){
-    return Global.kotor2DA["camerastyle"].rows[this.area.CameraStyle];
+    const cameraStyle2DA = TwoDAManager.datatables.get('camerastyle');
+    if(cameraStyle2DA){
+      return cameraStyle2DA.rows[this.area.CameraStyle];
+    }
   }
 
   setCustomToken(tokenNumber = 0, tokenValue = ''){
     this.customTokens.set(tokenNumber, tokenValue);
   }
 
-  getCustomToken(tokenNumber){
+  getCustomToken(tokenNumber: any){
     return this.customTokens.get(tokenNumber) || `<Missing CustomToken ${tokenNumber}>`;
   }
 
@@ -532,7 +564,7 @@ export class Module {
 
   save( isSaveGame = false ){
 
-    return new Promise( async (resolve, reject ) => {
+    return new Promise<void>( async (resolve, reject ) => {
 
       PartyManager.Save();
 
@@ -653,17 +685,20 @@ export class Module {
   }
 
   includeInSave(){
-    const moduleSave = Global.kotor2DA.modulesave.getRowByColumnAndValue('modulename', this.filename);
-    if(moduleSave){
-      return parseInt(moduleSave.includeInSave) == 0 ? false : true;
+    const modulesave2DA = TwoDAManager.datatables.get('modulesave');
+    if(modulesave2DA){
+      const moduleSave = modulesave2DA.getRowByColumnAndValue('modulename', this.filename);
+      if(moduleSave){
+        return parseInt(moduleSave.includeInSave) == 0 ? false : true;
+      }
     }
     return true;
   }
 
   static async GetModuleMod(modName = ''){
-    return new Promise( (resolve, reject) => {
+    return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'modules', modName+'.mod'), (mod) => {
+      new ERFObject(path.join(ApplicationProfile.directory, 'modules', modName+'.mod'), (mod: ERFObject) => {
         console.log('Module.GetModuleMod success', resource_path);
         resolve(mod);
       }, () => {
@@ -674,9 +709,9 @@ export class Module {
   }
 
   static async GetModuleRimA(modName = ''){
-    return new Promise( (resolve, reject) => {
+    return new Promise<RIMObject>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'.rim');
-      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'.rim'), (rim) => {
+      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'.rim'), (rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimA failed', resource_path);
@@ -686,9 +721,9 @@ export class Module {
   }
 
   static async GetModuleRimB(modName = ''){
-    return new Promise( (resolve, reject) => {
+    return new Promise<RIMObject>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'_s.rim');
-      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'_s.rim'), (rim) => {
+      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'_s.rim'), (rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimB failed', resource_path);
@@ -698,9 +733,9 @@ export class Module {
   }
 
   static async GetModuleLipsLoc(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<any>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'lips', 'localization.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'lips', 'localization.mod'), (mod) => {
+      new ERFObject(path.join(ApplicationProfile.directory, 'lips', 'localization.mod'), (mod: ERFObject) => {
         console.log('Module.GetModuleLipsLoc success', resource_path);
         resolve(mod);
       }, () => {
@@ -711,9 +746,9 @@ export class Module {
   }
 
   static async GetModuleLips(modName = ''){
-    return new Promise( (resolve, reject) => {
+    return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'lips', modName+'_loc.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'lips', modName+'_loc.mod'), (mod) => {
+      new ERFObject(path.join(ApplicationProfile.directory, 'lips', modName+'_loc.mod'), (mod: ERFObject) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleLips failed', resource_path);
@@ -723,9 +758,9 @@ export class Module {
   }
 
   static async GetModuleDLG(modName = ''){
-    return new Promise( (resolve, reject) => {
+    return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'_dlg.erf');
-      new ERFObject(resource_path, (mod) => {
+      new ERFObject(resource_path, (mod: ERFObject) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleDLG failed', resource_path);
@@ -735,8 +770,8 @@ export class Module {
   }
 
   static async GetModuleArchives(modName = ''){
-    return new Promise( async (resolve, reject) => {
-      let archives = [];
+    return new Promise<any[]>( async (resolve, reject) => {
+      let archives: any[] = [];
       let archive = undefined;
 
       let isModuleSaved = await CurrentGame.IsModuleSaved(modName);
@@ -786,7 +821,7 @@ export class Module {
         }
 
         //Locate the global LIPs file
-        archive = await Module.GetModuleLipsLoc(modName);
+        archive = await Module.GetModuleLipsLoc();
         if(archive instanceof ERFObject){
           archives.push(archive);
         }
@@ -806,8 +841,8 @@ export class Module {
   }
 
   static async GetModuleProjectArchives(modName = ''){
-    return new Promise( async (resolve, reject) => {
-      let archives = [];
+    return new Promise<any[]>( async (resolve, reject) => {
+      let archives: any[] = [];
       let archive = undefined;
 
       try{
@@ -838,29 +873,29 @@ export class Module {
   }
 
   //ex: end_m01aa end_m01aa_s
-  static BuildFromExisting(modName = null, waypoint = null, onComplete = null){
+  static BuildFromExisting(modName: string, waypoint?: any, onComplete?: Function){
     console.log('BuildFromExisting', modName);
     let module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
     GameState.module = module;
-    if(modName != null){
+    if(modName){
       try{
         Module.GetModuleArchives(modName).then( (archives) => {
           // console.log('archives', archives);
           GameState.module.archives = archives;
 
-          ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data) => {
+          ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
             
-            new GFFObject(ifo_data, (ifo, rootNode) => {
+            new GFFObject(ifo_data, (ifo) => {
 
               GameState.module.setFromIFO(ifo, GameState.isLoadingSave);
               GameState.time = GameState.module.timeManager.pauseTime / 1000;
 
-              ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data) => {
-                new GFFObject(data, (git, rootNode) => {
-                  ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data) => {
-                    new GFFObject(data, (are, rootNode) => {
+              ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data: Buffer) => {
+                new GFFObject(data, (git) => {
+                  ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data: Buffer) => {
+                    new GFFObject(data, (are) => {
                       module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                       module.Mod_Area_list = [module.area];
                       module.area.module = module;
@@ -878,7 +913,7 @@ export class Module {
                 });
               });
             });
-          }, (err) => {
+          }, (err: any) => {
             console.error('LoadModule', err);
             GameState.module = undefined;
           });
@@ -892,7 +927,7 @@ export class Module {
   }
 
   //This should only be used inside KotOR Forge
-  static FromProject(directory = null, onComplete = null){
+  static FromProject(directory?: string, onComplete?: Function){
     console.log('BuildFromExisting', directory);
     let module = new Module();
     module.transWP = null;
@@ -904,7 +939,7 @@ export class Module {
           //console.log('Module.FromProject', 'IFO', ifo);
           try{
             GameState.module.setFromIFO(ifo);
-            GameState.time = GameState.module.Mod_PauseTime / 1000;
+            GameState.time = GameState.module.timeManager.pauseTime / 1000;
 
             fs.readFile(path.join(directory, module.Mod_Entry_Area+'.git'), (err, data) => {
               new GFFObject(data, (git) => {
@@ -934,7 +969,7 @@ export class Module {
     return module;
   }
 
-  toEulerianAngle(q){
+  toEulerianAngle(q: any){
   	let ysqr = q.y * q.y;
 
   	// roll (x-axis rotation)
@@ -968,11 +1003,11 @@ export class Module {
       are: null,
       git: null,
       ifo: null
-    };
+    } as any;
 
   }
 
-  static FromJSON(path){
+  static FromJSON(path: any){
     let module = new Module();
     if(path != null){
       let json = JSON.parse(fs.readFileSync(path, 'utf8'));
@@ -983,7 +1018,7 @@ export class Module {
       module.area = Object.assign(new ModuleArea(), json.area);
 
     }else{
-      this.path = Global.Project.directory;
+      // this.path = Global.Project.directory;
     }
     return module;
   }
@@ -1005,7 +1040,7 @@ export class Module {
     ifo.RootNode.AddField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID', this.Expansion_Pack) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Mod_CutSceneList') );
     ifo.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_DawnHour', this.timeManager.dawnHour) );
-    ifo.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description'), this.Mod_Description );
+    ifo.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description') ).SetCExoLocString(this.Mod_Description);
     ifo.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_DuskHour', this.timeManager.duskHour) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Mod_Entry_Area', this.Mod_Entry_Area) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X', this.Mod_Entry_Dir_X) );
@@ -1021,7 +1056,7 @@ export class Module {
     ifo.RootNode.AddField( new GFFField(GFFDataType.VOID, 'Mod_ID') ).SetData(this.Mod_ID || Buffer.alloc(16));
     ifo.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame', 0) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour) );
-    ifo.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name'), this.Mod_Name );
+    ifo.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name') ).SetCExoLocString(this.Mod_Name );
     ifo.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scripts.onAcquirItem) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem', this.scripts.onActvItem) );
     ifo.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr', this.scripts.onClientEntr) );

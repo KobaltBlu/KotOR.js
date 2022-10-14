@@ -32,6 +32,8 @@ import { ModuleObject, ModuleItem, ModuleCreatureController } from "./";
 import { OdysseyModel } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { TwoDAManager } from "../managers/TwoDAManager";
+import { LIPObject } from "../resource/LIPObject";
+import { Utility } from "../utility/Utility";
 
 /* @file
  * The ModuleCreature class.
@@ -48,26 +50,6 @@ export class ModuleCreature extends ModuleCreatureController {
   isCommandable: boolean;
   lookAtObject: any;
   lookAtMatrix: THREE.Matrix4;
-  lastTriggerEntered: any;
-  lastTriggerExited: any;
-  lastAreaEntered: any;
-  lastAreaExited: any;
-  lastModuleEntered: any;
-  lastModuleExited: any;
-  lastDoorEntered: any;
-  lastDoorExited: any;
-  lastPlaceableEntered: any;
-  lastPlaceableExited: any;
-  lastAoeEntered: any;
-  lastAoeExited: any;
-  lastAttemptedAttackTarget: any;
-  lastAttackTarget: any;
-  lastSpellTarget: any;
-  lastAttemptedSpellTarget: any;
-  lastSpellAttacker: any;
-  lastCombatFeatUsed: any;
-  lastForcePowerUsed: any;
-  lastAttackResult: any;
   excitedDuration: number;
   bodyBag: number;
   bodyVariation: number;
@@ -124,12 +106,12 @@ export class ModuleCreature extends ModuleCreatureController {
   blockingTimer: number;
   groundTilt: THREE.Vector3;
   up: THREE.Vector3;
-  lipObject: any;
+  declare lipObject: LIPObject;
   walk: boolean;
   heardStrings: any[];
   targetPositions: any[];
-  audioEmitter: AudioEmitter;
-  footstepEmitter: AudioEmitter;
+  declare audioEmitter: AudioEmitter;
+  declare footstepEmitter: AudioEmitter;
   props: any;
   maxForcePoints: any;
   dex: any;
@@ -139,6 +121,7 @@ export class ModuleCreature extends ModuleCreatureController {
   ssf: SSFObject;
   joiningXP: any;
   skillPoints: any;
+  partyID: number;
   // appearance: any;
 
   constructor ( gff = new GFFObject() ) {
@@ -1138,11 +1121,14 @@ export class ModuleCreature extends ModuleCreatureController {
   }
 
   getAppearance(){
-    let eDisguise = this.getEffect(GameEffectType.EffectDisguise);
-    if(eDisguise){
-      return Global.kotor2DA["appearance"].rows[eDisguise.getInt(0)];
-    }else{
-      return Global.kotor2DA["appearance"].rows[this.appearance] || Global.kotor2DA["appearance"].rows[0];
+    const appearance2DA = TwoDAManager.datatables.get('appearance');
+    if(appearance2DA){
+      let eDisguise = this.getEffect(GameEffectType.EffectDisguise);
+      if(eDisguise){
+        return appearance2DA.rows[eDisguise.getInt(0)];
+      }else{
+        return appearance2DA.rows[this.appearance] || appearance2DA.rows[0];
+      }
     }
   }
 
@@ -1150,14 +1136,20 @@ export class ModuleCreature extends ModuleCreatureController {
     if(this.getWalkRateId() == 7){
       return parseFloat(this.getAppearance().rundist)
     }
-    return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].runrate);
+    const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
+    if(creaturespeed2DA){
+      return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].runrate);
+    }
   }
 
   getWalkSpeed(){
     if(this.getWalkRateId() == 7){
       return parseFloat(this.getAppearance().walkdist)
     }
-    return parseFloat(Global.kotor2DA.creaturespeed.rows[this.getWalkRateId()].walkrate);
+    const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
+    if(creaturespeed2DA){
+      return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].walkrate);
+    }
   }
 
   getMovementSpeed(){
@@ -1195,9 +1187,12 @@ export class ModuleCreature extends ModuleCreatureController {
   //Does the creature have enough EXP to level up
   canLevelUp(){
     let level = this.getTotalClassLevel();
-    let nextLevelEXP = Global.kotor2DA.exptable.rows[level];
-    if(this.getXP() >= parseInt(nextLevelEXP.xp)){
-      return true;
+    const exptable2DA = TwoDAManager.datatables.get('exptable');
+    if(exptable2DA){
+      let nextLevelEXP = exptable2DA.rows[level];
+      if(this.getXP() >= parseInt(nextLevelEXP.xp)){
+        return true;
+      }
     }
 
     return false;
@@ -1207,12 +1202,15 @@ export class ModuleCreature extends ModuleCreatureController {
   getEffectiveLevel(){
     let level = 0;
 
-    let totalLevels = Global.kotor2DA.exptable.RowCount;
-    let expLevels = Global.kotor2DA.exptable.rows;
+    const exptable2DA = TwoDAManager.datatables.get('exptable');
+    if(exptable2DA){
+      let totalLevels = exptable2DA.RowCount;
+      let expLevels = exptable2DA.rows;
 
-    for(let i = 0; i < totalLevels; i++){
-      if(this.getXP() > parseInt(expLevels[i].level)){
-        level = i;
+      for(let i = 0; i < totalLevels; i++){
+        if(this.getXP() > parseInt(expLevels[i].level)){
+          level = i;
+        }
       }
     }
 
@@ -1352,7 +1350,7 @@ export class ModuleCreature extends ModuleCreatureController {
     return undefined;
   }
 
-  hasTalent(talent = undefined){
+  hasTalent(talent: TalentObject){
     //console.log('hasTalent', talent);
     if(typeof talent != 'undefined'){
       switch(talent.type){
@@ -1423,11 +1421,17 @@ export class ModuleCreature extends ModuleCreatureController {
   }
 
   getPerceptionRange(){
-    return parseInt(Global.kotor2DA['ranges'].rows[this.perceptionRange].primaryrange);
+    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      return parseInt(ranges2DA.rows[this.perceptionRange].primaryrange);
+    }
   }
 
   getPerceptionRangeSecondary(){
-    return parseInt(Global.kotor2DA['ranges'].rows[this.perceptionRange].secondaryrange);
+    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      return parseInt(ranges2DA.rows[this.perceptionRange].secondaryrange);
+    }
   }
 
 
@@ -1526,7 +1530,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  LoadModel ( onLoad: Function ){
+  LoadModel ( onLoad?: Function ){
 
     this.isReady = false;
 
@@ -1620,7 +1624,7 @@ export class ModuleCreature extends ModuleCreatureController {
         }
 
         if(this.bodyTexture != '****'){
-          this.bodyTexture += pad( this.textureVar, 2);
+          this.bodyTexture += Utility.PadInt( this.textureVar, 2);
         }
 
         //console.log('ModuleCreature', 'body 1B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
@@ -1634,7 +1638,7 @@ export class ModuleCreature extends ModuleCreatureController {
         let match = raceTex.match(/\d+/);
         if(match && this.textureVar > 1){
           match = match[0];
-          this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? pad( this.textureVar, match.length ) : '' );
+          this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? Utility.PadInt( this.textureVar, match.length ) : '' );
         }else{
           this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
         }
@@ -1642,14 +1646,14 @@ export class ModuleCreature extends ModuleCreatureController {
         //console.log('ModuleCreature', 'body 2', this, this.bodyTexture, raceTex, this.textureVar, appearance);
       }else{
         this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + pad( this.textureVar, 2);
+        this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( this.textureVar, 2);
 
         //console.log('ModuleCreature', 'body 2B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
       }
     }
 
     if(this.bodyModel == '****'){
-      this.model = new THREE.Object3D();
+      this.model = new OdysseyModel3D();
       if(typeof onLoad === 'function')
         onLoad();
     }else{
@@ -1756,54 +1760,60 @@ export class ModuleCreature extends ModuleCreatureController {
     let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
     this.headModel = undefined;
     if(headId != '****' && appearance.modeltype == 'B'){
-      let head = Global.kotor2DA['heads'].rows[headId];
-      this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      GameState.ModelLoader.load({
-        file: this.headModel,
-        onLoad: (mdl) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true,
-            isHologram: this.isHologram,
-            onComplete: (head) => {
-              try{
-
-                if(this.head instanceof OdysseyModel3D && this.head.parent){
-                  this.head.parent.remove(this.head);
-                  this.head.dispose();
-                }
-
-                this.head = head;
-                this.head.moduleObject = this;
-                this.model.headhook.head = head;
-                this.model.headhook.add(head);
-
+      const heads2DA = TwoDAManager.datatables.get('heads');
+      if(heads2DA){
+        let head = heads2DA.rows[headId];
+        this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        GameState.ModelLoader.load({
+          file: this.headModel,
+          onLoad: (mdl: OdysseyModel) => {
+            OdysseyModel3D.FromMDL(mdl, {
+              context: this.context,
+              castShadow: true,
+              receiveShadow: true,
+              isHologram: this.isHologram,
+              onComplete: (head: OdysseyModel3D) => {
                 try{
-                  if(this.head.gogglehook instanceof THREE.Object3D){
-                    if(this.equipment.HEAD instanceof ModuleItem && this.equipment.HEAD.model instanceof OdysseyModel3D){
-                      this.head.gogglehook.add(this.equipment.HEAD.model);
-                    }
+
+                  if(this.head instanceof OdysseyModel3D && this.head.parent){
+                    this.head.parent.remove(this.head);
+                    this.head.dispose();
                   }
+
+                  this.head = head;
+                  this.head.moduleObject = this;
+                  this.model.headhook.head = head;
+                  this.model.headhook.add(head);
+
+                  try{
+                    if(this.head.gogglehook instanceof THREE.Object3D){
+                      if(this.equipment.HEAD instanceof ModuleItem && this.equipment.HEAD.model instanceof OdysseyModel3D){
+                        this.head.gogglehook.add(this.equipment.HEAD.model);
+                      }
+                    }
+                  }catch(e){
+                    console.error('ModuleCreature', e);
+                  }
+                  
+                  //this.model.nodes = new Map(this.model.nodes, head.nodes);
+
+                  if(typeof onLoad === 'function')
+                    onLoad();
+
+                  this.head.disableMatrixUpdate();
                 }catch(e){
-                  console.error('ModuleCreature', e);
+                  console.error(e);
+                  if(typeof onLoad === 'function')
+                    onLoad();
                 }
-                
-                //this.model.nodes = new Map(this.model.nodes, head.nodes);
-
-                if(typeof onLoad === 'function')
-                  onLoad();
-
-                this.head.disableMatrixUpdate();
-              }catch(e){
-                console.error(e);
-                if(typeof onLoad === 'function')
-                  onLoad();
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        });
+      }else{
+        if(typeof onLoad === 'function')
+          onLoad();
+      }
     }else{
       if(typeof onLoad === 'function')
         onLoad();
@@ -1822,7 +1832,7 @@ export class ModuleCreature extends ModuleCreatureController {
     this.unequipSlot(slot);
 
     if(item instanceof ModuleItem){
-      item.onEquip(this, slot: any);
+      item.onEquip(this);
       item.LoadModel( () => {
         switch(slot){
           case ModuleCreatureArmorSlot.ARMOR:
@@ -1893,7 +1903,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.IMPLANT:
           try{
             if(this.equipment.IMPLANT instanceof ModuleItem){
-              this.equipment.IMPLANT.onUnEquip(this, slot);
+              this.equipment.IMPLANT.onUnEquip(this);
               this.equipment.IMPLANT.destroy();
               this.equipment.IMPLANT = undefined;
             }
@@ -1904,7 +1914,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.HEAD:
 
           if(this.equipment.HEAD instanceof ModuleItem){
-            this.equipment.HEAD.onUnEquip(this, slot);
+            this.equipment.HEAD.onUnEquip(this);
           }
 
           try{
@@ -1917,7 +1927,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.ARMS:
           try{
             if(this.equipment.ARMS instanceof ModuleItem){
-              this.equipment.ARMS.onUnEquip(this, slot);
+              this.equipment.ARMS.onUnEquip(this);
               this.equipment.ARMS.destroy();
               this.equipment.ARMS = undefined;
             }
@@ -1928,7 +1938,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
             if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
-              this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
+              this.equipment.RIGHTARMBAND.onUnEquip(this);
               this.equipment.RIGHTARMBAND.destroy();
               this.equipment.RIGHTARMBAND = undefined;
             }
@@ -1939,7 +1949,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.LEFTARMBAND:
           try{
             if(this.equipment.LEFTARMBAND instanceof ModuleItem){
-              this.equipment.LEFTARMBAND.onUnEquip(this, slot);
+              this.equipment.LEFTARMBAND.onUnEquip(this);
               this.equipment.LEFTARMBAND.destroy();
               this.equipment.LEFTARMBAND = undefined;
             }
@@ -1950,7 +1960,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.ARMOR:
 
           if(this.equipment.ARMOR instanceof ModuleItem){
-            this.equipment.ARMOR.onUnEquip(this, slot);
+            this.equipment.ARMOR.onUnEquip(this);
           }
 
           this.equipment.ARMOR = undefined;
@@ -1959,7 +1969,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
             if(this.equipment.RIGHTARMBAND instanceof ModuleItem){
-              this.equipment.RIGHTARMBAND.onUnEquip(this, slot);
+              this.equipment.RIGHTARMBAND.onUnEquip(this);
               this.model.rhand.remove(this.equipment.RIGHTARMBAND.model);
               this.equipment.RIGHTARMBAND.destroy();
               this.equipment.RIGHTARMBAND = undefined;
@@ -1971,7 +1981,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.RIGHTHAND:
           try{
             if(this.equipment.RIGHTHAND instanceof ModuleItem){
-              this.equipment.RIGHTHAND.onUnEquip(this, slot);
+              this.equipment.RIGHTHAND.onUnEquip(this);
               this.model.rhand.remove(this.equipment.RIGHTHAND.model);
               this.equipment.RIGHTHAND.destroy();
               this.equipment.RIGHTHAND = undefined;
@@ -1983,7 +1993,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.BELT:
           try{
             if(this.equipment.BELT instanceof ModuleItem){
-              this.equipment.BELT.onUnEquip(this, slot);
+              this.equipment.BELT.onUnEquip(this);
               this.model.rhand.remove(this.equipment.BELT.model);
               this.equipment.BELT.destroy();
               this.equipment.BELT = undefined;
@@ -1995,7 +2005,7 @@ export class ModuleCreature extends ModuleCreatureController {
         case ModuleCreatureArmorSlot.LEFTHAND:
           try{
             if(this.equipment.LEFTHAND instanceof ModuleItem){
-              this.equipment.LEFTHAND.onUnEquip(this, slot);
+              this.equipment.LEFTHAND.onUnEquip(this);
               this.model.lhand.remove(this.equipment.LEFTHAND.model);
               this.equipment.LEFTHAND.destroy();
               this.equipment.LEFTHAND = null;
@@ -2168,7 +2178,7 @@ export class ModuleCreature extends ModuleCreatureController {
 
   }
 
-  InitProperties( onLoad: Function ){
+  InitProperties( onLoad?: Function ){
 
     this.classes = [];
     this.feats = [];
@@ -2621,19 +2631,25 @@ export class ModuleCreature extends ModuleCreatureController {
 
   LoadSoundSet( onLoad: Function ){
 
-    let ss_row = Global.kotor2DA.soundset.rows[this.soundSetFile];
-
-    if(ss_row){
-      ResourceLoader.loadResource(ResourceTypes.ssf, ss_row.resref.toLowerCase(), (data) => {
-        this.ssf = new SSFObject(data);
-        //SSF found
+    const soundset2DA = TwoDAManager.datatables.get('soundset');
+    if(soundset2DA){
+      let ss_row = soundset2DA.rows[this.soundSetFile];
+      if(ss_row){
+        ResourceLoader.loadResource(ResourceTypes.ssf, ss_row.resref.toLowerCase(), (data: Buffer) => {
+          this.ssf = new SSFObject(data);
+          //SSF found
+          if(typeof onLoad === 'function')
+            onLoad();
+        }, () => {
+          //SSF not found
+          if(typeof onLoad === 'function')
+            onLoad();
+        });
+      }else{
+        //SSF entry not found
         if(typeof onLoad === 'function')
           onLoad();
-      }, () => {
-        //SSF not found
-        if(typeof onLoad === 'function')
-          onLoad();
-      });
+      }
     }else{
       //SSF entry not found
       if(typeof onLoad === 'function')

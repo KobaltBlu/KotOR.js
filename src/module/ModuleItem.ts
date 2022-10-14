@@ -19,6 +19,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
 
 /* @file

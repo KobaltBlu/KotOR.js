@@ -2,14 +2,23 @@
  */
 
 import { ModuleObject } from ".";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFObject } from "../resource/GFFObject";
+import { AsyncLoop } from "../utility/AsyncLoop";
 
 /* @file
  * The ModuleMGObstacle class.
  */
 
 export class ModuleMGObstacle extends ModuleObject {
+  name: string;
+  invince: number;
+  hit_points: number;
+  invince_period: number;
 
-  constructor(){
+  constructor(template: GFFObject){
+    super(template);
     this.name = '';
     this.invince = 0;
   }
@@ -21,7 +30,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     
   }
 
@@ -61,7 +70,7 @@ export class ModuleMGObstacle extends ModuleObject {
     }
   }
 
-  LoadScripts (onLoad = null){
+  LoadScripts (onLoad?: Function){
     this.scripts = {
       onAnimEvent: undefined,
       onCreate: undefined,
@@ -93,7 +102,7 @@ export class ModuleMGObstacle extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);

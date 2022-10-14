@@ -1,21 +1,54 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleObject } from ".";
+import { ModuleMGGunBank, ModuleObject } from ".";
+import { GFFObject } from "../resource/GFFObject";
+import * as THREE from "three";
+import { OdysseyModel3D } from "../three/odyssey";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GameState } from "../GameState";
+import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { NWScript } from "../nwscript/NWScript";
 
 /* @file
  * The ModulMGEnemy class.
  */
 
 export class ModuleMGEnemy extends ModuleObject {
+  gunBanks: any[];
+  models: any[];
+  track: THREE.Object3D;
+  animationManagers: any[];
+  gear: number;
+  timer: number;
+  jumpVelcolity: number;
+  boostVelocity: number;
+  invince: number;
+  alive: boolean;
+  sphere_geom: THREE.Mesh;
+  sphere_radius: number;
+  hit_points: number;
+  died: any;
+  invince_period: number;
+  gun_hook: THREE.Object3D;
+  accel_secs: any;
+  bump_damage: any;
+  cameraName: any;
+  cameraRotate: any;
+  max_hps: any;
+  maximum_speed: any;
+  minimum_speed: any;
+  num_loops: any;
+  trackName: any;
 
-  constructor(template = null){
+  constructor(template: GFFObject){
     super();
     this.template = template;
 
     this.gunBanks = [];
     this.models = [];
-    this.model = new THREE.Object3D();
+    this.model = new OdysseyModel3D();
     this.track = new THREE.Object3D();
 
     this.animationManagers = [];
@@ -128,16 +161,20 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  updatePaused(delta){
+  updatePaused(delta: number = 0){
     
   }
 
   damage(damage = 0){
     if(this.alive){
       this.hit_points -= damage;
+      let model: OdysseyModel3D
       for(let i = 0; i < this.model.children.length; i++){
-        if(this.model.children[i] instanceof OdysseyModel3D && this.model.children[i].bonesInitialized && this.model.children[i].visible){
-          this.model.children[i].playAnimation('damage', false);
+        model = this.models[i];
+        if(model instanceof OdysseyModel3D){
+          if(model.bonesInitialized && model.visible){
+            model.playAnimation('damage', false);
+          }
         }
       }
       this.onDamage();
@@ -183,22 +220,24 @@ export class ModuleMGEnemy extends ModuleObject {
 
   removeAnimation(name = ''){
 
+    let model: OdysseyModel3D
     for(let i = 0; i < this.model.children.length; i++){
-      let model = this.model.children[i];
-      let anim = model.getAnimationByName(name);
+      model = this.models[i];
+      if(model instanceof OdysseyModel3D){
+        let anim = model.getAnimationByName(name);
 
-      if(anim){
-        let animLoopIdx = model.animLoops.indexOf(anim);
-        if(animLoopIdx >= 0){
-          model.animLoops.splice(animLoopIdx, 1);
+        if(anim){
+          let animLoopIdx = model.animLoops.indexOf(anim);
+          if(animLoopIdx >= 0){
+            model.animLoops.splice(animLoopIdx, 1);
+          }
+
+          if(model.animationManager.currentAnimation == anim){
+            model.stopAnimation();
+          }
+
         }
-
-        if(model.animationManager.currentAnimation == anim){
-          model.stopAnimation();
-        }
-
       }
-
     }
 
   }
@@ -207,23 +246,23 @@ export class ModuleMGEnemy extends ModuleObject {
     this.track.updateMatrixWorld();
   }
 
-  Load( onLoad = null ){
+  Load( onLoad?: Function ){
     this.InitProperties();
     GameState.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
   }
 
-  LoadModel (onLoad = null){
+  LoadModel (onLoad?: Function){
 
     let loop = new AsyncLoop({
       array: this.models,
-      onLoop: (item, asyncLoop) => {
+      onLoop: (item: any, asyncLoop: AsyncLoop) => {
         GameState.ModelLoader.load({
           file: item.model.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl) => {
+          onLoad: (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
-              onComplete: (model) => {
+              onComplete: (model: OdysseyModel3D) => {
                 try{
                   this.model.add(model);  
                   model.name = item.model;
@@ -249,10 +288,10 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  LoadGunBanks(onLoad = null){
+  LoadGunBanks(onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.gunBanks,
-      onLoop: (gunbank, asyncLoop) => {
+      onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
         gunbank.Load().then( () => {
           this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
@@ -284,6 +323,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.scripts.onDamage instanceof NWScriptInstance){
       this.scripts.onDamage.nwscript.newInstance().run(this, 0);
     }
+    return true;
   }
 
   onFire(){
@@ -322,7 +362,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  LoadScripts (onLoad = null){
+  LoadScripts (onLoad?: Function){
     this.scripts = {
       onAccelerate: undefined,
       onAnimEvent: undefined,
@@ -386,7 +426,7 @@ export class ModuleMGEnemy extends ModuleObject {
     let keys = Object.keys(this.scripts);
     let loop = new AsyncLoop({
       array: keys,
-      onLoop: async (key, asyncLoop) => {
+      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
         if(_script != '' && !(_script instanceof NWScriptInstance)){
           //let script = await NWScript.Load(_script);
