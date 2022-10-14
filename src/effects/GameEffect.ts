@@ -3,6 +3,7 @@ import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType"
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { Module } from "../module";
 import { ModuleObject } from "../module/ModuleObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -150,7 +151,7 @@ export class GameEffect {
     this.objectList[nOffset] = nValue;
   }
 
-  setAttachedObject( oObject: ModuleObject){
+  setAttachedObject( oObject: ModuleObject|Module ){
     this.object = oObject;
   }
 
