@@ -28,7 +28,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         try{
-          let class_data = Global.kotor2DA['classes'].rows[CharGenClass.SelectedClass];
+          let class_data = Global.kotor2DA['classes'].rows[CharGenManager.selectedClass];
           let saving_throw_data = Global.kotor2DA[class_data['savingthrowtable'].toLowerCase()].rows[0];
           let feats_table = Global.kotor2DA['feat'];
 
@@ -80,7 +80,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
           GameState.player.model.parent.remove(GameState.player.model);
         }catch(e){}
 
-        (MenuManager.CharGenClass as any)['_3D_MODEL'+(CharGenClass.SelectedClass+1)]._3dView.scene.add(GameState.player.model);
+        (MenuManager.CharGenClass as any)['_3D_MODEL'+(CharGenManager.selectedClass+1)]._3dView.scene.add(GameState.player.model);
 
         MenuManager.CharGenMain.Close();
       });

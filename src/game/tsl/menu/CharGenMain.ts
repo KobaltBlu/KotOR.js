@@ -103,7 +103,7 @@ export class CharGenMain extends K1_CharGenMain {
       modelControl._3dView.render(delta);
       modelControl.getFill().material.needsUpdate = true;
     } catch (e: any) {
-      console.error(e: any);
+      console.error(e);
     }
   }
 

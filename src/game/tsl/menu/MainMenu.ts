@@ -6,6 +6,7 @@ import { BinaryReader } from "../../../BinaryReader";
 import { GameState } from "../../../GameState";
 import { MainMenu as K1_MainMenu, GUILabel, GUIListBox, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { CharGenManager } from "../../../managers/CharGenManager";
 import { OdysseyModel } from "../../../odyssey";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { OdysseyModel3D } from "../../../three/odyssey";
@@ -46,14 +47,7 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_NEWGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        //GameState.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
-        MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
-          MenuManager.LoadScreen.Open();
-          MenuManager.CharGenClass.Init( () => {
-            MenuManager.LoadScreen.Close();
-            MenuManager.CharGenClass.Open();
-          });
-        });
+        CharGenManager.Start();
       });
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
@@ -138,11 +132,11 @@ export class MainMenu extends K1_MainMenu {
             console.log(e);
             this.Remove();
           }
-        }, (e) => {
+        }, (e: any) => {
           this.Remove();
           throw 'Resource not found in BIF archive ';
         });
-      }, (e) => {
+      }, (e: any) => {
         this.Remove();
         throw 'Resource not found in BIF archive ';
       });

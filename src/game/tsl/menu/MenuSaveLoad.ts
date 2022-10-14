@@ -40,7 +40,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
-      this.BTN_SAVELOAD.addEventListener('click', (e) => {
+      this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
         if(this.selected instanceof SaveGame){
           this.Close();

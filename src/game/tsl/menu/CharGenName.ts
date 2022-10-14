@@ -27,12 +27,12 @@ export class CharGenName extends K1_CharGenName {
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
-      this.NAME_BOX_EDIT.addEventListener('click', (e) => {
+      this.NAME_BOX_EDIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
 
       });
 
-      this.NAME_BOX_EDIT.onKeyDown = (e) => {
+      this.NAME_BOX_EDIT.onKeyDown = (e: any) => {
         //e.stopPropagation();
         console.log(e);
 
@@ -62,12 +62,12 @@ export class CharGenName extends K1_CharGenName {
 
       }
 
-      this.BTN_BACK.addEventListener('click', (e) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
       });
 
-      this.END_BTN.addEventListener('click', (e) => {
+      this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         GameState.player.firstName = this.NAME_BOX_EDIT.text.text;
         this.Close();

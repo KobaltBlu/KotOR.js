@@ -39,7 +39,7 @@ export class MenuJournal extends K1_MenuJournal {
 
       this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');
 
-      this.BTN_MESSAGES.addEventListener('click', (e) => {
+      this.BTN_MESSAGES.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close()
         MenuManager.MenuMessages.Open();

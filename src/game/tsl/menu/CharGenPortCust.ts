@@ -42,15 +42,15 @@ export class CharGenPortCust extends K1_CharGenPortCust {
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
-      this.BTN_ARRL.addEventListener('click', (e) => {
+      this.BTN_ARRL.addEventListener('click', (e: any) => {
         e.stopPropagation();
       
-        let idx = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.indexOf(GameState.player.appearance);
-        let arrayLength = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.length;
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(GameState.player.appearance);
+        let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx <= 0){
-          GameState.player.appearance = CharGenClass.Classes[CharGenClass.SelectedClass].appearances[arrayLength - 1];
+          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[arrayLength - 1];
         }else{
-          GameState.player.appearance = CharGenClass.Classes[CharGenClass.SelectedClass].appearances[--idx];
+          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
         }
 
         for(let i = 0; i < Global.kotor2DA.portraits.RowCount; i++){
@@ -74,15 +74,15 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
       });
 
-      this.BTN_ARRR.addEventListener('click', (e) => {
+      this.BTN_ARRR.addEventListener('click', (e: any) => {
         e.stopPropagation();
 
-        let idx = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.indexOf(GameState.player.appearance);
-        let arrayLength = CharGenClass.Classes[CharGenClass.SelectedClass].appearances.length;
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(GameState.player.appearance);
+        let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx >= arrayLength - 1){
-          GameState.player.appearance = CharGenClass.Classes[CharGenClass.SelectedClass].appearances[0];
+          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[0];
         }else{
-          GameState.player.appearance = CharGenClass.Classes[CharGenClass.SelectedClass].appearances[++idx];
+          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
         }
 
         for(let i = 0; i < Global.kotor2DA.portraits.RowCount; i++){
@@ -106,7 +106,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
       });
 
-      this.BTN_BACK.addEventListener('click', (e) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         if(!this.exiting){
           this.exiting = true;
@@ -120,7 +120,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         }
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e) => {
+      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         
         //Save appearance choice
@@ -177,7 +177,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       modelControl.getFill().material.needsUpdate = true;
       modelControl.getFill().material.transparent = false;
     } catch (e: any) {
-      console.error(e: any);
+      console.error(e);
     }
   }
 

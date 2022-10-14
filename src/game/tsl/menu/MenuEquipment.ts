@@ -70,66 +70,66 @@ export class MenuEquipment extends K1_MenuEquipment {
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
       });
 
-      this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
+      this.BTN_INV_IMPLANT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.IMPLANT;
+        this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.UpdateList();
       });
 
-      this.BTN_INV_HEAD.addEventListener('click', (e) => {
+      this.BTN_INV_HEAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.HEAD;
+        this.slot = ModuleCreatureArmorSlot.HEAD;
         this.UpdateList();
       });
 
-      this.BTN_INV_HANDS.addEventListener('click', (e) => {
+      this.BTN_INV_HANDS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.ARMS;
+        this.slot = ModuleCreatureArmorSlot.ARMS;
         this.UpdateList();
       });
 
-      this.BTN_INV_ARM_L.addEventListener('click', (e) => {
+      this.BTN_INV_ARM_L.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.LEFTARMBAND;
+        this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.UpdateList();
       });
 
-      this.BTN_INV_BODY.addEventListener('click', (e) => {
+      this.BTN_INV_BODY.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.ARMOR;
+        this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.UpdateList();
       });
 
-      this.BTN_INV_ARM_R.addEventListener('click', (e) => {
+      this.BTN_INV_ARM_R.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.RIGHTARMBAND;
+        this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.UpdateList();
       });
 
-      this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
+      this.BTN_INV_WEAP_L.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.LEFTHAND;
+        this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.UpdateList();
       });
 
-      this.BTN_INV_BELT.addEventListener('click', (e) => {
+      this.BTN_INV_BELT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.BELT;
+        this.slot = ModuleCreatureArmorSlot.BELT;
         this.UpdateList();
       });
 
-      this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
+      this.BTN_INV_WEAP_R.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.slot = UTCObject.SLOT.RIGHTHAND;
+        this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.UpdateList();
       });
 
-      this.BTN_EQUIP.addEventListener('click', (e) => {
+      this.BTN_EQUIP.addEventListener('click', (e: any) => {
         e.stopPropagation();
         if(this.selectedItem instanceof ModuleItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
@@ -222,7 +222,7 @@ export class MenuEquipment extends K1_MenuEquipment {
   UpdateSlotIcons() {
     let currentPC = PartyManager.party[0];
     if (currentPC.getRace() == 6) {
-      let implant = currentPC.GetItemInSlot(UTCObject.SLOT.IMPLANT);
+      let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
       if (implant) {
         let icon = 'i' + implant.getBaseItem().itemclass + '_' + ('000' + implant.getModelVariation()).slice(-3);
         if (this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
@@ -237,7 +237,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_IMPLANT.setFillTexture(texture);
         });
       }
-      let head = currentPC.GetItemInSlot(UTCObject.SLOT.HEAD);
+      let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
       if (head) {
         let icon = 'i' + head.getBaseItem().itemclass + '_' + ('000' + head.getModelVariation()).slice(-3);
         if (this.LBL_INV_HEAD.getFillTextureName() != icon) {
@@ -252,7 +252,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_HEAD.setFillTexture(texture);
         });
       }
-      let hands = currentPC.GetItemInSlot(UTCObject.SLOT.ARMS);
+      let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
       if (hands) {
         let icon = 'i' + hands.getBaseItem().itemclass + '_' + ('000' + hands.getModelVariation()).slice(-3);
         if (this.LBL_INV_HANDS.getFillTextureName() != icon) {
@@ -267,7 +267,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_HANDS.setFillTexture(texture);
         });
       }
-      let l_arm = currentPC.GetItemInSlot(UTCObject.SLOT.LEFTARMBAND);
+      let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
       if (l_arm) {
         let icon = 'i' + l_arm.getBaseItem().itemclass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
         if (this.LBL_INV_ARM_L.getFillTextureName() != icon) {
@@ -282,7 +282,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_ARM_L.setFillTexture(texture);
         });
       }
-      let armor = currentPC.GetItemInSlot(UTCObject.SLOT.ARMOR);
+      let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
       if (armor) {
         let icon = 'i' + armor.getBaseItem().itemclass + '_' + ('000' + armor.getModelVariation()).slice(-3);
         if (this.LBL_INV_BODY.getFillTextureName() != icon) {
@@ -297,7 +297,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_BODY.setFillTexture(texture);
         });
       }
-      let r_arm = currentPC.GetItemInSlot(UTCObject.SLOT.RIGHTARMBAND);
+      let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
       if (r_arm) {
         let icon = 'i' + r_arm.getBaseItem().itemclass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
         if (this.LBL_INV_ARM_R.getFillTextureName() != icon) {
@@ -312,7 +312,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_ARM_R.setFillTexture(texture);
         });
       }
-      let l_weap = currentPC.GetItemInSlot(UTCObject.SLOT.LEFTHAND);
+      let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
       if (l_weap) {
         let icon = 'i' + l_weap.getBaseItem().itemclass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
         if (this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
@@ -327,7 +327,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_WEAP_L.setFillTexture(texture);
         });
       }
-      let belt = currentPC.GetItemInSlot(UTCObject.SLOT.BELT);
+      let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
       if (belt) {
         let icon = 'i' + belt.getBaseItem().itemclass + '_' + ('000' + belt.getModelVariation()).slice(-3);
         if (this.LBL_INV_BELT.getFillTextureName() != icon) {
@@ -342,7 +342,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.LBL_INV_BELT.setFillTexture(texture);
         });
       }
-      let r_weap = currentPC.GetItemInSlot(UTCObject.SLOT.RIGHTHAND);
+      let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
       if (r_weap) {
         let icon = 'i' + r_weap.getBaseItem().itemclass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
         if (this.LBL_INV_WEAP_R.getFillTextureName() != icon) {

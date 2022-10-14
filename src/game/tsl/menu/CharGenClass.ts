@@ -47,59 +47,59 @@ export class CharGenClass extends K1_CharGenClass {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_BACK.addEventListener('click', (e) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close()
       });
 
-      this.BTN_SEL1.addEventListener('click', (e) => {
+      this.BTN_SEL1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 0;
+        CharGenManager.selectedClass = 0;
         GameState.player = this._3D_MODEL1.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
         MenuManager.CharGenMain.Open();
       });
 
-      this.BTN_SEL2.addEventListener('click', (e) => {
+      this.BTN_SEL2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 1;
+        CharGenManager.selectedClass = 1;
         GameState.player = this._3D_MODEL2.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
         MenuManager.CharGenMain.Open();
       });
 
-      this.BTN_SEL3.addEventListener('click', (e) => {
+      this.BTN_SEL3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 2;
+        CharGenManager.selectedClass = 2;
         GameState.player = this._3D_MODEL3.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
         MenuManager.CharGenMain.Open();
       });
 
-      this.BTN_SEL4.addEventListener('click', (e) => {
+      this.BTN_SEL4.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 3;
+        CharGenManager.selectedClass = 3;
         GameState.player = this._3D_MODEL4.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
         MenuManager.CharGenMain.Open();
       });
 
-      this.BTN_SEL5.addEventListener('click', (e) => {
+      this.BTN_SEL5.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 4;
+        CharGenManager.selectedClass = 4;
         GameState.player = this._3D_MODEL5.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
         MenuManager.CharGenMain.Open();
       });
 
-      this.BTN_SEL6.addEventListener('click', (e) => {
+      this.BTN_SEL6.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenClass.SelectedClass = 5;
+        CharGenManager.selectedClass = 5;
         GameState.player = this._3D_MODEL6.objectCreature;
         GameState.player.model.parent.remove(GameState.player.model);
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -206,7 +206,7 @@ export class CharGenClass extends K1_CharGenClass {
       break;
     }
     let portraitId = 0;
-    let appearanceIdx = CharGenClass.Classes[nth].appearances[idx];
+    let appearanceIdx = CharGenClasses[nth].appearances[idx];
     for (let i = 0; i < Global.kotor2DA.portraits.RowCount; i++) {
       let port = Global.kotor2DA.portraits.rows[i];
       if (parseInt(port['appearancenumber']) == appearanceIdx) {
@@ -268,7 +268,7 @@ export class CharGenClass extends K1_CharGenClass {
     _class.AddField(new GFFField(GFFDataType.SHORT, 'ClassLevel')).SetValue(1);
     _class.AddField(new GFFField(GFFDataType.LIST, 'KnownList0'));
     classList.AddChildStruct(_class);
-    let armorStruct = new GFFStruct(UTCObject.SLOT.ARMOR);
+    let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
     armorStruct.AddField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).SetValue('g_a_clothes01');
     equipment.AddChildStruct(armorStruct);
     template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(nth < 3 ? 85 : 83);
@@ -292,8 +292,8 @@ export class CharGenClass extends K1_CharGenClass {
         modelControl._3dView.render(delta);
         modelControl.getFill().material.needsUpdate = true;
         if (btnControl.hover) {
-          if (CharGenClass.HoveredClass != i) {
-            CharGenClass.HoveredClass = i;
+          if (CharGenManager.hoveredClass != i) {
+            CharGenManager.hoveredClass = i;
             this.textNeedsUpdate = true;
           }
           if (btnControl.extent.height < 213) {
@@ -318,12 +318,12 @@ export class CharGenClass extends K1_CharGenClass {
         modelControl.resizeControl();
       }
       if (this.textNeedsUpdate) {
-        this.LBL_DESC.setText(TLKManager.TLKStrings[CharGenClass.Classes[CharGenClass.HoveredClass].strings.description].Value);
-        this.LBL_CLASS.setText(TLKManager.TLKStrings[CharGenClass.Classes[CharGenClass.HoveredClass].strings.gender].Value + ' ' + TLKManager.TLKStrings[CharGenClass.Classes[CharGenClass.HoveredClass].strings.name].Value);
+        this.LBL_DESC.setText(TLKManager.TLKStrings[CharGenClasses[CharGenManager.hoveredClass].strings.description].Value);
+        this.LBL_CLASS.setText(TLKManager.TLKStrings[CharGenClasses[CharGenManager.hoveredClass].strings.gender].Value + ' ' + TLKManager.TLKStrings[CharGenClasses[CharGenManager.hoveredClass].strings.name].Value);
         this.textNeedsUpdate = false;
       }
     } catch (e: any) {
-      console.error(e: any);
+      console.error(e);
     }
   }
 

@@ -39,7 +39,7 @@ export class MenuGraphics extends K1_MenuGraphics {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         /*this.Hide();
-        if(GameState.Mode == GameState.MODES.INGAME){
+        if(GameState.Mode == EngineMode.INGAME){
           GameState.MenuOptions.Show();
         }else{
           GameState.MainOptions.Show();
