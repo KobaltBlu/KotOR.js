@@ -35,7 +35,7 @@ export class GFFObject {
   resourceID: string;
   ext: string;
   signals: { onSaved: any; onUpdated: any; };
-  json: {};
+  json: any = {};
   RootNode: GFFStruct;
   file: string;
   reader: any;

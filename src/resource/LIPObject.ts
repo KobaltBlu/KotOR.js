@@ -7,6 +7,8 @@ import { LIPHeader } from "../interface/resource/LIPHeader";
 import { LIPKeyFrame } from "../interface/resource/LIPKeyFrame";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
+import { ResourceLoader } from "./ResourceLoader";
+import { ResourceTypes } from "./ResourceTypes";
 
 /* @file
  * The LIPObject class.
@@ -298,6 +300,16 @@ export class LIPObject {
         onComplete();
     }
 
+  }
+
+  static async Load(resref: string = ''){
+    return new Promise<LIPObject>( (resolve, reject) => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], resref, (buffer: Buffer) => {
+        resolve(new LIPObject(buffer));
+      }, () => {
+        resolve(undefined);
+      });
+    });
   }
 
 

@@ -14,7 +14,7 @@ export class LYTObject {
   obstacles: any[];
   text: any;
 
-  constructor( data: Buffer ){
+  constructor( data?: Buffer ){
 
     if(typeof data == 'undefined')
       data = Buffer.alloc(0);

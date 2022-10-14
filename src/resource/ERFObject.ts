@@ -61,7 +61,7 @@ export class ERFObject {
   erfDataOffset: number;
   group: string = 'erf';
 
-  constructor(file: string|Buffer = undefined, onComplete: Function|undefined = undefined, onError: Function|undefined = undefined){
+  constructor(file?: string|Buffer, onComplete?: Function, onError?: Function){
     this.file = file;
     this.LocalizedStrings = [];
     this.KeyList = [];
@@ -210,7 +210,7 @@ export class ERFObject {
 
                 header = this.Reader = null;
 
-                fs.close(fd, (e) => {
+                fs.close(fd, (e: any) => {
 
                   if(typeof onComplete == 'function')
                     onComplete(this);
