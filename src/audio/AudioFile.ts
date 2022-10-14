@@ -70,7 +70,7 @@ export class AudioFile {
             //   this.reader = new BinaryReader(buffer);
             //   this.ProcessFile(onComplete);
             //   return;
-            // }, (e) => {
+            // }, (e: any) => {
             //   throw 'Resource not found in BIF archive '+pathInfo.archive.name;
             // });
           break;
