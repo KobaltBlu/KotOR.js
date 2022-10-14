@@ -2,7 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIProgressBar, GUILabel } from "../../../gui";
+import { GameMenu, GUIProgressBar, GUILabel, MenuManager } from "../../../gui";
+import { TLKManager } from "../../../managers/TLKManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 /* @file
 * The LoadScreen menu class.
@@ -14,6 +17,7 @@ export class LoadScreen extends GameMenu {
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
   LBL_LOADING: GUILabel;
+  defaultTex: any;
 
   constructor(){
     super();
@@ -23,64 +27,78 @@ export class LoadScreen extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      //this.showRandomHint();
 
-setProgress(val = 0) {
-  this.pb_progress.setProgress(val);
-}
+      this.LBL_HINT.visible = false;
 
-setLoadBackground(resref = null, onLoad = null) {
-  if (resref) {
-    this.LoadTexture(resref, texture => {
-      if (texture) {
-        this.tGuiPanel.getFill().material.uniforms.map.value = texture;
-        if (typeof onLoad === 'function')
-          onLoad();
-      } else {
-        this.LoadTexture('load_default', texture => {
-          this.tGuiPanel.getFill().material.uniforms.map.value = this.defaultTex = texture;
-          if (typeof onLoad === 'function')
-            onLoad();
+      this.defaultTex = this.tGuiPanel.getFill().material.uniforms.map.value;
+
+      if(this.args.loadscreen.length){
+        this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
+          this.tGuiPanel.getFill().uniforms.material.uniforms.map.value.value = texture;
+          resolve();
         });
+      }else{
+        resolve();
       }
     });
-  } else {
-    if (typeof onLoad === 'function')
-      onLoad();
   }
-}
 
-showRandomHint() {
-  this.lbl_name.setText(TLKManager.TLKStrings[42493].Value);
-  let id = Math.floor(Math.random() * (Global.kotor2DA.loadscreenhints.RowCount - 0 + 1)) + 0;
-  let hint = Global.kotor2DA.loadscreenhints.rows[id];
-  if (!hint) {
-    console.log('showRandomHint', id);
-    hint = Global.kotor2DA.loadscreenhints.rows[0];
+  setProgress(val = 0) {
+    this.PB_PROGRESS.setProgress(val);
   }
-  this.lbl_hint.setText(TLKManager.TLKStrings[hint.gameplayhint].Value);
-}
 
-showSavingMessage() {
-  this.lbl_name.setText(TLKManager.TLKStrings[42528].Value);
-  this.lbl_hint.setText(TLKManager.TLKStrings[41926].Value);
-  this.setProgress(0);
-}
+  setLoadBackground(resref: string, onLoad?: Function) {
+    if (resref) {
+      this.LoadTexture(resref, (texture: OdysseyTexture) => {
+        if (texture) {
+          this.tGuiPanel.getFill().material.uniforms.map.value = texture;
+          if (typeof onLoad === 'function')
+            onLoad();
+        } else {
+          this.LoadTexture('load_default', (texture: OdysseyTexture) => {
+            this.tGuiPanel.getFill().material.uniforms.map.value = this.defaultTex = texture;
+            if (typeof onLoad === 'function')
+              onLoad();
+          });
+        }
+      });
+    } else {
+      if (typeof onLoad === 'function')
+        onLoad();
+    }
+  }
 
-Show() {
-  super.Show();
-  this.setProgress(0);
-  GameState.InGameAreaTransition.Hide();
-  GameState.FadeOverlay.plane.visible = false;
-}
+  showRandomHint() {
+    this.LBL_LOADING.setText(TLKManager.TLKStrings[42493].Value);
+    let id = Math.floor(Math.random() * (TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
+    let hint = TwoDAManager.datatables.get('loadscreenhints').rows[id];
+    if (!hint) {
+      console.log('showRandomHint', id);
+      hint = TwoDAManager.datatables.get('loadscreenhints').rows[0];
+    }
+    this.LBL_HINT.setText(TLKManager.TLKStrings[hint.gameplayhint].Value);
+  }
 
-Hide() {
-  super.Hide();
-  GameState.FadeOverlay.plane.visible = true;
-  this.setProgress(0);
-}
+  showSavingMessage() {
+    this.LBL_LOADING.setText(TLKManager.TLKStrings[42528].Value);
+    this.LBL_HINT.setText(TLKManager.TLKStrings[41926].Value);
+    this.setProgress(0);
+  }
+
+  Show() {
+    super.Show();
+    this.setProgress(0);
+    MenuManager.InGameAreaTransition.Hide();
+    GameState.FadeOverlay.plane.visible = false;
+  }
+
+  Hide() {
+    super.Hide();
+    GameState.FadeOverlay.plane.visible = true;
+    this.setProgress(0);
+  }
   
 }

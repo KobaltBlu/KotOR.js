@@ -2,7 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, GUIListBox, MenuManager } from "../../../gui";
+import { CharGenManager } from "../../../managers/CharGenManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
 
 /* @file
 * The CharGenSkills menu class.
@@ -63,77 +65,100 @@ export class CharGenSkills extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
 
-Show() {
-  super.Show();
-  this.updateButtonStates();
-}
+      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        console.log('CharGenSkills', 'Assigning skillpoints')
+        CharGenManager.selectedCreature.skills[0].rank = CharGenManager.computerUse;
+        CharGenManager.selectedCreature.skills[1].rank = CharGenManager.demolitions;
+        CharGenManager.selectedCreature.skills[2].rank = CharGenManager.stealth;
+        CharGenManager.selectedCreature.skills[3].rank = CharGenManager.awareness;
+        CharGenManager.selectedCreature.skills[4].rank = CharGenManager.persuade;
+        CharGenManager.selectedCreature.skills[5].rank = CharGenManager.repair;
+        CharGenManager.selectedCreature.skills[6].rank = CharGenManager.security;
+        CharGenManager.selectedCreature.skills[7].rank = CharGenManager.treatInjury;
+        this.Close();
+      });
 
-updateButtonStates() {
-  this.COMPUTER_USE_POINTS_BTN.setText(this.computerUse);
-  this.DEMOLITIONS_POINTS_BTN.setText(this.demolitions);
-  this.STEALTH_POINTS_BTN.setText(this.stealth);
-  this.AWARENESS_POINTS_BTN.setText(this.awareness);
-  this.PERSUADE_POINTS_BTN.setText(this.persuade);
-  this.REPAIR_POINTS_BTN.setText(this.repair);
-  this.SECURITY_POINTS_BTN.setText(this.security);
-  this.TREAT_INJURY_POINTS_BTN.setText(this.treatInjury);
-  this.REMAINING_SELECTIONS_LBL.setText(this.availPoints);
-}
+      this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
 
-reset() {
-  this.availPoints = this.getMaxSkillPoints();
-  this.resetPoints();
-}
+        CharGenManager.resetSkillPoints();
+        CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
+        let skillOrder = CharGenManager.getRecommendedOrder();
+        
+        while(CharGenManager.availSkillPoints > 0){
+          for(let i = 0; i < 8; i++){
+            let skillIndex = skillOrder[i];
 
-resetPoints() {
-  for (let i = 0; i < 8; i++) {
-    GameState.getCurrentPlayer().skills[i].rank = 0;
+            if(!CharGenManager.availSkillPoints)
+              break;
+
+            switch(skillIndex){
+              case 0:
+                CharGenManager.computerUse++;
+              break;
+              case 1:
+                CharGenManager.demolitions++;
+              break;
+              case 2:
+                CharGenManager.stealth++;
+              break;
+              case 3:
+                CharGenManager.awareness++;
+              break;
+              case 4:
+                CharGenManager.persuade++;
+              break;
+              case 5:
+                CharGenManager.repair++;
+              break;
+              case 6:
+                CharGenManager.security++;
+              break;
+              case 7:
+                CharGenManager.treatInjury++;
+              break;
+            }
+            
+            if(skillIndex >= 0){
+              CharGenManager.availSkillPoints -= 1;
+            }
+          }
+        }
+
+        this.updateButtonStates();
+
+      });
+    });
   }
-  this.computerUse = GameState.getCurrentPlayer().skills[0].rank;
-  this.demolitions = GameState.getCurrentPlayer().skills[1].rank;
-  this.stealth = GameState.getCurrentPlayer().skills[2].rank;
-  this.awareness = GameState.getCurrentPlayer().skills[3].rank;
-  this.persuade = GameState.getCurrentPlayer().skills[4].rank;
-  this.repair = GameState.getCurrentPlayer().skills[5].rank;
-  this.security = GameState.getCurrentPlayer().skills[6].rank;
-  this.treatInjury = GameState.getCurrentPlayer().skills[7].rank;
-}
 
-getMaxSkillPoints() {
-  return 10 + parseInt(GameState.player.classes[0].skillpointbase);
-}
-
-getSkillTableColumn() {
-  return GameState.player.classes[0].skillstable.toLowerCase() + '_class';
-}
-
-getSkillTableColumnRecommended() {
-  return GameState.player.classes[0].skillstable.toLowerCase() + '_reco';
-}
-
-getRecommendedOrder() {
-  let skillOrder = {
-    '0': -1,
-    '1': -1,
-    '2': -1,
-    '3': -1,
-    '4': -1,
-    '5': -1,
-    '6': -1,
-    '7': -1
-  };
-  for (let i = 0; i < 8; i++) {
-    let value = Global.kotor2DA.skills.rows[i][this.getSkillTableColumnRecommended()];
-    if (value != '****') {
-      skillOrder[value - 1] = i;
-    }
+  Show() {
+    super.Show();
+    this.updateButtonStates();
   }
-  return skillOrder;
-}
+
+  updateButtonStates() {
+    this.COMPUTER_USE_POINTS_BTN.setText(CharGenManager.computerUse);
+    this.DEMOLITIONS_POINTS_BTN.setText(CharGenManager.demolitions);
+    this.STEALTH_POINTS_BTN.setText(CharGenManager.stealth);
+    this.AWARENESS_POINTS_BTN.setText(CharGenManager.awareness);
+    this.PERSUADE_POINTS_BTN.setText(CharGenManager.persuade);
+    this.REPAIR_POINTS_BTN.setText(CharGenManager.repair);
+    this.SECURITY_POINTS_BTN.setText(CharGenManager.security);
+    this.TREAT_INJURY_POINTS_BTN.setText(CharGenManager.treatInjury);
+    this.REMAINING_SELECTIONS_LBL.setText(CharGenManager.availSkillPoints);
+  }
+
+  reset() {
+    CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
+    CharGenManager.resetSkillPoints();
+  }
   
 }

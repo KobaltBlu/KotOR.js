@@ -2,7 +2,13 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel } from "../../../gui";
+import { GameMenu, GUILabel, LBL_3DView, MenuManager } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { CharGenManager } from "../../../managers/CharGenManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { OdysseyModel } from "../../../odyssey";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyModel3D } from "../../../three/odyssey";
 
 /* @file
 * The CharGenMain menu class.
@@ -54,6 +60,8 @@ export class CharGenMain extends GameMenu {
   LBL_LEVEL_VAL: GUILabel;
   LBL_LEVEL: GUILabel;
   LBL_CLASS: GUILabel;
+  _3dView: LBL_3DView;
+  _3dViewModel: OdysseyModel3D;
 
   constructor(){
     super();
@@ -63,68 +71,88 @@ export class CharGenMain extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.LBL_LEVEL.hide();
+      this.LBL_LEVEL_VAL.hide();
+      this.OLD_LBL.hide();
+      this.NEW_LBL.hide();
 
-Init3D() {
-  let control = this.MODEL_LBL;
-  OdysseyModel3D.FromMDL(this.cgbody_light, {
-    onComplete: model => {
-      control._3dViewModel = model;
-      control._3dView.addModel(control._3dViewModel);
-      control.camerahook = control._3dViewModel.getObjectByName('camerahook');
-      control._3dView.camera.position.set(control.camerahook.position.x, control.camerahook.position.y, control.camerahook.position.z);
-      control._3dView.camera.quaternion.set(control.camerahook.quaternion.x, control.camerahook.quaternion.y, control.camerahook.quaternion.z, control.camerahook.quaternion.w);
-      control._3dViewModel.playAnimation(0, true);
-    },
-    manageLighting: false,
-    context: control._3dView
-  });
-}
 
-Update(delta = 0) {
-  super.Update(delta);
-  if (!this.bVisible)
-    return;
-  try {
-    let modelControl = this.MODEL_LBL;
-    GameState.player.update(delta);
-    modelControl._3dView.render(delta);
-    modelControl.getFill().material.needsUpdate = true;
-  } catch (e: any) {
-    console.error(e: any);
-  }
-}
+      //Visible Elements
 
-Hide() {
-  super.Hide();
-}
+      this.tGuiPanel.getFill().position.z = -0.5;
 
-Show() {
-  super.Show();
-  GameState.MenuActive = true;
-  try {
-    GameState.player.model.parent.remove(GameState.player.model);
-  } catch (e: any) {
-  }
-  this.MODEL_LBL._3dView.scene.add(GameState.player.model);
-  GameState.player.model.rotation.z = -Math.PI / 2;
-  let portraitId = GameState.player.getPortraitId();
-  let portrait = Global.kotor2DA['portraits'].rows[portraitId];
-  GameState.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
-  GameState.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
-  this.PORTRAIT_LBL.show();
-  if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
-    this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);
-    TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
-      this.PORTRAIT_LBL.setFillTexture(texture);
+      this._3dView = new LBL_3DView();
+      this._3dView.visible = true;
+      this._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
+      this._3dView.camera.updateProjectionMatrix();
+      this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
+      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
+      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
+
+      this.Init3D();
+      resolve(); 
     });
   }
-}
 
-updateAttributes() {
-}
+  Init3D() {
+    let control = this.MODEL_LBL;
+    OdysseyModel3D.FromMDL(CharGenManager.cgbody_light, {
+      onComplete: (model: OdysseyModel3D) => {
+        this._3dViewModel = model;
+        this._3dView.addModel(this._3dViewModel);
+        this._3dView.camera.position.copy(this._3dViewModel.camerahook.position);
+        this._3dView.camera.quaternion.copy(this._3dViewModel.camerahook.quaternion);
+        this._3dViewModel.playAnimation(0, true);
+      },
+      manageLighting: false,
+      context: this._3dView
+    });
+  }
+
+  Update(delta = 0) {
+    super.Update(delta);
+    if (!this.bVisible)
+      return;
+    try {
+      let modelControl = this.MODEL_LBL;
+      CharGenManager.selectedCreature.update(delta);
+      this._3dView.render(delta);
+      (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+    } catch (e: any) {
+      console.error(e);
+    }
+  }
+
+  Hide() {
+    super.Hide();
+  }
+
+  Show() {
+    super.Show();
+    GameState.MenuActive = true;
+    try {
+      CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
+    } catch (e: any) {
+    }
+    this._3dView.scene.add(CharGenManager.selectedCreature.model);
+    CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
+    let portraitId = CharGenManager.selectedCreature.getPortraitId();
+    let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+    MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
+    MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
+    this.PORTRAIT_LBL.show();
+    if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
+      this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);
+      TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+        this.PORTRAIT_LBL.setFillTexture(texture);
+      });
+    }
+  }
+
+  updateAttributes() {
+
+  }
   
 }

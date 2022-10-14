@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { CharGenManager } from "../../../managers/CharGenManager";
 
 /* @file
 * The CharGenName menu class.
@@ -25,14 +26,30 @@ export class CharGenName extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.NAME_BOX_EDIT.setEditable(true);
 
-Show() {
-  super.Show();
-  this.NAME_BOX_EDIT.setText(GameState.player.firstName);
-}
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+
+      this.END_BTN.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
+        MenuManager.CharGenQuickPanel.step2 = true;
+        this.Close();
+      });
+
+      this.BTN_RANDOM.hide();
+      resolve();
+    });
+  }
+
+  Show() {
+    super.Show();
+    this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
+  }
   
 }

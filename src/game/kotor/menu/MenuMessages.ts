@@ -24,23 +24,29 @@ export class MenuMessages extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_EXIT;
+      resolve();
+    });
+  }
 
-Show() {
-  super.Show();
-  GameState.MenuTop.LBLH_MSG.onHoverIn();
-  GameState.MenuActive = true;
-}
+  Show() {
+    super.Show();
+    GameState.MenuTop.LBLH_MSG.onHoverIn();
+    GameState.MenuActive = true;
+  }
 
-triggerControllerBumperLPress() {
-  GameState.MenuTop.BTN_ABI.click();
-}
+  triggerControllerBumperLPress() {
+    GameState.MenuTop.BTN_ABI.click();
+  }
 
-triggerControllerBumperRPress() {
-  GameState.MenuTop.BTN_JOU.click();
-}
+  triggerControllerBumperRPress() {
+    GameState.MenuTop.BTN_JOU.click();
+  }
   
 }

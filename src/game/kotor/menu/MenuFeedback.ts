@@ -24,15 +24,22 @@ export class MenuFeedback extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this._button_b = this.BTN_BACK;
 
-Show() {
-  super.Show();
-  GameState.MenuTop.LBLH_MSG.onHoverIn();
-  GameState.MenuActive = true;
-}
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      resolve();
+    });
+  }
+
+  Show() {
+    super.Show();
+    GameState.MenuTop.LBLH_MSG.onHoverIn();
+    GameState.MenuActive = true;
+  }
   
 }

@@ -23,9 +23,20 @@ export class MenuResolutions extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_CANCEL;
+
+      this.BTN_OK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      resolve();
+    });
+  }
   
 }

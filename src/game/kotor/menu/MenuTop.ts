@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl, GUIButton } from "../../../gui";
+import { GameMenu, GUIControl, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuTop menu class.
@@ -35,28 +35,28 @@ export class MenuTop extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
-
-Show() {
-  super.Show();
-  this.LBLH_OPT.onHoverOut();
-  this.LBLH_MAP.onHoverOut();
-  this.LBLH_JOU.onHoverOut();
-  this.LBLH_ABI.onHoverOut();
-  this.LBLH_MSG.onHoverOut();
-  this.LBLH_CHA.onHoverOut();
-  this.LBLH_INV.onHoverOut();
-  this.LBLH_EQU.onHoverOut();
-}
-
-CloseAllOtherMenus() {
-  let currentMenu = MenuManager.GetCurrentMenu();
-  if (currentMenu == GameState.MenuAbilities || currentMenu == GameState.MenuInventory || currentMenu == GameState.MenuJournal || currentMenu == GameState.MenuMap || currentMenu == GameState.MenuMessages || currentMenu == GameState.MenuOptions || currentMenu == GameState.MenuCharacter || currentMenu == GameState.MenuEquipment) {
-    currentMenu.Close();
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+    });
   }
-}
+
+  Show() {
+    super.Show();
+    this.LBLH_OPT.onHoverOut();
+    this.LBLH_MAP.onHoverOut();
+    this.LBLH_JOU.onHoverOut();
+    this.LBLH_ABI.onHoverOut();
+    this.LBLH_MSG.onHoverOut();
+    this.LBLH_CHA.onHoverOut();
+    this.LBLH_INV.onHoverOut();
+    this.LBLH_EQU.onHoverOut();
+  }
+
+  CloseAllOtherMenus() {
+    let currentMenu = MenuManager.GetCurrentMenu();
+    if (currentMenu == MenuManager.MenuAbilities || currentMenu == MenuManager.MenuInventory || currentMenu == MenuManager.MenuJournal || currentMenu == MenuManager.MenuMap || currentMenu == MenuManager.MenuMessages || currentMenu == MenuManager.MenuOptions || currentMenu == MenuManager.MenuCharacter || currentMenu == MenuManager.MenuEquipment) {
+      currentMenu.Close();
+    }
+  }
   
 }

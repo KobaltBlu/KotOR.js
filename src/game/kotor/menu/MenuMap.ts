@@ -2,7 +2,11 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 /* @file
 * The MenuMap menu class.
@@ -20,6 +24,12 @@ export class MenuMap extends GameMenu {
   BTN_RETURN: GUIButton;
   BTN_EXIT: GUIButton;
 
+  onOpenScript: NWScriptInstance;
+  openScript: string;
+
+  onTransitScript: NWScriptInstance;
+  transitScript: string;
+
   constructor(){
     super();
     this.gui_resref = 'map';
@@ -28,32 +38,60 @@ export class MenuMap extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>( async (resolve, reject) => {
+      this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        MenuManager.MenuPartySelection.Open();
+      });
 
-SetMapTexture(sTexture = '') {
-  this.LBL_Map.setFillTextureName(sTexture);
-  TextureLoader.tpcLoader.fetch(sTexture, texture => {
-    this.LBL_Map.setFillTexture(texture);
-  });
-}
+      this.BTN_RETURN.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+        if(!GameState.module.area.Unescapable){
+          if(this.onTransitScript instanceof NWScriptInstance)
+            this.onTransitScript.run();
+        }
+      });
 
-Show() {
-  super.Show();
-  GameState.MenuTop.LBLH_MAP.onHoverIn();
-  GameState.MenuActive = true;
-  if (this.onOpenScript instanceof NWScriptInstance)
-    this.onOpenScript.run();
-}
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_EXIT;
 
-triggerControllerBumperLPress() {
-  GameState.MenuTop.BTN_JOU.click();
-}
+      this.openScript = 'k_sup_guiopen';
+      this.transitScript = 'k_sup_gohawk';
 
-triggerControllerBumperRPress() {
-  GameState.MenuTop.BTN_OPT.click();
-}
+      this.onOpenScript = await NWScript.Load('k_sup_guiopen');
+      this.onTransitScript = await NWScript.Load('k_sup_gohawk');
+      NWScript.SetGlobalScript('k_sup_guiopen', true);
+      NWScript.SetGlobalScript('k_sup_gohawk', true);
+      resolve();
+    });
+  }
+
+  SetMapTexture(sTexture = '') {
+    this.LBL_Map.setFillTextureName(sTexture);
+    TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
+      this.LBL_Map.setFillTexture(texture);
+    });
+  }
+
+  Show() {
+    super.Show();
+    GameState.MenuTop.LBLH_MAP.onHoverIn();
+    GameState.MenuActive = true;
+    if (this.onOpenScript instanceof NWScriptInstance)
+      this.onOpenScript.run();
+  }
+
+  triggerControllerBumperLPress() {
+    GameState.MenuTop.BTN_JOU.click();
+  }
+
+  triggerControllerBumperRPress() {
+    GameState.MenuTop.BTN_OPT.click();
+  }
   
 }

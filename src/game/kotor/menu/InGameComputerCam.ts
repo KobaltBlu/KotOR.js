@@ -20,23 +20,24 @@ export class InGameComputerCam extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
 
-Open(cam_id = -1) {
-  super.Open();
-  if (cam_id >= 0) {
-    GameState.InGameDialog.SetPlaceableCamera(cam_id);
-  } else {
-    GameState.currenCamera = GameState.camera;
+    });
   }
-}
 
-Hide() {
-  super.Hide();
-  GameState.currenCamera = GameState.camera;
-}
+  Open(cam_id = -1) {
+    super.Open();
+    if (cam_id >= 0) {
+      GameState.InGameDialog.SetPlaceableCamera(cam_id);
+    } else {
+      GameState.currentCamera = GameState.camera;
+    }
+  }
+
+  Hide() {
+    super.Hide();
+    GameState.currentCamera = GameState.camera;
+  }
   
 }

@@ -2,7 +2,13 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyModel } from "../../../odyssey";
+import { Planetary } from "../../../Planetary";
+import { OdysseyModel3D } from "../../../three/odyssey";
 
 /* @file
 * The MenuGalaxyMap menu class.
@@ -31,6 +37,10 @@ export class MenuGalaxyMap extends GameMenu {
   LBL_Live03: GUIButton;
   LBL_Live04: GUIButton;
   LBL_Live05: GUIButton;
+  script: NWScriptInstance;
+  _3dView: LBL_3DView;
+  _3dViewModel: OdysseyModel3D;
+  selectedPlanet: any;
 
   constructor(){
     super();
@@ -40,62 +50,120 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>( async (resolve, reject) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //Game.MenuActive = false;
+        //Game.InGameOverlay.Show();
+        //this.Hide();
+        this.Close();
+        Planetary.SetCurrentPlanet(GameState.getGlobalNumber('K_CURRENT_PLANET'));
+      });
+      this._button_b = this.BTN_BACK;
 
-Update(delta = 0) {
-  super.Update(delta);
-  try {
-    this._3dView.render(delta);
-    this.THREED_PlanetDisplay.fill.children[0].material.needsUpdate = true;
-  } catch (e: any) {
+      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //Game.MenuActive = false;
+        //Game.InGameOverlay.Show();
+        //this.Hide();
+        this.Close();
+
+        if(this.script instanceof NWScriptInstance){
+          this.script.run(GameState.player);
+        }
+
+      });
+
+      this.script = await NWScript.Load('k_sup_galaxymap');
+      NWScript.SetGlobalScript('k_sup_galaxymap', true);
+
+      GameState.ModelLoader.load({
+        file: 'galaxy',
+        onLoad: (mdl: OdysseyModel) => {
+          this.tGuiPanel.widget.fill.visible = false;
+
+          this._3dView = new LBL_3DView();
+          this._3dView.visible = true;
+          (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
+          (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).transparent = false;
+          
+          
+          OdysseyModel3D.FromMDL(mdl, { 
+            onComplete: (model: OdysseyModel3D) => {
+              //console.log('Model Loaded', model);
+              this._3dViewModel = model;
+              
+              this._3dView.camera.position.copy(model.camerahook.position);
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+    
+              this._3dView.addModel(this._3dViewModel);
+              TextureLoader.LoadQueue(() => {
+
+                resolve();
+
+              });
+
+            },
+            context: this._3dView
+          });
+        }
+      });
+    });
   }
-}
 
-UpdateScale() {
-  let controls = GameState.MenuGalaxyMap.tGuiPanel.children;
-  for (let i = 0; i < controls.length; i++) {
-    let control = controls[i];
-    let plnt = Planetary.GetPlanetByGUITag(control.name);
-    if (plnt) {
-      if (plnt == Planetary.current) {
-        control.widget.scale.setScalar(1.25);
-      } else {
-        control.widget.scale.setScalar(1);
+  Update(delta = 0) {
+    super.Update(delta);
+    try {
+      this._3dView.render(delta);
+      (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+    } catch (e: any) {
+      
+    }
+  }
+
+  UpdateScale() {
+    let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;
+    for (let i = 0; i < controls.length; i++) {
+      let control = controls[i];
+      let plnt = Planetary.GetPlanetByGUITag(control.name);
+      if (plnt) {
+        if (plnt == Planetary.current) {
+          control.widget.scale.setScalar(1.25);
+        } else {
+          control.widget.scale.setScalar(1);
+        }
       }
     }
   }
-}
 
-Show(object = null) {
-  super.Show();
-  GameState.MenuActive = true;
-  this.selectedPlanet = GameState.getGlobalNumber('K_CURRENT_PLANET');
-  this.UpdateScale();
-  let controls = GameState.MenuGalaxyMap.tGuiPanel.children;
-  for (let i = 0; i < controls.length; i++) {
-    let control = controls[i];
-    let plnt = Planetary.GetPlanetByGUITag(control.name);
-    if (plnt) {
-      if (plnt.enabled) {
-        control.show();
-        control.disableBorder();
-        control.addEventListener('click', e => {
-          e.stopPropagation();
-          this.LBL_PLANETNAME.setText(plnt.getName());
-          this.LBL_DESC.setText(plnt.getDescription());
-          Planetary.SetCurrentPlanet(plnt.getId());
-          this.UpdateScale();
-        });
-      } else {
-        control.hide();
-        control.disableBorder();
-        control.removeEventListener('click');
+  Show() {
+    super.Show();
+    GameState.MenuActive = true;
+    this.selectedPlanet = GameState.getGlobalNumber('K_CURRENT_PLANET');
+    this.UpdateScale();
+    let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;
+    for (let i = 0; i < controls.length; i++) {
+      let control = controls[i];
+      let plnt = Planetary.GetPlanetByGUITag(control.name);
+      if (plnt) {
+        if (plnt.enabled) {
+          control.show();
+          control.disableBorder();
+          control.addEventListener('click', (e: any) => {
+            e.stopPropagation();
+            this.LBL_PLANETNAME.setText(plnt.getName());
+            this.LBL_DESC.setText(plnt.getDescription());
+            Planetary.SetCurrentPlanet(plnt.getId());
+            this.UpdateScale();
+          });
+        } else {
+          control.hide();
+          control.disableBorder();
+          control.removeEventListener('click');
+        }
       }
     }
   }
-}
   
 }

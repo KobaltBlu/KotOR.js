@@ -36,23 +36,30 @@ export class MenuAbilities extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
 
-Show() {
-  super.Show();
-  GameState.MenuTop.LBLH_ABI.onHoverIn();
-  GameState.MenuActive = true;
-}
+      this._button_b = this.BTN_EXIT;
+      resolve();
+    });
+  }
 
-triggerControllerBumperLPress() {
-  GameState.MenuTop.BTN_CHAR.click();
-}
+  Show() {
+    super.Show();
+    GameState.MenuTop.LBLH_ABI.onHoverIn();
+    GameState.MenuActive = true;
+  }
 
-triggerControllerBumperRPress() {
-  GameState.MenuTop.BTN_MSG.click();
-}
+  triggerControllerBumperLPress() {
+    GameState.MenuTop.BTN_CHAR.click();
+  }
+
+  triggerControllerBumperRPress() {
+    GameState.MenuTop.BTN_MSG.click();
+  }
   
 }

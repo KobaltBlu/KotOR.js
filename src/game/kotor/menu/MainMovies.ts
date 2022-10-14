@@ -23,8 +23,14 @@ export class MainMovies extends GameMenu {
 
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_BACK;
+      resolve();
     });
-}
+  }
   
 }

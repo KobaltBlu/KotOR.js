@@ -15,6 +15,8 @@ export class MenuSaveName extends GameMenu {
   EDITBOX: GUILabel;
   LBL_TITLE: GUILabel;
 
+  onSave: Function;
+
   constructor(){
     super();
     this.gui_resref = 'savename';
@@ -23,16 +25,33 @@ export class MenuSaveName extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.EDITBOX.setEditable(true);
 
-Show() {
-  this.tGuiPanel.widget.position.z = 10;
-  this.EDITBOX.setText('');
-  super.Show();
-  GameState.activeGUIElement = this.EDITBOX;
-}
+      this.BTN_OK.addEventListener('click', () => {
+        // if(typeof this.onSave == 'function')
+        //   this.onSave(this.EDITBOX.getValue())
+
+        this.Close();
+      });
+      this._button_b = this.BTN_OK;
+
+      this.BTN_CANCEL.addEventListener('click', () => {
+
+
+        this.Close();
+      });
+      this._button_a = this.BTN_CANCEL;
+      resolve();
+    });
+  }
+
+  Show() {
+    this.tGuiPanel.widget.position.z = 10;
+    this.EDITBOX.setText('');
+    super.Show();
+    GameState.activeGUIElement = this.EDITBOX;
+  }
   
 }

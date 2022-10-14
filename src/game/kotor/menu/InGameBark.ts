@@ -3,6 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel } from "../../../gui";
+import * as THREE from "three";
+import { ResourceLoader } from "../../../resource/ResourceLoader";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { ModuleCreature } from "../../../module";
+import { LIPObject } from "../../../resource/LIPObject";
 
 /* @file
 * The InGameBark menu class.
@@ -21,11 +26,11 @@ export class InGameBark extends GameMenu {
 
   async MenuControlInitializer() {
   await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
   });
 }
 
-bark(entry = null) {
+bark(entry: any = null) {
   if (entry != null) {
     this.Show();
     this.LBL_BARKTEXT.setText(entry.text);
@@ -37,7 +42,7 @@ bark(entry = null) {
     this.tGuiPanel.widget.position.y = window.innerHeight / 2 - this.tGuiPanel.extent.height / 2 - 134;
     if (entry.sound != '') {
       console.log('lip', entry.sound);
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, buffer => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer: Buffer) => {
         if (entry.speaker instanceof ModuleCreature) {
           entry.speaker.setLIP(new LIPObject(buffer));
         }
@@ -53,7 +58,7 @@ bark(entry = null) {
       });
     } else if (entry.vo_resref != '') {
       console.log('lip', entry.vo_resref);
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, buffer => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, (buffer: Buffer) => {
         if (entry.speaker instanceof ModuleCreature) {
           entry.speaker.setLIP(new LIPObject(buffer));
         }

@@ -1,8 +1,15 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager, GUIProtoItem, GUIControl } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { TLKManager } from "../../../managers/TLKManager";
+import { Module } from "../../../module";
+import { GFFStruct } from "../../../resource/GFFStruct";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { SaveGame } from "../../../SaveGame";
 
 /* @file
 * The MenuSaveLoad menu class.
@@ -22,6 +29,10 @@ export class MenuSaveLoad extends GameMenu {
   BTN_BACK: GUIButton;
   BTN_SAVELOAD: GUIButton;
 
+  mode: MenuSaveLoadMode;
+  saves: SaveGame[] = [];
+  selected: SaveGame;
+
   constructor(){
     super();
     this.gui_resref = 'saveload';
@@ -30,86 +41,157 @@ export class MenuSaveLoad extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
 
-Show() {
-  super.Show();
-  GameState.MenuActive = true;
-  this.selectedControl = this.LB_GAMES;
-  this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
-  this.LB_GAMES.clearItems();
-  let saves = [];
-  if (this.mode == MenuSaveLoad.MODE.SAVEGAME) {
-    saves = SaveGame.saves.filter(save => {
-      return !save.getIsQuickSave() && !save.getIsAutoSave();
-    });
-    this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1587].Value);
-    saves.unshift(new NewSaveItem());
-  } else {
-    saves = SaveGame.saves;
-    this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1589].Value);
-  }
-  for (let i = 0; i < saves.length; i++) {
-    let save = saves[i];
-    this.LB_GAMES.addItem(save, null);
-  }
-  this.selected = saves[0];
-  this.UpdateSelected();
-  TextureLoader.LoadQueue();
-}
+      this._button_y = this.BTN_DELETE;
 
-UpdateSelected() {
-  this.LBL_SCREENSHOT.setFillTexture(undefined);
-  this.LBL_PM1.setFillTexture(undefined);
-  this.LBL_PM2.setFillTexture(undefined);
-  this.LBL_PM3.setFillTexture(undefined);
-  this.LBL_PLANETNAME.setText('');
-  this.LBL_AREANAME.setText('');
-  if (this.selected instanceof SaveGame) {
-    this.selected.GetThumbnail(texture => {
-      this.LBL_SCREENSHOT.setFillTexture(texture);
-      this.LBL_SCREENSHOT.getFill().material.transparent = false;
+      this.BTN_SAVELOAD.setText('Load');
+      this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(this.mode == MenuSaveLoadMode.LOADGAME){
+          if(this.selected instanceof SaveGame){
+            this.Close();
+
+            if(GameState.module instanceof Module){
+              GameState.module.dispose();
+            }
+
+            this.selected.Load();
+          }
+        }else{
+          if(this.selected instanceof NewSaveItem){
+            MenuManager.MenuSaveName.Show();
+            MenuManager.MenuSaveName.onSave = ( name = '' ) => {
+              console.log('SavGame', name);
+            };
+          }else{
+
+          }
+        }
+      });
+      this._button_a = this.BTN_SAVELOAD;
+
+      this.BTN_BACK = this.getControlByName('BTN_BACK');
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_BACK;
+
+      this.LB_GAMES.onSelected = (save: SaveGame) => {
+        this.selected = save;
+        this.UpdateSelected();
+      }
+
+      this.tGuiPanel.getFill().position.z = -1;
     });
-    this.selected.GetPortrait(0, texture => {
-      this.LBL_PM1.setFillTexture(texture);
-      this.LBL_PM1.getFill().material.transparent = false;
-    });
-    this.selected.GetPortrait(1, texture => {
-      this.LBL_PM2.setFillTexture(texture);
-      this.LBL_PM2.getFill().material.transparent = false;
-    });
-    this.selected.GetPortrait(2, texture => {
-      this.LBL_PM3.setFillTexture(texture);
-      this.LBL_PM3.getFill().material.transparent = false;
-    });
-    let areaNames = this.selected.getAreaName().split(' - ');
-    if (areaNames.length == 2) {
-      this.LBL_PLANETNAME.setText(areaNames[0]);
-      this.LBL_AREANAME.setText(areaNames[1]);
+  }
+
+  Show() {
+    super.Show();
+    GameState.MenuActive = true;
+    this.selectedControl = this.LB_GAMES;
+    this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
+    this.LB_GAMES.clearItems();
+    let saves = [];
+    if (this.mode == MenuSaveLoadMode.SAVEGAME) {
+      saves = SaveGame.saves.filter(save => {
+        return !save.getIsQuickSave() && !save.getIsAutoSave();
+      });
+      this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1587].Value);
+      saves.unshift(new NewSaveItem());
     } else {
-      this.LBL_PLANETNAME.setText('');
-      this.LBL_AREANAME.setText(areaNames[0]);
+      saves = SaveGame.saves;
+      this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1589].Value);
     }
-    this.BTN_SAVELOAD.show();
-    this.BTN_DELETE.show();
-  } else if (this.selected instanceof NewSaveItem) {
-    this.BTN_SAVELOAD.show();
-    this.BTN_DELETE.hide();
-  } else {
-    this.BTN_SAVELOAD.hide();
-    this.BTN_DELETE.hide();
+    for (let i = 0; i < saves.length; i++) {
+      let save = saves[i];
+      this.LB_GAMES.addItem(save, null);
+    }
+    this.selected = saves[0];
+    this.UpdateSelected();
+    TextureLoader.LoadQueue();
+  }
+
+  UpdateSelected() {
+    this.LBL_SCREENSHOT.setFillTexture(undefined);
+    this.LBL_PM1.setFillTexture(undefined);
+    this.LBL_PM2.setFillTexture(undefined);
+    this.LBL_PM3.setFillTexture(undefined);
+    this.LBL_PLANETNAME.setText('');
+    this.LBL_AREANAME.setText('');
+    if (this.selected instanceof SaveGame) {
+      if (this.selected instanceof NewSaveItem) {
+
+      }else{
+        this.selected.GetThumbnail((texture: OdysseyTexture) => {
+          this.LBL_SCREENSHOT.setFillTexture(texture);
+          (this.LBL_SCREENSHOT.getFill().material as THREE.ShaderMaterial).transparent = false;
+        });
+        this.selected.GetPortrait(0, (texture: OdysseyTexture) => {
+          this.LBL_PM1.setFillTexture(texture);
+          (this.LBL_PM1.getFill().material as THREE.ShaderMaterial).transparent = false;
+        });
+        this.selected.GetPortrait(1, (texture: OdysseyTexture) => {
+          this.LBL_PM2.setFillTexture(texture);
+          (this.LBL_PM2.getFill().material as THREE.ShaderMaterial).transparent = false;
+        });
+        this.selected.GetPortrait(2, (texture: OdysseyTexture) => {
+          this.LBL_PM3.setFillTexture(texture);
+          (this.LBL_PM3.getFill().material as THREE.ShaderMaterial).transparent = false;
+        });
+        let areaNames = this.selected.getAreaName().split(' - ');
+        if (areaNames.length == 2) {
+          this.LBL_PLANETNAME.setText(areaNames[0]);
+          this.LBL_AREANAME.setText(areaNames[1]);
+        } else {
+          this.LBL_PLANETNAME.setText('');
+          this.LBL_AREANAME.setText(areaNames[0]);
+        }
+      }
+      this.BTN_SAVELOAD.show();
+      this.BTN_DELETE.show();
+    } else {
+      this.BTN_SAVELOAD.hide();
+      this.BTN_DELETE.hide();
+    }
+  }
+
+  triggerControllerDUpPress() {
+    this.LB_GAMES.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress() {
+    this.LB_GAMES.directionalNavigate('down');
+  }
+  
+}
+
+class NewSaveItem extends SaveGame {
+  constructor(){
+    super();
+  }
+
+  getFullName(){
+    return TLKManager.TLKStrings[1586].Value;
   }
 }
 
-triggerControllerDUpPress() {
-  this.LB_GAMES.directionalNavigate('up');
-}
+class GUISaveGameItem extends GUIProtoItem {
 
-triggerControllerDDownPress() {
-  this.LB_GAMES.directionalNavigate('down');
-}
-  
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+    super(menu, control, parent, scale);
+  }
+
+  createControl(){
+    try{
+      super.createControl();
+      this.setText(this.node.getFullName());
+    }catch(e){
+      console.error(e);
+    }
+    return this.widget;
+  }
+
 }

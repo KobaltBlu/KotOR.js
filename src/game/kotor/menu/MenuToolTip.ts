@@ -21,7 +21,7 @@ export class MenuToolTip extends GameMenu {
 
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
     });
 }
   

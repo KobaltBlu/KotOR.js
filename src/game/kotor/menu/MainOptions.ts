@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUIButton, GUILabel } from "../../../gui";
+import { GameMenu, GUIListBox, GUIButton, GUILabel, MenuManager } from "../../../gui";
 
 /* @file
 * The MainOptions menu class.
@@ -27,9 +27,40 @@ export class MainOptions extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+
+      this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
+      this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
+      this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //this.Hide();
+        MenuManager.MenuGraphics.Open();
+      });
+
+      this.BTN_SOUND.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //this.Hide();
+        MenuManager.MenuSound.Open();
+      });
+
+      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
+      this._button_b = this.BTN_BACK;
+      resolve();
+    });
+  }
   
 }

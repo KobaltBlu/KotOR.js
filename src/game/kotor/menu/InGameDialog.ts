@@ -2,7 +2,20 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIProtoItem } from "../../../gui";
+
+import * as THREE from "three";
+import { ModuleCreature, ModuleObject } from "../../../module";
+import { ResourceLoader } from "../../../resource/ResourceLoader";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { LIPObject } from "../../../resource/LIPObject";
+import { DLGObject } from "../../../resource/DLGObject";
+import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { GFFObject } from "../../../resource/GFFObject";
+import { AudioLoader } from "../../../audio/AudioLoader";
 
 /* @file
 * The InGameDialog menu class.
@@ -12,6 +25,24 @@ export class InGameDialog extends GameMenu {
 
   LBL_MESSAGE: GUILabel;
   LB_REPLIES: GUIListBox;
+  dialog: any;
+  currentEntry: any;
+  listener: any;
+  owner: any;
+  nodeIndex: number;
+  paused: boolean;
+  ended: boolean;
+  state: number;
+  unequipHeadItem: boolean;
+  unequipItems: boolean;
+  isListening: boolean;
+  canLetterbox: boolean;
+  letterBoxed: boolean;
+  topBar: any;
+  bottomBar: any;
+  startingEntry: any;
+  conversation_name: string;
+  barHeight: any;
 
   constructor(){
     super();
@@ -22,7 +53,7 @@ export class InGameDialog extends GameMenu {
 
   async MenuControlInitializer() {
   await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
   });
 }
 
@@ -45,7 +76,7 @@ getCurrentOwner() {
   return this.owner;
 }
 
-StartConversation(dlg, owner, listener = GameState.player, options = {}) {
+StartConversation(dlg: string, owner: ModuleObject, listener = GameState.player, options: any = {}) {
   options = Object.assign({ onLoad: null }, options);
   this.LBL_MESSAGE.setText(' ');
   this.LB_REPLIES.clearItems();
@@ -76,12 +107,12 @@ StartConversation(dlg, owner, listener = GameState.player, options = {}) {
     dlg = this.owner.GetConversation();
   }
   if (typeof dlg === 'string' && dlg != '') {
-    this.LoadDialog(dlg, gff => {
+    this.LoadDialog(dlg, (gff: GFFObject) => {
       this.UpdateCamera();
       this.isListening = true;
       this.updateTextPosition();
       this.startingEntry = null;
-      this.getNextEntry(this.dialog.startingList, async entry => {
+      this.getNextEntry(this.dialog.startingList, async (entry: any) => {
         this.startingEntry = entry;
         let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
         if (isBarkDialog) {
@@ -94,7 +125,7 @@ StartConversation(dlg, owner, listener = GameState.player, options = {}) {
           }
         } else {
           if (this.startingEntry.cameraAngle == 6) {
-            this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID, this.startingEntry.cameraAngle);
+            this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
           } else {
             GameState.currentCamera = GameState.camera_dialog;
             this.UpdateCamera();
@@ -129,7 +160,7 @@ StartConversation(dlg, owner, listener = GameState.player, options = {}) {
 
 beginDialog() {
   if (this.dialog.ambientTrack != '') {
-    AudioLoader.LoadMusic(this.dialog.ambientTrack, data => {
+    AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
       GameState.audioEngine.stopBackgroundMusic();
       GameState.audioEngine.SetDialogBackgroundMusic(data);
       this.showEntry(this.startingEntry);
@@ -141,7 +172,7 @@ beginDialog() {
   }
 }
 
-async getNextEntry(entryLinks = [], callback = null) {
+async getNextEntry(entryLinks: any[] = [], callback?: Function) {
   console.log('getNextEntry', entryLinks);
   if (!entryLinks.length) {
     this.EndConversation();
@@ -163,7 +194,7 @@ async getNextEntry(entryLinks = [], callback = null) {
   }
 }
 
-isContinueDialog(node) {
+isContinueDialog(node: any) {
   let returnValue = null;
   if (typeof node.entries !== 'undefined') {
     returnValue = node.text == '' && node.entries.length;
@@ -175,7 +206,7 @@ isContinueDialog(node) {
   return returnValue;
 }
 
-isEndDialog(node) {
+isEndDialog(node: any) {
   let returnValue = null;
   if (typeof node.entries !== 'undefined') {
     returnValue = node.text == '' && !node.entries.length;
@@ -198,7 +229,7 @@ PlayerSkipEntry() {
   }
 }
 
-async showEntry(entry) {
+async showEntry(entry: any) {
   this.state = 0;
   entry.initProperties();
   if (!GameState.inDialog)
@@ -277,7 +308,7 @@ async showEntry(entry) {
       });
     }
   } else if (entry.cameraAngle == 6) {
-    this.SetPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID, entry.cameraAngle);
+    this.SetPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);//, entry.cameraAngle);
   } else {
     GameState.currentCamera = GameState.camera_dialog;
     this.UpdateCamera();
@@ -293,11 +324,11 @@ async showEntry(entry) {
   }
   entry.runScripts();
   if (entry.sound != '') {
-    ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, buffer => {
+    LIPObject.Load(entry.sound).then( (lip: LIPObject) => {
       if (entry.speaker instanceof ModuleCreature) {
-        entry.speaker.setLIP(new LIPObject(buffer));
+        entry.speaker.setLIP(lip);
       }
-    });
+    })
     this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
       entry.checkList.voiceOverComplete = true;
       if (entry.checkList.isComplete()) {
@@ -305,9 +336,9 @@ async showEntry(entry) {
       }
     });
   } else if (entry.vo_resref != '') {
-    ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, buffer => {
+    LIPObject.Load(entry.vo_resref).then( (lip: LIPObject) => {
       if (entry.speaker instanceof ModuleCreature) {
-        entry.speaker.setLIP(new LIPObject(buffer));
+        entry.speaker.setLIP(lip);
       }
     });
     this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
@@ -327,12 +358,12 @@ async showEntry(entry) {
   }
 }
 
-async GetAvailableReplies(entry) {
+async GetAvailableReplies(entry: any) {
   let replyLinks = await entry.getActiveReplies();
   for (let i = 0; i < replyLinks.length; i++) {
     let reply = this.dialog.getReplyByIndex(replyLinks[i]);
     if (reply) {
-      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), e => {
+      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), (e: any) => {
         this.onReplySelect(reply);
       });
     } else {
@@ -342,7 +373,7 @@ async GetAvailableReplies(entry) {
   this.LB_REPLIES.updateList();
 }
 
-async onReplySelect(reply = null) {
+async onReplySelect(reply: any) {
   if (reply) {
     reply.runScripts();
     this.getNextEntry(reply.entries);
@@ -351,7 +382,7 @@ async onReplySelect(reply = null) {
   }
 }
 
-async showReplies(entry) {
+async showReplies(entry: any) {
   this.state = 1;
   if (!GameState.inDialog)
     return;
@@ -395,18 +426,18 @@ async showReplies(entry) {
   this.state = 1;
 }
 
-LoadDialog(resref = '', onLoad = null) {
+LoadDialog(resref = '', onLoad?: Function) {
   this.conversation_name = resref;
   this.dialog = new DLGObject(resref);
   this.dialog.owner = this.owner;
   this.dialog.listener = this.listener;
   this.dialog.load().then(() => {
     switch (this.dialog.getConversationType()) {
-    case DLGObject.ConversationType.COMPUTER:
+    case DLGConversationType.COMPUTER:
       this.Close();
       GameState.InGameComputer.StartConversation(this.dialog.gff, this.owner, this.listener);
       break;
-    case DLGObject.ConversationType.CONVERSATION:
+    case DLGConversationType.CONVERSATION:
     default:
       if (typeof onLoad === 'function')
         onLoad(this.dialog.gff);
@@ -418,12 +449,12 @@ LoadDialog(resref = '', onLoad = null) {
   });
 }
 
-async OnBeforeConversationEnd(onEnd = null) {
+async OnBeforeConversationEnd(onEnd?: Function) {
   if (this.dialog.onEndConversation != '') {
     let script = await NWScript.Load(this.dialog.onEndConversation);
     if (script instanceof NWScriptInstance) {
       script.name = this.dialog.onEndConversation;
-      script.run(this.getCurrentOwner(), 0, bSuccess => {
+      script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
         if (typeof onEnd === 'function')
           onEnd();
       });
@@ -451,7 +482,7 @@ EndConversation(aborted = false) {
         let script = await NWScript.Load(this.dialog.onEndConversation);
         if (script instanceof NWScriptInstance) {
           script.name = this.dialog.onEndConversation;
-          script.run(this.getCurrentOwner(), 0, bSuccess => {
+          script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
           });
         }
       }
@@ -460,7 +491,7 @@ EndConversation(aborted = false) {
         let script = await NWScript.Load(this.dialog.onEndConversationAbort);
         if (script instanceof NWScriptInstance) {
           script.name = this.dialog.onEndConversationAbort;
-          script.run(this.getCurrentOwner(), 0, bSuccess => {
+          script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
           });
         }
       }
@@ -499,7 +530,7 @@ ResumeConversation() {
   }
 }
 
-UpdateEntryAnimations(entry) {
+UpdateEntryAnimations(entry: any) {
   if (this.dialog.isAnimatedCutscene) {
     for (let i = 0; i < entry.animations.length; i++) {
       let participant = entry.animations[i];
@@ -546,14 +577,14 @@ GetActorAnimation(index = 0) {
   return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
 }
 
-SetPlaceableCamera(nCamera) {
+SetPlaceableCamera(nCamera: number) {
   let cam = GameState.getCameraById(nCamera);
   if (cam) {
     GameState.currentCamera = cam;
   }
 }
 
-SetAnimatedCamera(nCamera, onComplete = undefined) {
+SetAnimatedCamera(nCamera: number, onComplete?: Function) {
   if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
     this.dialog.animatedCamera.playAnimation(this.GetActorAnimation(nCamera), false, () => {
       process.nextTick(() => {
@@ -694,14 +725,14 @@ UpdateCamera() {
   }
 }
 
-GetCameraMidPoint(pointA, pointB, percentage = 0.5) {
+GetCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {
   let dir = pointB.clone().sub(pointA);
   let len = dir.length();
   dir = dir.normalize().multiplyScalar(len * percentage);
   return pointA.clone().add(dir);
 }
 
-Update(delta) {
+Update(delta: number = 0) {
   super.Update(delta);
   if (!this.dialog)
     return;

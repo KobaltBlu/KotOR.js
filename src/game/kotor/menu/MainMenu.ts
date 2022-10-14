@@ -1,8 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { AudioLoader } from "../../../audio/AudioLoader";
+import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { OdysseyModel } from "../../../odyssey";
+import { OdysseyModel3D } from "../../../three/odyssey";
 
 /* @file
 * The MainMenu menu class.
@@ -23,6 +28,9 @@ export class MainMenu extends GameMenu {
   LBL_NEWCONTENT: GUILabel;
   BTN_WARP: GUIButton;
   BTN_EXIT: GUIButton;
+  _3dViewModel: OdysseyModel3D;
+  _3dView: LBL_3DView;
+  bgMusicBuffer: Buffer;
 
   constructor(){
     super();
@@ -32,81 +40,169 @@ export class MainMenu extends GameMenu {
   }
 
   async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise((resolve, reject) => {
-  });
-}
+    await super.MenuControlInitializer();
+    return new Promise<void>((resolve, reject) => {
+      this.selectedControl = this.BTN_NEWGAME;
 
-Update(delta = 0) {
-  super.Update(delta);
-  try {
-    this._3dView.render(delta);
-    this.lbl_3dview.getFill().material.needsUpdate = true;
-  } catch (e: any) {
-  }
-}
+      this.LB_MODULES.hide();
+      this.LBL_BW.hide();
+      this.LBL_LUCAS.hide();
+      this.LBL_NEWCONTENT.hide();
+      this.BTN_WARP.hide();
 
-Show() {
-  super.Show();
-  GameState.audioEngine.SetBackgroundMusic(this.bgMusicBuffer);
-  GameState.AlphaTest = 0.5;
-  CurrentGame.InitGameInProgressFolder();
-}
+      this.BTN_NEWGAME.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
+        MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
+          MenuManager.LoadScreen.Open();
+          MenuManager.CharGenClass.Init( () => {
+            MenuManager.LoadScreen.Close();
+            MenuManager.CharGenClass.Open();
+          });
+        });
+      });
 
-triggerControllerDUpPress() {
-  if (!this.selectedControl) {
-    this.selectedControl = this.BTN_NEWGAME;
-  }
-  this.BTN_NEWGAME.onHoverOut();
-  this.BTN_LOADGAME.onHoverOut();
-  this.BTN_MOVIES.onHoverOut();
-  this.BTN_OPTIONS.onHoverOut();
-  this.BTN_EXIT.onHoverOut();
-  if (this.selectedControl == this.BTN_EXIT) {
-    this.selectedControl = this.BTN_OPTIONS;
-  } else if (this.selectedControl == this.BTN_OPTIONS) {
-    this.selectedControl = this.BTN_MOVIES;
-  } else if (this.selectedControl == this.BTN_MOVIES) {
-    this.selectedControl = this.BTN_LOADGAME;
-  } else if (this.selectedControl == this.BTN_LOADGAME) {
-    this.selectedControl = this.BTN_NEWGAME;
-  } else if (this.selectedControl == this.BTN_NEWGAME) {
-    this.selectedControl = this.BTN_EXIT;
-  }
-  this.selectedControl.onHoverIn();
-}
+      this.BTN_LOADGAME.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        MenuManager.MenuSaveLoad.Open()
+      });
 
-triggerControllerDDownPress() {
-  if (!this.selectedControl) {
-    this.selectedControl = this.BTN_NEWGAME;
-  }
-  this.BTN_NEWGAME.onHoverOut();
-  this.BTN_LOADGAME.onHoverOut();
-  this.BTN_MOVIES.onHoverOut();
-  this.BTN_OPTIONS.onHoverOut();
-  this.BTN_EXIT.onHoverOut();
-  if (this.selectedControl == this.BTN_NEWGAME) {
-    this.selectedControl = this.BTN_LOADGAME;
-  } else if (this.selectedControl == this.BTN_LOADGAME) {
-    this.selectedControl = this.BTN_MOVIES;
-  } else if (this.selectedControl == this.BTN_MOVIES) {
-    this.selectedControl = this.BTN_OPTIONS;
-  } else if (this.selectedControl == this.BTN_OPTIONS) {
-    this.selectedControl = this.BTN_EXIT;
-  } else if (this.selectedControl == this.BTN_EXIT) {
-    this.selectedControl = this.BTN_NEWGAME;
-  }
-  this.selectedControl.onHoverIn();
-}
+      this.BTN_MOVIES.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //this.Hide();
+        MenuManager.MainMovies.Open();
+        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+      });
 
-triggerControllerAPress() {
-  if (this.selectedControl instanceof GUIControl) {
-    this.selectedControl.click();
-  }
-}
+      this.BTN_OPTIONS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        //this.Hide();
+        MenuManager.MainOptions.Open();
+      });
 
-triggerControllerBPress() {
-  this.BTN_EXIT.click();
-}
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        window.close();
+      });
+
+      let bgMusic = 'mus_theme_cult';            
+    
+
+      GameState.ModelLoader.load({
+        file: 'mainmenu',
+        onLoad: (mdl: OdysseyModel) => {
+          this.tGuiPanel.widget.fill.visible = false;
+
+          this._3dView = new LBL_3DView();
+          this._3dView.visible = true;
+          (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
+          (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
+          
+          
+          OdysseyModel3D.FromMDL(mdl, { 
+            onComplete: (model: OdysseyModel3D) => {
+              //console.log('Model Loaded', model);
+              this._3dViewModel = model;
+              
+              this._3dView.camera.position.copy(model.camerahook.position);
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+
+              this._3dView.addModel(this._3dViewModel);
+              TextureLoader.LoadQueue(() => {
+
+                AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
+                  
+                  this.bgMusicBuffer = data;
+                  resolve();
+                  this._3dViewModel.playAnimation(0, true);
+            
+                }, () => {
+                  console.error('Background Music not found', bgMusic);
+                  resolve();
+                });
+
+              });
+
+            },
+            manageLighting: false,
+            context: this._3dView
+          });
+        }
+      });
+    });
+  }
+
+  Update(delta = 0) {
+    super.Update(delta);
+    try {
+      this._3dView.render(delta);
+      (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+    } catch (e: any) {
+    }
+  }
+
+  Show() {
+    super.Show();
+    GameState.audioEngine.SetBackgroundMusic(this.bgMusicBuffer);
+    GameState.AlphaTest = 0.5;
+    CurrentGame.InitGameInProgressFolder();
+  }
+
+  triggerControllerDUpPress() {
+    if (!this.selectedControl) {
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+    this.BTN_NEWGAME.onHoverOut();
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_MOVIES.onHoverOut();
+    this.BTN_OPTIONS.onHoverOut();
+    this.BTN_EXIT.onHoverOut();
+    if (this.selectedControl == this.BTN_EXIT) {
+      this.selectedControl = this.BTN_OPTIONS;
+    } else if (this.selectedControl == this.BTN_OPTIONS) {
+      this.selectedControl = this.BTN_MOVIES;
+    } else if (this.selectedControl == this.BTN_MOVIES) {
+      this.selectedControl = this.BTN_LOADGAME;
+    } else if (this.selectedControl == this.BTN_LOADGAME) {
+      this.selectedControl = this.BTN_NEWGAME;
+    } else if (this.selectedControl == this.BTN_NEWGAME) {
+      this.selectedControl = this.BTN_EXIT;
+    }
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerDDownPress() {
+    if (!this.selectedControl) {
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+    this.BTN_NEWGAME.onHoverOut();
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_MOVIES.onHoverOut();
+    this.BTN_OPTIONS.onHoverOut();
+    this.BTN_EXIT.onHoverOut();
+    if (this.selectedControl == this.BTN_NEWGAME) {
+      this.selectedControl = this.BTN_LOADGAME;
+    } else if (this.selectedControl == this.BTN_LOADGAME) {
+      this.selectedControl = this.BTN_MOVIES;
+    } else if (this.selectedControl == this.BTN_MOVIES) {
+      this.selectedControl = this.BTN_OPTIONS;
+    } else if (this.selectedControl == this.BTN_OPTIONS) {
+      this.selectedControl = this.BTN_EXIT;
+    } else if (this.selectedControl == this.BTN_EXIT) {
+      this.selectedControl = this.BTN_NEWGAME;
+    }
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerAPress() {
+    if (this.selectedControl instanceof GUIControl) {
+      this.selectedControl.click();
+    }
+  }
+
+  triggerControllerBPress() {
+    this.BTN_EXIT.click();
+  }
   
 }
