@@ -96,7 +96,7 @@ export class TalentFeat extends TalentObject {
       feat.id = object.__index;
       return feat;
     }
-    return false;
+    return;
   }
 
   save(){

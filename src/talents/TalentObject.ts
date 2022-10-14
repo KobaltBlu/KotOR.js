@@ -1,5 +1,6 @@
 export class TalentObject {
   id: number;
+  type: number;
   item: any;
   itemPropertyIndex: number;
   casterLevel: number;
