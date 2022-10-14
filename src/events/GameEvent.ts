@@ -3,12 +3,12 @@ import { ModuleObject } from "../module/ModuleObject";
 import { GFFStruct } from "../resource/GFFStruct";
 
 
-class GameEvent {
+export class GameEvent {
 
   initialized: boolean = false;
   type = 0;
   caller: ModuleObject;
-  object: ModuleObjects;
+  object: ModuleObject;
   day: number;
   time: number;
   callerId: number;
