@@ -1,8 +1,16 @@
-import { CurrentGame } from "./CurrentGame";
-import { GameState } from "./GameState";
-import { Planetary } from "./Planetary";
-import { GFFObject } from "./resource/GFFObject";
-import { AsyncLoop } from "./utility/AsyncLoop";
+import { CurrentGame } from "../CurrentGame";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { Planetary } from "../Planetary";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { PartyManager } from "./PartyManager";
+import * as fs from "fs";
+import * as path from "path";
+import { TwoDAManager } from "./TwoDAManager";
 
 export class PartyTableManager {
 
@@ -23,10 +31,14 @@ export class PartyTableManager {
         Planetary.SetCurrentPlanet(currentPlanet);
       }
 
-      //Init the TutorialWindowTracker
-      let bitCount = Math.ceil(Global.kotor2DA.tutorial.RowCount / 8) * 8;
-      for(let i = 0; i < bitCount; i++){
-        GameState.TutorialWindowTracker[i] = 0;
+      //Init the TutorialWindowTracker      
+      const tutorial2DA = TwoDAManager.datatables.get('tutorial');
+      let bitCount = 0;
+      if(tutorial2DA){
+        bitCount = Math.ceil(tutorial2DA.RowCount / 8) * 8;
+        for(let i = 0; i < bitCount; i++){
+          GameState.TutorialWindowTracker[i] = 0;
+        }
       }
 
       if(gff.RootNode.HasField('PT_TUT_WND_SHOWN')){
@@ -66,7 +78,7 @@ export class PartyTableManager {
         //console.log('PartyTableManager', 'Loading Party Templates')
         let ptLoader = new AsyncLoop({
           array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-          onLoop: (id, asyncLoop) => {
+          onLoop: (id: number, asyncLoop: AsyncLoop) => {
             fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc'), (error, pm) => {
               PartyManager.NPCS[id].template = null;
               if(!error){
@@ -91,8 +103,8 @@ export class PartyTableManager {
 
   }
 
-  static export(directory = '', onSave = undefined){
-    return new Promise( (resolve, reject) => {
+  static export(directory = '', onSave?: Function){
+    return new Promise<void>( (resolve, reject) => {
       //Export PARTYTABLE.res
       let partytable = new GFFObject();
       partytable.FileType = 'PT  ';
@@ -158,20 +170,25 @@ export class PartyTableManager {
       partytable.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).SetValue(0);
       partytable.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).SetValue(0);
 
-      let byteCount = Math.ceil(Global.kotor2DA.tutorial.RowCount / 8);
-      let buffer = Buffer.alloc(byteCount);
-      for(let i = 0; i < byteCount; i++){
-        let byte = 0;
-        for(let j = 0; j < 8; j++){
-          let offset = (8 * i) + j;
-          let bit = GameState.TutorialWindowTracker.length[offset];
-          if(bit){
-            byte |= 1 << j;
+      const tutorial2DA = TwoDAManager.datatables.get('tutorial');
+      if(tutorial2DA){
+        let byteCount = Math.ceil(tutorial2DA.RowCount / 8);
+        let buffer = Buffer.alloc(byteCount);
+        for(let i = 0; i < byteCount; i++){
+          let byte = 0;
+          for(let j = 0; j < 8; j++){
+            let offset = (8 * i) + j;
+            let bit = GameState.TutorialWindowTracker[offset];
+            if(bit){
+              byte |= 1 << j;
+            }
           }
+          buffer.writeUInt8(byte, i);
         }
-        buffer.writeUInt8(byte, i);
+        partytable.RootNode.AddField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).SetData(buffer);
+      }else{
+        partytable.RootNode.AddField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).SetData(Buffer.alloc(0));
       }
-      partytable.RootNode.AddField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).SetData(buffer);
 
       partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_XP_POOL'));
 

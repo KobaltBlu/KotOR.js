@@ -12,6 +12,8 @@ import { CurrentGame } from "../CurrentGame";
 import { TwoDAManager } from "./TwoDAManager";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
+import { OdysseyModel3D } from "../three/odyssey";
 
 /* @file
  * The PartyManager class.
@@ -233,7 +235,7 @@ export class PartyManager {
   }
 
   //Add a world creature to the list of Party Members and remove it from the creatures array
-  static AddCreatureToParty(slot = 1, creature = null){
+  static AddCreatureToParty(slot = 1, creature: ModuleCreature){
     if(creature instanceof ModuleCreature){
       PartyManager.NPCS[slot].available = true;
       //PartyManager.NPCS[nID].canSelect = true;
@@ -267,7 +269,7 @@ export class PartyManager {
       partyMember.partyID = 0;
       partyMember.Load( () => {
         partyMember.LoadScripts( () => {
-          partyMember.LoadModel( (model) => {
+          partyMember.LoadModel( (model: OdysseyModel3D) => {
             PartyManager.party[0] = partyMember;
             
             model.box = new THREE.Box3().setFromObject(model);
@@ -342,7 +344,7 @@ export class PartyManager {
   }
 
   //Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
-  static GetCreatureStartingPartyIndex(creature = undefined){
+  static GetCreatureStartingPartyIndex(creature: ModuleCreature){
 
     if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
       return 0
@@ -357,7 +359,7 @@ export class PartyManager {
   }
 
   //Get the creatures reference in the CurrentMembers array
-  static GetCreatureMemberDetails( creature ){
+  static GetCreatureMemberDetails( creature: ModuleObject ){
     if(creature instanceof ModulePlayer){
       return undefined;
     }
@@ -375,7 +377,7 @@ export class PartyManager {
     let template = npc.template;
     let partyMember = new ModuleCreature(template);
 
-    let currentSlot = false;//PartyManager.party[nIdx+1];
+    let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
 
     if(nIdx == 0 || nIdx == 1){
       try{
@@ -392,7 +394,7 @@ export class PartyManager {
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
 
             partyMember.LoadScripts( () => {
-              partyMember.LoadModel( (model) => {
+              partyMember.LoadModel( (model: OdysseyModel3D) => {
                 let spawn = PartyManager.GetSpawnLocation(partyMember);
                 model.box = new THREE.Box3().setFromObject(model);
                 model.moduleObject = partyMember;
@@ -433,13 +435,13 @@ export class PartyManager {
   }
 
   //Used in the TSL PartySelection menu to load creature for the 3D preview of the selected party member
-  static LoadPartyMemberCreature(idx = 0, onLoad = null){
+  static LoadPartyMemberCreature(idx = 0, onLoad?: Function){
     let npc = PartyManager.NPCS[idx];
     if(npc){
       if(npc.template){
         let partyMember = new ModuleCreature(npc.template);
         partyMember.Load( () => {
-          partyMember.LoadModel( (model) => {
+          partyMember.LoadModel( (model: OdysseyModel3D) => {
             model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
             partyMember.onSpawn();
@@ -459,7 +461,7 @@ export class PartyManager {
     
   }
 
-  static GetSpawnLocation( creature = undefined ){
+  static GetSpawnLocation( creature: ModuleCreature ){
     if( creature instanceof ModuleCreature ){
       if( GameState.isLoadingSave ){
         return new EngineLocation(
@@ -546,7 +548,7 @@ export class PartyManager {
 
   }
 
-  static GetFollowPosition(creature = null){
+  static GetFollowPosition(creature: ModuleCreature){
 
     //I think party following is FORMATION_LINE in the formations.2da
 
@@ -572,7 +574,7 @@ export class PartyManager {
 
   }
 
-  static async ExportPartyMemberTemplate( index = 0, template = undefined ){
+  static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){
     return new Promise<void>( async (resolve, reject) => {
       if(template instanceof GFFObject){
         template.RemoveFieldByLabel('TemplateResRef');

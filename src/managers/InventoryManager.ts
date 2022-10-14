@@ -6,6 +6,8 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
 import { CurrentGame } from "../CurrentGame";
+import { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import { PartyManager } from "./PartyManager";
 
 /* @file
  * The InventoryManager class.
@@ -77,7 +79,7 @@ export class InventoryManager {
     return InventoryManager.getNonQuestInventory(slot, creature);
   }
 
-  static isItemUsableBy( item = undefined, creature?: ModuleCreature): boolean {
+  static isItemUsableBy( item?: ModuleItem, creature?: ModuleCreature): boolean {
     if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
       return false;
 
@@ -90,14 +92,14 @@ export class InventoryManager {
     
   }
 
-  static isItemUsableInSlot( item, slot ): boolean {
+  static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
     let baseItem = item.getBaseItem();
     return (parseInt(baseItem.equipableslots) & slot || parseInt(baseItem.equipableslots) === slot) ? true : false;
   }
 
-  static addItem(template = new GFFObject(), onLoad = null, limitOne = false){
+  static addItem(template: GFFObject|ModuleItem = new GFFObject(), onLoad?: Function, limitOne = false){
 
-    let item = undefined;
+    let item: ModuleItem;
     if(template instanceof GFFObject){
       item = new ModuleItem(template);
     }else if(template instanceof ModuleItem){
@@ -172,7 +174,7 @@ export class InventoryManager {
 
   }
 
-  static removeItemByResRef(resref = '', nCoutn = 1){
+  static removeItemByResRef(resRef = '', nCount = 1){
     let item = InventoryManager.getItem(resRef);
     if(item){
       let idx = InventoryManager.inventory.indexOf(item);
@@ -184,10 +186,10 @@ export class InventoryManager {
     }
   }
 
-  static removeItem(item = undefined, nCount = 1){
+  static removeItem(item?: string|ModuleItem, nCount = 1){
     if(typeof item === 'string'){
-      InventoryManager.removeItemByResRef(resref, nCount);
-    }else if(item instanceof ModuleObject){
+      InventoryManager.removeItemByResRef(item, nCount);
+    }else if(item instanceof ModuleItem){
       let idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         if(nCount >= item.getStackSize()){
@@ -204,7 +206,7 @@ export class InventoryManager {
   }
 
   static getItem(resRef = ''){
-    for(let i = 0; i<InventoryManager.inventory.length; i++){
+    for(let i = 0; i < InventoryManager.inventory.length; i++){
       let item = InventoryManager.inventory[i];
       if(item.getTag().toLowerCase() == resRef.toLowerCase())
         return item;

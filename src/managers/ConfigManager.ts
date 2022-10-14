@@ -6,7 +6,7 @@ import { ipcRenderer, ipcMain, app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { DeepObject } from "./DeepObject";
+import { DeepObject } from "../DeepObject";
 
 /* @file
  * The ConfigManager class.

@@ -140,10 +140,10 @@ export class LightManager {
       }
     }else{
     
-      if(GameState.Mode != GameState.MODES.INGAME && GameState.Mode != GameState.MODES.MINIGAME && target == null)
+      if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && target == null)
         return;
 
-      if(GameState.Mode == GameState.MODES.INGAME || GameState.Mode == GameState.MODES.MINIGAME){
+      if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME){
         if(GameState.inDialog){
           target = GameState.currentCamera;
         }else{

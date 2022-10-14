@@ -7,7 +7,7 @@ export class BIFManager {
   static bifs: Map<number, BIFObject> = new Map();
   static bifIndexes: Map<string, number> = new Map();
 
-  static Load(onComplete: Function|undefined = undefined){
+  static Load(onComplete?: Function){
 
   }
 
