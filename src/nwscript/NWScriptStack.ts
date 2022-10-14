@@ -331,7 +331,7 @@ export class NWScriptStack {
   }
   
   static LocationFromStruct = function( struct: GFFStruct ){
-    return new GameState.Location(
+    return new EngineLocation(
       struct.GetFieldByLabel('PositionX').GetValue(),
       struct.GetFieldByLabel('PositionY').GetValue(),
       struct.GetFieldByLabel('PositionZ').GetValue(),

@@ -1,14 +1,41 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import * as THREE from "three";
+import { ActionPlayAnimation, ActionResumeDialog } from "../actions";
+import { CombatEngine } from "../CombatEngine";
+import { EffectAbilityIncrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectDamage, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForcePushed, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowIncrease, EffectSetState, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
+import EngineLocation from "../engine/EngineLocation";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionType } from "../enums/actions/ActionType";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
+import { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
+import { MenuManager } from "../gui";
 import { TemplateLoader } from "../loaders/TemplateLoader";
+import { ConfigManager } from "../managers/ConfigManager";
+import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
+import { TLKManager } from "../managers/TLKManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
 import { ModuleCreature } from "../module/ModuleCreature";
 import { ModuleObject } from "../module/ModuleObject";
+import { OdysseyWalkMesh } from "../odyssey";
+import { Planetary } from "../Planetary";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { TalentFeat, TalentObject, TalentSkill, TalentSpell } from "../talents";
+import { OdysseyModel3D } from "../three/odyssey";
+import { NWScriptSlotToArmorSlot } from "../utility/NWScriptSlotToArmorSlot";
+import { Utility } from "../utility/Utility";
 import { VideoPlayer } from "../VideoPlayer";
+import { EventConversation } from "./events/EventConversation";
+import { EventSpellCastAt } from "./events/EventSpellCastAt";
+import { EventUserDefined } from "./events/EventUserDefined";
+import { NWScriptEvent } from "./events/NWScriptEvent";
 import { NWScript } from "./NWScript";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptInstance } from "./NWScriptInstance";
@@ -382,7 +409,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["string", "object", "int"],
       action: async function(args: any, _instr: any, action: any){
         return new Promise<ModuleItem>( (resolve, reject) => {
-          ModuleItem.FromResRef(args[0], (item) => {
+          ModuleItem.FromResRef(args[0], (item: ModuleItem) => {
             if(item instanceof ModuleItem){
               item.setStackSize(args[2]);
               if(PartyManager.party.indexOf(args[1]) > -1){
@@ -407,7 +434,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         if(args[0] instanceof ModuleItem && this.caller instanceof ModuleCreature){
           //args0 = item, args1 = slot, args2 = wether to do this instantly
           //We don't support this in the actionQueue yet so just do it instantly for now
-          this.caller.equipItem(UTCObject.NWScriptSlot(args[1]), args[0]);
+          this.caller.equipItem(NWScriptSlotToArmorSlot(args[1]), args[0]);
         }
       }
     },
@@ -419,8 +446,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       action: function(args: any, _instr: any, action: any){
         if(this.caller instanceof ModuleCreature){
           for(let slot in this.caller.equipment){
-            if(this.caller.equipment[UTCObject.NWScriptSlot(slot)] == args[0]){
-              this.caller.unequipSlot(UTCObject.NWScriptSlot(slot));
+            if(this.caller.equipment[slot] == args[0]){
+              this.caller.unequipSlot(NWScriptSlotToArmorSlot(slot));
               break;
             }
           }
@@ -1303,7 +1330,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[1]);
         effect.setInt(1, args[0]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         effect.setInt(5, args[2]);
         return effect.initialize();
       }
@@ -1335,7 +1362,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setInt(0, args[1]);
         effect.setInt(1, args[0]);
         effect.setInt(2, args[2]);
-        effect.setInt(3, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(3, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -1362,7 +1389,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[0]);
         effect.setInt(1, args[1]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -1715,66 +1742,66 @@ export class NWScriptDefK1 extends NWScriptDef {
           switch(args[0]){
             case 0:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.HEAD
+                  ModuleCreatureArmorSlot.HEAD
                 );
             break;
             case 1:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.ARMOR
+                  ModuleCreatureArmorSlot.ARMOR
                 );
             break;
             case 3:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.ARMS
+                  ModuleCreatureArmorSlot.ARMS
                 );
             break;
             case 4:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.RIGHTHAND
+                  ModuleCreatureArmorSlot.RIGHTHAND
                 );
             break;
             case 5:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.LEFTHAND
+                  ModuleCreatureArmorSlot.LEFTHAND
                 );
             break;
             case 7:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.LEFTARMBAND
+                  ModuleCreatureArmorSlot.LEFTARMBAND
                 );
             break;
             case 8:
             return args[1].getItemInSlot(
-                UTCObject.SLOT.RIGHTARMBAND
+                ModuleCreatureArmorSlot.RIGHTARMBAND
               );
             case 9:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.IMPLANT
+                  ModuleCreatureArmorSlot.IMPLANT
                 );
             break;
             case 10:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.BELT
+                  ModuleCreatureArmorSlot.BELT
                 );
             break;
             case 14:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.CLAW1
+                  ModuleCreatureArmorSlot.CLAW1
                 );
             break;
             case 15:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.CLAW2
+                  ModuleCreatureArmorSlot.CLAW2
                 );
             break;
             case 16:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.CLAW2
+                  ModuleCreatureArmorSlot.CLAW2
                 );
             break;
             case 17:
               return args[1].getItemInSlot(
-                  UTCObject.SLOT.HIDE
+                  ModuleCreatureArmorSlot.HIDE
                 );
             break;
           }
@@ -2470,7 +2497,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         if(args[0] instanceof ModuleObject){
           return args[0].GetLocation();
         }
-        return new GameState.Location();
+        return new EngineLocation();
       }
     },
     214:{
@@ -2480,7 +2507,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["location"],
       action: function(args: any, _instr: any, action: any){
         console.log('ActionJumpToLocation', args, this.caller);
-        if(args[0] instanceof GameState.Location){
+        if(args[0] instanceof EngineLocation){
           this.caller.jumpToLocation( args[0] );
         }
       }
@@ -2491,7 +2518,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 18,
       args: ["vector", "float"],
       action: function(args: any, _instr: any, action: any){
-        let location = new GameState.Location(
+        let location = new EngineLocation(
           args[0].x, args[0].y, args[0].z
         );
         location.setBearing(args[1]);
@@ -2644,11 +2671,11 @@ export class NWScriptDefK1 extends NWScriptDef {
       name: "GetSpellTargetLocation",
       type: 18,
       args: [],
-      action: function(args){
+      action: function(args: any){
         if(this.talent instanceof TalentObject && this.talent.oTarget instanceof ModuleObject){
           this.talent.oTarget.GetLocation();
         }
-        return new GameState.Location();
+        return new EngineLocation();
       }
     },
     223:{
@@ -2675,7 +2702,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 4,
       args: ["location"],
       action: function(args: any, _instr: any, action: any){
-        if(location instanceof GameState.Location){
+        if(location instanceof EngineLocation){
           return location.getFacing();
         }
         return 0;
@@ -2805,9 +2832,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 5,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return TLKManager.GetStringById(
-          args[0]
-          );
+        return TLKManager.GetStringById( args[0] );
       }
     },
     240:{
@@ -2857,7 +2882,7 @@ export class NWScriptDefK1 extends NWScriptDef {
               TemplateLoader.Load({
                 ResRef: args[1],
                 ResType: ResourceTypes.utc,
-                onLoad: (gff) => {
+                onLoad: (gff: GFFObject) => {
         
                   let creature = new ModuleCreature(gff)
                   creature.Load( () => {
@@ -2868,7 +2893,7 @@ export class NWScriptDefK1 extends NWScriptDef {
                     resolve(creature);
       
                     creature.LoadScripts( () => {
-                      creature.LoadModel( (model) => {
+                      creature.LoadModel( (model: OdysseyModel3D) => {
                         model.moduleObject = creature;
                         model.hasCollision = true;
                         model.name = creature.getTag();
@@ -2890,7 +2915,7 @@ export class NWScriptDefK1 extends NWScriptDef {
               TemplateLoader.Load({
                 ResRef: args[1],
                 ResType: ResourceTypes.utp,
-                onLoad: (gff) => {
+                onLoad: (gff: GFFObject) => {
         
                   let plc = new ModulePlaceable(gff)
                   plc.Load( () => {
@@ -2899,8 +2924,8 @@ export class NWScriptDefK1 extends NWScriptDef {
         
                     resolve(plc);
         
-                    plc.LoadModel( (model) => {
-                      plc.LoadWalkmesh(model.name, (pwk) => {
+                    plc.LoadModel( (model: OdysseyModel3D) => {
+                      plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
                         plc.model.moduleObject = plc;
                         
                         model.hasCollision = true;
@@ -3483,7 +3508,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 4,
       args: ["location", "location"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof GameState.Location && args[1] instanceof GameState.Location){
+        if(args[0] instanceof EngineLocation && args[1] instanceof EngineLocation){
           return args[0].position.distanceTo(args[1].position);
         }
         return 0;
@@ -3855,7 +3880,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 4,
       args: ["location", "location"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof GameState.Location && args[1] instanceof GameState.Location){
+        if(args[0] instanceof EngineLocation && args[1] instanceof EngineLocation){
           return args[0].position.distanceTo(args[1].position);
         }
         return 0;
@@ -3868,7 +3893,10 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleObject){
-          return new THREE.Vector2( this.caller.position.x, this.caller.position.y).distanceTo(args[0].position);
+          return new THREE.Vector2( this.caller.position.x, this.caller.position.y)
+            .distanceTo(
+              new THREE.Vector2( args[0].position.x, args[0].position.y)
+            );
         }else{
           return -1.0;
         }
@@ -3933,7 +3961,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleObject){
-          if(PartyManager.party.indexOf(args[0] >= 0)){
+          if(PartyManager.party.indexOf(args[0]) >= 0){
             // if(InventoryManager.inventory.length){
             //   return InventoryManager.inventory[0];
             // args[0]._inventoryPointer = 0;
@@ -3985,7 +4013,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         //   return undefined;
         // }
         if(args[0] instanceof ModuleObject){
-          if(PartyManager.party.indexOf(args[0] >= 0)){
+          if(PartyManager.party.indexOf(args[0]) >= 0){
             return InventoryManager.inventory[++args[0]._inventoryPointer];
           }else{
             return args[0].inventory[++args[0]._inventoryPointer];
@@ -4101,7 +4129,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[0]);
         effect.setInt(1, args[1]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -4331,7 +4359,10 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object", "object", "int", "int"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleStore){
-          GameState.MenuStore.Open(args[0], args[1], args[2], args[3]);
+          MenuManager.MenuStore.setStoreObject(args[0]);
+          MenuManager.MenuStore.setCustomerObject(args[1]);
+          MenuManager.MenuStore.setBonusMarkUp(args[2]);
+          MenuManager.MenuStore.setBonusMarkDown(args[3]);
         }
       }
     },
@@ -4578,7 +4609,7 @@ export class NWScriptDefK1 extends NWScriptDef {
   
             //console.log('ActionEquipMostDamagingMelee', weapon);
             if(weapon){
-              args[0].equipItem(args[1] ? UTCObject.SLOT.LEFTHAND : UTCObject.SLOT.RIGHTHAND, weapon);
+              args[0].equipItem(args[1] ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND, weapon);
             }
     
           }
@@ -4632,7 +4663,7 @@ export class NWScriptDefK1 extends NWScriptDef {
   
             //console.log('ActionEquipMostDamagingRanged', weapon);
             if(weapon){
-              args[0].equipItem(UTCObject.SLOT.RIGHTHAND, weapon);
+              args[0].equipItem(ModuleCreatureArmorSlot.RIGHTHAND, weapon);
             }
     
           }
@@ -5023,7 +5054,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[0]);
         effect.setInt(1, args[1]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -5044,7 +5075,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[1]);
         effect.setInt(1, args[0]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         effect.setInt(5, args[2]);
         return effect.initialize();
       }
@@ -5074,7 +5105,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setInt(0, args[1]);
         effect.setInt(1, args[0]);
         effect.setInt(2, args[2]);
-        effect.setInt(3, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(3, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -5089,7 +5120,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[0]);
         effect.setInt(1, args[1]);
-        effect.setInt(2, Global.kotor2DA.racialtypes.RowCount);
+        effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
         return effect.initialize();
       }
     },
@@ -5139,7 +5170,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 16,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        let forceshield = Global.kotor2DA.forceshields.rows[args[0]];
+        let forceshield = TwoDAManager.datatables.get('forceshields').rows[args[0]];
         if(forceshield){
           let effect = new EffectForceShield();
           effect.setCreator(this.caller);
@@ -5484,7 +5515,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object", "int", "int", "int"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature || args[0] instanceof ModulePlaceable){
-          this.caller.attackCreature(args[0], undefined, true, args[3], Global.kotor2DA.animations.rows[args[1]].name, args[2]);
+          this.caller.attackCreature(args[0], undefined, true, args[3], TwoDAManager.datatables.get('animations').rows[args[1]].name, args[2]);
         }else{
           console.error('attackCreature', args[0]);
         }
@@ -5573,7 +5604,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: [],
       action: function(args: any, _instr: any, action: any){
         try {
-          return parseInt(iniConfig.options['Game Options']['Difficulty Level']);
+          return parseInt(GameState.iniConfig.options['Game Options']['Difficulty Level']);
         } catch(e){  }
       }
     },
@@ -5612,7 +5643,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        GameState.InGameConfirm.ShowTutorialMessage(args[0]);
+        MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
       }
     },
     518:{
@@ -5666,7 +5697,7 @@ export class NWScriptDefK1 extends NWScriptDef {
               case ActionType.ActionOpenDoor: return 5;
               case ActionType.ActionCloseDoor: return 6;
               case ActionType.ActionDialogObject: return 7;
-              case ActionType.ActionDisableMine: return 8;
+              case ActionType.ActionDisarmMine: return 8;
               case ActionType.ActionRecoverMine: return 9;
               case ActionType.ActionFlagMine: return 10;
               case ActionType.ActionExamineMine: return 11;
@@ -5702,9 +5733,9 @@ export class NWScriptDefK1 extends NWScriptDef {
       action: function(args: any, _instr: any, action: any){
         let difficulty = 0;
         try {
-          difficulty = parseInt(iniConfig.options['Game Options']['Difficulty Level']);
+          difficulty = parseInt(GameState.iniConfig.options['Game Options']['Difficulty Level']);
         } catch(e){  }
-        parseFloat(Global.kotor2DA.difficultyopt.rows[difficulty].multiplier);
+        parseFloat(TwoDAManager.datatables.get('difficultyopt').rows[difficulty].multiplier);
       }
     },
     524:{
@@ -5873,7 +5904,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       action: function(args: any, _instr: any, action: any){
         //this._pcIdx++;
         //I believe GetNextPC should only ever return undefined, because partymember do not get added to the modules player list. And there is only one player
-        return undefined;//PartyManager.party[this._pcIdx];
+        return;//PartyManager.party[this._pcIdx];
       }
     },
     550:{
@@ -6638,9 +6669,9 @@ export class NWScriptDefK1 extends NWScriptDef {
         if(GameState.module.area.MiniGame.Type == 2){
           const rot = GameState.module.area.MiniGame.Player.rotation;
           return new THREE.Vector3(
-            THREE.Math.radToDeg(rot.x),
-            THREE.Math.radToDeg(rot.y),
-            THREE.Math.radToDeg(rot.z)
+            THREE.MathUtils.radToDeg(rot.x),
+            THREE.MathUtils.radToDeg(rot.y),
+            THREE.MathUtils.radToDeg(rot.z)
           );
         }else{
           return GameState.module.area.MiniGame.Player.position;
@@ -7113,7 +7144,7 @@ export class NWScriptDefK1 extends NWScriptDef {
           GameState.module.area.creatures.push(partyMember);
           partyMember.Load( () => {
             partyMember.LoadEquipment( () => {
-              partyMember.LoadModel( (model) => {
+              partyMember.LoadModel( (model: OdysseyModel3D) => {
                 partyMember.position.copy(args[1].position);
                 model.box = new THREE.Box3().setFromObject(model);
                 partyMember.setFacing(args[1].getFacing(), true);
@@ -7251,13 +7282,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       action: function(args: any, _instr: any, action: any){
         //Setting ignoreUnescapable = TRUE allows the exithawk script to manage the party ingoring the unescapable flag
         //set in the area properties. This is my current understanding of how I think it should work...
-        GameState.MenuPartySelection.Open(
-        args[0],
-        args[1],
-        args[2],
-          true
-        );
-        GameState.MenuPartySelection.ignoreUnescapable = true;
+        MenuManager.MenuPartySelection.Open( args[0], args[1], args[2] );
+        MenuManager.MenuPartySelection.ignoreUnescapable = true;
       }
     },
     713:{
@@ -7278,10 +7304,10 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: ["string", "int"],
       action: function(args: any, _instr: any, action: any){
-        let count = Global.kotor2DA.plot.RowCount;
+        let count = TwoDAManager.datatables.get('plot').RowCount;
         for(let i = 0; i < count; i++){
-          if(Global.kotor2DA.plot.rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
-            PartyManager.GiveXP( parseInt(Global.kotor2DA.plot.rows[i]) * (args[1] * 0.01) );
+          if(TwoDAManager.datatables.get('plot').rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
+            PartyManager.GiveXP( parseInt(TwoDAManager.datatables.get('plot').rows[i]) * (args[1] * 0.01) );
           }
         }
       }
@@ -7536,7 +7562,7 @@ export class NWScriptDefK1 extends NWScriptDef {
           let room = GameState.module.area.rooms[i];
           if(room.roomName.toLowerCase() == args[0].toLowerCase()){
             if(room.model){
-              room.model.playAnimation( 'scriptloop'+pad(args[1], 2) );
+              room.model.playAnimation( 'scriptloop'+Utility.PadInt(args[1], 2) );
             }
             break;
           }
@@ -7549,7 +7575,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        GameState.MenuGalaxyMap.Open(args[0]);
+        MenuManager.MenuGalaxyMap.Open();
+        MenuManager.MenuGalaxyMap.selectedPlanet = args[0];
       }
     },
     740:{
@@ -7759,7 +7786,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: [],
       action: function(args: any, _instr: any, action: any){
-        return Config.get('GameState.debug.is_shipping_build') ? true : false;
+        return ConfigManager.get('Game.debug.is_shipping_build') ? true : false;
       }
     },
     762:{

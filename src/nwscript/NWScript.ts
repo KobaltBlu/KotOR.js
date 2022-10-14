@@ -7,6 +7,7 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { Endians } from "../enums/resource/Endians";
 import { GameState } from "../GameState";
+import { ModuleObject } from "../module";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { NWScriptInstance } from "./NWScriptInstance";
@@ -234,7 +235,7 @@ export class NWScript {
   }
 
   static Load( scriptName = '', returnInstance = true ){
-    return new Promise( ( resolve, reject ) => {
+    return new Promise<NWScriptInstance>( ( resolve, reject ) => {
       if( NWScript.scripts.has( scriptName ) ){
         let script = NWScript.scripts.get( scriptName );
 
