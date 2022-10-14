@@ -465,9 +465,9 @@ export class PartyManager {
     if( creature instanceof ModuleCreature ){
       if( GameState.isLoadingSave ){
         return new EngineLocation(
-          creature.getXPosition(), 
-          creature.getYPosition(), 
-          creature.getZPosition(),
+          creature.position.x, 
+          creature.position.y, 
+          creature.position.z,
           creature.getXOrientation(), 
           creature.getYOrientation(), 
           creature.getZOrientation()
