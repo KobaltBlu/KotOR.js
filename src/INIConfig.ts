@@ -2,12 +2,20 @@
 import { DeepObject } from "./DeepObject";
 import * as fs from "fs";
 
+import * as swKotOR from "./game/kotor/swkotor-config";
+import * as swKotOR2 from "./game/tsl/swkotor2-config";
+
 export class INIConfig {
   ini_path: string;
   defaults: any;
   options: any = {};
   nodes: any[];
   current_section: any;
+  
+  static defaultConfigs: any = {
+    swKotOR: swKotOR,
+    swKotOR2: swKotOR2
+  };
 
   constructor( ini_path: string, defaults: any = {} ){
     this.ini_path = ini_path;

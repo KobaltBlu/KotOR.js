@@ -20,6 +20,8 @@ import { InventoryManager } from "./managers/InventoryManager";
 import { Utility } from "./utility/Utility";
 import { TGAObject } from "./resource/TGAObject";
 import { Module } from "./module/Module";
+import { ModuleObject } from "./module";
+import EngineLocation from "./engine/EngineLocation";
 
 /* @file
  * The SaveGame class.
@@ -368,7 +370,7 @@ export class SaveGame {
         GameState.Globals.Location.set(
           locLabel.toLowerCase(), { 
             name: locLabel, 
-            value: new GameState.Location(
+            value: new EngineLocation(
               locBytes.ReadSingle(),
               locBytes.ReadSingle(),
               locBytes.ReadSingle(),
@@ -474,7 +476,7 @@ export class SaveGame {
       fs.mkdir(this.directory, { recursive: false }, (err) => {
         this.savenfo = new GFFObject();
 
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.Name.GetValue();
+        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.AreaName.GetValue();
         this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).Value = 0;
         this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).Value = 0;
         this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).Value = GameState.module.Area_Name;
@@ -562,7 +564,7 @@ export class SaveGame {
         GameState.LoadScreen.Open();
         GameState.LoadScreen.showSavingMessage();
 
-        let base_dir = path.join( app.getAppPath(), 'Saves' );
+        let base_dir = path.join( ApplicationProfile.directory, 'Saves' );
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
         if(!fs.existsSync(base_dir)){
@@ -608,7 +610,7 @@ export class SaveGame {
       let nfo = new GFFObject();
       nfo.FileType = 'NFO ';
 
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.Name.GetValue();
+      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.AreaName.GetValue();
       nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).Value = 0;
       nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).Value = 0;
       nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).Value = GameState.module.filename.toUpperCase();

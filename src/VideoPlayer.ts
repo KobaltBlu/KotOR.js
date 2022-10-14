@@ -4,6 +4,7 @@
 import { ipcRenderer } from "electron";
 import * as fs from "fs";
 import * as path from "path";
+import { ApplicationProfile } from "./utility/ApplicationProfile";
 
 /* @file
  * The VideoPlayer class. I converted all the BINK videos into MP4's so I could test loading them in.
@@ -68,7 +69,7 @@ class VideoPlayerSession {
   onEnded: Function;
   hasEnded = false;
   player: any = null;
-  $video: any;
+  video: HTMLVideoElement;
   duration: any;
 
   constructor(src: string, movie: string, onEnded?: Function){
@@ -77,51 +78,49 @@ class VideoPlayerSession {
     this.onEnded = onEnded;
     let self = this;
 
-    this.$video = $('<video />');
+    this.video = document.createElement('video');
 
-    this.$video[0].onended = function(){
+    this.video.onended = function(){
       self.destroy();
     };
 
-    this.$video[0].onerror = this.$video[0].onended;
+    this.video.onerror = this.video.onended;
 
-    this.$video.on('click', function(e: any){
+    this.video.addEventListener('click', function(ev: MouseEvent){
       self.stop();
-    });
+    })
 
-    this.$video.css({
-      'position': 'absolute',
-      'top': 0,
-      'left': 0,
-      'width': '100%',
-      'height': '100%',
-      'background': 'black'
-    });
+    this.video.style.position = 'absolute';
+    this.video.style.top = '0px';
+    this.video.style.left = '0px';
+    this.video.style.width = '100%';
+    this.video.style.height = '100%';
+    this.video.style.background = 'black';
 
-    $('body').append(this.$video);
+    document.body.appendChild(this.video);
 
     // this.$video.attr('src', src);
     // this.$video.currentTime = 0;
   }
 
   attachNative(params: any){
-    this.$video.attr('src', params.videoSource);
-    this.$video[0].play();
+    this.video.src = params.videoSource;
+    this.video.play();
   }
 
   attachStream(params: any = {}){
     this.duration = params.duration;
-    this.$video.attr('src', params.videoSource);
-    this.$video[0].play();
+    this.video.src = params.videoSource;
+    this.video.play();
   }
 
   play(){
-    this.$video[0].play();
-    this.$video.show();
+    this.video.play();
+    // this.$video.show();
   }
 
   pause(){
-    this.$video[0].pause();
+    this.video.pause();
   }
 
   stop(){
@@ -139,11 +138,11 @@ class VideoPlayerSession {
     if(!this.hasEnded){
       this.hasEnded = true;
       try{
-        this.$video[0].pause();
+        this.video.pause();
       }catch(e){ }
-      this.$video.attr('src', '');
+      this.video.src = '';
       try{
-        this.$video.remove();
+        this.video.remove();
       }catch(e){ console.error(e) }
       if(typeof this.onEnded === 'function')
         this.onEnded();

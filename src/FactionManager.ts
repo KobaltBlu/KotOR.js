@@ -213,7 +213,7 @@ class FactionManager {
       let repList = gff.RootNode.GetFieldByLabel('RepList').GetChildStructs();
       for(let i = 0, len = repList.length; i < len; i++){
         let repStruct = repList[i];
-        if(repStruct instanceof Struct){
+        if(repStruct instanceof GFFStruct){
           let reputation = Reputation.FromStruct(repStruct);
           if(reputation instanceof Reputation){
             let faction = FactionManager.factions.get(reputation.id1);
@@ -264,7 +264,7 @@ class FactionManager {
     for (let id of FactionManager.factions.keys()) {
       let faction = FactionManager.factions.get(id);
       let facStruct = faction.toStruct(facIdx++);
-      if(facStruct instanceof Struct){
+      if(facStruct instanceof GFFStruct){
         factionList.AddChildStruct(facStruct);
       }
 
@@ -274,7 +274,7 @@ class FactionManager {
           let reputation = FactionManager.reputations.get(repKey);
           if(reputation.reputation < 100){
             let repStruct = reputation.toStruct(repIdx++, id, i);
-            if(repStruct instanceof Struct){
+            if(repStruct instanceof GFFStruct){
               repList.AddChildStruct(repStruct);
             }else{
               console.log('FactionManager.save', 'invalid struct', id, i, repStruct);
@@ -671,7 +671,7 @@ class Faction {
   }
 
   static FromStruct( struct = undefined ){
-    if( struct instanceof Struct ){
+    if( struct instanceof GFFStruct ){
       let faction = new Faction();
 
       faction.id = struct.GetType();
@@ -726,7 +726,7 @@ class Reputation {
   }
 
   static FromStruct( struct = undefined ){
-    if(struct instanceof Struct){
+    if(struct instanceof GFFStruct){
       let reputation = new Reputation();
       if(struct.HasField('FactionID1'))
         reputation.id1 = struct.GetFieldByLabel('FactionID1').GetValue();

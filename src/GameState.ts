@@ -2,35 +2,21 @@ import * as THREE from "three";
 import * as path from "path";
 import * as fs from "fs";
 import { AnimatedTexture } from "./AnimatedTexture";
-import { AudioEngine, CHANNEL, AudioEmitter } from "./audio";
-import { CameraShakeManager } from "./CameraShakeManager";
 import { CombatEngine } from "./CombatEngine";
-import { ConfigClient } from "./ConfigClient";
-import { CursorManager } from "./CursorManager";
-import { EngineMode, EngineState, EngineLocation } from "./Engine";
-import { FactionManager } from "./FactionManager";
-import { FadeOverlayManager } from "./FadeOverlayManager";
 import { GameMenu, MenuManager, GUIListBox } from "./gui";
 import { INIConfig } from "./INIConfig";
-import { LightManager } from "./LightManager";
-import { LoadingScreen } from "./LoadingScreen";
 import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
 import { Mouse } from "./controls/Mouse";
-import { NWScript } from "./nwscript";
 import { PartyManager } from "./managers/PartyManager";
 import { Planetary } from "./Planetary";
-import { ResourceLoader, TextureLoader, TGAObject } from "./resource";
-import { TwoDAManager } from "./resource/manager";
 import { SaveGame } from "./SaveGame";
-import { OdysseyModel3D, AuroraObject3D } from "./three/aurora";
-import { MDLLoader } from "./three/MDLLoader";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { VideoPlayer } from "./VideoPlayer";
 import { IngameControls } from "./controls/IngameControls";
-import { ShaderManager } from "./shaders";
 import { EngineGlobals } from "./interface/engine/EngineGlobals";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
+import { MDLLoader } from "./three/MDLLoader";
 
 const saturationShader: any = {
   uniforms: {
@@ -334,8 +320,8 @@ export class GameState implements EngineContext {
   
   static module: Module;
   static TutorialWindowTracker: any[];
-  static audioEngine: any;
-  static audioEmitter: any;
+  static audioEngine: AudioEngine;
+  static audioEmitter: AudioEmitter;
   static guiAudioEmitter: any;
   static State: EngineState;
   static inMenu: boolean;
@@ -348,6 +334,13 @@ export class GameState implements EngineContext {
   static VideoEffect: any;
   static LoadScreen: any;
   static MenuTop: any;
+  static InGameDialog: any;
+  static octree_walkmesh: any;
+  static MenuContainer: any;
+  static octree: any;
+  static InGameBark: any;
+  static FadeOverlay: any;
+  static InGameComputer: any;
 
   static Init(){
     if(GameState.GameKey == 'TSL'){
@@ -834,7 +827,7 @@ export class GameState implements EngineContext {
     }
   }
 
-  public static getCurrentPlayer(): ModuleObject {
+  public static getCurrentPlayer(): ModuleCreature {
     let p = PartyManager.party[0];
     return p ? p : GameState.player;
   }

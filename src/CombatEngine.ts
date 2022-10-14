@@ -174,7 +174,7 @@ export class CombatEngine {
       }
     }
 
-    /*if(!CombatEngine.active || GameState.Mode != GameState.MODES.INGAME){
+    /*if(!CombatEngine.active || GameState.Mode != EngineMode.INGAME){
       CombatEngine.timer = 0;
       return;
     }
@@ -312,7 +312,7 @@ export class CombatEngine {
       false
     );
 
-    let attack_sound = THREE.Math.randInt(0, 2);
+    let attack_sound = THREE.MathUtils.randInt(0, 2);
     switch(attack_sound){
       case 1:
         creature.PlaySoundSet(SSFObjectType.ATTACK_2);
