@@ -1,15 +1,21 @@
-export class EventBroadcastAOO extends GameEvent {
+import { GameEvent } from ".";
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
+export class EventBroadcastAOO extends GameEvent {
+  value: number = 0;
   constructor(){
     super();
 
     //Event Type
     this.type = GameEventType.EventBroadcastAOO; //Attack Of Opportunity
-    this.value = 0;
 
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       this.value = struct.GetFieldByLabel('Value').GetValue();
     }

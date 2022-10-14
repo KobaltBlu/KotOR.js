@@ -1,3 +1,10 @@
+import { GameEvent } from ".";
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+
 export class EventLockObject extends GameEvent {
 
   constructor(){
@@ -8,7 +15,7 @@ export class EventLockObject extends GameEvent {
 
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       
     }

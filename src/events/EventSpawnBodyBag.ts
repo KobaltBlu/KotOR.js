@@ -1,16 +1,24 @@
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEvent } from "./GameEvent";
+import * as THREE from "three";
+
 export class EventSpawnBodyBag extends GameEvent {
+
+  bodyBagId = 0;
+  position = new THREE.Vector3;
 
   constructor(){
     super();
 
     //Event Type
     this.type = GameEventType.EventSpawnBodyBag;
-    this.bodyBagId = 0;
-    this.position = new THREE.Vector3;
 
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       this.bodyBagId  = struct.GetFieldByLabel('BodyBagId').GetValue();
       this.position.x = struct.GetFieldByLabel('PositionX').GetValue();

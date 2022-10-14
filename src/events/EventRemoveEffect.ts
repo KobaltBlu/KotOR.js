@@ -1,5 +1,13 @@
-export class EventRemoveEffect extends GameEvent {
+import { GameEffect } from "../effects";
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEvent } from "./GameEvent";
 
+export class EventRemoveEffect extends GameEvent {
+  effect: GameEffect;
   constructor(){
     super();
 
@@ -10,7 +18,7 @@ export class EventRemoveEffect extends GameEvent {
 
   }
 
-  setEffect(effect){
+  setEffect(effect: GameEffect){
     if(effect instanceof GameEffect){
       this.effect = effect;
     }
@@ -20,7 +28,7 @@ export class EventRemoveEffect extends GameEvent {
     return this.effect;
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       
     }

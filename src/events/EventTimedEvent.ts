@@ -1,6 +1,16 @@
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScriptStack } from "../nwscript/NWScriptStack";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEvent } from "./GameEvent";
 
 
 export class EventTimedEvent extends GameEvent {
+  offset: number;
 
   constructor(){
     super();
@@ -19,13 +29,13 @@ export class EventTimedEvent extends GameEvent {
     this.offset = ptr;
   }
 
-  setNWScript(script = undefined){
+  setNWScript(script: NWScriptInstance){
     if(script instanceof NWScriptInstance){
       this.script = script;
     }
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       let nwscript = new NWScript();
       nwscript.name = struct.GetFieldByLabel('Name').GetValue();

@@ -1,5 +1,13 @@
-export class EventSignalEvent extends GameEvent {
+import { GameEvent } from ".";
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
+export class EventSignalEvent extends GameEvent {
+  event: NWScriptEvent;
   constructor(){
     super();
 
@@ -10,13 +18,13 @@ export class EventSignalEvent extends GameEvent {
 
   }
 
-  setEvent(event = undefined){
+  setEvent(event: NWScriptEvent){
     if(event instanceof NWScriptEvent){
       this.event = event;
     }
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       this.event = NWScriptEvent.EventFromStruct(struct);
     }

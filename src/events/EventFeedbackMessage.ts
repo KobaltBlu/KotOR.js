@@ -1,4 +1,16 @@
+import { GameEvent } from ".";
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+
 export class EventFeedbackMessage extends GameEvent {
+  messageType = 0;
+  intList: any[] = [];
+  floatList: any[] = [];
+  objectList: any[] = [];
+  stringList: any[] = [];
 
   constructor(){
     super();
@@ -13,7 +25,7 @@ export class EventFeedbackMessage extends GameEvent {
 
   }
 
-  eventDataFromStruct(struct){
+  eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       
     }
@@ -67,7 +79,7 @@ export class EventFeedbackMessage extends GameEvent {
     struct.AddField( new GFFField(GFFDataType.DWORD, 'CallerId') ).SetValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
     struct.AddField( new GFFField(GFFDataType.DWORD, 'Day') ).SetValue(this.day);
     let eventData = struct.AddField( new GFFField(GFFDataType.STRUCT, 'EventData') );
-        eventData.AddChildStruct( this.script.saveMessageData() );
+      // eventData.AddChildStruct( this.script.saveMessageData() );
     struct.AddField( new GFFField(GFFDataType.DWORD, 'EventId') ).SetValue(this.id);
     struct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
     struct.AddField( new GFFField(GFFDataType.DWORD, 'Time') ).SetValue(this.time);

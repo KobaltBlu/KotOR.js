@@ -1,10 +1,13 @@
+import { EventApplyEffect, EventAquireItem, EventAreaTransition, EventBroadcastAOO, EventBroadcastSafeProjectile, EventCloseObject, EventControllerRumble, EventDecrementStackSize, EventDestroyObject, EventEnteredTrigger, EventFeedbackMessage, EventForcedAction, EventItemOnHitSpellImpact, EventLeftTrigger, EventLockObject, EventOnMeleeAttacked, EventOpenObject, EventPlayAnimation, EventRemoveEffect, EventRemoveFromArea, EventSignalEvent, EventSpawnBodyBag, EventSpellImpact, EventSummonCreature, EventTimedEvent, EventUnlockObject } from ".";
 import { GameEventType } from "../enums/events/GameEventType";
 import { ModuleObject } from "../module/ModuleObject";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 
 
 export class GameEvent {
 
+  id: number = 0;
   initialized: boolean = false;
   type = 0;
   caller: ModuleObject;
@@ -13,6 +16,7 @@ export class GameEvent {
   time: number;
   callerId: number;
   objectId: number;
+  script: NWScriptInstance;
 
   setDay(nDay: number){
     this.day = nDay;
@@ -149,7 +153,7 @@ export class GameEvent {
           event = new EventFeedbackMessage();
         break;
         case GameEventType.EventAbilityEffectApplied: //EventAbilityEffectApplied
-          event = new EventAbilityEffectApplied();
+          // event = new EventAbilityEffectApplied();
         break;
         case GameEventType.EventSummonCreature: //EventSummonCreature
           event = new EventSummonCreature();
