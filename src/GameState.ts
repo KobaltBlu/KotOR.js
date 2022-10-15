@@ -38,6 +38,7 @@ import { FadeOverlayManager } from "./managers/FadeOverlayManager";
 import { CreatureType } from "./enums/nwscript/CreatureType";
 import { ReputationType } from "./enums/nwscript/ReputationType";
 import { ShaderManager } from "./managers/ShaderManager";
+import { LoadingScreen } from "./LoadingScreen";
 
 const saturationShader: any = {
   uniforms: {
