@@ -1,3 +1,4 @@
+import { ActionCastSpell, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionDropItem, ActionEquipItem, ActionFollowLeader, ActionGiveItem, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionLockObject, ActionMoveToPoint, ActionOpenDoor, ActionPauseDialog, ActionPhysicalAttacks, ActionPlayAnimation, ActionResumeDialog, ActionSetCommandable, ActionTakeItem, ActionUnlockObject, ActionUseObject, ActionWait } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -18,6 +19,8 @@ export class Action {
   path: any;
   openSpot: any;
   clearable: boolean = true;
+  combatAction: Action;
+  isCutsceneAttack: Action;
   constructor( groupId = 0 ){
     this.type = 0;
     this.groupId = groupId;

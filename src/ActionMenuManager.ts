@@ -1,14 +1,17 @@
 import { ActionMenuPanel } from "./ActionMenuPanel";
 import { ActionMenuItem } from "./ActionMenuItem";
-import { GameEngineType, GameState } from "./GameState";
+import { GameState } from "./GameState";
 import { ActionPanelLists } from "./interface/gui/ActionPanelLists";
+import { GameEngineType } from "./enums/engine/GameEngineType";
+import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "./module";
+import { ActionType } from "./enums/actions/ActionType";
 
 export class ActionMenuManager {
 
   static TARGET_MENU_COUNT = 3;
   static SELF_MENU_COUNT = (GameState.GameKey == GameEngineType.KOTOR ? 4 : 6);
 
-  static oPC: ModuleObject;
+  static oPC: ModuleCreature;
   static oTarget: ModuleObject;
 
   static ActionPanels: ActionPanelLists = {
@@ -16,7 +19,7 @@ export class ActionMenuManager {
     selfPanels: [],
   };
   
-  static SetPC(oPC: ModuleObject){
+  static SetPC(oPC: ModuleCreature){
     ActionMenuManager.oPC = oPC;
   }
   

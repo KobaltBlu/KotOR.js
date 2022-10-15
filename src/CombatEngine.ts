@@ -1,6 +1,16 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ActionType } from "./enums/actions/ActionType";
+import { GameEffectType } from "./enums/effects/GameEffectType";
+import { SSFObjectType } from "./interface/resource/SSFType";
+import { ModuleCreature, ModuleItem, ModuleObject } from "./module";
+
+import * as THREE from "three";
+import { ModuleCreatureAnimState } from "./enums/module/ModuleCreatureAnimState";
+import { OdysseyModelAnimation } from "./odyssey";
+import { TwoDAManager } from "./managers/TwoDAManager";
+
 /* @file
  * The CombatEngine class.
  */
@@ -202,7 +212,7 @@ export class CombatEngine {
     
   }
 
-  static CalculateAttackDamage(combatAction = undefined, creature = undefined){
+  static CalculateAttackDamage(combatAction: any, creature: any){
 
     if(!combatAction || (!combatAction.isCutsceneAttack && combatAction.damageCalculated))
       return;
@@ -393,11 +403,11 @@ export class CombatEngine {
 
   }
 
-  static InitiativeSort(a, b){
+  static InitiativeSort(a: any, b: any){
     return a.initiative - b.initiative;
   }
 
-  static GroupSort(a, b){
+  static GroupSort(a: any, b: any){
     return a.combatOrder - b.combatOrder;
   }
 
@@ -429,7 +439,7 @@ export class CombatEngine {
     }
   }
 
-  static RemoveCombatant(combatant = undefined){
+  static RemoveCombatant(combatant: ModuleObject){
     let index = CombatEngine.combatants.indexOf(combatant);
     if(index >= 0){
       CombatEngine.combatants.splice(index, 1);
@@ -497,14 +507,19 @@ export class CombatEngine {
             if(propName && propName.GetValue() == 51){
               let costTableIdx = prop.GetFieldByLabel('CostTable').GetValue();
               let costTableValue = prop.GetFieldByLabel('CostValue').GetValue();
-              let _2daName = Global.kotor2DA['iprp_costtable'].rows[19].name;
-
-              let cost = Global.kotor2DA[_2daName.toLowerCase()].rows[costTableValue];
-              if(cost){
-                return {
-                  num: parseInt(cost.numdice),
-                  type: 'd'+cost.die
-                };
+              let iprp_costtable2DA = TwoDAManager.datatables.get('iprp_costtable');
+              if(iprp_costtable2DA){
+                let _2daName = iprp_costtable2DA.rows[19].name;
+                let cost2DA = TwoDAManager.datatables.get(_2daName.toLowerCase());
+                if(cost2DA){
+                  let cost = cost2DA.rows[costTableValue];
+                  if(cost){
+                    return {
+                      num: parseInt(cost.numdice),
+                      type: 'd'+cost.die
+                    };
+                  }
+                }
               }
               
             }
