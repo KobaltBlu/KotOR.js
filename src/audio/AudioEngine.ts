@@ -127,7 +127,7 @@ export class AudioEngine {
     }
   }
 
-  Update ( position = new THREE.Vector3(0), rotation = new THREE.Vector3(0) ) {
+  Update ( position = new THREE.Vector3(0), rotation = new THREE.Euler(0) ) {
     this.audioCtx.listener.setPosition(position.x,position.y,position.z);
     this.audioCtx.listener.setOrientation(rotation.x,rotation.y,rotation.z, 0, 0, 1);
 
