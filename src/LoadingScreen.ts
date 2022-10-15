@@ -5,7 +5,7 @@
  * The LoadingScren class. This is used in KotOR Forge
  */
 
-class LoadingScreen {
+export class LoadingScreen {
   static main: LoadingScreen;
   message: string;
 
