@@ -1,0 +1,13 @@
+// the thing after CREATURE_TYPE_ should refer to the
+// actual "subtype" in the lists given above.
+export enum CreatureType {
+  RACIAL_TYPE     = 0,
+  PLAYER_CHAR     = 1,
+  CLASS           = 2,
+  REPUTATION      = 3,
+  IS_ALIVE        = 4,
+  HAS_SPELL_EFFECT = 5,
+  DOES_NOT_HAVE_SPELL_EFFECT = 6,
+  PERCEPTION                = 7,
+}
+//const CREATURE_TYPE_ALIGNMENT       = 2;
