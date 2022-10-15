@@ -2,7 +2,6 @@
  */
 
 import { Module } from "../module/Module";
-import { ProjectManager } from "./managers/ProjectManager";
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,6 +13,7 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { RIMObject } from "./RIMObject";
 import { KEYManager } from "../managers/KEYManager";
 import { RIMManager } from "../managers/RIMManager";
+import { ProjectManager } from "../managers/ProjectManage";
 
 /* @file
  * The ResourceLaoder class.
