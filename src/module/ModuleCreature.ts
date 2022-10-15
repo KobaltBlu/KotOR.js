@@ -1818,7 +1818,7 @@ export class ModuleCreature extends ModuleCreatureController {
     return [];
   }*/
 
-  equipItem(slot = 0x1, item: string|ModuleItem = '', onLoad: Function){
+  equipItem(slot = 0x1, item: string|ModuleItem = '', onLoad?: Function){
 
     this.unequipSlot(slot);
 
