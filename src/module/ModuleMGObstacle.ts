@@ -12,9 +12,9 @@ import { AsyncLoop } from "../utility/AsyncLoop";
  */
 
 export class ModuleMGObstacle extends ModuleObject {
-  name: string;
   invince: number;
   hit_points: number;
+  max_hps: number = 0;
   invince_period: number;
 
   constructor(template: GFFObject){
