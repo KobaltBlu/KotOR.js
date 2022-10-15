@@ -1,12 +1,14 @@
+import { ModuleObject } from "../module";
+
 export class TalentObject {
   id: number;
   type: number;
-  item: any;
+  item: ModuleObject;
   itemPropertyIndex: number;
   casterLevel: number;
   metaMagic: number;
-  oCaster: any;
-  oTarget: any;
+  oCaster: ModuleObject;
+  oTarget: ModuleObject;
 
   constructor( id = -1 ){
     this.id = id;
@@ -20,21 +22,21 @@ export class TalentObject {
     return this.id;
   }
 
-  useTalentOnObject(oTarget, oCaster){
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
     //console.log('useTalentOnObject', oCaster, this, oTarget);
   }
 
-  talentCombatRoundEnd(oTarget, oCaster){
+  talentCombatRoundEnd(oTarget: ModuleObject, oCaster: ModuleObject){
     //console.log('talentCombatRoundEnd', oCaster, this, oTarget);
   }
 
-  update(oTarget, oCaster, combatAction, delta){
+  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: any, delta: number = 0){
 
   }
 
-  inRange(oTarget, oCaster){
+  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
     return true;
   }
 
@@ -42,7 +44,7 @@ export class TalentObject {
     return 1;
   }
 
-  setItem( item = undefined ){
+  setItem( item: ModuleObject ){
     this.item = item;
   }
 

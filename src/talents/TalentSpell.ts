@@ -5,9 +5,14 @@ import { TalentObject } from "./TalentObject";
 import * as THREE from "three";
 import { CombatEngine } from "../CombatEngine";
 import { GameState } from "../GameState";
+import { ModuleObject } from "../module";
+import { NWScript } from "../nwscript/NWScript";
+import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel } from "../odyssey";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ActionType } from "../enums/actions/ActionType";
 
 export class TalentSpell extends TalentObject {
-  type: number;
   conjtime: string;
   casttime: string;
   catchtime: string;
@@ -33,8 +38,8 @@ export class TalentSpell extends TalentObject {
     this.type = 0;
 
     //Merge the spell properties from the spells.2da row with this spell
-    if(Global.kotor2DA.spells.rows[this.id]){
-      Object.assign(this, Global.kotor2DA.spells.rows[this.id]);
+    if(TwoDAManager.datatables.get('spells').rows[this.id]){
+      Object.assign(this, TwoDAManager.datatables.get('spells').rows[this.id]);
     }
 
   }
@@ -42,8 +47,8 @@ export class TalentSpell extends TalentObject {
   setId( value = 0 ){
     this.id = value;
     //Merge the spell properties from the spells.2da row with this spell
-    if(Global.kotor2DA.spells.rows[this.id]){
-      Object.assign(this, Global.kotor2DA.spells.rows[this.id]);
+    if(TwoDAManager.datatables.get('spells').rows[this.id]){
+      Object.assign(this, TwoDAManager.datatables.get('spells').rows[this.id]);
     }
   }
 
@@ -103,7 +108,7 @@ export class TalentSpell extends TalentObject {
     
   }
 
-  useTalentOnObject(oTarget, oCaster){
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     super.useTalentOnObject(oTarget, oCaster);
 
     console.log('Talent.useTalentOnObject', this);
@@ -150,10 +155,10 @@ export class TalentSpell extends TalentObject {
         console.log('projectile', this.projmodel);
         GameState.ModelLoader.load({
           file: this.projmodel.toLowerCase(),
-          onLoad: (mdl) => {
+          onLoad: (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
               context: oCaster.context,
-              onComplete: (model) => {
+              onComplete: (model: OdysseyModel3D) => {
                 this.projectile = model;
                 console.log('projectile', model);
                 if(oCaster.model){
@@ -194,7 +199,7 @@ export class TalentSpell extends TalentObject {
 
   }
   
-  update(oTarget, oCaster, combatAction, delta){
+  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: any, delta: number = 0){
     
     if(combatAction.conjureTime > 0){
       combatAction.conjuring = true;
@@ -256,7 +261,7 @@ export class TalentSpell extends TalentObject {
 
   }
 
-  impact(oTarget, oCaster){
+  impact(oTarget: ModuleObject, oCaster: ModuleObject){
     
     if(this.impactscript != '****'){
       console.log('Casting spell', this.impactscript, this);
@@ -271,10 +276,10 @@ export class TalentSpell extends TalentObject {
     if(this.casthandvisual != '****'){
       GameState.ModelLoader.load({
         file: this.casthandvisual,
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: oCaster.context,
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               this.casthandmodel = model;
 
               if(oCaster.model){
@@ -304,7 +309,7 @@ export class TalentSpell extends TalentObject {
 
   }
 
-  inRange(oTarget, oCaster){
+  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
     if(oTarget == oCaster){
       return true;
     }
@@ -344,10 +349,10 @@ export class TalentSpell extends TalentObject {
     }
   }
 
-  static From2DA( object = undefined ){
+  static From2DA( object: any ){
     if(typeof object == 'object'){
       let spell = new TalentSpell();
-      Object.assign(feat, Global.kotor2DA.spells.rows[object.__index]);
+      Object.assign(spell, TwoDAManager.datatables.get('spells').rows[object.__index]);
       spell.id = object.__index;
       return spell;
     }

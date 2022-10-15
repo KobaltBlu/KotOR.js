@@ -1,10 +1,12 @@
+import { ActionType } from "../enums/actions/ActionType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
 
 export class TalentFeat extends TalentObject {
-  type: number;
   category: number;
 
   constructor( id = 0){
@@ -12,8 +14,8 @@ export class TalentFeat extends TalentObject {
     this.type = 1;
 
     //Merge the feat properties from the feat.2da row with this feat
-    if(Global.kotor2DA.feat.rows[this.id]){
-      Object.assign(this, Global.kotor2DA.feat.rows[this.id]);
+    if(TwoDAManager.datatables.get('feat').rows[this.id]){
+      Object.assign(this, TwoDAManager.datatables.get('feat').rows[this.id]);
     }
 
   }
@@ -21,12 +23,12 @@ export class TalentFeat extends TalentObject {
   setId( value = 0 ){
     this.id = value;
     //Merge the feat properties from the feat.2da row with this feat
-    if(Global.kotor2DA.feat.rows[this.id]){
-      Object.assign(this, Global.kotor2DA.feat.rows[this.id]);
+    if(TwoDAManager.datatables.get('feat').rows[this.id]){
+      Object.assign(this, TwoDAManager.datatables.get('feat').rows[this.id]);
     }
   }
 
-  useTalentOnObject(oTarget, oCaster){
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     super.useTalentOnObject(oTarget, oCaster);
 
     //MELEE
@@ -55,7 +57,7 @@ export class TalentFeat extends TalentObject {
 
   }
 
-  inRange(oTarget, oCaster){
+  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
     if(oTarget == oCaster){
       return true;
     }
@@ -92,7 +94,7 @@ export class TalentFeat extends TalentObject {
   static From2DA( object: any ){
     if(typeof object == 'object'){
       let feat = new TalentFeat();
-      Object.assign(feat, Global.kotor2DA.feat.rows[object.__index]);
+      Object.assign(feat, TwoDAManager.datatables.get('feat').rows[object.__index]);
       feat.id = object.__index;
       return feat;
     }
