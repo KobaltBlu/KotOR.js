@@ -9,6 +9,8 @@ import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "./ResourceTypes";
+import { OdysseyModel } from "../odyssey";
+import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
 
 /* @file
  * The LIPObject class.
@@ -193,14 +195,14 @@ export class LIPObject {
               //Only interpolate keyframes if there is a previos frame and it isn't the same shape as the current
               if(last_frame){
                 switch(controller.type){
-                  case OdysseyModel.ControllerType.Position:
-                    if(modelNode.controllers.get(OdysseyModel.ControllerType.Position)){
-                      this.anim._position.copy(modelNode.controllers.get(OdysseyModel.ControllerType.Position).data[0]);
+                  case OdysseyModelControllerType.Position:
+                    if(modelNode.controllers.get(OdysseyModelControllerType.Position)){
+                      this.anim._position.copy(modelNode.controllers.get(OdysseyModelControllerType.Position).data[0]);
                     }
                     modelNode.position.copy(last_frame).add(this.anim._position);
                     modelNode.position.lerp(this.anim._position.add(next_frame), fl);
                   break;
-                  case OdysseyModel.ControllerType.Orientation:
+                  case OdysseyModelControllerType.Orientation:
                     modelNode.quaternion.copy(last_frame);
                     modelNode.quaternion.slerp(this.anim._quaternion.copy(next_frame), fl);
                   break;
@@ -282,23 +284,23 @@ export class LIPObject {
 
   async exportAs( onComplete?: Function ){
 
-    let payload = await dialog.showSaveDialog({
-      title: 'Export LIP',
-      defaultPath: this.file,
-      properties: ['createDirectory'],
-      filters: [
-        {name: 'LIP', extensions: ['lip']}
-      ]
-    });
+    // let payload = await dialog.showSaveDialog({
+    //   title: 'Export LIP',
+    //   defaultPath: this.file,
+    //   properties: ['createDirectory'],
+    //   filters: [
+    //     {name: 'LIP', extensions: ['lip']}
+    //   ]
+    // });
 
-    if(!payload.canceled && typeof payload.filePath != 'undefined'){
-      this.file = payload.filePath;
-      this.export(onComplete);
-    }else{
-      console.warn('LIP export aborted');
-      if(typeof onComplete === 'function')
-        onComplete();
-    }
+    // if(!payload.canceled && typeof payload.filePath != 'undefined'){
+    //   this.file = payload.filePath;
+    //   this.export(onComplete);
+    // }else{
+    //   console.warn('LIP export aborted');
+    //   if(typeof onComplete === 'function')
+    //     onComplete();
+    // }
 
   }
 
