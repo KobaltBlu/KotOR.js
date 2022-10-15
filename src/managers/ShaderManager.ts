@@ -17,6 +17,10 @@ export class ShaderManager {
     };
     ShaderManager.Shaders.set(shader.name, shader);
   }
+
+  static Init(){
+    
+  }
   
 
 }
