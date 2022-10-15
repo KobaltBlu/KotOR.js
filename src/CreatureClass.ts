@@ -3,8 +3,10 @@
 
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { TLKManager } from "./managers/TLKManager";
+import { TwoDAManager } from "./managers/TwoDAManager";
 import { GFFField } from "./resource/GFFField";
 import { GFFStruct } from "./resource/GFFStruct";
+import { TalentFeat, TalentSpell } from "./talents";
 
 /* @file
  * The CreatureClass class.
@@ -19,12 +21,15 @@ export class CreatureClass {
   description: number;
 
   spellcaster: number;
+  attackbonustable: any;
+  armorclasscolumn: any;
+  featstable: any;
 
   constructor(id = 0){
     this.id = id;
     this.level = 0;
     this.spells = [];
-    Object.assign(this, Global.kotor2DA.classes.rows[this.id]);
+    Object.assign(this, TwoDAManager.datatables.get('classes').rows[this.id]);
   }
 
   getName(){
@@ -50,14 +55,14 @@ export class CreatureClass {
   }
 
   getBaseAttackBonus(){
-    return parseInt(Global.kotor2DA[this.attackbonustable.toLowerCase()].rows[this.level].bab);
+    return parseInt(TwoDAManager.datatables.get(this.attackbonustable.toLowerCase()).rows[this.level].bab)
   }
 
   getACBonus(){
-    return parseInt(Global.kotor2DA.acbonus.rows[this.level][this.armorclasscolumn.toLowerCase()]);
+    return parseInt(TwoDAManager.datatables.get('acbonus').rows[this.level][this.armorclasscolumn.toLowerCase()]);
   }
 
-  isFeatAvailable( feat = undefined ){
+  isFeatAvailable( feat: any ){
     if(typeof feat != 'undefined'){
       let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
@@ -71,7 +76,7 @@ export class CreatureClass {
     return false;
   }
 
-  getFeatStatus( feat = undefined ){
+  getFeatStatus( feat: any ){
     if(typeof feat != 'undefined'){
       let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
@@ -83,7 +88,7 @@ export class CreatureClass {
     return -1;
   }
 
-  getFeatGrantedLevel( feat = undefined ){
+  getFeatGrantedLevel( feat: any ){
     if(typeof feat != 'undefined'){
       let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
       if(isNaN(granted)){
@@ -95,7 +100,7 @@ export class CreatureClass {
     return -1;
   }
 
-  static FromCreatureClassStruct(cls_struct = undefined){
+  static FromCreatureClassStruct(cls_struct: GFFStruct){
     if(typeof cls_struct != 'undefined'){
       let cls = new CreatureClass(cls_struct.GetFieldByLabel('Class').GetValue());
       cls.setLevel(cls_struct.GetFieldByLabel('ClassLevel').GetValue());
