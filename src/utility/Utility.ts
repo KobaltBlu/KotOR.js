@@ -89,7 +89,7 @@ export class Utility {
 
   }
 
-  static FileExists(file: string, onComplete: Function|undefined = undefined){
+  static FileExists(file: string, onComplete?: Function){
     if(file != null){
       fs.stat(file, (err, stat) => {
         if(err == null) {
@@ -110,7 +110,7 @@ export class Utility {
 
   }
 
-  static BuildModulesList(onComplete: Function|undefined = undefined){
+  static BuildModulesList(onComplete?: Function){
 
     fs.readdir(path.join(ApplicationProfile.directory, 'modules'), (err, files) => {
 

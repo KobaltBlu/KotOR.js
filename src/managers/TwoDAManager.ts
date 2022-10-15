@@ -10,7 +10,7 @@ export class TwoDAManager {
 
   static datatables: Map<string, TwoDAObject> = new Map();
 
-  static Load2DATables(onComplete: Function|undefined = undefined){
+  static Load2DATables(onComplete?: Function){
     TwoDAManager.datatables = new Map();
     const resources: BIFResource[] = KEYManager.Key.GetFilesByResType(ResourceTypes['2da']);
     

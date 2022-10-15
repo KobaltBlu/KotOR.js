@@ -7,7 +7,7 @@ export class ERFManager {
 
   static ERFs: Map<string, ERFObject> = new Map();
 
-  static Load( keyPaths: any[], onComplete: Function|undefined = undefined  ){
+  static Load( keyPaths: any[], onComplete?: Function  ){
     let data_dir = path.join(ApplicationProfile.directory, 'modules');
     new AsyncLoop({
       array: keyPaths,

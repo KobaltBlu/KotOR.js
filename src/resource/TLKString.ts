@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { BinaryReader } from "../BinaryReader";
+
 /* @file
  * The TLKString class.
  */
@@ -29,7 +31,7 @@ export class TLKString {
     // this.Value = Value;
   }
 
-  GetValue(binary, onReturn) {
+  GetValue(binary: BinaryReader, onReturn?: Function) {
     if(this.Value == null) {
       let pos = binary.Tell();
       binary.Seek(this.StringOffset);
@@ -50,7 +52,7 @@ export class TLKString {
     };
   }
 
-  FromDB(row) {
+  FromDB(row: any) {
     this.flags = row.flags;
     this.SoundResRef = row.SoundResRef;
     this.VolumeVariance = row.VolumeVariance;
@@ -58,7 +60,7 @@ export class TLKString {
     this.Value = row.Value.replace(/\0[\s\S]*$/g,'');
   }
 
-  static FromDBObj (row) {
+  static FromDBObj (row: any) {
     return new TLKString(row.flags, row.SoundResRef, row.VolumeVariance, row.PitchVariance, 0, row.Value.length, 0, row.Value);
   }
 

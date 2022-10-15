@@ -40,7 +40,7 @@ export class TextureLoader {
   static CACHE = false; //Should be false but it's causing isses if textures are cached
   static NOCACHE = true;
 
-  static Load(name: string, onLoad: Function|undefined = undefined, noCache: boolean = false){
+  static Load(name: string, onLoad?: Function, noCache: boolean = false){
     name = name.toLowerCase();
     //console.log('texture-load', name);
     if(TextureLoader.textures.has(name) || TextureLoader.guiTextures.has(name) && !noCache){
@@ -104,7 +104,7 @@ export class TextureLoader {
 
   }
 
-  static LoadOverride(name, onLoad: Function|undefined = undefined, onError: Function|undefined = undefined, noCache: boolean = false){
+  static LoadOverride(name, onLoad?: Function, onError?: Function, noCache: boolean = false){
 
     let dir = path.join(ApplicationProfile.directory, 'Override');
 
@@ -165,7 +165,7 @@ export class TextureLoader {
 
   }
 
-  static LoadLocal(name, onLoad: Function|undefined = undefined, onError: Function|undefined = undefined, noCache: boolean = false){
+  static LoadLocal(name, onLoad?: Function, onError?: Function, noCache: boolean = false){
 
     let dir = name;
 
@@ -193,7 +193,7 @@ export class TextureLoader {
 
   }
 
-  static LoadLightmap(name, onLoad: Function|undefined = undefined, noCache: boolean = false){
+  static LoadLightmap(name, onLoad?: Function, noCache: boolean = false){
     name = name.toLowerCase();
     if(TextureLoader.lightmaps.hasOwnProperty(name) && !noCache){
       //console.log('fetch-', TextureLoader.textures[name]);
@@ -230,7 +230,7 @@ export class TextureLoader {
     }
   }
 
-  static enQueue(name, material, type = TextureType.TEXTURE, onLoad: Function|undefined = undefined, fallback?: string){
+  static enQueue(name, material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
 
     if(typeof name == 'string'){
       name = name.toLowerCase();
@@ -259,12 +259,12 @@ export class TextureLoader {
     }
   }
 
-  static enQueueParticle(name, partGroup, onLoad: Function|undefined = undefined){
+  static enQueueParticle(name, partGroup, onLoad?: Function){
     name = name.toLowerCase();
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad: onLoad });
   }
 
-  static LoadQueue(onLoad: Function|undefined = undefined, onProgress: Function|undefined = undefined){
+  static LoadQueue(onLoad?: Function, onProgress?: Function){
 
     
     let loop = new AsyncLoop({

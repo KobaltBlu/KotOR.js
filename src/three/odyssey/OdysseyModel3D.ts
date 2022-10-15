@@ -755,7 +755,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  traverseIgnore( ignoreName: string = '', callback: Function|undefined = undefined ){
+  traverseIgnore( ignoreName: string = '', callback?: Function ){
 
     if(this.name == ignoreName)
       return;

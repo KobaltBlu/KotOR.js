@@ -19,7 +19,7 @@ export class TwoDAObject {
   columns: string[];
   rows: any = {};
 
-  constructor(file: Buffer|string|undefined = undefined, onComplete: Function|undefined = undefined){
+  constructor(file: Buffer|string|undefined = undefined, onComplete?: Function){
     this.file = file;
     this.columns = ["__rowlabel"];
     this.ColumnCount = 0;

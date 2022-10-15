@@ -11,7 +11,7 @@ export class BIFManager {
 
   }
 
-  static LoadBIFResource(resource: BIFResource, onComplete: Function|undefined = undefined){
+  static LoadBIFResource(resource: BIFResource, onComplete?: Function){
     if(resource){
       const bif: BIFObject = BIFManager.bifs.get( KEYObject.GetBIFIndex(resource.ID) )
       if(bif){

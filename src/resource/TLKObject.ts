@@ -15,22 +15,38 @@ export class TLKObject {
   reader: BinaryReader;
   TLKStrings: TLKString[];
 
-  onSuccess: Function|undefined;
-  onProgress: Function|undefined
+  onSuccess: Function;
+  onProgress: Function
   FileType: string;
   FileVersion: string;
   LanguageID: number;
   StringCount: number;
   StringEntriesOffset: number;
 
-  constructor(file: Buffer|string = '', onSuccess: Function|undefined = undefined, onProgress: Function|undefined = undefined){
+  constructor(file: Buffer|string = '', onSuccess?: Function, onProgress?: Function){
     this.file = file;
     this.TLKStrings = [];
     console.log('TLKObject', 'Opening TLK');
-    if(this.file instanceof Buffer){
-      fs.readFile(this.file, (err, binary) => {
+    if(typeof this.file === 'string'){
+      this.LoadFromDisk(this.file, onProgress).then( () => {
+        if(typeof onSuccess === 'function') onSuccess();
+      }).catch( () => {
+        if(typeof onSuccess === 'function') onSuccess();
+      });
+    }else if(file instanceof Buffer){
+      this.LoadFromBuffer(this.file, onProgress).then( () => {
+        if(typeof onSuccess === 'function') onSuccess();
+      }).catch( () => {
+        if(typeof onSuccess === 'function') onSuccess();
+      });
+    }
+  }
+
+  LoadFromBuffer( buffer: Buffer, onProgress?: Function ){
+    return new Promise<void>( (resolve, reject) => {
+      try{
         console.log('TLKObject', 'Reading');
-        this.reader = new BinaryReader(binary);
+        this.reader = new BinaryReader(buffer);
         this.reader.Seek(0);
         
         this.FileType = this.reader.ReadChars(4);
@@ -39,8 +55,7 @@ export class TLKObject {
         this.StringCount = this.reader.ReadUInt32();
         this.StringEntriesOffset = this.reader.ReadUInt32();
         this.reader.Seek(20);
-        for(let i = 0; i!=this.StringCount; i++) {
-
+        for(let i = 0, len = this.StringCount; i < len; i++) {
           this.TLKStrings[i] = new TLKString(
             this.reader.ReadUInt32(), //flags
             this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
@@ -58,18 +73,34 @@ export class TLKObject {
           this.TLKStrings[i].Value = this.reader.ReadChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
           this.reader.Seek(pos);
 
-          //if(typeof onProgress == 'function')
-          //  onProgress(i+1, this.StringCount);
-
+          if(typeof onProgress == 'function')
+            onProgress(i+1, this.StringCount);
         }
         console.log('TLKObject', 'Done');
-        if(onSuccess != null)
-          onSuccess();
-      });
-    }
+        resolve();
+      }catch(e){
+        reject(e);
+      }
+    })
   }
 
-  GetStringById(id: number, onReturn: Function|undefined = undefined): string {
+  LoadFromDisk( resource_path: string, onProgress?: Function ){
+    return new Promise<void>( (resolve, reject) => {
+      fs.readFile(this.file, (err, buffer: Buffer) => {
+        if(err){
+          reject();
+          return;
+        }
+        this.LoadFromBuffer(buffer, onProgress).then( () => {
+          resolve();
+        }).catch( () => {
+          reject();
+        });
+      });
+    });
+  }
+
+  GetStringById(id: number, onReturn?: Function): string {
     if(this.TLKStrings[id] != null){
       if(this.TLKStrings[id].Value == null){
         this.TLKStrings[id].GetValue(this.reader, onReturn);

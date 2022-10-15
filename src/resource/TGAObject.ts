@@ -89,7 +89,7 @@ export class TGAObject {
 
   }
 
-  getPixelData( onLoad: Function|undefined = undefined ){
+  getPixelData( onLoad?: Function ){
 
     let reader = new BinaryReader(this.file);
     console.log('TGAObject', this.header)

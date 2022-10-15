@@ -41,7 +41,7 @@ export class KEYObject {
   BuildDay: number;
   Reserved: Buffer;
 
-  constructor(file: string, onComplete: Function|undefined = undefined){
+  constructor(file: string, onComplete?: Function){
     this.file = file;
     this.keys = [];
     fs.readFile(file, (err, binary) => {
