@@ -54,10 +54,10 @@ export class MDLLoader {
               let mdlReader = new BinaryReader(mdlData);
               let mdxReader = new BinaryReader(mdxData);
 
-              let auroraModel = new OdysseyModel(mdlReader, mdxReader);
-              ModelCache.models[args.file] = auroraModel;
+              let odysseyModel = new OdysseyModel(mdlReader, mdxReader);
+              ModelCache.models[args.file] = odysseyModel;
               if(typeof args.onLoad == 'function')
-                args.onLoad(auroraModel);
+                args.onLoad(odysseyModel);
             }, (e: any) => {
               console.error('MDX 404', args.file);
               if(args.onError != null && typeof args.onError === 'function')
@@ -84,6 +84,20 @@ export class MDLLoader {
     return null;
 
 	}
+
+  loadAsync( resref: string ){
+    return new Promise<OdysseyModel>( (resolve, reject) => {
+      this.load({
+        file: resref,
+        onLoad: (model: OdysseyModel) => {
+          resolve(model);
+        },
+        onError: () => {
+          resolve(undefined);
+        }
+      })
+    })
+  }
 
   loadSync( args: any ) {
 
@@ -122,9 +136,9 @@ export class MDLLoader {
               let mdlReader = new BinaryReader(mdlData2);
               let mdxReader = new BinaryReader(mdxData2);
 
-              let auroraModel = new OdysseyModel(mdlReader, mdxReader);
+              let odysseyModel = new OdysseyModel(mdlReader, mdxReader);
               ModelCache.models[args.file] = {mdlData: mdlBuffer, mdxData: mdxBuffer};
-              return auroraModel;
+              return odysseyModel;
             } else {
               console.error('MDX 404', args.file);
               throw 'Model MDX 404: '+args.file;
