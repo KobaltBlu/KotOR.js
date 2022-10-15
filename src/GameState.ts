@@ -17,6 +17,27 @@ import { EngineGlobals } from "./interface/engine/EngineGlobals";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
 import { MDLLoader } from "./three/MDLLoader";
+import { ModuleObjectType } from "./enums/nwscript/ModuleObjectType";
+import EngineLocation from "./engine/EngineLocation";
+import { CursorManager } from "./managers/CursorManager";
+import { EngineMode } from "./enums/engine/EngineMode";
+import { OdysseyModel3D, OdysseyObject3D } from "./three/odyssey";
+import { NWScript } from "./nwscript/NWScript";
+import { AudioEngine } from "./audio/AudioEngine";
+import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
+import { ResourceLoader } from "./resource/ResourceLoader";
+import { LightManager } from "./managers/LightManager";
+import { TwoDAManager } from "./managers/TwoDAManager";
+import { TextureLoader } from "./loaders/TextureLoader";
+import { EngineState } from "./enums/engine/EngineState";
+import { CameraShakeManager } from "./managers/CameraShakeManager";
+import { TGAObject } from "./resource/TGAObject";
+import { AudioEmitter } from "./audio/AudioEmitter";
+import { TextureType } from "./enums/loaders/TextureType";
+import { FadeOverlayManager } from "./managers/FadeOverlayManager";
+import { CreatureType } from "./enums/nwscript/CreatureType";
+import { ReputationType } from "./enums/nwscript/ReputationType";
+import { ShaderManager } from "./managers/ShaderManager";
 
 const saturationShader: any = {
   uniforms: {
@@ -43,95 +64,16 @@ const saturationShader: any = {
   ].join("\n")
 };
 
-export const    OBJECT_TYPE_CREATURE         = 1;
-export const    OBJECT_TYPE_ITEM             = 2;
-export const    OBJECT_TYPE_TRIGGER          = 4;
-export const    OBJECT_TYPE_DOOR             = 8;
-export const    OBJECT_TYPE_AREA_OF_EFFECT   = 16;
-export const    OBJECT_TYPE_WAYPOINT         = 32;
-export const    OBJECT_TYPE_PLACEABLE        = 64;
-export const    OBJECT_TYPE_STORE            = 128;
-export const    OBJECT_TYPE_ENCOUNTER        = 256;
-export const    OBJECT_TYPE_SOUND            = 512;
-export const    OBJECT_TYPE_ALL              = 32767;
 
-// the thing after CREATURE_TYPE_ should refer to the
-// actual "subtype" in the lists given above.
-export const CREATURE_TYPE_RACIAL_TYPE     = 0;
-export const CREATURE_TYPE_PLAYER_CHAR     = 1;
-export const CREATURE_TYPE_CLASS           = 2;
-export const CREATURE_TYPE_REPUTATION      = 3;
-export const CREATURE_TYPE_IS_ALIVE        = 4;
-export const CREATURE_TYPE_HAS_SPELL_EFFECT = 5;
-export const CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT = 6;
-export const CREATURE_TYPE_PERCEPTION                = 7;
-//const CREATURE_TYPE_ALIGNMENT       = 2;
-
-export const REPUTATION_TYPE_FRIEND        = 0;
-export const REPUTATION_TYPE_ENEMY         = 1;
-export const REPUTATION_TYPE_NEUTRAL       = 2;
-
-export const PERCEPTION_SEEN_AND_HEARD           = 0;
-export const PERCEPTION_NOT_SEEN_AND_NOT_HEARD   = 1;
-export const PERCEPTION_HEARD_AND_NOT_SEEN       = 2;
-export const PERCEPTION_SEEN_AND_NOT_HEARD       = 3;
-export const PERCEPTION_NOT_HEARD                = 4;
-export const PERCEPTION_HEARD                    = 5;
-export const PERCEPTION_NOT_SEEN                 = 6;
-export const PERCEPTION_SEEN                     = 7;
 
 export const PLAYER_CHAR_NOT_PC            = false;
 export const PLAYER_CHAR_IS_PC             = true;
-
-export const CLASS_TYPE_SOLDIER       = 0;
-export const CLASS_TYPE_SCOUT         = 1;
-export const CLASS_TYPE_SCOUNDREL     = 2;
-export const CLASS_TYPE_JEDIGUARDIAN  = 3;
-export const CLASS_TYPE_JEDICONSULAR  = 4;
-export const CLASS_TYPE_JEDISENTINEL  = 5;
-export const CLASS_TYPE_COMBATDROID   = 6;
-export const CLASS_TYPE_EXPERTDROID   = 7;
-export const CLASS_TYPE_MINION        = 8;
 
 export const CLASS_TYPE_INVALID   = 255;
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
 export const PERSISTENT_ZONE_FOLLOW = 1;
-
-export const INVALID_STANDARD_FACTION        = -1;
-export const STANDARD_FACTION_HOSTILE_1      = 1;
-export const STANDARD_FACTION_FRIENDLY_1     = 2;
-export const STANDARD_FACTION_HOSTILE_2      = 3;
-export const STANDARD_FACTION_FRIENDLY_2     = 4;
-export const STANDARD_FACTION_NEUTRAL        = 5;
-export const STANDARD_FACTION_INSANE         = 6;
-export const STANDARD_FACTION_PTAT_TUSKAN    = 7;
-export const STANDARD_FACTION_GLB_XOR        = 8;
-export const STANDARD_FACTION_SURRENDER_1    = 9;
-export const STANDARD_FACTION_SURRENDER_2    = 10;
-export const STANDARD_FACTION_PREDATOR       = 11;
-export const STANDARD_FACTION_PREY           = 12;
-export const STANDARD_FACTION_TRAP           = 13;
-export const STANDARD_FACTION_ENDAR_SPIRE    = 14;
-export const STANDARD_FACTION_RANCOR         = 15;
-export const STANDARD_FACTION_GIZKA_1        = 16;
-export const STANDARD_FACTION_GIZKA_2        = 17;
-
-// Skill defines
-export const SKILL_COMPUTER_USE    = 0;
-export const SKILL_DEMOLITIONS     = 1;
-export const SKILL_STEALTH         = 2;
-export const SKILL_AWARENESS       = 3;
-export const SKILL_PERSUADE        = 4;
-export const SKILL_REPAIR          = 5;
-export const SKILL_SECURITY        = 6;
-export const SKILL_TREAT_INJURY    = 7;
-export const SKILL_MAX_SKILLS      = 8;
-
-export const SUBSKILL_FLAGTRAP      = 100;
-export const SUBSKILL_RECOVERTRAP   = 101;
-export const SUBSKILL_EXAMINETRAP   = 102;
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -193,8 +135,6 @@ export class GameState implements EngineContext {
   
   static SOLOMODE = false;
   static isLoadingSave = false;
-  static Heartbeat = undefined;
-  static HeartbeatTimer = 3000;
   
   static Flags = {
     EnableAreaVIS: false,
@@ -240,7 +180,6 @@ export class GameState implements EngineContext {
   static deltaTime: number;
 
   static canvas: HTMLCanvasElement;
-  static $canvas: any;
   static context: WebGLRenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: any;
@@ -362,10 +301,10 @@ export class GameState implements EngineContext {
 
     GameState.canvas = document.createElement( 'canvas' );
     //GameState.canvas = GameState.renderer.domElement;
-    GameState.$canvas = jQuery(GameState.canvas);
 
-    GameState.$canvas.addClass('noselect').attr('tabindex', 1);
-    jQuery('#renderer-container').append(GameState.$canvas);
+    GameState.canvas.classList.add('noselect');
+    GameState.canvas.setAttribute('tabindex', '1');
+    document.getElementById('renderer-container').appendChild(GameState.canvas);
     
     //transferToOffscreen() causes issues with savegame screenshots
     //GameState.canvas = GameState.canvas.transferControlToOffscreen();
@@ -396,9 +335,10 @@ export class GameState implements EngineContext {
     GameState.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
-    global.renderer = GameState.renderer;
+    (window as any).renderer = GameState.renderer;
 
     GameState.clock = new THREE.Clock();
+    //@ts-expect-error
     GameState.stats = new Stats();
 
     GameState.activeMenu = undefined;
@@ -536,10 +476,10 @@ export class GameState implements EngineContext {
     GameState.scene_cursor_holder = new THREE.Group();
     GameState.scene_gui.add(GameState.scene_cursor_holder);
 
-    GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas);
+    GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas, this);
 
-    jQuery('#renderer-container').append(GameState.stats.dom);
-    if(!ConfigClient.get('GameState.debug.show_fps'))
+    document.getElementById('#renderer-containe').appendChild(GameState.stats.dom);
+    if(!window.ConfigClient.get('GameState.debug.show_fps'))
       GameState.stats.showPanel(false);
 
     //BEGIN: PostProcessing
@@ -675,7 +615,7 @@ export class GameState implements EngineContext {
   static Start(){
 
     GameState.TutorialWindowTracker = [];
-    LightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+    LightManager.setLightHelpersVisible(window.ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
     GameState.audioEngine = new AudioEngine();
     GameState.initGUIAudio();
@@ -785,7 +725,7 @@ export class GameState implements EngineContext {
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
       MenuManager.MainMenu.Open();
-      jQuery( window ).trigger('resize');
+      window.dispatchEvent(new Event('resize'));
       // this.setTestingGlobals();
       //GameState.Update = GameState.Update.bind(this);
       console.log('begin');
@@ -868,7 +808,7 @@ export class GameState implements EngineContext {
     }
   }
 
-  public static setReticleSelectedObject( object = undefined ){
+  public static setReticleSelectedObject( object: ModuleObject ){
     if(object instanceof ModuleObject){
       GameState.selected = object.getReticleNode();
       if(GameState.selected){
@@ -893,7 +833,7 @@ export class GameState implements EngineContext {
     }
   }
 
-  public static setReticleHoveredObject( object = undefined ){
+  public static setReticleHoveredObject( object: ModuleObject ){
     if(object instanceof ModuleObject){
       let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
       let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (GameState.hoveredObject == GameState.selectedObject);
@@ -1004,7 +944,7 @@ export class GameState implements EngineContext {
         if(GameState.scene_cursor_holder.visible){
           //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
-          GameState.onMouseHitInteractive( (obj) => {
+          GameState.onMouseHitInteractive( (obj: any) => {
             if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){
               if(obj.moduleObject != GameState.getCurrentPlayer()){
                 GameState.setReticleHoveredObject(obj.moduleObject);
@@ -1023,14 +963,14 @@ export class GameState implements EngineContext {
       }
     }
 
-    if(GameState.hovered instanceof AuroraObject3D && !GameState.inDialog){
+    if(GameState.hovered instanceof OdysseyObject3D && !GameState.inDialog){
       GameState.hovered.getWorldPosition(CursorManager.reticle.position);
       CursorManager.reticle.visible = true;
     }else{
       CursorManager.reticle.visible = false;
     }
 
-    if(GameState.selected instanceof AuroraObject3D && !GameState.inDialog && !MenuManager.MenuContainer.bVisible){
+    if(GameState.selected instanceof OdysseyObject3D && !GameState.inDialog && !MenuManager.MenuContainer.bVisible){
       GameState.selected.getWorldPosition(CursorManager.reticle2.position);
       CursorManager.reticle2.visible = true;
       if(GameState.selectedObject instanceof ModuleDoor){      
@@ -1111,7 +1051,7 @@ export class GameState implements EngineContext {
                             
                             MenuManager.InGameComputer.audioEmitter = MenuManager.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
                               engine: GameState.audioEngine,
-                              channel: CHANNEL.VO,
+                              channel: AudioEngineChannel.VO,
                               props: {
                                 XPosition: 0,
                                 YPosition: 0,
@@ -1209,7 +1149,6 @@ export class GameState implements EngineContext {
     ModuleObject.COUNT = 1;
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
-    clearTimeout(GameState.Heartbeat);
     GameState.holdWorldFadeInForDialog = false;
     GameState.audioEngine.stopBackgroundMusic();
     GameState.audioEngine.Reset();
@@ -1284,7 +1223,7 @@ export class GameState implements EngineContext {
     }*/
     requestAnimationFrame( GameState.Update );
 
-    if(!ConfigClient.get('GameState.debug.show_fps')){
+    if(!window.ConfigClient.get('GameState.debug.show_fps')){
       // GameState.stats.showPanel(false);
     }
 
@@ -1376,18 +1315,18 @@ export class GameState implements EngineContext {
     }
 
     if(GameState.Mode == EngineMode.INGAME){
-      let obj = undefined;
+      let obj: any;
       for(let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++){
         obj = GameState.group.room_walkmeshes.children[i];
         if(obj.type === 'Mesh'){
-          obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
+          obj.material.visible = window.ConfigClient.get('GameState.debug.show_collision_meshes');
         }
       }
 
       for(let i = 0, len = GameState.walkmeshList.length; i < len; i++){
         obj = GameState.walkmeshList[i];
         if(obj.type === 'Mesh'){
-          obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
+          obj.material.visible = window.ConfigClient.get('GameState.debug.show_collision_meshes');
         }
       }
   
@@ -1401,7 +1340,7 @@ export class GameState implements EngineContext {
       for(let i = 0, len = GameState.group.path_helpers.children.length; i < len; i++){
         obj = GameState.group.path_helpers.children[i];
         if(obj){
-          obj.visible = ConfigClient.get('GameState.debug.show_path_helpers');
+          obj.visible = window.ConfigClient.get('GameState.debug.show_path_helpers');
         }
       }
     }
@@ -1431,7 +1370,7 @@ export class GameState implements EngineContext {
 
       let ssCallback = GameState.onScreenShot;
       let screenshot = new Image();
-      screenshot.src = GameState.$canvas[0].toDataURL('image/png');
+      screenshot.src = GameState.canvas.toDataURL('image/png');
       screenshot.onload = function() {
         let ssCanvas = new OffscreenCanvas(256, 256);
         let ctx = ssCanvas.getContext('2d');
@@ -1460,7 +1399,7 @@ export class GameState implements EngineContext {
     GameState.stats.update();
   }
 
-  static updateTime(delta){
+  static updateTime(delta: number = 0){
     GameState.time += delta;
     GameState.deltaTime += delta;
 
@@ -1486,24 +1425,24 @@ export class GameState implements EngineContext {
 
 
 
-  public static GetObjectByTag(sTag = '', iNum = 0, oType = OBJECT_TYPE_ALL){
+  public static GetObjectByTag(sTag = '', iNum = 0, oType = ModuleObjectType.ALL){
 
-    /*OBJECT_TYPE_CREATURE         = 1;
-    OBJECT_TYPE_ITEM             = 2;
-    OBJECT_TYPE_TRIGGER          = 4;
-    OBJECT_TYPE_DOOR             = 8;
-    OBJECT_TYPE_AREA_OF_EFFECT   = 16;
-    OBJECT_TYPE_WAYPOINT         = 32;
-    OBJECT_TYPE_PLACEABLE        = 64;
-    OBJECT_TYPE_STORE            = 128;
-    OBJECT_TYPE_ENCOUNTER        = 256;
-    OBJECT_TYPE_SOUND            = 512;
+    /*ModuleObjectType.CREATURE         = 1;
+    ModuleObjectType.ITEM             = 2;
+    ModuleObjectType.TRIGGER          = 4;
+    ModuleObjectType.DOOR             = 8;
+    ModuleObjectType.AOE   = 16;
+    ModuleObjectType.WAYPOINT         = 32;
+    ModuleObjectType.PLACEABLE        = 64;
+    ModuleObjectType.STORE            = 128;
+    ModuleObjectType.ENCOUNTER        = 256;
+    ModuleObjectType.SOUND            = 512;
     OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
-    let results = [];
+    let results: ModuleObject[] = [];
     let obj = undefined;
-    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
       for(let i = 0, len = GameState.module.area.placeables.length; i < len; i++){
         obj = GameState.module.area.placeables[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1511,7 +1450,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         obj = GameState.module.area.creatures[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1519,7 +1458,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         obj = PartyManager.party[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1527,7 +1466,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
       for(let i = 0, len = GameState.module.area.stores.length; i < len; i++){
         obj = GameState.module.area.stores[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1535,7 +1474,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
       for(let i = 0, len = GameState.module.area.doors.length; i < len; i++){
         obj = GameState.module.area.doors[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1543,7 +1482,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
       for(let i = 0, len = GameState.module.area.triggers.length; i < len; i++){
         obj = GameState.module.area.triggers[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1551,7 +1490,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
       for(let i = 0, len = GameState.module.area.waypoints.length; i < len; i++){
         obj = GameState.module.area.waypoints[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1559,7 +1498,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
       for(let i = 0, len = GameState.module.area.sounds.length; i < len; i++){
         obj = GameState.module.area.sounds[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1567,7 +1506,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
       for(let i = 0, len = GameState.module.area.items.length; i < len; i++){
         obj = GameState.module.area.items[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -1585,9 +1524,9 @@ export class GameState implements EngineContext {
 
   }
 
-  public static GetNearestObjectByTag(sTag = '', oObject = undefined, iNum = 0){
+  public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
-    let results = [];
+    let results: ModuleObject[] = [];
     let len = GameState.module.area.placeables.length;
     for(let i = 0; i < len; i++){
       if(GameState.module.area.placeables[i].getTag().toLowerCase() == sTag)
@@ -1664,8 +1603,8 @@ export class GameState implements EngineContext {
 
   }
 
-  public static GetNearestInteractableObject(oObject = null){
-    let results = [];
+  public static GetNearestInteractableObject(oObject?: ModuleObject){
+    let results: ModuleObject[] = [];
 
     results = results.concat(PartyManager.party);
     results = results.concat(GameState.module.area.creatures);
@@ -1701,37 +1640,37 @@ export class GameState implements EngineContext {
 
   }
 
-  public static GetNearestObject(oType = 0, oObject = null, iNum = 0){
-    let results = [];
+  public static GetNearestObject(oType = 0, oObject: ModuleObject, iNum = 0){
+    let results: ModuleObject[] = [];
 
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       results = results.concat(GameState.module.area.creatures);
     }
-    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
       results = results.concat(GameState.module.area.items);
     }
-    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
       results = results.concat(GameState.module.area.triggers);
     }
-    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
       results = results.concat(GameState.module.area.doors);
     }
-    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
       results = results.concat(GameState.module.area.waypoints);
     }
-    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
       results = results.concat(GameState.module.area.placeables);
     }
-    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
       results = results.concat(GameState.module.area.stores);
     }
-    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
+    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
       results = results.concat(GameState.module.area.encounters);
     }
-    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
       results = results.concat(GameState.module.area.sounds);
     }
 
@@ -1765,38 +1704,38 @@ export class GameState implements EngineContext {
 
     GameState.objSearchIndex = 0;
 
-    let results = [];
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    let results: ModuleObject[] = [];
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       results = results.concat(GameState.module.area.creatures);
     }
-    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
       results = results.concat(GameState.module.area.items);
     }
-    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
       results = results.concat(GameState.module.area.triggers);
     }
-    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
       results = results.concat(GameState.module.area.doors);
     }
-    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       results = results.concat(GameState.module.area.creatures);
     }
-    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
       results = results.concat(GameState.module.area.waypoints);
     }
-    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
       results = results.concat(GameState.module.area.placeables);
     }
-    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
       results = results.concat(GameState.module.area.stores);
     }
-    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
+    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
       results = results.concat(GameState.module.area.encounters);
     }
-    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
       results = results.concat(GameState.module.area.sounds);
     }
 
@@ -1813,38 +1752,38 @@ export class GameState implements EngineContext {
     }
     ++GameState.objSearchIndex;
 
-    let results = [];
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    let results: ModuleObject[] = [];
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       results = results.concat(GameState.module.area.creatures);
     }
-    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){
+    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
       results = results.concat(GameState.module.area.items);
     }
-    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){
+    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
       results = results.concat(GameState.module.area.triggers);
     }
-    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){
+    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
       results = results.concat(GameState.module.area.doors);
     }
-    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){
+    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
       results = results.concat(GameState.module.area.creatures);
     }
-    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){
+    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
       results = results.concat(GameState.module.area.waypoints);
     }
-    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){
+    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
       results = results.concat(GameState.module.area.placeables);
     }
-    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){
+    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
       results = results.concat(GameState.module.area.stores);
     }
-    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){
+    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
       results = results.concat(GameState.module.area.encounters);
     }
-    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){
+    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
       results = results.concat(GameState.module.area.sounds);
     }
 
@@ -1854,42 +1793,42 @@ export class GameState implements EngineContext {
     return undefined;
   }
 
-public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarget=null, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list = null ){
+  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list?: ModuleCreature[] ): ModuleCreature {
     
     if(!list){
       list = GameState.module.area.creatures;
       list = list.concat(PartyManager.party);
     }
 
-    let results = [];
+    let results: ModuleCreature[] = [];
     
     switch(nFirstCriteriaType){
-      case CREATURE_TYPE_RACIAL_TYPE:
+      case CreatureType.RACIAL_TYPE:
 
       break;
-      case CREATURE_TYPE_PLAYER_CHAR:
+      case CreatureType.PLAYER_CHAR:
 
       break;
-      case CREATURE_TYPE_CLASS:
+      case CreatureType.CLASS:
 
       break;
-      case CREATURE_TYPE_REPUTATION:
+      case CreatureType.REPUTATION:
         switch(nFirstCriteriaValue){
-          case REPUTATION_TYPE_FRIEND:
+          case ReputationType.FRIEND:
             for(let i = 0; i < list.length; i++){
               if(list[i].isFriendly(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
               }
             }
           break;
-          case REPUTATION_TYPE_ENEMY:
+          case ReputationType.ENEMY:
             for(let i = 0; i < list.length; i++){
               if(list[i].isHostile(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
               }
             }
           break;  
-          case REPUTATION_TYPE_NEUTRAL:
+          case ReputationType.NEUTRAL:
             for(let i = 0; i < list.length; i++){
               if(list[i].isNeutral(oTarget) && oTarget.hasLineOfSight(list[i])){
                 results.push(list[i]);
@@ -1898,59 +1837,59 @@ public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarge
           break;
         }
       break;
-      case CREATURE_TYPE_IS_ALIVE:
+      case CreatureType.IS_ALIVE:
         for(let i = 0; i < list.length; i++){
           if(!list[i].isDead()){
             results.push(list[i]);
           }
         }
       break;
-      case CREATURE_TYPE_HAS_SPELL_EFFECT:
+      case CreatureType.HAS_SPELL_EFFECT:
 
       break;
-      case CREATURE_TYPE_DOES_NOT_HAVE_SPELL_EFFECT:
+      case CreatureType.DOES_NOT_HAVE_SPELL_EFFECT:
 
       break;
-      case CREATURE_TYPE_PERCEPTION:
+      case CreatureType.PERCEPTION:
         for(let i = 0; i < list.length; i++){
           switch(nFirstCriteriaValue){
             case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen && o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen && o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen && !o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen && !o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen && o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen && o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen && !o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen && !o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.heard ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.heard ).length){
                 results.push(list[i]);
               }
             break;
             case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !o.seen ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen ).length){
                 results.push(list[i]);
               }
             break;
             case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && o.seen ).length){
+              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen ).length){
                 results.push(list[i]);
               }
             break;
@@ -1965,9 +1904,10 @@ public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarge
     }
 
     if(results.length){
-      return (results.sort((a, b) => {
+      results.sort((a: any, b: any) => {
         return oTarget.position.distanceTo(a.position) - oTarget.position.distanceTo(b.position);
-      }))[nNth-1];
+      });
+      return results[nNth-1];
     }
 
     return undefined;
@@ -1975,62 +1915,62 @@ public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarge
 
   public static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
-    let object_pool = [];
-    let results = [];
+    let object_pool: ModuleObject[] = [];
+    let results: ModuleObject[] = [];
 
     /*
-    int    OBJECT_TYPE_CREATURE         = 1;
-    int    OBJECT_TYPE_ITEM             = 2;
-    int    OBJECT_TYPE_TRIGGER          = 4;
-    int    OBJECT_TYPE_DOOR             = 8;
-    int    OBJECT_TYPE_AREA_OF_EFFECT   = 16;
-    int    OBJECT_TYPE_WAYPOINT         = 32;
-    int    OBJECT_TYPE_PLACEABLE        = 64;
-    int    OBJECT_TYPE_STORE            = 128;
-    int    OBJECT_TYPE_ENCOUNTER        = 256;
-    int    OBJECT_TYPE_SOUND            = 512;
+    int    ModuleObjectType.CREATURE         = 1;
+    int    ModuleObjectType.ITEM             = 2;
+    int    ModuleObjectType.TRIGGER          = 4;
+    int    ModuleObjectType.DOOR             = 8;
+    int    ModuleObjectType.AOE   = 16;
+    int    ModuleObjectType.WAYPOINT         = 32;
+    int    ModuleObjectType.PLACEABLE        = 64;
+    int    ModuleObjectType.STORE            = 128;
+    int    ModuleObjectType.ENCOUNTER        = 256;
+    int    ModuleObjectType.SOUND            = 512;
     int    OBJECT_TYPE_ALL              = 32767;
     */
 
     //console.log('GetObjectsInShape', objectFilter, shape);
 
-    if((oType & OBJECT_TYPE_CREATURE) == OBJECT_TYPE_CREATURE){ //CREATURE
+    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){ //CREATURE
       object_pool = object_pool.concat(GameState.module.area.creatures);
     }
 
-    if((oType & OBJECT_TYPE_ITEM) == OBJECT_TYPE_ITEM){ //ITEM
+    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){ //ITEM
       object_pool = object_pool.concat(GameState.module.area.items);
     }
 
-    if((oType & OBJECT_TYPE_TRIGGER) == OBJECT_TYPE_TRIGGER){ //TRIGGER
+    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){ //TRIGGER
       object_pool = object_pool.concat(GameState.module.area.triggers); 
     }
 
-    if((oType & OBJECT_TYPE_DOOR) == OBJECT_TYPE_DOOR){ //DOOR
+    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){ //DOOR
       object_pool = object_pool.concat(GameState.module.area.doors); 
     }
 
-    if((oType & OBJECT_TYPE_AREA_OF_EFFECT) == OBJECT_TYPE_AREA_OF_EFFECT){ //AOE
+    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){ //AOE
               
     }
 
-    if((oType & OBJECT_TYPE_WAYPOINT) == OBJECT_TYPE_WAYPOINT){ //WAYPOINTS
+    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(GameState.module.area.waypoints);
     }
     
-    if((oType & OBJECT_TYPE_PLACEABLE) == OBJECT_TYPE_PLACEABLE){ //PLACEABLE
+    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(GameState.module.area.placeables);
     }
 
-    if((oType & OBJECT_TYPE_STORE) == OBJECT_TYPE_STORE){ //STORE
+    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){ //STORE
           
     }
     
-    if((oType & OBJECT_TYPE_ENCOUNTER) == OBJECT_TYPE_ENCOUNTER){ //ENCOUNTER
+    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){ //ENCOUNTER
           
     }
     
-    if((oType & OBJECT_TYPE_SOUND) == OBJECT_TYPE_SOUND){ //SOUND
+    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(GameState.module.area.sounds);
     }
 
@@ -2050,7 +1990,7 @@ public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarge
 
   }
 
-  public static getNPCResRefById(nId){
+  public static getNPCResRefById(nId: number){
     switch(nId){
       case 0:
         return 'p_bastilla'
@@ -2083,42 +2023,42 @@ public static GetNearestCreature(nFirstCriteriaType, nFirstCriteriaValue, oTarge
     return '';
   }
 
-  public static isObjectPC(object = undefined){
+  public static isObjectPC(object: ModuleObject){
     return GameState.player === object;
   }
 
   public static setGlobalBoolean(name = '', value = false){
-    if(GameState.Globals.Boolean[name.toLowerCase()])
-    GameState.Globals.Boolean[name.toLowerCase()].value = value ? true : false;
+    if(GameState.Globals.Boolean.has(name.toLowerCase()))
+    GameState.Globals.Boolean.get(name.toLowerCase()).value = value ? true : false;
   }
 
   public static getGlobalBoolean(name = ''){
-    if(GameState.Globals.Boolean[name.toLowerCase()])
-      return GameState.Globals.Boolean[name.toLowerCase()].value ? true : false;
+    if(GameState.Globals.Boolean.has(name.toLowerCase()))
+      return GameState.Globals.Boolean.get(name.toLowerCase()).value ? true : false;
 
     return false;
   }
 
   public static setGlobalNumber(name:string = '', value:number = 0){
-    if(GameState.Globals.Number[name.toLowerCase()])
-    GameState.Globals.Number[name.toLowerCase()].value = Math.floor(value);
+    if(GameState.Globals.Number.has(name.toLowerCase()))
+    GameState.Globals.Number.get(name.toLowerCase()).value = Math.floor(value);
   }
 
   public static getGlobalNumber(name:string = ''){
-    if(GameState.Globals.Number[name.toLowerCase()])
-      return GameState.Globals.Number[name.toLowerCase()].value;
+    if(GameState.Globals.Number.has(name.toLowerCase()))
+      return GameState.Globals.Number.get(name.toLowerCase()).value;
 
     return 0;
   }
 
   public static setGlobalLocation(name = '', value = new EngineLocation){
-    if(GameState.Globals.Location[name.toLowerCase()] && value instanceof EngineLocation)
-    GameState.Globals.Location[name.toLowerCase()].value = value;
+    if(GameState.Globals.Location.has(name.toLowerCase()) && value instanceof EngineLocation)
+    GameState.Globals.Location.get(name.toLowerCase()).value = value;
   }
 
   public static getGlobalLocation(name = ''){
-    if(GameState.Globals.Location[name.toLowerCase()])
-      return GameState.Globals.Location[name.toLowerCase()].value;
+    if(GameState.Globals.Location.has(name.toLowerCase()))
+      return GameState.Globals.Location.get(name.toLowerCase()).value;
 
     return new EngineLocation;
   }
