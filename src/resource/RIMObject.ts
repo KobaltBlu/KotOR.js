@@ -28,6 +28,7 @@ export interface RIMResource {
 
 export class RIMObject {
   file: string | Buffer;
+  group: string;
   Resources: RIMResource[];
   HeaderSize: number;
   inMemory: boolean;
@@ -36,7 +37,7 @@ export class RIMObject {
   Header: RIMHeader;
   rimDataOffset: number;
 
-  constructor(file: Buffer|string, onComplete: Function|undefined = undefined, onError: Function|undefined = undefined){
+  constructor(file: Buffer|string, onComplete?: Function, onError?: Function){
     this.file = file;
 
     this.Resources = [];
@@ -47,61 +48,67 @@ export class RIMObject {
     try{
 
       if(typeof file == 'string'){
-        fs.open(this.file, 'r', (err, fd) => {
-          if (err) {
-            console.log('RIM Header Read', err);
-            if(typeof onError === 'function')
-              onError();
-
-            return;
-          }
-          let header = Buffer.allocUnsafe(this.HeaderSize);
-          fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
-            this.Reader = new BinaryReader(header);
-  
-            this.Header = {} as RIMHeader;
-  
-            this.Header.FileType = this.Reader.ReadChars(4);
-            this.Header.FileVersion = this.Reader.ReadChars(4);
-  
-            this.Reader.Skip(4);
-  
-            this.Header.ResourceCount = this.Reader.ReadUInt32();
-            this.Header.ResourcesOffset = this.Reader.ReadUInt32();
-  
-            //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-            this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
-            header = Buffer.allocUnsafe(this.rimDataOffset);
-            fs.read(fd, header, 0, this.rimDataOffset, 0, (err, num) => {
-              this.Reader.resuse(header);
-              this.Reader.Seek(this.Header.ResourcesOffset);
-  
-              for (let i = 0; i != this.Header.ResourceCount; i++) {
-                let res: RIMResource = {
-                  ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
-                  ResType: this.Reader.ReadUInt16(),
-                  Unused: this.Reader.ReadUInt16(),
-                  ResID: this.Reader.ReadUInt32(),
-                  DataOffset: this.Reader.ReadUInt32(),
-                  DataSize: this.Reader.ReadUInt32()
-                } as RIMResource;
-                this.Resources.push(res);
-              }
-
-              this.Reader.dispose();
-  
-              if(typeof onComplete === 'function')
-                onComplete(this);
-  
-            });
-  
-          });
-  
+        this.LoadFromDisk(file).then( (rim: RIMObject) => {
+          if(typeof onComplete === 'function')
+            onComplete(rim);
+        }).catch( (err: any) => {
+          console.log('RIM Open Error', err);
+          if(typeof onError === 'function')
+            onError();
         });
       }else if(this.file instanceof Buffer){
-        this.inMemory = true;
+        this.LoadFromBuffer(this.file).then( (rim: RIMObject) => {
+          if(typeof onComplete === 'function')
+            onComplete(rim);
+        }).catch( (err: any) => {
+          console.log('RIM Open Error', err);
+          if(typeof onError === 'function')
+            onError();
+        });
+      }
+      
+    }catch(e){
+      console.log('RIM Open Error', e);
+      if(typeof onError === 'function')
+        onError();
+    }
 
-        let header = Buffer.from(this.file, 0, this.HeaderSize);
+  }
+
+  ReadHeaderFromBuffer(buffer: Buffer){
+    this.Header = {} as RIMHeader;
+
+    this.Header.FileType = this.Reader.ReadChars(4);
+    this.Header.FileVersion = this.Reader.ReadChars(4);
+
+    this.Reader.Skip(4);
+
+    this.Header.ResourceCount = this.Reader.ReadUInt32();
+    this.Header.ResourcesOffset = this.Reader.ReadUInt32();
+
+    //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
+    this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
+    let header = Buffer.from(buffer, 0, this.rimDataOffset);
+    this.Reader = new BinaryReader(header);
+    this.Reader.Seek(this.Header.ResourcesOffset);
+
+    for (let i = 0; i != this.Header.ResourceCount; i++) {
+      let res = {
+        ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+        ResType: this.Reader.ReadUInt16(),
+        Unused: this.Reader.ReadUInt16(),
+        ResID: this.Reader.ReadUInt32(),
+        DataOffset: this.Reader.ReadUInt32(),
+        DataSize: this.Reader.ReadUInt32()
+      };
+      this.Resources.push(res);
+    }
+  }
+
+  ReadHeaderFromFileDecriptor(fd: number){
+    return new Promise<void>( (resolve, reject) => {
+      let header = Buffer.allocUnsafe(this.HeaderSize);
+      fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
         this.Reader = new BinaryReader(header);
 
         this.Header = {} as RIMHeader;
@@ -116,38 +123,72 @@ export class RIMObject {
 
         //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
         this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
-        header = Buffer.from(this.file, 0, this.rimDataOffset);
-        this.Reader = new BinaryReader(header);
-        this.Reader.Seek(this.Header.ResourcesOffset);
+        header = Buffer.allocUnsafe(this.rimDataOffset);
+        fs.read(fd, header, 0, this.rimDataOffset, 0, (err, bytesRead) => {
+          this.Reader.resuse(header);
+          this.Reader.Seek(this.Header.ResourcesOffset);
 
-        for (let i = 0; i != this.Header.ResourceCount; i++) {
-          let res = {
-            ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
-            ResType: this.Reader.ReadUInt16(),
-            Unused: this.Reader.ReadUInt16(),
-            ResID: this.Reader.ReadUInt32(),
-            DataOffset: this.Reader.ReadUInt32(),
-            DataSize: this.Reader.ReadUInt32()
-          };
-          this.Resources.push(res);
-        }
+          for (let i = 0; i != this.Header.ResourceCount; i++) {
+            let res: RIMResource = {
+              ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+              ResType: this.Reader.ReadUInt16(),
+              Unused: this.Reader.ReadUInt16(),
+              ResID: this.Reader.ReadUInt32(),
+              DataOffset: this.Reader.ReadUInt32(),
+              DataSize: this.Reader.ReadUInt32()
+            } as RIMResource;
+            this.Resources.push(res);
+          }
 
-        this.Reader.dispose();
+          this.Reader.dispose();
+          resolve();
+        });
 
-        if(onComplete != null)
-          onComplete(this);
-
-      }
-      
-    }catch(e){
-      console.log('RIM Open Error', e);
-      if(typeof onError === 'function')
-        onError();
-    }
-
+      });
+    });
   }
 
-  getRawResource(resref: string = '', restype: number = 0x000F, onComplete: Function|undefined = undefined, onError: Function|undefined = undefined) {
+  LoadFromBuffer(buffer: Buffer){
+    return new Promise<RIMObject>( (resolve, reject) => {
+      this.inMemory = true;
+      let header = Buffer.from(buffer, 0, this.HeaderSize);
+      this.Reader = new BinaryReader(header);
+      this.ReadHeaderFromBuffer(buffer);
+      this.Reader.dispose();
+      resolve(this);
+    });
+  }
+
+  LoadFromDisk(resource_path: string){
+    return new Promise<RIMObject>( (resolve, reject) => {
+      fs.open(resource_path, 'r', (err, fd) => {
+        if (err) {
+          console.log('RIM Header Read', err);
+          reject(err);
+          return;
+        }
+        
+        try{
+          this.ReadHeaderFromFileDecriptor(fd).then( () => {
+            fs.close(fd, () => {
+              resolve(this);
+            });
+          }).catch( () => {
+            fs.close(fd, () => {
+              resolve(this);
+            });
+          });
+        }catch(e){
+          fs.close(fd, () => {
+            resolve(this);
+          });
+        }
+
+      });
+    });
+  }
+
+  getRawResource(resref: string = '', restype: number = 0x000F, onComplete?: Function, onError?: Function) {
     for(let i = 0; i != this.Resources.length; i++){
       let resource: RIMResource = this.Resources[i];
       if (resource.ResRef == resref && resource.ResType == restype) {
@@ -203,7 +244,7 @@ export class RIMObject {
     return this.getResourceByKey(label, ResType);
   }
 
-  GetResourceData(resource: RIMResource, onComplete: Function|undefined = undefined) {
+  GetResourceData(resource: RIMResource, onComplete?: Function) {
     if(!!resource){
       try {
 
@@ -235,7 +276,7 @@ export class RIMObject {
     }
   }
 
-  exportRawResource(directory: string, resref: string, restype = 0x000F, onComplete: Function|undefined = undefined) {
+  exportRawResource(directory: string, resref: string, restype = 0x000F, onComplete?: Function) {
     if(directory != null){
       for(let i = 0; i != this.Resources.length; i++){
         let resource = this.Resources[i];

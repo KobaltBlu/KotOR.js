@@ -1,14 +1,33 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
+*/
+
+import * as fs from "fs";
+import * as path from "path";
+import { recursive } from "./utility/RecursiveDirectoryReader";
+import { GameState } from "./GameState";
+import { LoadingScreen } from "./LoadingScreen";
+import { ERFObject } from "./resource/ERFObject";
+import { ERFManager } from "./managers/ERFManager";
+import { KEYManager } from "./managers/KEYManager";
+import { TLKManager } from "./managers/TLKManager";
+import { TwoDAManager } from "./managers/TwoDAManager";
+import { ResourceLoader } from "./resource/ResourceLoader";
+import { ResourceTypes } from "./resource/ResourceTypes";
+import { RIMObject } from "./resource/RIMObject";
+import { ApplicationProfile } from "./utility/ApplicationProfile";
+import { AsyncLoop } from "./utility/AsyncLoop";
+import { RIMManager } from "./managers/RIMManager";
 
 /* @file
- * The GameInitializer class. Handles the loading of game archives for use later during runtime
- */
+* The GameInitializer class. Handles the loading of game archives for use later during runtime
+*/
 
-class GameInitializer {
+export class GameInitializer {
 
+  static currentGame: any;
+  static files: string[] = [];
 
-  static Init(props){
+  static Init(props: any){
 
     props = Object.assign({
       game: null,
@@ -18,24 +37,24 @@ class GameInitializer {
 
     if(GameInitializer.currentGame != props.game){
       GameInitializer.currentGame = props.game;
-
-      loader.SetMessage("Loading Keys");
-      Global.kotorKEY = new KEYObject(path.join(ApplicationProfile.directory, 'chitin.key'), () => {
-
-        Global.kotorBIF = {};
-        Global.kotorRIM = {};
-        loader.SetMessage("Loading Game Resources");
+      
+      LoadingScreen.main.SetMessage("Loading Keys");
+      KEYManager.Load(path.join(ApplicationProfile.directory, 'chitin.key'), () => {
+        LoadingScreen.main.SetMessage("Loading Game Resources");
         GameInitializer.LoadGameResources( () => {
-
           //Load the TLK File
-          loader.SetMessage("Loading TLK File");
-          Global.kotorTLK = new TLKObject(path.join(ApplicationProfile.directory, 'dialog.tlk'), () => {
-            if(props.onLoad != null)
+          LoadingScreen.main.SetMessage("Loading TLK File");
+          TLKManager.LoadTalkTable(path.join(ApplicationProfile.directory, 'dialog.tlk')).then( () => {
+            if(typeof props.onLoad === 'function'){
               props.onLoad();
-          }, function(num, total){
-            //onProgress
-            loader.SetMessage("Loading TLK File: "+num+" / "+total);
-          });
+            }
+          })
+          //   if(props.onLoad != null)
+          //     props.onLoad();
+          // }, function(num: any, total: any){
+          //   //onProgress
+          //   LoadingScreen.main.SetMessage("Loading TLK File: "+num+" / "+total);
+          // });
         });
       });
 
@@ -46,65 +65,54 @@ class GameInitializer {
 
   }
 
-  static LoadGameResources(onSuccess = null){
+  static LoadGameResources(onSuccess?: Function){
 
+    LoadingScreen.main.SetMessage("Loading BIF's");
 
-    //Load all biffs
-    Global.kotorBIF = {};
-    Global.kotorERF = {};
-    Global.kotorRIM = {};
-    Global.kotorMOD = {};
-    Global.kotor2DA = {};
+    LoadingScreen.main.SetMessage("Loading RIM's");
+    GameInitializer.LoadRIMs( () => {
 
-    loader.SetMessage("Loading BIF's");
-    GameInitializer.LoadBIFs( () => {
+      GameInitializer.LoadModules( () => {
 
-      loader.SetMessage("Loading RIM's");
-      GameInitializer.LoadRIMs( () => {
+        //Load all of the 2da files into memory
+        GameInitializer.Load2DAs( () => {
+          LoadingScreen.main.SetMessage('Loading: Texture Packs');
+          GameInitializer.LoadTexturePacks( () => {
 
-        GameInitializer.LoadModules( () => {
+            GameInitializer.LoadGameAudioResources( {
+              folder: 'streammusic',
+              name: 'StreamMusic',
+              onSuccess: () => {
+                GameInitializer.LoadGameAudioResources( {
+                  folder: 'streamsounds',
+                  name: 'StreamSounds',
+                  onSuccess: () => {
+                    if(GameState.GameKey != 'TSL'){
+                      GameInitializer.LoadGameAudioResources( {
+                        folder: 'streamwaves',
+                        name: 'StreamWaves',
+                        onSuccess: () => {
 
-          //Load all of the 2da files into memory
-          GameInitializer.Load2DAs( () => {
-            loader.SetMessage('Loading: Texture Packs');
-            GameInitializer.LoadTexturePacks( () => {
+                          if(onSuccess != null)
+                            onSuccess();
+                        }
+                      });
+                    }else{
+                      GameInitializer.LoadGameAudioResources( {
+                        folder: 'streamvoice',
+                        name: 'StreamSounds',
+                        onSuccess: () => {
 
-              GameInitializer.LoadGameAudioResources( {
-                folder: 'streammusic',
-                name: 'StreamMusic',
-                onSuccess: () => {
-                  GameInitializer.LoadGameAudioResources( {
-                    folder: 'streamsounds',
-                    name: 'StreamSounds',
-                    onSuccess: () => {
-                      if(GameKey != 'TSL'){
-                        GameInitializer.LoadGameAudioResources( {
-                          folder: 'streamwaves',
-                          name: 'StreamWaves',
-                          onSuccess: () => {
-
-                            if(onSuccess != null)
-                              onSuccess();
-                          }
-                        });
-                      }else{
-                        GameInitializer.LoadGameAudioResources( {
-                          folder: 'streamvoice',
-                          name: 'StreamSounds',
-                          onSuccess: () => {
-
-                            if(onSuccess != null)
-                              onSuccess();
-                          }
-                        });
-                      }
+                          if(onSuccess != null)
+                            onSuccess();
+                        }
+                      });
                     }
-                  });
-                }
-              });
+                  }
+                });
+              }
             });
           });
-
         });
 
       });
@@ -114,38 +122,10 @@ class GameInitializer {
 
   }
 
-  static LoadBIFs(onSuccess = null){
-    loader.SetMessage('Loading: BIF Archives');
-
-    let bifs = Global.kotorKEY.bifs.map(function(obj) {
-      let args = obj.filename.split(path.sep).pop().split('.');
-      return {ext: args[1].toLowerCase(), name: args[0], filename: obj.filename};
-    }).filter(function(file_obj){
-      return file_obj.ext == 'bif';
-    });
-
-    let loop = new AsyncLoop({
-      array: bifs,
-      onLoop: (bif_object, asyncLoop) => {
-        new BIFObject(path.join(ApplicationProfile.directory, bif_object.filename), (bif) => {
-          if(bif instanceof BIFObject){
-            bif.group = 'BIFs';
-            Global.kotorBIF[bif_object.name] = bif;
-          }
-          asyncLoop.next();
-        });
-      }
-    });
-    loop.iterate(() => {
-      if(typeof onSuccess === 'function')
-        onSuccess();
-    });
-  }
-
-  static LoadRIMs(onSuccess = null){
-    if(GameKey != 'TSL'){
+  static LoadRIMs(onSuccess?: Function){
+    if(GameState.GameKey != 'TSL'){
       let data_dir = path.join(ApplicationProfile.directory, 'rims');
-      loader.SetMessage('Loading: RIM Archives');
+      LoadingScreen.main.SetMessage('Loading: RIM Archives');
 
       fs.readdir(data_dir, (err, filenames) => {
         if (err){
@@ -156,27 +136,19 @@ class GameInitializer {
           return;
         }
 
-        let rims = filenames.map(function(file) {
+        let rims: any[] = filenames.map(function(file) {
           let filename = file.split(path.sep).pop();
           let args = filename.split('.');
-          return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+          return {
+            ext: args[1].toLowerCase(), 
+            name: args[0], 
+            filename: filename
+          } as any;
         }).filter(function(file_obj){
           return file_obj.ext == 'rim';
         });
 
-        let loop = new AsyncLoop({
-          array: rims,
-          onLoop: (rim_obj, asyncLoop) => {
-            new RIMObject(path.join(data_dir, rim_obj.filename), (rim) => {
-              if(rim instanceof RIMObject){
-                rim.group = 'RIMs';
-                Global.kotorRIM[rim_obj.name] = rim;
-              }
-              asyncLoop.next();
-            });
-          }
-        });
-        loop.iterate(() => {
+        RIMManager.Load(rims).then( () => {
           if(typeof onSuccess === 'function')
             onSuccess();
         });
@@ -187,9 +159,9 @@ class GameInitializer {
     }
   }
 
-  static LoadModules(onSuccess = null){
+  static LoadModules(onSuccess?: Function){
     let data_dir = path.join(ApplicationProfile.directory, 'modules');
-    loader.SetMessage('Loading: Module Archives');
+    LoadingScreen.main.SetMessage('Loading: Module Archives');
     
     fs.readdir(data_dir, (err, filenames) => {
       if (err){
@@ -210,22 +182,22 @@ class GameInitializer {
 
       let loop = new AsyncLoop({
         array: modules,
-        onLoop: (module_obj, asyncLoop) => {
+        onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
           switch(module_obj.ext){
             case 'rim':
-              new RIMObject(path.join(data_dir, module_obj.filename), (rim) => {
+              new RIMObject(path.join(data_dir, module_obj.filename), (rim: RIMObject) => {
                 if(rim instanceof RIMObject){
                   rim.group = 'Module';
-                  Global.kotorRIM[module_obj.name] = rim;
+                  RIMManager.addRIM(module_obj.name, rim);
                 }
                 asyncLoop.next();
               });
             break;
             case 'mod':
-              new ERFObject(path.join(data_dir, module_obj.filename), (mod) => {
+              new ERFObject(path.join(data_dir, module_obj.filename), (mod: ERFObject) => {
                 if(mod instanceof ERFObject){
                   mod.group = 'Module';
-                  Global.kotorMOD[module_obj.name] = mod;
+                  ERFManager.addERF(module_obj.name, mod);
                 }
                 asyncLoop.next();
               });
@@ -244,29 +216,15 @@ class GameInitializer {
     });
   }
 
-  static Load2DAs(onSuccess = null){
-    loader.SetMessage('Loading: 2DA\'s');
-    
-    let ResKey = undefined;
-    let loop = new AsyncLoop({
-      array: Global.kotorBIF['2da'].resources,
-      onLoop: (twoDA_res, asyncLoop) => {
-        ResKey = Global.kotorKEY.GetFileKeyByRes(twoDA_res);
-        //Load 2da's with the resource loader to it can pick up ones in the override folder
-        ResourceLoader.loadResource(ResourceTypes['2da'], ResKey.ResRef, (d) => {
-          Global.kotor2DA[ResKey.ResRef] = new TwoDAObject(d, () => {
-            asyncLoop.next();
-          });
-        });
-      }
-    });
-    loop.iterate(() => {
+  static Load2DAs(onSuccess?: Function){
+    LoadingScreen.main.SetMessage('Loading: 2DA\'s');
+    TwoDAManager.Load2DATables(() => {
       if(typeof onSuccess === 'function')
         onSuccess();
     });
   }
 
-  static LoadTexturePacks(onSuccess = null){
+  static LoadTexturePacks(onSuccess?: Function){
     let data_dir = path.join(ApplicationProfile.directory, 'TexturePacks');
 
     fs.readdir(data_dir, (err, filenames) => {
@@ -288,11 +246,11 @@ class GameInitializer {
 
       let loop = new AsyncLoop({
         array: erfs,
-        onLoop: (erf_obj, asyncLoop) => {
-          new ERFObject(path.join(data_dir, erf_obj.filename), (erf) => {
+        onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {
+          new ERFObject(path.join(data_dir, erf_obj.filename), (erf: ERFObject) => {
             if(erf instanceof ERFObject){
               erf.group = 'Textures';
-              Global.kotorERF[erf_obj.name] = erf;
+              ERFManager.addERF(erf_obj.name, erf);
             }
             asyncLoop.next();
           });
@@ -305,7 +263,7 @@ class GameInitializer {
     });
   }
 
-  static LoadGameAudioResources( args = {} ){
+  static LoadGameAudioResources( args: any = {} ){
 
     args = Object.assign({
       folder: null,
@@ -315,10 +273,11 @@ class GameInitializer {
 
     //console.log('Searching For Audio Files', args);
     let root = path.join(ApplicationProfile.directory, args.folder);
-    let dir = {name: args.folder, dirs: [], files: []};
+    let dir: any = {name: args.folder, dirs: [], files: []};
 
-    recursive(root, (err, files) => {
+    recursive(root).then((files: string[]) => {
       // Files is an array of filename
+      GameInitializer.files = files;
       for(let i = 0; i!=files.length; i++){
         let f = files[i];
 
@@ -341,12 +300,13 @@ class GameInitializer {
 
       }
 
-      if(args.onSuccess != null)
+      if(typeof args.onSuccess === 'function')
         args.onSuccess();
-
-    });
+    }).catch( () => {
+      
+      if(typeof args.onSuccess === 'function')
+        args.onSuccess();
+    })
   }
 
 }
-
-GameInitializer.currentGame = null;
