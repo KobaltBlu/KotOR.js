@@ -6,70 +6,82 @@
  */
 
 class LoadingScreen {
+  static main: LoadingScreen;
+  message: string;
 
-  constructor($parent, isGlobal = true){
+  loader: HTMLElement;
+  background: HTMLElement;
+  logo_wrapper: HTMLElement;
+  logo: HTMLImageElement;
+  loading_container: HTMLElement;
+  messageElement: HTMLElement;
+
+  constructor(parent?: HTMLElement, isGlobal: boolean = true){
 
     this.message = 'Loading...';
-    this.$loader = $('<div '+(isGlobal? 'id="loader"' : '')+' class="loading-screen se-pre-con">'+
-      '<div class="background"></div>'+
+    this.loader = document.createElement('div');
+    this.loader.id = (isGlobal? 'id="loader"' : '');
+    this.loader.classList.add('loading-screen', 'se-pre-con')
+    this.loader.innerHTML = '<div class="background"></div>'+
       '<div class="logo-wrapper"><img src="" /></div>'+
       '<div class="loading-container">'+
         '<div class="ball"></div>'+
         '<div class="ball1"></div>'+
         '<div id="loading-message" class="loading-message">'+this.message+'</div>'+
-      '</div>'+
-    '</div>');
+      '</div>';
 
-    this.$background = $('div.background', this.$loader);
-    this.$logo_wrapper = $('div.logo-wrapper', this.$loader);
-    this.$logo = $('img', this.$logo_wrapper);
-    this.$loading_container = $('div.loading-container', this.$loader);
-    this.$message = $('.loading-message', this.$loading_container);
+    this.background = this.loader.querySelector('div.background');
+    this.logo_wrapper = this.loader.querySelector('div.logo-wrapper');
+    this.logo = this.logo_wrapper.querySelector('img');
+    this.loading_container = this.loader.querySelector('div.loading-container');
+    this.messageElement = this.loading_container.querySelector('.loading-message');
 
-    if(typeof $parent === 'undefined'){
-      $parent = $('body');
+    if(typeof parent === 'undefined'){
+      parent = document.body;
     }
 
     if(!isGlobal){
-      this.$loader.css({'position': 'absolute'})
+      this.loader.style.position = 'absolute';
     }
 
-    //console.log($parent);
-    $parent.append(this.$loader);
+    //console.log(parent);
+    parent.append(this.loader);
   }
 
-  SetLogo(src){
-    this.$logo.attr('src', src);
+  SetLogo(src: string){
+    this.logo.src = src;
   }
 
-  SetBackgroundImage(src){
-    this.$background.css({
-      backgroundColor: 'black',
-      backgroundImage: `url(${src})`,
-      backgroundPosition: 'center',
-      backgroundSize: 'cover'
-    });
+  SetBackgroundImage(src?: string){
+    this.background.style.backgroundColor = 'black';
+    this.background.style.backgroundImage = `url({src})`;
+    this.background.style.backgroundPosition = 'center';
+    this.background.style.backgroundSize = 'cover';
   }
 
-  SetMessage(msg){
-    this.$message.html(msg);
-    //this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
+  SetMessage(msg: string = ''){
+    this.message = msg;
+    this.messageElement.innerHTML = this.message;
+    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width()/2+'px');
   }
 
-  Show(msg = null){
-    if(msg != null)
-      this.$message.html(msg);
-
-    this.$loader.stop(true, true).fadeIn('slow');
-    //this.$loading_container.css('left', '50%').css('left', '-='+this.$message.width()/2+'px');
+  Show(msg?: string){
+    this.SetMessage(msg);
+    this.loader.style.display = 'block';
+    // this.loader.stop(true, true).fadeIn('slow');
+    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width()/2+'px');
   }
 
   Hide(){
-    this.$loader.fadeOut('slow');
+    this.loader.style.display = 'none';
+    // this.loader.fadeOut('slow');
   }
 
   Dismiss(){
-    this.$loader.fadeOut('slow');
+    this.loader.style.display = 'none';
+    // this.loader.fadeOut('slow');
   }
 
 }
+
+LoadingScreen.main = new LoadingScreen();
