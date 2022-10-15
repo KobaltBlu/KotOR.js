@@ -44,6 +44,8 @@ export class ModuleObject {
   id: number;
   initialized: boolean;
   isPlayer: boolean = false;
+  name: string;
+  _conversation: string;
 
   AxisFront: THREE.Vector3;
   position: THREE.Vector3;
@@ -1720,6 +1722,22 @@ export class ModuleObject {
   }
 
 
+
+  getReticleNode(){
+    if(this.model){
+      if(this.model.talkdummy){
+        return this.model.talkdummy;
+      }else if(this.model.camerahook){
+        return this.model.camerahook;
+      }else if(this.model.lookathook){
+        return this.model.lookathook;
+      }else if(this.model.headhook){
+        return this.model.headhook;
+      }
+      return this.model;
+    }
+    return;
+  }
 
 
 
