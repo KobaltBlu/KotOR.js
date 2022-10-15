@@ -15,6 +15,7 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
+import { ShaderManager } from "../managers/ShaderManager";
 
 /* @file
  * The ModuleRoom class.
@@ -354,8 +355,8 @@ export class ModuleRoom extends ModuleObject {
                   alphaTest: { value: GameState.module.area.AlphaTest }
                 }
               ]),
-              vertexShader: Shaders['grass'].getVertex(),
-              fragmentShader: Shaders['grass'].getFragment(),
+              vertexShader: ShaderManager.Shaders.get('grass').getVertex(),
+              fragmentShader: ShaderManager.Shaders.get('grass').getFragment(),
               //color: new THREE.Color( 1, 1, 1 ),
               side: THREE.DoubleSide,
               transparent: false,
@@ -378,9 +379,13 @@ export class ModuleRoom extends ModuleObject {
               //FACE C
               let FC = new THREE.Vector3(aabb.vertices[face.c * 3], aabb.vertices[(face.c * 3) + 1], aabb.vertices[(face.c * 3) + 2]);
 
-              let uvA = aabb.tvectors[1][face.a];
-              let uvB = aabb.tvectors[1][face.b];
-              let uvC = aabb.tvectors[1][face.c];
+              let tvI1 = (face.a * 2)
+              let tvI2 = (face.a * 2)
+              let tvI3 = (face.a * 2)
+
+              let uvA = new THREE.Vector2(aabb.tvectors[1][tvI1], aabb.tvectors[1][tvI1 + 1]);
+              let uvB = new THREE.Vector2(aabb.tvectors[1][tvI2], aabb.tvectors[1][tvI2 + 1]);
+              let uvC = new THREE.Vector2(aabb.tvectors[1][tvI3], aabb.tvectors[1][tvI3 + 1]);
 
               let triangle = new THREE.Triangle(FA,FB,FC);
               let area = triangle.getArea();
