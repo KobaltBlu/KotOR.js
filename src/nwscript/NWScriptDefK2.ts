@@ -1,8 +1,11 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
+import { PartyManager } from "../managers/PartyManager";
+import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 
@@ -5618,8 +5621,9 @@ export class NWScriptDefK2 extends NWScriptDef {
       type: NWScriptDataType.VOID,
       args: [ 'string', 'int' ],
       action: function(args: any, _instr: any, action: any){
-        if(typeof GameState.Globals.Number[args[0].toLowerCase()] !== 'undefined')
-          GameState.Globals.Number[args[0].toLowerCase()].value += parseInt(args[1]);
+       
+        if(typeof GameState.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+        GameState.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1]);
       }	
     },
      800: {
@@ -5628,8 +5632,8 @@ export class NWScriptDefK2 extends NWScriptDef {
       type: NWScriptDataType.VOID,
       args: [ 'string', 'int' ],
       action: function(args: any, _instr: any, action: any){
-        if(typeof GameState.Globals.Number[args[0].toLowerCase()] !== 'undefined')
-          GameState.Globals.Number[args[0].toLowerCase()].value -= parseInt(args[1]);
+        if(typeof GameState.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+        GameState.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1]);
       }	
     },
      801: {

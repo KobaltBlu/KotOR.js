@@ -1,3 +1,5 @@
+import { NWScript } from "./NWScript";
+
 export class NWScriptInstruction {
   code: any;
   type: any;
