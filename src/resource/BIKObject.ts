@@ -63,7 +63,6 @@ export class BIKObject {
     this.min_buffer = 10;
     this.max_buffer = 20;
 
-    // @ts-expect-error
     this.geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     this.material = new THREE.RawShaderMaterial({
       vertexShader: `
@@ -126,7 +125,6 @@ export class BIKObject {
     this.videoPlane.position.z = 100;
 
     this.backPlane = new THREE.Mesh(
-      // @ts-expect-error
       new THREE.PlaneGeometry(1, 1, 1, 1),
       new THREE.MeshBasicMaterial({ color: 0x000000 })
     );
