@@ -2,8 +2,11 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import { TalentObject } from "../talents";
+import { NWScript } from "./NWScript";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptDefK2 } from "./NWScriptDefK2";
 import { NWScriptStack } from "./NWScriptStack";
@@ -26,7 +29,7 @@ export class NWScriptInstance {
   exitingObject: any;
   listenPatternNumber: number;
   debugging: boolean;
-  debug: { action: boolean; build: boolean; equal: boolean; nequal: boolean; };
+  debug: any = {};
   state: any[];
   var1: any;
   var2: any;
@@ -44,6 +47,7 @@ export class NWScriptInstance {
   address: any;
   lastPerceived: any;
   offset: any;
+  object: ModuleObject;
 
   constructor( args: any = {} ){
 
@@ -294,7 +298,7 @@ export class NWScriptInstance {
 
   }
 
-  async runInstr ( instr, scope ) {
+  async runInstr ( instr: any, scope: any ) {
 
     if(this.isDebugging()){
       console.log('NWScript: '+this.name,  'runInstr', instr.index, NWScript.ByteCodes[instr.code], instr );
