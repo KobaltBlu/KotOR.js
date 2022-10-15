@@ -22,7 +22,7 @@ const REPUTATION_STATUS = {
   FRIENDLY: 2,
 };
 
-class FactionManager {
+export class FactionManager {
 
   static factions = new Map();
   static reputations = new Map();
