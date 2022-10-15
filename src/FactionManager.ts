@@ -1,3 +1,15 @@
+import { CurrentGame } from "./CurrentGame";
+import { PartyManager } from "./managers/PartyManager";
+import { ModuleCreature, ModuleObject, ModulePlayer } from "./module";
+import { GFFObject } from "./resource/GFFObject";
+import { GFFStruct } from "./resource/GFFStruct";
+
+import * as path from "path";
+import * as fs from "fs";
+import { GFFField } from "./resource/GFFField";
+import { GFFDataType } from "./enums/resource/GFFDataType";
+import { TwoDAManager } from "./managers/TwoDAManager";
+
 const blacklist = ['(Row Label)', '__index', 'label'];
 
 const REP_FRIENDLY = 100;
@@ -20,7 +32,7 @@ class FactionManager {
     FactionManager.reputations.clear();
   }
 
-  static AddCreatureToFaction( creature = undefined ){
+  static AddCreatureToFaction( creature: ModuleObject ){
     if(creature instanceof ModuleCreature){
       FactionManager.RemoveCreatureFromFaction(creature);
       let faction = FactionManager.factions.get(creature.faction);
@@ -30,7 +42,7 @@ class FactionManager {
     }
   }
 
-  static RemoveCreatureFromFaction( creature = undefined ){
+  static RemoveCreatureFromFaction( creature: ModuleObject){
     if(creature instanceof ModuleCreature){
       let faction = FactionManager.factions.get(creature.faction);
       if(faction instanceof Faction){
@@ -39,7 +51,7 @@ class FactionManager {
     }
   }
 
-  static GetFactionLeader( creature = undefined ){
+  static GetFactionLeader( creature: ModuleObject ){
     if(creature instanceof ModuleCreature){
       if(creature.faction == 0){
         return PartyManager.party[0];
@@ -53,7 +65,7 @@ class FactionManager {
     return undefined;
   }
 
-  static GetCreatureFaction(oSource = undefined){
+  static GetCreatureFaction(oSource: ModuleObject){
     if(oSource instanceof ModuleCreature){
       return FactionManager.factions.get(oSource.faction);
     }
@@ -84,7 +96,7 @@ class FactionManager {
     return undefined;
   }
 
-  static SetFactionReputation(oSource = undefined, oTarget = undefined, value = 50){
+  static SetFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
 
     if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
       return false;
@@ -93,8 +105,8 @@ class FactionManager {
       return false;
 
     value = Math.max(0, Math.min(value, 100));
-    fac1 = FactionManager.factions.get(oSource.faction);
-    fac2 = FactionManager.factions.get(oTarget.faction);
+    let fac1 = FactionManager.factions.get(oSource.faction);
+    let fac2 = FactionManager.factions.get(oTarget.faction);
     if(fac1 instanceof Faction && fac2 instanceof Faction){
       fac1.setReputation(oTarget.faction, value);
       return true;
@@ -102,7 +114,7 @@ class FactionManager {
     return false;
   }
 
-  static AdjustFactionReputation(oSource = undefined, oTarget = undefined, value = 50){
+  static AdjustFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
 
     if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
       return false;
@@ -111,8 +123,8 @@ class FactionManager {
       return false;
 
     value = Math.max(-100, Math.min(value, 100));
-    fac1 = FactionManager.factions.get(oSource.faction);
-    fac2 = FactionManager.factions.get(oTarget.faction);
+    let fac1 = FactionManager.factions.get(oSource.faction);
+    let fac2 = FactionManager.factions.get(oTarget.faction);
     if(fac1 instanceof Faction && fac2 instanceof Faction){
       fac1.adjustReputation(oTarget.faction, value);
       return true;
@@ -120,20 +132,20 @@ class FactionManager {
     return false;
   }
 
-  static IsHostile(oSource = undefined, oTarget = undefined){
+  static IsHostile(oSource: ModuleObject, oTarget: ModuleObject){
     return FactionManager.GetReputation(oSource, oTarget) <= 10;
   }
 
-  static IsNeutral(oSource = undefined, oTarget = undefined){
+  static IsNeutral(oSource: ModuleObject, oTarget: ModuleObject){
     let rep = FactionManager.GetReputation(oSource, oTarget);
     return (rep >= 11) && (rep <= 89);
   }
 
-  static IsFriendly(oSource = undefined, oTarget = undefined){
+  static IsFriendly(oSource: ModuleObject, oTarget: ModuleObject){
     return FactionManager.GetReputation(oSource, oTarget) >= 90;
   }
 
-  static GetReputation(oSource = undefined, oTarget = undefined){
+  static GetReputation(oSource: ModuleObject, oTarget: ModuleObject){
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
@@ -161,28 +173,32 @@ class FactionManager {
     FactionManager.Init();
 
     //Populate the default factions
-    let factions = Global.kotor2DA["repute"].rows;
-    for(let i = 0, len = Global.kotor2DA["repute"].RowCount; i < len; i++){
-      let faction = Faction.From2DARow(factions[i]);
-      if(faction instanceof Faction){
-        FactionManager.factions.set(faction.id, faction);
+    let repute2DA = TwoDAManager.datatables.get('repute');
+    if(repute2DA){
+      let factions = repute2DA.rows;
+      for(let i = 0, len = repute2DA.RowCount; i < len; i++){
+        let faction = Faction.From2DARow(factions[i]);
+        if(faction instanceof Faction){
+          FactionManager.factions.set(faction.id, faction);
+        }
       }
-    }
+    
 
-    //Set all faction reputations to their default values
-    for (let id of FactionManager.factions.keys()) {
-      let faction = FactionManager.factions.get(id);
-      faction.initReputations(100);
-      if(faction instanceof Faction){
-        let row = factions[id];
-        let keys = Object.keys(row);
-        for(let i = 0, len = keys.length; i < len; i ++){
-          if(row.hasOwnProperty(keys[i]) && blacklist.indexOf(keys[i]) == -1){
-            let faction2 = FactionManager.GetFactionByLabel(row.label);
-            if(faction2 instanceof Faction){
-              let fac2_id = [...FactionManager.factions].find(([key, val]) => val == faction2)[0];
-              if(fac2_id != undefined){
-                faction.setReputation(fac2_id, parseInt(row[keys[i]]));
+      //Set all faction reputations to their default values
+      for (let id of FactionManager.factions.keys()) {
+        let faction = FactionManager.factions.get(id);
+        faction.initReputations(100);
+        if(faction instanceof Faction){
+          let row = factions[id];
+          let keys = Object.keys(row);
+          for(let i = 0, len = keys.length; i < len; i ++){
+            if(row.hasOwnProperty(keys[i]) && blacklist.indexOf(keys[i]) == -1){
+              let faction2 = FactionManager.GetFactionByLabel(row.label);
+              if(faction2 instanceof Faction){
+                let fac2_id = [...FactionManager.factions].find(([key, val]) => val == faction2)[0];
+                if(fac2_id != undefined){
+                  faction.setReputation(fac2_id, parseInt(row[keys[i]]));
+                }
               }
             }
           }
@@ -191,7 +207,7 @@ class FactionManager {
     }
   }
 
-  static LoadFac( gff = undefined ){
+  static LoadFac( gff: GFFObject ){
     console.log('FactionManager.LoadFac');
     if(gff instanceof GFFObject){
       FactionManager.Init();
@@ -229,7 +245,7 @@ class FactionManager {
   }
 
   static Load(){
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'repute.fac'), (error, data) => {
         if(!error){
           if(FactionManager.LoadFac( new GFFObject(data) )){
@@ -293,7 +309,7 @@ class FactionManager {
 
   static Export( filename = '' ){
     console.log('FactionManager.Export', filename);
-    return new Promise( (resolve, reject) => {
+    return new Promise<void>( (resolve, reject) => {
       let fac = FactionManager.Save();
       if(fac instanceof GFFObject){
         fac.Export( filename, () => {
@@ -313,9 +329,9 @@ class Faction {
   label = '';
   global = 0;
   parentId = 4294967295;
-  creatures = [];
+  creatures: ModuleCreature[] = [];
 
-  addMember( creature = undefined ){
+  addMember( creature: ModuleCreature ){
     if(creature instanceof ModuleCreature){
       if(this.creatures.indexOf(creature) == -1){
         this.creatures.push(creature);
@@ -323,7 +339,7 @@ class Faction {
     }
   }
 
-  removeMember( creature = undefined ){
+  removeMember( creature: ModuleCreature ){
     if(creature instanceof ModuleCreature){
       let index = this.creatures.indexOf(creature);
       if(index >= 0){
@@ -397,7 +413,7 @@ class Faction {
     return REP_NEUTRAL;
   }
 
-  getCreatureReputation(oTarget = undefined){
+  getCreatureReputation(oTarget: ModuleObject){
     if(oTarget instanceof ModuleCreature){
       let repKey = Reputation.GetReputationKey(this.id, oTarget.faction);
       if(repKey){
@@ -411,12 +427,12 @@ class Faction {
   }
 
   getWeakestMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let lowerCR = Infinity;
       let cLowestCR = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cLowestCR = creature.challengeRating;
           if(cLowestCR < lowerCR){
@@ -426,17 +442,17 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
   getStrongestMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let highestCR = -Infinity;
       let cHighestCR = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cHighestCR = creature.challengeRating;
           if(cHighestCR > highestCR){
@@ -446,17 +462,17 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
   getMostDamagedMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let lowestHP = Infinity;
       let cLowestHP = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cLowestHP = creature.maxHitPoints - creature.currentHitPoints;
           if(cLowestHP < lowestHP){
@@ -466,17 +482,17 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
   getLeastDamagedMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let highestHP = -Infinity;
       let cHighestHP = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cHighestHP = creature.maxHitPoints + creature.currentHitPoints;
           if(cHighestHP > highestHP){
@@ -486,17 +502,17 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
   getWorstACMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let ac = Infinity;
       let cAC = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cAC = creature.getAC();
           if(cAC < ac){
@@ -506,17 +522,17 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
   getBestACMember(bMustBeVisible = false){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let ac = -Infinity;
       let cAC = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           cAC = creature.getAC();
           if(cAC > ac){
@@ -526,7 +542,7 @@ class Faction {
         }
       }
       return currentCreature; 
-    }
+    // }
     return undefined;
   }
 
@@ -542,12 +558,12 @@ class Faction {
     return gold;
   }
 
-  getAverageReputation(oTarget = undefined){
+  getAverageReputation(oTarget: ModuleObject){
     if(oTarget instanceof ModuleCreature){
       let totalRep = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           totalRep += this.getCreatureReputation(oTarget);
           totalCreatures++;
@@ -559,58 +575,58 @@ class Faction {
   }
 
   getAverageGoodEvilAlignment(){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let totalGoodEvil = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           totalGoodEvil += creature.getGoodEvil();
           totalCreatures++;
         }
       }
       return Math.floor(totalGoodEvil / totalCreatures); 
-    }
+    // }
     return -1;
   }
 
   getAverageLevel(){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let totalLevel = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           totalLevel += creature.getTotalClassLevel();
           totalCreatures++;
         }
       }
       return Math.floor(totalLevel / totalCreatures); 
-    }
+    // }
     return -1;
   }
 
   getAverageExperience(){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let totalExp = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           totalExp += creature.getXP();
           totalCreatures++;
         }
       }
       return Math.floor(totalExp / totalCreatures); 
-    }
+    // }
     return -1;
   }
 
   getMostFrequestClass(){
-    if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof ModuleCreature){
       let classCount = new Map();
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        creature = this.creatures[i];
+        let creature = this.creatures[i];
         if(creature.faction == this.id){
           let creatureClass = creature.getMainClass();
           if(creatureClass){
@@ -618,7 +634,7 @@ class Faction {
           }
         }
       }
-      if(classCount.length){
+      if(classCount.size){
         let bestClass = undefined;
         let count = -Infinity;
         for(let c of classCount.entries()){
@@ -631,14 +647,14 @@ class Faction {
       }else{
         return -1;
       }
-    }
+    // }
     return -1;
   }
 
   getFactionMemberByIndex(index = 0, isPCOnly = false){
     let cIdx = 0;
     for(let i = 0, len = this.creatures.length; i < len; i++){
-      creature = this.creatures[i];
+      let creature = this.creatures[i];
       if(creature.faction == this.id){
         if(cIdx == index){
           if(!isPCOnly || creature instanceof ModulePlayer)
@@ -649,7 +665,7 @@ class Faction {
     }
   }
 
-  toStruct(structIdx){
+  toStruct(structIdx: number){
     let struct = new GFFStruct(structIdx);
 
     struct.AddField( new GFFField(GFFDataType.WORD, 'FactionGlobal') ).SetValue(this.global);
@@ -659,7 +675,7 @@ class Faction {
     return struct;
   }
 
-  static From2DARow( row = undefined ){
+  static From2DARow( row: any = undefined ){
     if(typeof row === 'object'){
       let faction = new Faction();
       faction.id = row.__index;
@@ -670,7 +686,7 @@ class Faction {
     return undefined;
   }
 
-  static FromStruct( struct = undefined ){
+  static FromStruct( struct: GFFStruct ){
     if( struct instanceof GFFStruct ){
       let faction = new Faction();
 
@@ -699,12 +715,12 @@ class Reputation {
   repKey = 0;
   reputation = 100;
 
-  constructor(repKey = 0, reputation = 100){
+  constructor(repKey: any = 0, reputation = 100){
     this.repKey = repKey;
     this.reputation = reputation;
   }
 
-  toStruct(structIdx, id1 = -1, id2 = -1){
+  toStruct(structIdx: number, id1 = -1, id2 = -1){
     let struct = new GFFStruct(structIdx);
 
     struct.AddField( new GFFField(GFFDataType.DWORD, 'FactionID1') ).SetValue(id1);
@@ -725,7 +741,7 @@ class Reputation {
     return false;
   }
 
-  static FromStruct( struct = undefined ){
+  static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let reputation = new Reputation();
       if(struct.HasField('FactionID1'))
