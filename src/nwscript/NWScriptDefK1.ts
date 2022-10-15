@@ -4,23 +4,27 @@
 import * as THREE from "three";
 import { ActionPlayAnimation, ActionResumeDialog } from "../actions";
 import { CombatEngine } from "../CombatEngine";
-import { EffectAbilityIncrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectDamage, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForcePushed, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowIncrease, EffectSetState, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
+import { EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForceFizzle, EffectForcePushed, EffectForceResisted, EffectForceShield, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
+import { EffectDisguise } from "../effects/EffectDisguise";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { EngineState } from "../enums/engine/EngineState";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { TemplateLoader } from "../loaders/TemplateLoader";
+import { CameraShakeManager } from "../managers/CameraShakeManager";
 import { ConfigManager } from "../managers/ConfigManager";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
 import { TLKManager } from "../managers/TLKManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
-import { ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
+import { ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
 import { ModuleCreature } from "../module/ModuleCreature";
 import { ModuleObject } from "../module/ModuleObject";
 import { OdysseyWalkMesh } from "../odyssey";
@@ -29,6 +33,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentFeat, TalentObject, TalentSkill, TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
+import { Dice } from "../utility/Dice";
 import { NWScriptSlotToArmorSlot } from "../utility/NWScriptSlotToArmorSlot";
 import { Utility } from "../utility/Utility";
 import { VideoPlayer } from "../VideoPlayer";
@@ -650,42 +655,42 @@ export class NWScriptDefK1 extends NWScriptDef {
       action: function(args: any, _instr: any, action: any){
   
         //SUBSCREEN_ID_EQUIP = 1;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuEquipment ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuEquipment ).length){
           return 1;
         }
   
         //SUBSCREEN_ID_ITEM = 2;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuInventory ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuInventory ).length){
           return 2;
         }
   
         //SUBSCREEN_ID_CHARACTER_RECORD = 3;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuCharacter ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuCharacter ).length){
           return 3;
         }
   
         //SUBSCREEN_ID_ABILITY = 4;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuAbilities ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuAbilities ).length){
           return 4;
         }
   
         //SUBSCREEN_ID_MAP = 5;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuMap ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuMap ).length){
           return 5;
         }
   
         //SUBSCREEN_ID_QUEST = 6;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuJournal ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuJournal ).length){
           return 6;
         }
   
         //SUBSCREEN_ID_OPTIONS = 7;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuOptions ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuOptions ).length){
           return 7;
         }
   
         //SUBSCREEN_ID_MESSAGES = 8;
-        if(MenuManager.activeMenus.filter( (menu) => menu instanceof MenuMessages ).length){
+        if(MenuManager.activeMenus.filter( (menu) => menu == MenuManager.MenuMessages ).length){
           return 8;
         }
   
@@ -742,9 +747,9 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
         if(args[0]){
-          GameState.State = GameState.STATES.PAUSED;
+          GameState.State = EngineState.PAUSED;
         }else{
-          GameState.State = GameState.STATES.RUNNING;
+          GameState.State = EngineState.RUNNING;
         }
       }
     },
@@ -916,7 +921,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 4,
       args: ["float", "float"],
       action: function(args: any, _instr: any, action: any){
-        return Math.pow(args[0]);
+        return Math.pow(args[0], args[1]);
       }
     },
     76:{
@@ -1147,7 +1152,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD2( args[0] || 1 );
+        return Dice.rollD2( args[0] || 1 );
       }
     },
     96:{
@@ -1156,7 +1161,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD3( args[0] || 1 );
+        return Dice.rollD3( args[0] || 1 );
       }
     },
     97:{
@@ -1165,7 +1170,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD4( args[0] || 1 );
+        return Dice.rollD4( args[0] || 1 );
       }
     },
     98:{
@@ -1174,7 +1179,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD6( args[0] || 1 );
+        return Dice.rollD6( args[0] || 1 );
       }
     },
     99:{
@@ -1183,7 +1188,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD8( args[0] || 1 );
+        return Dice.rollD8( args[0] || 1 );
       }
     },
     100:{
@@ -1192,7 +1197,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD10( args[0] || 1 );
+        return Dice.rollD10( args[0] || 1 );
       }
     },
     101:{
@@ -1201,7 +1206,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD12( args[0] || 1 );
+        return Dice.rollD12( args[0] || 1 );
       }
     },
     102:{
@@ -1210,7 +1215,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD20( args[0] || 1 );
+        return Dice.rollD20( args[0] || 1 );
       }
     },
     103:{
@@ -1219,7 +1224,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.rollD100( args[0] || 1 );
+        return Dice.rollD100( args[0] || 1 );
       }
     },
     104:{
@@ -1468,7 +1473,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       }
     },
     128:{
-      comment: "128: Get the first object in nShape\n- nShape: SHAPE_*\n- fSize:\n-> If nShape == SHAPE_SPHERE, this is the radius of the sphere\n-> If nShape == SHAPE_SPELLCYLINDER, this is the radius of the cylinder\n-> If nShape == SHAPE_CONE, this is the widest radius of the cone\n-> If nShape == SHAPE_CUBE, this is half the length of one of the sides of\nthe cube\n- lTarget: This is the centre of the effect, usually GetSpellTargetPosition(),\nor the end of a cylinder or cone.\n- bLineOfSight: This controls whether to do a line-of-sight check on the\nobject returned.\n(This can be used to ensure that spell effects do not go through walls.)\n- nObjectFilter: This allows you to filter out undesired object types, using\nbitwise 'or'.\nFor example, to return only creatures and doors, the value for this\nparameter would be OBJECT_TYPE_CREATURE | OBJECT_TYPE_DOOR\n- vOrigin: This is only used for cylinders and cones, and specifies the\norigin of the effect(normally the spell-caster's position).\nReturn value on error: OBJECT_INVALID\n",
+      comment: "128: Get the first object in nShape\n- nShape: SHAPE_*\n- fSize:\n-> If nShape == SHAPE_SPHERE, this is the radius of the sphere\n-> If nShape == SHAPE_SPELLCYLINDER, this is the radius of the cylinder\n-> If nShape == SHAPE_CONE, this is the widest radius of the cone\n-> If nShape == SHAPE_CUBE, this is half the length of one of the sides of\nthe cube\n- lTarget: This is the centre of the effect, usually GetSpellTargetPosition(),\nor the end of a cylinder or cone.\n- bLineOfSight: This controls whether to do a line-of-sight check on the\nobject returned.\n(This can be used to ensure that spell effects do not go through walls.)\n- nObjectFilter: This allows you to filter out undesired object types, using\nbitwise 'or'.\nFor example, to return only creatures and doors, the value for this\nparameter would be ModuleObjectType.CREATURE | ModuleObjectType.DOOR\n- vOrigin: This is only used for cylinders and cones, and specifies the\norigin of the effect(normally the spell-caster's position).\nReturn value on error: OBJECT_INVALID\n",
       name: "GetFirstObjectInShape",
       type: 6,
       args: ["int", "float", "location", "int", "int", "vector"],
@@ -1479,7 +1484,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       }
     },
     129:{
-      comment: "129: Get the next object in nShape\n- nShape: SHAPE_*\n- fSize:\n-> If nShape == SHAPE_SPHERE, this is the radius of the sphere\n-> If nShape == SHAPE_SPELLCYLINDER, this is the radius of the cylinder\n-> If nShape == SHAPE_CONE, this is the widest radius of the cone\n-> If nShape == SHAPE_CUBE, this is half the length of one of the sides of\nthe cube\n- lTarget: This is the centre of the effect, usually GetSpellTargetPosition(),\nor the end of a cylinder or cone.\n- bLineOfSight: This controls whether to do a line-of-sight check on the\nobject returned. (This can be used to ensure that spell effects do not go\nthrough walls.)\n- nObjectFilter: This allows you to filter out undesired object types, using\nbitwise 'or'. For example, to return only creatures and doors, the value for\nthis parameter would be OBJECT_TYPE_CREATURE | OBJECT_TYPE_DOOR\n- vOrigin: This is only used for cylinders and cones, and specifies the origin\nof the effect (normally the spell-caster's position).\nReturn value on error: OBJECT_INVALID\n",
+      comment: "129: Get the next object in nShape\n- nShape: SHAPE_*\n- fSize:\n-> If nShape == SHAPE_SPHERE, this is the radius of the sphere\n-> If nShape == SHAPE_SPELLCYLINDER, this is the radius of the cylinder\n-> If nShape == SHAPE_CONE, this is the widest radius of the cone\n-> If nShape == SHAPE_CUBE, this is half the length of one of the sides of\nthe cube\n- lTarget: This is the centre of the effect, usually GetSpellTargetPosition(),\nor the end of a cylinder or cone.\n- bLineOfSight: This controls whether to do a line-of-sight check on the\nobject returned. (This can be used to ensure that spell effects do not go\nthrough walls.)\n- nObjectFilter: This allows you to filter out undesired object types, using\nbitwise 'or'. For example, to return only creatures and doors, the value for\nthis parameter would be ModuleObjectType.CREATURE | ModuleObjectType.DOOR\n- vOrigin: This is only used for cylinders and cones, and specifies the origin\nof the effect (normally the spell-caster's position).\nReturn value on error: OBJECT_INVALID\n",
       name: "GetNextObjectInShape",
       type: 6,
       args: ["int", "float", "location", "int", "int", "vector"],
@@ -1865,8 +1870,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: ["string", "string"],
       action: function(args: any, _instr: any, action: any){
-        if(GameState.Globals.String[args[0].toLowerCase()])
-          GameState.Globals.String[args[0].toLowerCase()].value = args[1];
+        if(GameState.Globals.String.has(args[0].toLowerCase()))
+          GameState.Globals.String.get(args[0].toLowerCase()).value = args[1];
       }
     },
     161:{
@@ -2283,7 +2288,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 5,
       args: ["string"],
       action: function(args: any, _instr: any, action: any){
-        return GameState.Globals.String[args[0].toLowerCase()]?.value || '';
+        return GameState.Globals.String.get(args[0].toLowerCase())?.value || '';
       }
     },
     195:{
@@ -2314,7 +2319,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["string"],
       action: function(args: any, _instr: any, action: any){
         //console.log('GetWaypointByTag', args[0])
-        return GameState.GetObjectByTag(args[0], 0, OBJECT_TYPE_WAYPOINT);
+        return GameState.GetObjectByTag(args[0], 0, ModuleObjectType.WAYPOINT);
       }
     },
     198:{
@@ -2441,7 +2446,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         effect.setInt(0, args[0]);
         effect.setInt(1, args[2]);
         effect.setInt(2, args[3]);
-        effect.setCreator(0, args[1]);
+        effect.setObject(0, args[1]);
         return effect.initialize();
       }
     },
@@ -2866,7 +2871,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       }
     },
     243:{
-      comment: "243: Create an object of the specified type at lLocation.\n- nObjectType: OBJECT_TYPE_ITEM, OBJECT_TYPE_CREATURE, OBJECT_TYPE_PLACEABLE,\nOBJECT_TYPE_STORE\n- sTemplate\n- lLocation\n- bUseAppearAnimation\nWaypoints can now also be created using the CreateObject function.\nnObjectType is: OBJECT_TYPE_WAYPOINT\nsTemplate will be the tag of the waypoint\nlLocation is where the waypoint will be placed\nbUseAppearAnimation is ignored\n",
+      comment: "243: Create an object of the specified type at lLocation.\n- nObjectType: ModuleObjectType.ITEM, ModuleObjectType.CREATURE, ModuleObjectType.PLACEABLE,\nModuleObjectType.STORE\n- sTemplate\n- lLocation\n- bUseAppearAnimation\nWaypoints can now also be created using the CreateObject function.\nnObjectType is: ModuleObjectType.WAYPOINT\nsTemplate will be the tag of the waypoint\nlLocation is where the waypoint will be placed\nbUseAppearAnimation is ignored\n",
       name: "CreateObject",
       type: 6,
       args: ["int", "string", "location", "int"],
@@ -2934,10 +2939,10 @@ export class NWScriptDefK1 extends NWScriptDef {
                         GameState.module.area.placeables.push(plc);
         
                         try{
-                          if(pwk.model instanceof THREE.Object3D)
-                            model.add(pwk.model);
+                          if(pwk.mesh instanceof THREE.Object3D)
+                            model.add(pwk.mesh);
                             
-                          model.walkmesh = pwk;
+                          model.userData.walkmesh = pwk;
                           GameState.walkmeshList.push(pwk.mesh);
                         }catch(e){
                           console.error('Failed to add pwk', model.name, pwk);
@@ -3271,7 +3276,7 @@ export class NWScriptDefK1 extends NWScriptDef {
         if(args[0] instanceof ModuleObject){
           return args[0].getName();
         }else{
-          return 'OBJECT_INVALID' - 1;
+          return 'OBJECT_INVALID';
         }
       }
     },
@@ -3333,7 +3338,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["int", "object"],
       action: function(args: any, _instr: any, action: any){
         if(args[1] instanceof ModuleEncounter){
-          args[1].maxCreatures = arg[0];
+          args[1].maxCreatures = args[0];
         }
       }
     },
@@ -3355,7 +3360,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["int", "object"],
       action: function(args: any, _instr: any, action: any){
         if(args[1] instanceof ModuleEncounter){
-          args[1].currentSpawns = arg[0];
+          args[1].currentSpawns = args[0];
         }
       }
     },
@@ -3487,7 +3492,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["int", "object"],
       action: function(args: any, _instr: any, action: any){
         if(args[1] instanceof ModuleEncounter){
-          args[1].difficultyIndex = arg[0];
+          args[1].difficultyIndex = args[0];
         }
       }
     },
@@ -3725,7 +3730,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object", "object"],
       action: function(args: any, _instr: any, action: any){
           if(args[1] instanceof ModuleObject){
-            return new THREE.Vector2( args[0].position.x, args[0].position.y).distanceTo(args[1].position);
+            return new THREE.Vector2( args[0].position.x, args[0].position.y)
+              .distanceTo( new THREE.Vector2( args[1].position.x, args[1].position.y ) );
           }else{
             return 0.0;
           }
@@ -4277,7 +4283,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        GameState.camera_shake.playRumblePattern(args[0]);
+        CameraShakeManager.playRumblePattern(args[0]);
       }
     },
     371:{
@@ -4286,7 +4292,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["int"],
       action: function(args: any, _instr: any, action: any){
-        GameState.camera_shake.stopRumblePattern(args[0]);
+        CameraShakeManager.stopRumblePattern(args[0]);
       }
     },
     372:{
@@ -5312,7 +5318,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleItem){
           return args[0].getStackSize();
         }else{
           return 0;
@@ -5418,7 +5424,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 6,
       args: [],
       action: function(args: any, _instr: any, action: any){
-        return undefined;
+        return;
       }
     },
     490:{
@@ -6263,7 +6269,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["object", "int", "int"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleMGEnemy || args[0] instanceof ModuleMGObstacle || args[0] instanceof ModuleMGPlayer){
           args[0].adjustHitPoints(args[1], args[2]);
         }
       }
@@ -6285,7 +6291,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: [],
       action: function(args: any, _instr: any, action: any){
-        if(this.caller instanceof ModuleObject){
+        if(this.caller instanceof ModuleMGObstacle){
           //return this.caller.onObstacleHit();
         }
       }
@@ -6496,7 +6502,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleMGEnemy || args[0] instanceof ModuleMGObstacle){
           return args[0].hit_points;
         }
         return 0;
@@ -6508,7 +6514,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleMGEnemy || args[0] instanceof ModuleMGObstacle){
           return args[0].max_hps;
         }
         return 0;
@@ -6855,7 +6861,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleMGObstacle || args[0] instanceof ModuleMGEnemy || args[0] instanceof ModuleMGPlayer){
           return (args[0].invince > 0) ? 1 : 0;
         }
         return 0;
@@ -6867,7 +6873,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 0,
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
-        if(args[0] instanceof ModuleObject){
+        if(args[0] instanceof ModuleMGObstacle || args[0] instanceof ModuleMGEnemy || args[0] instanceof ModuleMGPlayer){
           args[0].startInvulnerability();
         }
       }
@@ -7393,7 +7399,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleObject){
-          switch(args[0].lastAttackAction){
+          switch(args[0]._lastAttackAction){
             case ActionType.ActionPhysicalAttacks:
               return 3;
             case ActionType.ActionCastSpell:
@@ -7786,7 +7792,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: [],
       action: function(args: any, _instr: any, action: any){
-        return ConfigManager.get('Game.debug.is_shipping_build') ? true : false;
+        return window.ConfigClient.get('Game.debug.is_shipping_build') ? true : false;
       }
     },
     762:{
@@ -7834,7 +7840,7 @@ export class NWScriptDefK1 extends NWScriptDef {
     
                 resolve(1);
     
-                item.LoadModel( (model) => {
+                item.LoadModel( (model: OdysseyModel3D) => {
   
                   item.model.moduleObject = item;
                   
