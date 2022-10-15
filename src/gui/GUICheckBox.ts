@@ -62,10 +62,10 @@ export class GUICheckBox extends GUIControl{
     
     this.borderSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -75,10 +75,10 @@ export class GUICheckBox extends GUIControl{
 
     this.borderSelected.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -95,10 +95,10 @@ export class GUICheckBox extends GUIControl{
     
     this.borderSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -139,10 +139,10 @@ export class GUICheckBox extends GUIControl{
     
     this.highlightSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -152,10 +152,10 @@ export class GUICheckBox extends GUIControl{
 
     this.highlightSelected.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -172,10 +172,10 @@ export class GUICheckBox extends GUIControl{
     
     this.highlightSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true

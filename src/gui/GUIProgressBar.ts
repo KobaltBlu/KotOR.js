@@ -60,10 +60,10 @@ export class GUIProgressBar extends GUIControl {
     
     this.progress.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -73,10 +73,10 @@ export class GUIProgressBar extends GUIControl {
 
     this.progress.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -93,10 +93,10 @@ export class GUIProgressBar extends GUIControl {
     
     this.progress.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true

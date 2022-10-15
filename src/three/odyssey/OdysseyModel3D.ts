@@ -17,6 +17,7 @@ import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModel
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { OdysseyModelMDXFlag } from "../../interface/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelClass } from "../../interface/odyssey/OdysseyModelClass";
+import { ShaderManager } from "../../managers/ShaderManager";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -697,9 +698,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       let originalSkinMesh = this.skins[i];
       let skinMesh = originalSkinMesh.clone();
       let skinMaterial = new THREE.ShaderMaterial({
-        fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
-        vertexShader: THREE.ShaderLib.aurora.vertexShader,
-        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
+        vertexShader: ShaderManager.Shaders.get('odyssey').getVertex(),
+        fragmentShader: ShaderManager.Shaders.get('odyssey').getFragment(),
+        uniforms: THREE.UniformsUtils.merge([ShaderManager.Shaders.get('odyssey').getUniforms()]),
         side:THREE.FrontSide,
         lights: true,
         fog: true,

@@ -21,6 +21,7 @@ import { TextureLoader } from "../loaders/TextureLoader";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
+import { ShaderManager } from "../managers/ShaderManager";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -245,10 +246,10 @@ export class GUIControl {
     
     this.border.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -259,10 +260,10 @@ export class GUIControl {
 
     this.border.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -280,10 +281,10 @@ export class GUIControl {
     
     this.border.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -326,10 +327,10 @@ export class GUIControl {
 
     this.highlight.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -339,10 +340,10 @@ export class GUIControl {
 
     this.highlight.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -359,10 +360,10 @@ export class GUIControl {
     
     this.highlight.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -405,10 +406,10 @@ export class GUIControl {
 
     this.text.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        THREE.ShaderLib.odysseyGUI.uniforms
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: THREE.ShaderLib.odysseyGUI.vertexShader,
-      fragmentShader: THREE.ShaderLib.odysseyGUI.fragmentShader,
+      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
