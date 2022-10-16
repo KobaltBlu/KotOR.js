@@ -34,6 +34,7 @@ import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { LIPObject } from "../resource/LIPObject";
 import { Utility } from "../utility/Utility";
+import { FactionManager } from "../FactionManager";
 
 /* @file
  * The ModuleCreature class.
