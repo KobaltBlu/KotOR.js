@@ -15,6 +15,7 @@ import { EngineState } from "../enums/engine/EngineState";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { EventTimedEvent } from "../events";
+import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { TemplateLoader } from "../loaders/TemplateLoader";
@@ -452,7 +453,44 @@ export class NWScriptDefK1 extends NWScriptDef {
         if(this.caller instanceof ModuleCreature){
           for(let slot in this.caller.equipment){
             if(this.caller.equipment[slot] == args[0]){
-              this.caller.unequipSlot(NWScriptSlotToArmorSlot(slot));
+              switch(slot){
+                case 'HEAD':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.HEAD);
+                break;
+                case 'ARMS':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.ARMS);
+                break;
+                case 'IMPLANT':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.IMPLANT);
+                break;
+                case 'LEFTARMBAND':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
+                break;
+                case 'ARMOR':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
+                break;
+                case 'RIGHTARMBAND':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
+                break;
+                case 'LEFTHAND':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
+                break;
+                case 'BELT':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.BELT);
+                break;
+                case 'RIGHTHAND':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+                break;
+                case 'CLAW1':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.CLAW1);
+                break;
+                case 'CLAW2':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.CLAW2);
+                break;
+                case 'CLAW3':
+                  this.caller.unequipSlot(ModuleCreatureArmorSlot.CLAW3);
+                break;
+              }
               break;
             }
           }
@@ -5288,9 +5326,10 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: [],
       action: function(args: any, _instr: any, action: any){
         console.log('EffectHorrified', this.caller);
-        let effect = new EffectHorrified();
+        let effect = new EffectSetState();
         effect.setCreator(this.caller);
         effect.setSpellId(this.getSpellId());
+        effect.setInt(0, 8);
         return effect.initialize();
       }
     },
@@ -6014,10 +6053,16 @@ export class NWScriptDefK1 extends NWScriptDef {
       name: "GetFactionLeader",
       type: 6,
       args: ["object"],
-      action: function(args: any, _instr: any, action: any){
+      _action: function (args: any, _instr: any, action: any) {
         //https://nwnlexicon.com/index.php/GetFactionLeader
         return FactionManager.GetFactionLeader(args[0]);
-      }
+      },
+      get action() {
+        return this._action;
+      },
+      set action(value) {
+        this._action = value;
+      },
     },
     563:{
       comment: "563: Turns on or off the speed blur effect in rendered scenes.\nbEnabled: Set TRUE to turn it on, FALSE to turn it off.\nfRatio: Sets the frame accumulation ratio.\n",
