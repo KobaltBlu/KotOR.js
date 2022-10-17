@@ -5,7 +5,7 @@ import { ModuleObject } from "../module";
 export class EffectFeat extends GameEffect {
   constructor(){
     super();
-    this.type = GameEffectType.EffectFeat;
+    this.type = GameEffectType.EffectBonusFeat;
     
     //intList[0] : feat.2da id
     

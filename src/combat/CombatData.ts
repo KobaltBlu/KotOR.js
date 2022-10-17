@@ -1,6 +1,6 @@
 import { CombatRoundData } from "./CombatRoundData";
-import { ActionType } from "./enums/actions/ActionType";
-import { ModuleCreature, ModuleObject } from "./module";
+import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreature, ModuleObject } from "../module";
 
 export class CombatData {
   object: ModuleObject;

@@ -50,7 +50,7 @@ export class GameEffect {
 
   }
 
-  async initialize(){
+  async initialize(): Promise<GameEffect> {
     if(this.initialized)
       return this;
 

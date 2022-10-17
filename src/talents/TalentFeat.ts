@@ -40,7 +40,7 @@ export class TalentFeat extends TalentObject {
         object: oTarget,
         feat: this.id
       });
-      oCaster.lastCombatFeatUsed = this;
+      oCaster.combatData.lastCombatFeatUsed = this;
     }
 
     //RANGED
@@ -52,7 +52,7 @@ export class TalentFeat extends TalentObject {
         object: oTarget,
         feat: this.id
       });
-      oCaster.lastCombatFeatUsed = this;
+      oCaster.combatData.lastCombatFeatUsed = this;
     }
 
   }

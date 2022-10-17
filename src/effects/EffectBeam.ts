@@ -27,7 +27,7 @@ export class EffectBeam extends GameEffect {
 
   }
 
-  async initialize(){
+  async initialize(): Promise<GameEffect> {
     if(this.initialized)
       return this;
       
@@ -38,7 +38,7 @@ export class EffectBeam extends GameEffect {
 
     super.initialize();
 
-    return new Promise( ( resolve, reject) => {
+    return new Promise<GameEffect>( ( resolve, reject) => {
       switch(this.visualEffect.progfx_duration){
         case 616:
           this.modelName = 'v_coldray_dur';

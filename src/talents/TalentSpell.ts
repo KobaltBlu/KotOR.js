@@ -3,7 +3,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
 import * as THREE from "three";
-import { CombatEngine } from "../CombatEngine";
+import { CombatEngine } from "../combat/CombatEngine";
 import { GameState } from "../GameState";
 import { ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
@@ -115,14 +115,14 @@ export class TalentSpell extends TalentObject {
     
     //I'm assuming that usertype: 1 means force powers
     //if(this.usertype == 1){
-      oCaster.lastSpellTarget = oTarget;
-      oTarget.lastSpellAttacker = oCaster;
+      oCaster.combatData.lastSpellTarget = oTarget;
+      oTarget.combatData.lastSpellAttacker = oCaster;
       if(this.hostilesetting == 1){
         oCaster.resetExcitedDuration();
       }
       CombatEngine.AddCombatant(oCaster);
 
-      oCaster.combatQueue.push({
+      oCaster.combatData.combatQueue.push({
         target: oTarget,
         type: ActionType.ActionCastSpell,
         icon: this.iconresref,

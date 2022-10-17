@@ -11,7 +11,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ModuleArea } from "./ModuleArea";
 import { ModuleTimeManager } from "./ModuleTimeManager";
 import * as THREE from "three";
-import { CombatEngine } from "../CombatEngine";
+import { CombatEngine } from "../combat/CombatEngine";
 import { MenuManager } from "../gui";
 import { TLKManager } from "../managers/TLKManager";
 import { ModuleObject, ModulePlayer } from ".";

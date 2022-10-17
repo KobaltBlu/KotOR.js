@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { ActionPlayAnimation, ActionResumeDialog } from "../actions";
-import { CombatEngine } from "../CombatEngine";
+import { CombatEngine } from "../combat/CombatEngine";
 import { EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForceFizzle, EffectForcePushed, EffectForceResisted, EffectForceShield, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
 import { EffectDisguise } from "../effects/EffectDisguise";
 import EngineLocation from "../engine/EngineLocation";
@@ -516,7 +516,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          return args[0].lastAttacker;
+          return args[0].combatData.lastAttacker;
         }else{
           return undefined;
         }
@@ -3737,9 +3737,9 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          if(args[0].combatState){
+          if(args[0].combatData.combatState){
             //console.log('GetAttackTarget', this.caller, args[0]);
-            return args[0].lastAttackTarget || args[0].lastAttacker;
+            return args[0].combatData.lastAttackTarget || args[0].combatData.lastAttacker;
           }else{
             return undefined;
           }
@@ -3782,7 +3782,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          return args[0].combatState ? 1 : 0;
+          return args[0].combatData.combatState ? 1 : 0;
         }else{
           return 0;
         }
@@ -7431,7 +7431,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          return args[0].lastAttackTarget;
+          return args[0].combatData.lastAttackTarget;
         }else{
           return this.caller.lastAttackTarget;
         }
@@ -7444,7 +7444,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleObject){
-          switch(args[0]._lastAttackAction){
+          switch(args[0].combatData._lastAttackAction){
             case ActionType.ActionPhysicalAttacks:
               return 3;
             case ActionType.ActionCastSpell:
@@ -7462,8 +7462,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          if(args[0].lastForcePowerUsed instanceof TalentSpell){
-            return args[0].lastForcePowerUsed.id;
+          if(args[0].combatData.lastForcePowerUsed instanceof TalentSpell){
+            return args[0].combatData.lastForcePowerUsed.id;
           }
         }
         return -1;
@@ -7476,8 +7476,8 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          if(args[0].lastCombatFeatUsed instanceof TalentFeat){
-            return args[0].lastCombatFeatUsed.id;
+          if(args[0].combatData.lastCombatFeatUsed instanceof TalentFeat){
+            return args[0].combatData.lastCombatFeatUsed.id;
           }
         }
         return -1;
@@ -7748,7 +7748,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       args: ["object"],
       action: function(args: any, _instr: any, action: any){
         if(args[0] instanceof ModuleCreature){
-          return args[0].lastSpellTarget;
+          return args[0].combatData.lastSpellTarget;
         }
         return undefined;
       }

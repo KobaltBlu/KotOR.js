@@ -1,6 +1,7 @@
 import { ModuleObject } from "./module";
 
 export class CreaturePartyFollowInfo {
+  object: ModuleObject;
   followObject: ModuleObject;
   followLocation: THREE.Vector3;
   lastLeaderPos: THREE.Vector3;
@@ -10,4 +11,9 @@ export class CreaturePartyFollowInfo {
   result: number = 0;
   timeElapsed: number = 0;
   inSafetyRange: boolean = false;
+  
+  constructor(object: ModuleObject){
+    this.object = object;
+  }
+
 }

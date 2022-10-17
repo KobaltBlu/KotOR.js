@@ -2,7 +2,7 @@ import * as THREE from "three";
 import * as path from "path";
 import * as fs from "fs";
 import { AnimatedTexture } from "./AnimatedTexture";
-import { CombatEngine } from "./CombatEngine";
+import { CombatEngine } from "./combat/CombatEngine";
 import { GameMenu, MenuManager, GUIListBox } from "./gui";
 import { INIConfig } from "./INIConfig";
 import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
@@ -39,6 +39,9 @@ import { CreatureType } from "./enums/nwscript/CreatureType";
 import { ReputationType } from "./enums/nwscript/ReputationType";
 import { ShaderManager } from "./managers/ShaderManager";
 import { LoadingScreen } from "./LoadingScreen";
+import { FactionManager } from "./FactionManager";
+import { EngineContext } from "./enums/engine/EngineContext";
+import { GameStateGroups } from "./interface/engine/GameStateGroups";
 
 const saturationShader: any = {
   uniforms: {
@@ -66,12 +69,6 @@ const saturationShader: any = {
 };
 
 
-
-export const PLAYER_CHAR_NOT_PC            = false;
-export const PLAYER_CHAR_IS_PC             = true;
-
-export const CLASS_TYPE_INVALID   = 255;
-
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
 export const PERSISTENT_ZONE_FOLLOW = 1;
@@ -81,32 +78,6 @@ export interface GameStateInitializeOptions {
   GameDirectory: string, //path to the local game install directory
   Env: GameEngineEnv,
 };
-
-export interface GameStateGroups {
-  creatures: THREE.Group;
-  doors: THREE.Group;
-  placeables: THREE.Group;
-  rooms: THREE.Group;
-  grass: THREE.Group;
-  sounds: THREE.Group;
-  triggers: THREE.Group;
-  waypoints: THREE.Group;
-  party: THREE.Group;
-  lights: THREE.Group;
-  light_helpers: THREE.Group;
-  shadow_lights: THREE.Group;
-  path_helpers: THREE.Group;
-  emitters: THREE.Group;
-  effects: THREE.Group;
-  stunt: THREE.Group;
-  weather_effects: THREE.Group;
-  room_walkmeshes: THREE.Group;
-};
-
-export class EngineContext {
-  static groups: GameStateGroups;
-
-}
 
 export class GameState implements EngineContext {
 

@@ -2,7 +2,7 @@
  */
 
 import { ModuleCreature, ModuleObject } from ".";
-import { CombatEngine } from "../CombatEngine";
+import { CombatEngine } from "../combat/CombatEngine";
 import { EffectDisguise } from "../effects/EffectDisguise";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";

@@ -5,8 +5,8 @@ import * as THREE from "three";
 import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../CollisionData";
-import { CombatData } from "../CombatData";
-import { CombatEngine } from "../CombatEngine";
+import { CombatData } from "../combat/CombatData";
+import { CombatEngine } from "../combat/CombatEngine";
 import { EffectLink, EffectRacialType } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
@@ -19,6 +19,7 @@ import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
+import { EffectIconListItem } from "../interface/module/EffectIconListItem";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
@@ -48,6 +49,8 @@ export class ModuleObject {
   isPlayer: boolean = false;
   name: string;
   _conversation: string;
+
+  effectIconList: EffectIconListItem[] = [];
 
   AxisFront: THREE.Vector3;
   position: THREE.Vector3;

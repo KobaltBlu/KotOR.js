@@ -61,6 +61,7 @@ export class CollisionData {
     
     //Check creature collision
     let creature = undefined;
+    //@ts-expect-error
     if(ConfigClient.options.Game.debug.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
@@ -95,6 +96,7 @@ export class CollisionData {
     }
 
     //Check party collision
+    //@ts-expect-error
     if(ConfigClient.options.Game.debug.creature_collision){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         creature = PartyManager.party[i];
@@ -163,7 +165,7 @@ export class CollisionData {
                 if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
 
                   if(intersects[j].object.moduleObject instanceof ModuleDoor){
-                    this.object.collisionData.blockingObject = intersects[j].object.moduleObject;
+                    this.blockingObject = intersects[j].object.moduleObject;
                   }
 
                   if(!collider || collider.distance < intersects[j].distance)
@@ -233,8 +235,8 @@ export class CollisionData {
       //END: PLACEABLE COLLISION
       
       //START: ROOM COLLISION
-      if(!this.object.groundFace){
-        this.object.findWalkableFace();
+      if(!this.groundFace){
+        this.findWalkableFace();
       }
 
       //room walkable edge check
@@ -357,21 +359,21 @@ export class CollisionData {
         //update creature position
         this.object.position.add(this.object.AxisFront);
         //DETECT: GROUND FACE
-        this.object.collisionData.lastRoom = this.object.room;
-        this.object.lastGroundFace = this.object.groundFace;
-        this.object.groundFace = undefined;
+        this.lastRoom = this.object.room;
+        this.lastGroundFace = this.groundFace;
+        this.groundFace = undefined;
         if(this.object.room){
           let face = this.object.room.findWalkableFace(this);
           if(!face){
-            this.object.findWalkableFace();
+            this.findWalkableFace();
           }
         }
 
-        if(!this.object.groundFace){
+        if(!this.groundFace){
           this.object.AxisFront.set(0, 0, 0);
           this.object.position.copy(_oPosition);
-          this.object.groundFace = this.object.collisionData.lastGroundFace;
-          this.object.attachToRoom(this.object.collisionData.lastRoom);
+          this.groundFace = this.lastGroundFace;
+          this.object.attachToRoom(this.lastRoom);
           this.object.AxisFront.set(0, 0, 0);
         }
       }

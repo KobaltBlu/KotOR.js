@@ -40,8 +40,8 @@ export class EffectDamage extends GameEffect {
     
     if(this.object instanceof ModuleObject){
       this.object.subtractHP(this.getDamageAmount());
-      this.object.lastDamager = this.creator;
-      this.object.lastAttacker = this.creator;
+      this.object.combatData.lastDamager = this.creator;
+      this.object.combatData.lastAttacker = this.creator;
     }
   }
 

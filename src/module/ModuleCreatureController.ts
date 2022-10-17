@@ -4,7 +4,7 @@
 import THREE from "three";
 import { ModuleCreature, ModuleDoor, ModuleItem, ModuleObject, ModuleRoom } from ".";
 import { Action, ActionMoveToPoint, ActionJumpToObject, ActionJumpToPoint, ActionPhysicalAttacks, ActionUnlockObject, ActionCastSpell, ActionItemCastSpell } from "../actions";
-import { CombatEngine } from "../CombatEngine";
+import { CombatEngine } from "../combat/CombatEngine";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";

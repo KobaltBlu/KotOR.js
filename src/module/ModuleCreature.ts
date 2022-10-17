@@ -5,8 +5,8 @@ import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { Action, ActionCastSpell, ActionFollowLeader, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { CombatEngine } from "../CombatEngine";
-import { CreatureClass } from "../CreatureClass";
+import { CombatEngine } from "../combat/CombatEngine";
+import { CreatureClass } from "../combat/CreatureClass";
 import { GameEffect } from "../effects";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
@@ -159,7 +159,7 @@ export class ModuleCreature extends ModuleObject {
     this.head = null;
     this.deathAnimationPlayed = false;
     this.aiStyle = 0;
-    
+
     this.isCommandable = true;
     this.lookAtObject = undefined;
     this.lookAtMatrix = new THREE.Matrix4();
