@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "declaration": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "sourceMap": true,
+    "listFiles": true,
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "types": [
+      "node",
+      "offscreencanvas",
+      "jquery",
+    ]
+  },
+  "lib": [
+    "ESNext",
+    "dom"
+  ],
+  "filesGlob": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "!./**/*.d.ts",
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "src/**/*.spec.ts"]
+}
