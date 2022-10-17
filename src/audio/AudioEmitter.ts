@@ -14,7 +14,7 @@ export class AudioEmitter {
   isDestroyed: boolean;
   pos: { x: number; y: number; z: number; };
   options: any;
-  engine: any;
+  engine: AudioEngine;
   currentSound: any;
   buffers: any = {};
   gainNode: any;
@@ -174,7 +174,7 @@ export class AudioEmitter {
     }
     
     if(typeof this.buffers[name] == 'undefined'){
-      AudioLoader.LoadSound(name, (data: ArrayBuffer) => {
+      AudioLoader.LoadSound(name, (data: AudioBuffer) => {
         //console.log('AudioEmitter', 'Sound Loaded', name, data);
 
         this.AddSound({
@@ -378,7 +378,7 @@ export class AudioEmitter {
 
     if(options.data != null){
 
-      this.engine.audioCtx.decodeAudioData( options.data, ( buffer: ArrayBuffer ) => {
+      this.engine.audioCtx.decodeAudioData( options.data, ( buffer: AudioBuffer ) => {
 
         this.buffers[options.name] = buffer;
         this.buffers[options.name].onEnd = options.onEnd;
