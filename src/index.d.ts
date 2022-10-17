@@ -1,10 +1,11 @@
 export {};
 
 interface ConfigClient {
-  get(key: string): any
-  set(key: string, value: any): any,
-  getRecentProjects(): any[],
-  getRecentFiles(): any[]
+  options: any;
+  get(key: string): any;
+  set(key: string, value: any): any;
+  getRecentProjects(): any[];
+  getRecentFiles(): any[];
 }
 
 declare global {
