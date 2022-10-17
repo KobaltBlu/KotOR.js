@@ -10,7 +10,6 @@ export * from "./ModuleArea";
 export * from "./ModuleCalendar";
 export * from "./ModuleCamera";
 export * from "./ModuleCreature";
-export * from "./ModuleCreatureController";
 export * from "./ModuleDoor";
 export * from "./ModuleEncounter";
 export * from "./ModuleItem";

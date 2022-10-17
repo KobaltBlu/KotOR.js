@@ -28,7 +28,7 @@ import { TalentSkill } from "../talents/TalentSkill";
 import { TalentSpell } from "../talents/TalentSpell";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { ModuleObject, ModuleItem, ModuleCreatureController, ModuleRoom } from "./";
+import { ModuleObject, ModuleItem, ModuleRoom } from "./";
 import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { TwoDAManager } from "../managers/TwoDAManager";
