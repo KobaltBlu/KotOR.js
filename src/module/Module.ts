@@ -33,6 +33,7 @@ import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "../events";
+import { FactionManager } from "../FactionManager";
 
 /* @file
  * The Module class.

@@ -548,7 +548,7 @@ export class PartyManager {
 
   }
 
-  static GetFollowPosition(creature: ModuleCreature){
+  static GetFollowPosition(creature: ModuleObject){
 
     //I think party following is FORMATION_LINE in the formations.2da
 

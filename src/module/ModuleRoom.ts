@@ -53,7 +53,7 @@ export class ModuleRoom extends ModuleObject {
 
     this.room = args.room;
     this.model = args.model;
-    this.walkmesh = args.walkmesh;
+    this.collisionData.walkmesh = args.walkmesh;
     this.linked_rooms = args.linked_rooms;
     this.hasVISObject = false;
 
@@ -129,11 +129,11 @@ export class ModuleRoom extends ModuleObject {
     }
 
     //Add the walkmesh back to the scene
-    if(this.walkmesh && !this.walkmesh.mesh.parent){
-      GameState.group.room_walkmeshes.add(this.walkmesh.mesh);
-    }else if(this.walkmesh && this.walkmesh.mesh.parent){
-      this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
-      GameState.group.room_walkmeshes.add(this.walkmesh.mesh);
+    if(this.collisionData.walkmesh && !this.collisionData.walkmesh.mesh.parent){
+      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
+    }else if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
+      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
+      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
     }
   }
 
@@ -152,8 +152,8 @@ export class ModuleRoom extends ModuleObject {
     }
     
     //Remove the walkmesh back to the scene
-    if(this.walkmesh && this.walkmesh.mesh.parent){
-      this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
+      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
     }
   }
 
@@ -211,12 +211,12 @@ export class ModuleRoom extends ModuleObject {
               if(scene)
                 scene.add(this.model);
 
-              if(!(this.walkmesh instanceof OdysseyWalkMesh)){
+              if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
 
                 this.loadWalkmesh(this.roomName, (wok: OdysseyWalkMesh) => {
                   if(wok){
-                    this.walkmesh = wok;
-                    this.walkmesh.mesh.position.z += 0.001;
+                    this.collisionData.walkmesh = wok;
+                    this.collisionData.walkmesh.mesh.position.z += 0.001;
                     this.buildGrass();
                     
                     //TextureLoader.LoadQueue( () => {
@@ -508,13 +508,13 @@ export class ModuleRoom extends ModuleObject {
 
   findWalkableFace( object?: ModuleObject ){
     let face;
-    if(object instanceof ModuleObject && this.walkmesh){
-      for(let j = 0, jl = this.walkmesh.walkableFaces.length; j < jl; j++){
-        face = this.walkmesh.walkableFaces[j];
+    if(object instanceof ModuleObject && this.collisionData.walkmesh){
+      for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+        face = this.collisionData.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){
-          object.groundFace = face;
-          object.lastGroundFace = object.groundFace;
-          object.surfaceId = object.groundFace.walkIndex;
+          object.collisionData.groundFace = face;
+          object.collisionData.lastGroundFace = object.collisionData.groundFace;
+          object.collisionData.surfaceId = object.collisionData.groundFace.walkIndex;
           object.room = this;
 
           face.triangle.closestPointToPoint(object.position, object.wm_c_point);

@@ -4,6 +4,8 @@
 import * as THREE from "three";
 import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
+import { CollisionData } from "../CollisionData";
+import { CombatData } from "../CombatData";
 import { CombatEngine } from "../CombatEngine";
 import { EffectLink, EffectRacialType } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
@@ -15,6 +17,7 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { InventoryManager } from "../managers/InventoryManager";
@@ -37,9 +40,8 @@ import { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, Module
  */
 
 export class ModuleObject {
-  setCommadable(arg0: any) {
-    throw new Error("Method not implemented.");
-  }
+  combatOrder: number;
+  combatRoundTimer: number;
   controlled: boolean;
   id: number;
   initialized: boolean;
@@ -57,9 +59,13 @@ export class ModuleObject {
   sphere: THREE.Sphere;
   v20: THREE.Vector2;
   v21: THREE.Vector2;
+  tmpPos: THREE.Vector3;
 
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
+
+  collisionData: CollisionData = new CollisionData(this);
+  combatData: CombatData = new CombatData(this);
 
   facing: number;
   wasFacing: number;
@@ -108,27 +114,6 @@ export class ModuleObject {
   _heartbeatTimeout: any;
   _healTarget: any;
 
-  //combat
-  
-  lastAttemptedAttackTarget: ModuleObject;
-  lastAttackTarget: ModuleObject;
-  lastSpellTarget: ModuleObject;
-  lastAttemptedSpellTarget: ModuleObject;
-  lastSpellAttacker: ModuleObject;
-
-  lastCombatFeatUsed: any;
-  lastForcePowerUsed: any;
-  lastAttackResult: any;
-  combatQueue: any[];
-  combatAction: any;
-  _lastAttackObject: any;
-  _lastAttackAction: number;
-  _lastForcePowerUsed: number;
-  _lastForcePowerSuccess: number;
-  initiative: number;
-  lastDamager: any;
-  lastAttacker: any;
-
   //Perception
   perceptionList: any[] = [];
   isListening: boolean;
@@ -143,12 +128,6 @@ export class ModuleObject {
   reflexSaveThrow: number;
   willSaveThrow: number;
   min1HP: boolean;
-
-  //collision
-  walkmesh: OdysseyWalkMesh;
-  surfaceId: any;
-  groundFace: any;
-  lastGroundFace: any;
 
   //attributes
   placedInWorld: any;
@@ -184,7 +163,6 @@ export class ModuleObject {
 
   deferEventUpdate: any;
   distanceToCamera: any;
-  roomCheckTimer: any;
   facingAnim: boolean;
   mesh: THREE.Mesh;
   geometry: any;
@@ -257,7 +235,7 @@ export class ModuleObject {
     this.rotation = new THREE.Euler();
     this.quaternion = new THREE.Quaternion();
     this._triangle = new THREE.Triangle();
-    this.wm_c_point = new THREE.Vector3();
+    // this.wm_c_point = new THREE.Vector3();
 
     this.rotation._onChange( () => { this.onRotationChange } );
 	  this.quaternion._onChange( () => { this.onQuaternionChange } );
@@ -329,20 +307,20 @@ export class ModuleObject {
     this.context = GameState;
     this.heartbeatTimer = null;
     this._heartbeatTimerOffset = Math.floor(Math.random() * 600) + 100;
-    this._heartbeatTimeout = GameState.HeartbeatTimer + this._heartbeatTimerOffset;
+    this._heartbeatTimeout = 0 + this._heartbeatTimerOffset;
 
     //Combat Info
-    this._lastAttackObject = undefined;
-    this._lastAttackAction = -1;
-    this._lastForcePowerUsed = -1;
-    this._lastForcePowerSuccess = 0;
+    this.combatData._lastAttackObject = undefined;
+    this.combatData._lastAttackAction = -1;
+    this.combatData._lastForcePowerUsed = -1;
+    this.combatData._lastForcePowerSuccess = 0;
 
     this._healTarget = undefined;
 
     this.perceptionList = [];
     this.isListening = false;
     this.listeningPatterns = {};
-    this.initiative = 0;
+    this.combatData.initiative = 0;
 
     this.spawned = false;
 
@@ -465,7 +443,7 @@ export class ModuleObject {
       if(GameState.module){
         this.triggerHeartbeat();
       }
-      this._heartbeatTimeout = GameState.HeartbeatTimer + this._heartbeatTimerOffset;
+      this._heartbeatTimeout = this._heartbeatTimerOffset;
     }else{
       this._heartbeatTimeout -= 1000*delta;
     }
@@ -482,14 +460,7 @@ export class ModuleObject {
     }
 
     if(this.spawned){
-      if(!this.room){
-        if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
-          this.roomCheckTimer = 1;
-          this.findWalkableFace();
-        }
-        this.roomCheckTimer -= delta;
-      }
-      this.setModelVisibility();
+      this.collisionData.roomCheck(delta);
     }
 
 
@@ -526,7 +497,7 @@ export class ModuleObject {
   }
 
   clearAllActions(skipUnclearable = false){
-    this.combatQueue = [];
+    this.combatData.combatQueue = [];
     //Reset the anim state
     //this.animState = 0;
     //this.actionQueue.clear();
@@ -546,7 +517,7 @@ export class ModuleObject {
       this.actionQueue.clear();
     }
 
-    this.combatAction = undefined;
+    this.combatData.combatAction = undefined;
     //this.clearTarget();
   }
 
@@ -951,51 +922,7 @@ export class ModuleObject {
     return;
   }
 
-  updateCollision(delta=0){
-    //START Gravity
-
-    /*let playerFeetRay = new THREE.Vector3().copy( this.position.clone().add( ( new THREE.Vector3(0, 0, 0.25) ) ) );
-    GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-    
-    //this.position.z += (-10 * delta);
-    playerFeetRay.z += 10;
-    
-    GameState.raycaster.ray.direction.set(0, 0,-1);
-    
-    let intersects = GameState.raycaster.intersectObjects( GameState.walkmeshList );
-    if ( intersects.length > 0 ) {
-      if(intersects[ 0 ].distance < 0.5) {
-        let faceIdx = intersects[0].faceIndex;
-        let walkableType = intersects[0].object.wok.walkTypes[faceIdx];
-        let pDistance = 0.25 - intersects[ 0 ].distance;
-        this.position.z = intersects[ 0 ].point.z;
-      }
-    }
-
-    //START: PLAYER WORLD COLLISION
-
-    playerFeetRay = new THREE.Vector3().copy( this.position.clone().add( ( new THREE.Vector3(0, 0, 0.25) ) ) );
-
-    for(let i = 0; i < 360; i += 36) {
-      GameState.raycaster.ray.direction.set(Math.cos(i), Math.sin(i),-1);
-      GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-      let intersects = GameState.raycaster.intersectObjects( GameState.walkmeshList );
-      if ( intersects.length > 0 ) {
-        if(intersects[ 0 ].distance < 0.5){
-          let faceIdx = intersects[0].faceIndex;
-          if(intersects[0].object.wok.walkTypes[faceIdx] == 7){
-            let pDistance = 0.5 - intersects[ 0 ].distance;
-            this.position.sub( new THREE.Vector3( pDistance * Math.cos(i), pDistance * Math.sin(i), 0 ) );
-          }
-        }
-      }
-    }
-    
-    //END: PLAYER WORLD COLLISION
-
-    //END Gravity
-    */
-  }
+  updateCollision(delta: number = 0){ }
 
   doCommand(script: NWScriptInstance){
     //console.log('doCommand', this.getTag(), script, action, instruction);
@@ -1004,16 +931,28 @@ export class ModuleObject {
     this.actionQueue.add(action);
   }
 
+  //---------------//
+  // STATUS CHECKS
+  //---------------//
+
   isDead(){
     return this.getHP() <= 0;
   }
 
-  damage(amount = 0, oAttacker?: ModuleObject){
-    this.subtractHP(amount);
-    this.lastDamager = oAttacker;
-    this.lastAttacker = oAttacker;
-    this.onDamage();
+  isDebilitated() {
+    return false;
   }
+
+  isStunned() {
+    return false;
+  }
+  isParalyzed() {
+    return false;
+  }
+
+  //---------------//
+  // SCRIPT EVENTS
+  //---------------//
 
   onDamage(){
     if(this.isDead())
@@ -1022,6 +961,47 @@ export class ModuleObject {
     if(this.scripts.onDamaged instanceof NWScriptInstance){
       this.scripts.onDamaged.run(this);
     }
+  }
+
+  onDeath(){
+    //stub
+  }
+
+  onCombatRoundEnd() {
+    //stub
+  }
+
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1){
+    //stub
+  }
+
+  onAttacked(){
+    //stub
+  }
+
+  onDamaged(){
+    //stub
+  }
+
+  onBlocked(){
+    //stub
+  }
+
+
+  
+  resetExcitedDuration() {
+    throw new Error("Method not implemented.");
+  }
+
+  setCommadable(arg0: any) {
+    throw new Error("Method not implemented.");
+  }
+
+  damage(amount = 0, oAttacker?: ModuleObject){
+    this.subtractHP(amount);
+    this.combatData.lastDamager = oAttacker;
+    this.combatData.lastAttacker = oAttacker;
+    this.onDamage();
   }
 
   getCurrentRoom(){
@@ -1080,31 +1060,31 @@ export class ModuleObject {
         return;
       }
     }else{
-      this.findWalkableFace();
+      this.collisionData.findWalkableFace();
     }
   }
 
-  findWalkableFace(object?: ModuleObject){
-    let face;
-    let room;
-    for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
-      room = GameState.module.area.rooms[i];
-      if(room.walkmesh){
-        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          face = room.walkmesh.walkableFaces[j];
-          if(face.triangle.containsPoint(this.position)){
-            this.groundFace = face;
-            this.lastGroundFace = this.groundFace;
-            this.surfaceId = this.groundFace.walkIndex;
-            this.attachToRoom(room);
-            face.triangle.closestPointToPoint(this.position, this.wm_c_point);
-            this.position.z = this.wm_c_point.z + .005;
-          }
-        }
-      }
-    }
-    return face;
-  }
+  // findWalkableFace(object?: ModuleObject){
+  //   let face;
+  //   let room;
+  //   for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
+  //     room = GameState.module.area.rooms[i];
+  //     if(room.walkmesh){
+  //       for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
+  //         face = room.walkmesh.walkableFaces[j];
+  //         if(face.triangle.containsPoint(this.position)){
+  //           this.groundFace = face;
+  //           this.lastGroundFace = this.groundFace;
+  //           this.surfaceId = this.groundFace.walkIndex;
+  //           this.attachToRoom(room);
+  //           face.triangle.closestPointToPoint(this.position, this.wm_c_point);
+  //           this.position.z = this.wm_c_point.z + .005;
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return face;
+  // }
 
   getCameraHeight(){
     return 1.5;
@@ -1187,9 +1167,9 @@ export class ModuleObject {
             GameState.module.area.placeables.splice(pIdx, 1);
 
             try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.walkmesh.mesh);
+              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.walkmesh.mesh);
+              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
 
           }
@@ -1203,9 +1183,9 @@ export class ModuleObject {
               room.walkmesh.dispose();
 
             try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.walkmesh.mesh);
+              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.walkmesh.mesh);
+              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
 
           }
@@ -1216,9 +1196,9 @@ export class ModuleObject {
             GameState.module.area.doors.splice(pIdx, 1);
 
             try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.walkmesh.mesh);
+              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.walkmesh.mesh);
+              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
             
           }
@@ -1535,8 +1515,8 @@ export class ModuleObject {
       }
 
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-      this.groundFace = undefined;
-      this.lastGroundFace = undefined;
+      this.collisionData.groundFace = undefined;
+      this.collisionData.lastGroundFace = undefined;
 
       if(this instanceof ModuleCreature)
         this.updateCollision();

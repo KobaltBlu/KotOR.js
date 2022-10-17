@@ -415,7 +415,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   updateFollowerCamera(delta: number = 0){
-    let followee = GameState.getCurrentPlayer() as ModuleMGPlayer;
+    let followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
     let camStyle = GameState.module.getCameraStyle();
@@ -486,20 +486,20 @@ export class ModuleArea extends ModuleObject {
     GameState.raycaster.far = Infinity;
 
     if(GameState.Mode == EngineMode.MINIGAME){
+      if(followee instanceof ModuleMGPlayer){
+        followee.camera.camerahook.getWorldPosition(GameState.followerCamera.position);
+        followee.camera.camerahook.getWorldQuaternion(GameState.followerCamera.quaternion);
 
-      followee.camera.camerahook.getWorldPosition(GameState.followerCamera.position);
-      followee.camera.camerahook.getWorldQuaternion(GameState.followerCamera.quaternion);
-
-      switch(GameState.module.area.MiniGame.Type){
-        case 1: //SWOOPRACE
-          GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-        break;
-        case 2: //TURRET
-          GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-        break;
+        switch(GameState.module.area.MiniGame.Type){
+          case 1: //SWOOPRACE
+            GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
+          break;
+          case 2: //TURRET
+            GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
+          break;
+        }
+        GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
       }
-      GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-
     }else{
       GameState.followerCamera.position.copy(followee.position);
 
@@ -1285,8 +1285,8 @@ export class ModuleArea extends ModuleObject {
         GameState.player.clearAllActions();
         GameState.player.force = 0;
         GameState.player.animState = ModuleCreatureAnimState.IDLE;
-        GameState.player.groundFace = undefined;
-        GameState.player.lastGroundFace = undefined;
+        GameState.player.collisionData.groundFace = undefined;
+        GameState.player.collisionData.lastGroundFace = undefined;
         GameState.player.Load( ( object: ModuleCreature ) => {
 
           if(typeof object == 'undefined'){
@@ -1471,9 +1471,9 @@ export class ModuleArea extends ModuleObject {
           room.load( (room: ModuleRoom) => {
             if(room.model instanceof OdysseyModel3D){
 
-              if(room.walkmesh instanceof OdysseyWalkMesh){
-                GameState.walkmeshList.push( room.walkmesh.mesh );
-                GameState.group.room_walkmeshes.add( room.walkmesh.mesh );
+              if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
+                GameState.walkmeshList.push( room.collisionData.walkmesh.mesh );
+                GameState.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
               }
     
               if(typeof room.model.walkmesh != 'undefined'){
@@ -1552,7 +1552,7 @@ export class ModuleArea extends ModuleObject {
                 door.computeBoundingBox();
                 try{
                   model.userData.walkmesh = dwk;
-                  door.walkmesh = dwk;
+                  door.collisionData.walkmesh = dwk;
                   GameState.walkmeshList.push( dwk.mesh );
     
                   if(dwk.mesh instanceof THREE.Object3D){

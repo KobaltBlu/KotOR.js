@@ -48,7 +48,7 @@ export class Utility {
   }
 
   //https://github.com/vorg/interpolate-angle/blob/master/index.js
-  interpolateAngle(fromAngle: number = 0, toAngle: number = 0, t: number = 0) {
+  static interpolateAngle(fromAngle: number = 0, toAngle: number = 0, t: number = 0) {
     fromAngle = (fromAngle + TWO_PI) % TWO_PI;
     toAngle = (toAngle + TWO_PI) % TWO_PI;
 

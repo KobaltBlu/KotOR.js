@@ -44,7 +44,6 @@ export class ModuleMGPlayer extends ModuleObject {
   onCreateRun: boolean;
   sphere_radius: number;
   invince_period: number;
-  tmpPos: THREE.Vector3;
   lastRoom: any;
   cameraName: any;
   gun_hook: THREE.Object3D;
@@ -468,7 +467,7 @@ export class ModuleMGPlayer extends ModuleObject {
       //END: PLACEABLE COLLISION
       
       //START: ROOM COLLISION
-      if(!this.groundFace){
+      if(!this.collisionData.groundFace){
         this.findWalkableFace();
       }
 
@@ -561,7 +560,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.position.add(this.AxisFront);
         //DETECT: GROUND FACE
         this.lastRoom = this.room;
-        this.lastGroundFace = this.groundFace;
+        this.collisionData.lastGroundFace = this.collisionData.groundFace;
         //this.groundFace = undefined;
         if(this.room){
           let face = this.room.findWalkableFace(this);
@@ -570,10 +569,10 @@ export class ModuleMGPlayer extends ModuleObject {
           }
         }
 
-        if(!this.groundFace){
+        if(!this.collisionData.groundFace){
           this.AxisFront.set(0, 0, 0);
           this.position.copy(_oPosition);
-          this.groundFace = this.lastGroundFace;
+          this.collisionData.groundFace = this.collisionData.lastGroundFace;
           this.attachToRoom(this.lastRoom);
           this.AxisFront.set(0, 0, 0);
         }
@@ -657,9 +656,9 @@ export class ModuleMGPlayer extends ModuleObject {
         for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
           face = room.walkmesh.walkableFaces[j];
           if(face.triangle.containsPoint(this.position)){
-            this.groundFace = face;
-            this.lastGroundFace = this.groundFace;
-            this.surfaceId = this.groundFace.walkIndex;
+            this.collisionData.groundFace = face;
+            this.collisionData.lastGroundFace = this.collisionData.groundFace;
+            this.collisionData.surfaceId = this.collisionData.groundFace.walkIndex;
             this.attachToRoom(room);
             face.triangle.closestPointToPoint(this.position, this.wm_c_point);
             this.position.z = this.wm_c_point.z + .005;

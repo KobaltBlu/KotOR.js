@@ -47,7 +47,6 @@ export class ModulePlaceable extends ModuleObject {
   keyRequired: boolean;
   lockable: boolean;
   locked: boolean;
-  name: string;
   openLockDC: number;
   paletteID: number;
   partyInteract: boolean;
@@ -168,8 +167,8 @@ export class ModulePlaceable extends ModuleObject {
     
     super.update(delta);
 
-    if(this.walkmesh && this.model){
-      this.walkmesh.matrixWorld = this.model.matrix.clone();
+    if(this.collisionData.walkmesh && this.model){
+      this.collisionData.walkmesh.matrixWorld = this.model.matrix.clone();
     }
 
     if(this.model instanceof OdysseyModel3D){
@@ -737,24 +736,24 @@ export class ModulePlaceable extends ModuleObject {
     if(wokKey != null){
       KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
 
-        this.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-        this.walkmesh.name = ResRef;
-        this.walkmesh.moduleObject = this;
-        this.model.add(this.walkmesh.mesh);
+        this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+        this.collisionData.walkmesh.name = ResRef;
+        this.collisionData.walkmesh.moduleObject = this;
+        this.model.add(this.collisionData.walkmesh.mesh);
 
         if(typeof onLoad === 'function')
-          onLoad(this.walkmesh);
+          onLoad(this.collisionData.walkmesh);
 
       });
 
     }else{
       console.warn('ModulePlaceable', 'PWK Missing', ResRef);
-      this.walkmesh = new OdysseyWalkMesh();
-      this.walkmesh.name = ResRef;
-      this.walkmesh.moduleObject = this;
+      this.collisionData.walkmesh = new OdysseyWalkMesh();
+      this.collisionData.walkmesh.name = ResRef;
+      this.collisionData.walkmesh.moduleObject = this;
 
       if(typeof onLoad === 'function')
-        onLoad(this.walkmesh);
+        onLoad(this.collisionData.walkmesh);
     }
 
   }

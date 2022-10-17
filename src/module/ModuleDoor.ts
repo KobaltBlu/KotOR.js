@@ -224,6 +224,7 @@ export class ModuleDoor extends ModuleObject {
   onClick2(callee: ModuleObject){
 
     //You can't interact with yourself
+    //@ts-expect-error
     if(this === GameState.player && GameState.getCurrentPlayer() === this){
       return;
     }
@@ -333,8 +334,8 @@ export class ModuleDoor extends ModuleObject {
     this.model.playAnimation('opening1', false, () => {
       console.log('opening1');
       setTimeout( () => {
-        if(this.walkmesh && this.walkmesh.mesh){
-          this.walkmesh.mesh.remove(this.walkmesh.mesh.parent);
+        if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
+          this.collisionData.walkmesh.mesh.remove(this.collisionData.walkmesh.mesh.parent);
           // if(GameState.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == this.walkmesh.mesh){
           //   GameState.octree_walkmesh.remove(this.walkmesh.mesh)
           // }
@@ -343,8 +344,8 @@ export class ModuleDoor extends ModuleObject {
       }, 100);
     });
 
-    if(this.walkmesh && this.walkmesh.mesh && this.walkmesh.mesh.parent){
-      GameState.group.room_walkmeshes.remove( this.walkmesh.mesh );
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh && this.collisionData.walkmesh.mesh.parent){
+      GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
     }
 
     //Notice all creatures within range that someone opened this door
@@ -370,11 +371,11 @@ export class ModuleDoor extends ModuleObject {
       this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
     }
 
-    if(this.walkmesh && this.walkmesh.mesh){
-      if(this.walkmesh.mesh.parent){
-        this.walkmesh.mesh.parent.remove(this.walkmesh.mesh);
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
+      if(this.collisionData.walkmesh.mesh.parent){
+        this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
       }
-      GameState.group.room_walkmeshes.add( this.walkmesh.mesh );
+      GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
     }
 
     this.model.playAnimation('closing1', false, () => {
@@ -437,8 +438,8 @@ export class ModuleDoor extends ModuleObject {
       GameState.group.light_helpers.add( this.boxHelper );
     }
 
-    if(this.walkmesh && this.model){
-      this.walkmesh.matrixWorld = this.model.matrix.clone();
+    if(this.collisionData.walkmesh && this.model){
+      this.collisionData.walkmesh.matrixWorld = this.model.matrix.clone();
     }
   }
 
@@ -734,12 +735,12 @@ export class ModuleDoor extends ModuleObject {
     if(wokKey){
       KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
 
-        this.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-        this.walkmesh.mesh.name = this.walkmesh.name = ResRef;
-        this.walkmesh.mesh.moduleObject = this.walkmesh.moduleObject = this;
+        this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+        this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = ResRef;
+        this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
 
         if(typeof onLoad === 'function')
-          onLoad(this.walkmesh);
+          onLoad(this.collisionData.walkmesh);
 
       });
 
