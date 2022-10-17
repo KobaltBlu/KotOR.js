@@ -1,8 +1,12 @@
+import { Forge } from "./Forge";
 import { Wizard } from "./Wizard";
+import { Ractive } from "ractive";
 
 export class LevelSelectWizard extends Wizard {
+  data: any;
+  ractive: any;
 
-  constructor(selected = -1, onSelect?: Function){
+  constructor(selected = -1, private onSelect?: Function){
     super({
       title: 'Level Select',
       buttons: [
@@ -10,8 +14,6 @@ export class LevelSelectWizard extends Wizard {
           name: 'Choose Level',
           onClick: () => {
             //e.preventDefault();
-
-            console.log(typeof this.onSelect, typeof this.onSelect == 'function');
     
             if(typeof this.onSelect == 'function')
               this.onSelect(this.data.selected, this.data.levels[this.data.selected]);
@@ -24,13 +26,13 @@ export class LevelSelectWizard extends Wizard {
 
     //Variables
     this.data = {
-      levels: GameMaps,
+      levels: Forge.GameMaps,
       selected: selected
     };
     
     this.onSelect = onSelect;
 
-    this.ractive = Ractive({
+    this.ractive = new Ractive({
       target: this.$body[0],
       template: `
 <ul id="modal-level-list" class="list-group my-list-group" style="max-height: calc(100vh - 280px); overflow-y: scroll;">
@@ -42,7 +44,7 @@ export class LevelSelectWizard extends Wizard {
       `,
       data: this.data,
       on: {
-        levelSelect(ctx){
+        levelSelect(ctx: any){
           this.set('selected', ctx.node.dataset.index);
         }
       }

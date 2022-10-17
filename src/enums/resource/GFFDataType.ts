@@ -18,4 +18,5 @@ export enum GFFDataType {
   LIST = 15,
   ORIENTATION = 16,
   VECTOR = 17,
+  STRREF
 };

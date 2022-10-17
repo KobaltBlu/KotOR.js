@@ -158,7 +158,7 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     // @ts-expect-error
-    this.mesh.visible = Config.get('Game.debug.trigger_geometry_show') ? true : false;
+    this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
 
   }
 

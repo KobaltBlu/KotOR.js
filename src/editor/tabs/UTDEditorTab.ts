@@ -1,4 +1,4 @@
-import { path } from "@ffmpeg-installer/ffmpeg";
+import * as path from "path";
 import { dialog } from "electron";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
 import { ModuleDoor } from "../../module";
@@ -13,9 +13,59 @@ import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
 import { ImageViewerTab } from "./ImageViewerTab";
+import * as THREE from "three";
+import { TextureLoader } from "../../loaders/TextureLoader";
+import { TwoDAManager } from "../../managers/TwoDAManager";
 
 export class UTDEditorTab extends EditorTab {
-  constructor(file){
+  $name: JQuery<HTMLElement>;
+  $tag: JQuery<HTMLElement>;
+  $description: JQuery<HTMLElement>;
+  $doorType: JQuery<HTMLElement>;
+  $plotItem: JQuery<HTMLElement>;
+  $static: JQuery<HTMLElement>;
+  $hardness: JQuery<HTMLElement>;
+  $hitPoints: JQuery<HTMLElement>;
+  $fortitudeSave: JQuery<HTMLElement>;
+  $reflexSave: JQuery<HTMLElement>;
+  $willSave: JQuery<HTMLElement>;
+  $lock: JQuery<HTMLElement>;
+  $lockable: JQuery<HTMLElement>;
+  $autoRemoveKey: JQuery<HTMLElement>;
+  $keyRequired: JQuery<HTMLElement>;
+  $openLockDC: JQuery<HTMLElement>;
+  $closeLockDC: JQuery<HTMLElement>;
+  $keyTag: JQuery<HTMLElement>;
+  $templateResRef: JQuery<HTMLElement>;
+  $faction: JQuery<HTMLElement>;
+  $conversation: JQuery<HTMLElement>;
+  $noInterrupt: JQuery<HTMLElement>;
+  $animationState: JQuery<HTMLElement>;
+  $onClick: JQuery<HTMLElement>;
+  $onClosed: JQuery<HTMLElement>;
+  $onDamaged: JQuery<HTMLElement>;
+  $onDeath: JQuery<HTMLElement>;
+  $onDisarm: JQuery<HTMLElement>;
+  $onHeartbeat: JQuery<HTMLElement>;
+  $onLock: JQuery<HTMLElement>;
+  $onMeleeAttacked: JQuery<HTMLElement>;
+  $onOpen: JQuery<HTMLElement>;
+  $onSpellCastAt: JQuery<HTMLElement>;
+  $onTrapTriggered: JQuery<HTMLElement>;
+  $onUnlock: JQuery<HTMLElement>;
+  $onUsed: JQuery<HTMLElement>;
+  $onUserDefined: JQuery<HTMLElement>;
+  $navBar: JQuery<HTMLElement>;
+  $utcTabContent: JQuery<HTMLElement>;
+  $verticalTabs: JQuery<HTMLElement>;
+  verticalTabs: VerticalTabs;
+  $previewContainer: JQuery<HTMLElement>;
+  $preview: JQuery<HTMLElement>;
+  ui3DRenderer: UI3DRenderer;
+  door: ModuleDoor;
+  requestId: any;
+
+  constructor(file: EditorFile){
     super();
 
     this.file = null;
@@ -119,6 +169,9 @@ export class UTDEditorTab extends EditorTab {
     });
 
   }
+  $firstName($firstName: any) {
+    throw new Error("Method not implemented.");
+  }
 
   onResize(){
 
@@ -140,19 +193,19 @@ export class UTDEditorTab extends EditorTab {
     return null;
   }
 
-  ElementId(str){
+  ElementId(str: any){
     return str+'-'+this.id;
   }
 
-  OpenFile(file){
+  OpenFile(file: EditorFile){
     if(file instanceof EditorFile){
 
-      file.readFile( (buffer) => {
+      file.readFile( (buffer: Buffer) => {
         try{
 
           if(!file.buffer.length){
 
-            this.gff = UTDObject.GenerateTemplate();
+            this.gff = ModuleDoor.GenerateTemplate();
             console.log(this.gff.RootNode);
             try{
               this.PopulateFields();
@@ -188,24 +241,24 @@ export class UTDEditorTab extends EditorTab {
     });*/
   }
 
-  Reload( onLoad = null ){
+  Reload( onLoad?: Function ){
     global.cancelAnimationFrame(this.requestId);
     this.door = new ModuleDoor(this.gff);
     this.door.context = this.ui3DRenderer;
     this.door.InitProperties();
-    this.door.LoadModel( (model) => {
+    this.door.LoadModel( (model: OdysseyModel3D) => {
       let scene = this.ui3DRenderer.ResetScene();
       scene.add(model);
       setTimeout( () => {
-        let center = model.box.getCenter();
-        let size = model.box.getSize();
+        let center = model.box.getCenter(new THREE.Vector3());
+        let size = model.box.getSize(new THREE.Vector3());
         //Center the object to 0
         model.position.set(-center.x, -center.y, -center.z);
         this.ui3DRenderer.camera.position.z = 0;
         this.ui3DRenderer.camera.position.y = size.x + size.y;
         this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
         //Stand the object on the floor by adding half it's height back to it's position
-        //model.position.z += model.box.getSize().z/2;
+        //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
         this.onResize();
 
         this.Update();
@@ -223,7 +276,7 @@ export class UTDEditorTab extends EditorTab {
 
   }
 
-  RenderCallback(renderer, delta){
+  RenderCallback(renderer: any, delta: number = 0){
     //console.log(delta);
 
     if(this.door){
@@ -248,9 +301,9 @@ export class UTDEditorTab extends EditorTab {
 
   }
 
-  GameImageToCanvas(canvas, name){
-    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', name, (image) => {
-      image.getPixelData( (pixelData) => {
+  GameImageToCanvas(canvas: any, name: any){
+    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', name, (image: any) => {
+      image.getPixelData( (pixelData: any) => {
         
         let workingData = pixelData;
     
@@ -279,7 +332,7 @@ export class UTDEditorTab extends EditorTab {
             workingData = ImageViewerTab.PixelDataToRGBA(workingData, width, height);
     
           if(bitsPerPixel == 8)
-            workingData = ImageViewerTab.TGAGrayFix(workingData, width, height);
+            workingData = ImageViewerTab.TGAGrayFix(workingData);
     
           //FlipY
           ImageViewerTab.FlipY(workingData, width, height);
@@ -317,16 +370,16 @@ export class UTDEditorTab extends EditorTab {
     this.InitResRefField(this.$tag, this.gff.GetFieldByLabel("Tag"));
 
     //DoorType
-    for (let key in Global.kotor2DA.genericdoors.rows) {
-      let genericdoor = Global.kotor2DA.genericdoors.rows[key];
+    for (let key in TwoDAManager.datatables.get('genericdoors').rows) {
+      let genericdoor = TwoDAManager.datatables.get('genericdoors').rows[key];
       let label = genericdoor['label'];
       this.$doorType.append('<option value="'+key+'">'+label+'</option>');
     }
 
     let options = $('option', this.$doorType);
-    let arr = options.map(function(_, o) { return { t: $(o).text(), v: o.value }; }).get();
+    let arr = options.map(function(_, o: any) { return { t: $(o).text(), v: o.value }; }).get();
     arr.sort(function(o1, o2) { return o1.t > o2.t ? 1 : o1.t < o2.t ? -1 : 0; });
-    options.each(function(i, o) {
+    options.each(function(i, o: any) {
       o.value = arr[i].v;
       $(o).text(arr[i].t);
     });
@@ -404,7 +457,7 @@ export class UTDEditorTab extends EditorTab {
       $field: this.$faction,         //jQuery Element
       fieldName: 'Faction',     //GFF Field Name
       fieldType: GFFDataType.DWORD,     //GFF Field Type
-      objOrArray: Global.kotor2DA.repute.rows,   //Elements of data
+      objOrArray: TwoDAManager.datatables.get('repute').rows,   //Elements of data
       propertyName: 'label',            //Property name to target inside objOrArray
     });
 
@@ -454,11 +507,8 @@ export class UTDEditorTab extends EditorTab {
         this.$tabName.text(this.file.getFilename());
         this.$templateResRef.val(this.file.getFilename().split('.')[0]);
   
-        if(typeof onComplete === 'function')
-          onComplete(err);
-  
         console.log('File Saved');//, Object.keys(IMAGE_TYPE)[type]);
-      }, (err) => {
+      }, (err: any) => {
         return console.error(err);
       })
 

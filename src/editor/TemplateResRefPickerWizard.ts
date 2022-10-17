@@ -1,5 +1,10 @@
+import { BIFManager } from "../managers/BIFManager";
+import { KEYManager } from "../managers/KEYManager";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { Forge } from "./Forge";
 import { TemplateEngine } from "./TemplateEngine";
 import { Wizard } from "./Wizard";
+import "jquery-ui";
 
 export class TemplateResRefPickerWizard extends Wizard {
   props: { autoShow: boolean; selected: string; restype: number; onChoose: any; };
@@ -31,10 +36,10 @@ export class TemplateResRefPickerWizard extends Wizard {
       this.$projectList = $('#modal-templateresref-project-list', this.$wizard);
       this.$choose = $('#modal-templateresref-choose', this.$wizard);
 
-      let templates = Global.kotorBIF['templates'].GetResourcesByType(this.props.restype);
+      let templates = BIFManager.GetBIFByName('templates').GetResourcesByType(this.props.restype);
 
       for(let i = 0; i < templates.length; i++){
-        let name = Global.kotorKEY.GetFileLabel(templates[i].ID);
+        let name = KEYManager.Key.GetFileLabel(templates[i].ID);
         let $item = $('<li class="list-group-item" data-name="'+name+'">'+name+'</li>');
         this.$gameList.append($item);
 
@@ -83,9 +88,9 @@ export class TemplateResRefPickerWizard extends Wizard {
 
       $('body').append(this.$wizard);
       let $modal = this.$wizard.filter('.modal').modal({
-          keyboard: false,
-          backdrop: false,
-          show: this.props.autoShow
+        keyboard: false,
+        backdrop: false,
+        // show: this.props.autoShow ? true : false
       });
 
       this.$wizard.draggable({

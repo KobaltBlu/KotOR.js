@@ -156,7 +156,7 @@ export class BinaryWriter {
     this.WriteUInt8(byte);
   }
 
-  WriteBytes(bytes: Buffer|any[] = []){
+  WriteBytes(bytes: Uint8Array|Buffer|any[] = []){
     //console.log('Writing Bytes: ', bytes.length);
     let tmpBuffer = bytes instanceof Buffer ? bytes : Buffer.from(bytes);
     //this.buffer = Buffer.concat( [ this.buffer, (bytes instanceof Buffer ? bytes : Buffer.from(bytes)) ] );

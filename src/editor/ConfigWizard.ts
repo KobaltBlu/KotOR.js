@@ -1,3 +1,4 @@
+import { ConfigClient } from "../utility/ConfigClient";
 import { TemplateEngine } from "./TemplateEngine";
 import { Wizard } from "./Wizard";
 
@@ -84,6 +85,7 @@ export class ConfigWizard extends Wizard {
     let $colorPicker = $('<div class="input-group color-picker colorpicker-component">'+
         '<input type="text" value="#CCC" class="form-control" />'+
         '<span class="input-group-addon"><i></i></span>'+
+      //@ts-expect-error
     '</div>').colorpicker(options);
     return $colorPicker;
   }

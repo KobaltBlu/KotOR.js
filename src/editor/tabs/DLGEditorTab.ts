@@ -1,7 +1,19 @@
+import { TLKManager } from "../../managers/TLKManager";
+import { GFFObject } from "../../resource/GFFObject";
+import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
+import { TemplateEngine } from "../TemplateEngine";
 
 export class DLGEditorTab extends EditorTab {
-  constructor(file){
+  treeIndex: number;
+  $dialogPanes: JQuery<HTMLElement>;
+  $nodeTreeContainer: JQuery<HTMLElement>;
+  $nodePropsContainer: JQuery<HTMLElement>;
+  $nodeTreeRootNode: JQuery<HTMLElement>;
+  entryNodes: any;
+  replyNodes: any;
+  startingNodes: any;
+  constructor(file: EditorFile ){
     super();
 
     this.file = null;
@@ -31,11 +43,11 @@ export class DLGEditorTab extends EditorTab {
 
       this.$dialogPanes.layout({
         applyDefaultStyles: false,
-        'onopen': (pane) => {
+        'onopen': (pane: any) => {
         },
-        'onclose': (pane) => {
+        'onclose': (pane: any) => {
         },
-        'onresize': (pane) => {
+        'onresize': (pane: any) => {
         },
         'south': {
           size: 200
@@ -63,14 +75,14 @@ export class DLGEditorTab extends EditorTab {
     return null;
   }
 
-  ElementId(str){
+  ElementId(str: string){
     return str+'-'+this.id;
   }
 
-  OpenFile(file){
+  OpenFile(file: EditorFile){
 
     if(file instanceof EditorFile){
-      file.readFile( (buffer) => {
+      file.readFile( (buffer: Buffer) => {
         try{
           new GFFObject(buffer, (gff) => {
             this.gff = gff;
@@ -108,7 +120,7 @@ export class DLGEditorTab extends EditorTab {
 
   }
 
-  ParseDialogStringNode($parent, node){
+  ParseDialogStringNode($parent: any, node: any){
     let entryNodeIndex = node.GetFieldByLabel('Index').Value;
     let entryNode = this.entryNodes[entryNodeIndex];
     let replies = entryNode.GetFieldByLabel('RepliesList').GetChildStructs();
@@ -125,7 +137,7 @@ export class DLGEditorTab extends EditorTab {
     }
   }
 
-  ParseDialogReplyNode($parent, node){
+  ParseDialogReplyNode($parent: any, node: any){
 
     let replyNodeIndex = node.GetFieldByLabel('Index').Value;
     let replyNodeIsChild = node.GetFieldByLabel('IsChild').Value;
@@ -162,7 +174,7 @@ export class DLGEditorTab extends EditorTab {
 
   }
 
-  ParseDialogEntryNode($parent, node){
+  ParseDialogEntryNode($parent: any, node: any){
 
     let entryNodeIndex = node.GetFieldByLabel('Index').Value;
     let entryNodeIsChild = node.GetFieldByLabel('IsChild').Value;
@@ -187,7 +199,7 @@ export class DLGEditorTab extends EditorTab {
 
   }
 
-  CreateSubTree(name, checked = false){
+  CreateSubTree(name: any, checked = false){
     let $sub = $('<li><input class="node-toggle" type="checkbox" checked id="dialog-'+this.id+'-tree-'+(this.treeIndex)+'" /><label for="dialog-'+this.id+'-tree-'+(this.treeIndex++)+'">'+name+'</label><span></span><ul></ul></li>');
     let $checkbox = $('input[type=checkbox]', $sub);
     let $label = $('label', $sub);

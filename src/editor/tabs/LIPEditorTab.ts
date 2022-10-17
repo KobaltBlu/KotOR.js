@@ -6,9 +6,82 @@ import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
 import { NotificationManager } from "../NotificationManager";
+import * as THREE from "three";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { TwoDAManager } from "../../managers/TwoDAManager";
+import { TextureLoader } from "../../loaders/TextureLoader";
+import { OdysseyModel } from "../../odyssey";
+import { AudioLoader } from "../../audio/AudioLoader";
+
+import * as path from "path";
+import * as fs from "fs";
+import { WindowDialog } from "../../utility/WindowDialog";
 
 export class LIPEditorTab extends EditorTab {
-  constructor(file, isLocal = false){
+  animLoop: boolean;
+  playing: boolean;
+  seeking: boolean;
+  current_head: string;
+  audio_name: string;
+  selected_frame: any;
+  poseFrame: boolean;
+  audio_buffer: AudioBuffer;
+  dragging_frame: any;
+  preview_gain: number;
+  max_timeline_zoom: number;
+  min_timeline_zoom: number;
+  timeline_zoom: number;
+  renderer: THREE.WebGLRenderer;
+  clock: THREE.Clock;
+  stats: Stats;
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  CameraMode: { EDITOR: number; STATIC: number; ANIMATED: number; };
+  staticCameraIndex: number;
+  animatedCameraIndex: number;
+  cameraMode: any;
+  currentCamera: any;
+  canvas: any;
+  $canvas: JQuery<any>;
+  $ui_controls: JQuery<HTMLElement>;
+  $ui_picker: JQuery<HTMLElement>;
+  $ui_keyframe_options: JQuery<HTMLElement>;
+  $ui_audio: JQuery<HTMLElement>;
+  $ui_lip: JQuery<HTMLElement>;
+  $ui_bar: JQuery<HTMLElement>;
+  $ui_canvas: JQuery<HTMLCanvasElement>;
+  globalLight: THREE.AmbientLight;
+  pointLight: THREE.PointLight;
+  lip: any;
+  head: OdysseyModel3D;
+  head_hook: THREE.Object3D<THREE.Event>;
+  data: Uint8Array;
+  gainNode: GainNode;
+  source: AudioBufferSourceNode;
+  $btn_key_left: JQuery<HTMLElement>;
+  $btn_key_right: JQuery<HTMLElement>;
+  $btn_play: JQuery<HTMLElement>;
+  $btn_stop: JQuery<HTMLElement>;
+  $btn_key_add: JQuery<HTMLElement>;
+  $btn_key_delete: JQuery<HTMLElement>;
+  $btn_timeline_zoom_in: JQuery<HTMLElement>;
+  $btn_timeline_zoom_out: JQuery<HTMLElement>;
+  $ui_bar_seek: JQuery<HTMLElement>;
+  $ui_bar_keyframe_time: JQuery<HTMLElement>;
+  $ui_bar_keyframes: JQuery<HTMLElement>;
+  $select_keyframe_shape: JQuery<HTMLElement>;
+  $select_keyframe_time: JQuery<HTMLElement>;
+  $select_head: JQuery<HTMLElement>;
+  $select_anim: JQuery<HTMLElement>;
+  $lbl_audio_name: JQuery<HTMLElement>;
+  $lbl_audio_duration: JQuery<HTMLElement>;
+  $input_gain: JQuery<HTMLElement>;
+  $btn_audio_browse: JQuery<HTMLElement>;
+  $input_lip_length: JQuery<HTMLElement>;
+  $btn_match_audio_length: JQuery<HTMLElement>;
+  $btn_load_phn: JQuery<HTMLElement>;
+  mim_timeline_zoom: any;
+  constructor(file: EditorFile, isLocal = false){
     super();
     this.animLoop = true;
     this.playing = false;
@@ -17,7 +90,7 @@ export class LIPEditorTab extends EditorTab {
     this.audio_name = '';
     this.selected_frame = null;
     this.poseFrame = false;
-    this.audio_buffer = {duration: 0};
+    // this.audio_buffer = {duration: 0};
     this.dragging_frame = undefined;
     this.preview_gain = 0.25;
 
@@ -38,14 +111,14 @@ export class LIPEditorTab extends EditorTab {
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
-      autoClear: false,
+      // autoClear: false,
       logarithmicDepthBuffer: true
     });
     this.renderer.autoClear = false;
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
 
     this.clock = new THREE.Clock();
-    this.stats = new Stats();
+    this.stats = Stats();
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 15000 );
@@ -167,7 +240,7 @@ export class LIPEditorTab extends EditorTab {
 
   }
 
-  onKeyUp(e){
+  onKeyUp(e: any){
     super.onKeyUp(e);
     console.log(e);
     if(
@@ -208,8 +281,8 @@ export class LIPEditorTab extends EditorTab {
 
   UpdateUI(){
     this.$ui_controls.html('');
-    this.$ui_keyframe_options[0].$content.html('');
-    this.$ui_audio[0].$content.html('');
+    (this.$ui_keyframe_options[0] as any).$content.html('');
+    (this.$ui_audio[0] as any).$content.html('');
     this.$ui_bar.html('');
 
     this.$ui_bar.append(this.$ui_canvas);
@@ -361,7 +434,7 @@ export class LIPEditorTab extends EditorTab {
     this.$select_keyframe_shape.on('change', (e: any) => {
       if(this.lip instanceof LIPObject){
         let keyframe = this.selected_frame;
-        keyframe.shape = parseInt(this.$select_keyframe_shape.val());
+        keyframe.shape = parseInt(this.$select_keyframe_shape.val().toString());
         this.poseFrame = true;
       }
     });
@@ -369,7 +442,7 @@ export class LIPEditorTab extends EditorTab {
     this.$select_keyframe_time.on('input', (e: any) => {
       if(this.lip instanceof LIPObject){
         let keyframe = this.selected_frame;
-        keyframe.time = parseFloat(this.$select_keyframe_time.val());
+        keyframe.time = parseFloat(this.$select_keyframe_time.val().toString());
 
         let $keyframe = this.selected_frame.$ele;
         
@@ -383,7 +456,7 @@ export class LIPEditorTab extends EditorTab {
       }
     });
 
-    this.$ui_keyframe_options[0].$content.append('<b class="title">Mouth Shape:</b>').append(this.$select_keyframe_shape).append('<b class="title">Time:</b>').append(this.$select_keyframe_time);
+    (this.$ui_keyframe_options[0] as any).$content.append('<b class="title">Mouth Shape:</b>').append(this.$select_keyframe_shape).append('<b class="title">Time:</b>').append(this.$select_keyframe_time);
 
     this.$btn_key_left.on('click', (e: any) => {
       e.preventDefault();
@@ -410,18 +483,18 @@ export class LIPEditorTab extends EditorTab {
     this.$select_anim = $('<select />');
 
     let _options = '';
-    let heads = Global.kotor2DA.heads;
+    let heads = TwoDAManager.datatables.get('heads');
     for(let i = 0, il = heads.RowCount; i < il; i++){
       let head_row = heads.rows[i];
       _options += '<option value="'+head_row.head+'">'+head_row.head+'</option>';
     }
     
     this.$select_head.html(_options);
-    this.$ui_picker[0].$content.append('<b class="title">Change Head:</b>').append(this.$select_head);
+    (this.$ui_picker[0] as any).$content.append('<b class="title">Change Head:</b>').append(this.$select_head);
 
     this.$select_head.on('change', (e: any) => {
 
-      let head = this.$select_head.val().toLowerCase();
+      let head = this.$select_head.val().toString().toLowerCase();
       if(head != this.current_head){
         this.LoadHead(head, () => {
           TextureLoader.LoadQueue(() => {
@@ -441,10 +514,10 @@ export class LIPEditorTab extends EditorTab {
     }
     
     this.$select_anim.html(_options);
-    this.$ui_picker[0].$content.append('<br />').append('<b class="title">Change Animation:</b>').append(this.$select_anim);
+    (this.$ui_picker[0] as any).$content.append('<br />').append('<b class="title">Change Animation:</b>').append(this.$select_anim);
     this.$select_anim.val('tlknorm');
     this.$select_anim.on('change', (e: any) => {
-      let anim_name = this.$select_anim.val().toLowerCase();
+      let anim_name = this.$select_anim.val().toString().toLowerCase();
       //this.head.poseAnimation(anim_name);
       //this.head.bonedInitialized = true;
       this.head.playAnimation(anim_name, true);
@@ -457,7 +530,7 @@ export class LIPEditorTab extends EditorTab {
     this.$btn_audio_browse = $('<a href="#" class="btn btn-default" style="width: 100%; padding: 5px; display: inline-block; margin: 0; margin-top: 5px;">Load Audio</a>');
     this.$btn_audio_browse.on('click', (e: any) => {
       e.preventDefault();
-      dialog.showOpenDialog(
+      WindowDialog.showOpenDialog(
         {
           title: 'Open Audio File',
           filters: [
@@ -465,16 +538,16 @@ export class LIPEditorTab extends EditorTab {
           ],
           properties: ['createDirectory'],
         }
-      ).then( (response) => {
+      ).then( (response: any) => {
         if(response.filePaths.length){
           let filename = response.filePaths[0].split(path.sep).pop();
           let fileParts = filename.split('.');
           switch(fileParts[1]){
             case 'mp3':
             case 'wav':
-              new AudioFile(response.filePaths[0], (audio) => {
+              new AudioFile(response.filePaths[0], (audio: any) => {
                 console.log('audio', audio);
-                audio.GetPlayableByteStream((data) => {
+                audio.GetPlayableByteStream((data: any) => {
                   GameState.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
                     this.Stop();
                     this.audio_name = fileParts[0];
@@ -499,12 +572,12 @@ export class LIPEditorTab extends EditorTab {
     this.$input_gain.val(this.preview_gain);
 
     this.$input_gain.on('input', (e: any) => {
-      this.preview_gain = parseFloat(this.$input_gain.val());
+      this.preview_gain = parseFloat(this.$input_gain.val().toString());
       this.gainNode.gain.value = this.preview_gain;
-      localStorage.setItem('lip_gain', this.preview_gain);
+      localStorage.setItem('lip_gain', this.preview_gain.toString());
     });
 
-    this.$ui_audio[0].$content.append('<b class="title">Name: </b>').append(this.$lbl_audio_name).append('<br />')
+    (this.$ui_audio[0] as any).$content.append('<b class="title">Name: </b>').append(this.$lbl_audio_name).append('<br />')
     .append('<b class="title" style="margin-top: 5px;">Length: </b>').append(this.$lbl_audio_duration).append('<br />')
     .append(this.$input_gain).append('<br />')
     .append(this.$btn_audio_browse);
@@ -515,7 +588,7 @@ export class LIPEditorTab extends EditorTab {
     this.$input_lip_length.val(this.lip.Header.Length);
     this.$input_lip_length.on('input', (e: any) => {
       if(this.lip instanceof LIPObject){
-        this.lip.Header.Length = parseFloat(this.$input_lip_length.val());
+        this.lip.Header.Length = parseFloat(this.$input_lip_length.val().toString());
         //Rebuild the timeline because the length has changed
         this.BuildKeyframes();
       }
@@ -533,7 +606,7 @@ export class LIPEditorTab extends EditorTab {
           this.BuildKeyframes();
           this.$input_lip_length.val(this.lip.Header.Length);
         }else{
-          dialog.showErrorBox('KotOR Forge', 'Failed: No audio file present.');
+          WindowDialog.showErrorBox('KotOR Forge', 'Failed: No audio file present.');
         }
       }
 
@@ -543,13 +616,13 @@ export class LIPEditorTab extends EditorTab {
     this.$btn_load_phn.on('click', (e: any) => {
       e.preventDefault();
 
-      dialog.showOpenDialog({
+      WindowDialog.showOpenDialog({
         title: 'Open PHN File',
         filters: [
           {name: 'PHN File', extensions: ['phn']}
         ],
         properties: ['createDirectory'],
-      }).then( (response) => {
+      }).then( (response: any) => {
         if(response.filePaths.length){
           let filename = response.filePaths[0].split(path.sep).pop();
           let fileParts = filename.split('.');
@@ -573,7 +646,7 @@ export class LIPEditorTab extends EditorTab {
 
     });
 
-    this.$ui_lip[0].$content.append('<b class="title">Duration:</b>').append(this.$input_lip_length).append(this.$btn_match_audio_length).append(this.$btn_load_phn);
+    (this.$ui_lip[0] as any).$content.append('<b class="title">Duration:</b>').append(this.$input_lip_length).append(this.$btn_match_audio_length).append(this.$btn_load_phn);
 
     this.InitWindowEventHandlers();
     this.DrawWaveform();
@@ -795,7 +868,7 @@ export class LIPEditorTab extends EditorTab {
 
   }
 
-  BuildKeyframe(keyframe, index){
+  BuildKeyframe(keyframe: any, index: any){
     
     let $keyframe = $('<div class="keyframe" />');
     keyframe.$ele = $keyframe;
@@ -863,11 +936,11 @@ export class LIPEditorTab extends EditorTab {
 
   }
 
-  OpenFile(file){
+  OpenFile(file: any){
 
     if(file instanceof EditorFile){
-      file.readFile( (buffer) => {
-        new LIPObject(buffer, (lip) => {
+      file.readFile( (buffer: any) => {
+        new LIPObject(buffer, (lip: any) => {
           this.lip = lip;
 
           if(typeof this.lip.file != 'string')
@@ -890,17 +963,17 @@ export class LIPEditorTab extends EditorTab {
 
   }
 
-  LoadHead(model_name = 'p_bastilah', onLoad = null){
+  LoadHead(model_name = 'p_bastilah', onLoad?: Function){
 
     GameState.ModelLoader.load({
       file: model_name,
-      onLoad: (mdl) => {
+      onLoad: (mdl: OdysseyModel) => {
         this.current_head = model_name;
         localStorage.setItem('lip_head', this.current_head);
         OdysseyModel3D.FromMDL(mdl, {
           castShadow: true,
           receiveShadow: true,
-          onComplete: (model) => {
+          onComplete: (model: OdysseyModel3D) => {
 
             if(this.head instanceof THREE.Object3D){
               this.head.parent.remove(this.head);
@@ -909,7 +982,7 @@ export class LIPEditorTab extends EditorTab {
             this.head = model;
             this.head_hook.add(this.head);
 
-            this.head.animations.sort((a,b) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
+            this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
 
             this.head.playAnimation('tlknorm', true);
 
@@ -926,11 +999,11 @@ export class LIPEditorTab extends EditorTab {
     });
   }
 
-  LoadSound(sound = 'nm35aabast06217_', onLoad = null){
+  LoadSound(sound = 'nm35aabast06217_', onLoad?: Function){
 
-    this.audio_buffer = {duration: 0};
+    // this.audio_buffer = {duration: 0};
     
-    AudioLoader.LoadStreamWave(sound, (data) => {
+    AudioLoader.LoadStreamWave(sound, (data: any) => {
       this.audio_name = sound;
       GameState.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
 
@@ -950,7 +1023,7 @@ export class LIPEditorTab extends EditorTab {
 
   DrawWaveform(){
 
-    let canvas = this.$ui_canvas[0];
+    let canvas: HTMLCanvasElement = this.$ui_canvas[0];
     let ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -1030,8 +1103,9 @@ export class LIPEditorTab extends EditorTab {
     }
   }
 
-  SeekAudio(time){
+  SeekAudio(time: number){
     if(this.source){
+      //@ts-expect-error
       this.source.currentTime = time;
     }
   }
@@ -1101,7 +1175,7 @@ export class LIPEditorTab extends EditorTab {
       let last_time = this.lip.elapsed;
 
       if(this.playing || this.seeking || this.poseFrame)
-        this.updateLip(delta, this.head);
+        this.updateLip(delta);
       
       if(this.poseFrame){
         this.poseFrame = false;
@@ -1122,8 +1196,8 @@ export class LIPEditorTab extends EditorTab {
       }
     }
 
-    for(let i = 0; i < AnimatedTextures.length; i++){
-      AnimatedTextures[i].Update(delta);
+    for(let i = 0; i < GameState.AnimatedTextures.length; i++){
+      GameState.AnimatedTextures[i].Update(delta);
     }
     
 
@@ -1172,10 +1246,10 @@ export class LIPEditorTab extends EditorTab {
     }
   }
 
-  ImportPHN(file = '', onLoad = null){
-    fs.readFile(file, 'utf-8', (err, data) => {
+  ImportPHN(file = '', onLoad?: Function){
+    fs.readFile(file, 'utf-8', (err: any, data: any) => {
       if (err){
-        dialog.showErrorBox('KotOR Forge', 'Failed: To load .phn file.');
+        WindowDialog.showErrorBox('KotOR Forge', 'Failed: To load .phn file.');
         if(typeof onLoad === 'function')
           onLoad();
       }else{
@@ -1218,7 +1292,7 @@ export class LIPEditorTab extends EditorTab {
               continue;
             }
 
-            let keyframe = {
+            let keyframe: any = {
               lip: PHN_INVALID,
               time: parseFloat(keyframe_data[0]) * .001
             };
@@ -1231,7 +1305,7 @@ export class LIPEditorTab extends EditorTab {
                 keyframe.shape = PHN_EH;
                 break;
               case "I_x":
-                eyframe.lip = PHN_EH;
+                keyframe.lip = PHN_EH;
                 break;
               case "E":
                 keyframe.shape = PHN_EH;

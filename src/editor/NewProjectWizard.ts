@@ -1,20 +1,24 @@
-import { path } from "@ffmpeg-installer/ffmpeg";
+import * as path from "path";
+import * as fs from "fs";
 import { dialog } from "electron";
+import Ractive from "ractive";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
 import { Module } from "../module";
-import { ERFObject } from "../resource/ERFObject";
+import { ERFKeyEntry, ERFObject } from "../resource/ERFObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { RIMObject } from "../resource/RIMObject";
+import { RIMObject, RIMResource } from "../resource/RIMObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { Forge } from "./Forge";
 import { LevelSelectWizard } from "./LevelSelectWizard";
 import { Project } from "./Project";
 import { Wizard } from "./Wizard";
+import { ConfigClient } from "../utility/ConfigClient";
 
 export class NewProjectWizard extends Wizard {
   data: any = {};
@@ -36,7 +40,7 @@ export class NewProjectWizard extends Wizard {
 
     this.data = {
       name: 'New Project',
-      project_directory: Config.get('Projects_Directory'),
+      project_directory: ConfigClient.get('Projects_Directory'),
       project_location: '',
       project_type: Project.Types.MODULE,
       template_id: -1,
@@ -67,7 +71,7 @@ export class NewProjectWizard extends Wizard {
       alert: '',
     };
 
-    this.ractive = Ractive({
+    this.ractive = new Ractive({
       target: this.$body[0],
       template: `
 {{#if alert}}
@@ -198,10 +202,10 @@ export class NewProjectWizard extends Wizard {
 </div>`,
       data: this.data,
       on: {
-        dismissAlert(ctx){
+        dismissAlert(ctx: any){
           this.set('alert', '');
         },
-        inputNameValidator(ctx){
+        inputNameValidator(ctx: any){
           let e = ctx.event;
           let regex = new RegExp("^[a-zA-Z0-9\-\_\s]+$");
           let keyCode = !e.charCode ? e.which : e.charCode;
@@ -221,18 +225,18 @@ export class NewProjectWizard extends Wizard {
             }
           }
         },
-        inputResRefValidator(ctx){
+        inputResRefValidator(ctx: any){
           if(ctx.node.dataset.key){
             this.set(ctx.node.dataset.key, this.get(ctx.node.dataset.key).replace(/([^a-zA-Z0-9\_]+)/gi, '').trim().substr(0, 16));
           }
         },
-        levelSelect(ctx){
-          new LevelSelectWizard(this.data.template_id, (id, level) => {
+        levelSelect(ctx: any){
+          new LevelSelectWizard(this.data.template_id, (id: any, level: any) => {
             this.set('template_id', id);
             this.set('template_name', level.module);
           });
         },
-        async btnProjectDirectoryBrowse(ctx){
+        async btnProjectDirectoryBrowse(ctx: any){
           let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
           if(!payload.canceled && payload.filePaths.length){
             this.set('project_directory', payload.filePaths[0]);
@@ -240,11 +244,11 @@ export class NewProjectWizard extends Wizard {
         }
       },
       observe: {
-        show ( value ) {
+        show ( value: any ) {
           //console.log( `show changed to '${value}'` )
         },
         'name project_directory': {
-          handler ( value, old, pth, idx ) {
+          handler ( value: any, old: any, pth: any, idx: any ) {
             this.set('project_location', path.join(
               this.get('project_directory'), this.get('name').replace(/\s+/g, '-').toLowerCase()
             ));
@@ -253,14 +257,14 @@ export class NewProjectWizard extends Wizard {
           strict: true
         }
       }
-    });
+    } as any);
 
     // console.log(this.data);
     // console.log(this);
 
   }
 
-  canExportFileType(res){
+  canExportFileType(res: any){
     let export_types = Object.keys(this.data.export_types);
     for(let i = 0, len = export_types.length; i < len; i++){
       let export_res_key = export_types[i];
@@ -328,19 +332,19 @@ export class NewProjectWizard extends Wizard {
 
             //Load the project so that the template builder can access the projects variables
             if(this.data.template_id != -1){
-              let module_name = GameMaps[this.data.template_id].module.split('.')[0];
-              console.log('Creating Project and Exporting Files', GameMaps[this.data.template_id], module_name);
+              let module_name = Forge.GameMaps[this.data.template_id].module.split('.')[0];
+              console.log('Creating Project and Exporting Files', Forge.GameMaps[this.data.template_id], module_name);
 
               GameState.module = new Module();
               Module.GetModuleProjectArchives(module_name).then( (archives) => {
                 let archiveLoop = new AsyncLoop({
                   array: archives,
-                  onLoop: (archive, asyncLoop) => {
+                  onLoop: (archive: any[], asyncLoop: AsyncLoop) => {
                     if(archive instanceof RIMObject){
                       //Loop though the resources inside the RIMObject and export them to the project directory
                       let resourceLoop = new AsyncLoop({
                         array: archive.Resources,
-                        onLoop: (resource, asyncLoopR) => {
+                        onLoop: (resource: RIMResource, asyncLoopR: AsyncLoop) => {
                           if(this.canExportFileType(resource)){
                             if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
                               archive.exportRawResource(Forge.Project.directory, resource.ResRef, resource.ResType, () => {
@@ -361,7 +365,7 @@ export class NewProjectWizard extends Wizard {
                       //Loop though the resources inside the ERFObject and export them to the project directory
                       let resourceLoop = new AsyncLoop({
                         array: archive.KeyList,
-                        onLoop: (resource, asyncLoopR) => {
+                        onLoop: (resource: ERFKeyEntry, asyncLoopR: AsyncLoop) => {
                           if(this.canExportFileType(resource)){
                             if(resource.ResType == ResourceTypes['ifo'] || resource.ResType == ResourceTypes['are'] || resource.ResType == ResourceTypes['git']){
                               archive.exportRawResource(Forge.Project.directory, resource.ResRef, resource.ResType, () => {
@@ -384,9 +388,9 @@ export class NewProjectWizard extends Wizard {
                   }
                 });
                 archiveLoop.iterate(() => {
-                  //Module.BuildFromProject(GameMaps[this.data.template_id].module.split('.')[0], () => {  });
+                  //Module.BuildFromProject(Forge.GameMaps[this.data.template_id].module.split('.')[0], () => {  });
                   fs.readFile(path.join(Forge.Project.directory, 'module.ifo'), (err, ifo_data) => {
-                    new GFFObject(ifo_data, (ifo, rootNode) => {
+                    new GFFObject(ifo_data, (ifo: GFFObject) => {
 
                       let originalAreaName = ifo.GetFieldByLabel('Mod_Entry_Area').GetValue();
 
@@ -407,10 +411,10 @@ export class NewProjectWizard extends Wizard {
                             //Rename the Extracted PTH file
                             fs.rename(path.join(Forge.Project.directory, 'files', originalAreaName+'.pth'), path.join(Forge.Project.directory, 'files', `${this.data.module_name}.pth`), (err) => {
                               //Extract and rename the original VIS file
-                              ResourceLoader.loadResource(ResourceTypes['vis'], originalAreaName, (visData) => {
+                              ResourceLoader.loadResource(ResourceTypes['vis'], originalAreaName, (visData: Buffer) => {
                                 fs.writeFile(path.join(Forge.Project.directory, 'files', `${this.data.module_name}.vis`), visData, (err) => {
                                   //Extract and rename the original LYT file
-                                  ResourceLoader.loadResource(ResourceTypes['lyt'], originalAreaName, (visData) => {
+                                  ResourceLoader.loadResource(ResourceTypes['lyt'], originalAreaName, (visData: Buffer) => {
                                     fs.writeFile(path.join(Forge.Project.directory, 'files', `${this.data.module_name}.lyt`), visData, (err) => {
                                       Forge.Project.Open(() => {
                                         //Update the project to update the module variables
@@ -455,7 +459,7 @@ export class NewProjectWizard extends Wizard {
                 });
               });
             }
-          }, true);
+          });
         }
 
       }else{
@@ -472,7 +476,7 @@ export class NewProjectWizard extends Wizard {
     this.ractive.set('alert', message);
   }
 
-  createProject(onComplete = null){
+  createProject(onComplete ?: Function){
     //Try to create the files directory
     try{
       fs.mkdirSync(path.join(
@@ -500,14 +504,14 @@ export class NewProjectWizard extends Wizard {
     });
   }
 
-  directoryExists(dir){
+  directoryExists(dir: string){
     console.log('Checking Directory', dir);
     try{
       return fs.lstatSync(dir).isDirectory();
     }catch(e){ return false; }
   }
 
-  fileExists(file){
+  fileExists(file: string){
     console.log('Checking File', file);
     try{
       return fs.lstatSync(file).isFile();

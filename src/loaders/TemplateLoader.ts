@@ -156,10 +156,10 @@ export class TemplateLoader {
         return;
       }
 
-      resKey = Global.kotorBIF['templates'].GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
+      resKey = BIFManager.GetBIFByName('templates').GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
       if(resKey != null){
         //console.log('Template Resource found');
-        Global.kotorBIF['templates'].GetResourceData(resKey, (buffer) => {
+        BIFManager.GetBIFByName('templates').GetResourceData(resKey, (buffer) => {
           if(args.onLoad != null)
             args.onLoad(buffer);
         });

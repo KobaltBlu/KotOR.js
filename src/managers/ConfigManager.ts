@@ -152,7 +152,7 @@ export class ConfigManager{
   
   }
 
-  get(path: string = '', defaultValue:any = null){
+  get(path: string = '', defaultValue?:any){
     if(Array.isArray(path))
       path = path.join('.');
 
@@ -176,7 +176,7 @@ export class ConfigManager{
     return undefined;
   }
 
-  set(path = '', value = ''): any{
+  set(path = '', value = ''): any {
     if(Array.isArray(path))
       path = path.join('.');
 

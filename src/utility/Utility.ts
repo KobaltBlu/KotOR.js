@@ -42,6 +42,15 @@ export interface OdysseyFileInfo {
 
 export class Utility {
 
+  
+
+  static bytesToSize(bytes: any) {
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes == 0) return '0 Byte';
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
+    return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
+  };
+
   // /https://github.com/mattdesl/lerp/blob/master/index.js
   static lerp(v0: number = 0, v1: number = 0, t: number = 0) {
     return v0*(1-t)+v1*t

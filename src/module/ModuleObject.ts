@@ -68,6 +68,7 @@ export class ModuleObject {
   footstepEmitter: AudioEmitter;
 
   collisionData: CollisionData = new CollisionData(this);
+  invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
 
   facing: number;

@@ -23,7 +23,6 @@ export class EditorTabManager {
   constructor(){
     this.currentTab = undefined;
     this.tabs = [];
-    //@ts-expect-error
     this.$tabs = $('<ul class="tabs-menu" />').sortable();
 
     this.$tabsScrollControl = $('<div class="tabs-scroll-control" />');

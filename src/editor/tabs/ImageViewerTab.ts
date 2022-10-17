@@ -6,7 +6,8 @@ import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
 import { Modal } from "../Modal";
 
-
+import * as fs from "fs";
+import * as path from "path";
 
 export class ImageViewerTab extends EditorTab {
   $contentWrapper: JQuery<HTMLElement>;
@@ -16,7 +17,6 @@ export class ImageViewerTab extends EditorTab {
   data: Uint8Array;
   workingData: Uint8Array;
   image: any;
-  file: any;
   filename: string;
   width: any;
   height: any;
@@ -55,8 +55,6 @@ export class ImageViewerTab extends EditorTab {
       }
     });
 
-    global.testImage = this;
-
     this.OpenFile(file);
 
   }
@@ -84,7 +82,7 @@ export class ImageViewerTab extends EditorTab {
           break;
         }
 
-        this.image.getPixelData( (pixelData) => {
+        this.image.getPixelData( (pixelData: any) => {
           this.SetPixelData(pixelData);
         });
       });
@@ -97,8 +95,8 @@ export class ImageViewerTab extends EditorTab {
     let offset = 0;
     let stride = width * 4;
 
-    if(pixelData == null)
-      pixelData = this.data;
+    // if(pixelData == null)
+    //   pixelData = this.data;
 
     let unFlipped = Uint8Array.from(pixelData);
 
@@ -111,8 +109,8 @@ export class ImageViewerTab extends EditorTab {
 
   static FlipX(pixelData: Uint8Array, width = 1, height = 1){
 
-    if(pixelData == null)
-      pixelData = this.data;
+    // if(pixelData == null)
+    //   pixelData = this.data;
 
     let unFlipped = Uint8Array.from(pixelData);
 
@@ -334,7 +332,7 @@ export class ImageViewerTab extends EditorTab {
       console.log(e);
     }
 
-    fs.writeFile(this.file, writer.buffer, (err) => {
+    fs.writeFile(this.file.getLocalPath(), writer.buffer, (err) => {
       if (err) {
         return console.error(err);
       }
@@ -347,7 +345,7 @@ export class ImageViewerTab extends EditorTab {
 
   }
 
-  async exportAs( onComplete = null ){
+  async exportAs( onComplete?: Function ){
 
     let payload = await dialog.showSaveDialog({
       title: 'Export Image',
@@ -359,7 +357,7 @@ export class ImageViewerTab extends EditorTab {
     });
 
     if(!payload.canceled && typeof payload.filePath != 'undefined'){
-      this.file = payload.filePath;
+      this.file.setPath(payload.filePath);
       this.export(onComplete);
     }else{
       console.warn('TGA export aborted');

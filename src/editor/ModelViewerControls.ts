@@ -1,9 +1,30 @@
-export class ModelViewerControls {
+import { KeyboardEvent } from "electron/main";
+import * as THREE from "three";
+import { Mouse, MouseState } from "../controls/Mouse";
+import { EditorControls } from "./EditorControls";
+import { EditorTab } from "./EditorTab";
+import { EditorControlsTool } from "./enum/EditorControlsTool";
+import { LIPEditorTab } from "./tabs/LIPEditorTab";
+import { ModelViewerTab } from "./tabs/ModelViewerTab";
+import { WalkmeshViewerTab } from "./tabs/WalkmeshViewerTab";
 
-  constructor(camera, element, editor){
+export class ModelViewerControls {
+  camera: THREE.PerspectiveCamera;
+  element: HTMLElement;
+  editor: LIPEditorTab|ModelViewerTab|WalkmeshViewerTab;
+  AxisFront: THREE.Vector3;
+  CameraMoveSpeed: number;
+  pitch: number;
+  yaw: number;
+  pointerLockVector: THREE.Vector2;
+  CurrentTool: EditorControlsTool;
+  keys: any = {};
+  plMoveEvent: Function;
+
+  constructor(camera: THREE.PerspectiveCamera, element: HTMLElement, editor: LIPEditorTab|ModelViewerTab|WalkmeshViewerTab){
 
     this.camera = camera;
-    this.element = element || document;
+    this.element = element;
     this.editor = editor;
 
     this.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
@@ -14,15 +35,7 @@ export class ModelViewerControls {
 
     this.pointerLockVector = new THREE.Vector2();
 
-    this.TOOL = {
-      NONE: 0,
-      OBJECT_MOVE: 1001,
-      OBJECT_ROTATE: 1002,
-
-      CAMERA_MOVE: 2001
-    };
-
-    this.CurrentTool = this.TOOL.NONE;
+    this.CurrentTool = EditorControlsTool.NONE;
 
     this.keys = {
       'w':false,
@@ -40,7 +53,7 @@ export class ModelViewerControls {
 
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
-    this.editor.$canvas.keydown( ( event ) => {
+    this.editor.$canvas.keydown( ( event: any ) => {
       //console.log(event.which)
       if ( event.which == 87 )
         this.keys['w'] = true;
@@ -58,7 +71,7 @@ export class ModelViewerControls {
         this.keys['escape'] = true;
       if ( event.which == 70 )
         this.keys['f'] = true;
-    }).keyup( ( event ) => {
+    }).keyup( ( event: any ) => {
       if ( event.which == 87 )
         this.keys['w'] = false;
       if ( event.which == 65 )
@@ -75,7 +88,7 @@ export class ModelViewerControls {
         this.keys['escape'] = false;
       if ( event.which == 70 )
         this.keys['f'] = false;
-    }).mousedown((event) => {
+    }).mousedown((event: any) => {
       if(event.target == this.element){
         //console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
@@ -87,6 +100,7 @@ export class ModelViewerControls {
         if(Mouse.ButtonState == MouseState.LEFT){
           //let axisMoverSelected = false;
           //this.editor.axes.selected = null;
+          //@ts-expect-error
           this.editor.raycaster.setFromCamera( Mouse.Vector, this.camera );
           /*let axisMoverIntersects = this.editor.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
           if(axisMoverIntersects.length){
@@ -95,14 +109,21 @@ export class ModelViewerControls {
           }*/
 
           //if(!axisMoverSelected){
+            //@ts-expect-error
             let intersects = this.editor.raycaster.intersectObjects( this.editor.selectable.children, true );
 
+      //@ts-expect-error
             this.editor.selectionBox.visible = false;
+            //@ts-expect-error
             this.editor.selectionBox.update();
+            //@ts-expect-error
             this.editor.selected = null;
 
-            if(this.editor.$ui_selected.$selected_object)
+      //@ts-expect-error
+            if(this.editor.$ui_selected.$selected_object){
+              //@ts-expect-error
               this.editor.$ui_selected.$selected_object.hide();
+            }
 
             if(intersects.length){
 
@@ -110,13 +131,19 @@ export class ModelViewerControls {
                 obj = intersection.object;
 
               if(obj instanceof THREE.Mesh){
-                if(typeof this.editor.select === 'function')
+                //@ts-expect-error
+                if(typeof this.editor.select === 'function'){
+                  //@ts-expect-error
                   this.editor.select(obj);
+                }
               }else{
-                obj.traverseAncestors( (obj) => {
+                obj.traverseAncestors( (obj: any) => {
                   if(obj instanceof THREE.Mesh){
-                    if(typeof this.editor.select === 'function')
+                    //@ts-expect-error
+                    if(typeof this.editor.select === 'function'){
+                      //@ts-expect-error
                       this.editor.select(obj);
+                    }
                     return;
                   }
                 });
@@ -132,7 +159,7 @@ export class ModelViewerControls {
         //console.log('Invalid Mouse Target', this.element);
       }
 
-    }).mousemove((event) => {
+    }).mousemove((event: any) => {
 
 
       let parentOffset = this.editor.$canvas.offset();
@@ -143,13 +170,13 @@ export class ModelViewerControls {
 
       if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT){
         Mouse.Dragging = true;
-        this.CurrentTool = this.TOOL.CAMERA_MOVE;
+        this.CurrentTool = EditorControlsTool.CAMERA_MOVE;
       }else if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.LEFT){
         Mouse.Dragging = true;
-        this.CurrentTool = this.TOOL.CAMERA_MOVE;
+        this.CurrentTool = EditorControlsTool.CAMERA_MOVE;
       }
 
-    }).mouseup((event) => {
+    }).mouseup((event: any) => {
       Mouse.MouseDown = false;
       Mouse.Dragging = false;
       Mouse.ButtonState = MouseState.NONE;
@@ -164,7 +191,7 @@ export class ModelViewerControls {
 
   }
 
-  Update(delta){
+  Update(delta: number = 0){
     //console.log('Camera.Update')
     let speed = EditorControls.CameraMoveSpeed * delta;
     let speed2 = 0.5 * delta;
@@ -217,10 +244,11 @@ export class ModelViewerControls {
     }
 
     if(this.keys['escape']){
+      //@ts-expect-error
       this.editor.selected = null;
     }
 
-    if(this.CurrentTool == this.TOOL.CAMERA_MOVE){
+    if(this.CurrentTool == EditorControlsTool.CAMERA_MOVE){
 
       if(xoffset != 0 || yoffset != 0){
         let sensitivity = 0.05;
@@ -247,7 +275,7 @@ export class ModelViewerControls {
   }
 
 
-  AxisUpdate(axisFront = null){
+  AxisUpdate(axisFront: THREE.Vector3 = new THREE.Vector3()){
     let front = new THREE.Vector3();
     front.x = Math.cos(THREE.MathUtils.degToRad(this.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.pitch));
     front.y = Math.sin(THREE.MathUtils.degToRad(this.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.pitch));
@@ -264,7 +292,7 @@ export class ModelViewerControls {
     this.camera.updateProjectionMatrix();
   }
 
-  plChangeCallback(e){
+  plChangeCallback(e: any){
     // document.pointerLockElement = this.element;
     //console.log('ModelViewerControls', document.pointerLockElement, this.element);
     if(document.pointerLockElement === this.element) {
@@ -273,6 +301,7 @@ export class ModelViewerControls {
       Mouse.Dragging = true;
     } else {
       //console.log('The pointer lock status is now unlocked');
+      //@ts-expect-error
       document.body.removeEventListener("mousemove", this.plMoveEvent, true);
       //this.plMoveEvent = undefined;
       Mouse.Dragging = false;
@@ -280,7 +309,7 @@ export class ModelViewerControls {
     }
   }
 
-  plMouseMove(event){
+  plMouseMove(event: any){
     if(Mouse.Dragging && (event.movementX || event.movementY)){
       let range = 100;
       //console.log(event.movementX, event.movementY);

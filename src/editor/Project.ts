@@ -3,6 +3,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { DeepObject } from "../DeepObject";
 import { GameInitializer } from "../GameInitializer";
+import { Module } from "../module";
+import { ConfigClient } from "../utility/ConfigClient";
 import { EditorFile } from "./EditorFile";
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
@@ -16,6 +18,7 @@ export class Project {
   settings: any = {};
   custom: Function;
   moduleEditor: any;
+  module: Module;
   static Types: any;
 
   constructor(directory: string){
@@ -92,14 +95,14 @@ export class Project {
           Forge.tabManager.RemoveTab(quickStart);
         }
 
-        let pjIndex = Config.options.recent_projects.indexOf(this.directory);
+        let pjIndex = ConfigClient.options.recent_projects.indexOf(this.directory);
         if (pjIndex > -1) {
-          Config.options.recent_projects.splice(pjIndex, 1);
+          ConfigClient.options.recent_projects.splice(pjIndex, 1);
         }
 
         //Append this project to the beginning of the list
-        Config.options.recent_projects.unshift(this.directory);
-        Config.save(null, true); //Save the configuration silently
+        ConfigClient.options.recent_projects.unshift(this.directory);
+        ConfigClient.save(null, true); //Save the configuration silently
 
         this.GetFiles(()=>{
 
@@ -125,7 +128,7 @@ export class Project {
 
         });
 
-        global.project = this;
+        Forge.Project = this;
 
       }catch(e){
         console.log(e);
@@ -173,14 +176,14 @@ export class Project {
 
     await this.parseProjectFolder();
 
-    projectExplorerTab.initialize();
+    Forge.projectExplorerTab.initialize();
       
     if(typeof onSuccess == 'function')
       onSuccess(this.files);
 
   }
 
-  async parseProjectFolder( folder: string, ){
+  async parseProjectFolder( folder: string = '' ){
     return new Promise<void>( async (resolve, reject) => {
       if(typeof folder === 'undefined')
         folder = this.directory;

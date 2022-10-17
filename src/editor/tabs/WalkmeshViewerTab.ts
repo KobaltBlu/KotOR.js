@@ -1,3 +1,4 @@
+import Ractive from "ractive";
 import * as THREE from "three";
 import { BinaryReader } from "../../BinaryReader";
 import { GameState } from "../../GameState";
@@ -5,6 +6,7 @@ import { OdysseyWalkMesh } from "../../odyssey";
 import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
 import { ModelViewerControls } from "../ModelViewerControls";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 export class WalkmeshViewerTab extends EditorTab {
   animLoop: boolean;
@@ -33,8 +35,8 @@ export class WalkmeshViewerTab extends EditorTab {
   selectionBox: any;
   controls: ModelViewerControls;
   $ui_selected: JQuery<HTMLElement>;
-  data: Uint8Array;
-  file: EditorFile;
+  data: any;
+  // file: EditorFile;
   ractive: any;
   mousePosition: THREE.Vector2;
   mouseMoveEvent: Function;
@@ -68,7 +70,7 @@ export class WalkmeshViewerTab extends EditorTab {
     this.referenceNode = new THREE.Object3D();
 
     this.clock = new THREE.Clock();
-    this.stats = new Stats();
+    this.stats = Stats();
 
     this.scene = new THREE.Scene();
 
@@ -132,7 +134,7 @@ export class WalkmeshViewerTab extends EditorTab {
     //this.unselectable.add(this.axes);
 
     //Selection Box Helper
-    this.selectionBox = new THREE.BoundingBoxHelper(new THREE.Object3D(), 0xffffff);
+    this.selectionBox = new THREE.BoxHelper(new THREE.Object3D(), 0xffffff);
     this.selectionBox.update();
     this.selectionBox.visible = false;
     this.unselectable.add( this.selectionBox );
@@ -180,7 +182,7 @@ export class WalkmeshViewerTab extends EditorTab {
       selectedFace: undefined
     };
 
-    this.ractive = Ractive({
+    this.ractive = new Ractive({
       target: $('.windowpane-content', this.$ui_selected)[0],
       template: `
       {{#if selectedFace}}
@@ -225,19 +227,20 @@ export class WalkmeshViewerTab extends EditorTab {
     this.mouseUpEvent = (e: any) => {
       this.onMouseUp(e);
     };
+    //@ts-expect-error
     document.addEventListener('mousemove', this.mouseMoveEvent);
     this.canvas.addEventListener('mouseup', this.mouseUpEvent);
     this.canvas.addEventListener('mousedown', this.mouseDownEvent);
 
   }
 
-  OpenFile(file){
+  OpenFile(file: EditorFile){
 
     console.log('Walkmesh Loading', file);
 
     if(file instanceof EditorFile){
 
-      file.readFile( (buffer) => {
+      file.readFile( (buffer: Buffer) => {
         try{
           let wok = new OdysseyWalkMesh(new BinaryReader(buffer));
           this.ractive.set('walkmesh', wok);
@@ -249,7 +252,7 @@ export class WalkmeshViewerTab extends EditorTab {
           this.model = wok;
           this.selectable.add(this.model.mesh);
           //this.model.mesh.position.set(0, 0, 0);
-          this.model.mesh.material.visible = true;
+          (this.model.mesh.material as THREE.ShaderMaterial).visible = true;
 
           this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
           this.wireframe = new THREE.Mesh(this.model.geometry, this.wireMaterial);
@@ -259,13 +262,13 @@ export class WalkmeshViewerTab extends EditorTab {
           this.Render();
 
           setTimeout( () => {
-            let center = this.model.box.getCenter();
+            let center = this.model.box.getCenter(new THREE.Vector3());
             if(!isNaN(center.length())){
               //Center the object to 0
               this.model.mesh.position.set(-center.x, -center.y, 0);
               this.wireframe.position.set(-center.x, -center.y, 0);
               //Stand the object on the floor by adding half it's height back to it's position
-              //model.position.z += model.box.getSize().z/2;
+              //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
             }else{
               //this.model.mesh.position.set(0, 0, 0);
             }
@@ -293,6 +296,7 @@ export class WalkmeshViewerTab extends EditorTab {
 
   onDestroy() {
     super.onDestroy();
+    //@ts-expect-error
     document.removeEventListener('mousemove', this.mouseMoveEvent);
     this.canvas.removeEventListener('mouseup', this.mouseUpEvent);
     this.canvas.removeEventListener('mousedown', this.mouseDownEvent);
@@ -327,26 +331,26 @@ export class WalkmeshViewerTab extends EditorTab {
     this.stats.update();
   }
 
-  onMouseUp(e){
+  onMouseUp(e: any){
     if(e.button == 0){
-      let face = undefined;
-      for (let i = 0, len = this.model.geometry.faces.length; i < len; i++) {
-        face = this.model.geometry.faces[i];
-        face.color.copy((OdysseyWalkMesh.TILECOLORS[face.walkIndex] || OdysseyWalkMesh.TILECOLORS[0]));
-      }
+      // let face = undefined;
+      // for (let i = 0, len = this.model.geometry.faces.length; i < len; i++) {
+      //   face = this.model.geometry.faces[i];
+      //   face.color.copy((OdysseyWalkMesh.TILECOLORS[face.walkIndex] || OdysseyWalkMesh.TILECOLORS[0]));
+      // }
       
-      // Raycasting
-      GameState.raycaster.setFromCamera(this.mousePosition, this.currentCamera);
-      this.hit = GameState.raycaster.intersectObjects(this.model.mesh.parent.children);
-      if (this.hit.length > 0) {
-        this.selectedFace = this.hit[0].face;
-        this.hit[0].face.color.setHex(0x607D8B);
-        this.ractive.set('selectedFace', this.selectedFace);
-      }else{
-        this.ractive.set('selectedFace', undefined);
-      }
+      // // Raycasting
+      // GameState.raycaster.setFromCamera(this.mousePosition, this.currentCamera);
+      // this.hit = GameState.raycaster.intersectObjects(this.model.mesh.parent.children);
+      // if (this.hit.length > 0) {
+      //   this.selectedFace = this.hit[0].face;
+      //   this.hit[0].face.color.setHex(0x607D8B);
+      //   this.ractive.set('selectedFace', this.selectedFace);
+      // }else{
+      //   this.ractive.set('selectedFace', undefined);
+      // }
 
-      this.model.mesh.geometry.colorsNeedUpdate = true;
+      // this.model.mesh.geometry.colorsNeedUpdate = true;
     }
   }
 

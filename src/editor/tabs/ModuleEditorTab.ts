@@ -25,6 +25,7 @@ import { EditorTab } from "../EditorTab";
 import { UTCEditorTab } from "./UTCEditorTab";
 import { UTDEditorTab } from "./UTDEditorTab";
 import { UTPEditorTab } from "./UTPEditorTab";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 export class ModuleEditorTab extends EditorTab {
   scene: THREE.Scene;
@@ -199,7 +200,6 @@ export class ModuleEditorTab extends EditorTab {
 
     this.toolsUI.init = () => {
       this.$tabContent.append(this.$toolsUI);
-      //@ts-expect-error
       this.$toolsUI.draggable({
         handle: '.float-ui-header',
         containment: this.$tabContent
@@ -292,7 +292,6 @@ export class ModuleEditorTab extends EditorTab {
       this.$containerExplorer = $(this.ElementId('#project-explorer'), this.$tabContent);
       this.$containerObjProps = $(this.ElementId('#object-properties'), this.$tabContent);
 
-      //@ts-expect-error
       this.$container.layout();
       this.Init();
 
@@ -472,8 +471,7 @@ export class ModuleEditorTab extends EditorTab {
     this.audio = new AudioEngine();
 
     this.clock = new THREE.Clock();
-    //@ts-expect-error
-    this.stats = new Stats();
+    this.stats = Stats();
 
     this.$content.append($(this.stats.dom));
     this.$content.append(this.$canvas);

@@ -11,9 +11,9 @@ import { ModuleEditorTab } from "./tabs/ModuleEditorTab";
 
 export class EditorControls {
 
-  static CameraMoveSpeed = localStorage.getItem('camera_speed') || 1;
+  static CameraMoveSpeed: number = parseInt(localStorage.getItem('camera_speed')) || 1;
   camera: THREE.Camera;
-  element: HTMLCanvasElement | Document;
+  element: HTMLCanvasElement;
   editor: ModuleEditorTab;
   cameraMode: EditorControlsCameraMode;
   camSpeed: number;
@@ -27,7 +27,7 @@ export class EditorControls {
   constructor(camera: THREE.Camera, element: HTMLCanvasElement, editor: ModuleEditorTab){
 
     this.camera = camera;
-    this.element = element || document;
+    this.element = element;
     this.editor = editor;
     this.cameraMode = EditorControlsCameraMode.EDITOR;
 
@@ -54,12 +54,12 @@ export class EditorControls {
 
     this.workerPointerWorking = false;*/
 
-    this.element.requestPointerLock = this.element.requestPointerLock ||
-			     this.element.webkitRequestPointerLock;
+    // this.element.requestPointerLock = this.element.requestPointerLock ||
+		// 	     this.element.webkitRequestPointerLock;
 
-    // Ask the browser to release the pointer
-    this.element.exitPointerLock = this.element.exitPointerLock ||
-   			   this.element.webkitExitPointerLock;
+    // // Ask the browser to release the pointer
+    // this.element.exitPointerLock = this.element.exitPointerLock ||
+   	// 		   this.element.webkitExitPointerLock;
 
     //document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
@@ -246,7 +246,7 @@ export class EditorControls {
     });
 
 
-    this.signals.objectSelected.add( ( object ) => {
+    this.signals.objectSelected.add( ( object: any ) => {
 
       console.log('Signal', 'objectSelected', object);
       this.editor.selectionBox.setFromObject(object || null);
@@ -320,11 +320,11 @@ export class EditorControls {
     };
   }
 
-  SetCameraMode(cameraMode){
+  SetCameraMode(cameraMode: EditorControlsCameraMode){
     this.cameraMode = cameraMode;
   }
 
-  Update(delta){
+  Update(delta: number = 0){
 
     let speed = EditorControls.CameraMoveSpeed * delta;
     let speed2 = 0.5 * delta;
@@ -469,24 +469,24 @@ export class EditorControls {
   }
 
 
-  AxisUpdate(axisFront = null){
+  AxisUpdate(axisFront: THREE.Vector3 = new THREE.Vector3){
     let front = new THREE.Vector3();
-    front.x = Math.cos(THREE.MathUtils.degToRad(this.camera.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.camera.pitch));
-    front.y = Math.sin(THREE.MathUtils.degToRad(this.camera.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.camera.pitch));
-    front.z = Math.sin(THREE.MathUtils.degToRad(this.camera.pitch));
+    front.x = Math.cos(THREE.MathUtils.degToRad(this.camera.userData.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.camera.userData.pitch));
+    front.y = Math.sin(THREE.MathUtils.degToRad(this.camera.userData.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.camera.userData.pitch));
+    front.z = Math.sin(THREE.MathUtils.degToRad(this.camera.userData.pitch));
 
     if(axisFront != null)
       front = axisFront;
 
-    this.camera.AxisFront = front.normalize();
+    this.camera.userData.AxisFront = front.normalize();
 
     let lookAt = new THREE.Vector3();
-    lookAt.addVectors(this.camera.position, this.camera.AxisFront);
+    lookAt.addVectors(this.camera.position, this.camera.userData.AxisFront);
     this.camera.lookAt(lookAt);
-    this.camera.updateProjectionMatrix();
+    // this.camera.updateProjectionMatrix();
   }
 
-  plChangeCallback(e){
+  plChangeCallback(e: any){
     /*
     //document.pointerLockElement = this.element;
     //console.log('EditorControls', document.pointerLockElement, this.element);
@@ -505,13 +505,12 @@ export class EditorControls {
     */
   }
 
-  plMouseMove(event){
-
+  plMouseMove(event: any){
     Mouse.OffsetX = event.movementX || 0;
     Mouse.OffsetY = (event.movementY || 0)*-1.0;
   }
 
-  updatePlayerControls(delta){
+  updatePlayerControls(delta: number = 0){
     let followee = this.editor.player;
     let turningCamera = false;
 
@@ -522,7 +521,7 @@ export class EditorControls {
       if((this.keys['w'].down) && !followee.isDead()){
         followee.clearAllActions(true);
         followee.force = moveSpeed;
-        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.facing + Math.PI/2), true);
+        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.userData.facing + Math.PI/2), true);
         //followee.facing = Utility.NormalizeRadian(this.editor.followerCamera.facing + Math.PI);
         followee.controlled = true;
         followee.invalidateCollision = true;
@@ -533,7 +532,7 @@ export class EditorControls {
       }else if( this.keys['s'].down && !followee.isDead()){
         followee.clearAllActions(true);
         followee.force = moveSpeed;
-        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.facing - Math.PI/2), true);
+        followee.setFacing(Utility.NormalizeRadian(this.editor.followerCamera.userData.facing - Math.PI/2), true);
         //followee.facing = Utility.NormalizeRadian(this.editor.followerCamera.facing - Math.PI);
         followee.controlled = true;
         followee.invalidateCollision = true;
@@ -587,7 +586,7 @@ export class EditorControls {
     }
 
     if(this.camSpeed > 0){
-      this.editor.followerCamera.facing = (Utility.NormalizeRadian(this.editor.followerCamera.facing + (this.camSpeed * this.camDir) * delta))
+      this.editor.followerCamera.userData.facing = (Utility.NormalizeRadian(this.editor.followerCamera.userData.facing + (this.camSpeed * this.camDir) * delta))
     }
 
   }

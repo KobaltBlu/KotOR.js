@@ -2,6 +2,8 @@ import { TemplateEngine } from "./TemplateEngine";
 import { Wizard } from "./Wizard";
 
 export class Modal extends Wizard {
+  $title: JQuery<HTMLElement>;
+  $close: JQuery<HTMLElement>;
 
   constructor(args: any = {}){
 

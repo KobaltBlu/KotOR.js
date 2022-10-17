@@ -1,3 +1,10 @@
+import { dialog } from "electron";
+import { AudioFile } from "../audio/AudioFile";
+import { GameState } from "../GameState";
+import { LoadingScreen } from "../LoadingScreen";
+import { EditorFile } from "./EditorFile";
+import { NotificationManager } from "./NotificationManager";
+
 export class InlineAudioPlayer {
   position: number;
   startedAt: number;
@@ -109,7 +116,7 @@ export class InlineAudioPlayer {
 
     this.$audioPlayer.width(300);
 
-    this.loader = new LoadingScreen(this.$audioPlayer, false);
+    this.loader = new LoadingScreen(this.$audioPlayer[0], false);
     this.loader.$loader.css({top: '0', zIndex: 100});
 
     $('body').append(this.$audioPlayer);
@@ -124,12 +131,12 @@ export class InlineAudioPlayer {
     this.loop = false;
   }
 
-  OpenAudio(file){
+  OpenAudio(file: EditorFile){
     this.Reset();
     this.Stop();
     
     if(file instanceof EditorFile){
-      file.readFile( (buffer) => {
+      file.readFile( (buffer: Buffer) => {
         try{
           this.$title.text(file.resref+'.'+file.ext);
           this.audioFile = new AudioFile(buffer);
@@ -150,9 +157,9 @@ export class InlineAudioPlayer {
     }
   }
 
-  GetAudioBuffer(onBuffered = null){
+  GetAudioBuffer(onBuffered?: Function){
     if(this.buffer == null){
-      this.audioFile.GetPlayableByteStream((data) => {
+      this.audioFile.GetPlayableByteStream((data: ArrayBuffer) => {
         //console.log('format', )
         try{
           GameState.audioEngine.audioCtx.decodeAudioData(data, (buffer) => {
@@ -162,7 +169,7 @@ export class InlineAudioPlayer {
           }, (error) => {
               console.error("decodeAudioData error", error);
 
-              this.buffer = pcm.toAudioBuffer(data);
+              // this.buffer = pcm.toAudioBuffer(data);
               console.log('Caught PCM error converting ADPCM to PCM', this.buffer, this.buffer instanceof AudioBuffer)
               if(onBuffered != null)
                 onBuffered(this.buffer);
@@ -181,7 +188,7 @@ export class InlineAudioPlayer {
     this.source = GameState.audioEngine.audioCtx.createBufferSource();
     if(!this.loading){
       this.loader.Show();
-      this.GetAudioBuffer((data) => {
+      this.GetAudioBuffer((data: any) => {
         this.loading = false;
         let offset = this.pausedAt;
         this.source.buffer = this.buffer;
@@ -208,7 +215,7 @@ export class InlineAudioPlayer {
            let width = this.$audioProgress.innerWidth();
 
            // Figure out placement percentage between left and right of input
-           newPoint = (this.$audioProgress.val() - this.$audioProgress.attr("min")) / (this.$audioProgress.attr("max") - this.$audioProgress.attr("min"));
+           newPoint = (parseFloat(this.$audioProgress.val().toString()) - parseFloat(this.$audioProgress.attr("min").toString())) / (parseInt(this.$audioProgress.attr("max").toString()) - parseInt(this.$audioProgress.attr("min").toString()));
 
            // Prevent bubble from going beyond left or right (unsupported browsers)
            if (newPoint < 0) { newPlace = 0; }
@@ -218,13 +225,13 @@ export class InlineAudioPlayer {
           this.$audioProgressPopup.css({
              left: this.$audioProgress.offset().left + newPlace - (this.$audioProgressPopup.width() / 2),
              top: this.$audioProgress.offset().top - (this.$audioProgressPopup.height() + 5)
-          }).text(this.SecondsToTimeString(this.$audioProgress.val())).show();;
+          }).text(this.SecondsToTimeString(parseFloat(this.$audioProgress.val().toString()))).show();
 
           this.StopLoop();
           $(this).trigger('change');
         }).off('change').on('change', () => {
           this.Stop();
-          this.pausedAt = this.$audioProgress.val();
+          this.pausedAt = parseFloat(this.$audioProgress.val().toString());
           this.Play();
           this.$audioProgressPopup.hide();
         });
@@ -331,7 +338,7 @@ export class InlineAudioPlayer {
     this.$audioTime.text(this.SecondsToTimeString(Number(this.GetCurrentTime())) + ' / ' + this.SecondsToTimeString(Number(this.GetDuration())));
   }
 
-  SecondsToTimeString(time){
+  SecondsToTimeString(time: number){
     time = time | 0
     let h = Math.floor(time / 3600);
     let m = Math.floor(time % 3600 / 60);

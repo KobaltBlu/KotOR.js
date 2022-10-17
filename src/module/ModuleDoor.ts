@@ -1092,4 +1092,64 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
+  static GenerateTemplate(){
+    let template = new GFFObject();
+    template.FileType = 'UTD ';
+
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AnimationState') );
+    template.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Appearance') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') );
+    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Comment') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') );
+    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHP') );
+    template.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DisarmDC') );
+    template.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Faction') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Fort') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'GenericType') );
+    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'HP') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Hardness') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Interruptable') );
+    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'KeyRequired') );
+    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'LoadScreenID') );
+    template.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Lockable') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Locked') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Min1HP') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnClick') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnClosed') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnDamaged') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnDeath') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnDisarm') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnHeartbeat') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnLock') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnMeleeAttacked') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnOpen') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnSpellCastAt') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnTrapTriggered') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnUnlock') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnUsed') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnUserDefined') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PaletteId') ).SetValue(6);
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Plot') );
+    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraidId') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Ref') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Static') );
+    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') );
+    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapDetactable') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapFlag') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TrapType') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Type') );
+    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Will') );
+
+    return template;
+  }
+
 }

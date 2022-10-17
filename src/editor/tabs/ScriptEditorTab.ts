@@ -31,7 +31,6 @@ export class ScriptEditorTab extends EditorTab {
   layout: any;
   editor: any;
   loaded: boolean;
-  file: any;
   static nwscript_nss: Buffer;
   static nwScriptParser: NWScriptParser;
   constructor(file: EditorFile){
@@ -88,7 +87,6 @@ export class ScriptEditorTab extends EditorTab {
   Show(){
     super.Show();
     console.log('script show');
-    // @ts-expect-error
     this.layout = this.$r_container.layout({
       applyDefaultStyles: false,
       south__size:			200,

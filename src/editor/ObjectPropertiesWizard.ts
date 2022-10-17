@@ -1,3 +1,9 @@
+///<reference path="../../node_modules/@types/jqueryui/index.d.ts"/>
+import { BIFManager } from "../managers/BIFManager";
+import { KEYManager } from "../managers/KEYManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { ModuleDoor, ModuleObject, ModulePlaceable, ModuleSound } from "../module";
+import { ResourceTypes } from "../resource/ResourceTypes";
 import { TemplateEngine } from "./TemplateEngine";
 import { Wizard } from "./Wizard";
 
@@ -36,11 +42,11 @@ export class ObjectPropertiesWizard extends Wizard {
       this.$wizard.filter('.modal').modal({
           keyboard: false,
           backdrop: false,
-          show: this.props.autoShow
+          // show: this.props.autoShow
       });
 
       this.$wizard.draggable({
-          handle: ".modal-header"
+        handle: ".modal-header"
       });
 
       if(this.props.autoShow)
@@ -51,7 +57,7 @@ export class ObjectPropertiesWizard extends Wizard {
 
   }
 
-  SetObject(obj){
+  SetObject(obj: ModuleObject){
 
     this.obj = obj;
 
@@ -72,10 +78,10 @@ export class ObjectPropertiesWizard extends Wizard {
 
       this.$templateList.html('').off('change');
 
-      let templates = Global.kotorBIF['templates'].GetResourcesByType(ResourceTypes['utp']);
+      let templates = BIFManager.GetBIFByName('templates').GetResourcesByType(ResourceTypes['utp']);
 
       for(let i = 0; i < templates.length; i++){
-        let name = Global.kotorKEY.GetFileLabel(templates[i].ID);
+        let name = KEYManager.Key.GetFileLabel(templates[i].ID);
         this.$templateList.append('<option value="'+name+'">'+name+'</option>');
       }
 
@@ -89,7 +95,7 @@ export class ObjectPropertiesWizard extends Wizard {
 
 
     try {
-      let placeables = Global.kotor2DA['placeables'].rows;
+      let placeables = TwoDAManager.datatables.get('placeables').rows;
       this.$list.html('').off('change');
       for (let key in placeables) {
         if (placeables.hasOwnProperty(key)) {
@@ -114,17 +120,17 @@ export class ObjectPropertiesWizard extends Wizard {
 
       this.$templateList.html('').off('change');
 
-      let templates = Global.kotorBIF['templates'].GetResourcesByType(ResourceTypes['utd']);
+      let templates = BIFManager.GetBIFByName('templates').GetResourcesByType(ResourceTypes['utd']);
 
       for(let i = 0; i < templates.length; i++){
-        let name = Global.kotorKEY.GetFileLabel(templates[i].ID);
+        let name = KEYManager.Key.GetFileLabel(templates[i].ID);
         this.$templateList.append('<option value="'+name+'">'+name+'</option>');
       }
 
     }catch(e){}
 
     try {
-      let doors = Global.kotor2DA['genericdoors'].rows;
+      let doors = TwoDAManager.datatables.get('genericdoors').rows;
       this.$list.html('').off('change');
       for (let key in doors) {
         if (doors.hasOwnProperty(key)) {

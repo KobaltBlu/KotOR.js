@@ -5,6 +5,8 @@ import { NewProjectWizard } from "../NewProjectWizard";
 import { Project } from "../Project";
 import { TemplateEngine } from "../TemplateEngine";
 import * as path from "path";
+import { WindowDialog } from "../../utility/WindowDialog";
+import { ConfigClient } from "../../utility/ConfigClient";
 
 export class QuickStartTab extends EditorTab {
   $recentProjectsList: JQuery<HTMLElement>;
@@ -30,7 +32,7 @@ export class QuickStartTab extends EditorTab {
       this.$newProject = $('#btn-new-project', this.$tabContent);
       this.$openProject = $('#btn-open-project', this.$tabContent);
 
-      $.each(Config.getRecentProjects(), (i, dir) => {
+      $.each(ConfigClient.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
@@ -51,7 +53,7 @@ export class QuickStartTab extends EditorTab {
         }catch(e){}
       });
 
-      $.each(Config.getRecentFiles(), (i, file) => {
+      $.each(ConfigClient.getRecentFiles(), (i, file) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 
@@ -72,7 +74,7 @@ export class QuickStartTab extends EditorTab {
 
       this.$openProject.on('click', async (e: any) => {
         e.preventDefault();
-        let payload = await dialog.showOpenDialog({
+        let payload = await WindowDialog.showOpenDialog({
           properties: ['openFile'],
           filters: [
             {name: 'Forge Project', extensions: ['json']}
@@ -98,7 +100,7 @@ export class QuickStartTab extends EditorTab {
     super.Show();
     try{
       this.$recentProjectsList.html('');
-      $.each(Config.getRecentProjects(), (i, dir) => {
+      $.each(ConfigClient.getRecentProjects(), (i, dir) => {
         try{
           let project = require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
@@ -120,7 +122,7 @@ export class QuickStartTab extends EditorTab {
       });
 
       this.$recentFilesList.html('');
-      $.each(Config.getRecentFiles(), (i, file) => {
+      $.each(ConfigClient.getRecentFiles(), (i, file) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 

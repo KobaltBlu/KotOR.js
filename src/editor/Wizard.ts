@@ -48,7 +48,7 @@ export class Wizard {
     this.$wizard.filter('.modal').modal({
       backdrop: 'static',
       keyboard: false,
-      show: args.show
+      // show: args.show
     });
 
     this.$header = $('.modal-header', this.$wizard);

@@ -1,18 +1,19 @@
 export class TreeView {
+  $nodeList: JQuery<HTMLElement>;
 
-  constructor($listNode = null){
+  constructor($listNode: JQuery<HTMLElement>){
 
     this.$nodeList = $listNode || $('<ul class="tree css-treeview js" />');
 
   }
 
-  attachTo($element = null){
+  attachTo($element: JQuery<HTMLElement>){
     if($element != null){
       $element.append(this.$nodeList);
     }
   }
 
-  addNode($node){
+  addNode($node: TreeViewNode|JQuery<HTMLElement>){
     if($node instanceof TreeViewNode){
       this.$nodeList.append($node.$node)
     }else{
@@ -23,6 +24,12 @@ export class TreeView {
 }
 
 export class TreeViewNode {
+  $node: JQuery<HTMLElement>;
+  name: string;
+  type: string;
+  $fileIcon: JQuery<HTMLElement>;
+  $nodeList: JQuery<HTMLElement>;
+  $listNode: JQuery<HTMLElement>;
 
   constructor(name = '', type = 'list'){
 
@@ -49,13 +56,13 @@ export class TreeViewNode {
 
   }
 
-  attachTo($element = null){
-    if($element != null){
+  attachTo($element: JQuery<HTMLElement>){
+    if($element){
       $element.append(this.$listNode);
     }
   }
 
-  addNode($node){
+  addNode($node: TreeViewNode|JQuery<HTMLElement>){
 
     if($node instanceof TreeViewNode){
       this.$nodeList.append($node.$node)

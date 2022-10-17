@@ -42,6 +42,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { FactionManager } from "./FactionManager";
 import { EngineContext } from "./enums/engine/EngineContext";
 import { GameStateGroups } from "./interface/engine/GameStateGroups";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 const saturationShader: any = {
   uniforms: {
@@ -310,8 +311,7 @@ export class GameState implements EngineContext {
     (window as any).renderer = GameState.renderer;
 
     GameState.clock = new THREE.Clock();
-    //@ts-expect-error
-    GameState.stats = new Stats();
+    GameState.stats = Stats();
 
     GameState.activeMenu = undefined;
 

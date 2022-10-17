@@ -25,6 +25,7 @@ import { TextureLoader } from "../../loaders/TextureLoader";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { Forge } from "../Forge";
 import { BIFManager } from "../../managers/BIFManager";
+import { ImageViewerTab } from "./ImageViewerTab";
 
 export class UTCEditorTab extends EditorTab {
   $firstName: JQuery<HTMLElement>;
@@ -89,8 +90,8 @@ export class UTCEditorTab extends EditorTab {
   $previewContainer: JQuery<HTMLElement>;
   $preview: JQuery<HTMLElement>;
   ui3DRenderer: UI3DRenderer;
-  file: any;
   creature: ModuleCreature;
+  requestId: any;
   constructor(file: EditorFile|GFFObject){
     super();
 
@@ -253,7 +254,7 @@ export class UTCEditorTab extends EditorTab {
       file.readFile( (buffer: Buffer) => {
         if(!file.buffer.length){
 
-          this.gff = UTCObject.GenerateTemplate();
+          this.gff = ModuleCreature.GenerateTemplate();
           console.log(this.gff.RootNode);
           try{
             this.PopulateFields();
@@ -293,24 +294,21 @@ export class UTCEditorTab extends EditorTab {
           let scene = this.ui3DRenderer.ResetScene();
           scene.add(model);
           setTimeout( () => {
-            let center = model.box.getCenter();
-            let size = model.box.getSize();
+            let center = model.box.getCenter(new THREE.Vector3());
+            let size = model.box.getSize(new THREE.Vector3());
             //Center the object to 0
             model.position.set(-center.x, -center.y, -center.z);
             this.ui3DRenderer.camera.position.z = 0;
             this.ui3DRenderer.camera.position.y = size.x + size.y;
             this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
             //Stand the object on the floor by adding half it's height back to it's position
-            //model.position.z += model.box.getSize().z/2;
+            //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
             this.onResize();
             this.Update();
           }, 10);
         });
       });
     });
-  }
-  requestId(requestId: any) {
-    throw new Error("Method not implemented.");
   }
 
   Update(){
@@ -322,7 +320,7 @@ export class UTCEditorTab extends EditorTab {
 
   }
 
-  RenderCallback(renderer: any, delta: number = 0;){
+  RenderCallback(renderer: any, delta: number = 0){
     //console.log(delta);
 
     if(this.creature){
@@ -350,9 +348,9 @@ export class UTCEditorTab extends EditorTab {
 
   }
 
-  GameImageToCanvas(canvas, name, cwidth = null, cheight = null){
-    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', name, (image) => {
-      image.getPixelData( (pixelData) => {
+  GameImageToCanvas(canvas: any, name: any, cwidth: any = null, cheight: any = null){
+    TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', name, (image: any) => {
+      image.getPixelData( (pixelData: any) => {
         
         let workingData = pixelData;
     
@@ -380,7 +378,7 @@ export class UTCEditorTab extends EditorTab {
             workingData = ImageViewerTab.PixelDataToRGBA(workingData, width, height);
     
           if(bitsPerPixel == 8)
-            workingData = ImageViewerTab.TGAGrayFix(workingData, width, height);
+            workingData = ImageViewerTab.TGAGrayFix(workingData);
     
           //FlipY
           ImageViewerTab.FlipY(workingData, width, height);
@@ -436,7 +434,7 @@ export class UTCEditorTab extends EditorTab {
       fieldType: GFFDataType.BYTE,     //GFF Field Type
       objOrArray: TwoDAManager.datatables.get('gender').rows,   //Elements of data
       propertyName: 'name',            //Property name to target inside objOrArray
-      onLabel: (label) => {
+      onLabel: (label: any) => {
         return TLKManager.TLKStrings[label].Value;
       }
     });
@@ -840,8 +838,8 @@ export class UTCEditorTab extends EditorTab {
                   let scene = ui3DRenderer.ResetScene();
                   scene.add(model);
                   setTimeout( () => {
-                    let center = model.box.getCenter();
-                    let size = model.box.getSize();
+                    let center = model.box.getCenter(new THREE.Vector3());
+                    let size = model.box.getSize(new THREE.Vector3());
                     //Center the object to 0
                     model.position.set(-center.x, -center.y, -center.z);
                     ui3DRenderer.camera.position.z = 0;
@@ -891,23 +889,24 @@ export class UTCEditorTab extends EditorTab {
         ResRef: $slot.data('equippedRes'),
         ResType: ResourceTypes.uti,
         onLoad: (gff: GFFObject) => {
-          let uti = new UTIObject(gff)
-          uti.getIcon((icon) => {
-            icon.getPixelData( ( pixelData ) => {
-              pixelData = icon.FlipY(pixelData);
-              let $canvas = $('<canvas width="60" height="60" />');
-              let canvas = $canvas[0];
-              let ctx = canvas.getContext('2d');
-              let imageData = ctx.getImageData(0, 0, 64, 64);
-              let data = imageData.data;
+          let uti = new ModuleItem(gff);
+          uti.Load( () => {
+            let iconResRef = uti.getIcon();
+            TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', iconResRef, (icon: any) => {
+              icon.getPixelData( ( pixelData: any ) => {
+                pixelData = icon.FlipY(pixelData);
+                let $canvas = $('<canvas width="60" height="60" />');
+                let canvas: HTMLCanvasElement = $canvas[0] as any;
+                let ctx = canvas.getContext('2d');
+                let imageData = ctx.getImageData(0, 0, 64, 64);
+                let data = imageData.data;
 
-              data.set(pixelData);
-              ctx.putImageData(imageData, 0, 0);
-              $slot.append($canvas);
-            }, (e: any) => {
-              console.error('UTIObject.getIcon', e);
+                data.set(pixelData);
+                ctx.putImageData(imageData, 0, 0);
+                $slot.append($canvas);
+              });
             });
-          })
+          });
         }
       });
     }else{

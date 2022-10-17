@@ -4,10 +4,50 @@ import { CExoLocSubString } from "../../resource/CExoLocSubString";
 import { GFFField } from "../../resource/GFFField";
 import { GFFObject } from "../../resource/GFFObject";
 import { GFFStruct } from "../../resource/GFFStruct";
+import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
 import { NotificationManager } from "../NotificationManager";
 
+import * as path from "path";
+
 export class GFFEditorTab extends EditorTab {
+  structIndex: number;
+  fieldsIndex: number;
+  $gffContainer: JQuery<HTMLElement>;
+  $gffProperties: JQuery<HTMLElement>;
+  $gffPropertiesGroupSimple: JQuery<HTMLElement>;
+  $gffPropertiesGroupVector: JQuery<HTMLElement>;
+  $gffPropertiesGroupOrientation: JQuery<HTMLElement>;
+  $gffPropertiesGroupCExoLocString: JQuery<HTMLElement>;
+  $gffPropertiesGroupCExoLocSubString: JQuery<HTMLElement>;
+  $gffPropertiesLabelTitle: JQuery<HTMLElement>;
+  $gffPropertiesValueTitle: JQuery<HTMLElement>;
+  $gffPropertiesStringRefValueTitle: JQuery<HTMLElement>;
+  $gffPropertiesSubStringInfoTitle: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringTextTitle: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringLanguageTitle: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringGenderTitle: JQuery<HTMLElement>;
+  $gffPropertiesVectorXTitle: JQuery<HTMLElement>;
+  $gffPropertiesVectorYTitle: JQuery<HTMLElement>;
+  $gffPropertiesVectorZTitle: JQuery<HTMLElement>;
+  $gffPropertiesOrientationXTitle: JQuery<HTMLElement>;
+  $gffPropertiesOrientationYTitle: JQuery<HTMLElement>;
+  $gffPropertiesOrientationZTitle: JQuery<HTMLElement>;
+  $gffPropertiesOrientationWTitle: JQuery<HTMLElement>;
+  $gffPropertiesLabel: JQuery<HTMLElement>;
+  $gffPropertiesValue: JQuery<HTMLElement>;
+  $gffPropertiesStringRefValue: JQuery<HTMLElement>;
+  $gffPropertiesSubStringInfo: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringTextValue: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringLanguageValue: JQuery<HTMLElement>;
+  $gffPropertiesCExoLocSubStringGenderValue: JQuery<HTMLElement>;
+  $gffPropertiesVectorXValue: JQuery<HTMLElement>;
+  $gffPropertiesVectorYValue: JQuery<HTMLElement>;
+  $gffPropertiesVectorZValue: JQuery<HTMLElement>;
+  $gffPropertiesOrientationXValue: JQuery<HTMLElement>;
+  $gffPropertiesOrientationYValue: JQuery<HTMLElement>;
+  $gffPropertiesOrientationZValue: JQuery<HTMLElement>;
+  $gffPropertiesOrientationWValue: JQuery<HTMLElement>;
   constructor(){
     super();
 
@@ -123,7 +163,7 @@ export class GFFEditorTab extends EditorTab {
 
   }
 
-  OpenFile(file){
+  OpenFile(file: EditorFile){
     if(typeof file !== 'undefined'){
       //sessionStorage.setItem(KEY_FILE, JSON.stringify(file));
       this.tabLoader.Show();
@@ -149,7 +189,7 @@ export class GFFEditorTab extends EditorTab {
     }
   }
 
-  parseStruct(struct, $parent, isRoot = false){
+  parseStruct(struct: GFFStruct, $parent: any, isRoot = false){
     let self = this;//Need to use this for the time being to pass this to ContextMenus
 
     let $struct = $('<li class="gff-struct" />');
@@ -167,137 +207,137 @@ export class GFFEditorTab extends EditorTab {
       this.parseField(field, $fields);
     });
 
-    let menu = new Menu();
-    menu.append(new MenuItem({label: 'Add BYTE', click() {
-      let newField = new GFFField(GFFDataType.BYTE, 'New BYTE');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add CHAR', click() {
-      let newField = new GFFField(GFFDataType.CHAR, 'New CHAR');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add WORD', click() {
-      let newField = new GFFField(GFFDataType.WORD, 'New WORD');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add SHORT', click() {
-      let newField = new GFFField(GFFDataType.SHORT, 'New SHORT');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add DWORD', click() {
-      let newField = new GFFField(GFFDataType.DWORD, 'New DWORD');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add INT', click() {
-      let newField = new GFFField(GFFDataType.INT, 'New INT');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add DWORD64', click() {
-      let newField = new GFFField(GFFDataType.DWORD64, 'New DWORD64');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add INT64', click() {
-      let newField = new GFFField(GFFDataType.INT64, 'New INT64');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add FLOAT', click() {
-      let newField = new GFFField(GFFDataType.FLOAT, 'New FLOAT');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add DOUBLE', click() {
-      let newField = new GFFField(GFFDataType.DOUBLE, 'New DOUBLE');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add CEXOSTRING', click() {
-      let newField = new GFFField(GFFDataType.CEXOSTRING, 'New CEXOSTRING');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add RESREF', click() {
-      let newField = new GFFField(GFFDataType.RESREF, 'New RESREF');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add CEXOLOCSTRING', click() {
-      let newField = new GFFField(GFFDataType.CEXOLOCSTRING, 'New CEXOLOCSTRING');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add BINARY', click() {
-      let newField = new GFFField(GFFDataType.VOID, 'New BINARY');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add STRUCT', click() {
-      let newField = new GFFField(GFFDataType.STRUCT, 'New STRUCT');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add LIST', click() {
-      let newField = new GFFField(GFFDataType.LIST, 'New LIST');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add ORIENTATION', click() {
-      let newField = new GFFField(GFFDataType.ORIENTATION, 'New ORIENTATION');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add VECTOR', click() {
-      let newField = new GFFField(GFFDataType.VECTOR, 'New VECTOR');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({label: 'Add STRREF', click() {
-      let newField = new GFFField(GFFDataType.STRREF, 'New STRREF');
-      struct.AddField(newField);
-      self.parseField(newField, $fields);
-    }}));
-    menu.append(new MenuItem({type: 'separator'}));
-    //Clipboard
-    menu.append(new MenuItem({label: 'Paste FIELD', click(){
-        if(Clipboard == null){
-          alert('There is nothing in the clipboard');
-          return;
-        }
+    // let menu = new Menu();
+    // menu.append(new MenuItem({label: 'Add BYTE', click() {
+    //   let newField = new GFFField(GFFDataType.BYTE, 'New BYTE');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add CHAR', click() {
+    //   let newField = new GFFField(GFFDataType.CHAR, 'New CHAR');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add WORD', click() {
+    //   let newField = new GFFField(GFFDataType.WORD, 'New WORD');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add SHORT', click() {
+    //   let newField = new GFFField(GFFDataType.SHORT, 'New SHORT');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add DWORD', click() {
+    //   let newField = new GFFField(GFFDataType.DWORD, 'New DWORD');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add INT', click() {
+    //   let newField = new GFFField(GFFDataType.INT, 'New INT');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add DWORD64', click() {
+    //   let newField = new GFFField(GFFDataType.DWORD64, 'New DWORD64');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add INT64', click() {
+    //   let newField = new GFFField(GFFDataType.INT64, 'New INT64');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add FLOAT', click() {
+    //   let newField = new GFFField(GFFDataType.FLOAT, 'New FLOAT');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add DOUBLE', click() {
+    //   let newField = new GFFField(GFFDataType.DOUBLE, 'New DOUBLE');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add CEXOSTRING', click() {
+    //   let newField = new GFFField(GFFDataType.CEXOSTRING, 'New CEXOSTRING');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add RESREF', click() {
+    //   let newField = new GFFField(GFFDataType.RESREF, 'New RESREF');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add CEXOLOCSTRING', click() {
+    //   let newField = new GFFField(GFFDataType.CEXOLOCSTRING, 'New CEXOLOCSTRING');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add BINARY', click() {
+    //   let newField = new GFFField(GFFDataType.VOID, 'New BINARY');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add STRUCT', click() {
+    //   let newField = new GFFField(GFFDataType.STRUCT, 'New STRUCT');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add LIST', click() {
+    //   let newField = new GFFField(GFFDataType.LIST, 'New LIST');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add ORIENTATION', click() {
+    //   let newField = new GFFField(GFFDataType.ORIENTATION, 'New ORIENTATION');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add VECTOR', click() {
+    //   let newField = new GFFField(GFFDataType.VECTOR, 'New VECTOR');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({label: 'Add STRREF', click() {
+    //   let newField = new GFFField(GFFDataType.STRREF, 'New STRREF');
+    //   struct.AddField(newField);
+    //   self.parseField(newField, $fields);
+    // }}));
+    // menu.append(new MenuItem({type: 'separator'}));
+    // //Clipboard
+    // menu.append(new MenuItem({label: 'Paste FIELD', click(){
+    //     if(Clipboard == null){
+    //       alert('There is nothing in the clipboard');
+    //       return;
+    //     }
 
-        if(Clipboard instanceof GFFField){
-          let newField = Clipboard;
-          //newField.bind(Clipboard);
-          console.log(Clipboard);
-          struct.AddField(newField);
-          self.parseField(newField, $fields);
-          Clipboard = null;
-        }
+    //     if(Clipboard instanceof GFFField){
+    //       let newField = Clipboard;
+    //       //newField.bind(Clipboard);
+    //       console.log(Clipboard);
+    //       struct.AddField(newField);
+    //       self.parseField(newField, $fields);
+    //       Clipboard = null;
+    //     }
 
-      }
-    }));
-    menu.append(new MenuItem({type: 'separator'}));
-    menu.append(new MenuItem({label: 'Delete STRUCT', click(){
-        if(struct == gff.RootNode){
-          alert('You can\'t delete the Root Node');
-          return;
-        }
-        gff.DeleteStruct(struct);
-        $struct.remove();
-        self.UpdatePropertiesWindow(null);
-        console.log(struct);
-      }
-    }));
+    //   }
+    // }));
+    // menu.append(new MenuItem({type: 'separator'}));
+    // menu.append(new MenuItem({label: 'Delete STRUCT', click(){
+    //     if(struct == gff.RootNode){
+    //       alert('You can\'t delete the Root Node');
+    //       return;
+    //     }
+    //     gff.DeleteStruct(struct);
+    //     $struct.remove();
+    //     self.UpdatePropertiesWindow(null);
+    //     console.log(struct);
+    //   }
+    // }));
 
     $struct.contextmenu((e: any) => {
       e.preventDefault();
-      menu.popup(remote.getCurrentWindow());
+      // menu.popup(remote.getCurrentWindow());
       return false;
     }).on('click', (e: any) => {
       e.stopPropagation();
@@ -310,7 +350,7 @@ export class GFFEditorTab extends EditorTab {
 
   }
 
-  parseField(field, $parent){
+  parseField(field: any, $parent: any){
     let self = this;//Need to use this for the time being to pass this to ContextMenus
     let $field = $('<li class="gff-field" />');
 
@@ -325,13 +365,13 @@ export class GFFEditorTab extends EditorTab {
       console.log($(this));
       let SubString = field.GetCExoLocString().GetStrings()[field.GetCExoLocString().GetStrings().length-1];
       let $SubString = $('<li class="gff-field gff-substring"><label>'+SubString.getString()+'</label></li>');
-      let substringmenu = new Menu();
-      substringmenu.append(new MenuItem({label: 'Delete String', click() {
-        let index = field.GetCExoLocString().GetStrings().indexOf(SubString);
-        field.GetCExoLocString().GetStrings().splice(index, 1);
-        $SubString.remove();
-        this.UpdatePropertiesWindow(null);
-      }}));
+      // let substringmenu = new Menu();
+      // substringmenu.append(new MenuItem({label: 'Delete String', click() {
+      //   let index = field.GetCExoLocString().GetStrings().indexOf(SubString);
+      //   field.GetCExoLocString().GetStrings().splice(index, 1);
+      //   $SubString.remove();
+      //   this.UpdatePropertiesWindow(null);
+      // }}));
       //Context Menu
       $SubString.on('click', (e: any) => {
         e.stopPropagation();
@@ -341,41 +381,41 @@ export class GFFEditorTab extends EditorTab {
       }).contextmenu((e: any) => {
         e.preventDefault();
         $SubString.trigger('click');
-        substringmenu.popup(remote.getCurrentWindow());
+        // substringmenu.popup(remote.getCurrentWindow());
         return false;
       });
 
       $fields.append($SubString);
     });
 
-    let menu = new Menu();
-    menu.append(new MenuItem({label: 'Cut FIELD', click() { console.log(typeof field); }}));
-    menu.append(new MenuItem({label: 'Copy FIELD', click() { Clipboard = field; NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Field Copied'); }}));
-    if(field.GetType() == GFFDataType.CEXOLOCSTRING){
-      menu.append(new MenuItem({label: 'Add String', click() {
-        field.GetCExoLocString().AddSubString(new CExoLocSubString(0, 'New String'));
-        $field.trigger('onSubStringAdded');
-      }}));
-    }
-    if(field.GetType() == GFFDataType.LIST){
-      menu.append(new MenuItem({label: 'Add STRUCT', click() {
-        let newStruct = new GFFStruct();
-        field.AddChildStructs(newStruct);
-        self.parseStruct(newStruct, $fields);
-      }}));
-    }
-    menu.append(new MenuItem({type: 'separator'}));
-    menu.append(new MenuItem({label: 'Delete FIELD', click() {
-      $field.remove();
-      gff.DeleteField(field, null);
-      self.UpdatePropertiesWindow(null);
-      console.log(field);
-    }}));
+    // let menu = new Menu();
+    // menu.append(new MenuItem({label: 'Cut FIELD', click() { console.log(typeof field); }}));
+    // menu.append(new MenuItem({label: 'Copy FIELD', click() { Clipboard = field; NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Field Copied'); }}));
+    // if(field.GetType() == GFFDataType.CEXOLOCSTRING){
+    //   menu.append(new MenuItem({label: 'Add String', click() {
+    //     field.GetCExoLocString().AddSubString(new CExoLocSubString(0, 'New String'));
+    //     $field.trigger('onSubStringAdded');
+    //   }}));
+    // }
+    // if(field.GetType() == GFFDataType.LIST){
+    //   menu.append(new MenuItem({label: 'Add STRUCT', click() {
+    //     let newStruct = new GFFStruct();
+    //     field.AddChildStructs(newStruct);
+    //     self.parseStruct(newStruct, $fields);
+    //   }}));
+    // }
+    // menu.append(new MenuItem({type: 'separator'}));
+    // menu.append(new MenuItem({label: 'Delete FIELD', click() {
+    //   $field.remove();
+    //   gff.DeleteField(field, null);
+    //   self.UpdatePropertiesWindow(null);
+    //   console.log(field);
+    // }}));
 
     $field.contextmenu((e: any) => {
       e.preventDefault();
       $field.trigger('click');
-      menu.popup(remote.getCurrentWindow());
+      // menu.popup(remote.getCurrentWindow());
       return false;
     });
 
@@ -402,11 +442,11 @@ export class GFFEditorTab extends EditorTab {
 
   }
 
-  UpdateFieldLabel(field){
+  UpdateFieldLabel(field: any){
     $('span.field-label', field.$label).text(field.Label);
   }
 
-  UpdateFieldValue(field){
+  UpdateFieldValue(field: any){
     let $value = $('span.field-value', field.$label);
 
     switch(field.GetType()){
@@ -436,7 +476,7 @@ export class GFFEditorTab extends EditorTab {
 
   }
 
-  UpdatePropertiesWindow(field){
+  UpdatePropertiesWindow(field: any){
 
 
     this.$gffPropertiesLabelTitle.hide();
@@ -472,7 +512,7 @@ export class GFFEditorTab extends EditorTab {
 
         this.$gffPropertiesGroupCExoLocSubString.show();
         this.$gffPropertiesCExoLocSubStringTextValue.val(field.getString()).on('input', () => {
-          field.setString(this.$gffPropertiesCExoLocSubStringTextValue.val());
+          field.setString(this.$gffPropertiesCExoLocSubStringTextValue.val().toString());
         }).prop("disabled", false);
 
       }else if(field instanceof GFFField){
@@ -481,7 +521,7 @@ export class GFFEditorTab extends EditorTab {
 
         this.$gffPropertiesLabel.val(field.Label).on('input', () => {
           if(this.$gffPropertiesLabel.val() != ""){
-            field.Label = this.$gffPropertiesLabel.val();
+            field.Label = this.$gffPropertiesLabel.val().toString();
             this.UpdateFieldLabel(field);
           }
         });
@@ -555,7 +595,7 @@ export class GFFEditorTab extends EditorTab {
               if($(this).val() == '-'){
                 $(this).val('-1');
               }
-              field.GetCExoLocString().RESREF = isNaN(parseInt($(this).val())) ? '-1' : parseInt($(this).val());
+              field.GetCExoLocString().RESREF = parseInt((isNaN(parseInt($(this).val().toString())) ? '-1' : parseInt($(this).val().toString())).toString());
               this.UpdateFieldValue(field);
               this.UpdatePropertiesWindow(field);
               //console.log($(this).val());
@@ -574,7 +614,7 @@ export class GFFEditorTab extends EditorTab {
 
               this.$gffPropertiesStringRefValue.prop("disabled", true);
               this.$gffPropertiesSubStringInfo.prop("disabled", true).on('input', () => {
-                field.GetCExoLocString().GetStrings()[0].setString($(this).val());
+                field.GetCExoLocString().GetStrings()[0].setString($(this).val().toString());
                 this.UpdatePropertiesWindow(field);
               });
             }

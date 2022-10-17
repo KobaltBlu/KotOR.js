@@ -6,7 +6,6 @@ import * as path from "path";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 
 export class TextEditorTab extends EditorTab {
-  file: EditorFile;
   $nssContainer: JQuery<HTMLElement>;
   $textEditor: JQuery<HTMLElement>;
   editor: any;

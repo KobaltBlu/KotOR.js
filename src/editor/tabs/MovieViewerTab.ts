@@ -4,7 +4,6 @@ import { EditorFile } from "../EditorFile";
 import { EditorTab } from "../EditorTab";
 
 export class MovieViewerTab extends EditorTab {
-  file: EditorFile;
   animLoop: boolean;
   renderer: THREE.WebGLRenderer;
   camera: THREE.OrthographicCamera;
@@ -62,7 +61,6 @@ export class MovieViewerTab extends EditorTab {
       }
     });
 
-    //@ts-expect-error
     $('#container').layout({ applyDefaultStyles: false,
       onresize: () => {
         try{

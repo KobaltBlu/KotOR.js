@@ -6,6 +6,9 @@ import { FileLocationType } from "./enum/FileLocationType";
 
 import * as path from "path";
 import * as fs from "fs";
+import { Forge } from "./Forge";
+import { Project } from "./Project";
+import { ConfigClient } from "../utility/ConfigClient";
 
 export class EditorFile {
   buffer: Buffer;
@@ -381,7 +384,7 @@ export class EditorFile {
   }
 
   updateOpenedFiles(){
-    const recent_files = Config.getRecentFiles();
+    const recent_files = ConfigClient.getRecentFiles();
     //Update the opened files list
     if(this.getPath()){
       const index = recent_files.indexOf(this.getPath());
@@ -391,7 +394,7 @@ export class EditorFile {
 
       //Append this file to the beginning of the list
       recent_files.unshift(this.getPath());
-      Config.save(null, true); //Save the configuration silently
+      ConfigClient.save(null, true); //Save the configuration silently
 
       //Notify the project we have opened a new file
       if(Forge.Project instanceof Project){
