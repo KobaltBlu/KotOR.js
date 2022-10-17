@@ -1,11 +1,32 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { GameState } from "../GameState";
+import * as THREE from "three";
+import { EngineMode } from "../enums/engine/EngineMode";
+import { Forge } from "../editor/Forge";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { ApplicationMode } from "../enums/ApplicationMode";
+
 /* @file
  * The LightManager class is currently used for dynamic lighting on objects like doors, placeables, creatures, and more. 
  */
 
 export class LightManager {
+  static MAXLIGHTS = 8; //NumDynamicLights row in videoquality.2da
+  static MAXSHADOWLIGHTS = 3; //NumShadowCastingLights row in videoquality.2da
+  static spawned = 0;
+  static spawned_shadow = 0;
+  static light_pool: any[] = [];
+  static modelLightCounter: any = {};
+  static shadowLightCounter: any = {};
+  static lights: any[] = [];
+  static shadow_pool: any[] = [];
+  static tmpLights: any[];
+  static lightsShown: any[];
+  static new_lights: any[];
+  static new_lights_uuids: any[];
+  static new_lights_spawned: number;
 
   static init(){
     LightManager.MAXLIGHTS = 8; //NumDynamicLights row in videoquality.2da
@@ -46,13 +67,13 @@ export class LightManager {
     for(let i = 0; i < LightManager.MAXLIGHTS; i++){
       
       let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
-      light.animated = 0;
-      light.reclaimed = true;
+      light.userData.animated = 0;
+      light.userData.reclaimed = true;
       GameState.group.lights.add(light);
       let helper = new THREE.PointLightHelper( light, 1 );
-      light.visible = light.helper = true;
-      helper.material.color = light.color;
-      light.helper = helper;
+      light.visible = light.userData.helper = true;
+      helper.color = light.color;
+      light.userData.helper = helper;
 
       LightManager.light_pool.push( light );
       GameState.group.light_helpers.add( helper );
@@ -64,13 +85,13 @@ export class LightManager {
       
       let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
       light.castShadow = true;
-      light.animated = 0;
-      light.reclaimed = true;
+      light.userData.animated = 0;
+      light.userData.reclaimed = true;
       GameState.group.shadow_lights.add(light);
       let helper = new THREE.PointLightHelper( light, 1 );
-      light.visible = light.helper = true;
-      helper.material.color = light.color;
-      light.helper = helper;
+      light.visible = light.userData.helper = true;
+      helper.color = light.color;
+      light.userData.helper = helper;
 
       LightManager.shadow_pool.push( light );
       GameState.group.light_helpers.add( helper );
@@ -94,7 +115,7 @@ export class LightManager {
   }
 
   //Add a THREE.AuroraLight to the LightManager
-  static addLight(light = null){
+  static addLight(light: any){
     //return;
     if(light){
       //LightManager.lights[light.priority].push(light);
@@ -105,7 +126,7 @@ export class LightManager {
   }
 
   //Remove a THREE.AuroraLight from the LightManager
-  static removeLight(light = null){
+  static removeLight(light: any){
     if(light){
       let idx = LightManager.lights.indexOf(light);
       if(idx >= 0){
@@ -130,10 +151,10 @@ export class LightManager {
 
   }
 
-  static update(delta = 0, target = null){
+  static update(delta = 0, target: any){
 
-    if(APP_MODE == "FORGE"){
-      if(tabManager.currentTab.currentCamera instanceof THREE.Camera){
+    if(ApplicationProfile.MODE == ApplicationMode.FORGE){
+      if(Forge.tabManager.currentTab.currentCamera instanceof THREE.Camera){
         target = Forge.tabManager.currentTab.currentCamera;
       }else{
         return;
@@ -644,7 +665,7 @@ export class LightManager {
   }
 
   //Sort lights by distance and priority
-  static sortLights (a, b){
+  static sortLights (a: any, b: any){
     if (b.isAnimated < a.isAnimated) return -1;
     if (b.isAnimated > a.isAnimated) return 1;
 
@@ -661,7 +682,7 @@ export class LightManager {
   }
 
   //Check to see if the model that owns the light has already met it's limit of three active lights
-  static canShowLight(light){
+  static canShowLight(light: any){
 
     if(LightManager.lightsShown.indexOf(light.uuid) >= 0)
       return false;
@@ -696,11 +717,3 @@ export class LightManager {
   }
 
 }
-
-LightManager.PRIORITY = {
-  HIGHEST: 5,
-  HIGH: 4,
-  MEDIUM: 3,
-  LOW: 2,
-  LOWEST: 1
-};
