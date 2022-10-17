@@ -38,6 +38,7 @@ export class BIFObject {
   resourceDiskInfo: IResourceDiskInfo;
   HeaderSize: number = 20;
   resources: BIFResource[];
+  file: string;
 
   constructor(file: Buffer|string, onComplete?: Function){
 
@@ -55,6 +56,7 @@ export class BIFObject {
       if(typeof onComplete == 'function')
         onComplete(this);
     }else if(typeof file === 'string'){
+      this.file = file;
       this.resourceDiskInfo.path = file;
       this.resourceDiskInfo.existsOnDisk = true;
       this.resourceDiskInfo.pathInfo = path.parse(this.resourceDiskInfo.path);

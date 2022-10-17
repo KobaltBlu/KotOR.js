@@ -134,7 +134,7 @@ export class LightManager {
 
     if(APP_MODE == "FORGE"){
       if(tabManager.currentTab.currentCamera instanceof THREE.Camera){
-        target = tabManager.currentTab.currentCamera;
+        target = Forge.tabManager.currentTab.currentCamera;
       }else{
         return;
       }

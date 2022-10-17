@@ -49,7 +49,8 @@ export interface ERFResource {
 const HeaderSize = 160;
 
 export class ERFObject {
-  file: string | Buffer;
+  resource_path: string;
+  // file: string | Buffer;
   LocalizedStrings: ERFLanguage[];
   KeyList: ERFKeyEntry[];
   Resources: ERFResource[];
@@ -62,7 +63,6 @@ export class ERFObject {
   group: string = 'erf';
 
   constructor(file?: string|Buffer, onComplete?: Function, onError?: Function){
-    this.file = file;
     this.LocalizedStrings = [];
     this.KeyList = [];
     this.Resources = [];
@@ -76,6 +76,7 @@ export class ERFObject {
       this.inMemory = true;
       this.buffer = file;
     }else if(typeof file === 'string'){
+      this.resource_path = file;
       this.inMemory = false;
       this.pathInfo = path.parse(file);
     }
@@ -144,8 +145,8 @@ export class ERFObject {
             onComplete(this);
 
         }else{
-          console.log('erf', this.file);
-          fs.open(this.file, 'r', (e, fd) => {
+          console.log('erf', this.resource_path);
+          fs.open(this.resource_path, 'r', (e, fd) => {
             if (e) {
               console.error('ERFObject', 'ERF Header Read', e);
               if(typeof onError == 'function')
@@ -250,7 +251,7 @@ export class ERFObject {
           if(typeof onComplete == 'function')
             onComplete(buffer);
         }else{
-          fs.open(this.file, 'r', (e, fd) => {
+          fs.open(this.resource_path, 'r', (e, fd) => {
             let buffer = Buffer.alloc(resource.ResourceSize);
             fs.read(fd, buffer, 0, buffer.length, resource.OffsetToResource, function(err, br, buf) {
               fs.close(fd, function(e) {
@@ -338,7 +339,7 @@ export class ERFObject {
 
           });
         }else{
-          fs.open(this.file, 'r', function(err, fd) {
+          fs.open(this.resource_path, 'r', function(err, fd) {
             if (err) {
               console.log('ERF Read', err.message);
               return;

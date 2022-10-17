@@ -29,6 +29,7 @@ export class UIItem {
   parent?: JQuery<HTMLElement>;
 
   $item: JQuery<HTMLElement>;
+  static TYPE: any;
 
   constructor (args: UIItemOptions = {}) {
 

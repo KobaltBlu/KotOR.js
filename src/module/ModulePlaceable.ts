@@ -63,6 +63,7 @@ export class ModulePlaceable extends ModuleObject {
   useable: any;
   isBodyBag: any;
   lightState: any;
+  props: any;
 
   constructor ( gff = new GFFObject()) {
     super(gff);

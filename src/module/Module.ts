@@ -1019,7 +1019,7 @@ export class Module {
       module.area = Object.assign(new ModuleArea(), json.area);
 
     }else{
-      // this.path = Global.Project.directory;
+      // this.path = Forge.Project.directory;
     }
     return module;
   }

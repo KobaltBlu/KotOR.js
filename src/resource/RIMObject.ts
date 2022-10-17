@@ -27,18 +27,17 @@ export interface RIMResource {
 }
 
 export class RIMObject {
-  file: string | Buffer;
+  buffer: Buffer;
+  resource_path: string;
   group: string;
   Resources: RIMResource[];
   HeaderSize: number;
   inMemory: boolean;
-  buffer: Buffer;
   Reader: any;
   Header: RIMHeader;
   rimDataOffset: number;
 
   constructor(file: Buffer|string, onComplete?: Function, onError?: Function){
-    this.file = file;
 
     this.Resources = [];
     this.HeaderSize = 160;
@@ -48,6 +47,7 @@ export class RIMObject {
     try{
 
       if(typeof file == 'string'){
+        this.resource_path = file;
         this.LoadFromDisk(file).then( (rim: RIMObject) => {
           if(typeof onComplete === 'function')
             onComplete(rim);
@@ -56,8 +56,9 @@ export class RIMObject {
           if(typeof onError === 'function')
             onError();
         });
-      }else if(this.file instanceof Buffer){
-        this.LoadFromBuffer(this.file).then( (rim: RIMObject) => {
+      }else if(file instanceof Buffer){
+        this.buffer = file;
+        this.LoadFromBuffer(this.buffer).then( (rim: RIMObject) => {
           if(typeof onComplete === 'function')
             onComplete(rim);
         }).catch( (err: any) => {
@@ -195,14 +196,14 @@ export class RIMObject {
         try {
           let _buffers: Buffer[] = [];
 
-          if(this.inMemory && this.file instanceof Buffer){
+          if(this.inMemory && this.buffer instanceof Buffer){
             let buffer = Buffer.alloc(resource.DataSize);
-            this.file.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
+            this.buffer.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
 
             if(typeof onComplete == 'function')
               onComplete(buffer);
           }else{
-            fs.createReadStream(this.file, {autoClose: true, start: resource.DataOffset, end: resource.DataOffset + (resource.DataSize - 1)}).on('data', function (chunk: Buffer) {
+            fs.createReadStream(this.buffer, {autoClose: true, start: resource.DataOffset, end: resource.DataOffset + (resource.DataSize - 1)}).on('data', function (chunk: Buffer) {
               _buffers.push(chunk);
             })
             .on('end', function () {
@@ -250,13 +251,13 @@ export class RIMObject {
 
         let _buffers: Buffer[] = [];
 
-        if(this.inMemory && this.file instanceof Buffer){
+        if(this.inMemory && this.buffer instanceof Buffer){
           let buffer = Buffer.alloc(resource.DataSize);
-          this.file.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
+          this.buffer.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
           if(typeof onComplete == 'function')
             onComplete(buffer);
         }else{
-          fs.createReadStream(this.file, {autoClose: true, start: resource.DataOffset, end: resource.DataOffset + (resource.DataSize - 1)}).on('data', function (chunk: Buffer) {
+          fs.createReadStream(this.buffer, {autoClose: true, start: resource.DataOffset, end: resource.DataOffset + (resource.DataSize - 1)}).on('data', function (chunk: Buffer) {
             _buffers.push(chunk);
           })
           .on('end', function () {
@@ -283,8 +284,8 @@ export class RIMObject {
         if (resource.ResRef == resref && resource.ResType == restype) {
           try {
 
-            if(this.inMemory && this.file instanceof Buffer){
-              let buffer = Buffer.from(this.file, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
+            if(this.inMemory && this.buffer instanceof Buffer){
+              let buffer = Buffer.from(this.buffer, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
               fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
                 if (err) console.log(err);
 
@@ -293,7 +294,7 @@ export class RIMObject {
 
               });
             }else{
-              fs.open(this.file, 'r', function(err, fd) {
+              fs.open(this.resource_path, 'r', function(err, fd) {
                 if (err) {
                   console.log('RIM Read', err.message);
                   return;

@@ -27,7 +27,7 @@ export class TemplateLoader {
       onFail: null
     }, args);
 
-    if(typeof Global.Project != 'undefined'){
+    if(typeof Forge.Project != 'undefined'){
       TemplateLoader.LoadFromProject({
         ResType: args.ResType, 
         ResRef: args.ResRef, 
@@ -110,8 +110,8 @@ export class TemplateLoader {
       onFail: null
     }, args);
 
-    if(typeof Global.Project != 'undefined' && Global.Project != null){
-      let projectFilePath = path.join(Global.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
+    if(typeof Forge.Project != 'undefined' && Forge.Project != null){
+      let projectFilePath = path.join(Forge.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists) => {
         if(exists){

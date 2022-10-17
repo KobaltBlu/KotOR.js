@@ -147,6 +147,7 @@ export class ModuleCreature extends ModuleObject {
   deathStarted: boolean;
   getUpAnimationPlayed: boolean;
   animSpeed: number;
+  portrait: number;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);

@@ -27,9 +27,9 @@ export class TemplateEngine {
       document.head.appendChild(link);*/
 
       TemplateEngine.templates[file] = fs.readFileSync(file).toString();
-      return TemplateEngine.templates[file].replace(/{(\w*)}/g,function(m: any,key: string){return data.hasOwnProperty(key)?data[key]:"";});
+      return TemplateEngine.templates[file].replace(/{(\w*)}/g,function(m: any,key: string){return data.hasOwnProperty(key)?(data as any)[key]:"";});
     }else{
-      return TemplateEngine.templates[file].replace(/{(\w*)}/g,function(m: any,key: string){return data.hasOwnProperty(key)?data[key]:"";});
+      return TemplateEngine.templates[file].replace(/{(\w*)}/g,function(m: any,key: string){return data.hasOwnProperty(key)?(data as any)[key]:"";});
     }
 
     return 'not yet';

@@ -3,8 +3,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { DeepObject } from "../DeepObject";
 import { GameInitializer } from "../GameInitializer";
+import { EditorFile } from "./EditorFile";
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
+import { Forge } from "./Forge";
+import { ModuleEditorTab } from "./tabs/ModuleEditorTab";
 
 export class Project {
   ClassName: string;
@@ -13,6 +16,7 @@ export class Project {
   settings: any = {};
   custom: Function;
   moduleEditor: any;
+  static Types: any;
 
   constructor(directory: string){
     console.log("Project Class");
@@ -74,18 +78,18 @@ export class Project {
 
   //Opens a project from it's location
   Open(onSuccess?: Function, deferInit = false){
-    loader.SetMessage("Loading Project..");
-    loader.Show();
+    Forge.loader.SetMessage("Loading Project..");
+    Forge.loader.Show();
     //load project.json
     this.Load( () => {
       try{
 
         console.log('project', this.settings);
 
-        let quickStart = tabManager.GetTabByType('QuickStartTab');
+        let quickStart = Forge.tabManager.GetTabByType('QuickStartTab');
         if(quickStart){
           console.log(quickStart);
-          tabManager.RemoveTab(quickStart);
+          Forge.tabManager.RemoveTab(quickStart);
         }
 
         let pjIndex = Config.options.recent_projects.indexOf(this.directory);
@@ -107,7 +111,7 @@ export class Project {
               //This is where we initialize ProjectType specific operations
               if(!deferInit){
                 project.InitializeProject( () => {
-                  loader.SetMessage("Loading Complete");
+                  Forge.loader.SetMessage("Loading Complete");
                   //When everything is done
                   if(typeof onSuccess == 'function')
                     onSuccess();
@@ -215,13 +219,13 @@ export class Project {
    */
   InitEditor() {
     this.moduleEditor = new ModuleEditorTab();
-    tabManager.AddTab(this.moduleEditor);
+    Forge.tabManager.AddTab(this.moduleEditor);
     //this.moduleEditor.Init();
   }
 
   openModuleEditor(){
     if(this.moduleEditor instanceof ModuleEditorTab){
-      tabManager.AddTab(this.moduleEditor);
+      Forge.tabManager.AddTab(this.moduleEditor);
       this.moduleEditor.Show();
     }else{
       this.InitEditor();
@@ -239,7 +243,7 @@ export class Project {
     return files;
   }
 
-  addToOpenFileList(editor_file = undefined){
+  addToOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
         let index = this.settings.open_files.indexOf(editor_file.getPath());
@@ -253,7 +257,7 @@ export class Project {
     }
   }
 
-  removeFromOpenFileList(editor_file = undefined){
+  removeFromOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
         let index = this.settings.open_files.indexOf(editor_file.getPath());
@@ -267,13 +271,13 @@ export class Project {
     }
   }
 
-  saveSettings(onSave = undefined){
+  saveSettings(onSave?: Function){
     try{
       fs.writeFile(path.join(this.directory, 'project.json'),
         JSON.stringify(this.settings, null, "\t"),
         (err) => {
           if(err){
-            console.error('Project.saveSettings', e);
+            console.error('Project.saveSettings', err);
             return;
           }
 
@@ -289,7 +293,7 @@ export class Project {
 
 }
 
-const defaults = {
+const defaults: any = {
   name: '',
   game: 1,
   type: 1,

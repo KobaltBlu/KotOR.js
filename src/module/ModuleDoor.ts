@@ -62,6 +62,7 @@ export class ModuleDoor extends ModuleObject {
   z: number;
   declare audioEmitter: AudioEmitter;
   boxHelper: THREE.Box3Helper;
+  props: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);

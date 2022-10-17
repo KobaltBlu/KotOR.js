@@ -1693,7 +1693,7 @@ export class ModuleObject {
 
     // if(APP_MODE == 'FORGE'){
     //   if(tabManager.currentTab instanceof ModuleEditorTab){
-    //     frustum = tabManager.currentTab.viewportFrustum;
+    //     frustum = Forge.tabManager.currentTab.viewportFrustum;
     //     this.box.getBoundingSphere(this.sphere);
     //     return frustum.intersectsSphere(this.sphere);
     //   }

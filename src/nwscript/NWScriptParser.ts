@@ -29,7 +29,7 @@ const NWCompileDataTypes: any = {
   'FV': 0x3C,
 };
 
-class NWScriptParser {
+export class NWScriptParser {
 
   ast: any = null;
   regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
