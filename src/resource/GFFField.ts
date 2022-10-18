@@ -3,6 +3,7 @@ import { CExoLocString } from "./CExoLocString";
 import { GFFObject } from "./GFFObject";
 import { GFFStruct } from "./GFFStruct";
 import * as THREE from "three";
+import isBuffer from "is-buffer";
 
 export class GFFField {
 
@@ -225,7 +226,7 @@ export class GFFField {
         }
       break;
       case GFFDataType.VOID:
-        if(val instanceof Buffer){
+        if(isBuffer(val)){
           this.Value = val;
         }else if(val instanceof ArrayBuffer){
           this.Value = Buffer.from(val);

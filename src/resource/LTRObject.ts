@@ -3,6 +3,7 @@
 //Some helpful info can be found at
 //http://web.archive.org/web/20160801205623/https://forum.bioware.com/topic/134653-ltr-file-format/#entry3901817
 
+import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 
 export class LTRObject {
@@ -29,7 +30,7 @@ export class LTRObject {
     if(typeof data === 'string'){
       this.file = data;
       this.openFile(this.file, onLoad, onError);
-    }else if(data instanceof Buffer){
+    }else if(isBuffer(data)){
       this.data = data;
       this.readData(this.data, onLoad, onError);
     }
@@ -48,7 +49,7 @@ export class LTRObject {
 
     //2439
 
-    if(data instanceof Buffer){
+    if(isBuffer(data)){
       let br = new BinaryReader(data);
 
       let header_len = 9;

@@ -7,6 +7,7 @@ import * as path from 'path';
 import { Utility } from "../utility/Utility";
 import { KEYManager } from "../managers/KEYManager";
 import { ResourceTypes } from "./ResourceTypes";
+import isBuffer from "is-buffer";
 
 /* @file
  * The BIFObject class.
@@ -49,7 +50,7 @@ export class BIFObject {
 
     this.resources = [];
 
-    if(file instanceof Buffer){
+    if(isBuffer(file)){
       this.resourceDiskInfo.path = '';
       this.resourceDiskInfo.existsOnDisk = false;
       this.ReadFromMemory();

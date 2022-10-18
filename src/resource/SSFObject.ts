@@ -1,3 +1,4 @@
+import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { TLKManager } from "../managers/TLKManager";
 
@@ -20,7 +21,7 @@ export class SSFObject {
     this.data = data;
     this.sound_refs = [];
 
-    if(this.data instanceof Buffer){
+    if(isBuffer(this.data)){
 
       let reader = new BinaryReader(this.data);
       this.FileType = reader.ReadChars(4);

@@ -1,6 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import isBuffer from "is-buffer";
 import { ADPCMBlock } from "./ADPCMBlock";
 
 /* @file
@@ -46,7 +47,7 @@ export class ADPCMDecoder {
 
 	decode(){
 		this.blocks = [];
-		if(this.adpcm instanceof Buffer){
+		if(isBuffer(this.adpcm)){
 
 			let blockHeaderSize = 4 * this.header.channels;
 			let count = this.adpcm.length;

@@ -9,6 +9,7 @@ import * as fs from "fs";
 import { Forge } from "./Forge";
 import { Project } from "./Project";
 import { ConfigClient } from "../utility/ConfigClient";
+import isBuffer from "is-buffer";
 
 export class EditorFile {
   buffer: Buffer;
@@ -112,7 +113,7 @@ export class EditorFile {
           case 'bif':
             new BIFObject(this.archive_path, (archive: BIFObject) => {
 
-              if(!(this.buffer instanceof Buffer)){
+              if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
                   let mdl_mdx_key = ResourceTypes.mdx;
@@ -159,7 +160,7 @@ export class EditorFile {
           case 'mod':
             new ERFObject(this.archive_path, (archive: ERFObject) => {
 
-              if(!(this.buffer instanceof Buffer)){
+              if(!isBuffer(this.buffer)){
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
                   this.buffer = buffer;
                   let mdl_mdx_key = ResourceTypes.mdx;
@@ -205,7 +206,7 @@ export class EditorFile {
           case 'rim':
             new RIMObject(this.archive_path, (archive: RIMObject) => {
 
-              if(!(this.buffer instanceof Buffer)){
+              if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
                   let mdl_mdx_key = ResourceTypes.mdx;
@@ -250,9 +251,9 @@ export class EditorFile {
           break;
         }
       }else{
-        if(this.buffer instanceof Buffer){
+        if(isBuffer(this.buffer)){
 
-          if(this.buffer2 instanceof Buffer){
+          if(isBuffer(this.buffer2)){
             if(typeof onLoad === 'function'){
               onLoad(this.buffer, this.buffer2);
             }
@@ -290,7 +291,7 @@ export class EditorFile {
       }
     }else{
       //Common Loader
-      if(this.buffer instanceof Buffer){
+      if(isBuffer(this.buffer)){
         if(typeof onLoad === 'function'){
           onLoad(this.buffer);
         }

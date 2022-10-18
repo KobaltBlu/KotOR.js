@@ -2,6 +2,7 @@
  */
 
 import * as fs from 'fs';
+import isBuffer from 'is-buffer';
 import { BinaryReader } from "../BinaryReader";
 
 /* @file
@@ -27,8 +28,8 @@ export class TwoDAObject {
     this.rows = {};
     
     if(!!file){
-      if(file instanceof Buffer) {
-        let br = new BinaryReader(file);
+      if(isBuffer(file)) {
+        let br = new BinaryReader(file as Buffer);
         this.Read2DA(br);
 
         if(onComplete != null)

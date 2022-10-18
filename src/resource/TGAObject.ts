@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as THREE from "three";
 import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
 import { TGAHeader } from "../interface/graphics/tga/TGAHeader";
+import isBuffer from "is-buffer";
 
 /* @file
  * The TGAObject class.
@@ -33,7 +34,7 @@ export class TGAObject {
 
     if(typeof options.file === 'string'){
       this.file = Buffer.alloc(0);
-    }else if(options.file instanceof Buffer){
+    }else if(isBuffer(options.file)){
 
     }
 
@@ -58,7 +59,7 @@ export class TGAObject {
       imageDescriptor: 0
     } as TGAHeader;
 
-    if(this.file instanceof Buffer){
+    if(isBuffer(this.file)){
       let reader = new BinaryReader(this.file);
 
       Header.ID = reader.ReadByte();

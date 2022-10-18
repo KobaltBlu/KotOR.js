@@ -11,6 +11,7 @@ import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "./ResourceTypes";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
+import isBuffer from "is-buffer";
 
 /* @file
  * The LIPObject class.
@@ -59,7 +60,7 @@ export class LIPObject {
     
     try{
 
-      if(this.file instanceof Buffer){
+      if(isBuffer(this.file)){
 
         if(!this.file.length){
 
@@ -100,7 +101,7 @@ export class LIPObject {
 
   readBinary(buffer: Buffer, onComplete?: Function){
 
-    if(buffer instanceof Buffer){
+    if(isBuffer(buffer)){
 
       let reader = new BinaryReader(buffer);
 

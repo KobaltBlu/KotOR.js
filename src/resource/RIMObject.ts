@@ -2,6 +2,7 @@
  */
 
 import * as fs from 'fs';
+import isBuffer from 'is-buffer';
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
 import { ResourceTypes } from './ResourceTypes';
@@ -56,7 +57,7 @@ export class RIMObject {
           if(typeof onError === 'function')
             onError();
         });
-      }else if(file instanceof Buffer){
+      }else if(isBuffer(file)){
         this.buffer = file;
         this.LoadFromBuffer(this.buffer).then( (rim: RIMObject) => {
           if(typeof onComplete === 'function')
@@ -196,7 +197,7 @@ export class RIMObject {
         try {
           let _buffers: Buffer[] = [];
 
-          if(this.inMemory && this.buffer instanceof Buffer){
+          if(this.inMemory && isBuffer(this.buffer)){
             let buffer = Buffer.alloc(resource.DataSize);
             this.buffer.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
 
@@ -251,7 +252,7 @@ export class RIMObject {
 
         let _buffers: Buffer[] = [];
 
-        if(this.inMemory && this.buffer instanceof Buffer){
+        if(this.inMemory && isBuffer(this.buffer)){
           let buffer = Buffer.alloc(resource.DataSize);
           this.buffer.copy(buffer, 0, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
           if(typeof onComplete == 'function')
@@ -284,7 +285,7 @@ export class RIMObject {
         if (resource.ResRef == resref && resource.ResType == restype) {
           try {
 
-            if(this.inMemory && this.buffer instanceof Buffer){
+            if(this.inMemory && isBuffer(this.buffer)){
               let buffer = Buffer.from(this.buffer, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
               fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
                 if (err) console.log(err);

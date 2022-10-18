@@ -2,6 +2,7 @@
  */
 
 import * as fs from "fs";
+import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
@@ -90,7 +91,7 @@ export class NWScript {
             onComplete(this);
         });
 
-      }else if ( dataOrFile instanceof Buffer ){
+      }else if ( isBuffer(dataOrFile) ){
         if(dataOrFile.slice(0, 8).toString() == 'NCS V1.0'){
           this.init(dataOrFile);
         }

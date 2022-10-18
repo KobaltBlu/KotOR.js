@@ -2,6 +2,7 @@
  */
 
 import * as fs from "fs";
+import isBuffer from "is-buffer";
 import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
@@ -72,9 +73,9 @@ export class ERFObject {
       FileVersion: 'V1.0'
     } as ERFObjectHeader;
 
-    if(file instanceof Buffer){
+    if(isBuffer(file)){
       this.inMemory = true;
-      this.buffer = file;
+      this.buffer = file as Buffer;
     }else if(typeof file === 'string'){
       this.resource_path = file;
       this.inMemory = false;

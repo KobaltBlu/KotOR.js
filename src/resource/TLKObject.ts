@@ -4,6 +4,7 @@
 import { BinaryReader } from "../BinaryReader";
 import * as fs from 'fs';
 import { TLKString } from "./TLKString";
+import isBuffer from "is-buffer";
 
 /* @file
  * The TLKObject class.
@@ -33,7 +34,7 @@ export class TLKObject {
       }).catch( () => {
         if(typeof onSuccess === 'function') onSuccess();
       });
-    }else if(file instanceof Buffer){
+    }else if(isBuffer(file)){
       this.LoadFromBuffer(this.file, onProgress).then( () => {
         if(typeof onSuccess === 'function') onSuccess();
       }).catch( () => {

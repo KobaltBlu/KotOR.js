@@ -1,6 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import isBuffer from "is-buffer";
+
 /* @file
  * The BinaryWriter class.
  */
@@ -158,8 +160,8 @@ export class BinaryWriter {
 
   WriteBytes(bytes: Uint8Array|Buffer|any[] = []){
     //console.log('Writing Bytes: ', bytes.length);
-    let tmpBuffer = bytes instanceof Buffer ? bytes : Buffer.from(bytes);
-    //this.buffer = Buffer.concat( [ this.buffer, (bytes instanceof Buffer ? bytes : Buffer.from(bytes)) ] );
+    let tmpBuffer = isBuffer(bytes) ? bytes as Buffer : Buffer.from(bytes);
+    //this.buffer = Buffer.concat( [ this.buffer, (isBuffer(bytes) ? bytes as Buffer : Buffer.from(bytes)) ] );
     this.AppendData(tmpBuffer);
     //console.log('Buffer Concat: ');
     
