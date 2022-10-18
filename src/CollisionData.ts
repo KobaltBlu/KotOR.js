@@ -4,6 +4,7 @@ import { ModuleDoor, ModuleObject, ModuleRoom } from "./module";
 import { OdysseyWalkMesh } from "./odyssey";
 import * as THREE from "three";
 import { Utility } from "./utility/Utility";
+import { ConfigClient } from "./utility/ConfigClient";
 
 export class CollisionData {
   object: ModuleObject;
@@ -61,7 +62,6 @@ export class CollisionData {
     
     //Check creature collision
     let creature = undefined;
-    //@ts-expect-error
     if(ConfigClient.options.Game.debug.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
@@ -96,7 +96,6 @@ export class CollisionData {
     }
 
     //Check party collision
-    //@ts-expect-error
     if(ConfigClient.options.Game.debug.creature_collision){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         creature = PartyManager.party[i];
@@ -133,7 +132,7 @@ export class CollisionData {
 
       //START: DOOR COLLISION
 
-      if(window.ConfigClient.options.Game.debug.door_collision){
+      if(ConfigClient.options.Game.debug.door_collision){
         for(let j = 0, jl = this.object.room.doors.length; j < jl; j++){
           obj = this.object.room.doors[j];
           if(obj && obj.walkmesh && !obj.isOpen()){

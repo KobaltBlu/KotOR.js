@@ -34,6 +34,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentFeat, TalentObject, TalentSkill, TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
+import { ConfigClient } from "../utility/ConfigClient";
 import { Dice } from "../utility/Dice";
 import { NWScriptSlotToArmorSlot } from "../utility/NWScriptSlotToArmorSlot";
 import { Utility } from "../utility/Utility";
@@ -7837,7 +7838,7 @@ export class NWScriptDefK1 extends NWScriptDef {
       type: 3,
       args: [],
       action: function(args: any, _instr: any, action: any){
-        return window.ConfigClient.get('Game.debug.is_shipping_build') ? true : false;
+        return ConfigClient.get('Game.debug.is_shipping_build') ? true : false;
       }
     },
     762:{

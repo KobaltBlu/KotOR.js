@@ -43,6 +43,7 @@ import { FactionManager } from "./FactionManager";
 import { EngineContext } from "./enums/engine/EngineContext";
 import { GameStateGroups } from "./interface/engine/GameStateGroups";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { ConfigClient } from "./utility/ConfigClient";
 
 const saturationShader: any = {
   uniforms: {
@@ -451,7 +452,7 @@ export class GameState implements EngineContext {
     GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas, this);
 
     document.getElementById('#renderer-containe').appendChild(GameState.stats.dom);
-    if(!window.ConfigClient.get('GameState.debug.show_fps'))
+    if(!ConfigClient.get('GameState.debug.show_fps'))
       GameState.stats.showPanel(false);
 
     //BEGIN: PostProcessing
@@ -587,7 +588,7 @@ export class GameState implements EngineContext {
   static Start(){
 
     GameState.TutorialWindowTracker = [];
-    LightManager.setLightHelpersVisible(window.ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+    LightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
     GameState.audioEngine = new AudioEngine();
     GameState.initGUIAudio();
@@ -1195,7 +1196,7 @@ export class GameState implements EngineContext {
     }*/
     requestAnimationFrame( GameState.Update );
 
-    if(!window.ConfigClient.get('GameState.debug.show_fps')){
+    if(!ConfigClient.get('GameState.debug.show_fps')){
       // GameState.stats.showPanel(false);
     }
 
@@ -1291,14 +1292,14 @@ export class GameState implements EngineContext {
       for(let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++){
         obj = GameState.group.room_walkmeshes.children[i];
         if(obj.type === 'Mesh'){
-          obj.material.visible = window.ConfigClient.get('GameState.debug.show_collision_meshes');
+          obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
         }
       }
 
       for(let i = 0, len = GameState.walkmeshList.length; i < len; i++){
         obj = GameState.walkmeshList[i];
         if(obj.type === 'Mesh'){
-          obj.material.visible = window.ConfigClient.get('GameState.debug.show_collision_meshes');
+          obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
         }
       }
   
@@ -1312,7 +1313,7 @@ export class GameState implements EngineContext {
       for(let i = 0, len = GameState.group.path_helpers.children.length; i < len; i++){
         obj = GameState.group.path_helpers.children[i];
         if(obj){
-          obj.visible = window.ConfigClient.get('GameState.debug.show_path_helpers');
+          obj.visible = ConfigClient.get('GameState.debug.show_path_helpers');
         }
       }
     }
