@@ -53,7 +53,7 @@ export class ADPCMDecoder {
 			let count = this.adpcm.length;
 
 			this.pcm = Buffer.alloc(0);
-			let chunks = [];
+			let chunks: Buffer[] = [];
 
 			console.log('ADPCMDecoder', 'Decode Starting');
 			while( count > 0 ) {
@@ -63,7 +63,7 @@ export class ADPCMDecoder {
 				let buffer = Buffer.alloc( samples );
 				this.decodeBlock( this.adpcm, buffer, this.inputStreamIndex, samples );
 
-				chunks.push(buffer);
+				chunks.push(buffer as Buffer);
 
 				count -= inSamples;
 				this.inputStreamIndex += inSamples;
@@ -83,7 +83,7 @@ export class ADPCMDecoder {
 		let currentBlock = this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
 
 		/* Block Header */
-		let byte1 = undefined, byte2 = undefined, dummyByte = undefined;
+		let byte1, byte2, dummyByte;
 		for(let i = 0, len = this.header.channels; i < len; i++){
 
 			byte1 = currentBlock.header.samples[i][0] = output[ outputIdx++ ] = input[ inputIdx++ ];
@@ -103,8 +103,8 @@ export class ADPCMDecoder {
 
 		/* Sample Parser: Start */
 		let sampleIdx = 0;
-		let channelSamples = undefined;
-		let channel = undefined, bytes = undefined;
+		let channelSamples;
+		let channel, bytes;
 		while( outputIdx < (outputEnd) ) {
 
 			channel = (sampleIdx & 4) >> 2;
