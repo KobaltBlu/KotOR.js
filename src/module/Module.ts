@@ -34,6 +34,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "../events";
 import { FactionManager } from "../FactionManager";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The Module class.
@@ -698,8 +699,8 @@ export class Module {
 
   static async GetModuleMod(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'modules', modName+'.mod'), (mod: ERFObject) => {
+      let resource_path = path.join('modules', modName+'.mod');
+      new ERFObject(resource_path, (mod: ERFObject) => {
         console.log('Module.GetModuleMod success', resource_path);
         resolve(mod);
       }, () => {
@@ -711,8 +712,8 @@ export class Module {
 
   static async GetModuleRimA(modName = ''){
     return new Promise<RIMObject>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'.rim');
-      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'.rim'), (rim: RIMObject) => {
+      let resource_path = path.join('modules', modName+'.rim');
+      new RIMObject(resource_path, (rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimA failed', resource_path);
@@ -723,8 +724,8 @@ export class Module {
 
   static async GetModuleRimB(modName = ''){
     return new Promise<RIMObject>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'_s.rim');
-      new RIMObject(path.join(ApplicationProfile.directory, 'modules', modName+'_s.rim'), (rim: RIMObject) => {
+      let resource_path = path.join('modules', modName+'_s.rim');
+      new RIMObject(resource_path, (rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimB failed', resource_path);
@@ -735,8 +736,8 @@ export class Module {
 
   static async GetModuleLipsLoc(){
     return new Promise<any>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'lips', 'localization.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'lips', 'localization.mod'), (mod: ERFObject) => {
+      let resource_path = path.join('lips', 'localization.mod');
+      new ERFObject(resource_path, (mod: ERFObject) => {
         console.log('Module.GetModuleLipsLoc success', resource_path);
         resolve(mod);
       }, () => {
@@ -748,8 +749,8 @@ export class Module {
 
   static async GetModuleLips(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'lips', modName+'_loc.mod');
-      new ERFObject(path.join(ApplicationProfile.directory, 'lips', modName+'_loc.mod'), (mod: ERFObject) => {
+      let resource_path = path.join('lips', modName+'_loc.mod');
+      new ERFObject(resource_path, (mod: ERFObject) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleLips failed', resource_path);
@@ -760,7 +761,7 @@ export class Module {
 
   static async GetModuleDLG(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
-      let resource_path = path.join(ApplicationProfile.directory, 'modules', modName+'_dlg.erf');
+      let resource_path = path.join('modules', modName+'_dlg.erf');
       new ERFObject(resource_path, (mod: ERFObject) => {
         resolve(mod);
       }, () => {
@@ -935,18 +936,17 @@ export class Module {
     GameState.module = module;
     if(directory != null){
 
-      fs.readFile(path.join(directory, 'module.ifo'), (err, ifo_data) => {
+      GameFileSystem.readFile(path.join(directory, 'module.ifo')).then( (ifo_data) => {
         new GFFObject(ifo_data, (ifo) => {
           //console.log('Module.FromProject', 'IFO', ifo);
           try{
             GameState.module.setFromIFO(ifo);
             GameState.time = GameState.module.timeManager.pauseTime / 1000;
-
-            fs.readFile(path.join(directory, module.Mod_Entry_Area+'.git'), (err, data) => {
-              new GFFObject(data, (git) => {
+            GameFileSystem.readFile(path.join(directory, module.Mod_Entry_Area+'.git')).then( (buffer) => {
+              new GFFObject(buffer, (git) => {
                 //console.log('Module.FromProject', 'GIT', git);
-                fs.readFile(path.join(directory, module.Mod_Entry_Area+'.are'), (err, data) => {
-                  new GFFObject(data, (are) => {
+                GameFileSystem.readFile(path.join(directory, module.Mod_Entry_Area+'.are')).then( (buffer) => {
+                  new GFFObject(buffer, (are) => {
                     //console.log('Module.FromProject', 'ARE', are);
                     module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                     module.area.module = module;
@@ -957,13 +957,19 @@ export class Module {
                         onComplete(module);
                     });                        
                   });
+                }).catch( () => {
+          
                 });
               });
+            }).catch( () => {
+      
             });
           }catch(e){
             console.error(e);
           }
         });
+      }).catch( () => {
+
       });
       
     }
@@ -1006,22 +1012,6 @@ export class Module {
       ifo: null
     } as any;
 
-  }
-
-  static FromJSON(path: any){
-    let module = new Module();
-    if(path != null){
-      let json = JSON.parse(fs.readFileSync(path, 'utf8'));
-
-      module = Object.assign(new Module(), json);
-
-      //module.area = new ModuleArea();
-      module.area = Object.assign(new ModuleArea(), json.area);
-
-    }else{
-      // this.path = Forge.Project.directory;
-    }
-    return module;
   }
 
   toolsetExportIFO(){

@@ -252,33 +252,33 @@ export class ScriptEditorTab extends EditorTab {
   }
 
   async SaveAs(){
-    return new Promise( async ( resolve, reject ) => {
-      //@ts-expect-error
-      dialog.showSaveDialog({
-        title: 'Save As',
-        defaultPath: this.file,
-        properties: ['createDirectory'],
-        filters: [
-          {name: 'NSS File', extensions: ['nss']}
-        ]
-      }).then( ( context: any ) => {
-        console.log('save as', context);
-        if(!context.canceled){
-          fs.writeFile(context.filePath, this.editor.getModel().getValue(), (err) => {
-            if(!err){
-              this.editorFile.setPath(context.filePath);
-              this.lastSavedState = this.editor.getModel().getValue();
-              this.editorFile.unsaved_changes = false;
-              NotificationManager.Notify(NotificationManager.Types.SUCCESS, `File saved`);
-            }else{
-              NotificationManager.Notify(NotificationManager.Types.ALERT, `Failed to save file`);
-            }
-            resolve(true);
-          });
-        }else{
-          resolve(false);
-        }
-      });
+    return new Promise<boolean>( async ( resolve, reject ) => {
+      resolve(false);
+      // dialog.showSaveDialog({
+      //   title: 'Save As',
+      //   defaultPath: this.file,
+      //   properties: ['createDirectory'],
+      //   filters: [
+      //     {name: 'NSS File', extensions: ['nss']}
+      //   ]
+      // }).then( ( context: any ) => {
+      //   console.log('save as', context);
+      //   if(!context.canceled){
+      //     fs.writeFile(context.filePath, this.editor.getModel().getValue(), (err) => {
+      //       if(!err){
+      //         this.editorFile.setPath(context.filePath);
+      //         this.lastSavedState = this.editor.getModel().getValue();
+      //         this.editorFile.unsaved_changes = false;
+      //         NotificationManager.Notify(NotificationManager.Types.SUCCESS, `File saved`);
+      //       }else{
+      //         NotificationManager.Notify(NotificationManager.Types.ALERT, `Failed to save file`);
+      //       }
+      //       resolve(true);
+      //     });
+      //   }else{
+      //     resolve(false);
+      //   }
+      // });
     });
   }
 

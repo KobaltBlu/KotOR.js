@@ -24,9 +24,6 @@ export class LTRObject {
 
   constructor( data: string|Buffer, onLoad?: Function, onError?: Function){
 
-    this.data = undefined;
-    this.file = undefined;
-
     if(typeof data === 'string'){
       this.file = data;
       this.openFile(this.file, onLoad, onError);
@@ -119,8 +116,8 @@ export class LTRObject {
         }
       }
 
-      this.data = undefined;
-      br = undefined;
+      this.data = Buffer.allocUnsafe(0);
+      br.dispose();
 
     }
 

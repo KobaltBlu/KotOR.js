@@ -720,7 +720,7 @@ export class ModuleArea extends ModuleObject {
     this.PlayerVsPlayer = this.are.GetFieldByLabel('PlayerVsPlayer').GetValue();
 
     //Rooms
-    for(let i = 0; i != rooms.ChildStructs.length; i++ ){
+    for(let i = 0; i < rooms.ChildStructs.length; i++ ){
       let strt = rooms.ChildStructs[i];
       
       this.rooms.push(
@@ -791,55 +791,55 @@ export class ModuleArea extends ModuleObject {
     this.audio.MusicNight = this.git.GetFieldByLabel('MusicNight', areaPropsField).GetValue();
 
     //Cameras
-    for(let i = 0; i != cameras.ChildStructs.length; i++){
+    for(let i = 0; i < cameras.ChildStructs.length; i++){
       let strt = cameras.ChildStructs[i];
       this.cameras.push( new ModuleCamera(GFFObject.FromStruct(strt) ) );
     }
 
     //Creatures
-    for(let i = 0; i != creatures.ChildStructs.length; i++){
+    for(let i = 0; i < creatures.ChildStructs.length; i++){
       let strt = creatures.ChildStructs[i];
       this.creatures.push( new ModuleCreature(GFFObject.FromStruct(strt)) );
     }
 
     //Triggers
-    for(let i = 0; i != triggers.ChildStructs.length; i++){
+    for(let i = 0; i < triggers.ChildStructs.length; i++){
       let strt = triggers.ChildStructs[i];
       this.triggers.push( new ModuleTrigger(GFFObject.FromStruct(strt)) );
     }
 
     //Encounter
-    for(let i = 0; i != encounters.ChildStructs.length; i++){
+    for(let i = 0; i < encounters.ChildStructs.length; i++){
       let strt = encounters.ChildStructs[i];
       this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
     }
 
     //Doors
-    for(let i = 0; i != doors.ChildStructs.length; i++ ){
+    for(let i = 0; i < doors.ChildStructs.length; i++ ){
       let strt = doors.ChildStructs[i];
       this.doors.push( new ModuleDoor(GFFObject.FromStruct(strt)) );
     }
 
     //Placeables
-    for(let i = 0; i != placeables.ChildStructs.length; i++ ){
+    for(let i = 0; i < placeables.ChildStructs.length; i++ ){
       let strt = placeables.ChildStructs[i];
       this.placeables.push( new ModulePlaceable(GFFObject.FromStruct(strt)) );
     }
 
     //Sounds
-    for(let i = 0; i != sounds.ChildStructs.length; i++ ){
+    for(let i = 0; i < sounds.ChildStructs.length; i++ ){
       let strt = sounds.ChildStructs[i];
       this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), GameState.audioEngine) );
     }
 
     //Stores
-    for(let i = 0; i != stores.ChildStructs.length; i++ ){
+    for(let i = 0; i < stores.ChildStructs.length; i++ ){
       let strt = stores.ChildStructs[i];
       this.stores.push( new ModuleStore(GFFObject.FromStruct(strt)) );
     }
 
     //Waypoints
-    for(let i = 0; i != waypoints.ChildStructs.length; i++ ){
+    for(let i = 0; i < waypoints.ChildStructs.length; i++ ){
       let strt = waypoints.ChildStructs[i];
 
       if(this.transWP){
@@ -920,7 +920,7 @@ export class ModuleArea extends ModuleObject {
 
       //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
       let sortedRooms = [];
-      for(let i = 0; i != this.layout.rooms.length; i++){
+      for(let i = 0; i < this.layout.rooms.length; i++){
         let roomLYT = this.layout.rooms[i];
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
@@ -937,22 +937,22 @@ export class ModuleArea extends ModuleObject {
 
       this.rooms = sortedRooms;
 
-      for(let i = 0; i != this.layout.doorhooks.length; i++){
+      for(let i = 0; i < this.layout.doorhooks.length; i++){
         let _doorHook = this.layout.doorhooks[i];
         this.doorhooks.push(_doorHook);
       }
 
-      for(let i = 0; i != this.layout.tracks.length; i++){
+      for(let i = 0; i < this.layout.tracks.length; i++){
         this.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
       }
 
-      for(let i = 0; i != this.layout.obstacles.length; i++){
+      for(let i = 0; i < this.layout.obstacles.length; i++){
         let _obstacle = this.layout.obstacles[i];
         this.obstacles.push(_obstacle);
       }
 
       //Room Linking Pass 1
-      for(let ri = 0; ri != this.rooms.length; ri++ ){
+      for(let ri = 0; ri < this.rooms.length; ri++ ){
         let room = this.rooms[ri];
         let linked_rooms = [];
         if(this.visObject.GetRoom(room.roomName)){

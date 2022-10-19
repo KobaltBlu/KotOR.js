@@ -13,8 +13,7 @@ import { RIMManager } from "../../managers/RIMManager";
 import { RIMObject } from "../../resource/RIMObject";
 import { ERFManager } from "../../managers/ERFManager";
 import { ERFObject } from "../../resource/ERFObject";
-import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { recursive } from "../../utility/RecursiveDirectoryReader";
+import { GameFileSystem } from "../../utility/GameFileSystem";
 
 export class ResourceExplorerTab extends EditorTab {
 	$scrollContainer: JQuery<HTMLElement>;
@@ -425,16 +424,12 @@ export class ResourceExplorerTab extends EditorTab {
 
 	loadFolderForFileBrowser(folder_name = '', onComplete?: Function) {
 		//Load StreamWaves
-		let files: any[] = [];
-		recursive( path.join(ApplicationProfile.directory, folder_name), files).then( () => {
+		GameFileSystem.readdir( folder_name, { recursive: true } ).then( (files) => {
 			let folder: any = { name: folder_name, type: 'group', nodeList: [] };
 			folder.nodeList._indexes = {};
-			let substr_len = (
-				path.join(ApplicationProfile.directory, folder_name) + path.sep
-			).length;
 
 			for (let i = 0; i < files.length; i++) {
-				let file = files[i].substr(substr_len);
+				let file = files[i];
 				let parts = file.split(path.sep);
 
 				let newfile = parts.pop();
@@ -456,8 +451,7 @@ export class ResourceExplorerTab extends EditorTab {
 						targetFolder = targetFolder.nodeList[index];
 						targetFolder.nodeList._indexes = {};
 					} else {
-						let index =
-							targetFolder.nodeList._indexes[parts[i]];
+						let index = targetFolder.nodeList._indexes[parts[i]];
 						targetFolder = targetFolder.nodeList[index];
 					}
 				}
@@ -470,8 +464,8 @@ export class ResourceExplorerTab extends EditorTab {
 				});
 
 				/*targetFolder.nodeList.sort( (a, b) => {
-				return a.type == 'group' ? 0 : 1;
-			});*/
+					return a.type == 'group' ? 0 : 1;
+				});*/
 			}
 
 			folder.nodeList.sort((a: any, b: any) => {

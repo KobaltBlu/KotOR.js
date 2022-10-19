@@ -48,7 +48,7 @@ export class GFFStruct {
 
   GetFieldByLabel(Label: string): GFFField|null {
 
-    for(let i = 0; i!=this.Fields.length; i++){
+    for(let i = 0; i < this.Fields.length; i++){
       let field = this.Fields[i];
       if (field.Label == Label){
         return field;
@@ -78,7 +78,7 @@ export class GFFStruct {
   }
 
   HasField(Label: string){
-    for(let i = 0; i!=this.Fields.length; i++){
+    for(let i = 0; i < this.Fields.length; i++){
       let field = this.Fields[i];
       if (field.Label == Label)
         return true;

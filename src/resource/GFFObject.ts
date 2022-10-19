@@ -12,6 +12,7 @@ import { GFFStruct } from "./GFFStruct";
 import * as THREE from "three";
 import * as fs from "fs";
 import * as path from "path";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The GFFObject class.
@@ -95,11 +96,11 @@ export class GFFObject {
         this.file = fileInfo.name;
         this.ext = fileInfo.ext.substr(1);
 
-        //let start = performance.now();
-        //console.log(file)
-        fs.readFile(file, (err, binary) => {
+        GameFileSystem.readFile(file).then( (binary) => {
           this.resourceID = file;
           this.Parse(binary, onComplete);
+        }).catch( () => {
+
         });
 
       }else{
@@ -276,7 +277,7 @@ export class GFFObject {
     else if(struct.FieldCount != 0){
       let originalPos = this.reader.Tell();
       this.reader.Seek(this.FieldIndicesOffset + struct.DataOrDataOffset);
-      for (let i = 0; i!=struct.FieldCount; i++){
+      for (let i = 0; i < struct.FieldCount; i++){
         let index = this.reader.ReadInt32();
         strt.AddField(this.BuildField(this.tmpFieldsArray[index]));
       }
@@ -344,7 +345,7 @@ export class GFFObject {
           this.reader.Seek(this.ListIndicesOffset + offset);
           let ListSize = this.reader.ReadUInt32();//The first 4 bytes indicate the size of the array
           let arr: GFFStruct[] = [];
-          for (let i = 0; i != ListSize; i++){
+          for (let i = 0; i < ListSize; i++){
             arr[i] = this.BuildStruct(this.tmpStructArray[this.reader.ReadInt32()]);
           }
 
@@ -373,13 +374,13 @@ export class GFFObject {
     return null;
   }
 
-  GetFieldByLabel(Label: string, Fields?:GFFField[]): GFFField {
+  GetFieldByLabel(Label: string, Fields?:GFFField[]): GFFField|any {
     if (Fields == null)
       Fields = this.RootNode.GetFields();
 
     let listFields:GFFField[] = [];
 
-    for(let i = 0; i!=Fields.length; i++){
+    for(let i = 0; i < Fields.length; i++){
       let field = Fields[i];
       if (field.Label == Label){
         return field;
@@ -401,7 +402,7 @@ export class GFFObject {
       }
     }
 
-    return null;
+    return undefined;
   }
 
   /*
@@ -592,16 +593,15 @@ export class GFFObject {
 
       console.log('Export GFF', fileInfo, this);
 
-      fs.writeFile( path.join(fileInfo.dir, fileInfo.base), buffer, (err) => {
-        if (err){
-          if(typeof onError === 'function')
-            onError(err);
-          reject(err);
-        }else{
-          if(typeof onExport === 'function')
-            onExport(err);
-          resolve(this);
-        }
+      GameFileSystem.writeFile( path.join(fileInfo.dir, fileInfo.base), buffer ).then( () => {
+        if(typeof onExport === 'function')
+          onExport();
+        resolve(this);
+      }).catch( (err) => {
+        if(typeof onError === 'function')
+          onError(err);
+        reject(err);
+
       });
 
       // this.signals.onSaved.dispatch( this );

@@ -23,7 +23,7 @@ import { TextureLoader } from "./TextureLoader";
 
 export class TGALoader {
 	manager: any;
-	constructor( manager: any ){
+	constructor( manager?: any ){
 		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 	}
 
@@ -61,7 +61,7 @@ export class TGALoader {
 
 	load_override = function ( name: string, onLoad?: Function, onError?: Function ) {
 
-		let dir = path.join(ApplicationProfile.directory, 'Override');
+		let dir = path.join('Override');
 		
 		let scope = this;
 		let texture = new OdysseyTexture();
@@ -84,7 +84,7 @@ export class TGALoader {
 	
 				if(err){
 	
-					TextureLoader.tpcLoader.fetch(name, (tpcCheck) => {
+					TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
 	
 						if(tpcCheck){
 							texture.txi = tpcCheck.txi;
@@ -131,7 +131,7 @@ export class TGALoader {
 	
 				//if(err){
 	
-					TextureLoader.tpcLoader.fetch(name, (tpcCheck) => {
+					TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
 	
 						/*if(tpcCheck){
 							texture.txi = tpcCheck.txi;

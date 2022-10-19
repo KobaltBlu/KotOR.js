@@ -58,8 +58,9 @@ export class CharGenQuickPanel extends GameMenu {
         GameState.player = CharGenManager.selectedCreature;
         PartyManager.Player = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder();
-        GameState.LoadModule('end_m01aa');
+        CurrentGame.InitGameInProgressFolder().then( () => {
+          GameState.LoadModule('end_m01aa');
+        });
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {

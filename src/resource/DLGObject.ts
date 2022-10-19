@@ -31,7 +31,6 @@ export class DLGObject {
 
   constructor(resref = ''){
     this.resref = resref;
-    this.gff = undefined;
 
     this.conversationType = 0;
     this.entryList = [];
@@ -105,8 +104,8 @@ export class DLGObject {
       let linkNode = new DLGNode();
       linkNode.dialog = this;
       
-      linkNode.entries = undefined;
-      linkNode.replies = undefined;
+      linkNode.entries = [];
+      linkNode.replies = [];
 
       if(typeof _node.Not !== 'undefined'){
         linkNode.isActiveParams.Not = _node.Not.value;

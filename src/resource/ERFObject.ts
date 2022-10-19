@@ -7,6 +7,7 @@ import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { GameFileSystem } from "../utility/GameFileSystem";
 import { ResourceTypes } from "./ResourceTypes";
 
 /* @file
@@ -103,12 +104,13 @@ export class ERFObject {
           this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
           this.Header.Reserved = this.Reader.ReadBytes(116);                 //Byte 116
 
-          header = this.Reader = null;
+          header = Buffer.allocUnsafe(0);
+          this.Reader.dispose();
 
           //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
           this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
           header = Buffer.from(this.buffer, 0, this.erfDataOffset);
-          this.Reader = new BinaryReader(header);
+          this.Reader.reuse(header);
 
           this.Reader.Seek(this.Header.OffsetToLocalizedString);
 
@@ -140,22 +142,17 @@ export class ERFObject {
             this.Resources.push(resource);
           }
 
-          header = this.Reader = null;
+          header = Buffer.allocUnsafe(0);
+          this.Reader.dispose();
 
           if(typeof onComplete == 'function')
             onComplete(this);
 
         }else{
           console.log('erf', this.resource_path);
-          fs.open(this.resource_path, 'r', (e, fd) => {
-            if (e) {
-              console.error('ERFObject', 'ERF Header Read', e);
-              if(typeof onError == 'function')
-                onError(undefined);
-              return;
-            }
+          GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
             let header = Buffer.alloc(HeaderSize);
-            fs.read(fd, header, 0, HeaderSize, 0, (e, num, buffer) => {
+            GameFileSystem.read(fd, header, 0, HeaderSize, 0).then( (buffer) => {
               this.Reader = new BinaryReader(buffer);
 
               this.Header.FileType = this.Reader.ReadChars(4);
@@ -172,12 +169,12 @@ export class ERFObject {
               this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
               this.Header.Reserved = this.Reader.ReadBytes(116);               //Byte 116
 
-              header = null;
+              header = Buffer.allocUnsafe(0);
 
               //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
               this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
               header = Buffer.alloc(this.erfDataOffset);
-              fs.read(fd, header, 0, this.erfDataOffset, 0, (e, num, buffer2) => {
+              GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0).then( (buffer2) => {
                 this.Reader.reuse(buffer2);
 
                 this.Reader.Seek(this.Header.OffsetToLocalizedString);
@@ -210,24 +207,35 @@ export class ERFObject {
                   this.Resources.push(resource);
                 }
 
-                header = this.Reader = null;
+                header = Buffer.allocUnsafe(0);
+                this.Reader.dispose();
 
-                fs.close(fd, (e: any) => {
-
+                GameFileSystem.close(fd).then( () => {
                   if(typeof onComplete == 'function')
                     onComplete(this);
 
-                  if (e) {
-                    console.error('ERFObject', "close error:  " + e.message);
-                  } else {
-                    console.log('ERFObject', "File was closed!");
+                  console.log('ERFObject', "File was closed!");
+                }).catch( (err) => {
+                  if (err) {
+                    console.error('ERFObject', "close error:  ", err);
                   }
                 });
 
+              }).catch( (err) => {
+
               });
+
+            }).catch( (err) => {
 
             });
 
+          }).catch( (err) => {
+            if (err) {
+              console.error('ERFObject', 'ERF Header Read', err);
+              if(typeof onError == 'function')
+                onError(undefined);
+              return;
+            }
           });
         }
       }catch(e){
@@ -252,23 +260,32 @@ export class ERFObject {
           if(typeof onComplete == 'function')
             onComplete(buffer);
         }else{
-          fs.open(this.resource_path, 'r', (e, fd) => {
+          GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
             let buffer = Buffer.alloc(resource.ResourceSize);
-            fs.read(fd, buffer, 0, buffer.length, resource.OffsetToResource, function(err, br, buf) {
-              fs.close(fd, function(e) {
+            GameFileSystem.read(fd, buffer, 0, buffer.length, resource.OffsetToResource).then( () => {
+              GameFileSystem.close(fd).then( () => {
                 if(typeof onComplete === 'function')
-                  onComplete(buf);
-              });
-            });
+                  onComplete(buffer);
+              }).catch( (err) => {
+                if(typeof onComplete === 'function')
+                  onComplete(Buffer.allocUnsafe(0));
+              })
+            }).catch( (err) => {
+              if(typeof onComplete === 'function')
+                onComplete(Buffer.allocUnsafe(0));
+            })
+          }).catch( (err) => {
+            if(typeof onComplete === 'function')
+              onComplete(Buffer.allocUnsafe(0));
           });
         }
       }else{
         if(typeof onComplete === 'function')
-          onComplete(Buffer.alloc(0));
+          onComplete(Buffer.allocUnsafe(0));
       }
     }else{
       if(typeof onComplete === 'function')
-        onComplete(Buffer.alloc(0));
+        onComplete(Buffer.allocUnsafe(0));
     }
   }
 
@@ -316,7 +333,7 @@ export class ERFObject {
   }
 
   getResourcesByType(restype: number){
-    let resources = [];
+    let resources: ERFResource[] = [];
     for(let i = 0; i < this.KeyList.length; i++){
       let _key = this.KeyList[i];
       if (_key.ResType == restype) {
@@ -329,50 +346,55 @@ export class ERFObject {
   exportRawResource(directory: string, resref: string, restype: number = 0x000F, onComplete?: Function) {
     if(directory != null){
       let resource = this.getResourceByKey(resref, restype);
-      if(resource){
+      if(!!resource){
         if(this.inMemory){
           let buffer = Buffer.from(this.buffer, resource.OffsetToResource, resource.OffsetToResource + (resource.ResourceSize - 1));
-          fs.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer, (err) => {
-            if (err) console.log(err);
-
-            if(onComplete != null)
+          GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer).then( () => {
+            if(typeof onComplete === 'function')
               onComplete(buffer);
-
+          }).catch((err) => {
+            console.error(err);
           });
         }else{
-          fs.open(this.resource_path, 'r', function(err, fd) {
-            if (err) {
-              console.log('ERF Read', err.message);
-              return;
-            }
+          GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
             try{
-            let buffer = Buffer.alloc(resource.ResourceSize);
-              fs.read(fd, buffer, 0, resource.ResourceSize, resource.OffsetToResource, function(err, num, buffer2) {
-                console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
-                fs.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer2, (err) => {
-                  if (err) console.log(err);
-
-                  if(onComplete != null)
-                    onComplete(buffer);
-
+              if(resource){
+                let buffer = Buffer.alloc(resource.ResourceSize);
+                GameFileSystem.read(fd, buffer, 0, resource.ResourceSize, resource.OffsetToResource).then( () => {
+                  console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
+                  
+                  GameFileSystem.writeFile(
+                    path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
+                  ).then( () => {
+                    if(typeof onComplete === 'function')
+                      onComplete(buffer);
+                  }).catch( (err) => {
+                    console.log(err);
+                  })
+                }).catch( (err) => {
+                  console.log(err);
                 });
-
-              });
+              }else{
+                if(typeof onComplete === 'function')
+                  onComplete(undefined);
+              }
             }catch(e){
               console.log(resource);
               console.error(e);
 
-              if(onComplete != null)
+              if(typeof onComplete === 'function')
                 onComplete(undefined);
             }
+          }).catch( (err) => {
+            console.log('ERF Read', err.message);
           });
         }
       }else{
-        if(onComplete != null)
+        if(typeof onComplete === 'function')
           onComplete(new ArrayBuffer(0));
       }
     }else{
-      if(onComplete != null)
+      if(typeof onComplete === 'function')
         onComplete(new ArrayBuffer(0));
     }
   }
@@ -398,24 +420,21 @@ export class ERFObject {
     return new Promise( (resolve: Function, reject: Function) => {
 
       if(!file){
-        throw 'Failed to export: Missing file path.';
+        reject('Failed to export: Missing file path.');
+        return;
       }
 
       let buffer = this.getExportBuffer();
+      GameFileSystem.writeFile( file, buffer ).then( () => {
+        if(typeof onExport === 'function')
+          onExport();
 
-      fs.writeFile( file, buffer, (err) => {
-        if (err){
-          console.log(err);
-          if(typeof onError === 'function')
-            onError(err);
-
-          reject();
-        }else{
-          if(typeof onExport === 'function')
-            onExport(err);
-
-          resolve();
-        }
+        resolve();
+      }).catch( (err) => {
+        console.log(err);
+        if(typeof onError === 'function')
+          onError(err);
+        reject();
       });
 
     });

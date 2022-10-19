@@ -7,6 +7,7 @@ import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
 import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
+import { GameFileSystem } from "../utility/GameFileSystem";
 import { Utility } from "../utility/Utility";
 import { ADPCMDecoder } from "./ADPCMDecoder";
 
@@ -49,8 +50,7 @@ export class AudioFile {
 
         this.filename = info.file.name;
 
-        fs.readFile(info.path, (err, buffer) => {
-          if (err) throw err;
+        GameFileSystem.readFile(info.path).then( (buffer) => {
           try{
             this.reader = new BinaryReader(buffer);
             this.ProcessFile(onComplete);
@@ -60,7 +60,9 @@ export class AudioFile {
             console.error(e);
           }
 
-        });
+        }).catch( (err) => {
+          throw err;
+        })
 
       }else if(info.location == 'archive'){
 

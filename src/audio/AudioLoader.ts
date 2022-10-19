@@ -9,6 +9,7 @@ import { AudioFile } from "./AudioFile";
 import * as path from "path";
 import * as fs from "fs";
 import { KEYManager } from "../managers/KEYManager";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The AudioLoader class is used for finding and loading audio files by name and filetype.
@@ -65,52 +66,43 @@ export class AudioLoader {
 
   static LoadStreamSound (ResRef: string, onLoad?: Function, onError?: Function) {
 
-    let file = path.join(ApplicationProfile.directory, 'streamsounds', ResRef+'.wav');
+    let file = path.join('streamsounds', ResRef+'.wav');
 
     //console.log('LoadStreamSound', ResRef, file);
 
-    fs.readFile(file, (err, buffer) => {
-      if (err) {
-        //console.log('AudioLoader.LoadStreamSound : read', err);
-        if(onError != null)
-          onError(err);
-      }else{
-        new AudioFile(buffer, (af: AudioFile)=> {
-          //console.log(af, buffer)
-          af.GetPlayableByteStream( (data: any) => {
-            if(onLoad != null)
-              onLoad(data);
-          });
+    GameFileSystem.readFile(file).then( (buffer) => {
+      new AudioFile(buffer, (af: AudioFile)=> {
+        //console.log(af, buffer)
+        af.GetPlayableByteStream( (data: any) => {
+          if(onLoad != null)
+            onLoad(data);
         });
-      }
-
+      });
+    }).catch((err) => {
+      //console.log('AudioLoader.LoadStreamSound : read', err);
+      if(typeof onError === 'function')
+        onError(err);
     });
 
   }
 
   static LoadStreamWave (ResRef: string, onLoad?: Function, onError?: Function) {
 
-    //let file = path.join(ApplicationProfile.directory, 'streamwaves', ResRef+'.wav');
-
     let snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
     if(snd){
       //console.log('LoadStreamSound', ResRef, snd);
 
-      fs.readFile(snd.file, (err, buffer) => {
-        if (err) {
-          console.log('AudioLoader.LoadStreamWave : read', err);
-          if(onError != null)
-            onError(err);
-        }else{
-          new AudioFile(buffer, (af: AudioFile)=> {
-            //console.log(af, buffer)
-            af.GetPlayableByteStream( (data: any) => {
-              if(onLoad != null)
-                onLoad(data);
-            });
+      GameFileSystem.readFile(snd.file).then( (buffer) => {
+        new AudioFile(buffer, (af: AudioFile)=> {
+          af.GetPlayableByteStream( (data: any) => {
+            if(onLoad != null)
+              onLoad(data);
           });
-        }
-
+        });
+      }).catch( (err) => {
+        console.log('AudioLoader.LoadStreamWave : read', err);
+        if(typeof onError === 'function')
+          onError(err);
       });
     }else{
       if(typeof onError === 'function')
@@ -125,23 +117,19 @@ export class AudioLoader {
 
   static LoadAmbientSound (ResRef: string, onLoad?: Function, onError?: Function) {
 
-    let file = path.join(ApplicationProfile.directory, 'streammusic', ResRef+'.wav');
-    fs.readFile(file, (err, buffer) => {
-      if (err) {
-        console.log('AudioLoader.LoadAmbientSound : read', err);
-        if(onError != null)
-          onError(err);
-      }else{
-        new AudioFile(buffer, (af: AudioFile)=> {
-          //console.log(af, buffer)
-          af.GetPlayableByteStream( (data: any) => {
-            if(onLoad != null)
-              onLoad(data);
-          });
+    let file = path.join('streammusic', ResRef+'.wav');
+    GameFileSystem.readFile(file).then( (buffer) => {
+      new AudioFile(buffer, (af: AudioFile)=> {
+        af.GetPlayableByteStream( (data: any) => {
+          if(onLoad != null)
+            onLoad(data);
         });
-      }
-
-    });
+      });
+    }).catch( (err) => {
+      console.log('AudioLoader.LoadAmbientSound : read', err);
+      if(onError != null)
+        onError(err);
+    })
 
   }
 

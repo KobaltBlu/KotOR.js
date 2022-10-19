@@ -235,7 +235,7 @@ export class DLGNode {
 
   async getActiveReplies(){
     let totalReplies = this.replies.length;
-    let replyIds = [];
+    let replyIds: any[] = [];
     for(let i = 0; i < totalReplies; i++){
       let replyLink = this.replies[i];
       let isActive = await replyLink.runActiveScripts();
@@ -305,7 +305,7 @@ export class DLGNode {
       node.camFieldOfView = struct.CamFieldOfView.value;
 
     if(typeof struct.RepliesList !== 'undefined'){
-      node.entries = undefined;
+      node.entries = [];
       for(let i = 0; i < struct.RepliesList.structs.length; i++){
         let _node = struct.RepliesList.structs[i].fields;
         let linkNode = new DLGNode();
@@ -389,7 +389,7 @@ export class DLGNode {
     }
 
     if(typeof struct.EntriesList !== 'undefined'){
-      node.replies = undefined;
+      node.replies = [];
       for(let i = 0; i < struct.EntriesList.structs.length; i++){
         let _node = struct.EntriesList.structs[i].fields;
         let linkNode = new DLGNode();

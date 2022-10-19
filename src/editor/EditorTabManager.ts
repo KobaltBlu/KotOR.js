@@ -86,7 +86,7 @@ export class EditorTabManager {
   IsResourceIdOpenInTab(resID: number){
 
     if(resID){
-      for(let i = 0; i!=this.tabs.length; i++){
+      for(let i = 0; i < this.tabs.length; i++){
         if(this.tabs[i].GetResourceID() == resID){
           return this.tabs[i];
         }
@@ -98,7 +98,7 @@ export class EditorTabManager {
   }
 
   GetTabByType(tabClass: any){
-    for(let i = 0; i!=this.tabs.length; i++){
+    for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return this.tabs[i];
     }
@@ -107,7 +107,7 @@ export class EditorTabManager {
 
   TabTypeExists(tab: EditorTab){
     let tabClass = tab.constructor.name;
-    for(let i = 0; i!=this.tabs.length; i++){
+    for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return true;
     }
@@ -115,14 +115,14 @@ export class EditorTabManager {
   }
 
   HideAll(){
-    for(let i = 0; i!=this.tabs.length; i++){
+    for(let i = 0; i < this.tabs.length; i++){
       this.tabs[i].Hide();
     }
   }
 
   RemoveTab(tab: EditorTab){
     let length = this.tabs.length;
-    for(let i = 0; i!=length; i++){
+    for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
         console.log('Tab found. Deleting');
         this.tabs[i].$tab.remove();

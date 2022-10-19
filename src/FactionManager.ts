@@ -9,6 +9,7 @@ import * as fs from "fs";
 import { GFFField } from "./resource/GFFField";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { TwoDAManager } from "./managers/TwoDAManager";
+import { GameFileSystem } from "./utility/GameFileSystem";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 
@@ -246,21 +247,19 @@ export class FactionManager {
 
   static Load(){
     return new Promise<void>( (resolve, reject) => {
-      fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'repute.fac'), (error, data) => {
-        if(!error){
-          if(FactionManager.LoadFac( new GFFObject(data) )){
-            console.log('ReputationLoader: loaded', 'CurrentGame .fac');
-          }else{
-            console.error('ReputationLoader: failed', 'CurrentGame .fac');
-            FactionManager.Load2DA();
-            console.log('ReputationLoader: loaded', 'default faction data');
-          }
-          resolve();
+      GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'repute.fac') ).then( (buffer) => {
+        if(FactionManager.LoadFac( new GFFObject(buffer) )){
+          console.log('ReputationLoader: loaded', 'CurrentGame .fac');
         }else{
+          console.error('ReputationLoader: failed', 'CurrentGame .fac');
           FactionManager.Load2DA();
           console.log('ReputationLoader: loaded', 'default faction data');
-          resolve();
         }
+        resolve();
+      }).catch( (err) => {
+        FactionManager.Load2DA();
+        console.log('ReputationLoader: loaded', 'default faction data');
+        resolve();
       });
     });
   }

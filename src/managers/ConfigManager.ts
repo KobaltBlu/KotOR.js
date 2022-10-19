@@ -33,7 +33,7 @@ export class ConfigManager{
     this.cache();
 
     if(typeof _settings == 'object'){
-      this.Save(null, true);
+      // this.Save(null, true);
     }
 
     if(typeof ipcRenderer != 'undefined'){
@@ -64,9 +64,7 @@ export class ConfigManager{
     }
 
   }
-  Save(arg0: null, arg1: boolean) {
-    throw new Error('Method not implemented.');
-  }
+  
   _cache: any = {};
 
   //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/

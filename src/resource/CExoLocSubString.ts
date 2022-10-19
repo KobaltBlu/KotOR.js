@@ -9,7 +9,7 @@ export class CExoLocSubString {
     this.language = Math.floor(stringId / 2);
     this.gender = stringId % 2;
     this.StringID = stringId;
-    this.str = str; //1024 character limit
+    this.str = str || ''; //1024 character limit
   }
 
   getLanguage() {

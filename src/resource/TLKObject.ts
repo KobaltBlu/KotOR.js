@@ -5,6 +5,7 @@ import { BinaryReader } from "../BinaryReader";
 import * as fs from 'fs';
 import { TLKString } from "./TLKString";
 import isBuffer from "is-buffer";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The TLKObject class.
@@ -87,17 +88,15 @@ export class TLKObject {
 
   LoadFromDisk( resource_path: string, onProgress?: Function ){
     return new Promise<void>( (resolve, reject) => {
-      fs.readFile(this.file, (err, buffer: Buffer) => {
-        if(err){
-          reject();
-          return;
-        }
+      GameFileSystem.readFile(resource_path).then((buffer) => {
         this.LoadFromBuffer(buffer, onProgress).then( () => {
           resolve();
         }).catch( () => {
           reject();
         });
-      });
+      }).catch((err) => {
+        reject();
+      })
     });
   }
 

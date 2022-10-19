@@ -11,6 +11,7 @@ import { PartyManager } from "./PartyManager";
 import * as fs from "fs";
 import * as path from "path";
 import { TwoDAManager } from "./TwoDAManager";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 export class PartyTableManager {
 
@@ -79,13 +80,14 @@ export class PartyTableManager {
         let ptLoader = new AsyncLoop({
           array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
           onLoop: (id: number, asyncLoop: AsyncLoop) => {
-            fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc'), (error, pm) => {
+            GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc') ).then( (buffer) => {
               PartyManager.NPCS[id].template = null;
-              if(!error){
-                if(pm.length){
-                  PartyManager.NPCS[id].template = new GFFObject(pm);
-                }
+              if(buffer.length){
+                PartyManager.NPCS[id].template = new GFFObject(buffer);
               }
+              asyncLoop.next();
+            }).catch( (err) => {
+              console.error(err);
               asyncLoop.next();
             });
           }

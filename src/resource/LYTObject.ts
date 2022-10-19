@@ -38,7 +38,7 @@ export class LYTObject {
 
     let mode = MODES.NONE;
 
-    for(let i = 0; i!= lines.length; i++){
+    for(let i = 0; i < lines.length; i++){
       let line = lines[i];
 
       if(line.includes('roomcount')){

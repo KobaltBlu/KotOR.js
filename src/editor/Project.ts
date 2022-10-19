@@ -12,6 +12,11 @@ import { Forge } from "./Forge";
 import { ModuleEditorTab } from "./tabs/ModuleEditorTab";
 
 export class Project {
+
+  static base_dir: string = 'forge';
+  static project_assets_dir: string = 'assets';
+  dir: string = '';
+
   ClassName: string;
   directory: string;
   files: any[];

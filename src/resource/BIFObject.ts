@@ -8,6 +8,7 @@ import { Utility } from "../utility/Utility";
 import { KEYManager } from "../managers/KEYManager";
 import { ResourceTypes } from "./ResourceTypes";
 import isBuffer from "is-buffer";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The BIFObject class.
@@ -80,15 +81,9 @@ export class BIFObject {
   }
 
   ReadFromDisk(onComplete?: Function){
-    fs.open(this.resourceDiskInfo.path, 'r', (err, fd) => {
-      if (err) {
-        try{ fs.close(fd, null); }catch(e){}
-        console.log('BIF Header Read', err.message);
-        throw 'BIFObject: Failed to open '+this.resourceDiskInfo.path+' for reading.';
-      }
-      
+    GameFileSystem.open(this.resourceDiskInfo.path, 'r').then((fd) => {
       const header = Buffer.alloc(this.HeaderSize);
-      fs.read(fd, header, 0, this.HeaderSize, 0, (err, num) => {
+      GameFileSystem.read(fd, header, 0, this.HeaderSize, 0).then( (buffer) => {
         this.reader = new BinaryReader(header);
 
         this.FileType = this.reader.ReadChars(4);
@@ -102,10 +97,9 @@ export class BIFObject {
 
         //Read variable tabs blocks
         const variableTable: Buffer = Buffer.alloc(this.VariableTableSize);
-        fs.read(fd, variableTable, 0, this.VariableTableSize, this.VariableTableOffset, (err, num) => {
-          this.reader.reuse(variableTable);
+        GameFileSystem.read(fd, variableTable, 0, this.VariableTableSize, this.VariableTableOffset).then( () => {
 
-          for(let i = 0; i!=this.VariableResourceCount; i++){
+          for(let i = 0; i < this.VariableResourceCount; i++){
             this.resources[i] = {
               ID: this.reader.ReadUInt32(),
               Offset: this.reader.ReadUInt32(),
@@ -116,25 +110,37 @@ export class BIFObject {
 
           this.reader.dispose();
 
-          fs.close(fd, (error) => {
-            if (error) {
-              console.error("close error:  " + error.message);
-              if(typeof onComplete == 'function')
-                onComplete(this);
-            } else {
-              // console.log("File was closed!");
+          GameFileSystem.close(fd).then( () => {
+            // console.log("File was closed!");
+            if(typeof onComplete == 'function')
+              onComplete(this);
+          }).catch( (err) => {
+            if (err) {
+              console.error("close error:  " + err.message);
               if(typeof onComplete == 'function')
                 onComplete(this);
             }
-          });
-        });
-      });
+          })
+        }).catch( () => {
+          if(typeof onComplete == 'function')
+            onComplete(this);
+        })
+      }).catch( () => {
+        if(typeof onComplete == 'function')
+          onComplete(this);
+      })
+    }).catch((err) => {
+      if (err) {
+        // try{ fs.close(fd); }catch(e){}
+        console.log('BIF Header Read', err.message);
+        throw 'BIFObject: Failed to open '+this.resourceDiskInfo.path+' for reading.';
+      }
     });
   }
 
   GetResourceById(id: number){
     if(id != null){
-      for(let i = 0; i!=this.VariableResourceCount; i++){
+      for(let i = 0; i < this.VariableResourceCount; i++){
         if(this.resources[i].ID == id){
           return this.resources[i];
         }
@@ -146,7 +152,7 @@ export class BIFObject {
   GetResourcesByType(ResType: number){
     let arr: BIFResource[] = []
     if(ResType != null){
-      for(let i = 0; i!=this.VariableResourceCount; i++){
+      for(let i = 0; i < this.VariableResourceCount; i++){
         if(this.resources[i].ResType == ResType){
           arr.push(this.resources[i]);
         }
@@ -158,7 +164,7 @@ export class BIFObject {
   GetResourceByLabel(label: string, ResType: number): BIFResource|undefined {
     if(label != null){
       let len = KEYManager.Key.keys.length;
-      for(let i = 0; i != len; i++){
+      for(let i = 0; i < len; i++){
         let key = KEYManager.Key.keys[i];
         if(key.ResRef == label && key.ResType == ResType){
           for(let j = 0; j != this.resources.length; j++){
@@ -177,18 +183,23 @@ export class BIFObject {
     if(res != null){
 
       if(res.FileSize){
-
-        fs.open(this.resourceDiskInfo.path, 'r', (e, fd) => {
+        GameFileSystem.open(this.resourceDiskInfo.path, 'r').then( (fd) => {
           let buffer = Buffer.alloc(res.FileSize);
-          fs.read(fd, buffer, 0, buffer.length, res.Offset, function(err, br, buf) {
-            //console.log(err, buf);
-            fs.close(fd, function(e) {
+          GameFileSystem.read(fd, buffer, 0, buffer.length, res.Offset).then( () => {
+            GameFileSystem.close(fd).then( () => {
               if(typeof onComplete === 'function')
-                onComplete(buf);
+                onComplete(buffer);
             });
+          }).catch( (err) => {
+            console.error(err);
+            if(typeof onComplete == 'function')
+              onComplete(Buffer.alloc(0));
           });
-        });
-
+        }).catch( (err) => {
+          console.error(err);
+          if(typeof onComplete == 'function')
+            onComplete(Buffer.alloc(0));
+        })
       }else{
         if(typeof onComplete == 'function')
           onComplete(Buffer.alloc(0));
@@ -203,19 +214,20 @@ export class BIFObject {
     return new Promise<Buffer>( (resolve, reject) => {
       if(res){
         if(res.FileSize){
-          fs.open(this.resourceDiskInfo.path, 'r', (e, fd) => {
+          GameFileSystem.open(this.resourceDiskInfo.path, 'r').then( (fd) => {
             let buffer = Buffer.alloc(res.FileSize);
-            fs.read(fd, buffer, 0, buffer.length, res.Offset, function(err, br, buf) {
-              if(err){
-                resolve(Buffer.alloc(0));
-                return;
-              }
-              //console.log(err, buf);
-              fs.close(fd, function(e) {
-                resolve(buf);
+            GameFileSystem.read(fd, buffer, 0, buffer.length, res.Offset).then( () => {
+              GameFileSystem.close(fd).then( () => {
+                resolve(buffer);
+              }).catch( () => {
+                resolve(Buffer.allocUnsafe(0))
               });
-            });
-          });
+            }).catch( (err) => {
+              resolve(Buffer.allocUnsafe(0))
+            })
+          }).catch( () => {
+            resolve(Buffer.allocUnsafe(0))
+          })
         }else{
           resolve(Buffer.alloc(0));
         }
@@ -224,18 +236,6 @@ export class BIFObject {
       }
 
     });
-  }
-
-  GetResourceDataSync(res: BIFResource){
-    if(!!res){
-      let fd = fs.openSync(this.resourceDiskInfo.path, 'r');
-      let buffer = Buffer.alloc(res.FileSize);
-      fs.readSync(fd, buffer, 0, res.FileSize, res.Offset);
-      fs.closeSync(fd);
-      return buffer;
-    }else{
-      return null;
-    }
   }
 
   load( path: string, onLoad?: Function, onError?: Function ){

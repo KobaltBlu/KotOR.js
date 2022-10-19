@@ -1,7 +1,14 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { Forge } from "../editor/Forge";
+import { GameState } from "../GameState";
+import { BIFManager } from "../managers/BIFManager";
+import { GFFObject } from "../resource/GFFObject";
+import { ResourceLoader } from "../resource/ResourceLoader";
 import { Utility } from "../utility/Utility";
+import * as path from "path";
+import { ResourceTypes } from "../resource/ResourceTypes";
 
 /* @file
  * The TemplateLoader class.
@@ -18,7 +25,7 @@ export class TemplateLoader {
 
   static cache: any = {};
 
-  static Load(args = {}){
+  static Load(args: any = {}){
 
     args = Object.assign({
       ResRef: null,
@@ -31,12 +38,12 @@ export class TemplateLoader {
       TemplateLoader.LoadFromProject({
         ResType: args.ResType, 
         ResRef: args.ResRef, 
-        onLoad: (data) => {
+        onLoad: (data: Buffer) => {
           if(args.onLoad != null)
               args.onLoad(data);
         }, onFail: () => {
-          ResourceLoader.loadResource(args.ResType, args.ResRef, (data) => {
-            new GFFObject(data, (gff, rootNode) => {
+          ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
+            new GFFObject(data, (gff) => {
               if(args.onLoad != null)
                 args.onLoad(gff);
             }); 
@@ -44,8 +51,8 @@ export class TemplateLoader {
         }
       });
     }else{
-      ResourceLoader.loadResource(args.ResType, args.ResRef, (data) => {
-        new GFFObject(data, (gff, rootNode) => {
+      ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
+        new GFFObject(data, (gff) => {
           if(args.onLoad != null)
             args.onLoad(gff);
         }); 
@@ -101,7 +108,7 @@ export class TemplateLoader {
 
   }
 
-  static LoadFromProject ( args = null ) {
+  static LoadFromProject ( args: any = {} ) {
 
     args = Object.assign({
       ResRef: null,
@@ -113,10 +120,10 @@ export class TemplateLoader {
     if(typeof Forge.Project != 'undefined' && Forge.Project != null){
       let projectFilePath = path.join(Forge.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
       //Check in the project directory
-      Utility.FileExists(projectFilePath, (exists) => {
+      Utility.FileExists(projectFilePath, (exists: boolean) => {
         if(exists){
-          fs.readFile(projectFilePath, (err, buffer) => {
-            new GFFObject(buffer, (gff, rootNode) => {
+          fs.readFile(projectFilePath, (err: any, buffer: Buffer) => {
+            new GFFObject(buffer, (gff: GFFObject) => {
               if(args.onLoad != null)
                 args.onLoad(gff);
             });
@@ -143,45 +150,45 @@ export class TemplateLoader {
       onFail: null
     }, args);
 
-    if(typeof Global.kotorBIF != 'undefined' && Global.kotorBIF != null){
+    // if(true){
 
-      let resKey = GameState.module.rim_s.GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
-      if(resKey != null){
-        //console.log('Template Resource found');
-        GameState.module.rim_s.GetResourceData(resKey, (buffer) => {
-          if(args.onLoad != null)
-            args.onLoad(buffer);
-        });
+    //   let resKey = GameState.module.rim_s.GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
+    //   if(resKey != null){
+    //     //console.log('Template Resource found');
+    //     GameState.module.rim_s.GetResourceData(resKey, (buffer) => {
+    //       if(args.onLoad != null)
+    //         args.onLoad(buffer);
+    //     });
 
-        return;
-      }
+    //     return;
+    //   }
 
-      resKey = BIFManager.GetBIFByName('templates').GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
-      if(resKey != null){
-        //console.log('Template Resource found');
-        BIFManager.GetBIFByName('templates').GetResourceData(resKey, (buffer) => {
-          if(args.onLoad != null)
-            args.onLoad(buffer);
-        });
+    //   resKey = BIFManager.GetBIFByName('templates').GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
+    //   if(resKey != null){
+    //     //console.log('Template Resource found');
+    //     BIFManager.GetBIFByName('templates').GetResourceData(resKey, (buffer) => {
+    //       if(args.onLoad != null)
+    //         args.onLoad(buffer);
+    //     });
 
-        return;
-      }
+    //     return;
+    //   }
 
-      resKey = ResourceLoader.getResource(args.ResType, args.ResRef.toLowerCase());
-      if(resKey){
-        if(!resKey.inArchive){
+    //   resKey = ResourceLoader.getResource(args.ResType, args.ResRef.toLowerCase());
+    //   if(resKey){
+    //     if(!resKey.inArchive){
           
-        }else{
+    //     }else{
 
-        }
-      }
+    //     }
+    //   }
       
-      if(args.onFail != null)
-        args.onFail();
-    }else{
-      if(args.onFail != null)
-        args.onFail();
-    }
+    //   if(args.onFail != null)
+    //     args.onFail();
+    // }else{
+    //   if(args.onFail != null)
+    //     args.onFail();
+    // }
   }
 
 }

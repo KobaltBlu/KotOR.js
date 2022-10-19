@@ -156,10 +156,10 @@ export class OdysseyModel {
 
     let animOffsets = OdysseyModel.ReadArray(mdlReader, this.fileHeader.ModelDataOffset + this.modelHeader.AnimationDataOffset, this.modelHeader.AnimationsCount);
 
-    for (let i = 0; i!=this.modelHeader.AnimationsCount; i++){
+    for (let i = 0; i < this.modelHeader.AnimationsCount; i++){
       let tmpPos = this.mdlReader.position;
       let offset = animOffsets[i];
-      this.ReadAnimation(this.fileHeader.ModelDataOffset + offset);
+      this.ReadAnimation((this.fileHeader.ModelDataOffset as number) + offset);
       this.mdlReader.Seek(tmpPos);
     }
 
@@ -168,15 +168,6 @@ export class OdysseyModel {
     this.mdlReader = undefined;
     this.mdxReader = undefined;
 
-  }
-
-  LoadSuperModel(name: string){
-    let archive = BIFManager.GetBIFByName("models");
-
-    let mdlReader = new BinaryReader(Buffer.from(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdl']))));
-    let mdxReader = new BinaryReader(Buffer.from(archive.GetResourceDataSync(archive.GetResourceByLabel(name, ResourceTypes['mdx']))));
-
-    return new OdysseyModel(mdlReader, mdxReader);
   }
 
   ParseModel(){
@@ -353,7 +344,7 @@ export class OdysseyModel {
     let posCache = stream.position;
     let strings = [];
 
-    for (let i = 0; i != offsets.length; i++){
+    for (let i = 0; i < offsets.length; i++){
       stream.position = offset + offsets[i];
 
       let str = "";

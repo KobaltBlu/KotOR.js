@@ -93,7 +93,7 @@ export class TXI {
 
   ParseInfo(){
     let lines = this.info.split('\n');
-    for(let i = 0; i!= lines.length; i++){
+    for(let i = 0; i < lines.length; i++){
       let line = lines[i];
       let args = line.split(' ');
 
@@ -218,7 +218,7 @@ export class TXI {
 
           let _max = i + 1 + _num;
           
-          for(let _i = i + 1; _i != _max; _i++){
+          for(let _i = i + 1; _i < _max; _i++){
             let line = lines[_i];
             let args = line.split(' ');
             this.upperleftcoords.push({x: parseFloat(args[0]), y: parseFloat(args[1]), z: parseFloat(args[2])});
@@ -232,7 +232,7 @@ export class TXI {
 
           let _max2 = i + 1 + _num2;
           
-          for(let _i = i + 1; _i != _max2; _i++){
+          for(let _i = i + 1; _i < _max2; _i++){
             let line = lines[_i];
             let args = line.split(' ');
             this.lowerrightcoords.push({x: parseFloat(args[0]), y:parseFloat(args[1]), z:parseFloat(args[2])});

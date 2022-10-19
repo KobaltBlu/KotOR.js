@@ -6,6 +6,7 @@ import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
 import { BIFObject, BIFResource } from './BIFObject';
 import { BIFManager } from '../managers/BIFManager';
+import { GameFileSystem } from '../utility/GameFileSystem';
 
 /* @file
  * The KEYObject class.
@@ -44,9 +45,9 @@ export class KEYObject {
   constructor(file: string, onComplete?: Function){
     this.file = file;
     this.keys = [];
-    fs.readFile(file, (err, binary) => {
+    GameFileSystem.readFile(file).then( (buffer) => {
 
-      this.reader = new BinaryReader(binary);
+      this.reader = new BinaryReader(buffer);
 
       this.FileType = this.reader.ReadChars(4);
       this.FileVersion = this.reader.ReadChars(4);
@@ -61,7 +62,7 @@ export class KEYObject {
       this.bifs = [];
 
       this.reader.Seek(this.OffsetToFileTable);
-      for(let i = 0; i!=this.BIFCount; i++){
+      for(let i = 0; i < this.BIFCount; i++){
         this.bifs[i] = {
           FileSize:this.reader.ReadUInt32(),
           FilenameOffset: this.reader.ReadUInt32(),
@@ -70,13 +71,13 @@ export class KEYObject {
         } as BIF;
       }
 
-      for(let i = 0; i!=this.BIFCount; i++){
+      for(let i = 0; i < this.BIFCount; i++){
         this.reader.Seek(this.bifs[i].FilenameOffset);
         this.bifs[i].filename = this.reader.ReadChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
       }
 
       this.reader.Seek(this.OffsetToKeyTable);
-      for(let i = 0; i!=this.KeyCount; i++){
+      for(let i = 0; i < this.KeyCount; i++){
         this.keys[i] = {
           ResRef: this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,''),
           ResType: this.reader.ReadUInt16(),
@@ -87,13 +88,17 @@ export class KEYObject {
       if(onComplete != null)
         onComplete();
 
-    });
+    }).catch( (err) => {
+      console.error(err);
+      if(onComplete != null)
+        onComplete();
+    })
 
 
   }
 
   GetFileLabel(index = 0){
-    for(let i = 0; i!=this.keys.length; i++){
+    for(let i = 0; i < this.keys.length; i++){
       if(index == this.keys[i].ResID)
         return this.keys[i].ResRef;
     }
@@ -104,7 +109,7 @@ export class KEYObject {
   }
 
   GetFileKey(ResRef: string, ResType: number){
-    for(let i = 0; i!=this.keys.length; i++){
+    for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
       if ( key.ResRef == ResRef && key.ResType == ResType){
         return key;
@@ -113,8 +118,8 @@ export class KEYObject {
     return null;
   }
 
-  GetFileKeyByRes(Res: BIFResource): KEY{
-    for(let i = 0; i!=this.keys.length; i++){
+  GetFileKeyByRes(Res: BIFResource): KEY|any {
+    for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
       if ( key.ResID == Res.ID && key.ResType == Res.ResType){
         return key;

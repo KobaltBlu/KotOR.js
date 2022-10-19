@@ -19,6 +19,7 @@ import { LevelSelectWizard } from "./LevelSelectWizard";
 import { Project } from "./Project";
 import { Wizard } from "./Wizard";
 import { ConfigClient } from "../utility/ConfigClient";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 export class NewProjectWizard extends Wizard {
   data: any = {};

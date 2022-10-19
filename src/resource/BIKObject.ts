@@ -197,7 +197,7 @@ export class BIKObject {
 
     // this.file = file;
 
-    // let _path = this.abs_path ? this.file : path.join(ApplicationProfile.directory, 'Movies', this.file);
+    // let _path = this.abs_path ? this.file : path.join('Movies', this.file);
 
     // this.audioCtx = GameState.audioEngine.audioCtx;
     // this.stop();

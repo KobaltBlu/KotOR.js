@@ -65,7 +65,7 @@ export class ImageViewerTab extends EditorTab {
     this.file = null;
 
     if(file instanceof EditorFile){
-
+      this.file = file;
       file.readFile( (buffer: Buffer) => {
         switch(file.ext){
           case 'tga':
@@ -347,23 +347,23 @@ export class ImageViewerTab extends EditorTab {
 
   async exportAs( onComplete?: Function ){
 
-    let payload = await dialog.showSaveDialog({
-      title: 'Export Image',
-      defaultPath: this.filename,
-      properties: ['createDirectory'],
-      filters: [
-        {name: 'TGA', extensions: ['tga']}
-      ]
-    });
+    // let payload = await dialog.showSaveDialog({
+    //   title: 'Export Image',
+    //   defaultPath: this.filename,
+    //   properties: ['createDirectory'],
+    //   filters: [
+    //     {name: 'TGA', extensions: ['tga']}
+    //   ]
+    // });
 
-    if(!payload.canceled && typeof payload.filePath != 'undefined'){
-      this.file.setPath(payload.filePath);
-      this.export(onComplete);
-    }else{
-      console.warn('TGA export aborted');
-      if(typeof onComplete === 'function')
-        onComplete();
-    }
+    // if(!payload.canceled && typeof payload.filePath != 'undefined'){
+    //   this.file.setPath(payload.filePath);
+    //   this.export(onComplete);
+    // }else{
+    //   console.warn('TGA export aborted');
+    //   if(typeof onComplete === 'function')
+    //     onComplete();
+    // }
 
   }
 

@@ -1,20 +1,15 @@
 import { TLKString } from "../resource/TLKString";
-import * as path from "path";
-import * as fs from "fs";
 import { TLKObject } from "../resource/TLKObject";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 export class TLKManager {
 
   static TLKStrings: TLKString[] = [];
   static TLKObject: TLKObject;
 
-  static async LoadTalkTable(resource_path: string, onProgress?: Function){
+  static async LoadTalkTable(onProgress?: Function){
     return new Promise<TLKObject>((resolve, reject) => {
-      fs.readFile(resource_path, (err: any, buffer: Buffer) => {
-        if(err){
-          reject(undefined);
-          return;
-        }
+      GameFileSystem.readFile('dialog.tlk').then((buffer) => {
         TLKManager.TLKObject = new TLKObject(undefined);
         TLKManager.TLKObject.LoadFromBuffer(buffer, (index: number = 0, count: number = 0) => {
           if(typeof onProgress === 'function') onProgress(index, count)
@@ -25,6 +20,11 @@ export class TLKManager {
           TLKManager.TLKStrings = TLKManager.TLKObject.TLKStrings;
           resolve(TLKManager.TLKObject);
         })
+      }).catch((err) => {
+        if(err){
+          reject(undefined);
+          return;
+        }
       });
     })
   }

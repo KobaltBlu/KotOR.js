@@ -30,7 +30,7 @@ export class TwoDAEditorTab extends EditorTab {
     this.$tableHeaderRow = $('<tr />');
     this.$tableBody = $('<tbody />');
 
-    for(let i = 0; i != this.twoDAObject.columns.length; i++){
+    for(let i = 0; i < this.twoDAObject.columns.length; i++){
       let col = this.twoDAObject.columns[i];
       if(col != '' && col != null){
         this.$tableHeaderRow.append('<th>'+col+'</th>');

@@ -12,6 +12,10 @@ import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
 
 export class EditorFile {
+
+  //handle - is for file handling inside the web environment
+  handle: FileSystemFileHandle;
+
   buffer: Buffer;
   path: any;
   archive_path: any;

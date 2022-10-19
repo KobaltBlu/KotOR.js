@@ -22,6 +22,7 @@ import { TGAObject } from "./resource/TGAObject";
 import { Module } from "./module/Module";
 import { ModuleObject } from "./module";
 import EngineLocation from "./engine/EngineLocation";
+import { GameFileSystem } from "./utility/GameFileSystem";
 
 /* @file
  * The SaveGame class.
@@ -57,7 +58,7 @@ export class SaveGame {
   
 
   static saves: SaveGame[] = [];
-  static base_directory: string = path.join(ApplicationProfile.directory, 'Saves');
+  static base_directory: string = 'Saves';
 
   static FolderRegexValidator: RegExp = /^(\d+) - (Game\d+)$|^(000000) - (QUICKSAVE)$|^(000001) - (AUTOSAVE)$/;
   static FolderNameRegex: RegExp = /^(\d+) - (QUICKSAVE|AUTOSAVE|Game\d+)$/;
@@ -332,10 +333,11 @@ export class SaveGame {
   }
 
   InitGameInProgressFolder( onLoad?: Function ){
-    CurrentGame.InitGameInProgressFolder();
-    CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME ).then( () => {
-      if(typeof onLoad === 'function')
-        onLoad();
+    CurrentGame.InitGameInProgressFolder().then( () => {
+      CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME ).then( () => {
+        if(typeof onLoad === 'function')
+          onLoad();
+      });
     });
   }
 
@@ -473,7 +475,7 @@ export class SaveGame {
     //TODO
     if(GameState.module instanceof Module){
       //Go ahead and run mkdir. It will silently fail if it already exists
-      fs.mkdir(this.directory, { recursive: false }, (err) => {
+      GameFileSystem.mkdir(this.directory, { recursive: false }).then( () => {
         this.savenfo = new GFFObject();
 
         this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.AreaName.GetValue();
@@ -551,7 +553,9 @@ export class SaveGame {
 
         });
 
-      });
+      }).catch(() => {
+
+      })
     }
 
   }
@@ -564,19 +568,20 @@ export class SaveGame {
         GameState.LoadScreen.Open();
         GameState.LoadScreen.showSavingMessage();
 
-        let base_dir = path.join( ApplicationProfile.directory, 'Saves' );
+        let base_dir = 'Saves';
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
-        if(!fs.existsSync(base_dir)){
-          fs.mkdirSync(base_dir);
+        if(!(await GameFileSystem.exists(base_dir))){
+          await GameFileSystem.mkdir(base_dir);
         }
 
         let save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
         let save_dir = path.join( base_dir, save_dir_name );
 
-        if(!fs.existsSync(save_dir)){
-          fs.mkdirSync(save_dir);
+        if(!(await GameFileSystem.exists(save_dir))){
+          await GameFileSystem.mkdir(save_dir);
         }
+
         GameState.LoadScreen.setProgress(25);
 
         await GameState.module.save();
@@ -724,17 +729,7 @@ export class SaveGame {
 
   static GetSaveGames(){
     return new Promise<void>( (resolve, reject) => {
-      fs.readdir(SaveGame.base_directory, (err, folders) => {
-
-        if(err){
-          resolve();
-    
-          //Make the default savegame directory
-          fs.mkdirSync(SaveGame.base_directory);
-    
-          return;
-        }
-    
+      GameFileSystem.readdir(SaveGame.base_directory).then( (folders) => {
         //Loop through and detect the possible savegame paths
         for(let i = 0; i < folders.length; i++){
           if(SaveGame.FolderRegexValidator.test(folders[i])){
@@ -747,10 +742,17 @@ export class SaveGame {
             //console.log('SaveGame', 'Folder Invalid', folders[i]);
           }
         }
-    
+
         resolve();
-    
-      });
+      }).catch( () => {
+        //Make the default savegame directory
+        GameFileSystem.mkdir(SaveGame.base_directory).then( () => {
+          resolve();
+        }).catch( () => {
+          resolve();
+        });
+        return;
+      })
     });
   }
 
@@ -771,7 +773,7 @@ export class SaveGame {
 
 //Clean up the gameinprogress folder on startup
 try{
-  fs.rmdirSync( CurrentGame.gameinprogress_dir, { recursive: true } );
+  GameFileSystem.rmdir( CurrentGame.gameinprogress_dir, {recursive: true});
 }catch(e){
   console.error('SaveGame', 'delete gameinprogress directory error', e);
 }

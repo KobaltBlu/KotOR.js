@@ -4,6 +4,7 @@
 import * as fs from 'fs';
 import isBuffer from 'is-buffer';
 import { BinaryReader } from "../BinaryReader";
+import { GameFileSystem } from '../utility/GameFileSystem';
 
 /* @file
  * The TwoDAObject class.
@@ -36,14 +37,14 @@ export class TwoDAObject {
           onComplete();
       }else if(typeof file === "string"){
         this.file = file;
-        fs.readFile(this.file, (err, binary) => {
-          if (err) throw err;
-
-          let br = new BinaryReader(binary);
+        GameFileSystem.readFile(this.file).then((buffer) => {
+          let br = new BinaryReader(buffer);
           this.Read2DA(br);
 
           if(onComplete != null)
             onComplete();
+        }).catch((err) => {
+          throw err;
         });
       }else{
         //invalid resource

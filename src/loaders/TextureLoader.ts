@@ -13,6 +13,9 @@ import { TextureType } from '../enums/loaders/TextureType';
 import { TextureLoaderQueuedRef } from '../interface/loaders/TextureLoaderQueuedRef';
 import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
 import { OdysseyTexture } from '../resource/OdysseyTexture';
+import { TPCLoader } from './TPCLoader';
+import { TGALoader } from './TGALoader';
+import { OdysseyEmitter3D } from '../three/odyssey';
 
 /* @file
  * The TextureLoader class.
@@ -20,12 +23,12 @@ import { OdysseyTexture } from '../resource/OdysseyTexture';
 
 export class TextureLoader {
 
-  static tpcLoader = new THREE.TPCLoader();
-  static tgaLoader = new THREE.TGALoader();
+  static tpcLoader = new TPCLoader();
+  static tgaLoader = new TGALoader();
   static textures = new Map();
   static guiTextures = new Map();
-  static lightmaps = {};
-  static particles = {};
+  static lightmaps: any = {};
+  static particles: any = {};
   static queue: TextureLoaderQueuedRef[] = [];
   static Anisotropy = 8;
   static TextureQuality = 2;
@@ -104,9 +107,9 @@ export class TextureLoader {
 
   }
 
-  static LoadOverride(name, onLoad?: Function, onError?: Function, noCache: boolean = false){
+  static LoadOverride(name: string, onLoad?: Function, onError?: Function, noCache: boolean = false){
 
-    let dir = path.join(ApplicationProfile.directory, 'Override');
+    let dir = 'Override';
 
     if(GameState.Flags.EnableOverride){
 
@@ -134,7 +137,7 @@ export class TextureLoader {
 
           fs.exists(path.join(dir, name+'.tga'), (tga_exists) => {
             if (tga_exists) {
-              TextureLoader.tgaLoader.load_override(name, (tga) => {
+              TextureLoader.tgaLoader.load_override(name, (tga: OdysseyTexture) => {
                 tga.anisotropy = TextureLoader.Anisotropy;
                 
                 if(tga != null){
@@ -165,13 +168,13 @@ export class TextureLoader {
 
   }
 
-  static LoadLocal(name, onLoad?: Function, onError?: Function, noCache: boolean = false){
+  static LoadLocal(name: string, onLoad?: Function, onError?: Function, noCache: boolean = false){
 
     let dir = name;
 
     fs.exists(path.join(dir, name), (tga_exists) => {
       if (tga_exists) {
-        TextureLoader.tgaLoader.load_local(name, (tga) => {
+        TextureLoader.tgaLoader.load_local(name, (tga: OdysseyTexture) => {
           tga.anisotropy = TextureLoader.Anisotropy;
           
           if(tga != null){
@@ -193,7 +196,7 @@ export class TextureLoader {
 
   }
 
-  static LoadLightmap(name, onLoad?: Function, noCache: boolean = false){
+  static LoadLightmap(name: string, onLoad?: Function, noCache: boolean = false){
     name = name.toLowerCase();
     if(TextureLoader.lightmaps.hasOwnProperty(name) && !noCache){
       //console.log('fetch-', TextureLoader.textures[name]);
@@ -203,7 +206,7 @@ export class TextureLoader {
     }else{
 
       if(GameState.GameKey == 'TSL'){
-        TextureLoader.tpcLoader.fetch(name, (lightmap) => {
+        TextureLoader.tpcLoader.fetch(name, (lightmap: OdysseyTexture) => {
           //console.log('fetch', texture);
           if(lightmap != null){
             lightmap.wrapS = lightmap.wrapT = THREE.RepeatWrapping;
@@ -215,7 +218,7 @@ export class TextureLoader {
             onLoad(TextureLoader.lightmaps[name]);
         });
       }else{
-        TextureLoader.tgaLoader.load(name, (lightmap) => {
+        TextureLoader.tgaLoader.load(name, (lightmap: OdysseyTexture) => {
           //console.log('fetch', texture);
           if(lightmap != null){
             lightmap.wrapS = lightmap.wrapT = THREE.RepeatWrapping;
@@ -230,11 +233,11 @@ export class TextureLoader {
     }
   }
 
-  static enQueue(name, material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
+  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
 
     if(typeof name == 'string'){
       name = name.toLowerCase();
-      let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad };
+      let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
       if(TextureLoader.textures.has(name)){
         setTimeout(() => {
           TextureLoader.UpdateMaterial(obj);
@@ -247,7 +250,7 @@ export class TextureLoader {
     }else if(Array.isArray(name)){
       for(let i = 0, len = name.length; i < len; i++){
         let texName = name[i].toLowerCase();
-        let obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad };
+        let obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
         if(TextureLoader.textures.has(texName)){
           TextureLoader.UpdateMaterial(obj);
           if(typeof onLoad == 'function')
@@ -259,7 +262,7 @@ export class TextureLoader {
     }
   }
 
-  static enQueueParticle(name, partGroup, onLoad?: Function){
+  static enQueueParticle(name: string, partGroup: any, onLoad?: Function){
     name = name.toLowerCase();
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad: onLoad });
   }
@@ -269,7 +272,7 @@ export class TextureLoader {
     
     let loop = new AsyncLoop({
       array: TextureLoader.queue.slice(0),
-      onLoop: (tex, asyncLoop, index, count) => {
+      onLoop: (tex: TextureLoaderQueuedRef, asyncLoop: AsyncLoop, index: number, count: number) => {
 
         if(typeof onProgress == 'function'){
           onProgress(tex.name, index, count);
@@ -293,7 +296,7 @@ export class TextureLoader {
 
   }
 
-  static UpdateMaterial(tex){
+  static UpdateMaterial(tex: TextureLoaderQueuedRef){
     
     switch(tex.type){
       case TextureType.TEXTURE:
@@ -303,12 +306,12 @@ export class TextureLoader {
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               //console.log('THREE.RawShaderMaterial', tex);
               tex.material.uniforms.map.value = texture;
-              tex.material.map = texture;
+              (tex.material as any).map = texture;
               tex.material.uniformsNeedUpdate = true;
               tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
             }else{
-              tex.material.map = texture;
-              tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+              (tex.material as any).map = texture;
+              (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
             }
 
             /*
@@ -357,12 +360,12 @@ export class TextureLoader {
                 if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
                   //console.log('THREE.RawShaderMaterial', tex);
                   tex.material.uniforms.map.value = texture;
-                  tex.material.map = texture;
+                  (tex.material as any).map = texture;
                   tex.material.uniformsNeedUpdate = true;
                   tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
                 }else{
-                  tex.material.map = texture;
-                  tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+                  (tex.material as any).map = texture;
+                  (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
                 }
 
                 /*
@@ -410,7 +413,7 @@ export class TextureLoader {
           if(lightmap != null){
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               tex.material.uniforms.lightMap.value = lightmap;
-              tex.material.lightMap = lightmap;
+              (tex.material as any).lightMap = lightmap;
               lightmap.updateMatrix();
               if(tex.material.uniforms.map.value){
                 tex.material.uniforms.map.value.updateMatrix();
@@ -422,10 +425,10 @@ export class TextureLoader {
               tex.material.defines.AURORA = "";
               tex.material.uniformsNeedUpdate = true;
             }else{
-              tex.material.lightMap = lightmap;
-              tex.material.defines = tex.material.defines || {};
-              if(tex.material.defines.hasOwnProperty('IGNORE_LIGHTING')){
-                delete tex.material.defines.IGNORE_LIGHTING;
+              (tex.material as any).lightMap = lightmap;
+              (tex.material as any).defines = (tex.material as any).defines || {};
+              if((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')){
+                delete (tex.material as any).defines.IGNORE_LIGHTING;
               }
             }
             
@@ -442,9 +445,9 @@ export class TextureLoader {
         }, TextureLoader.CACHE);
       break;
       case TextureType.PARTICLE:
-        TextureLoader.Load(tex.name, (texture = null) => {
+        TextureLoader.Load(tex.name, (texture: OdysseyTexture) => {
           if(texture != null){
-            if(tex.partGroup instanceof AuroraEmitter3D){
+            if(tex.partGroup instanceof OdysseyEmitter3D){
               tex.partGroup.material.uniforms.map.value = texture;
               tex.partGroup.material.map = texture;
               tex.partGroup.material.depthWrite = false;
@@ -467,7 +470,7 @@ export class TextureLoader {
     }
   }
 
-  static ParseTXI(texture, tex){
+  static ParseTXI(texture: OdysseyTexture, tex: TextureLoaderQueuedRef){
     //console.log('ParseTXI', texture.txi);
     if(!texture.txi)
       return;
@@ -477,7 +480,7 @@ export class TextureLoader {
       //ENVMAP
       if(texture.txi.envMapTexture != null){
 
-        TextureLoader.Load(texture.txi.envMapTexture, (envmap) => {
+        TextureLoader.Load(texture.txi.envMapTexture, (envmap: OdysseyTexture) => {
           
           if(envmap != null){
 
@@ -485,7 +488,7 @@ export class TextureLoader {
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               tex.material.uniforms.envMap.value = envmap;
-              tex.material.envMap = envmap;
+              (tex.material as any).envMap = envmap;
               envmap.updateMatrix();
               if(tex.material.uniforms.map.value){
                 tex.material.uniforms.map.value.updateMatrix();
@@ -496,7 +499,7 @@ export class TextureLoader {
               tex.material.defines.ENVMAP_BLENDING_ADD = '';
               tex.material.uniformsNeedUpdate = true;
             }else{
-              tex.material.envMap = envmap;
+              (tex.material as any).envMap = envmap;
             }
 
             //tex.material.alphaMap = texture;
@@ -506,15 +509,15 @@ export class TextureLoader {
 
             tex.material.side = THREE.FrontSide;
             if(texture.txi.waterAlpha == null){
-              tex.material.combine = THREE.AddOperation;
-              tex.material.reflectivity = 1;
+              (tex.material as any).combine = THREE.AddOperation;
+              (tex.material as any).reflectivity = 1;
             }
             tex.material.needsUpdate = true;
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               if(tex.material.defines.hasOwnProperty('HOLOGRAM')){
                 //tex.material.alphaTest = 1;
-                tex.material.combine = THREE.AddOperation;
+                (tex.material as any).combine = THREE.AddOperation;
                 tex.material.blending = THREE['NormalBlending'];
                 tex.material.transparent = true;
                 tex.material.uniformsNeedUpdate = true;
@@ -532,12 +535,12 @@ export class TextureLoader {
 
       //BUMPMAP
       if(texture.txi.bumpMapTexture != null){
-        TextureLoader.Load(texture.txi.bumpMapTexture, (bumpMap) => {
+        TextureLoader.Load(texture.txi.bumpMapTexture, (bumpMap: OdysseyTexture) => {
           
           if(bumpMap != null){
             bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
 
-            bumpMap.material = tex.material;
+            (bumpMap as any).material = tex.material;
 
             if(bumpMap.bumpMapType == 'NORMAL'){
 
@@ -545,13 +548,13 @@ export class TextureLoader {
                 tex.material.uniforms.normalMap.value = bumpMap;
                 tex.material.defines.USE_NORMALMAP = '';
                 tex.material.uniformsNeedUpdate = true;
-                tex.material.vertexTangents = true;
-                tex.material.normalMapType = THREE.TangentSpaceNormalMap;
+                (tex.material as any).vertexTangents = true;
+                (tex.material as any).normalMapType = THREE.TangentSpaceNormalMap;
                 tex.material.defines['TANGENTSPACE_NORMALMAP'] = '';
               }else{
-                tex.material.normalMap = bumpMap;
-                tex.material.normalMapType = THREE.ObjectSpaceNormalMap;
-                tex.material.defines['OBJECTSPACE_NORMALMAP'] = '';
+                (tex.material as any).normalMap = bumpMap;
+                (tex.material as any).normalMapType = THREE.ObjectSpaceNormalMap;
+                (tex.material as any).defines['OBJECTSPACE_NORMALMAP'] = '';
               }
 
               tex.material.transparent = false;
@@ -563,7 +566,7 @@ export class TextureLoader {
                 tex.material.defines.USE_BUMPMAP = '';
                 tex.material.uniformsNeedUpdate = true;
               }else{
-                tex.material.bumpMap = bumpMap;
+                (tex.material as any).bumpMap = bumpMap;
               }
               tex.material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling;
 
@@ -577,7 +580,7 @@ export class TextureLoader {
               tex.material.defines.ENVMAP_BLENDING_MIX = ''
               delete tex.material.defines.USE_NORMALMAP;
               delete tex.material.defines.ENVMAP_BLENDING_ADD;
-              tex.material.combine = THREE.MixOperation;
+              (tex.material as any).combine = THREE.MixOperation;
               //tex.material.bumpMap.flipY = false;
 
               tex.material.uniforms.bumpMap.value.minFilter = THREE.LinearFilter;

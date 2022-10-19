@@ -80,27 +80,27 @@ export class InlineAudioPlayer {
     this.$btnExport.on('click', async (e: any) => {
       e.preventDefault();
 
-      let payload = await dialog.showSaveDialog({
-        title: 'Export Audio File',
-        defaultPath: this.audioFile.filename,
-        properties: ['createDirectory'],
-        filters: [
-          {name: 'Wave File', extensions: ['wav']},
-          {name: 'MP3 File', extensions: ['mp3']}
-        ]
-      });
+      // let payload = await dialog.showSaveDialog({
+      //   title: 'Export Audio File',
+      //   defaultPath: this.audioFile.filename,
+      //   properties: ['createDirectory'],
+      //   filters: [
+      //     {name: 'Wave File', extensions: ['wav']},
+      //     {name: 'MP3 File', extensions: ['mp3']}
+      //   ]
+      // });
 
-      if(!payload.canceled && typeof payload.filePath != 'undefined'){
-        this.audioFile.Export({
-          file: payload.filePath,
-          onComplete: () => {
-            NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Audio file saved');
-          },
-          onError: () => {
-            NotificationManager.Notify(NotificationManager.Types.WARNING, 'Audio file failed to save');
-          }
-        });
-      }
+      // if(!payload.canceled && typeof payload.filePath != 'undefined'){
+      //   this.audioFile.Export({
+      //     file: payload.filePath,
+      //     onComplete: () => {
+      //       NotificationManager.Notify(NotificationManager.Types.SUCCESS, 'Audio file saved');
+      //     },
+      //     onError: () => {
+      //       NotificationManager.Notify(NotificationManager.Types.WARNING, 'Audio file failed to save');
+      //     }
+      //   });
+      // }
       
     });
 

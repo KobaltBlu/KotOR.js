@@ -95,28 +95,27 @@ export class TextEditorTab extends EditorTab {
   async SaveAs(){
     if(this.file instanceof EditorFile){
 
-      //@ts-expect-error
-      let payload = await dialog.showSaveDialog({
-        title: 'Save File As',
-        defaultPath: this.file.getLocalPath() ? this.file.getLocalPath() : this.file.getFilename(),
-        properties: ['createDirectory'],
-        filters: [
-          {name: this.file.ext.toUpperCase(), extensions: [this.file.ext]}
-        ]
-      });
+      // let payload = await dialog.showSaveDialog({
+      //   title: 'Save File As',
+      //   defaultPath: this.file.getLocalPath() ? this.file.getLocalPath() : this.file.getFilename(),
+      //   properties: ['createDirectory'],
+      //   filters: [
+      //     {name: this.file.ext.toUpperCase(), extensions: [this.file.ext]}
+      //   ]
+      // });
   
-      if(!payload.canceled && typeof payload.filePath != 'undefined'){
-        let path_obj = path.parse(payload.filePath);
-        this.file.path = payload.filePath;
-        this.file.resref = path_obj.name;
-        this.file.ext = path_obj.ext.slice(1);
-        this.file.reskey = ResourceTypes[this.file.ext];
-        this.file.archive_path = null;
-        this.file.location = FileLocationType.LOCAL;
-        this.Save();
-      }else{
-        console.warn('File export aborted');
-      }
+      // if(!payload.canceled && typeof payload.filePath != 'undefined'){
+      //   let path_obj = path.parse(payload.filePath);
+      //   this.file.path = payload.filePath;
+      //   this.file.resref = path_obj.name;
+      //   this.file.ext = path_obj.ext.slice(1);
+      //   this.file.reskey = ResourceTypes[this.file.ext];
+      //   this.file.archive_path = null;
+      //   this.file.location = FileLocationType.LOCAL;
+      //   this.Save();
+      // }else{
+      //   console.warn('File export aborted');
+      // }
 
     }
   }

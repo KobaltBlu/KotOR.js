@@ -102,7 +102,7 @@ export class GFFField {
 
   GetFieldByLabel(Label: string){
     if(this.ChildStructs.length){
-      for(let i = 0; i!=this.ChildStructs[0].Fields.length; i++){
+      for(let i = 0; i < this.ChildStructs[0].Fields.length; i++){
         let field = this.ChildStructs[0].Fields[i];
         if (field.Label == Label){
           return field;

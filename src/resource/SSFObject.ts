@@ -33,8 +33,8 @@ export class SSFObject {
         this.sound_refs.push(reader.ReadUInt32() & 0xFFFFFFFF);
       }
 
-      this.data = undefined;
-      reader = undefined;
+      this.data = Buffer.allocUnsafe(0);
+      reader.dispose();
 
     }
 

@@ -12,6 +12,7 @@ import { ResourceTypes } from "./ResourceTypes";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
 import isBuffer from "is-buffer";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The LIPObject class.
@@ -80,17 +81,11 @@ export class LIPObject {
         this.readBinary(Buffer.from(this.file), onComplete);
 
       }else{
-
-        fs.readFile(this.file, (e, buffer) => {
-          if (e) {
-            console.error('LIPObject', 'LIP Header Read', e);
-            return;
-          }
-
+        GameFileSystem.readFile(this.file as string).then( (buffer) => {
           this.readBinary(Buffer.from(buffer), onComplete);
-
+        }).catch( (err) => {
+          console.error('LIPObject', 'LIP Header Read', err);
         });
-
       }
     }catch(e){
       console.error('LIPObject', 'LIP Open Error', e);
@@ -121,7 +116,7 @@ export class LIPObject {
         this.keyframes.push(keyframe);
       }
 
-      buffer = reader = undefined;
+      reader.dispose();
 
       if(typeof onComplete == 'function')
         onComplete(this);
@@ -268,19 +263,17 @@ export class LIPObject {
 
     console.log('Exporting LIP file to ', this.file);
 
-    fs.writeFile(this.file, writer.buffer, (err) => {
-
-      if (err) {
-        console.error(err);
-      }else{
+    if(typeof this.file == 'string'){
+      GameFileSystem.writeFile(this.file, writer.buffer).then( () => {
         console.log('LIP file exported to ', this.file);
-      }
-
-      if(typeof onComplete === 'function')
-        onComplete(err);
-
-    });
-
+        if(typeof onComplete === 'function')
+          onComplete();
+      }).catch( (err) => {
+        console.error(err);
+        if(typeof onComplete === 'function')
+          onComplete(err);
+      });
+    }
   }
 
   async exportAs( onComplete?: Function ){
@@ -305,8 +298,8 @@ export class LIPObject {
 
   }
 
-  static async Load(resref: string = ''){
-    return new Promise<LIPObject>( (resolve, reject) => {
+  static async Load(resref: string = ''): Promise<LIPObject>{
+    return new Promise<LIPObject|any>( (resolve, reject) => {
       ResourceLoader.loadResource(ResourceTypes['lip'], resref, (buffer: Buffer) => {
         resolve(new LIPObject(buffer));
       }, () => {

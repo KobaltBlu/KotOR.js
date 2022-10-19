@@ -191,7 +191,7 @@ export class TPCLoader {
   
   fetch_override( name = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
     
-    let dir = path.join(ApplicationProfile.directory, 'Override');
+    let dir = path.join('Override');
   
     fs.readFile(path.join(dir, name)+'.tpc', (err, buffer) => {
       if (err) throw err; // Fail if the file can't be read.

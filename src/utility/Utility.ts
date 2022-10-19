@@ -121,55 +121,55 @@ export class Utility {
 
   static BuildModulesList(onComplete?: Function){
 
-    fs.readdir(path.join(ApplicationProfile.directory, 'modules'), (err, files) => {
+    // fs.readdir(path.join(ApplicationProfile.directory, 'modules'), (err, files) => {
 
-      let modules: string[] = [];
-      for(let i = 0; i!=files.length; i++){
-        let fileInfo = path.parse(files[i]);
-        if(fileInfo.base.includes('.rim') && !fileInfo.base.includes('_s.rim')){
-          modules.push(fileInfo.base);
-        }
-      }
+    //   let modules: string[] = [];
+    //   for(let i = 0; i < files.length; i++){
+    //     let fileInfo = path.parse(files[i]);
+    //     if(fileInfo.base.includes('.rim') && !fileInfo.base.includes('_s.rim')){
+    //       modules.push(fileInfo.base);
+    //     }
+    //   }
 
-      let _data: any[] = [];
+    //   let _data: any[] = [];
 
-      let i = 0;
-      let readModule = () => {
-        let module = modules[i];
-        new RIMObject(path.join(ApplicationProfile.directory, 'modules', module), (rim: RIMObject) => {
+    //   let i = 0;
+    //   let readModule = () => {
+    //     let module = modules[i];
+    //     new RIMObject(path.join(ApplicationProfile.directory, 'modules', module), (rim: RIMObject) => {
 
-          for(let i = 0; i < rim.Resources.length; i++){
-            const res = rim.Resources[i];
-            switch(res.ResType){
-              case ResourceTypes['are']:
+    //       for(let i = 0; i < rim.Resources.length; i++){
+    //         const res = rim.Resources[i];
+    //         switch(res.ResType){
+    //           case ResourceTypes['are']:
 
-                rim.getRawResource(res.ResRef, res.ResType, (data: Buffer) => {
-                  let are = new GFFObject(data, (gff: GFFObject) => {
+    //             rim.getRawResource(res.ResRef, res.ResType, (data: Buffer) => {
+    //               let are = new GFFObject(data, (gff: GFFObject) => {
 
-                    let Name = gff.GetFieldByLabel('Name').GetCExoLocString();
+    //                 let Name = gff.GetFieldByLabel('Name').GetCExoLocString();
 
-                    _data.push({module: module, name: TLKManager.TLKStrings[Name.RESREF].Value, nameref: Name.RESREF});
+    //                 _data.push({module: module, name: TLKManager.TLKStrings[Name.RESREF].Value, nameref: Name.RESREF});
 
-                    i++;
-                    if(i != modules.length){
-                      readModule();
-                    }else{
-                      if(typeof onComplete === 'function')
-                        onComplete(_data);
-                    }
-                  });
-                });
+    //                 i++;
+    //                 if(i < modules.length){
+    //                   readModule();
+    //                 }else{
+    //                   if(typeof onComplete === 'function')
+    //                     onComplete(_data);
+    //                 }
+    //               });
+    //             });
 
-              break;
-            }
-          }
+    //           break;
+    //         }
+    //       }
 
-        });
+    //     });
 
-      };
-      readModule();
+    //   };
+    //   readModule();
 
-    });
+    // });
 
   }
 

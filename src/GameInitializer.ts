@@ -3,7 +3,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { recursive } from "./utility/RecursiveDirectoryReader";
 import { GameState } from "./GameState";
 import { LoadingScreen } from "./LoadingScreen";
 import { ERFObject } from "./resource/ERFObject";
@@ -17,6 +16,7 @@ import { RIMObject } from "./resource/RIMObject";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { AsyncLoop } from "./utility/AsyncLoop";
 import { RIMManager } from "./managers/RIMManager";
+import { GameFileSystem } from "./utility/GameFileSystem";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -39,12 +39,12 @@ export class GameInitializer {
       GameInitializer.currentGame = props.game;
       
       LoadingScreen.main.SetMessage("Loading Keys");
-      KEYManager.Load(path.join(ApplicationProfile.directory, 'chitin.key'), () => {
+      KEYManager.Load('chitin.key', () => {
         LoadingScreen.main.SetMessage("Loading Game Resources");
         GameInitializer.LoadGameResources( () => {
           //Load the TLK File
           LoadingScreen.main.SetMessage("Loading TLK File");
-          TLKManager.LoadTalkTable(path.join(ApplicationProfile.directory, 'dialog.tlk')).then( () => {
+          TLKManager.LoadTalkTable().then( () => {
             if(typeof props.onLoad === 'function'){
               props.onLoad();
             }
@@ -124,34 +124,11 @@ export class GameInitializer {
 
   static LoadRIMs(onSuccess?: Function){
     if(GameState.GameKey != 'TSL'){
-      let data_dir = path.join(ApplicationProfile.directory, 'rims');
       LoadingScreen.main.SetMessage('Loading: RIM Archives');
 
-      fs.readdir(data_dir, (err, filenames) => {
-        if (err){
-          console.warn('GameInitializer.LoadRIMs', err);
-          if(typeof onSuccess === 'function')
-            onSuccess();
-            
-          return;
-        }
-
-        let rims: any[] = filenames.map(function(file) {
-          let filename = file.split(path.sep).pop();
-          let args = filename.split('.');
-          return {
-            ext: args[1].toLowerCase(), 
-            name: args[0], 
-            filename: filename
-          } as any;
-        }).filter(function(file_obj){
-          return file_obj.ext == 'rim';
-        });
-
-        RIMManager.Load(rims).then( () => {
-          if(typeof onSuccess === 'function')
-            onSuccess();
-        });
+      RIMManager.Load().then( () => {
+        if(typeof onSuccess === 'function')
+          onSuccess();
       });
     }else{
       if(onSuccess != null)
@@ -160,18 +137,10 @@ export class GameInitializer {
   }
 
   static LoadModules(onSuccess?: Function){
-    let data_dir = path.join(ApplicationProfile.directory, 'modules');
+    let data_dir = 'modules';
     LoadingScreen.main.SetMessage('Loading: Module Archives');
-    
-    fs.readdir(data_dir, (err, filenames) => {
-      if (err){
-        console.warn('GameInitializer.LoadModules', err);
-        if(typeof onSuccess === 'function')
-          onSuccess();
-          
-        return;
-      }
 
+    GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
       let modules = filenames.map(function(file) {
         let filename = file.split(path.sep).pop();
         let args = filename.split('.');
@@ -213,7 +182,12 @@ export class GameInitializer {
         if(typeof onSuccess === 'function')
           onSuccess();
       });
+    }).catch( (err) => {
+      console.warn('GameInitializer.LoadModules', err);
+      if(typeof onSuccess === 'function')
+        onSuccess();
     });
+
   }
 
   static Load2DAs(onSuccess?: Function){
@@ -225,17 +199,9 @@ export class GameInitializer {
   }
 
   static LoadTexturePacks(onSuccess?: Function){
-    let data_dir = path.join(ApplicationProfile.directory, 'TexturePacks');
+    let data_dir = 'TexturePacks';
 
-    fs.readdir(data_dir, (err, filenames) => {
-      if (err){
-        console.warn('GameInitializer.LoadTexturePacks', err);
-        if(typeof onSuccess === 'function')
-          onSuccess();
-
-        return;
-      }
-
+    GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
       let erfs = filenames.map(function(file) {
         let filename = file.split(path.sep).pop();
         let args = filename.split('.');
@@ -260,6 +226,12 @@ export class GameInitializer {
         if(typeof onSuccess === 'function')
           onSuccess();
       });
+    }).catch( (err) => {
+      if (err)
+        console.warn('GameInitializer.LoadTexturePacks', err);
+
+      if(typeof onSuccess === 'function')
+        onSuccess();
     });
   }
 
@@ -272,21 +244,17 @@ export class GameInitializer {
     }, args);
 
     //console.log('Searching For Audio Files', args);
-    let root = path.join(ApplicationProfile.directory, args.folder);
     let dir: any = {name: args.folder, dirs: [], files: []};
 
-    recursive(root).then((files: string[]) => {
+    GameFileSystem.readdir(args.folder, {recursive: true}).then( (files) => {
       // Files is an array of filename
       GameInitializer.files = files;
-      for(let i = 0; i!=files.length; i++){
+      for(let i = 0, len = files.length; i < len; i++){
         let f = files[i];
-
         let _parsed = path.parse(f);
-
         let ext = _parsed.ext.substr(1,  _parsed.ext.length);
 
         if(typeof ResourceTypes[ext] != 'undefined'){
-          //console.log(ext);
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
             inArchive: false,
             file: f,
@@ -302,11 +270,10 @@ export class GameInitializer {
 
       if(typeof args.onSuccess === 'function')
         args.onSuccess();
-    }).catch( () => {
-      
+    }).catch( (e) => {
       if(typeof args.onSuccess === 'function')
         args.onSuccess();
-    })
+    });
   }
 
 }

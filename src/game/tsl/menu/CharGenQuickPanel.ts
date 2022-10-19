@@ -50,8 +50,10 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         GameState.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
         PartyManager.Player = GameState.player.template;
         PartyManager.AddPortraitToOrder(GameState.player.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder();
-        GameState.LoadModule('001EBO');
+        CurrentGame.InitGameInProgressFolder().then( () => {
+          GameState.LoadModule('001EBO');
+
+        });
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {

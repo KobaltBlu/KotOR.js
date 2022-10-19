@@ -91,26 +91,28 @@ export class ResourceLoader {
       Utility.FileExists(projectFilePath, (exists: boolean) => {
         //console.log('File Exists', exists, projectFilePath);
         if(exists){
-          fs.readFile(projectFilePath, (err, data) => {
-            if(err){
-              this._searchOverride(resId, resRef, (data: Buffer) => {
-                if(typeof onLoad === 'function')
-                  onLoad(data);
-              }, (e: any) => {
-                if(onError != null)
-                  onError();
-              });
-            }else{
-              if(onLoad != null)
-                onLoad(data);
-            }
-          });
+          if(typeof onLoad === 'function')
+            onError();
+          // fs.readFile(projectFilePath, (err, data) => {
+          //   if(err){
+          //     this._searchOverride(resId, resRef, (data: Buffer) => {
+          //       if(typeof onLoad === 'function')
+          //         onLoad(data);
+          //     }, (e: any) => {
+          //       if(typeof onError === 'function')
+          //         onError();
+          //     });
+          //   }else{
+          //     if(typeof onLoad === 'function')
+          //       onLoad(data);
+          //   }
+          // });
         }else{
           this._searchOverride(resId, resRef, (data: Buffer) => {
             if(typeof onLoad === 'function')
               onLoad(data);
           }, (e: any) => {
-            if(onError != null)
+            if(typeof onError === 'function')
               onError();
           });
         }
@@ -120,7 +122,7 @@ export class ResourceLoader {
         if(typeof onLoad === 'function')
           onLoad(data);
       }, (e: any) => {
-        if(onError != null)
+        if(typeof onError === 'function')
           onError();
       });
     }
