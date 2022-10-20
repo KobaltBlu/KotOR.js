@@ -38,6 +38,7 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<FileSystemFileHandle> {
+    console.log('open', filepath);
     filepath = GameFileSystem.normalizePath(filepath);
     const dirs = filepath.split('/');
     const filename = dirs.pop();
@@ -76,7 +77,8 @@ export class GameFileSystem {
 
       let blob = await file.slice(position, position + length);
       let arrayBuffer = await blob.arrayBuffer();
-      Buffer.from( arrayBuffer );
+      Buffer.from(arrayBuffer).copy(output);
+      // output.copy(new Uint8Array(arrayBuffer));
     }
   }
 
@@ -95,6 +97,7 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async readFile(filepath: string, options: any = {}): Promise<Buffer> {
+    console.log('readFile', filepath);
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Buffer>( (resolve, reject) => {
         fs.readFile(path.join(GameFileSystem.rootDirectoryPath, filepath), options, (err, buffer) => {
@@ -154,23 +157,26 @@ export class GameFileSystem {
     }
   }
 
-  private static async readdir_web(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = []){
+  private static async readdir_web(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = [], dirbase: string = ''){
     try{
       if(typeof pathOrHandle === 'string'){
         const dirPath = pathOrHandle as string;
         pathOrHandle = await GameFileSystem.resolvePathDirectoryHandle(pathOrHandle);
         if(!pathOrHandle) throw new Error('Failed to locate directory inside game folder: '+dirPath);
+        dirbase = pathOrHandle.name;
       }
 
       if(pathOrHandle instanceof FileSystemDirectoryHandle){
         for await (const entry of pathOrHandle.values()) {
           if (entry.kind === "file"){
-            files.push(entry.name);
+            files.push(path.join(dirbase, entry.name));
           }
           if (entry.kind === "directory"){
+            let newdirbase = path.join(dirbase, entry.name);
+            // if(!dirbase) dirbase = 
             // files.push(entry.name);
             if(opts.recursive){
-              await GameFileSystem.readdir_web(entry, opts, files);
+              await GameFileSystem.readdir_web(entry, opts, files, newdirbase);
             }
           }
         }

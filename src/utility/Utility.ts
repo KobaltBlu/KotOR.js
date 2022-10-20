@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { GFFObject } from '../resource/GFFObject';
 import { TLKManager } from '../managers/TLKManager';
@@ -9,6 +8,7 @@ import { ResourceTypes } from '../resource/ResourceTypes';
 import { RIMObject } from '../resource/RIMObject';
 import { ApplicationProfile } from './ApplicationProfile';
 import { GFFStruct } from '../resource/GFFStruct';
+import { GameFileSystem } from './GameFileSystem';
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -100,17 +100,19 @@ export class Utility {
 
   static FileExists(file: string, onComplete?: Function){
     if(file != null){
-      fs.stat(file, (err, stat) => {
-        if(err == null) {
-          if(onComplete != null)
-            onComplete(true);
-        } else if(err.code == 'ENOENT') {
-          if(onComplete != null)
-            onComplete(false);
-        } else {
-          if(onComplete != null)
-            onComplete(false);
-        }
+      GameFileSystem.exists(file).then( (exists) => {
+        if(onComplete != null)
+          onComplete(exists);
+        // if(err == null) {
+        //   if(onComplete != null)
+        //     onComplete(true);
+        // } else if(err.code == 'ENOENT') {
+        //   if(onComplete != null)
+        //     onComplete(false);
+        // } else {
+        //   if(onComplete != null)
+        //     onComplete(false);
+        // }
       });
     }else{
       if(onComplete != null)

@@ -120,10 +120,11 @@ export class LBL_3DView {
       }
     }
 
-    //let oldClearColor = GameState.renderer.getClearColor();
+    let oldClearColor = new THREE.Color()
+    GameState.renderer.getClearColor(oldClearColor);
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
-    GameState.renderer.clear(this.texture);
+    GameState.renderer.clear(true);
     GameState.renderer.render(this.scene, this.camera);
     // @ts-expect-error
     this.texture.needsUpdate = true;

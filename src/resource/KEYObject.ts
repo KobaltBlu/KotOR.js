@@ -143,43 +143,19 @@ export class KEYObject {
     return bifResults.flat();
   }
 
-  GetFileData(key: KEY, onComplete?: Function){
+  GetFileData(key: KEY, onComplete?: Function, onError?: Function){
+    if(key){
+      const bif: BIFObject = BIFManager.bifs.get(KEYObject.GetBIFIndex(key.ResID));
+      if(bif){
+        bif.GetResourceData(bif.GetResourceById(key.ResID), onComplete);
+        return true;
+      }
+    }
 
-    // if(key != null){
-
-    //   let bifs = Object.keys(Global.kotorBIF);
-    //   let bif = Global.kotorBIF[bifs[key.ResID >> 20]];
-
-    //   if(typeof bif != undefined){
-    //     bif.GetResourceData(bif.GetResourceById(key.ResID), onComplete);
-    //     return true;
-    //   }
-      
-    //   return false;
-
-    // }
+    if(typeof onError === 'function')
+      onError(undefined);
     
-    // return false;
-  
-  }
-
-  GetFileDataSync(key: KEY){
-    
-    // if(key != null){
-
-    //   let bifs = Object.keys(Global.kotorBIF);
-    //   let bif = Global.kotorBIF[bifs[key.ResID >> 20]];
-
-    //   if(typeof bif != undefined){
-    //     return bif.GetResourceDataSync(bif.GetResourceById(key.ResID));
-    //   }
-      
-    //   return null;
-
-    // }
-    
-    // return null;
-  
+    return false;
   }
 
   static GetBIFIndex( ResID: number = 0 ): number{

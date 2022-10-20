@@ -92,7 +92,7 @@ export class MainMenu extends GameMenu {
       GameState.ModelLoader.load({
         file: 'mainmenu',
         onLoad: (mdl: OdysseyModel) => {
-          this.tGuiPanel.widget.fill.visible = false;
+          this.tGuiPanel.widget.userData.fill.visible = false;
 
           this._3dView = new LBL_3DView();
           this._3dView.visible = true;

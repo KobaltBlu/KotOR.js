@@ -18,6 +18,7 @@ import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeTy
 import { OdysseyModelMDXFlag } from "../../interface/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelClass } from "../../interface/odyssey/OdysseyModelClass";
 import { ShaderManager } from "../../managers/ShaderManager";
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -862,7 +863,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //Merge Basic Geometries
           if(odysseyModel.mergedGeometries.length){
 
-            odysseyModel.mergedBufferGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedGeometries);
+            odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedGeometries);
             odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, odysseyModel.mergedMaterials);
             odysseyModel.mergedMesh.receiveShadow = true;
             odysseyModel.add(odysseyModel.mergedMesh);
@@ -877,7 +878,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //Merge Dangly Geometries
           if(odysseyModel.mergedDanglyGeometries.length){
 
-            odysseyModel.mergedBufferDanglyGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedDanglyGeometries);
+            odysseyModel.mergedBufferDanglyGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedDanglyGeometries);
             odysseyModel.mergedDanglyMesh = new THREE.Mesh(odysseyModel.mergedBufferDanglyGeometry, odysseyModel.mergedDanglyMaterials);
             //odysseyModel.mergedDanglyMesh.receiveShadow = true;
             odysseyModel.add(odysseyModel.mergedDanglyMesh);
@@ -1168,7 +1169,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             
             //Compute Geometry Tangents
             if((odysseyNode.NodeType & OdysseyModelNodeType.Saber) != OdysseyModelNodeType.Saber){
-              THREE.BufferGeometryUtils.computeTangents(geometry);
+              // BufferGeometryUtils.computeTangents(geometry);
             }
             
           }else{

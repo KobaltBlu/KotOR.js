@@ -16,6 +16,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { ShaderManager } from "../managers/ShaderManager";
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 
 /* @file
  * The ModuleRoom class.
@@ -304,7 +305,7 @@ export class ModuleRoom extends ModuleObject {
               blade.rotateX(Math.PI/2);
               blade.rotateZ(Math.PI/4 * i);
               if(grassGeometry){
-                grassGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
+                grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
               }else{
                 grassGeometry = blade;
               }

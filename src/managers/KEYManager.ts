@@ -24,6 +24,7 @@ export class KEYManager {
       onLoop: async (bifRes: BIF, loop: AsyncLoop, index: number, count: number) => {
         const bifPath: string = bifRes.filename;
         new BIFObject(bifPath, (bif: BIFObject) => {
+          BIFManager.bifIndexes.set( path.parse(bifRes.filename).name, index );
           BIFManager.bifs.set(index, bif);
           loop.next();
         });

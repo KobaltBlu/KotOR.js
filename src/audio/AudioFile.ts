@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from "fs";
-import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
@@ -403,16 +401,16 @@ export class AudioFile {
 
     if(args.file!=null){
 
-      fs.writeFile(args.file, this.GetExportableData(), (err) => {
-        if (err) {
-          if(typeof args.onError == 'function')
-            args.onError(err);
-        }else{
-          if(typeof args.onComplete == 'function')
-            args.onComplete();
-        }
-        console.log('AudioFile Saved');
-      });
+      // fs.writeFile(args.file, this.GetExportableData(), (err) => {
+      //   if (err) {
+      //     if(typeof args.onError == 'function')
+      //       args.onError(err);
+      //   }else{
+      //     if(typeof args.onComplete == 'function')
+      //       args.onComplete();
+      //   }
+      //   console.log('AudioFile Saved');
+      // });
 
     }
 

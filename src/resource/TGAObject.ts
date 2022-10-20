@@ -3,11 +3,10 @@
 
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
-import * as fs from 'fs';
-import * as THREE from "three";
 import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
 import { TGAHeader } from "../interface/graphics/tga/TGAHeader";
 import isBuffer from "is-buffer";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The TGAObject class.
@@ -137,13 +136,11 @@ export class TGAObject {
         reject(e);
       }
   
-      fs.writeFile(file, writer.buffer, (err) => {
-        if(err){
-          reject(err);
-        }else{
-          resolve(true);
-        }
-      });
+      GameFileSystem.writeFile(file, writer.buffer).then( () => {
+        resolve(true);
+      }).catch( (err) => {
+        reject(err);
+      })
     });
   }
 

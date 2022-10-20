@@ -344,7 +344,7 @@ export class GUIScrollBar extends GUIControl{
   calculatePosition(){
     let parentExtent = { width: this.menu.width, height: this.menu.height };
     let parentOffsetX, parentOffsetY;
-    if(!(this.parent instanceof THREE.Scene)){
+    if(!(this.parent.widget instanceof THREE.Scene)){
       parentExtent = this.menu.tGuiPanel.extent;
       //console.log(this.parent)
       //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
@@ -372,7 +372,12 @@ export class GUIScrollBar extends GUIControl{
     this.widget.position.x = this.anchorOffset.x;
     this.widget.position.y = this.anchorOffset.y;
 
-    let worldPosition = this.parent.position.clone();
+    let worldPosition = new THREE.Vector3();
+    try{
+      worldPosition = this.parent.widget.position.clone();
+    }catch(e){
+      console.error(e);
+    }
     let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
     //console.log('worldPos', worldPosition);
     this.box = new THREE.Box2(

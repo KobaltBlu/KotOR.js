@@ -2,9 +2,9 @@
  */
 
 import { BinaryWriter } from "../BinaryWriter";
-import * as fs from "fs";
 import { GameState } from "../GameState";
 import { ModuleRoom } from "../module";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The VisObject class.
@@ -153,10 +153,10 @@ export class VISObject {
 
     }
 
-    fs.writeFile('m01aa.vis', data.buffer, (err) => {
-      if (err) {
-       return console.error(err);
-      }
+    GameFileSystem.writeFile('m01aa.vis', data.buffer).then( () => {
+      // if (err) {
+      //  return console.error(err);
+      // }
       console.log('VISObject Saved');
     });
 

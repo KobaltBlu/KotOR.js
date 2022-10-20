@@ -84,6 +84,7 @@ export class BIFObject {
     GameFileSystem.open(this.resourceDiskInfo.path, 'r').then((fd) => {
       const header = Buffer.alloc(this.HeaderSize);
       GameFileSystem.read(fd, header, 0, this.HeaderSize, 0).then( (buffer) => {
+        console.log('header', header);
         this.reader = new BinaryReader(header);
 
         this.FileType = this.reader.ReadChars(4);
@@ -98,7 +99,7 @@ export class BIFObject {
         //Read variable tabs blocks
         const variableTable: Buffer = Buffer.alloc(this.VariableTableSize);
         GameFileSystem.read(fd, variableTable, 0, this.VariableTableSize, this.VariableTableOffset).then( () => {
-
+          this.reader.reuse(variableTable);
           for(let i = 0; i < this.VariableResourceCount; i++){
             this.resources[i] = {
               ID: this.reader.ReadUInt32(),

@@ -5,7 +5,6 @@
  */
 
 import * as path from "path";
-import * as fs from "fs";
 import * as THREE from "three";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
@@ -13,6 +12,7 @@ import { TXI } from "../resource/TXI";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { TextureLoader } from "./TextureLoader";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
@@ -33,6 +33,11 @@ export class TGALoader {
 		let found = false;
 
 		ResourceLoader.loadResourceAsync(ResourceTypes.tga, url).then( (buffer: Buffer) => {
+			if(!buffer){
+				if(typeof onLoad == 'function')
+					onLoad( undefined );
+				return;
+			}
 			texture.image = this.parse( buffer, url );
 			texture.needsUpdate = true;
 			texture.name = url;
@@ -66,47 +71,42 @@ export class TGALoader {
 		let scope = this;
 		let texture = new OdysseyTexture();
 	
-		fs.readFile(path.join(dir, name)+'.tga', (err, buffer) => {
-			if(err){
-				if(typeof onError == 'function')
-					onError( err );
-	
-				return;
-			}
-	
+		GameFileSystem.readFile(path.join(dir, name)+'.tga').then( (buffer) => {
+
 			texture.image = scope.parse( buffer, name );
 			texture.needsUpdate = true;
 			texture.name = name;
 			texture.bumpMapType = 'BUMP';
 			texture.generateMipmaps = true;
 	
-			fs.readFile(path.join(dir, name)+'.txi', (err, txiBuffer) => {
+			GameFileSystem.readFile(path.join(dir, name)+'.txi').then( (txiBuffer) => {
 	
-				if(err){
+				TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
+
+					if(tpcCheck){
+						texture.txi = tpcCheck.txi;
+						if(typeof onLoad == 'function')
+							onLoad( texture );
+					}else{
+						texture.txi = new TXI('');
+						if(typeof onLoad == 'function')
+							onLoad( texture );
+					}
+
+				});
 	
-					TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
+			}).catch( (err) => {
+				texture.txi = new TXI('');
+				if(typeof onLoad == 'function')
+					onLoad( texture );
+			})
 	
-						if(tpcCheck){
-							texture.txi = tpcCheck.txi;
-							if(typeof onLoad == 'function')
-								onLoad( texture );
-						}else{
-							texture.txi = new TXI('');
-							if(typeof onLoad == 'function')
-								onLoad( texture );
-						}
-	
-					});
-	
-				}else{
-					texture.txi = new TXI(txiBuffer);
-					if(typeof onLoad == 'function')
-						onLoad( texture );
-				}
-	
-			});
-	
-		});
+		}).catch( (err) => {
+			if(typeof onError == 'function')
+				onError( err );
+
+			return;
+		})
 	
 	};
 	
@@ -114,13 +114,7 @@ export class TGALoader {
 		
 		let texture = new OdysseyTexture();
 	
-		fs.readFile(name, (err, buffer) => {
-			if(err){
-				if(typeof onError === 'function')
-					onError( err );
-	
-				return;
-			}
+		GameFileSystem.readFile(name).then( (buffer) => {
 			texture.image = this.parse( buffer, name );
 			texture.needsUpdate = true;
 			texture.name = name;
@@ -152,7 +146,12 @@ export class TGALoader {
 	
 			//});
 	
-		});
+		}).catch( (err) => {
+			if(typeof onError === 'function')
+				onError( err );
+
+			return;
+		})
 	
 	};
 

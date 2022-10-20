@@ -60,53 +60,74 @@ export class TwoDAObject {
 
     br.position += 1; //10 = Newline (Skip)
 
-    let readingColumns:boolean = true;
-    this.columns = [];//str.split(/\s|\t/);
-    while(!!readingColumns){
-      let label: string = br.ReadString();
-
-      if(!label.length || label.charCodeAt(0) == 0){
-        readingColumns = false;
+    let str = "";
+    let ch;
+    this.columns = ["__rowlabel"];
+    while ((ch = br.ReadChar()).charCodeAt(0) != 0){
+      if(ch.charCodeAt(0) != 9){
+        str = str + ch;
       }else{
-        this.columns.push(label);
+        this.columns.push(str);
+        str = '';
       }
     }
-    this.ColumnCount = this.columns.length;
+
+    this.ColumnCount = this.columns.length - 1;
     this.RowCount = br.ReadUInt32();
 
     //Get the row index numbers
-    const RowIndexes: number[] = [];
+    let RowIndexes = [];
     for (let i = 0; i < this.RowCount; i++){
-      let rowIndex: string = br.ReadString();
+      let rowIndex = "";
+      let c;
+
+      while ((c = br.ReadChar()).charCodeAt(0) != 9){
+        rowIndex = rowIndex + c;
+      }
+
       RowIndexes[i] = parseInt(rowIndex);
     }
 
     //Get the Row Data Offsets
     this.CellCount = this.ColumnCount * this.RowCount;
-    let offsets: number[] = [];
+    let offsets = [];
     for (let i = 0; i < this.CellCount; i++){
       offsets[i] = br.ReadUInt16();
     }
 
-    const dataBlockSize = br.ReadUInt16();
-    let dataOffset: number = br.position;
-    console.log(dataBlockSize, dataOffset);
+    br.position += 2;
+    let dataOffset = br.position;
 
     //Get the Row Data
     for (let i = 0; i < this.RowCount; i++){
+
       let row: any = {"__index": i, "__rowlabel": RowIndexes[i] };
+
       for (let j = 0; j < this.ColumnCount; j++){
+
         let offset = dataOffset + offsets[i * this.ColumnCount + j];
-        br.position = offset;
-        let value = br.ReadString();
 
-        if(value == "")
-          value = "****";
+        try{
+          br.position = offset;
+        }catch(e){
+          console.error(e);
+          throw e;
+        }
 
-        row[this.columns[j]] = value;
+        let token = "";
+        let c;
+
+        while((c = br.ReadChar()).charCodeAt(0) != 0)
+          token = token + c;
+
+        if(token == "")
+          token = "****";
+
+        row[this.columns[j+1]] = token;
       }
-      console.log(i, row);
+
       this.rows[ i ] = row;
+
     }
 
   }

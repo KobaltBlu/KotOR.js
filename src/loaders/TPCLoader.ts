@@ -4,12 +4,12 @@
 import * as THREE from "three";
 import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
-import * as fs from "fs";
 import { TextureLoader } from "./TextureLoader";
 import { KEYManager } from "../managers/KEYManager";
 import { ERFManager } from "../managers/ERFManager";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The THREE.TPCLoader class is used to decode the TPC image format found in the game archives.
@@ -193,8 +193,7 @@ export class TPCLoader {
     
     let dir = path.join('Override');
   
-    fs.readFile(path.join(dir, name)+'.tpc', (err, buffer) => {
-      if (err) throw err; // Fail if the file can't be read.
+    GameFileSystem.readFile(path.join(dir, name)+'.tpc').then( (buffer) => {
   
       let tpc = new TPCObject({
         filename: name,
@@ -205,7 +204,9 @@ export class TPCLoader {
 
       if ( typeof onLoad === 'function' ) onLoad( texture );
   
-    });
+    }).catch( (err) => {
+      throw err; // Fail if the file can't be read.
+    })
   
   };
   
@@ -213,9 +214,7 @@ export class TPCLoader {
   
     let file_info = path.parse(name);
     if(file_info.ext == '.tpc'){
-      fs.readFile(name, (err, buffer) => {
-        if (err) throw err; // Fail if the file can't be read.
-  
+      GameFileSystem.readFile(name).then( (buffer) => {
         let tpc = new TPCObject({
           filename: file_info.name,
           file: buffer
@@ -226,7 +225,9 @@ export class TPCLoader {
   
         if ( typeof onLoad === 'function' ) onLoad( texture );
   
-      });
+      }).catch( (err) => {
+        throw err; // Fail if the file can't be read.
+      })
     }else{
       onError('Unsupported File Format');
     }

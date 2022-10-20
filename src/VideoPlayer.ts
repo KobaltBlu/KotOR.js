@@ -2,7 +2,6 @@
  */
 
 // import { ipcRenderer } from "electron";
-import * as fs from "fs";
 import * as path from "path";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 
@@ -21,7 +20,7 @@ export class VideoPlayer {
       let bik = path.join(ApplicationProfile.directory, 'Movies', name+'.bik');
 
       let hasMP4 = false;//fs.existsSync(mp4);
-      let hasBIK = fs.existsSync(bik);
+      let hasBIK = false;//fs.existsSync(bik);
       let playerSession;
 
       // console.log(name, hasMP4, hasBIK);

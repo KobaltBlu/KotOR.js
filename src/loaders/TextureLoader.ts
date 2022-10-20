@@ -2,7 +2,6 @@
  */
 
 import * as THREE from 'three';
-import * as fs from "fs";
 import * as path from "path";
 import { GameState } from '../GameState';
 import { ApplicationProfile } from '../utility/ApplicationProfile';
@@ -16,6 +15,7 @@ import { OdysseyTexture } from '../resource/OdysseyTexture';
 import { TPCLoader } from './TPCLoader';
 import { TGALoader } from './TGALoader';
 import { OdysseyEmitter3D } from '../three/odyssey';
+import { GameFileSystem } from '../utility/GameFileSystem';
 
 /* @file
  * The TextureLoader class.
@@ -113,7 +113,7 @@ export class TextureLoader {
 
     if(GameState.Flags.EnableOverride){
 
-      fs.exists(path.join(dir, name+'.tpc'), (tpc_exists) => {
+      GameFileSystem.exists(path.join(dir, name+'.tpc')).then( (tpc_exists) => {
         if (tpc_exists) {
 
           TextureLoader.tpcLoader.fetch_override(name, (texture: OdysseyTexture) => {
@@ -135,7 +135,7 @@ export class TextureLoader {
           
         }else{
 
-          fs.exists(path.join(dir, name+'.tga'), (tga_exists) => {
+          GameFileSystem.exists(path.join(dir, name+'.tga')).then( (tga_exists) => {
             if (tga_exists) {
               TextureLoader.tgaLoader.load_override(name, (tga: OdysseyTexture) => {
                 tga.anisotropy = TextureLoader.Anisotropy;
@@ -172,7 +172,7 @@ export class TextureLoader {
 
     let dir = name;
 
-    fs.exists(path.join(dir, name), (tga_exists) => {
+    GameFileSystem.exists(path.join(dir, name)).then( (tga_exists) => {
       if (tga_exists) {
         TextureLoader.tgaLoader.load_local(name, (tga: OdysseyTexture) => {
           tga.anisotropy = TextureLoader.Anisotropy;

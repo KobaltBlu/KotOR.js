@@ -49,6 +49,15 @@ import { ModuleObjectType } from "./enums/nwscript/ModuleObjectType";
 
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { ConfigClient } from "./utility/ConfigClient";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
+import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
+import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
+import { FilmPass } from "three/examples/jsm/postprocessing/FilmPass";
+import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
+import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 // import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 const saturationShader: any = {
@@ -162,7 +171,7 @@ export class GameState implements EngineContext {
   static canvas: HTMLCanvasElement;
   static context: WebGLRenderingContext;
   static rendererUpscaleFactor: number;
-  static renderer: any;
+  static renderer: THREE.WebGLRenderer;
   static depthTarget: any;
   static clock: any;
   static stats: any;
@@ -263,9 +272,9 @@ export class GameState implements EngineContext {
 
   static Init(){
     if(GameState.GameKey == 'TSL'){
-      GameState.iniConfig = new INIConfig(path.join(ApplicationProfile.directory, 'swkotor2.ini'), INIConfig.defaultConfigs.swKotOR2);
+      GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
     }else{
-      GameState.iniConfig = new INIConfig(path.join(ApplicationProfile.directory, 'swkotor.ini'), INIConfig.defaultConfigs.swKotOR);
+      GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
     }
     
     GameState.models = [];
@@ -318,8 +327,7 @@ export class GameState implements EngineContext {
     (window as any).renderer = GameState.renderer;
 
     GameState.clock = new THREE.Clock();
-    //@ts-expect-error
-    GameState.stats = Stats();
+    // GameState.stats = Stats();
 
     GameState.activeMenu = undefined;
 
@@ -458,38 +466,28 @@ export class GameState implements EngineContext {
 
     GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas, this);
 
-    document.getElementById('#renderer-containe').appendChild(GameState.stats.dom);
-    if(!ConfigClient.get('GameState.debug.show_fps'))
-      GameState.stats.showPanel(false);
+    // document.getElementById('#renderer-containe').appendChild(GameState.stats.dom);
+    // if(!ConfigClient.get('GameState.debug.show_fps'))
+    //   GameState.stats.showPanel(false);
 
     //BEGIN: PostProcessing
-    //@ts-expect-error
-    GameState.composer = new THREE.EffectComposer(GameState.renderer);
-    //@ts-expect-error
-    GameState.renderPass = new THREE.RenderPass(GameState.scene, GameState.currentCamera);
-    //@ts-expect-error
-    GameState.renderPassAA = new THREE.SSAARenderPass (GameState.scene, GameState.currentCamera);
-    //@ts-expect-error
-    GameState.saturationPass = new THREE.ShaderPass(saturationShader);
-    //@ts-expect-error
-    GameState.colorPass = new THREE.ShaderPass(THREE.ColorCorrectionShader);
-    //@ts-expect-error
-    GameState.copyPass = new THREE.ShaderPass(THREE.CopyShader);
-    //@ts-expect-error
-    GameState.renderPassGUI = new THREE.RenderPass(GameState.scene_gui, GameState.camera_gui);
+    GameState.composer = new EffectComposer(GameState.renderer);
+    GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
+    GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
+    GameState.saturationPass = new ShaderPass(saturationShader);
+    GameState.colorPass = new ShaderPass(ColorCorrectionShader);
+    GameState.copyPass = new ShaderPass(CopyShader);
+    GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     
-    //@ts-expect-error
-    GameState.bloomPass = new THREE.BloomPass(0.5);
-    //@ts-expect-error
-    GameState.bokehPass = new THREE.BokehPass(GameState.scene, GameState.currentCamera, {
+    GameState.bloomPass = new BloomPass(0.5);
+    GameState.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
       focus: 1.0,
       aperture:	0.0001,
       maxblur:	1.0,
-      width: GameState.renderer.width,
-      height: GameState.renderer.height
+      width: window.innerWidth,
+      height: window.innerHeight
     });
-    //@ts-expect-error
-    GameState.filmPass = new THREE.FilmPass(1, 0.325, 512, false);
+    GameState.filmPass = new FilmPass(1, 0.325, 512);
 
     GameState.renderPassAA.sampleLevel = 1;
 
@@ -1376,7 +1374,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    GameState.stats.update();
+    // GameState.stats.update();
   }
 
   static updateTime(delta: number = 0){

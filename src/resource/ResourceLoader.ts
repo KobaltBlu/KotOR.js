@@ -171,18 +171,6 @@ export class ResourceLoader {
 
   }
 
-  static loadResourceSync(resId: number, resRef: string){
-    
-    let model: any;
-
-    model = this._searchKeyTableSync(resId, resRef);
-    if(model)
-      return model;
-    
-    return;
-
-  }
-
   static loadTexture(resId: number, resRef: string){
 
 
@@ -316,15 +304,6 @@ export class ResourceLoader {
     }else{
       if(typeof onError === 'function')
         onError();
-    }
-  }
-
-  static _searchKeyTableSync(resId: number, resRef: string){
-    let keyLookup = KEYManager.Key.GetFileKey(resRef, resId);
-    if(keyLookup){
-      return KEYManager.Key.GetFileDataSync(keyLookup);
-    }else{
-      return null;
     }
   }
 

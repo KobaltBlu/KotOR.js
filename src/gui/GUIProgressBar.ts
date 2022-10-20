@@ -30,7 +30,7 @@ export class GUIProgressBar extends GUIControl {
     this.maxValue = ( control.HasField('MAXVALUE') ? control.GetFieldByLabel('MAXVALUE')?.GetValue() : 0 );
 
     this.widget.userData.progress = new THREE.Group();
-    this.widget.userData.add(this.widget.userData.progress);
+    this.widget.add(this.widget.userData.progress);
 
     //----------//
     // Progress

@@ -28,8 +28,11 @@ export class RIMManager {
         for(let i = 0, len = rims.length; i < len; i++){
           try{
             await RIMManager.LoadRIMObject(rims[i]);
-          }catch(e){ }
+          }catch(e){ 
+            console.error(e);
+          }
         }
+        resolve();
       }catch(err){
         console.warn('GameInitializer.LoadRIMs', err);
         resolve();
@@ -42,8 +45,8 @@ export class RIMManager {
   static LoadRIMObject( rimObj: any ){
     //{ext: args[1].toLowerCase(), name: args[0], filename: filename}
     return new Promise<RIMObject>( async (resolve, reject) => {
-      new RIMObject(rimObj.name, (rim: RIMObject) => {
-        RIMManager.RIMs.set(rimObj.filename, rim);
+      new RIMObject(rimObj.filename, (rim: RIMObject) => {
+        RIMManager.RIMs.set(rimObj.name, rim);
         resolve(rim);
       }, (err: any) => {
         reject(err);

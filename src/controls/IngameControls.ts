@@ -139,9 +139,9 @@ export class IngameControls {
           console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
-        let parentOffset = this.editor.$canvas.offset();
-        Mouse.MouseDownX = event.pageX - parentOffset.left;
-        Mouse.MouseDownY = event.pageY - parentOffset.top;
+        // let parentOffset = this.editor.canvas.offset();
+        Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
+        Mouse.MouseDownY = event.pageY - this.element.offsetTop;
 
         if(Mouse.ButtonState == MouseState.LEFT){
 
@@ -227,9 +227,9 @@ export class IngameControls {
         }
       }
 
-      let parentOffset = this.editor.$canvas.offset();
-      Mouse.MouseX = event.pageX - parentOffset.left;
-      Mouse.MouseY = event.pageY - parentOffset.top;
+      // let parentOffset = this.element.offset();
+      Mouse.MouseX = event.pageX - this.element.offsetLeft;
+      Mouse.MouseY = event.pageY - this.element.offsetTop;
 
       if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT){
         Mouse.Dragging = true;
@@ -437,7 +437,7 @@ export class IngameControls {
 
     for(let i = 0; i < GameState.scene_gui.children.length; i++){
       if(GameState.scene_gui.children[i].userData.control){
-        elements = elements.concat(GameState.scene_gui.children[i].control.menu.GetActiveControls());
+        elements = elements.concat((GameState.scene_gui.children[i].userData.control.menu as GameMenu).GetActiveControls());
       }
     }
 

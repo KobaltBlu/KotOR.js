@@ -19,7 +19,7 @@ export class TwoDAManager {
       array: resources,
       onLoop: (resource: BIFResource, asyncLoop: AsyncLoop) => {
         ResKey = KEYManager.Key.GetFileKeyByRes(resource);
-        //Load 2da's with the resource loader to it can pick up ones in the override folder
+        //Load 2da's with the resource loader so it can pick up ones in the override folder
         ResourceLoader.loadResource(ResourceTypes['2da'], ResKey.ResRef, (d: Buffer) => {
           TwoDAManager.datatables.set(ResKey.ResRef, new TwoDAObject(d));
           asyncLoop.next();

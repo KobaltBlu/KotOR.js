@@ -17,34 +17,34 @@ export class LoadingScreen {
   messageElement: HTMLElement;
 
   constructor(parent?: HTMLElement, isGlobal: boolean = true){
-    // this.message = 'Loading...';
-    // this.loader = document.createElement('div');
-    // this.loader.id = (isGlobal? 'id="loader"' : '');
-    // this.loader.classList.add('loading-screen', 'se-pre-con')
-    // this.loader.innerHTML = '<div class="background"></div>'+
-    //   '<div class="logo-wrapper"><img src="" /></div>'+
-    //   '<div class="loading-container">'+
-    //     '<div class="ball"></div>'+
-    //     '<div class="ball1"></div>'+
-    //     '<div id="loading-message" class="loading-message">'+this.message+'</div>'+
-    //   '</div>';
+    this.message = 'Loading...';
+    this.loader = document.createElement('div');
+    this.loader.id = (isGlobal? 'id="loader"' : '');
+    this.loader.classList.add('loading-screen', 'se-pre-con')
+    this.loader.innerHTML = '<div class="background"></div>'+
+      '<div class="logo-wrapper"><img src="" /></div>'+
+      '<div class="loading-container">'+
+        '<div class="ball"></div>'+
+        '<div class="ball1"></div>'+
+        '<div id="loading-message" class="loading-message">'+this.message+'</div>'+
+      '</div>';
 
-    // this.background = this.loader.querySelector('div.background');
-    // this.logo_wrapper = this.loader.querySelector('div.logo-wrapper');
-    // this.logo = this.logo_wrapper.querySelector('img');
-    // this.loading_container = this.loader.querySelector('div.loading-container');
-    // this.messageElement = this.loading_container.querySelector('.loading-message');
+    this.background = this.loader.querySelector('div.background');
+    this.logo_wrapper = this.loader.querySelector('div.logo-wrapper');
+    this.logo = this.logo_wrapper.querySelector('img');
+    this.loading_container = this.loader.querySelector('div.loading-container');
+    this.messageElement = this.loading_container.querySelector('.loading-message');
 
-    // if(typeof parent === 'undefined'){
-    //   parent = document.body;
-    // }
+    if(typeof parent === 'undefined'){
+      parent = document.body;
+    }
 
-    // if(!isGlobal){
-    //   this.loader.style.position = 'absolute';
-    // }
+    if(!isGlobal){
+      this.loader.style.position = 'absolute';
+    }
 
-    // //console.log(parent);
-    // parent.append(this.loader);
+    //console.log(parent);
+    parent.append(this.loader);
   }
 
   SetLogo(src: string){

@@ -4,6 +4,7 @@ import * as KOTOR from "../game/kotor/KOTOR";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { GameMenu } from "../gui";
+import { CharGenManager } from "./CharGenManager";
 
 
 export class MenuManager {
@@ -153,6 +154,7 @@ export class MenuManager {
   }
 
   static async LoadGameMenus(){
+    CharGenManager.InitializeCreatureTemplate();
     try{
       if(GameState.GameKey == GameEngineType.KOTOR){
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(KOTOR.CharGenAbilities) as KOTOR.CharGenAbilities;

@@ -11,6 +11,7 @@ import { GameState } from "../GameState";
 import { ModuleObject } from "../module";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { GameFileSystem } from "../utility/GameFileSystem";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
@@ -85,8 +86,8 @@ export class NWScript {
 
       if( typeof dataOrFile === 'string' ){
 
-        fs.readFile(dataOrFile, (err, binary) => {
-          this.decompile(binary);
+        GameFileSystem.readFile(dataOrFile).then( (buffer) => {
+          this.decompile(buffer);
           if(typeof onComplete === 'function')
             onComplete(this);
         });

@@ -33,10 +33,12 @@ export class LoadScreen extends GameMenu {
 
       this.LBL_HINT.visible = false;
 
+      //@ts-expect-error
       this.defaultTex = this.tGuiPanel.getFill().material.uniforms.map.value;
 
       if(this.args.loadscreen.length){
         this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
+          //@ts-expect-error
           this.tGuiPanel.getFill().uniforms.material.uniforms.map.value.value = texture;
           resolve();
         });
@@ -54,11 +56,13 @@ export class LoadScreen extends GameMenu {
     if (resref) {
       this.LoadTexture(resref, (texture: OdysseyTexture) => {
         if (texture) {
+          //@ts-expect-error
           this.tGuiPanel.getFill().material.uniforms.map.value = texture;
           if (typeof onLoad === 'function')
             onLoad();
         } else {
           this.LoadTexture('load_default', (texture: OdysseyTexture) => {
+            //@ts-expect-error
             this.tGuiPanel.getFill().material.uniforms.map.value = this.defaultTex = texture;
             if (typeof onLoad === 'function')
               onLoad();

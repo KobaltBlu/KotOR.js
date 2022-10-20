@@ -35,7 +35,7 @@ export class GameMenu {
   canCancel: boolean;
   childMenu: any;
   activeWidget: any[];
-  tGuiPanel: any;
+  tGuiPanel: GUIControl;
   menuGFF: any;
   width: any;
   height: any;
@@ -74,7 +74,7 @@ export class GameMenu {
       //mainmenu16x12
       this.LoadBackground( () => {
         
-        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref, (buffer: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref, async (buffer: Buffer) => {
           
           this.menuGFF = new GFFObject(buffer);
           
@@ -100,6 +100,8 @@ export class GameMenu {
           //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
           //You can just use this.CONTROL_NAME 
           this.AssignChildControlsToMenu(this.tGuiPanel);
+
+          await this.MenuControlInitializer();
   
           TextureLoader.LoadQueue(() => {
             resolve(this);
@@ -165,7 +167,7 @@ export class GameMenu {
 
   getControlByName(name: string): GUIControl {
     try{
-      return this.tGuiPanel.getControl().getObjectByName(name).control;
+      return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
     }catch(e){
       console.error('getControlByName', 'Control not found', name);
     }
@@ -258,7 +260,7 @@ export class GameMenu {
   }
 
   GetActiveControls(){
-    let controls = [];
+    let controls: GUIControl[] = [];
     if(this.tGuiPanel){
       controls = this.tGuiPanel.getActiveControls();
     }

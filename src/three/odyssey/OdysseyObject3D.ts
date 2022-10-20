@@ -36,7 +36,9 @@ export class OdysseyObject3D extends THREE.Object3D {
   constructor( node: OdysseyModelNode = undefined ){
     super();
     this.odysseyModelNode = node;
-    this.controllers = node.controllers;
+    if(node){
+      this.controllers = node?.controllers;
+    }
     this.controllerCache = {};
     // this.trans = {
     //   position: new THREE.Vector3,

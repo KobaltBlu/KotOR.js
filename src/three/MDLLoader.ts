@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from "fs";
-import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModel } from "../odyssey";
 import { ResourceLoader } from "../resource/ResourceLoader";
@@ -30,7 +28,7 @@ export class MDLLoader {
     let isLocal = false;
 
     try{
-      isLocal = fs.lstatSync(args.file).isFile();
+      isLocal = false;//fs.lstatSync(args.file).isFile();
     }catch(e){}
 
     //Arg3 used to be isLocal this is included for backwards compatibility for charCode
@@ -98,71 +96,5 @@ export class MDLLoader {
       })
     })
   }
-
-  loadSync( args: any ) {
-
-    args = Object.assign({
-      file: null,
-      options: null
-    }, args);
-
-    let name = args.file;
-
-    let isLocal = false;
-
-    if(ModelCache.models.hasOwnProperty(args.file)){
-      //console.log('Loading model from cache');
-      let cache = ModelCache.models[args.file];
-      return cache;
-
-    }else{
-
-      if(!isLocal){
-
-        try{
-
-          let mdlBuffer = ResourceLoader.loadResourceSync(ResourceTypes['mdl'], args.file);
-          let mdxBuffer = ResourceLoader.loadResourceSync(ResourceTypes['mdx'], args.file);
-
-          if(mdlBuffer){
-            if(mdxBuffer){
-
-              let mdlData2 = Buffer.alloc(mdlBuffer.length);
-              mdlBuffer.copy(mdlData2);
-
-              let mdxData2 = Buffer.alloc(mdxBuffer.length);
-              mdxBuffer.copy(mdxData2);
-          
-              let mdlReader = new BinaryReader(mdlData2);
-              let mdxReader = new BinaryReader(mdxData2);
-
-              let odysseyModel = new OdysseyModel(mdlReader, mdxReader);
-              ModelCache.models[args.file] = {mdlData: mdlBuffer, mdxData: mdxBuffer};
-              return odysseyModel;
-            } else {
-              console.error('MDX 404', args.file);
-              throw 'Model MDX 404: '+args.file;
-            }
-          } else {
-            console.error('MDL 404', args.file);
-            throw 'Model MDL 404: '+args.file;
-          }
-
-        }catch(e){
-          return e;
-        }
-
-      }else{
-        throw 'Model 404 Local file not supported: '+args.file;
-        return null;
-      }
-
-    }
-
-    throw 'Model 404 nothing found: '+args.file;
-
-    return null;
-
-	}
 
 }

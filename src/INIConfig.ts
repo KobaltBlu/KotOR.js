@@ -1,9 +1,9 @@
 
 import { DeepObject } from "./DeepObject";
-import * as fs from "fs";
 
 import * as swKotOR from "./game/kotor/swkotor-config";
 import * as swKotOR2 from "./game/tsl/swkotor2-config";
+import { GameFileSystem } from "./utility/GameFileSystem";
 
 export class INIConfig {
   ini_path: string;
@@ -24,40 +24,42 @@ export class INIConfig {
     this.nodes = [];
     
     try{
-      let ini_text = fs.readFileSync(this.ini_path).toString('utf8');
-      let lines = ini_text.split(/\r?\n/);
+      GameFileSystem.readFile(this.ini_path).then( (buffer) => {
+        let ini_text = buffer.toString('utf8');
+        let lines = ini_text.split(/\r?\n/);
 
-      this.current_section = null;
+        this.current_section = null;
 
-      for(let i = 0, len = lines.length; i < len; i++){
-        let line = lines[i].trim();
-        if( !line.length ){
+        for(let i = 0, len = lines.length; i < len; i++){
+          let line = lines[i].trim();
+          if( !line.length ){
 
-        }else{
-          let section = line.match(/^\[(.*)\]$/);
-          let property = line.split('=');
-          if(section != null && section.length){
-            this.current_section = section[1];
-            this.options[section[1]] = {};
-          }else if(property.length){
+          }else{
+            let section = line.match(/^\[(.*)\]$/);
+            let property = line.split('=');
+            if(section != null && section.length){
+              this.current_section = section[1];
+              this.options[section[1]] = {};
+            }else if(property.length){
 
-            let name = property.shift();
-            let value = property.join('=');
+              let name = property.shift();
+              let value = property.join('=');
 
-            try{
-              value = JSON.parse(value.toString());
-            }catch(e){
-              value = value.toString();
-            }
+              try{
+                value = JSON.parse(value.toString());
+              }catch(e){
+                value = value.toString();
+              }
 
-            if(this.current_section){
-              this.options[this.current_section][name] = value;
-            }else{
-              this.options[name] = value;
+              if(this.current_section){
+                this.options[this.current_section][name] = value;
+              }else{
+                this.options[name] = value;
+              }
             }
           }
         }
-      }
+      })
     }catch(e){
 
     }
@@ -124,17 +126,17 @@ export class INIConfig {
   }
 
   save( onSave?: Function ){
-    fs.writeFile(this.ini_path, this.toString(), function(err) {
-      if(err) {
-        return console.log(err);
-      }
+    // fs.writeFile(this.ini_path, this.toString(), function(err) {
+    //   if(err) {
+    //     return console.log(err);
+    //   }
   
-      //console.log("INIConfig saved!");
+    //   //console.log("INIConfig saved!");
 
-      if(typeof onSave === 'function')
-        onSave();
+    //   if(typeof onSave === 'function')
+    //     onSave();
 
-    });
+    // });
   }
 
 }

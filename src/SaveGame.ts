@@ -2,7 +2,6 @@
  */
 
 import * as path from "path";
-import * as fs from "fs";
 import { GFFObject } from "./resource/GFFObject";
 import { TextureLoader } from "./loaders/TextureLoader";
 import { OdysseyTexture } from "./resource/OdysseyTexture";
@@ -89,22 +88,24 @@ export class SaveGame {
   async InitSavePIFO(){
     return new Promise<void>( (resolve, reject) => {
       try{
-        if(fs.existsSync(path.join(this.directory, 'pifo.ifo'))){
-          this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo: GFFObject) => {
+        GameFileSystem.exists(path.join(this.directory, 'pifo.ifo')).then( (exists) => {
+          if(exists){
+            this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo: GFFObject) => {
       
-            if(pifo.RootNode.HasField('Mod_PlayerList')){
-              let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
-              if(playerList.length){
-                PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+              if(pifo.RootNode.HasField('Mod_PlayerList')){
+                let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
+                if(playerList.length){
+                  PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+                }
               }
-            }
-
+  
+              resolve();
+        
+            });
+          }else{
             resolve();
-      
-          });
-        }else{
-          resolve();
-        }
+          }
+        })
       }catch(e){
         resolve();
       }
@@ -438,19 +439,17 @@ export class SaveGame {
   InventoryLoader(onLoad?: Function){
     console.log('SaveGame', 'Loading Inventory...');
 
-    fs.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'), (error, data: Buffer) => {
-      if(!error){
-        this.inventory = new GFFObject(data);
-        let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
-  
-        this.LoadInventoryItems(invArr, 0, () => {
-          if(typeof onLoad === 'function')
-            onLoad();
-        });
-      }else{
-        console.error('InventoryLoader', error)
-      }
-    });
+    GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res')).then( (buffer: Buffer) => {
+      this.inventory = new GFFObject(buffer);
+      let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+
+      this.LoadInventoryItems(invArr, 0, () => {
+        if(typeof onLoad === 'function')
+          onLoad();
+      });
+    }).catch((err) => {
+      console.error('InventoryLoader', err)
+    })
 
   }
 
@@ -729,11 +728,11 @@ export class SaveGame {
 
   static GetSaveGames(){
     return new Promise<void>( (resolve, reject) => {
-      GameFileSystem.readdir(SaveGame.base_directory).then( (folders) => {
+      GameFileSystem.readdir(SaveGame.base_directory).then( async (folders) => {
         //Loop through and detect the possible savegame paths
         for(let i = 0; i < folders.length; i++){
           if(SaveGame.FolderRegexValidator.test(folders[i])){
-            if(fs.existsSync(path.join(SaveGame.base_directory, folders[i], 'SAVEGAME.sav'))){
+            if(GameFileSystem.exists(path.join(SaveGame.base_directory, folders[i], 'SAVEGAME.sav'))){
               SaveGame.AddSaveGame( new SaveGame(folders[i]) );
             }else{
               //console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);

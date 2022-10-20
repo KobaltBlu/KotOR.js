@@ -142,7 +142,7 @@ export class CharGenPortCust extends GameMenu {
         this.Close();
       });
 
-      this.tGuiPanel.widget.fill.position.z = -0.5
+      this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;

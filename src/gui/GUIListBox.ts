@@ -122,10 +122,11 @@ export class GUIListBox extends GUIControl {
     if(!this.isVisible())
       return;
 
-    let oldClearColor = GameState.renderer.getClearColor();
+    let oldClearColor = new THREE.Color()
+    GameState.renderer.getClearColor(oldClearColor);
     GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
-    GameState.renderer.clear(this.texture);
+    GameState.renderer.clear(true);
     GameState.renderer.render(this.scene, this.camera);
     // @ts-expect-error
     this.texture.needsUpdate = true;
@@ -496,12 +497,12 @@ export class GUIListBox extends GUIControl {
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.upArrow.box.containsPoint(GameState.mouseUI)){
+    if(this.scrollbar.upArrow.userData.box.containsPoint(GameState.mouseUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.downArrow.box.containsPoint(GameState.mouseUI)){
+    if(this.scrollbar.downArrow.userData.box.containsPoint(GameState.mouseUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }

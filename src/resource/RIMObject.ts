@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from 'fs';
 import isBuffer from 'is-buffer';
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
@@ -13,7 +12,7 @@ import { ResourceTypes } from './ResourceTypes';
  */
 
 export interface RIMHeader {
-  FileType: number;
+  FileType: string;
   FileVersion: string;
   ResourceCount: number;
   ResourcesOffset: number;
@@ -35,7 +34,7 @@ export class RIMObject {
   Resources: RIMResource[];
   HeaderSize: number;
   inMemory: boolean;
-  Reader: any;
+  Reader: BinaryReader;
   Header: RIMHeader;
   rimDataOffset: number;
 
@@ -128,7 +127,7 @@ export class RIMObject {
         this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
         header = Buffer.allocUnsafe(this.rimDataOffset);
         GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0).then( () => {
-          this.Reader.resuse(header);
+          this.Reader.reuse(header);
           this.Reader.Seek(this.Header.ResourcesOffset);
 
           for (let i = 0; i < this.Header.ResourceCount; i++) {
@@ -174,7 +173,8 @@ export class RIMObject {
             GameFileSystem.close(fd).then( () => {
               resolve(this);
             });
-          }).catch( () => {
+          }).catch( (err) => {
+            console.error('RIM Header Read', err);
             GameFileSystem.close(fd).then( () => {
               resolve(this);
             });
@@ -186,7 +186,7 @@ export class RIMObject {
         }
 
       }).catch( (err: any) => {
-        console.log('RIM Header Read', err);
+        console.error('RIM Header Read', err);
         reject(err);
         return;
       });
@@ -206,17 +206,23 @@ export class RIMObject {
             if(typeof onComplete == 'function')
               onComplete(buffer);
           }else{
-            let _buffers: Buffer[] = [];
-            fs.createReadStream(this.resource_path, {
-              autoClose: true, 
-              start: resource.DataOffset, 
-              end: resource.DataOffset + (resource.DataSize - 1)
-            }).on('data', function (chunk: Buffer) {
-              _buffers.push(chunk);
-            }).on('end', function () {
-              let buffer = Buffer.concat(_buffers);
-              if(typeof onComplete == 'function')
-                onComplete(buffer);
+            GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
+              let buffer = Buffer.alloc(resource.DataSize);
+              GameFileSystem.read(fd, buffer, 0, buffer.length, resource.DataOffset).then( () => {
+                GameFileSystem.close(fd).then( () => {
+                  if(typeof onComplete === 'function')
+                    onComplete(buffer);
+                }).catch( (err) => {
+                  if(typeof onComplete === 'function')
+                    onComplete(Buffer.allocUnsafe(0));
+                })
+              }).catch( (err) => {
+                if(typeof onComplete === 'function')
+                  onComplete(Buffer.allocUnsafe(0));
+              })
+            }).catch( (err) => {
+              if(typeof onComplete === 'function')
+                onComplete(Buffer.allocUnsafe(0));
             });
           }
           
@@ -260,17 +266,23 @@ export class RIMObject {
           if(typeof onComplete == 'function')
             onComplete(buffer);
         }else{
-          let _buffers: Buffer[] = [];
-          fs.createReadStream(this.resource_path, {
-            autoClose: true, 
-            start: resource.DataOffset, 
-            end: resource.DataOffset + (resource.DataSize - 1)
-          }).on('data', function (chunk: Buffer) {
-            _buffers.push(chunk);
-          }).on('end', function () {
-            let buffer = Buffer.concat(_buffers);
-            if(typeof onComplete == 'function')
-              onComplete(buffer);
+          GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
+            let buffer = Buffer.alloc(resource.DataSize);
+            GameFileSystem.read(fd, buffer, 0, buffer.length, resource.DataOffset).then( () => {
+              GameFileSystem.close(fd).then( () => {
+                if(typeof onComplete === 'function')
+                  onComplete(buffer);
+              }).catch( (err) => {
+                if(typeof onComplete === 'function')
+                  onComplete(Buffer.allocUnsafe(0));
+              })
+            }).catch( (err) => {
+              if(typeof onComplete === 'function')
+                onComplete(Buffer.allocUnsafe(0));
+            })
+          }).catch( (err) => {
+            if(typeof onComplete === 'function')
+              onComplete(Buffer.allocUnsafe(0));
           });
         }
       }
@@ -288,42 +300,44 @@ export class RIMObject {
         let resource = this.Resources[i];
         if (resource.ResRef == resref && resource.ResType == restype) {
           try {
+            if(onComplete != null)
+              onComplete();
 
-            if(this.inMemory && isBuffer(this.buffer)){
-              let buffer = Buffer.from(this.buffer, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
-              fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
-                if (err) console.log(err);
+            // if(this.inMemory && isBuffer(this.buffer)){
+            //   let buffer = Buffer.from(this.buffer, resource.DataOffset, resource.DataOffset + (resource.DataSize - 1));
+            //   fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
+            //     if (err) console.log(err);
 
-                if(onComplete != null)
-                  onComplete(buffer);
+            //     if(onComplete != null)
+            //       onComplete(buffer);
 
-              });
-            }else{
-              fs.open(this.resource_path, 'r', function(err, fd) {
-                if (err) {
-                  console.log('RIM Read', err.message);
-                  return;
-                }
-                let buffer = Buffer.alloc(resource.DataSize);
-                fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
-                  console.log('RIM Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
-                  fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
-                    if (err) console.log(err);
+            //   });
+            // }else{
+            //   fs.open(this.resource_path, 'r', function(err, fd) {
+            //     if (err) {
+            //       console.log('RIM Read', err.message);
+            //       return;
+            //     }
+            //     let buffer = Buffer.alloc(resource.DataSize);
+            //     fs.read(fd, buffer, 0, resource.DataSize, resource.DataOffset, function(err, num) {
+            //       console.log('RIM Export', 'Writing File', path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)));
+            //       fs.writeFile(path.join(directory, resource.ResRef+'.'+ResourceTypes.getKeyByValue(resource.ResType)), buffer, (err) => {
+            //         if (err) console.log(err);
   
-                    if(onComplete != null)
-                      onComplete(buffer);
+            //         if(onComplete != null)
+            //           onComplete(buffer);
   
-                  });
+            //       });
   
-                });
-              });
-            }
+            //     });
+            //   });
+            // }
 
           }
           catch (e) {
             console.log(e);
             if(onComplete != null)
-              onComplete(new ArrayBuffer(0));
+              onComplete();
           }
         }
       }

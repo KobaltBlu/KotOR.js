@@ -57,7 +57,7 @@ export interface ITPCObjectOptions {
 export class TPCObject {
 
   header: TPCHeader;
-  txi: TXI;
+  txi: TXI = new TXI('');
   file: Buffer;
   filename: string;
   pack: number;
@@ -74,7 +74,7 @@ export class TPCObject {
     this.filename = options.filename;
     this.pack = options.pack;
     this.header = this.readHeader();
-    this.txi = null;
+    this.txi = new TXI('');
 
   }
 

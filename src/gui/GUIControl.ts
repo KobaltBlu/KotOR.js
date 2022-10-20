@@ -22,6 +22,7 @@ import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ShaderManager } from "../managers/ShaderManager";
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -31,13 +32,13 @@ const box = { min: [0, 0], max: [0, 0] }
  */
 
 export class GUIControl {
-  position: any;
+  position: THREE.Vector3 = new THREE.Vector3();
   node: any;
   visible: boolean = true;
   calculateBox() {
     return;
   }
-
+  
   static colors = {
     normal: {
       r: 0, 
@@ -143,7 +144,7 @@ export class GUIControl {
   highlightEnabled: boolean;
   highlightFillEnabled: boolean;
   hovering: boolean;
-  anchorOffset: THREE.Vector2;
+  anchorOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
   editable: boolean;
   selected: boolean;
   onSelect: any;
@@ -1720,8 +1721,7 @@ export class GUIControl {
     if(this.border.geometry instanceof THREE.BufferGeometry)
       this.border.geometry.dispose();
 
-    // @ts-expect-error
-    this.border.geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.border.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
     this.border.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1806,8 +1806,7 @@ export class GUIControl {
     if(this.highlight.geometry instanceof THREE.BufferGeometry)
       this.highlight.geometry.dispose();
 
-    // @ts-expect-error
-    this.highlight.geometry = THREE.BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.highlight.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
     this.highlight.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1871,7 +1870,7 @@ export class GUIControl {
         this.boundingSphere.center.set(0, 0, 0)
         return
       }
-      this.computeSphere(positions, this.boundingSphere)
+      // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
         console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
           'Computed radius is NaN. The ' +

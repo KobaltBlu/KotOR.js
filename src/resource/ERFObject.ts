@@ -152,8 +152,8 @@ export class ERFObject {
           console.log('erf', this.resource_path);
           GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
             let header = Buffer.alloc(HeaderSize);
-            GameFileSystem.read(fd, header, 0, HeaderSize, 0).then( (buffer) => {
-              this.Reader = new BinaryReader(buffer);
+            GameFileSystem.read(fd, header, 0, HeaderSize, 0).then( () => {
+              this.Reader = new BinaryReader(header);
 
               this.Header.FileType = this.Reader.ReadChars(4);
               this.Header.FileVersion = this.Reader.ReadChars(4);
@@ -174,8 +174,8 @@ export class ERFObject {
               //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
               this.erfDataOffset = (this.Header.OffsetToResourceList + (this.Header.EntryCount * 8));
               header = Buffer.alloc(this.erfDataOffset);
-              GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0).then( (buffer2) => {
-                this.Reader.reuse(buffer2);
+              GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0).then( () => {
+                this.Reader.reuse(header);
 
                 this.Reader.Seek(this.Header.OffsetToLocalizedString);
 
@@ -222,11 +222,15 @@ export class ERFObject {
                 });
 
               }).catch( (err) => {
-
+                console.error(err);
+                if(typeof onComplete == 'function')
+                  onComplete(undefined);
               });
 
             }).catch( (err) => {
-
+              console.error(err);
+              if(typeof onComplete == 'function')
+                onComplete(undefined);
             });
 
           }).catch( (err) => {
