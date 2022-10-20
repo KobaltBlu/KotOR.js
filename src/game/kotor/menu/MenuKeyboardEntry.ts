@@ -28,6 +28,7 @@ export class MenuKeyboardEntry extends GameMenu {
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
+      resolve();
     });
 }
   
