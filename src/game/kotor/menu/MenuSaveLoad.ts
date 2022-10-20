@@ -85,6 +85,7 @@ export class MenuSaveLoad extends GameMenu {
       }
 
       this.tGuiPanel.getFill().position.z = -1;
+      resolve();
     });
   }
 

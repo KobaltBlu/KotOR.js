@@ -76,6 +76,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
       // };
       // this.CB_FRAMEBUFF.attachINIProperty('Graphics Options.Grass');
 
+      resolve();
     });
   }
 

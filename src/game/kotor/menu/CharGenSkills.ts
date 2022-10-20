@@ -136,6 +136,7 @@ export class CharGenSkills extends GameMenu {
         this.updateButtonStates();
 
       });
+      resolve();
     });
   }
 
