@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "moduleResolution": "node",
     "target": "ESNext",
     "module": "commonjs",
     "declaration": true,
@@ -13,21 +14,25 @@
     "noEmitOnError": true,
     "strictNullChecks": false,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "types": [
+      "@types/wicg-file-system-access",
       "node",
       "offscreencanvas",
       "jquery",
-    ]
+      "jqueryui",
+    ],
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+    "outDir": "dist",
   },
-  "lib": [
-    "ESNext",
-    "dom"
-  ],
-  "filesGlob": [
-    "./**/*.ts",
-    "./**/*.tsx",
-    "!./**/*.d.ts",
-  ],
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"]
+  "include": ["src/KotOR.ts"],
+  "exclude": ["node_modules", "src/**/*.spec.ts"],
+  "paths" :{
+    "jison":["src/types/jison"],
+    "jquerylayout":["src/types/jquery.layout"],
+    "jquerypane":["src/types/jquery.pane"],
+  }
 }
