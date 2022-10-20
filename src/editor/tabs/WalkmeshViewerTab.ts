@@ -148,6 +148,7 @@ export class WalkmeshViewerTab extends EditorTab {
 
     this.$ui_selected = $('<div style="position: absolute; top: 0; right: 0; bottom: 0;" />');
 
+    //@ts-expect-error
     this.$ui_selected.windowPane({
       title: 'Walkmesh Viewer Tools'
     });
@@ -166,6 +167,7 @@ export class WalkmeshViewerTab extends EditorTab {
       }
     });
 
+    //@ts-expect-error
     $('#container').layout({ applyDefaultStyles: false,
       onresize: () => {
         try{
