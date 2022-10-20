@@ -2,7 +2,7 @@
 // const Jison = require("jison").Jison;
 // const grammar = require('./AST/nwscript.jison.js').grammar;
 
-import { Jison } from 'jison';
+const Jison = require('jison');
 import { grammar } from "./AST/nwscript.jison";
 
 //const Lexer = require("jison").Lexer;
