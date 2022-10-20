@@ -19,6 +19,7 @@ import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
+import { MenuManager } from "../gui";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { InventoryManager } from "../managers/InventoryManager";
@@ -81,11 +82,12 @@ export class ModuleObject {
   area: ModuleArea;
 
   //Room
-  room: any;
-  rooms: number[];
+  room: ModuleRoom;
+  rooms: ModuleRoom[] = [];
+  roomIds: number[] = [];
   roomSize: THREE.Vector3;
 
-  inventory: ModuleItem[];
+  inventory: ModuleItem[] = [];
 
   model: OdysseyModel3D;
   xOrientation: number;
@@ -1023,18 +1025,18 @@ export class ModuleObject {
         if(model instanceof OdysseyModel3D){
           let pos = this.position.clone();
           if(model.box.containsPoint(pos)){
-            this.rooms.push(i);
+            this.roomIds.push(i);
           }
         }
       }
 
       if(box){
-        for(let j = 0, jl = this.rooms.length; j < jl; j++){
-          let room = GameState.module.area.rooms[this.rooms[j]];
-          if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+        for(let j = 0, jl = this.roomIds.length; j < jl; j++){
+          let room = GameState.module.area.rooms[this.roomIds[j]];
+          if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
             aabbFaces.push({
               object: room, 
-              faces: room.walkmesh.getAABBCollisionFaces(box)
+              faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
             });
           }
         }
@@ -1047,20 +1049,20 @@ export class ModuleObject {
       
       for(let j = 0, jl = aabbFaces.length; j < jl; j++){
         let castableFaces = aabbFaces[j];
-        intersects = castableFaces.object.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
           if(this == GameState.player){
             //console.log(intersects);
           }
-          if(intersects[0].object.moduleObject){
-            this.attachToRoom(intersects[0].object.moduleObject);
+          if(intersects[0].object.userData.moduleObject){
+            this.attachToRoom(intersects[0].object.userData.moduleObject);
             return;
           }
         }
       }
       if(this.rooms.length){
-        this.attachToRoom(GameState.module.area.rooms[this.rooms[0]]);
+        this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
         return;
       }
     }else{
@@ -1081,8 +1083,8 @@ export class ModuleObject {
   //           this.lastGroundFace = this.groundFace;
   //           this.surfaceId = this.groundFace.walkIndex;
   //           this.attachToRoom(room);
-  //           face.triangle.closestPointToPoint(this.position, this.wm_c_point);
-  //           this.position.z = this.wm_c_point.z + .005;
+  //           face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
+  //           this.position.z = this.collisionData.wm_c_point.z + .005;
   //         }
   //       }
   //     }
@@ -1095,7 +1097,7 @@ export class ModuleObject {
   }
 
   isInConversation(){
-    return GameState.inDialog && (GameState.InGameDialog.owner == this || GameState.InGameDialog.listener == this);
+    return GameState.inDialog && (MenuManager.InGameDialog.owner == this || MenuManager.InGameDialog.listener == this);
   }
 
   applyVisualEffect(resref = 'v_light'){
@@ -1183,8 +1185,8 @@ export class ModuleObject {
           if(pIdx > -1){
             let room = GameState.module.area.rooms.splice(pIdx, 1)[0];
             
-            if(room.walkmesh)
-              room.walkmesh.dispose();
+            if(room.collisionData.walkmesh)
+              room.collisionData.walkmesh.dispose();
 
             try{
               let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
@@ -1923,16 +1925,17 @@ export class ModuleObject {
 
       for(let j = 0, jl = GameState.module.area.rooms.length; j < jl; j++){
         let room = GameState.module.area.rooms[j];
-        if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+        if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
-            faces: room.walkmesh.faces
+            faces: room.collisionData.walkmesh.faces
           });
         }
       }
 
       for(let j = 0, jl = GameState.module.area.doors.length; j < jl; j++){
         let door = GameState.module.area.doors[j];
+        //@ts-expect-error
         if(door && door != this && !door.isOpen()){
           let box3 = door.box;
           if(box3){
@@ -1946,7 +1949,7 @@ export class ModuleObject {
 
       for(let i = 0, il = aabbFaces.length; i < il; i++){
         let castableFaces = aabbFaces[i];
-        intersects = castableFaces.object.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
+        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
         if (intersects && intersects.length > 0 ) {
           for(let j = 0; j < intersects.length; j++){
             if(intersects[j].distance < distance){

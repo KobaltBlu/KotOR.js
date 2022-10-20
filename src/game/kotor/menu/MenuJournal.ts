@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuJournal menu class.
@@ -39,16 +39,16 @@ export class MenuJournal extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_JOU.onHoverIn();
+    MenuManager.MenuTop.LBLH_JOU.onHoverIn();
     GameState.MenuActive = true;
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_MSG.click();
+    MenuManager.MenuTop.BTN_MSG.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_MAP.click();
+    MenuManager.MenuTop.BTN_MAP.click();
   }
   
 }

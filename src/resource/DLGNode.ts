@@ -152,7 +152,7 @@ export class DLGNode {
           script.setScriptParam(5, this.script2Params.Param5);
           script.setScriptStringParam(this.script2Params.String);
           script.name = this.script2;
-          script.run(this.speaker || this.dialog?.owner || GameState.InGameDialog.dialog?.owner, 0, async () => {
+          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async () => {
             
           });
           resolve();
@@ -183,7 +183,7 @@ export class DLGNode {
           script.setScriptParam(5, this.isActiveParams.Param5);
           script.setScriptStringParam(this.isActiveParams.String);
           script.name = this.isActive;
-          script.run(this.speaker || this.dialog?.owner || GameState.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
+          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
             if(this.isActiveParams.Not){
               resolve(bSuccess ? false : true);
             }else{
@@ -211,7 +211,7 @@ export class DLGNode {
           script.setScriptParam(5, this.isActive2Params.Param5);
           script.setScriptStringParam(this.isActive2Params.String);
           script.name = this.isActive2;
-          script.run(this.speaker || this.dialog?.owner || GameState.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
+          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
             if(this.isActive2Params.Not){
               resolve(bSuccess ? false : true);
             }else{

@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuFeedback menu class.
@@ -38,7 +38,7 @@ export class MenuFeedback extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_MSG.onHoverIn();
+    MenuManager.MenuTop.LBLH_MSG.onHoverIn();
     GameState.MenuActive = true;
   }
   

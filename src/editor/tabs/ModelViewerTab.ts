@@ -303,7 +303,7 @@ export class ModelViewerTab extends EditorTab {
 
     (this.$ui_selected as any).$btn_change_texture.on('click', async (e: any) => {
 
-      let originalTextureName = this.selected._node.TextureMap1;
+      let originalTextureName = this.selected.odysseyModelNode.TextureMap1;
 
       let payload = await WindowDialog.showOpenDialog({
         title: 'Replace Texture',
@@ -319,7 +319,7 @@ export class ModelViewerTab extends EditorTab {
           let file = payload.filePaths[0];
           let file_info = path.parse(file);
           TextureLoader.tpcLoader.fetch_local(file, (texture: OdysseyTexture) => {
-            this.selected._node.TextureMap1 = file_info.name;
+            this.selected.odysseyModelNode.TextureMap1 = file_info.name;
             this.selected.material.uniforms.map.value = texture;
             this.selected.material.uniformsNeedsUpdate = true;
 
@@ -361,13 +361,13 @@ export class ModelViewerTab extends EditorTab {
 
       file.readFile( (mdlBuffer: Buffer, mdxBuffer: Buffer) => {
         try{
-          let auroraModel = new OdysseyModel(new BinaryReader(mdlBuffer), new BinaryReader(mdxBuffer));
+          let odysseyModel = new OdysseyModel(new BinaryReader(mdlBuffer), new BinaryReader(mdxBuffer));
 
           try{
             this.$tabName.text(file.getFilename());
           }catch(e){}
 
-          OdysseyModel3D.FromMDL(auroraModel, {
+          OdysseyModel3D.FromMDL(odysseyModel, {
             manageLighting: false,
             context: this, 
             onComplete: (model: OdysseyModel3D) => {
@@ -551,8 +551,8 @@ export class ModelViewerTab extends EditorTab {
         if(child instanceof THREE.Mesh){
           this.selected = child;
           (this.$ui_selected as any).$selected_object.show();
-          (this.$ui_selected as any).$input_name.val(this.selected._node.name);
-          (this.$ui_selected as any).$input_texture.val(this.selected._node.TextureMap1);
+          (this.$ui_selected as any).$input_name.val(this.selected.odysseyModelNode.name);
+          (this.$ui_selected as any).$input_texture.val(this.selected.odysseyModelNode.TextureMap1);
           break;
         }
       }

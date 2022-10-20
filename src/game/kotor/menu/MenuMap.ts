@@ -80,18 +80,18 @@ export class MenuMap extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_MAP.onHoverIn();
+    MenuManager.MenuTop.LBLH_MAP.onHoverIn();
     GameState.MenuActive = true;
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_JOU.click();
+    MenuManager.MenuTop.BTN_JOU.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_OPT.click();
+    MenuManager.MenuTop.BTN_OPT.click();
   }
   
 }

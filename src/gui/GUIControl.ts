@@ -1839,7 +1839,8 @@ export class GUIControl {
   }
 
   buildText(){
-
+    let self = this;
+    
     if(!this.text.texture)
       return;
 
@@ -1857,7 +1858,7 @@ export class GUIControl {
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof TLKManager.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.text.text : TLKManager.TLKStrings[this.text.strref].Value);
-
+    
     this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
@@ -1890,7 +1891,7 @@ export class GUIControl {
         bbox.makeEmpty()
         return
       }
-      this.computeBox(positions, bbox)
+      self.computeBox(positions, bbox)
     }
 
   }
@@ -2446,7 +2447,7 @@ export class GUIControl {
 
   }
 
-  bounds = function (positions: number[] = []) {
+  bounds(positions: number[] = []) {
     let count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
@@ -2463,13 +2464,13 @@ export class GUIControl {
     }
   }
 
-  computeBox = function (positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: number[] = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
   }
 
-  computeSphere = function (positions: number[] = [], output: THREE.Sphere) {
+  computeSphere (positions: number[] = [], output: THREE.Sphere) {
     this.bounds(positions)
     let minX = box.min[0]
     let minY = box.min[1]
@@ -2481,6 +2482,5 @@ export class GUIControl {
     output.center.set(minX + width / 2, minY + height / 2, 0)
     output.radius = length / 2
   }
-
 
 }

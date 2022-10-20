@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuAbilities menu class.
@@ -50,16 +50,16 @@ export class MenuAbilities extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_ABI.onHoverIn();
+    MenuManager.MenuTop.LBLH_ABI.onHoverIn();
     GameState.MenuActive = true;
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_CHAR.click();
+    MenuManager.MenuTop.BTN_CHAR.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_MSG.click();
+    MenuManager.MenuTop.BTN_MSG.click();
   }
   
 }

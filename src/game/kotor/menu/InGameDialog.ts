@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIProtoItem } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIProtoItem, MenuManager } from "../../../gui";
 
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject } from "../../../module";
@@ -16,6 +16,7 @@ import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { GFFObject } from "../../../resource/GFFObject";
 import { AudioLoader } from "../../../audio/AudioLoader";
+import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 
 /* @file
 * The InGameDialog menu class.
@@ -118,7 +119,7 @@ StartConversation(dlg: string, owner: ModuleObject, listener = GameState.player,
         let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
         if (isBarkDialog) {
           this.EndConversation();
-          GameState.InGameBark.bark(entry);
+          MenuManager.InGameBark.bark(entry);
           entry.runScripts();
           let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
           if (reply) {
@@ -256,17 +257,17 @@ async showEntry(entry: any) {
   }
   entry.checkList = {
     isSkipped: false,
-    cameraAnimationComplete: GameState.InGameDialog.dialog.isAnimatedCutscene ? false : true,
+    cameraAnimationComplete: MenuManager.InGameDialog.dialog.isAnimatedCutscene ? false : true,
     voiceOverComplete: false,
     alreadyAllowed: false,
     isComplete: function () {
       if (this.alreadyAllowed || this.isSkipped) {
         return false;
       }
-      if (GameState.InGameDialog.dialog.isAnimatedCutscene) {
+      if (MenuManager.InGameDialog.dialog.isAnimatedCutscene) {
         if (this.cameraAnimationComplete) {
           this.alreadyAllowed = true;
-          if (GameState.InGameDialog.paused) {
+          if (MenuManager.InGameDialog.paused) {
             return false;
           } else {
             return true;
@@ -275,7 +276,7 @@ async showEntry(entry: any) {
       } else {
         if (this.voiceOverComplete) {
           this.alreadyAllowed = true;
-          if (GameState.InGameDialog.paused) {
+          if (MenuManager.InGameDialog.paused) {
             return false;
           } else {
             return true;
@@ -316,11 +317,11 @@ async showEntry(entry: any) {
   }
   if (entry.fade.type == 3) {
     setTimeout(() => {
-      GameState.FadeOverlay.FadeIn(entry.fade.length, 0, 0, 0);
+      FadeOverlayManager.FadeIn(entry.fade.length, 0, 0, 0);
     }, entry.fade.delay * 1000);
   } else if (entry.fade.type == 4) {
     setTimeout(() => {
-      GameState.FadeOverlay.FadeOut(entry.fade.length, 0, 0, 0);
+      FadeOverlayManager.FadeOut(entry.fade.length, 0, 0, 0);
     }, entry.fade.delay * 1000);
   }
   entry.runScripts();
@@ -436,7 +437,7 @@ LoadDialog(resref = '', onLoad?: Function) {
     switch (this.dialog.getConversationType()) {
     case DLGConversationType.COMPUTER:
       this.Close();
-      GameState.InGameComputer.StartConversation(this.dialog.gff, this.owner, this.listener);
+      MenuManager.InGameComputer.StartConversation(this.dialog.gff, this.owner, this.listener);
       break;
     case DLGConversationType.CONVERSATION:
     default:
@@ -477,7 +478,7 @@ EndConversation(aborted = false) {
   this.state = -1;
   if (this.dialog.animatedCamera instanceof OdysseyModel3D)
     this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-  process.nextTick(async () => {
+  window.setTimeout(async () => {
     if (!aborted) {
       if (this.dialog.onEndConversation != '') {
         let script = await NWScript.Load(this.dialog.onEndConversation);
@@ -588,7 +589,7 @@ SetPlaceableCamera(nCamera: number) {
 SetAnimatedCamera(nCamera: number, onComplete?: Function) {
   if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
     this.dialog.animatedCamera.playAnimation(this.GetActorAnimation(nCamera), false, () => {
-      process.nextTick(() => {
+      window.setTimeout(() => {
         if (typeof onComplete === 'function')
           onComplete();
       });

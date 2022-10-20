@@ -40,6 +40,7 @@ import { SSFObjectType } from "../interface/resource/SSFType";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
+import { MenuManager } from "../gui";
 
 /* @file
  * The ModuleCreature class.
@@ -2245,8 +2246,8 @@ export class ModuleCreature extends ModuleObject {
 
   use(object: ModuleObject){
     if(this.hasInventory()){
-      GameState.MenuContainer.AttachContainer(this);
-      GameState.MenuContainer.Open();
+      MenuManager.MenuContainer.AttachContainer(this);
+      MenuManager.MenuContainer.Open();
     }
   }
 

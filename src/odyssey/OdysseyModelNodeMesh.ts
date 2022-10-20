@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyWalkMesh } from ".";
+import { OdysseyModelEngine } from "../interface/odyssey/OdysseyModelEngine";
 import { OdysseyModelMDXFlag } from "../interface/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
 import { OdysseyFace3 } from "../three/odyssey";
@@ -168,7 +169,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.Beaming = this.odysseyModel.mdlReader.ReadByte() ? true : false;
     this.FlagRender = this.odysseyModel.mdlReader.ReadByte() ? true : false;
 
-    if (this.odysseyModel.engine == OdysseyModel.ENGINE.K2){
+    if (this.odysseyModel.engine == OdysseyModelEngine.K2){
       this.DirtEnabled = this.odysseyModel.mdlReader.ReadByte();
       this.tslPadding1 = this.odysseyModel.mdlReader.ReadByte();
       this.DirtTexture = this.odysseyModel.mdlReader.ReadUInt16();

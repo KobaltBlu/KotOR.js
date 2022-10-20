@@ -49,7 +49,7 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         });
-        GameState.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
+        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           if (!error) {
             this.Close();
           } else {
@@ -65,7 +65,7 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         });
-        GameState.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
+        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           if (!error) {
             this.Close();
           } else {

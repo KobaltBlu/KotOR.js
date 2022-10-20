@@ -518,8 +518,8 @@ export class ModuleRoom extends ModuleObject {
           object.collisionData.surfaceId = object.collisionData.groundFace.walkIndex;
           object.room = this;
 
-          face.triangle.closestPointToPoint(object.position, object.wm_c_point);
-          object.position.z = object.wm_c_point.z + .005;
+          face.triangle.closestPointToPoint(object.position, object.collisionData.wm_c_point);
+          object.position.z = object.collisionData.wm_c_point.z + .005;
           return face;
         }
       }

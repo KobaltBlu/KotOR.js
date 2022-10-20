@@ -537,7 +537,7 @@ export class InGameComputer extends GameMenu {
     GameState.currentCamera = GameState.camera;
     GameState.inDialog = false;
     this.state = -1;
-    process.nextTick(async () => {
+    window.setTimeout(async () => {
       if (!aborted) {
         if (this.onEndConversation != '') {
           let script = await NWScript.Load(this.onEndConversation);

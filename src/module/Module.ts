@@ -367,77 +367,79 @@ export class Module {
   }
 
   loadScene( onLoad?: Function, onProgress?: Function ){
-
-    PartyManager.party = [];
-    
-    ModuleObject.ResetPlayerId();
-
-    if(this.area.SunFogOn && this.area.SunFogColor){
-      GameState.globalLight.color.setHex(parseInt('0x'+this.area.SunFogColor.toString(16)));
-    }else{
-      GameState.globalLight.color.setHex(parseInt('0x'+this.area.DynAmbientColor.toString(16)));
-    }
-    
-    GameState.globalLight.color.setRGB(
-      THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
-      THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
-      THREE.MathUtils.clamp(GameState.globalLight.color.b, 0.2, 1),
-    );
-
-    GameState.camera.position.setX(this['Mod_Entry_X']);
-    GameState.camera.position.setY(this['Mod_Entry_Y']);
-    GameState.camera.position.setZ(this['Mod_Entry_Z'] + 2);
-    GameState.camera.rotation.set(Math.PI / 2, -Math.atan2(this['Mod_Entry_Dir_X'], this['Mod_Entry_Dir_Y']), 0);
-
-    //this.camera.pitch = THREE.MathUtils.radToDeg(this.camera.rotation.y) * -1;
-    //this.camera.yaw = THREE.MathUtils.radToDeg(this.camera.rotation.x);
-
-    let ypr = this.toEulerianAngle(GameState.camera.quaternion);
-
-    GameState.camera.userData.pitch = THREE.MathUtils.radToDeg(ypr.pitch);
-    GameState.camera.userData.yaw = THREE.MathUtils.radToDeg(ypr.yaw) * -1;
-
-    if (GameState.camera.userData.pitch > 89.0)
-      GameState.camera.userData.pitch = 89.0;
-    if (GameState.camera.userData.pitch < -89.0)
-      GameState.camera.userData.pitch = -89.0;
-
-    for(let i = 0, len = this.area.cameras.length; i < len; i++){
-      let cam = this.area.cameras[i];
-      cam.InitProperties();
-      let camera = new THREE.PerspectiveCamera(cam.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
-      camera.up = new THREE.Vector3( 0, 1, 0 );
-      camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
-      camera.rotation.reorder('YZX');
-      let quat = new THREE.Quaternion().copy(cam.orientation);
-      let rot = quat.multiplyVector3(new THREE.Vector3(1, 1, 0));
-      camera.rotation.x = THREE.MathUtils.degToRad(cam.pitch);
-      camera.rotation.z = -Math.atan2(cam.orientation.w, -cam.orientation.x)*2;
-
-      //Clipping hack
-      camera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(camera.rotation));
-
-      camera.userData.ingameID = cam.cameraID;
-      GameState.staticCameras.push(camera);
-
-      camera.userData._cam = cam;
-    }
-
-    GameState.LoadScreen.setProgress(0);
-
     try{
-      MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
-      MenuManager.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+      PartyManager.party = [];
+      
+      ModuleObject.ResetPlayerId();
+
+      if(this.area.SunFogOn && this.area.SunFogColor){
+        GameState.globalLight.color.setHex(parseInt('0x'+this.area.SunFogColor.toString(16)));
+      }else{
+        GameState.globalLight.color.setHex(parseInt('0x'+this.area.DynAmbientColor.toString(16)));
+      }
+      
+      GameState.globalLight.color.setRGB(
+        THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
+        THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
+        THREE.MathUtils.clamp(GameState.globalLight.color.b, 0.2, 1),
+      );
+
+      GameState.camera.position.setX(this['Mod_Entry_X']);
+      GameState.camera.position.setY(this['Mod_Entry_Y']);
+      GameState.camera.position.setZ(this['Mod_Entry_Z'] + 2);
+      GameState.camera.rotation.set(Math.PI / 2, -Math.atan2(this['Mod_Entry_Dir_X'], this['Mod_Entry_Dir_Y']), 0);
+
+      //this.camera.pitch = THREE.MathUtils.radToDeg(this.camera.rotation.y) * -1;
+      //this.camera.yaw = THREE.MathUtils.radToDeg(this.camera.rotation.x);
+
+      let ypr = this.toEulerianAngle(GameState.camera.quaternion);
+
+      GameState.camera.userData.pitch = THREE.MathUtils.radToDeg(ypr.pitch);
+      GameState.camera.userData.yaw = THREE.MathUtils.radToDeg(ypr.yaw) * -1;
+
+      if (GameState.camera.userData.pitch > 89.0)
+        GameState.camera.userData.pitch = 89.0;
+      if (GameState.camera.userData.pitch < -89.0)
+        GameState.camera.userData.pitch = -89.0;
+
+      for(let i = 0, len = this.area.cameras.length; i < len; i++){
+        let cam = this.area.cameras[i];
+        cam.InitProperties();
+        let camera = new THREE.PerspectiveCamera(cam.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
+        camera.up = new THREE.Vector3( 0, 1, 0 );
+        camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
+        camera.rotation.reorder('YZX');
+        let quat = new THREE.Quaternion().copy(cam.orientation);
+        camera.rotation.x = THREE.MathUtils.degToRad(cam.pitch);
+        camera.rotation.z = -Math.atan2(cam.orientation.w, -cam.orientation.x)*2;
+
+        //Clipping hack
+        camera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(camera.rotation));
+
+        camera.userData.ingameID = cam.cameraID;
+        GameState.staticCameras.push(camera);
+
+        camera.userData._cam = cam;
+      }
+
+      MenuManager.LoadScreen.setProgress(0);
+
+      try{
+        MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+        MenuManager.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+      }catch(e){
+        console.error(e);
+      }
+
+      this.area.loadScene( () => {
+        if(typeof onLoad === 'function')
+          onLoad();
+
+        this.transWP = null;
+      });
     }catch(e){
-
+      console.error(e);
     }
-
-    this.area.loadScene( () => {
-      if(typeof onLoad === 'function')
-        onLoad();
-
-      this.transWP = null;
-    });
 
   }
 

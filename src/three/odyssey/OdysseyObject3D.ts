@@ -21,10 +21,10 @@ export class OdysseyObject3D extends THREE.Object3D {
   matrixInverse: THREE.Matrix4;
   wasOffscreen: boolean = false;
   box: THREE.Box3;
-  // trans: {
-  //   position: THREE.Vector3,
-  //   quaternion: THREE.Quaternion,
-  // };
+  transitionState: {
+    position: THREE.Vector3,
+    quaternion: THREE.Quaternion,
+  };
   isClickable: (e: any) => any;
   onClick: (e: any) => void;
   onMouseMove: (e: any) => void;
@@ -40,10 +40,10 @@ export class OdysseyObject3D extends THREE.Object3D {
       this.controllers = node?.controllers;
     }
     this.controllerCache = {};
-    // this.trans = {
-    //   position: new THREE.Vector3,
-    //   quaternion: new THREE.Quaternion,
-    // };
+    this.transitionState = {
+      position: new THREE.Vector3,
+      quaternion: new THREE.Quaternion,
+    };
   }
   
   getControllerByType(type = -1){

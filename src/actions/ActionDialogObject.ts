@@ -4,6 +4,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
+import { MenuManager } from "../gui";
 import { ModuleCreature } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { Utility } from "../utility/Utility";
@@ -66,7 +67,7 @@ export class ActionDialogObject extends Action {
           if(this.target.scripts.onDialog instanceof NWScriptInstance){
             this.target.onDialog(this.owner, -1);
           }else{
-            GameState.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.target, this.owner);
+            MenuManager.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.target, this.owner);
           }
           return ActionStatus.COMPLETE;
         }
@@ -75,7 +76,7 @@ export class ActionDialogObject extends Action {
         return ActionStatus.FAILED;
       }
     }else{
-      GameState.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.owner, this.target);
+      MenuManager.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.owner, this.target);
       return ActionStatus.COMPLETE;
     }
     

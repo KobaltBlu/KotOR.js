@@ -15,7 +15,7 @@ export class CollisionData {
   surfaceId: any;
   groundFace: any;
   lastGroundFace: any;
-  wm_c_point: THREE.Vector3;
+  wm_c_point: THREE.Vector3 = new THREE.Vector3();
   lastRoom: ModuleRoom;
   groundTilt = new THREE.Vector3();
 
@@ -62,13 +62,13 @@ export class CollisionData {
     
     //Check creature collision
     let creature = undefined;
-    if(ConfigClient.options.Game.debug.creature_collision){
+    if(ConfigClient.options?.Game?.debug?.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
         if(creature){
           let position = this.object.position.clone().add(this.object.AxisFront);
           
-          if(creature == this || creature.isDead())
+          if(creature == this.object || creature.isDead())
             continue;
 
           if(!creature.getAppearance())
@@ -96,7 +96,7 @@ export class CollisionData {
     }
 
     //Check party collision
-    if(ConfigClient.options.Game.debug.creature_collision){
+    if(ConfigClient.options?.Game?.debug?.creature_collision){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         creature = PartyManager.party[i];
         if(creature){
@@ -132,13 +132,13 @@ export class CollisionData {
 
       //START: DOOR COLLISION
 
-      if(ConfigClient.options.Game.debug.door_collision){
+      if(ConfigClient.options?.Game?.debug?.door_collision){
         for(let j = 0, jl = this.object.room.doors.length; j < jl; j++){
           obj = this.object.room.doors[j];
-          if(obj && obj.walkmesh && !obj.isOpen()){
+          if(obj && obj.collisionData.walkmesh && !obj.isOpen()){
             aabbFaces.push({
               object: obj,
-              faces: obj.walkmesh.faces
+              faces: obj.collisionData.walkmesh.faces
             });
           }
         }
@@ -156,8 +156,8 @@ export class CollisionData {
           GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
 
           castableFaces = aabbFaces[k];
-          castableFaces.object.walkmesh.mesh.visible = true;
-          intersects = castableFaces.object.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+          castableFaces.collisionData.walkmesh.mesh.visible = true;
+          intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
           if (intersects && intersects.length > 0 ) {
             for(let j = 0, jLen = intersects.length; j < jLen; j++){
               if(intersects[j].distance < hitdist_half){
@@ -201,11 +201,11 @@ export class CollisionData {
       let reflectForce = new THREE.Vector3(0, 0, 0);
       for(let j = 0, jl = this.object.room.placeables.length; j < jl; j++){
         obj = this.object.room.placeables[j];
-        if(obj && obj.walkmesh && obj.model && obj.model.visible){
+        if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
           obj.box.setFromObject(obj.model);
           if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
-            for(let l = 0, ll = obj.walkmesh.edgeKeys.length; l < ll; l++){
-              edge = obj.walkmesh.edges[obj.walkmesh.edgeKeys[l]];
+            for(let l = 0, ll = obj.collisionData.walkmesh.edgeKeys.length; l < ll; l++){
+              edge = obj.collisionData.walkmesh.edges[obj.collisionData.walkmesh.edgeKeys[l]];
               edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
               distance = closestPoint.distanceTo(this.object.tmpPos);
               if(distance < hitdist_half){
@@ -240,8 +240,8 @@ export class CollisionData {
 
       //room walkable edge check
       let roomCollision = false;
-      for(let i = 0, len = this.object.room.walkmesh.edgeKeys.length; i < len; i++){
-        edge = this.object.room.walkmesh.edges[this.object.room.walkmesh.edgeKeys[i]];
+      for(let i = 0, len = this.object.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
+        edge = this.object.room.collisionData.walkmesh.edges[this.object.room.collisionData.walkmesh.edgeKeys[i]];
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.object.tmpPos);
@@ -321,9 +321,9 @@ export class CollisionData {
         this.object.tmpPos.copy(this.object.position).add(this.object.AxisFront);
         for(let j = 0, jl = this.object.room.placeables.length; j < jl; j++){
           obj = this.object.room.placeables[j];
-          if(obj && obj.walkmesh && obj.model && obj.model.visible){
-            for(let i = 0, iLen = obj.walkmesh.faces.length; i < iLen; i++){
-              face = obj.walkmesh.faces[i];
+          if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
+            for(let i = 0, iLen = obj.collisionData.walkmesh.faces.length; i < iLen; i++){
+              face = obj.collisionData.walkmesh.faces[i];
               if(face.triangle.containsPoint(this.object.tmpPos) && face.surfacemat.walk == 0){
                 //bail we should not be here
                 this.object.AxisFront.set(0, 0, 0);
@@ -334,8 +334,8 @@ export class CollisionData {
         }
       
         //DETECT: ROOM TRANSITION
-        for(let i = 0, len = this.object.room.walkmesh.edgeKeys.length; i < len; i++){
-          edge = this.object.room.walkmesh.edges[this.object.room.walkmesh.edgeKeys[i]];
+        for(let i = 0, len = this.object.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
+          edge = this.object.room.collisionData.walkmesh.edges[this.object.room.collisionData.walkmesh.edgeKeys[i]];
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(
@@ -362,7 +362,7 @@ export class CollisionData {
         this.lastGroundFace = this.groundFace;
         this.groundFace = undefined;
         if(this.object.room){
-          let face = this.object.room.findWalkableFace(this);
+          let face = this.object.room.findWalkableFace(this.object);
           if(!face){
             this.findWalkableFace();
           }
@@ -389,9 +389,9 @@ export class CollisionData {
     let room;
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
       room = GameState.module.area.rooms[i];
-      if(room.walkmesh){
-        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          face = room.walkmesh.walkableFaces[j];
+      if(room.collisionData.walkmesh){
+        for(let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+          face = room.collisionData.walkmesh.walkableFaces[j];
           if(face.triangle.containsPoint(objectPos)){
             this.groundFace = face;
             this.lastGroundFace = this.groundFace;

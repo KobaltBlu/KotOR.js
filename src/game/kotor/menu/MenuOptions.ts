@@ -132,7 +132,7 @@ export class MenuOptions extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_OPT.onHoverIn();
+    MenuManager.MenuTop.LBLH_OPT.onHoverIn();
     GameState.MenuActive = true;
   }
 
@@ -209,11 +209,11 @@ export class MenuOptions extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_MAP.click();
+    MenuManager.MenuTop.BTN_MAP.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_EQU.click();
+    MenuManager.MenuTop.BTN_EQU.click();
   }
   
 }

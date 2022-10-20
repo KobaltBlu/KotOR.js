@@ -22,6 +22,7 @@ import { Module } from "./module/Module";
 import { ModuleObject } from "./module";
 import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
+import { MenuManager } from "./gui";
 
 /* @file
  * The SaveGame class.
@@ -564,8 +565,8 @@ export class SaveGame {
 
       if(GameState.module instanceof Module){
 
-        GameState.LoadScreen.Open();
-        GameState.LoadScreen.showSavingMessage();
+        MenuManager.LoadScreen.Open();
+        MenuManager.LoadScreen.showSavingMessage();
 
         let base_dir = 'Saves';
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
@@ -581,13 +582,13 @@ export class SaveGame {
           await GameFileSystem.mkdir(save_dir);
         }
 
-        GameState.LoadScreen.setProgress(25);
+        MenuManager.LoadScreen.setProgress(25);
 
         await GameState.module.save();
-        GameState.LoadScreen.setProgress(50);
+        MenuManager.LoadScreen.setProgress(50);
 
         await CurrentGame.ExportToSaveFolder( save_dir );
-        GameState.LoadScreen.setProgress(75);
+        MenuManager.LoadScreen.setProgress(75);
 
         await SaveGame.ExportSaveNFO(save_dir, name);
         await SaveGame.ExportGlobalVars( save_dir );
@@ -595,8 +596,8 @@ export class SaveGame {
 
         GameState.onScreenShot = (tga: TGAObject) => {
           tga.export( path.join( save_dir, 'Screen.tga')).then( (d) => {
-            GameState.LoadScreen.setProgress(100);
-            GameState.LoadScreen.Close();
+            MenuManager.LoadScreen.setProgress(100);
+            MenuManager.LoadScreen.Close();
             resolve();
           });
         };

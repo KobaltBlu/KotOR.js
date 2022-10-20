@@ -57,7 +57,7 @@ export class InGameComputer extends K1_InGameComputer {
     this.ended = false;
     this.currentEntry = null;
     if (this.audioEmitter === undefined) {
-      this.audioEmitter = GameState.InGameDialog.audioEmitter;
+      this.audioEmitter = MenuManager.InGameDialog.audioEmitter;
     }
     GameState.inDialog = true;
     this.entryList = [];
@@ -338,7 +338,7 @@ export class InGameComputer extends K1_InGameComputer {
     };
     let nodeDelay = 0;
     if (entry.cameraAngle == 6) {
-      GameState.InGameComputerCam.Open(entry.cameraID);
+      MenuManager.InGameComputerCam.Open(entry.cameraID);
     }
     this.GetAvailableReplies(entry);
     if (entry.delay > -1) {
@@ -648,7 +648,7 @@ export class InGameComputer extends K1_InGameComputer {
     GameState.currentCamera = GameState.camera;
     GameState.inDialog = false;
     this.state = -1;
-    process.nextTick(async () => {
+    window.setTimeout(async () => {
       if (!aborted) {
         if (this.onEndConversation != '') {
           let script = await NWScript.Load(this.onEndConversation);

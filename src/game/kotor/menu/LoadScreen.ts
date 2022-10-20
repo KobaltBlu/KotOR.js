@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GameMenu, GUIProgressBar, GUILabel, MenuManager } from "../../../gui";
+import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { TLKManager } from "../../../managers/TLKManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
@@ -36,15 +37,7 @@ export class LoadScreen extends GameMenu {
       //@ts-expect-error
       this.defaultTex = this.tGuiPanel.getFill().material.uniforms.map.value;
 
-      if(this.args.loadscreen.length){
-        this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
-          //@ts-expect-error
-          this.tGuiPanel.getFill().uniforms.material.uniforms.map.value.value = texture;
-          resolve();
-        });
-      }else{
-        resolve();
-      }
+      resolve();
     });
   }
 
@@ -96,12 +89,12 @@ export class LoadScreen extends GameMenu {
     super.Show();
     this.setProgress(0);
     MenuManager.InGameAreaTransition.Hide();
-    GameState.FadeOverlay.plane.visible = false;
+    FadeOverlayManager.plane.visible = false;
   }
 
   Hide() {
     super.Hide();
-    GameState.FadeOverlay.plane.visible = true;
+    FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }
   

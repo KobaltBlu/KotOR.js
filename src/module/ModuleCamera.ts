@@ -6,6 +6,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import * as THREE from "three";
 
 /* @file
  * The ModuleCamera class.
@@ -16,7 +17,7 @@ export class ModuleCamera extends ModuleObject {
   fov: any;
   height: any;
   micRange: any;
-  orientation: any;
+  orientation: THREE.Quaternion = new THREE.Quaternion;
   pitch: any;
 
   constructor ( gff = new GFFObject() ) {

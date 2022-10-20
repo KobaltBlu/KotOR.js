@@ -534,7 +534,7 @@ export class OdysseyWalkMesh {
     return false;
   }
 
-  getAABBCollisionFaces(box = new THREE.Box3, node: OdysseyModelAABBNode, collisions: any[] = []){
+  getAABBCollisionFaces(box = new THREE.Box3, node?: OdysseyModelAABBNode, collisions: any[] = []){
 
     if(this.header.walkMeshType == OdysseyWalkMeshType.AABB){
 

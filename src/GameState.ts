@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import * as path from "path";
-import * as fs from "fs";
 
 import { AnimatedTexture } from "./AnimatedTexture";
 import { CombatEngine } from "./combat";
@@ -1013,7 +1011,7 @@ export class GameState implements EngineContext {
                         console.log('Module.initScripts');
                         module.initScripts( () => {
                           MenuManager.LoadScreen.Close();
-                          process.nextTick( ()=> {
+                          window.setTimeout( ()=> {
                             //GameState.scene_gui.background = null;
                             GameState.scene.visible = true;
                             
@@ -1266,8 +1264,8 @@ export class GameState implements EngineContext {
       }else{
         LightManager.update(delta, GameState.getCurrentPlayer());
       }
-      //GameState.InGameOverlay.Update(delta);
-      //GameState.InGameAreaTransition.Update(delta);
+      //MenuManager.InGameOverlay.Update(delta);
+      //MenuManager.InGameAreaTransition.Update(delta);
 
       if(!GameState.inDialog){
         GameState.currentCamera = GameState.camera;
@@ -1289,7 +1287,7 @@ export class GameState implements EngineContext {
       }else{
         LightManager.update(delta, GameState.getCurrentPlayer());
       }
-      //GameState.InGameOverlay.Hide();
+      //MenuManager.InGameOverlay.Hide();
     }
 
     if(GameState.Mode == EngineMode.INGAME){

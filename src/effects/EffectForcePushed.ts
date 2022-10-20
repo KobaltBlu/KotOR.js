@@ -100,9 +100,9 @@ export class EffectForcePushed extends GameEffect {
     let closestPoint = new THREE.Vector3();
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
       room = GameState.module.area.rooms[i];
-      if(room.walkmesh){
-        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          face = room.walkmesh.walkableFaces[j];
+      if(room.collisionData.walkmesh){
+        for(let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+          face = room.collisionData.walkmesh.walkableFaces[j];
           if(face.triangle.containsPoint(position)){
             surfaceId = face.walkIndex;
             face.triangle.closestPointToPoint(position, closestPoint);

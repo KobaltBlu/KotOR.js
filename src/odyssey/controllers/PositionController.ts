@@ -15,8 +15,8 @@ export class PositionController extends OdysseyController {
     if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Position) != 'undefined'){
 
       if(manager.trans && controller.frameCount > 1){
-        manager.modelNode.trans.position.copy(manager.modelNode.position);
-        anim._position.copy(manager.modelNode.trans.position);
+        manager.modelNode.transitionState.position.copy(manager.modelNode.position);
+        anim._position.copy(manager.modelNode.transitionState.position);
       }else{
         anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0]);
       }
@@ -90,7 +90,7 @@ export class PositionController extends OdysseyController {
     }else{
       
       //if(manager.trans && lastFrame == 0){
-      //  manager.modelNode.position.copy(manager.modelNode.trans.position);
+      //  manager.modelNode.position.copy(manager.modelNode.transitionState.position);
       //}else{
         manager._vec3.copy(last as any).add(anim._position);
         manager.modelNode.position.copy(manager._vec3);

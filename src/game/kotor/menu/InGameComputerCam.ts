@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel } from "../../../gui";
+import { GameMenu, GUILabel, MenuManager } from "../../../gui";
 
 /* @file
 * The InGameComputerCam menu class.
@@ -29,7 +29,7 @@ export class InGameComputerCam extends GameMenu {
   Open(cam_id = -1) {
     super.Open();
     if (cam_id >= 0) {
-      GameState.InGameDialog.SetPlaceableCamera(cam_id);
+      MenuManager.InGameDialog.SetPlaceableCamera(cam_id);
     } else {
       GameState.currentCamera = GameState.camera;
     }

@@ -29,7 +29,7 @@ export class SelfIllumColorController extends OdysseyController {
     let lerpIllumColorR = last.x + fl * (next.x - last.x);
       let lerpIllumColorG = last.y + fl * (next.y - last.y);
       let lerpIllumColorB = last.z + fl * (next.z - last.z);
-      //console.log(manager.modelNode.mesh._node.Diffuse.r, lerpIllumColor);
+      //console.log(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
       if(manager.modelNode.mesh){
 
         if(manager.modelNode.mesh.material instanceof THREE.ShaderMaterial){

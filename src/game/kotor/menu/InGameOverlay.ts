@@ -480,7 +480,7 @@ export class InGameOverlay extends GameMenu {
     if (GameState.selectedObject instanceof ModuleCreature && GameState.selectedObject.isDead())
       return false;
     return (
-      !GameState.MenuContainer.bVisible && 
+      !MenuManager.MenuContainer.bVisible && 
       CursorManager.reticle2.visible && 
       GameState.selectedObject instanceof ModuleObject && 
       !(GameState.selectedObject instanceof ModuleRoom)

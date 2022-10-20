@@ -18,6 +18,7 @@ export class FadeOverlayManager {
     FADED_IN: 3,
     FADED_OUT: 4
   }
+  static holdForScript: boolean;
   /* Fade Geometry */
 
   static Initialize(){

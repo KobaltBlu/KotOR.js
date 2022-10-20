@@ -5,6 +5,7 @@ export class ShaderGrass extends Shader {
 
   constructor(){
     super();
+    this.name = 'grass'
     this.vertex = `
     //precision highp float; //Already defined in shader code
     //uniform mat4 modelViewMatrix; //Already defined in shader code

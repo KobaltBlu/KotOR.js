@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem } from "../../../gui";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { InventoryManager } from "../../../managers/InventoryManager";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -58,7 +58,7 @@ export class MenuInventory extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_INV.onHoverIn();
+    MenuManager.MenuTop.LBLH_INV.onHoverIn();
     GameState.MenuActive = true;
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
@@ -102,11 +102,11 @@ export class MenuInventory extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_EQU.click();
+    MenuManager.MenuTop.BTN_EQU.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_CHAR.click();
+    MenuManager.MenuTop.BTN_CHAR.click();
   }
   
 }

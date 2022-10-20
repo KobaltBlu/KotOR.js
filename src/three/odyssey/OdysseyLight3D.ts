@@ -7,7 +7,7 @@ import { OdysseyModel } from "../../odyssey/OdysseyModel";
 import { OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
 
 
-//THREE.js representation of AuroraLight
+//THREE.js representation of an OdysseyLight
 export class OdysseyLight3D extends OdysseyObject3D {
 
   _node: OdysseyModelNodeLight;
@@ -27,23 +27,22 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
-    this._node = node;
-    this.type = 'AuroraLight';
+    this.type = 'OdysseyLight';
     this.worldPosition = new THREE.Vector3();
     this.sphere = new THREE.Sphere();
   }
 
   getIntensity(){
-    if(this._node)
-      //return this._node.multiplier;
-      return 0.5;//(this._node.multiplier > 1 && (Number(this._node.multiplier) === this._node.multiplier && this._node.multiplier % 1 === 0) ? this._node.multiplier : this._node.multiplier);
+    if(this.odysseyModelNode)
+      //return this.odysseyModelNode.multiplier;
+      return 0.5;//(this.odysseyModelNode.multiplier > 1 && (Number(this.odysseyModelNode.multiplier) === this.odysseyModelNode.multiplier && this.odysseyModelNode.multiplier % 1 === 0) ? this.odysseyModelNode.multiplier : this.odysseyModelNode.multiplier);
     else
       return 0;
   }
 
   getRadius(){
-    if(this._node)
-      return this._node.radius;
+    if(this.odysseyModelNode)
+      return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
     else
       return 0;
   }

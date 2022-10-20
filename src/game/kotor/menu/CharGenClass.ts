@@ -225,7 +225,7 @@ export class CharGenClass extends GameMenu {
             model.box = new THREE.Box3().setFromObject(model);
             _3dView.addModel(model);
             TextureLoader.LoadQueue(() => {
-              GameState.LoadScreen.setProgress((nth + 1) / 6 * 100);
+              MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               if (typeof onLoad === 'function')
                 onLoad();
               _3dViewModel.playAnimation(0, true);
@@ -300,7 +300,7 @@ export class CharGenClass extends GameMenu {
 
   Init(onLoad?: Function) {
     let bgMusic = 'mus_theme_rep';
-    GameState.LoadScreen.setProgress(0);
+    MenuManager.LoadScreen.setProgress(0);
     this.Load3D(() => {
       AudioLoader.LoadMusic(bgMusic, (data: any) => {
         GameState.audioEngine.SetBackgroundMusic(data);

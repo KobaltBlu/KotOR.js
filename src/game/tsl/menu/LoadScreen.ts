@@ -86,12 +86,12 @@ export class LoadScreen extends K1_LoadScreen {
 
   Show() {
     super.Show();
-    GameState.FadeOverlay.plane.visible = false;
+    FadeOverlayManager.plane.visible = false;
   }
 
   Hide() {
     super.Hide();
-    GameState.FadeOverlay.plane.visible = true;
+    FadeOverlayManager.plane.visible = true;
   }
   
 }

@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameOverlay as K1_InGameOverlay, GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
+import { InGameOverlay as K1_InGameOverlay, GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager } from "../../../gui";
 
 /* @file
 * The InGameOverlay menu class.
@@ -199,42 +199,42 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuPartySelection.Open();
+        MenuManager.MenuPartySelection.Open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuJournal.Open();
+        MenuManager.MenuJournal.Open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuMap.Open();
+        MenuManager.MenuMap.Open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuOptions.Open();
+        MenuManager.MenuOptions.Open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuCharacter.Open();
+        MenuManager.MenuCharacter.Open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuCharacter.Open();
+        MenuManager.MenuCharacter.Open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuInventory.Open();
+        MenuManager.MenuInventory.Open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.MenuEquipment.Open();
+        MenuManager.MenuEquipment.Open();
       });
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
@@ -257,7 +257,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
-        GameState.MenuEquipment.Open()
+        MenuManager.MenuEquipment.Open()
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
@@ -627,7 +627,7 @@ export class InGameOverlay extends K1_InGameOverlay {
   _canShowTargetUI() {
     if (GameState.selectedObject instanceof ModuleCreature && GameState.selectedObject.isDead())
       return false;
-    return !GameState.MenuContainer.bVisible && CursorManager.reticle2.visible && GameState.selectedObject instanceof ModuleObject && !(GameState.selectedObject instanceof ModuleRoom);
+    return !MenuManager.MenuContainer.bVisible && CursorManager.reticle2.visible && GameState.selectedObject instanceof ModuleObject && !(GameState.selectedObject instanceof ModuleRoom);
   }
 
   UpdateTargetUIIcon(index = 0) {
@@ -675,7 +675,7 @@ export class InGameOverlay extends K1_InGameOverlay {
           });
         }
       }
-      if (GameState.InGameOverlay.LBL_NAME.text.text != GameState.selectedObject.getName()) {
+      if (MenuManager.InGameOverlay.LBL_NAME.text.text != GameState.selectedObject.getName()) {
         this.LBL_NAME.setText(GameState.selectedObject.getName(), 25);
       }
       let health = 100 * Math.min(Math.max(GameState.selectedObject.getHP() / GameState.selectedObject.getMaxHP(), 0), 1);
@@ -829,8 +829,8 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.TogglePartyMember(id, true);
       let pmBG = this['LBL_BACK' + (id + 1)];
       pmBG.setFillColor(1, 1, 1);
-      GameState.InGameOverlay['PB_VIT' + (id + 1)].setFillColor(1, 0, 0);
-      GameState.InGameOverlay['PB_FORCE' + (id + 1)].setFillColor(0, 0.5, 1);
+      MenuManager.InGameOverlay['PB_VIT' + (id + 1)].setFillColor(1, 0, 0);
+      MenuManager.InGameOverlay['PB_FORCE' + (id + 1)].setFillColor(0, 0.5, 1);
       if (pmBG.getFillTextureName() != portrait.baseresref) {
         pmBG.setFillTextureName(portrait.baseresref);
         TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {

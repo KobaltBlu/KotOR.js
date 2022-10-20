@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuPartySelection as K1_MenuPartySelection, GUILabel, GUICheckBox, GUIButton } from "../../../gui";
+import { MenuPartySelection as K1_MenuPartySelection, GUILabel, GUICheckBox, GUIButton, MenuManager } from "../../../gui";
 import { PartyManager } from "../../../managers/PartyManager";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
@@ -302,9 +302,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           creature.model.position.set(0, 0, 0);
           creature.model.rotation.z = -Math.PI / 2;
           this.LBL_3D_VIEW.group.creatures.add(creature.model);
-          process.nextTick(() => {
-            this.char.LoadModel();
-          });
+          this.char.LoadModel();
         }
       });
     }
@@ -334,7 +332,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.addToParty(this.forceNPC2);
     GameState.MenuActive = true;
     if (this.ignoreUnescapable) {
-      GameState.MenuTop.toggleNavUI(false);
+      MenuManager.MenuTop.toggleNavUI(false);
     }
     for (let i = 0; i < 10; i++) {
       this['LBL_CHAR' + i].hide();

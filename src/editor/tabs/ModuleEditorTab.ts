@@ -590,10 +590,10 @@ export class ModuleEditorTab extends EditorTab {
         for(let i = 0; i < this.module.area.cameras.length; i++){
           let cam = this.module.area.cameras[i];
           cam.InitProperties();
-          let camera = new THREE.PerspectiveCamera(cam.FieldOfView, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 1500);
+          let camera = new THREE.PerspectiveCamera(cam.fov, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 1500);
           camera.up = new THREE.Vector3( 0, 0, 1 );
           camera.userData.AxisFront = new THREE.Vector3(0.0, 1.0, 0.0);
-          camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.Height);
+          camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
   
           camera.rotation.set(Math.PI / 2, Math.atan2(cam.quaternion.x, cam.quaternion.w), 0);
   

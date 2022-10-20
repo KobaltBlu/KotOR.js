@@ -67,8 +67,8 @@ export class LightManager {
     for(let i = 0; i < LightManager.MAXLIGHTS; i++){
       
       let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
-      light.userData.animated = 0;
-      light.userData.reclaimed = true;
+      (light as any).animated = 0;
+      (light as any).reclaimed = true;
       GameState.group.lights.add(light);
       let helper = new THREE.PointLightHelper( light, 1 );
       light.visible = light.userData.helper = true;
@@ -85,8 +85,8 @@ export class LightManager {
       
       let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
       light.castShadow = true;
-      light.userData.animated = 0;
-      light.userData.reclaimed = true;
+      (light as any).animated = 0;
+      (light as any).reclaimed = true;
       GameState.group.shadow_lights.add(light);
       let helper = new THREE.PointLightHelper( light, 1 );
       light.visible = light.userData.helper = true;
@@ -114,7 +114,7 @@ export class LightManager {
     
   }
 
-  //Add a THREE.AuroraLight to the LightManager
+  //Add a OdysseyLight3D to the LightManager
   static addLight(light: any){
     //return;
     if(light){
@@ -125,7 +125,7 @@ export class LightManager {
     }
   }
 
-  //Remove a THREE.AuroraLight from the LightManager
+  //Remove a OdysseyLight3D from the LightManager
   static removeLight(light: any){
     if(light){
       let idx = LightManager.lights.indexOf(light);
@@ -201,9 +201,9 @@ export class LightManager {
 
   static updateDynamicLights(delta = 0){
     LightManager.tmpLights = [];//LightManager.lights.slice();
-    //let ambientLights = LightManager.lights.filter(light => light.auroraModel.visible && (light.isAmbient || (light._node.radius*light._node.multiplier) > 50));
-    //let shadowLights = LightManager.lights.filter(light => light.auroraModel.visible && light.castShadow);
-    let fadingLights = LightManager.lights.filter(light => light.auroraModel.visible);
+    //let ambientLights = LightManager.lights.filter(light => light.odysseyModel.visible && (light.isAmbient || (light.odysseyModelNode.radius*light.odysseyModelNode.multiplier) > 50));
+    //let shadowLights = LightManager.lights.filter(light => light.odysseyModel.visible && light.castShadow);
+    let fadingLights = LightManager.lights.filter(light => light.odysseyModel.visible);
     
     //ambientLights.sort(LightManager.sortLights).reverse();
     //shadowLights.sort(LightManager.sortLights);
@@ -295,7 +295,7 @@ export class LightManager {
             lightNode.isAmbientLight = true;
             lightNode.type = 'AmbientLight';
             lightNode.intensity = 0.5;
-            lightNode.helper.material.opacity = 1;
+            lightNode.userData.helper.material.opacity = 1;
             //lightNode.distance = Infinity;
           }else{
             lightNode.isPointLight = true;
@@ -387,8 +387,8 @@ export class LightManager {
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
-          lightNode.helper.material.transparent = true;
+          lightNode.userData.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
+          lightNode.userData.helper.material.transparent = true;
 
           lightNode.reclaimed = false;
           LightManager.lightsShown.push(lightNode.lightUUID);
@@ -408,8 +408,8 @@ export class LightManager {
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
-          lightNode.helper.material.transparent = true;
+          lightNode.userData.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
+          lightNode.userData.helper.material.transparent = true;
 
           if(lightsUsed.indexOf(lightNode.light.uuid) == -1 && lightNode.intensity > 0){
             lightsUsed.push(lightNode.light.uuid);
@@ -425,8 +425,8 @@ export class LightManager {
             lightNode.position.set(0,0,0);
             lightNode.intensity = 0;
             //Reset the light helper properties
-            lightNode.helper.material.opacity = 0;
-            lightNode.helper.material.transparent = true;
+            lightNode.userData.helper.material.opacity = 0;
+            lightNode.userData.helper.material.transparent = true;
             lightNode.reclaimed = true;
             lightNode.light = undefined;
           }
@@ -454,8 +454,8 @@ export class LightManager {
           lightNode.intensity = 1;
           lightNode.distance = lightNode.light.getRadius();
           //Reset the light helper properties
-          lightNode.helper.material.opacity = 1;
-          lightNode.helper.material.transparent = false;
+          lightNode.userData.helper.material.opacity = 1;
+          lightNode.userData.helper.material.transparent = false;
           LightManager.light_pool.unshift(LightManager.light_pool.splice(i, 1)[0]);
           lightNode.reclaimed = false;
         }else{
@@ -463,8 +463,8 @@ export class LightManager {
           lightNode.position.set(0,0,0);
           lightNode.intensity = 0;
           //Reset the light helper properties
-          lightNode.helper.material.opacity = 0;
-          lightNode.helper.material.transparent = true;
+          lightNode.userData.helper.material.opacity = 0;
+          lightNode.userData.helper.material.transparent = true;
           lightNode.reclaimed = true;
           lightNode.light = undefined;
         }
@@ -476,7 +476,7 @@ export class LightManager {
 
   static updateShadowLights(delta = 0){
     LightManager.tmpLights = [];//LightManager.lights.slice();
-    let shadowLights = LightManager.lights.filter(light => light.auroraModel.visible && light.castShadow);
+    let shadowLights = LightManager.lights.filter(light => light.odysseyModel.visible && light.castShadow);
     shadowLights.sort(LightManager.sortLights);
 
     LightManager.new_lights = [];
@@ -533,7 +533,7 @@ export class LightManager {
             lightNode.isAmbientLight = true;
             lightNode.type = 'AmbientLight';
             lightNode.intensity = 0.5;
-            lightNode.helper.material.opacity = 1;
+            lightNode.userData.helper.material.opacity = 1;
             //lightNode.distance = Infinity;
           }else{
             lightNode.isPointLight = true;
@@ -605,8 +605,8 @@ export class LightManager {
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
-          lightNode.helper.material.transparent = true;
+          lightNode.userData.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
+          lightNode.userData.helper.material.transparent = true;
 
           lightNode.reclaimed = false;
           LightManager.lightsShown.push(lightNode.lightUUID);
@@ -624,8 +624,8 @@ export class LightManager {
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
-          lightNode.helper.material.transparent = true;
+          lightNode.userData.helper.material.opacity = lightNode.intensity/lightNode.maxIntensity;
+          lightNode.userData.helper.material.transparent = true;
 
           if(lightNode.intensity > 0){
             //The light hasn't completed it's fadeout yet
@@ -640,8 +640,8 @@ export class LightManager {
             lightNode.position.set(0,0,0);
             lightNode.intensity = 0;
             //Reset the light helper properties
-            lightNode.helper.material.opacity = 0;
-            lightNode.helper.material.transparent = true;
+            lightNode.userData.helper.material.opacity = 0;
+            lightNode.userData.helper.material.transparent = true;
           }
 
         }
@@ -656,8 +656,8 @@ export class LightManager {
         lightNode.position.set(0,0,0);
         lightNode.intensity = 0;
         //Reset the light helper properties
-        lightNode.helper.material.opacity = 0;
-        lightNode.helper.material.transparent = true;
+        lightNode.userData.helper.material.opacity = 0;
+        lightNode.userData.helper.material.transparent = true;
       }
 
     }
@@ -687,7 +687,7 @@ export class LightManager {
     if(LightManager.lightsShown.indexOf(light.uuid) >= 0)
       return false;
 
-    if(!light || !light.isOnScreen(GameState.viewportFrustum) || !light.auroraModel.visible)
+    if(!light || !light.isOnScreen(GameState.viewportFrustum) || !light.odysseyModel.visible)
       return false;
 
     //if(light.isDynamic == 1)

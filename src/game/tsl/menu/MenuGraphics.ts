@@ -40,9 +40,9 @@ export class MenuGraphics extends K1_MenuGraphics {
         e.stopPropagation();
         /*this.Hide();
         if(GameState.Mode == EngineMode.INGAME){
-          GameState.MenuOptions.Show();
+          MenuManager.MenuOptions.Show();
         }else{
-          GameState.MainOptions.Show();
+          MenuManager.MainOptions.Show();
         }*/
         this.Close();
       });

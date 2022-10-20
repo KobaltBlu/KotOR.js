@@ -40,7 +40,7 @@ export interface OdysseyModelLoaderOptions {
   parseChildren?: boolean,
   isHologram?: boolean,
   context?: any,
-  onComplete: Function,
+  onComplete?: Function,
 }
 
 //THREE.js representation of OdysseyModel
@@ -812,7 +812,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   static async FromMDL(model: OdysseyModel, _options: OdysseyModelLoaderOptions = {} as OdysseyModelLoaderOptions): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( async (resolve: Function, reject: Function) => {
-
+_options
       const _default: OdysseyModelLoaderOptions = {
         textureVar: '****',
         castShadow: false,
@@ -913,8 +913,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
 
         odysseyModel.box.setFromObject(odysseyModel);
+        if(typeof _options.onComplete === 'function') _options.onComplete(odysseyModel);
         resolve(odysseyModel);
       }else{
+        if(typeof _options.onComplete === 'function') _options.onComplete();
         reject('model is not of type OdysseyModel');
       }
     });
@@ -1377,16 +1379,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
       });
     }else{
       material = new THREE.ShaderMaterial({
-        fragmentShader: THREE.ShaderLib.aurora.fragmentShader,
-        vertexShader: THREE.ShaderLib.aurora.vertexShader,
-        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.aurora.uniforms]),
+        fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
+        vertexShader: THREE.ShaderLib.odyssey.vertexShader,
+        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.odyssey.uniforms]),
         side: THREE.FrontSide,
         lights: true,
         // fog: odysseyModel.affectedByFog,
       });
 
       if(material instanceof THREE.ShaderMaterial){
-        material.uniforms.shininess.value = 0.0000001;
+        // material.uniforms.shininess.value = 0.0000001;
         material.extensions.derivatives = true;
         //material.extensions.fragDepth = true;
         if(options.useTweakColor){
@@ -1569,6 +1571,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }else{
       let lightNode: OdysseyLight3D;
       lightNode = new OdysseyLight3D(odysseyNode);
+      lightNode.odysseyModel = odysseyModel;
       lightNode.isAnimated = !odysseyNode.roomStatic;
       //if(!odysseyNode.AmbientFlag){
         lightNode.position.copy(odysseyNode.position);

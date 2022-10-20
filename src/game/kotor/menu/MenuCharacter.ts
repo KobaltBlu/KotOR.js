@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { PartyManager } from "../../../managers/PartyManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
@@ -229,7 +229,7 @@ export class MenuCharacter extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_CHA.onHoverIn();
+    MenuManager.MenuTop.LBLH_CHA.onHoverIn();
     this.RecalculatePosition();
     if (this.char) {
       this._3dViewModel.children[0].children[0].remove(this.char);
@@ -356,11 +356,11 @@ export class MenuCharacter extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_INV.click();
+    MenuManager.MenuTop.BTN_INV.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_ABI.click();
+    MenuManager.MenuTop.BTN_ABI.click();
   }
   
 }

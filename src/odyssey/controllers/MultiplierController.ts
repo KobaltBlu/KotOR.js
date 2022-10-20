@@ -11,14 +11,14 @@ export class MultiplierController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
-    if ((manager.modelNode._node.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      manager.modelNode._node.multiplier = data.value;
+    if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      manager.modelNode.odysseyModelNode.multiplier = data.value;
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
-    if ((manager.modelNode._node.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      manager.modelNode._node.multiplier = ((next.value - last.value) * fl + last.value);
+    if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      manager.modelNode.odysseyModelNode.multiplier = ((next.value - last.value) * fl + last.value);
     }
   }
 

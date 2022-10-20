@@ -8,7 +8,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
-import { Module, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGPlayer, ModuleMGTrack, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
+import { Module, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { GFFField } from "../resource/GFFField";
@@ -29,6 +29,7 @@ import { TwoDAManager } from "../managers/TwoDAManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
+import { MenuManager } from "../gui";
 
 /* @file
  * The ModuleArea class.
@@ -36,21 +37,21 @@ import { VISObject } from "../resource/VISObject";
 
 export class ModuleArea extends ModuleObject {
 
-  cameras: any[] = [];
-  creatures: any[] = [];
+  cameras: ModuleCamera[] = [];
+  creatures: ModuleCreature[] = [];
   doorhooks: any[] = [];
-  doors: any[] = [];
-  encounters: any[] = [];
-  obstacles: any[] = [];
+  doors: ModuleDoor[] = [];
+  encounters: ModuleEncounter[] = [];
+  obstacles: ModuleMGObstacle[] = [];
   items: any[] = [];
   party: any[] = [];
-  placeables: any[] = [];
-  rooms: any[] = [];
-  sounds: any[] = [];
-  stores: any[] = [];
-  tracks: any[] = [];
-  triggers: any[] = [];
-  waypoints: any[] = [];
+  placeables: ModulePlaceable[] = [];
+  // rooms: ModuleRoom[] = [];
+  sounds: ModuleSound[] = [];
+  stores: ModuleStore[] = [];
+  tracks: ModuleMGTrack[] = [];
+  triggers: ModuleTrigger[] = [];
+  waypoints: ModuleWaypoint[] = [];
 
   audio = {
     AmbientSndDay: 0,
@@ -452,20 +453,20 @@ export class ModuleArea extends ModuleObject {
     this.cameraBoundingBox.max.copy(GameState.raycaster.ray.origin);
     this.cameraBoundingBox.expandByScalar(distance * 1.5);
     
-    if(followee.room && followee.room.walkmesh && followee.room.walkmesh.aabbNodes.length){
+    if(followee.room && followee.room.collisionData.walkmesh && followee.room.collisionData.walkmesh.aabbNodes.length){
       aabbFaces.push({
         object: followee.room, 
-        faces: followee.room.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
+        faces: followee.room.collisionData.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
       });
     }
 
     for(let j = 0, jl = GameState.module.area.doors.length; j < jl; j++){
       let door = GameState.module.area.doors[j];
-      if(door && door.walkmesh && !door.isOpen()){
+      if(door && door.collisionData.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
           aabbFaces.push({
             object: door,
-            faces: door.walkmesh.faces
+            faces: door.collisionData.walkmesh.faces
           });
         }
       }
@@ -473,7 +474,7 @@ export class ModuleArea extends ModuleObject {
     
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
       let castableFaces = aabbFaces[k];
-      intersects = castableFaces.object.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){
           if(intersects[i].distance < distance){
@@ -524,8 +525,8 @@ export class ModuleArea extends ModuleObject {
   }
 
   reloadTextures(){
-    GameState.LoadScreen.Open();
-    GameState.LoadScreen.lbl_hint.setText('');
+    MenuManager.LoadScreen.Open();
+    MenuManager.LoadScreen.LBL_HINT.setText('');
     GameState.loadingTextures = true;
     //Cleanup texture cache
     Array.from(TextureLoader.textures.keys()).forEach( (key) => {
@@ -580,11 +581,11 @@ export class ModuleArea extends ModuleObject {
               }
             }).iterate(() => {
               TextureLoader.LoadQueue(() => {
-                GameState.LoadScreen.Close();
+                MenuManager.LoadScreen.Close();
                 GameState.loadingTextures = false;
               }, (textureName: string, index: number, count: number) => {
-                GameState.LoadScreen.setProgress((index/count + 1) * 100);
-                GameState.LoadScreen.lbl_hint.setText('Loading: '+textureName);
+                MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
+                MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+textureName);
                 //console.log('tex', textureName, index, count);
               });
             });
@@ -1025,66 +1026,69 @@ export class ModuleArea extends ModuleObject {
   }
 
   async loadScene( onLoad?: Function ){
+    try{
+      await this.loadRooms();
 
-    await this.loadRooms();
+      MenuManager.LoadScreen.setProgress(10);
 
-    GameState.LoadScreen.setProgress(10);
+      await this.loadPlaceables();
 
-    await this.loadPlaceables();
+      MenuManager.LoadScreen.setProgress(20);
 
-    GameState.LoadScreen.setProgress(20);
+      await this.loadWaypoints();
 
-    await this.loadWaypoints();
+      MenuManager.LoadScreen.setProgress(30);
 
-    GameState.LoadScreen.setProgress(30);
+      await this.loadCreatures();
+      await this.loadPlayer();
+      await this.loadParty();
 
-    await this.loadCreatures();
-    await this.loadPlayer();
-    await this.loadParty();
+      MenuManager.LoadScreen.setProgress(40);
 
-    GameState.LoadScreen.setProgress(40);
+      await this.loadSoundTemplates();
 
-    await this.loadSoundTemplates();
+      MenuManager.LoadScreen.setProgress(50);
 
-    GameState.LoadScreen.setProgress(50);
+      await this.loadTriggers();
 
-    await this.loadTriggers();
+      await this.loadEncounters();
 
-    await this.loadEncounters();
+      MenuManager.LoadScreen.setProgress(60);
 
-    GameState.LoadScreen.setProgress(60);
+      await this.loadMGTracks();
+      await this.loadMGPlayer();
+      await this.loadMGEnemies();
 
-    await this.loadMGTracks();
-    await this.loadMGPlayer();
-    await this.loadMGEnemies();
+      MenuManager.LoadScreen.setProgress(70);
 
-    GameState.LoadScreen.setProgress(70);
+      await this.loadDoors();
 
-    await this.loadDoors();
+      await this.loadStores();
 
-    await this.loadStores();
+      MenuManager.LoadScreen.setProgress(80);
+      await this.loadTextures();
 
-    GameState.LoadScreen.setProgress(80);
-    await this.loadTextures();
+      MenuManager.LoadScreen.setProgress(90);
 
-    GameState.LoadScreen.setProgress(90);
+      await this.loadAudio();
+      await this.loadBackgroundMusic();
 
-    await this.loadAudio();
-    await this.loadBackgroundMusic();
+      MenuManager.LoadScreen.setProgress(100);
 
-    GameState.LoadScreen.setProgress(100);
+      GameState.followerCamera.userData.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
 
-    GameState.followerCamera.userData.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
+      await this.weather.load();
 
-    await this.weather.load();
+      this.transWP = null;
 
-    this.transWP = null;
+      this.cleanupUninitializedObjects();
+      this.detectRoomObjects();
 
-    this.cleanupUninitializedObjects();
-    this.detectRoomObjects();
-
-    if(typeof onLoad === 'function')
-      onLoad();
+      if(typeof onLoad === 'function')
+        onLoad();
+    }catch(e){
+      console.error(e);
+    }
 
   }
 
@@ -2063,7 +2067,7 @@ export class ModuleArea extends ModuleObject {
 
   isPointWalkable(point: any){
     for(let i = 0, len = this.rooms.length; i < len; i++){
-      if(this.rooms[i].walkmesh && this.rooms[i].walkmesh.isPointWalkable(point)){
+      if(this.rooms[i].collisionData.walkmesh && this.rooms[i].collisionData.walkmesh.isPointWalkable(point)){
         return true;
       }
     }
@@ -2077,8 +2081,8 @@ export class ModuleArea extends ModuleObject {
     let p = undefined;
     let p_dist = 0;
     for(let i = 0, len = this.rooms.length; i < len; i++){
-      if(this.rooms[i].walkmesh){
-        p = this.rooms[i].walkmesh.getNearestWalkablePoint(point);
+      if(this.rooms[i].collisionData.walkmesh){
+        p = this.rooms[i].collisionData.walkmesh.getNearestWalkablePoint(point);
         if(p){
           p_dist = p.distanceTo(point);
           if(p_dist < nearest){

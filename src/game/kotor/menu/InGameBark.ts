@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel } from "../../../gui";
+import { GameMenu, GUILabel, MenuManager } from "../../../gui";
 import * as THREE from "three";
 import { ResourceLoader } from "../../../resource/ResourceLoader";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
@@ -48,7 +48,7 @@ bark(entry: any = null) {
           entry.speaker.setLIP(new LIPObject(buffer));
         }
       });
-      GameState.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
+      MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
         if (!error) {
           this.Close();
         } else {
@@ -64,7 +64,7 @@ bark(entry: any = null) {
           entry.speaker.setLIP(new LIPObject(buffer));
         }
       });
-      GameState.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
+      MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
         if (!error) {
           this.Close();
         } else {

@@ -46,7 +46,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
   }
 
   readBinary(odysseyModel: OdysseyModel){
-    // super.readBinary(odysseyModel);
+    super.readBinary(odysseyModel);
   }
 
 }

@@ -16,8 +16,12 @@ export class VideoPlayer {
 
   static Load(name = '', onEnded?: Function){
     if(typeof name == 'string' && name.length){
-      let mp4 = path.join(ApplicationProfile.directory, 'Movies', name+'.mp4');
-      let bik = path.join(ApplicationProfile.directory, 'Movies', name+'.bik');
+      if(typeof onEnded === 'function')
+        onEnded();
+
+      return;
+      let mp4 = path.join('Movies', name+'.mp4');
+      let bik = path.join('Movies', name+'.bik');
 
       let hasMP4 = false;//fs.existsSync(mp4);
       let hasBIK = false;//fs.existsSync(bik);

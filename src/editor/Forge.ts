@@ -8,7 +8,7 @@ import { ResourceExplorerTab } from "./tabs/ResourceExplorerTab";
 
 export class Forge {
   static Project: Project;
-  static loader = new LoadingScreen();
+  static loader: LoadingScreen;// = new LoadingScreen();
   static tabManager: EditorTabManager;
   static projectExplorerTab: ProjectExplorerTab;
   static resourceExplorerTab: ResourceExplorerTab;

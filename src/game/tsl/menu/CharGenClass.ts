@@ -168,7 +168,7 @@ export class CharGenClass extends K1_CharGenClass {
             control.char = model;
             control._3dView.addModel(control.char);
             TextureLoader.LoadQueue(() => {
-              GameState.LoadScreen.setProgress((nth + 1) / 6 * 100);
+              MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               if (typeof onLoad === 'function')
                 onLoad();
               control._3dViewModel.playAnimation(0, true);
@@ -333,7 +333,7 @@ export class CharGenClass extends K1_CharGenClass {
 
   Init(onLoad = null) {
     let bgMusic = 'mus_main';
-    GameState.LoadScreen.setProgress(0);
+    MenuManager.LoadScreen.setProgress(0);
     this.Load3D(() => {
       AudioLoader.LoadMusic(bgMusic, data => {
         GameState.audioEngine.SetBackgroundMusic(data);

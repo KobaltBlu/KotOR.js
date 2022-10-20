@@ -473,8 +473,8 @@ export class ModuleMGPlayer extends ModuleObject {
 
       //room walkable edge check
       let roomCollision = false;
-      for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
-        edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
+      for(let i = 0, len = this.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
+        edge = this.room.collisionData.walkmesh.edges[this.room.collisionData.walkmesh.edgeKeys[i]];
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.tmpPos);
@@ -522,9 +522,9 @@ export class ModuleMGPlayer extends ModuleObject {
         this.tmpPos.copy(this.position).add(this.AxisFront);
         for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
           obj = this.room.placeables[j];
-          if(obj && obj.walkmesh && obj.model && obj.model.visible){
-            for(let i = 0, iLen = obj.walkmesh.faces.length; i < iLen; i++){
-              face = obj.walkmesh.faces[i];
+          if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
+            for(let i = 0, iLen = obj.collisionData.walkmesh.faces.length; i < iLen; i++){
+              face = obj.collisionData.walkmesh.faces[i];
               if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk == 0){
                 //bail we should not be here
                 this.AxisFront.set(0, 0, 0);
@@ -535,8 +535,8 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       
         //DETECT: ROOM TRANSITION
-        for(let i = 0, len = this.room.walkmesh.edgeKeys.length; i < len; i++){
-          edge = this.room.walkmesh.edges[this.room.walkmesh.edgeKeys[i]];
+        for(let i = 0, len = this.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
+          edge = this.room.collisionData.walkmesh.edges[this.room.collisionData.walkmesh.edgeKeys[i]];
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(
@@ -603,18 +603,18 @@ export class ModuleMGPlayer extends ModuleObject {
         let model = room.model;
         if(model instanceof OdysseyModel3D){
           if(model.box.containsPoint(this.position)){
-            this.rooms.push(i);
+            this.roomIds.push(i);
           }
         }
       }
 
       if(box){
         for(let j = 0, jl = this.rooms.length; j < jl; j++){
-          let room = GameState.module.area.rooms[this.rooms[j]];
-          if(room && room.walkmesh && room.walkmesh.aabbNodes.length){
+          let room = GameState.module.area.rooms[this.roomIds[j]];
+          if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
             aabbFaces.push({
               object: room, 
-              faces: room.walkmesh.getAABBCollisionFaces(box)
+              faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
             });
           }
         }
@@ -627,20 +627,20 @@ export class ModuleMGPlayer extends ModuleObject {
       
       for(let j = 0, jl = aabbFaces.length; j < jl; j++){
         let castableFaces = aabbFaces[j];
-        intersects = castableFaces.object.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
           if(this == GameState.player){
             //console.log(intersects);
           }
-          if(intersects[0].object.moduleObject){
-            this.attachToRoom(intersects[0].object.moduleObject);
+          if(intersects[0].object.userData.moduleObject){
+            this.attachToRoom(intersects[0].object.userData.moduleObject);
             return;
           }
         }
       }
-      if(this.rooms.length){
-        this.attachToRoom(GameState.module.area.rooms[this.rooms[0]]);
+      if(this.roomIds.length){
+        this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
         return;
       }
       this.findWalkableFace();
@@ -652,16 +652,16 @@ export class ModuleMGPlayer extends ModuleObject {
     let room;
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
       room = GameState.module.area.rooms[i];
-      if(room.walkmesh){
-        for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-          face = room.walkmesh.walkableFaces[j];
+      if(room.collisionData.walkmesh){
+        for(let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+          face = room.collisionData.walkmesh.walkableFaces[j];
           if(face.triangle.containsPoint(this.position)){
             this.collisionData.groundFace = face;
             this.collisionData.lastGroundFace = this.collisionData.groundFace;
             this.collisionData.surfaceId = this.collisionData.groundFace.walkIndex;
             this.attachToRoom(room);
-            face.triangle.closestPointToPoint(this.position, this.wm_c_point);
-            this.position.z = this.wm_c_point.z + .005;
+            face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
+            this.position.z = this.collisionData.wm_c_point.z + .005;
           }
         }
       }

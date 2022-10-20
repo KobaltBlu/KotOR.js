@@ -28,12 +28,12 @@ export class AudioFile {
     this.isProcessed = false;
 
     //Open Binary Stream
-    this.GetBinaryStream( (reader: BinaryReader) => {
+    //this.GetBinaryStream( (reader: BinaryReader) => {
 
       if(typeof onComplete == 'function')
         onComplete(this);
 
-    });
+    //});
 
   }
 
@@ -125,7 +125,7 @@ export class AudioFile {
       this.header = this.ReadWavHeader(this.reader);
       //console.log(this.header);
       this.reader.Seek(0);
-
+      this.data = this.reader.buffer;
       if(onComplete != null)
         onComplete(this.data);
 
@@ -147,6 +147,7 @@ export class AudioFile {
         this.reader = this.reader.Slice(58, this.reader.Length()); //Remove the fake data
         this.header = this.ReadMP3Header(this.reader);
         this.reader.Seek(0);
+        this.data = this.reader.buffer; 
         
         if(onComplete != null)
           onComplete(this.reader);

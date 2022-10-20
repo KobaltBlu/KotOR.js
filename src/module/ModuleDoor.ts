@@ -277,7 +277,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     /*if(this.GetConversation() != ''){
-      GameState.InGameDialog.StartConversation(this.GetConversation(), object);
+      MenuManager.InGameDialog.StartConversation(this.GetConversation(), object);
     }*/
 
   }

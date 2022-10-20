@@ -3,7 +3,7 @@
 
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
@@ -446,7 +446,7 @@ export class MenuEquipment extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_EQU.onHoverIn();
+    MenuManager.MenuTop.LBLH_EQU.onHoverIn();
     GameState.MenuActive = true;
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;
@@ -495,11 +495,11 @@ export class MenuEquipment extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_OPT.click();
+    MenuManager.MenuTop.BTN_OPT.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_INV.click();
+    MenuManager.MenuTop.BTN_INV.click();
   }
 
   triggerControllerDUpPress() {

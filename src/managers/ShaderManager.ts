@@ -13,7 +13,7 @@ export class ShaderManager {
     THREE.ShaderLib[shader.name] = {
       fragmentShader: shader.getFragment(),
       vertexShader: shader.getVertex(),
-      uniforms: {},//THREE.UniformsUtils.merge(shader.getUniforms())
+      uniforms: THREE.UniformsUtils.merge(shader.getUniforms())
     };
     ShaderManager.Shaders.set(shader.name, shader);
   }

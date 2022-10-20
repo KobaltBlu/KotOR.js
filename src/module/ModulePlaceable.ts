@@ -10,6 +10,7 @@ import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimSta
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { MenuManager } from "../gui";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { TemplateLoader } from "../loaders/TemplateLoader";
 import { InventoryManager } from "../managers/InventoryManager";
@@ -460,10 +461,10 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.hasInventory){
-      GameState.MenuContainer.AttachContainer(this);
-      GameState.MenuContainer.Open();
+      MenuManager.MenuContainer.AttachContainer(this);
+      MenuManager.MenuContainer.Open();
     }else if(this.GetConversation() != ''){
-      GameState.InGameDialog.StartConversation(this.GetConversation(), object);
+      MenuManager.InGameDialog.StartConversation(this.GetConversation(), object);
     }
 
     if(this.scripts.onUsed instanceof NWScriptInstance){

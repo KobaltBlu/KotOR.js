@@ -228,7 +228,7 @@ export class MenuTop extends K1_MenuTop {
 
   CloseAllOtherMenus() {
     let currentMenu = MenuManager.GetCurrentMenu();
-    if (currentMenu == GameState.MenuAbilities || currentMenu == GameState.MenuInventory || currentMenu == GameState.MenuJournal || currentMenu == GameState.MenuMap || currentMenu == GameState.MenuMessages || currentMenu == GameState.MenuFeedback || currentMenu == GameState.MenuOptions || currentMenu == GameState.MenuCharacter || currentMenu == GameState.MenuPartySelection || currentMenu == GameState.MenuEquipment) {
+    if (currentMenu == MenuManager.MenuAbilities || currentMenu == MenuManager.MenuInventory || currentMenu == MenuManager.MenuJournal || currentMenu == MenuManager.MenuMap || currentMenu == MenuManager.MenuMessages || currentMenu == MenuManager.MenuFeedback || currentMenu == MenuManager.MenuOptions || currentMenu == MenuManager.MenuCharacter || currentMenu == MenuManager.MenuPartySelection || currentMenu == MenuManager.MenuEquipment) {
       currentMenu.Close();
     }
   }

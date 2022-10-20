@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuMessages menu class.
@@ -37,16 +37,16 @@ export class MenuMessages extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuTop.LBLH_MSG.onHoverIn();
+    MenuManager.MenuTop.LBLH_MSG.onHoverIn();
     GameState.MenuActive = true;
   }
 
   triggerControllerBumperLPress() {
-    GameState.MenuTop.BTN_ABI.click();
+    MenuManager.MenuTop.BTN_ABI.click();
   }
 
   triggerControllerBumperRPress() {
-    GameState.MenuTop.BTN_JOU.click();
+    MenuManager.MenuTop.BTN_JOU.click();
   }
   
 }
