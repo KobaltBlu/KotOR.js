@@ -45,6 +45,7 @@ export class ImageViewerTab extends EditorTab {
       }
     });
 
+    //@ts-expect-error
     $('#container').layout({ applyDefaultStyles: false,
       onresize: () => {
         try{

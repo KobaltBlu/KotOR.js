@@ -152,21 +152,25 @@ export class LIPEditorTab extends EditorTab {
     this.$ui_bar = $('<div class="keyframe-bar">');
     this.$ui_canvas = $('<canvas style="position: absolute; bottom: 0;"/>');
 
+    //@ts-expect-error
     this.$ui_picker.windowPane({
       title: 'Preview Head',
       draggable: true
     });
 
+    //@ts-expect-error
     this.$ui_keyframe_options.windowPane({
       title: 'Selected Keyframe',
       draggable: true
     });
 
+    //@ts-expect-error
     this.$ui_audio.windowPane({
       title: 'Voice Over Preview',
       draggable: true
     });
     
+    //@ts-expect-error
     this.$ui_lip.windowPane({
       title: 'Lip Sync Properties',
       draggable: true
@@ -224,6 +228,7 @@ export class LIPEditorTab extends EditorTab {
       }
     });
 
+    //@ts-expect-error
     $('#container').layout({ applyDefaultStyles: false,
       onresize: () => {
         try{

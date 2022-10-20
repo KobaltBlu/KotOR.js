@@ -40,7 +40,7 @@ export class DLGEditorTab extends EditorTab {
 
       this.$nodeTreeContainer.append(this.$nodeTreeRootNode);
 
-
+      //@ts-expect-error
       this.$dialogPanes.layout({
         applyDefaultStyles: false,
         'onopen': (pane: any) => {

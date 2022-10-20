@@ -819,6 +819,7 @@ export class UTCEditorTab extends EditorTab {
       
             $('.pallete-item', equip_popup.$body).each( (i, ele) => {
               let $ele = $(ele);
+              //@ts-expect-error
               if($ele.attr('resref').equalsIgnoreCase(equippedRes)){
                 $ele.removeClass('active').addClass('active');
               }

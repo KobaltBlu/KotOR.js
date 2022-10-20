@@ -292,6 +292,7 @@ export class ModuleEditorTab extends EditorTab {
       this.$containerExplorer = $(this.ElementId('#project-explorer'), this.$tabContent);
       this.$containerObjProps = $(this.ElementId('#object-properties'), this.$tabContent);
 
+      //@ts-expect-error
       this.$container.layout();
       this.Init();
 
@@ -1004,6 +1005,7 @@ export class ModuleEditorTab extends EditorTab {
     for (let i = 0, len = areaGroups.length; i < len; i++) {
       let group = areaGroups[i];
 
+      //@ts-expect-error
       let $nodeGroup = $('<li><input class="node-toggle" type="checkbox" checked="" id="module-scene-tree-'+(treeIndex)+'"><label for="module-scene-tree-'+(treeIndex++)+'">'+group.name.titleCase()+'</label><span></span><ul></ul></li>');
       let $nodeGroupUL = $('ul', $nodeGroup);
 
@@ -1014,6 +1016,7 @@ export class ModuleEditorTab extends EditorTab {
         let child = children[j];
         let nth = j+1;
 
+        //@ts-expect-error
         let name = group.name.slice(0, -1).titleCase()+' '+((nth < 10) ? ("0" + nth) : nth);
 
         if(typeof child.getName === 'function')
