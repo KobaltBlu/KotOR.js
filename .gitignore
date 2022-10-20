@@ -10,3 +10,6 @@ backup/
 .ds_store
 projects/
 Saves/
+tests/
+src/**/*.js
+dist/
