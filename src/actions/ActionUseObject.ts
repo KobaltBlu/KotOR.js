@@ -1,6 +1,12 @@
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GameState } from "../GameState";
+import { ModuleObject } from "../module";
+import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
+import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
 export class ActionUseObject extends Action {
 
@@ -47,7 +53,7 @@ export class ActionUseObject extends Action {
       this.owner.setFacingObject( this.target );
 
       if(this.target != GameState.player){
-        this.target.use(this);
+        this.target.use(this.owner);
       }
 
       return ActionStatus.COMPLETE;

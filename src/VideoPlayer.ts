@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ipcRenderer } from "electron";
+// import { ipcRenderer } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
@@ -26,26 +26,26 @@ export class VideoPlayer {
 
       // console.log(name, hasMP4, hasBIK);
 
-      if(hasMP4){
-        ipcRenderer.send('movie', {
-          action: 'play',
-          movie: name,
-          file: mp4
-        });
-        playerSession = new VideoPlayerSession( bik, name, onEnded );
-      }else if(hasBIK){
-        ipcRenderer.send('movie', {
-          action: 'play',
-          movie: name,
-          file: bik
-        });
-        playerSession = new VideoPlayerSession( bik, name, onEnded );
-      }else{
-        // console.log('no video');
-        if(typeof onEnded === 'function')
-          onEnded();
-        return;
-      }
+      // if(hasMP4){
+      //   ipcRenderer.send('movie', {
+      //     action: 'play',
+      //     movie: name,
+      //     file: mp4
+      //   });
+      //   playerSession = new VideoPlayerSession( bik, name, onEnded );
+      // }else if(hasBIK){
+      //   ipcRenderer.send('movie', {
+      //     action: 'play',
+      //     movie: name,
+      //     file: bik
+      //   });
+      //   playerSession = new VideoPlayerSession( bik, name, onEnded );
+      // }else{
+      //   // console.log('no video');
+      //   if(typeof onEnded === 'function')
+      //     onEnded();
+      //   return;
+      // }
 
       VideoPlayer.CurrentSession = playerSession;
       VideoPlayer.Sessions.push(playerSession);
@@ -152,33 +152,33 @@ class VideoPlayerSession {
 }
 
 
-ipcRenderer.on('movie-ready', (event, response) => {
+// ipcRenderer.on('movie-ready', (event, response) => {
 
-  // response.movie = path.parse(videoFilePath).name;
-  // response.type = "stream";
-  // response.videoSource = "http://127.0.0.1:8888?startTime=0";
-  // response.duration = checkResult.duration
+//   // response.movie = path.parse(videoFilePath).name;
+//   // response.type = "stream";
+//   // response.videoSource = "http://127.0.0.1:8888?startTime=0";
+//   // response.duration = checkResult.duration
 
-  let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
-  if(session instanceof VideoPlayerSession){
-    if (response.type === 'native') {
-      session.attachNative(response);
-    } else if (response.type === 'stream') {
-      session.attachStream(response);
-    }
-  }else{
-    //kill movie stream
-    ipcRenderer.send('movie-kill-stream');
-  }
+//   let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
+//   if(session instanceof VideoPlayerSession){
+//     if (response.type === 'native') {
+//       session.attachNative(response);
+//     } else if (response.type === 'stream') {
+//       session.attachStream(response);
+//     }
+//   }else{
+//     //kill movie stream
+//     ipcRenderer.send('movie-kill-stream');
+//   }
 
-});
-ipcRenderer.on('movie-fail', (event, response) => {
-  // console.log('movie-fail', response);
-  let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
-  if(session instanceof VideoPlayerSession){
-    session.stop();
-  }else{
-    //kill movie stream
-    //ipcRenderer.send('movie-kill-stream');
-  }
-});
+// });
+// ipcRenderer.on('movie-fail', (event, response) => {
+//   // console.log('movie-fail', response);
+//   let session = VideoPlayer.Sessions.find( s => s.movie == response.movie );
+//   if(session instanceof VideoPlayerSession){
+//     session.stop();
+//   }else{
+//     //kill movie stream
+//     //ipcRenderer.send('movie-kill-stream');
+//   }
+// });

@@ -65,4 +65,4 @@ export { MenuUpgrade } from "./menu/MenuUpgrade";
 export { MenuUpgradeItems } from "./menu/MenuUpgradeItems";
 export { MenuUpgradeSelect } from "./menu/MenuUpgradeSelect";
 
-export as namespace TSL;
+// export as namespace TSL;

@@ -1,5 +1,6 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreature, ModuleObject } from "../module";
 import { Action } from "./Action";
 
 export class ActionJumpToObject extends Action {
@@ -24,10 +25,10 @@ export class ActionJumpToObject extends Action {
     if(this.owner instanceof ModuleCreature){
       this.owner.setPosition(this.target.position);
       this.owner.setFacing(this.target.rotation.z, false);
-      this.owner.groundFace = undefined;
-      this.owner.lastGroundFace = undefined;
+      this.owner.collisionData.groundFace = undefined;
+      this.owner.collisionData.lastGroundFace = undefined;
       //this.getCurrentRoom();
-      this.owner.findWalkableFace();
+      this.owner.collisionData.findWalkableFace();
       return ActionStatus.COMPLETE;
     }
 

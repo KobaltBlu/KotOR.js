@@ -1,4 +1,4 @@
-import { CombatRoundData } from "./CombatRoundData";
+import { CombatRoundData } from "./";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreature, ModuleObject } from "../module";
 

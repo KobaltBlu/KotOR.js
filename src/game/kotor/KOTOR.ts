@@ -63,4 +63,4 @@ export * from "./menu/MenuUpgrade";
 export * from "./menu/MenuUpgradeItems";
 export * from "./menu/MenuUpgradeSelect";
 
-export as namespace KOTOR;
+// export as namespace KOTOR;

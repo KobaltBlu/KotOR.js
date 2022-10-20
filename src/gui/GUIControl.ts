@@ -33,6 +33,7 @@ const box = { min: [0, 0], max: [0, 0] }
 export class GUIControl {
   position: any;
   node: any;
+  visible: boolean = true;
   calculateBox() {
     return;
   }

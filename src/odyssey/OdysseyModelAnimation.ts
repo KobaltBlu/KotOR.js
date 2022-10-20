@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
+import { OdysseyModelAnimationNode } from "./";
 import * as THREE from 'three';
 import { TwoDAManager } from "../managers/TwoDAManager";
 

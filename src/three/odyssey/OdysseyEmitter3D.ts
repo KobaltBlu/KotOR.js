@@ -2,7 +2,12 @@
  */
 
 import * as THREE from "three";
+import { GameState } from "../../GameState";
+import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { TextureLoader } from "../../loaders/TextureLoader";
+import { OdysseyModelNode } from "../../odyssey";
+import { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyObject3D } from "./";
 
 /* @file
@@ -11,7 +16,7 @@ import { OdysseyObject3D } from "./";
  */
 
 
-//THREE.js representation of AuroraEmitter
+//THREE.js representation of OdysseyEmitter
 export class OdysseyEmitter3D extends OdysseyObject3D {
   
   static BirthTime: number = 1;
@@ -22,7 +27,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   maxParticleCount: number;
   velocities: any;
   props: any;
-  ids: THREE.InstancedBufferAttribute;
+  ids: any;
   particleCount: number;
   referenceNode: OdysseyObject3D;
   _lightningDelay: any;
@@ -44,19 +49,347 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   lightningRadius: number = 0;
   spread: number = 0;
   size: THREE.Vector3 = new THREE.Vector3();
+  isDetonated: boolean;
+  particleIndex: number;
+  vec3: THREE.Vector3;
+  sizeXY: THREE.Vector2;
+  node: any;
+  geometry: THREE.BufferGeometry;
+  material: THREE.ShaderMaterial;
+  colorStart: any;
+  colorMid: any;
+  colorEnd: any;
+  threshold: any;
+  gravity: any;
+  sizes: any;
+  opacity: any;
+  angle: any;
+  _detonate: any;
+  fps: any;
+  lightningSubDiv: any;
+  speed_min: number;
+  speed_max: number;
+  xangle: number;
+  zangle: number;
+  mesh: THREE.Points|THREE.Mesh;
+  attributes: any = {};
 
-  constructor(){
+  constructor(odysseyNode: OdysseyModelNode){
     super();
-    this.type = 'AuroraEmitter';
-  }
+    this.type = 'OdysseyEmitter';
+
+    this.isDetonated = false;
+    this.particleIndex = 0;
   
-  type = 'AuroraEmitter';
+    this.vec3 = new THREE.Vector3(0.0, 0.0, 0.0);
+    this.sizeXY = new THREE.Vector2(0.0, 0.0);
+    this.node = odysseyNode;
+  
+    this.material = undefined;
+    this.mesh = undefined;
+  
+    switch(this.node.Render){
+      case 'Normal':
+      case 'Motion_Blur':
+      case 'Linked':
+        this.geometry = new THREE.BufferGeometry();
+      break;
+      default:
+        this.geometry = new THREE.InstancedBufferGeometry();
+        this.geometry.index = OdysseyEmitter3D.PlaneGeometry.index;
+        this.geometry.attributes.position = OdysseyEmitter3D.PlaneGeometry.attributes.position;
+        this.geometry.attributes.uv = OdysseyEmitter3D.PlaneGeometry.attributes.uv;
+      break;
+    }
+  
+    // this.geometry.ignoreRaycast = true;
+  
+    //Particles
+    this.particleCount = 0;
+    this.maxParticleCount = 0;
+    // this.positions = [];
+    // this.ages = [];
+  
+    //Properties
+    this.size = new THREE.Vector3();
+    this.sizes = [0, 0, 0];
+    this.spread = 0;
+    this.opacity = [];
+    this.lifeExp = 0;
+    this._detonate = 0;
+    this.birthRate = 0;
+  
+    this.colorStart = new THREE.Color(1, 1, 1);
+    this.colorMid = new THREE.Color(1, 1, 1);
+    this.colorEnd = new THREE.Color(1, 1, 1);
 
-  isDetonated = false;
-  particleIndex = 0;
+    
 
-  vec3 = new THREE.Vector3(0.0, 0.0, 0.0);
-  sizeXY = new THREE.Vector2(0.0, 0.0);
+    this.addEventListener( 'added', ( event ) => {
+      this.material.uniforms.matrix.value.copy(this.parent.matrix);
+      this.material.uniforms.matrix.value.setPosition(0, 0, 0);
+
+      /*if(this.node.Update != 'Explosion' && this.node.Render != 'Linked'){
+        for(let i = 0; i < this.birthRate; i++){
+          this.spawnParticle(i);
+        }
+      }*/
+
+      this.material.uniformsNeedUpdate = true;
+      this.attributeChanged('mass');
+    } );
+  
+    if(odysseyNode instanceof OdysseyModelNode){
+  
+      this.updateType = this.node.Update;
+  
+      this.material = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.merge( [
+          THREE.ShaderLib.odysseyEmitter.uniforms, {
+            textureAnimation: { value: new THREE.Vector4(this.node.GridX, this.node.GridY, this.node.GridX * this.node.GridY, 1) },
+          }
+        ]),
+        vertexShader: THREE.ShaderLib.odysseyEmitter.vertexShader,
+        fragmentShader: THREE.ShaderLib.odysseyEmitter.fragmentShader,
+        side: THREE.FrontSide,
+        transparent: true,
+        fog: false,
+        visible: true
+      });
+  
+      if(this.node.TwoSidedTex || this.node.Render == 'Linked'){
+        this.material.side = THREE.DoubleSide;
+      }
+  
+      //this.material.defines.USE_FOG = '';
+  
+      TextureLoader.enQueueParticle(this.node.Texture, this);
+  
+      this.node.controllers.forEach( (controller: OdysseyControllerGeneric ) => {
+        if(controller.data.length){
+          switch(controller.type){
+            case OdysseyModelControllerType.Position:
+              //positionOffset.copy(controller.data[0]);
+            break;
+            case OdysseyModelControllerType.Orientation:
+              //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
+            break;
+            case OdysseyModelControllerType.ColorStart:
+              this.colorStart.copy(controller.data[0]);
+            break;
+            case OdysseyModelControllerType.ColorMid:
+              this.colorMid.copy(controller.data[0]);
+            break;
+            case OdysseyModelControllerType.ColorEnd:
+              this.colorEnd.copy(controller.data[0]);
+            break;
+            case OdysseyModelControllerType.XSize:
+              //if(this.node.Render == 'Aligned_to_Particle_Dir'){
+                this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+              //}else{
+              //  this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+              //}
+            break;
+            case OdysseyModelControllerType.YSize:
+              //if(this.node.Render == 'Aligned_to_Particle_Dir'){
+                this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+              //}else{
+              //  this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
+              //}
+            break;
+            case OdysseyModelControllerType.Spread:
+              this.spread = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LifeExp:
+              this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : 100;
+            break;
+            case OdysseyModelControllerType.BirthRate:
+              this.birthRate = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Drag:
+              this.drag = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Threshold:
+              this.threshold = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Grav:
+              this.gravity = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Mass:
+              this.mass = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Velocity:
+              this.velocity = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.RandVel:
+              this.randVelocity = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.SizeStart:
+              this.sizes[0] = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.SizeMid:
+              this.sizes[1] = (controller.data[0].value);
+            break;
+            case OdysseyModelControllerType.SizeEnd:
+              this.sizes[2] = (controller.data[0].value);
+            break;
+            case OdysseyModelControllerType.AlphaStart:
+              this.opacity[0] = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.AlphaMid:
+              this.opacity[1] = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.AlphaEnd:
+              this.opacity[2] = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.ParticleRot:
+              this.angle = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.Detonate:
+              this._detonate = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.FPS:
+              this.fps = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.FrameStart:
+              this.material.uniforms.frameRange.value.x = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.FrameEnd:
+              this.material.uniforms.frameRange.value.y = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LightningZigZag:
+              this.lightningZigZag = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LightningDelay:
+              this.lightningDelay = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LightningRadius:
+              this.lightningRadius = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LightningSubDiv:
+              this.lightningSubDiv = controller.data[0].value;
+            break;
+            case OdysseyModelControllerType.LightningScale:
+              this.lightningScale = controller.data[0].value;
+            break;
+          }
+        }
+      });
+  
+      this.maxParticleCount = this.birthRate * this.lifeExp;
+      this.material.uniforms.tDepth.value = GameState.depthTarget.depthTexture;
+      this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
+      this.material.uniforms.colorStart.value.copy(this.colorStart);
+      this.material.uniforms.colorMid.value.copy(this.colorMid);
+      this.material.uniforms.colorEnd.value.copy(this.colorEnd);
+      this.material.uniforms.opacity.value.fromArray(this.opacity);
+      this.material.uniforms.scale.value.fromArray(this.sizes);
+      this.material.uniforms.rotate.value = this.angle;
+      this.material.uniforms.drag.value = this.drag;
+      this.material.uniforms.velocity.value = this.velocity;
+      this.material.uniforms.randVelocity.value = this.randVelocity;
+  
+      if(this.node.Render == 'Linked'){
+        this.birthRate = 0;
+      }
+  
+      if(this.node.Update == 'Lightning'){
+        this.material.defines.LIGHTNING = '';
+      }
+  
+      if(this.fps){
+        this.material.defines.FPS = '';
+        this.material.uniforms.fps.value = this.fps;
+      }
+  
+      this.material.defines[this.node.Render] = '';
+  
+      this._birthTimer = 1/this.birthRate;
+  
+      switch(this.node.Blend){
+        case 'Normal':
+          this.material.blending = THREE.NormalBlending;
+        break;
+        case 'Lighten':
+        case 'Punch-Through':
+          this.material.blending = THREE.AdditiveBlending;
+        break;
+      }
+  
+      let offsets: any[] = [];
+      let props: any[] = [];
+      let velocities: any[] = [];
+      let ids: any[] = [];
+      this.maxParticleCount = this.getMaxParticleCount();
+  
+      //Start Velocity Calculations
+      this.speed_min = this.velocity;
+      this.speed_max = this.randVelocity;
+  
+      this.xangle = this.spread;
+      this.zangle = this.spread;
+      this.vx = Math.sin(this.xangle);
+      this.vy = Math.sin(this.zangle);
+      this.vz = Math.cos(this.xangle) + Math.cos(this.zangle);
+  
+      this.d = this.speed_min / (Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz));
+      this.d2 = this.speed_max / (Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz));
+      //End Velocity Calculations
+  
+      switch(this.node.Render){
+        case 'Normal':
+        case 'Motion_Blur':
+          this.material.defines.POINTS = '';
+  
+          this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+          this.geometry.setAttribute( 'position', this.offsets );
+          this.geometry.setAttribute( 'velocity', this.velocities );
+          this.geometry.setAttribute( 'props', this.props );
+          this.geometry.setAttribute( 'ids', this.ids );
+          
+          this.mesh = new THREE.Points( this.geometry, this.material );
+        break;
+        case 'Linked':
+          this.material.defines.LINKED = '';
+  
+          this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.BufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+          this.geometry.setAttribute( 'position', this.offsets );
+          this.geometry.setAttribute( 'offset', this.velocities );
+          this.geometry.setAttribute( 'props', this.props );
+          //this.geometry.setAttribute( 'ids', this.ids );
+          
+          this.mesh = new THREE.Mesh( this.geometry, this.material );
+          //Need to fix!!! THREE JS update broke this
+          //this.mesh.setDrawMode(THREE.TriangleStripDrawMode);
+        break;
+        default:
+          this.offsets = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
+          this.velocities = new THREE.InstancedBufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.props = new THREE.InstancedBufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
+          this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
+          this.geometry.setAttribute( 'offset', this.offsets );
+          this.geometry.setAttribute( 'velocity', this.velocities );
+          this.geometry.setAttribute( 'props', this.props );
+          this.geometry.setAttribute( 'ids', this.ids );
+      
+          this.mesh = new THREE.Mesh( this.geometry, this.material );
+        break;
+      }
+  
+      this.mesh.renderOrder = 9999;
+  
+      this.mesh.frustumCulled = true;
+      this.material.uniformsNeedUpdate = true;
+      this.add(this.mesh);
+  
+    }
+  }
 
   getMaxParticleCount(){
     if(this.node.Render == 'Linked'){ //Max attribute array size
@@ -408,10 +741,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   }
 
-  // sizes(arg0: null, sizes: any) {
-  //   throw new Error("Method not implemented.");
-  // }
-
   setReferenceNode( referenceNode: OdysseyObject3D ){
     if(referenceNode instanceof OdysseyObject3D){
       this.referenceNode = referenceNode;
@@ -752,302 +1081,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   };
 
-  attributes = {
-
-  };
-
-  node = odysseyNode;
-
-  material = undefined;
-  mesh = undefined;
-
-  switch(this.node.Render){
-    case 'Normal':
-    case 'Motion_Blur':
-    case 'Linked':
-      this.geometry = new THREE.BufferGeometry();
-    break;
-    default:
-      this.geometry = new THREE.InstancedBufferGeometry();
-      this.geometry.index = AuroraEmitter3D.geometry.index;
-      this.geometry.attributes.position = AuroraEmitter3D.geometry.attributes.position;
-      this.geometry.attributes.uv = AuroraEmitter3D.geometry.attributes.uv;
-    break;
-  }
-
-  geometry.ignoreRaycast = true;
-
-  //Particles
-  particleCount = 0;
-  maxParticleCount = 0;
-  positions = [];
-  ages = [];
-
-  //Properties
-  size = new THREE.Vector3();
-  sizes = [0, 0, 0];
-  spread = 0;
-  opacity = [];
-  lifeExp = 0;
-  _detonate = 0;
-  birthRate = 0;
-
-  colorStart = new THREE.Color(1, 1, 1);
-  colorMid = new THREE.Color(1, 1, 1);
-  colorEnd = new THREE.Color(1, 1, 1);
-
-  if(odysseyNode instanceof OdysseyModelNode){
-
-    this.updateType = this.node.Update;
-
-    this.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge( [
-        THREE.ShaderLib.auroraEmitter.uniforms, {
-          textureAnimation: { value: new THREE.Vector4(this.node.GridX, this.node.GridY, this.node.GridX * this.node.GridY, 1) },
-        }
-      ]),
-      vertexShader: THREE.ShaderLib.auroraEmitter.vertexShader,
-      fragmentShader: THREE.ShaderLib.auroraEmitter.fragmentShader,
-      side: THREE.FrontSide,
-      transparent: true,
-      fog: false,
-      visible: true
-    });
-
-    if(this.node.TwoSidedTex || this.node.Render == 'Linked'){
-      this.material.side = THREE.DoubleSide;
-    }
-
-    //this.material.defines.USE_FOG = '';
-
-    TextureLoader.enQueueParticle(this.node.Texture, this);
-
-    this.node.controllers.forEach( (controller) => {
-      if(controller.data.length){
-        switch(controller.type){
-          case ControllerType.Position:
-            //positionOffset.copy(controller.data[0]);
-          break;
-          case ControllerType.Orientation:
-            //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
-          break;
-          case ControllerType.ColorStart:
-            this.colorStart.copy(controller.data[0]);
-          break;
-          case ControllerType.ColorMid:
-            this.colorMid.copy(controller.data[0]);
-          break;
-          case ControllerType.ColorEnd:
-            this.colorEnd.copy(controller.data[0]);
-          break;
-          case ControllerType.XSize:
-            //if(this.node.Render == 'Aligned_to_Particle_Dir'){
-              this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-            //}else{
-            //  this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-            //}
-          break;
-          case ControllerType.YSize:
-            //if(this.node.Render == 'Aligned_to_Particle_Dir'){
-              this.size.y = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-            //}else{
-            //  this.size.x = controller.data[0].value < 1 ? controller.data[0].value : (controller.data[0].value*.01);
-            //}
-          break;
-          case ControllerType.Spread:
-            this.spread = controller.data[0].value;
-          break;
-          case ControllerType.LifeExp:
-            this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : 100;
-          break;
-          case ControllerType.BirthRate:
-            this.birthRate = controller.data[0].value;
-          break;
-          case ControllerType.Drag:
-            this.drag = controller.data[0].value;
-          break;
-          case ControllerType.Threshold:
-            this.threshold = controller.data[0].value;
-          break;
-          case ControllerType.Grav:
-            this.gravity = controller.data[0].value;
-          break;
-          case ControllerType.Mass:
-            this.mass = controller.data[0].value;
-          break;
-          case ControllerType.Velocity:
-            this.velocity = controller.data[0].value;
-          break;
-          case ControllerType.RandVel:
-            this.randVelocity = controller.data[0].value;
-          break;
-          case ControllerType.SizeStart:
-            this.sizes[0] = controller.data[0].value;
-          break;
-          case ControllerType.SizeMid:
-            this.sizes[1] = (controller.data[0].value);
-          break;
-          case ControllerType.SizeEnd:
-            this.sizes[2] = (controller.data[0].value);
-          break;
-          case ControllerType.AlphaStart:
-            this.opacity[0] = controller.data[0].value;
-          break;
-          case ControllerType.AlphaMid:
-            this.opacity[1] = controller.data[0].value;
-          break;
-          case ControllerType.AlphaEnd:
-            this.opacity[2] = controller.data[0].value;
-          break;
-          case ControllerType.ParticleRot:
-            this.angle = controller.data[0].value;
-          break;
-          case ControllerType.Detonate:
-            this._detonate = controller.data[0].value;
-          break;
-          case ControllerType.FPS:
-            this.fps = controller.data[0].value;
-          break;
-          case ControllerType.FrameStart:
-            this.material.uniforms.frameRange.value.x = controller.data[0].value;
-          break;
-          case ControllerType.FrameEnd:
-            this.material.uniforms.frameRange.value.y = controller.data[0].value;
-          break;
-          case ControllerType.LightningZigZag:
-            this.lightningZigZag = controller.data[0].value;
-          break;
-          case ControllerType.LightningDelay:
-            this.lightningDelay = controller.data[0].value;
-          break;
-          case ControllerType.LightningRadius:
-            this.lightningRadius = controller.data[0].value;
-          break;
-          case ControllerType.LightningSubDiv:
-            this.lightningSubDiv = controller.data[0].value;
-          break;
-          case ControllerType.LightningScale:
-            this.lightningScale = controller.data[0].value;
-          break;
-        }
-      }
-    });
-
-    this.maxParticleCount = this.birthRate * this.lifeExp;
-    this.material.uniforms.tDepth.value = GameState.depthTarget.depthTexture;
-    this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
-    this.material.uniforms.colorStart.value.copy(this.colorStart);
-    this.material.uniforms.colorMid.value.copy(this.colorMid);
-    this.material.uniforms.colorEnd.value.copy(this.colorEnd);
-    this.material.uniforms.opacity.value.fromArray(this.opacity);
-    this.material.uniforms.scale.value.fromArray(this.sizes);
-    this.material.uniforms.rotate.value = this.angle;
-    this.material.uniforms.drag.value = this.drag;
-    this.material.uniforms.velocity.value = this.velocity;
-    this.material.uniforms.randVelocity.value = this.randVelocity;
-
-    if(this.node.Render == 'Linked'){
-      this.birthRate = 0;
-    }
-
-    if(this.node.Update == 'Lightning'){
-      this.material.defines.LIGHTNING = '';
-    }
-
-    if(this.fps){
-      this.material.defines.FPS = '';
-      this.material.uniforms.fps.value = this.fps;
-    }
-
-    this.material.defines[this.node.Render] = '';
-
-    this._birthTimer = 1/this.birthRate;
-
-    switch(this.node.Blend){
-      case 'Normal':
-        this.material.blending = THREE.NormalBlending;
-      break;
-      case 'Lighten':
-      case 'Punch-Through':
-        this.material.blending = THREE.AdditiveBlending;
-      break;
-    }
-
-    let offsets = [];
-    let props = [];
-    let velocities = [];
-    let ids = [];
-    this.maxParticleCount = this.getMaxParticleCount();
-
-    //Start Velocity Calculations
-    this.speed_min = this.velocity;
-    this.speed_max = this.randVelocity;
-
-    this.xangle = this.spread;
-    this.zangle = this.spread;
-    this.vx = Math.sin(this.xangle);
-    this.vy = Math.sin(this.zangle);
-    this.vz = Math.cos(this.xangle) + Math.cos(this.zangle);
-
-    this.d = this.speed_min / (Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz));
-    this.d2 = this.speed_max / (Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz));
-    //End Velocity Calculations
-
-    switch(this.node.Render){
-      case 'Normal':
-      case 'Motion_Blur':
-        this.material.defines.POINTS = '';
-
-        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
-        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
-        this.geometry.setAttribute( 'position', this.offsets );
-        this.geometry.setAttribute( 'velocity', this.velocities );
-        this.geometry.setAttribute( 'props', this.props );
-        this.geometry.setAttribute( 'ids', this.ids );
-        
-        this.mesh = new THREE.Points( this.geometry, this.material );
-      break;
-      case 'Linked':
-        this.material.defines.LINKED = '';
-
-        this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
-        this.velocities = new THREE.BufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.props = new THREE.BufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.ids = new THREE.BufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
-        this.geometry.setAttribute( 'position', this.offsets );
-        this.geometry.setAttribute( 'offset', this.velocities );
-        this.geometry.setAttribute( 'props', this.props );
-        //this.geometry.setAttribute( 'ids', this.ids );
-        
-        this.mesh = new THREE.Mesh( this.geometry, this.material );
-        //Need to fix!!! THREE JS update broke this
-        //this.mesh.setDrawMode(THREE.TriangleStripDrawMode);
-      break;
-      default:
-        this.offsets = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
-        this.velocities = new THREE.InstancedBufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.props = new THREE.InstancedBufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
-        this.ids = new THREE.InstancedBufferAttribute( new Float32Array( ids ), 1 ).setUsage( THREE.DynamicDrawUsage );
-        this.geometry.setAttribute( 'offset', this.offsets );
-        this.geometry.setAttribute( 'velocity', this.velocities );
-        this.geometry.setAttribute( 'props', this.props );
-        this.geometry.setAttribute( 'ids', this.ids );
-    
-        this.mesh = new THREE.Mesh( this.geometry, this.material );
-      break;
-    }
-
-    this.mesh.renderOrder = 9999;
-
-    this.mesh.frustumCulled = true;
-    this.material.uniformsNeedUpdate = true;
-    this.add(this.mesh);
-
-  }
-
-  attributeChanged(attr = null){
+  attributeChanged(attr: any){
     let quat = new THREE.Quaternion();
     switch(attr){
       case 'mass':
@@ -1059,20 +1093,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
   }
-
-  addEventListener( 'added', function ( event ) {
-    this.material.uniforms.matrix.value.copy(this.parent.matrix);
-    this.material.uniforms.matrix.value.setPosition(0, 0, 0);
-
-    /*if(this.node.Update != 'Explosion' && this.node.Render != 'Linked'){
-      for(let i = 0; i < this.birthRate; i++){
-        this.spawnParticle(i);
-      }
-    }*/
-
-    this.material.uniformsNeedUpdate = true;
-    this.attributeChanged('mass');
-  } );
 
   setLinkedVertexPositionOLD(i = 0, newPosition = new THREE.Vector3){
     /*for(let vi = 0; vi < 3; vi++){

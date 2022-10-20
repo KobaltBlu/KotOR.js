@@ -24,7 +24,7 @@ import { SSFObjectType } from "../interface/resource/SSFType";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
-import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
+import { NWScriptEvent } from "../nwscript/events";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { CExoLocString } from "../resource/CExoLocString";
@@ -1962,9 +1962,15 @@ export class ModuleObject {
     }
   }
 
-
+  use(object: ModuleObject){
+    throw new Error("Method not implemented.");
+  }
 
   attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
+    throw new Error("Method not implemented.");
+  }
+  
+  setCommandable(arg0: boolean) {
     throw new Error("Method not implemented.");
   }
 

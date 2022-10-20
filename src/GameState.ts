@@ -1,49 +1,55 @@
 import * as THREE from "three";
 import * as path from "path";
 import * as fs from "fs";
+
 import { AnimatedTexture } from "./AnimatedTexture";
-import { CombatEngine } from "./combat/CombatEngine";
+import { CombatEngine } from "./combat";
 import { GameMenu, MenuManager, GUIListBox } from "./gui";
-import { INIConfig } from "./INIConfig";
 import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
-import { Mouse } from "./controls/Mouse";
+import { IngameControls, Mouse } from "./controls";
+
 import { PartyManager } from "./managers/PartyManager";
+import { CursorManager } from "./managers/CursorManager";
+import { FadeOverlayManager } from "./managers/FadeOverlayManager";
+import { ShaderManager } from "./managers/ShaderManager";
+import { LightManager } from "./managers/LightManager";
+import { TwoDAManager } from "./managers/TwoDAManager";
+import { CameraShakeManager } from "./managers/CameraShakeManager";
+
+import { INIConfig } from "./INIConfig";
+import { FactionManager } from "./FactionManager";
+import { LoadingScreen } from "./LoadingScreen";
 import { Planetary } from "./Planetary";
 import { SaveGame } from "./SaveGame";
-import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { VideoPlayer } from "./VideoPlayer";
-import { IngameControls } from "./controls/IngameControls";
-import { EngineGlobals } from "./interface/engine/EngineGlobals";
-import { GameEngineType } from "./enums/engine/GameEngineType";
-import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
+
 import { MDLLoader } from "./three/MDLLoader";
-import { ModuleObjectType } from "./enums/nwscript/ModuleObjectType";
 import EngineLocation from "./engine/EngineLocation";
-import { CursorManager } from "./managers/CursorManager";
-import { EngineMode } from "./enums/engine/EngineMode";
 import { OdysseyModel3D, OdysseyObject3D } from "./three/odyssey";
 import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine } from "./audio/AudioEngine";
-import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
 import { ResourceLoader } from "./resource/ResourceLoader";
-import { LightManager } from "./managers/LightManager";
-import { TwoDAManager } from "./managers/TwoDAManager";
-import { TextureLoader } from "./loaders/TextureLoader";
-import { EngineState } from "./enums/engine/EngineState";
-import { CameraShakeManager } from "./managers/CameraShakeManager";
 import { TGAObject } from "./resource/TGAObject";
+import { TextureLoader } from "./loaders/TextureLoader";
 import { AudioEmitter } from "./audio/AudioEmitter";
+
+import { EngineGlobals } from "./interface/engine/EngineGlobals";
+import { GameStateGroups } from "./interface/engine/GameStateGroups";
+
+import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
 import { TextureType } from "./enums/loaders/TextureType";
-import { FadeOverlayManager } from "./managers/FadeOverlayManager";
 import { CreatureType } from "./enums/nwscript/CreatureType";
 import { ReputationType } from "./enums/nwscript/ReputationType";
-import { ShaderManager } from "./managers/ShaderManager";
-import { LoadingScreen } from "./LoadingScreen";
-import { FactionManager } from "./FactionManager";
+import { EngineState } from "./enums/engine/EngineState";
+import { EngineMode } from "./enums/engine/EngineMode";
+import { GameEngineType } from "./enums/engine/GameEngineType";
+import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
 import { EngineContext } from "./enums/engine/EngineContext";
-import { GameStateGroups } from "./interface/engine/GameStateGroups";
-import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { ModuleObjectType } from "./enums/nwscript/ModuleObjectType";
+
+import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { ConfigClient } from "./utility/ConfigClient";
+// import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 const saturationShader: any = {
   uniforms: {
@@ -312,6 +318,7 @@ export class GameState implements EngineContext {
     (window as any).renderer = GameState.renderer;
 
     GameState.clock = new THREE.Clock();
+    //@ts-expect-error
     GameState.stats = Stats();
 
     GameState.activeMenu = undefined;

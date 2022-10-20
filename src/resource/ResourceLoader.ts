@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { Module } from "../module/Module";
+import { Module } from "../module";
 
 import * as fs from 'fs';
 import * as path from 'path';

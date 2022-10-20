@@ -1,8 +1,11 @@
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptStack } from "../nwscript/NWScriptStack";
+import { GFFStruct } from "../resource/GFFStruct";
 
 export class ActionParameter {
+  type: number;
+  value: number;
 
   constructor(type = 0, value = 0){
     this.type = type;
@@ -17,7 +20,7 @@ export class ActionParameter {
     }
   }
 
-  static FromStruct( struct ){
+  static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let type = struct.GetFieldByLabel('Type').GetValue();
       let value = undefined;

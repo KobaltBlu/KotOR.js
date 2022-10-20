@@ -1,12 +1,12 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { GFFDataType } from "./enums/resource/GFFDataType";
-import { TLKManager } from "./managers/TLKManager";
-import { TwoDAManager } from "./managers/TwoDAManager";
-import { GFFField } from "./resource/GFFField";
-import { GFFStruct } from "./resource/GFFStruct";
-import { TalentFeat, TalentSpell } from "./talents";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { TLKManager } from "../managers/TLKManager";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { TalentFeat, TalentSpell } from "../talents";
 
 /* @file
  * The CreatureClass class.

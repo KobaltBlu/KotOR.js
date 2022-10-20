@@ -1,27 +1,10 @@
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { AlphaController } from "./AlphaController";
-import { AlphaEndController } from "./AlphaEndController";
-import { AlphaMidController } from "./AlphaMidController";
-import { AlphaStartController } from "./AlphaStartController";
-import { BirthRateController } from "./BirthRateController";
-import { ColorController } from "./ColorController";
-import { ColorEndController } from "./ColorEndController";
-import { ColorMidController } from "./ColorMidController";
-import { ColorStartController } from "./ColorStartController";
-import { FrameEndController } from "./FrameEndController";
-import { FrameStartController } from "./FrameStartController";
-import { LifeExpController } from "./LifeExpController";
-import { MassController } from "./MassController";
-import { MultiplierController } from "./MultiplierController";
-import { OrientationController } from "./OrientationController";
-import { PositionController } from "./PositionController";
-import { RadiusController } from "./RadiusController";
-import { ScaleController } from "./ScaleController";
-import { SelfIllumColorController } from "./SelfIllumColorController";
-import { SizeEndController } from "./SizeEndController";
-import { SizeMidController } from "./SizeMidController";
-import { SizeStartController } from "./SizeStartController";
+import { 
+  AlphaController, AlphaEndController, AlphaMidController, AlphaStartController, BirthRateController, ColorController, ColorEndController, ColorMidController,
+  ColorStartController, FrameEndController, FrameStartController, LifeExpController, MassController, MultiplierController, OrientationController,
+  PositionController, RadiusController, ScaleController, SelfIllumColorController, SizeEndController, SizeMidController, SizeStartController
+} from ".";
 
 import * as THREE from "three";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";

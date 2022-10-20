@@ -3,6 +3,10 @@ import { ActionType } from "../enums/actions/ActionType";
 import { Action } from "./Action";
 
 export class ActionPlayAnimation extends Action {
+  overlayAnimation: any;
+  animation: any;
+  speed: any;
+  time: any;
 
   constructor( groupId = 0 ){
     super(groupId);

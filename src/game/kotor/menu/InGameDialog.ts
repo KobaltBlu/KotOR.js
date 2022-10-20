@@ -219,7 +219,7 @@ isEndDialog(node: any) {
   return returnValue;
 }
 
-PlayerSkipEntry() {
+PlayerSkipEntry(currentEntry: any) {
   if (this.currentEntry != null) {
     this.currentEntry.checkList.isSkipped = true;
     clearTimeout(this.currentEntry.timeout);

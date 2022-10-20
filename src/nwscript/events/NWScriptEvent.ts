@@ -1,11 +1,9 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
+import { ModuleObject } from "../../module";
 import { GFFField } from "../../resource/GFFField";
 import { GFFStruct } from "../../resource/GFFStruct";
-import { EventActivateItem } from "./EventActivateItem";
-import { EventConversation } from "./EventConversation";
-import { EventSpellCastAt } from "./EventSpellCastAt";
-import { EventUserDefined } from "./EventUserDefined";
+import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from "./";
 
 export class NWScriptEvent {
   type: NWScriptEventType;

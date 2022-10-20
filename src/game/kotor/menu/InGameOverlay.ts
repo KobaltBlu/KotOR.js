@@ -296,28 +296,28 @@ export class InGameOverlay extends GameMenu {
       this.BTN_CLEARALL.addEventListener('click', (e: any) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatState = false;
+        GameState.getCurrentPlayer().combatData.combatState = false;
         GameState.getCurrentPlayer().cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatAction = undefined;
+        GameState.getCurrentPlayer().combatData.combatAction = undefined;
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatQueue.splice(0, 1);
+        GameState.getCurrentPlayer().combatData.combatQueue.splice(0, 1);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatQueue.splice(1, 1);
+        GameState.getCurrentPlayer().combatData.combatQueue.splice(1, 1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatQueue.splice(2, 1);
+        GameState.getCurrentPlayer().combatData.combatQueue.splice(2, 1);
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
@@ -722,12 +722,12 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_DEBILATATED' + (id + 1)).hide();
         }
       }
-      if (GameState.getCurrentPlayer().combatAction || GameState.getCurrentPlayer().combatQueue.length) {
+      if (GameState.getCurrentPlayer().combatData.combatAction || GameState.getCurrentPlayer().combatData.combatQueue.length) {
         this.showCombatUI();
-        let action0 = GameState.getCurrentPlayer().combatAction;
-        let action1 = GameState.getCurrentPlayer().combatQueue[0];
-        let action2 = GameState.getCurrentPlayer().combatQueue[1];
-        let action3 = GameState.getCurrentPlayer().combatQueue[2];
+        let action0 = GameState.getCurrentPlayer().combatData.combatAction;
+        let action1 = GameState.getCurrentPlayer().combatData.combatQueue[0];
+        let action2 = GameState.getCurrentPlayer().combatData.combatQueue[1];
+        let action3 = GameState.getCurrentPlayer().combatData.combatQueue[2];
         if (action0 != undefined) {
           if (this.LBL_QUEUE0.getFillTextureName() != action0.icon) {
             this.LBL_QUEUE0.setFillTextureName(action0.icon);

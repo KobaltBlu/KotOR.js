@@ -2,7 +2,7 @@ import { GameEvent } from ".";
 import { GameEventType } from "../enums/events/GameEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ModuleObject } from "../module";
-import { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
+import { NWScriptEvent } from "../nwscript/events";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 

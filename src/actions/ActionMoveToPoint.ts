@@ -2,8 +2,21 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { Action } from "./Action";
 import * as THREE from "three";
+import { ModuleCreature, ModuleObject } from "../module";
+import { Utility } from "../utility/Utility";
+import { GameState } from "../GameState";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 
 export class ActionMoveToPoint extends Action {
+  target_position: THREE.Vector3;
+  real_target_position: any;
+  range: any;
+  run: any;
+  distance: number;
+  path_realtime: boolean;
+  path_timer: number;
+  blockingTimer: number;
+  collisionTimer: number;
 
   constructor( groupId = 0 ){
     super(groupId);

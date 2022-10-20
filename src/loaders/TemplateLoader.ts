@@ -9,6 +9,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { Utility } from "../utility/Utility";
 import * as path from "path";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
  * The TemplateLoader class.
@@ -122,20 +123,23 @@ export class TemplateLoader {
       //Check in the project directory
       Utility.FileExists(projectFilePath, (exists: boolean) => {
         if(exists){
-          fs.readFile(projectFilePath, (err: any, buffer: Buffer) => {
+          GameFileSystem.readFile(projectFilePath).then( (buffer) => {
             new GFFObject(buffer, (gff: GFFObject) => {
-              if(args.onLoad != null)
+              if(typeof args.onLoad === 'function')
                 args.onLoad(gff);
             });
+          }).catch( (err) => {
+            if(typeof args.onFail === 'function')
+              args.onFail();
           });
         }else{
-          if(args.onFail != null)
+          if(typeof args.onFail === 'function')
             args.onFail();
         }
       });
 
     }else{
-      if(args.onFail != null)
+      if(typeof args.onFail === 'function')
         args.onFail();
     }
 

@@ -9,6 +9,7 @@ import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
+import { ShaderManager } from "../managers/ShaderManager";
 
 /* @file
  * The GUICheckbox class.

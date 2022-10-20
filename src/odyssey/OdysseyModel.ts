@@ -4,20 +4,11 @@
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModelEngine } from "../interface/odyssey/OdysseyModelEngine";
 import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import { OdysseyModelNodeAABB } from "./OdysseyModelNodeAABB";
-import { OdysseyModelNodeDangly } from "./OdysseyModelNodeDangly";
-import { OdysseyModelNodeEmitter } from "./OdysseyModelNodeEmitter";
-import { OdysseyModelNodeLight } from "./OdysseyModelNodeLight";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import { OdysseyModelNodeReference } from "./OdysseyModelNodeReference";
-import { OdysseyModelNodeSaber } from "./OdysseyModelNodeSaber";
+import { 
+  OdysseyModelAnimation, OdysseyModelAnimationNode, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly,
+  OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin 
+} from ".";
 import * as THREE from 'three';
-import { BIFManager } from "../managers/BIFManager";
-import { OdysseyModelNodeSkin } from ".";
 
 /* @file
  * The OdysseyModel class takes an MDL & MDX file and decode the values to later be passed to a 

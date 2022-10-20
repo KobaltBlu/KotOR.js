@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { dialog } from "electron";
+// import { dialog } from "electron";
 import Ractive from "ractive";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
@@ -238,10 +238,10 @@ export class NewProjectWizard extends Wizard {
           });
         },
         async btnProjectDirectoryBrowse(ctx: any){
-          let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
-          if(!payload.canceled && payload.filePaths.length){
-            this.set('project_directory', payload.filePaths[0]);
-          }
+          // let payload = await dialog.showOpenDialog({properties: ['openDirectory', 'createDirectory']});
+          // if(!payload.canceled && payload.filePaths.length){
+          //   this.set('project_directory', payload.filePaths[0]);
+          // }
         }
       },
       observe: {

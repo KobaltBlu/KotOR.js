@@ -650,9 +650,9 @@ export class MenuEquipment extends GameMenu {
   
 }
 
-class GUIItemNone extends ModuleItem {
+class GUIItemNone {
   constructor(){
-    super()
+    // super()
   }
 
   getIcon(){

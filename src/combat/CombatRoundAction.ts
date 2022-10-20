@@ -1,4 +1,4 @@
-import { ModuleObject } from "./module";
+import { ModuleObject } from "../module";
 
 export class CombatRoundAction {
   actionTimer: number = 0;

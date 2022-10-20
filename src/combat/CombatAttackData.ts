@@ -1,6 +1,6 @@
-import { CombatAttackDamage } from "./CombatAttackDamage";
-import { ModuleObject } from "./module";
-import { CExoLocString } from "./resource/CExoLocString";
+import { CombatAttackDamage } from "./";
+import { ModuleObject } from "../module";
+import { CExoLocString } from "../resource/CExoLocString";
 
 export class CombatAttackData {
   attackGroup: number = 0;

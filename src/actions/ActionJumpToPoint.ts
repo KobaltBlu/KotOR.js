@@ -1,8 +1,14 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreature } from "../module";
 import { Action } from "./Action";
+import * as THREE from "three";
 
 export class ActionJumpToPoint extends Action {
+  x: number;
+  y: number;
+  z: number;
+  facing: number;
 
   constructor( groupId = 0 ){
     super(groupId);
@@ -44,10 +50,10 @@ export class ActionJumpToPoint extends Action {
     if(this.owner instanceof ModuleCreature){
       this.owner.setPosition(new THREE.Vector3(this.x, this.y, this.z));
       this.owner.setFacing(this.facing, false);
-      this.owner.groundFace = undefined;
-      this.owner.lastGroundFace = undefined;
+      this.owner.collisionData.groundFace = undefined;
+      this.owner.collisionData.lastGroundFace = undefined;
       //this.getCurrentRoom();
-      this.owner.findWalkableFace();
+      this.owner.collisionData.findWalkableFace();
       return ActionStatus.COMPLETE;
     }
 

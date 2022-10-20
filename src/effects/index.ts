@@ -20,6 +20,7 @@ export * from "./EffectDamageReduction";
 export * from "./EffectDamageResistance";
 export * from "./EffectDeath";
 export * from "./EffectDisease";
+export * from "./EffectDisguise";
 export * from "./EffectEntangle";
 export * from "./EffectFeat";
 export * from "./EffectForceFizzle";

@@ -1,6 +1,12 @@
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GameState } from "../GameState";
+import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
+import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
+import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
 export class ActionLockObject extends Action {
 
@@ -48,7 +54,7 @@ export class ActionLockObject extends Action {
         if(this.target instanceof ModuleDoor){
           this.target.closeDoor(this.owner);
         }else if(this.target instanceof ModulePlaceable){
-          this.target.close();
+          this.target.close(this.owner);
         }
 
         this.target.setLocked(true);
@@ -59,7 +65,7 @@ export class ActionLockObject extends Action {
       if(this.target instanceof ModuleDoor){
         this.target.closeDoor(this.owner);
       }else if(this.target instanceof ModulePlaceable){
-        this.target.close();
+        this.target.close(this.owner);
       }
 
       this.target.setLocked(true);

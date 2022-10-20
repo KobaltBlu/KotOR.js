@@ -1,4 +1,4 @@
-import THREE from "three";
+import * as THREE from "three";
 import { Shader } from "./Shader";
 
 export class ShaderGrass extends Shader {

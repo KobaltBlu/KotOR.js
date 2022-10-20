@@ -1,9 +1,16 @@
+import { ActionMoveToPoint } from ".";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
+import { ModuleCreature } from "../module";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
 export class ActionDialogObject extends Action {
+  _conversation: string;
 
   constructor( groupId = 0 ){
     super(groupId);

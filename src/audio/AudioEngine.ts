@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 // import { SimpleReverb } from "soundbank-reverb";
-import { Module } from "../module/Module";
+import { Module } from "../module";
 import { GameState } from "../GameState";
 import { EAXPresets } from "./EAXPresets";
 import { AudioEmitter } from "./AudioEmitter";

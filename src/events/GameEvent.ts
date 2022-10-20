@@ -1,6 +1,6 @@
 import { EventApplyEffect, EventAquireItem, EventAreaTransition, EventBroadcastAOO, EventBroadcastSafeProjectile, EventCloseObject, EventControllerRumble, EventDecrementStackSize, EventDestroyObject, EventEnteredTrigger, EventFeedbackMessage, EventForcedAction, EventItemOnHitSpellImpact, EventLeftTrigger, EventLockObject, EventOnMeleeAttacked, EventOpenObject, EventPlayAnimation, EventRemoveEffect, EventRemoveFromArea, EventSignalEvent, EventSpawnBodyBag, EventSpellImpact, EventSummonCreature, EventTimedEvent, EventUnlockObject } from ".";
 import { GameEventType } from "../enums/events/GameEventType";
-import { ModuleObject } from "../module/ModuleObject";
+import { ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 

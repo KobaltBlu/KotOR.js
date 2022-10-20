@@ -9,7 +9,7 @@ import { ActionType } from "./enums/actions/ActionType";
 export class ActionMenuManager {
 
   static TARGET_MENU_COUNT = 3;
-  static SELF_MENU_COUNT = (GameState.GameKey == GameEngineType.KOTOR ? 4 : 6);
+  static SELF_MENU_COUNT = 4;//(GameState.GameKey == GameEngineType.KOTOR ? 4 : 6);
 
   static oPC: ModuleCreature;
   static oTarget: ModuleObject;

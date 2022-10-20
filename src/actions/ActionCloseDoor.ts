@@ -1,4 +1,11 @@
-import { Action } from "./Action";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionType } from "../enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GameState } from "../GameState";
+import { ModuleDoor, ModuleCreature } from "../module";
+import { Utility } from "../utility/Utility";
+import { Action, ActionMoveToPoint } from "./";
 
 export class ActionCloseDoor extends Action {
 

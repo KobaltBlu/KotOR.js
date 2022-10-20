@@ -2,9 +2,8 @@
  */
 
 import * as THREE from "three";
-import { OdysseyModelAnimation, OdysseyModelNode } from ".";
+import { OdysseyModelAnimation, OdysseyModelNode, OdysseyModel } from ".";
 import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModel } from "./OdysseyModel";
 
 /* @file
  * The OdysseyModelAnimationNode holds the values for an animation node

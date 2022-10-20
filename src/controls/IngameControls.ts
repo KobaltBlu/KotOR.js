@@ -11,6 +11,8 @@ import { PartyManager } from "../managers/PartyManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
 import { VideoPlayer } from "../VideoPlayer";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObject } from "../module";
 
 /* @file
  * The IngameControls class.

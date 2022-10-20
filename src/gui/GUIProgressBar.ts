@@ -6,6 +6,7 @@ import { GameMenu, GUIControl } from ".";
 import { TextureType } from "../enums/loaders/TextureType";
 import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
 import { TextureLoader } from "../loaders/TextureLoader";
+import { ShaderManager } from "../managers/ShaderManager";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 

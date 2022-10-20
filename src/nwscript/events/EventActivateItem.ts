@@ -1,5 +1,5 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { NWScriptEvent } from "./NWScriptEvent";
+import { NWScriptEvent } from "./";
 
 export class EventActivateItem extends NWScriptEvent {
 

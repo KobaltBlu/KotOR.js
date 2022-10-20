@@ -1,13 +1,12 @@
-import { EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectDisease, EffectEntangle, EffectFeat, EffectForceFizzle, EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, EffectImmunity, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRacialType, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSlow, EffectSpellImmunity, EffectTemporaryHitPoints, EffectVisualEffect } from ".";
+import { EffectDisguise, EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectDisease, EffectEntangle, EffectFeat, EffectForceFizzle, EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, EffectImmunity, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRacialType, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSlow, EffectSpellImmunity, EffectTemporaryHitPoints, EffectVisualEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { Module } from "../module";
-import { ModuleObject } from "../module/ModuleObject";
+import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { EffectDisguise } from "./EffectDisguise";
 
 //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
 

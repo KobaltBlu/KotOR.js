@@ -35,24 +35,24 @@ export class TalentFeat extends TalentObject {
     if(this.category == 0x1104){
       oCaster.attackCreature(oTarget, this);
       return;
-      oCaster.actionQueue.add({
-        type: ActionType.ActionPhysicalAttacks,
-        object: oTarget,
-        feat: this.id
-      });
-      oCaster.combatData.lastCombatFeatUsed = this;
+      // oCaster.actionQueue.add({
+      //   type: ActionType.ActionPhysicalAttacks,
+      //   object: oTarget,
+      //   feat: this.id
+      // });
+      // oCaster.combatData.lastCombatFeatUsed = this;
     }
 
     //RANGED
     if(this.category == 0x1111){
       oCaster.attackCreature(oTarget, this);
       return;
-      oCaster.actionQueue.add({
-        type: ActionType.ActionPhysicalAttacks,
-        object: oTarget,
-        feat: this.id
-      });
-      oCaster.combatData.lastCombatFeatUsed = this;
+      // oCaster.actionQueue.add({
+      //   type: ActionType.ActionPhysicalAttacks,
+      //   object: oTarget,
+      //   feat: this.id
+      // });
+      // oCaster.combatData.lastCombatFeatUsed = this;
     }
 
   }

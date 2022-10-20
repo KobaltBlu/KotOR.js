@@ -48,13 +48,15 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
 
       //SABER Normals
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
-      this.normals[i] = new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+      this.normals.push(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
 
       //SABER UVs
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
-      this.tvectors[0][i] = (new THREE.Vector2(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle()));
-      this.tvectors[1][i] = this.tvectors[0][i];
+      this.tvectors[0].push(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+      // this.tvectors[1][i] = this.tvectors[0][i];
     }
+
+    this.tvectors[1] = this.tvectors[0];
 
 /* 
  *  SABER MESH VERTEX INDICES

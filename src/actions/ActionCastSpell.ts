@@ -5,6 +5,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { ModuleObject } from "../module";
+import { TalentSpell } from "../talents";
 
 export class ActionCastSpell extends Action {
   

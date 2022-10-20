@@ -1,15 +1,15 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ActionType } from "./enums/actions/ActionType";
-import { GameEffectType } from "./enums/effects/GameEffectType";
-import { SSFObjectType } from "./interface/resource/SSFType";
-import { ModuleCreature, ModuleItem, ModuleObject } from "./module";
+import { ActionType } from "../enums/actions/ActionType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { SSFObjectType } from "../interface/resource/SSFType";
+import { ModuleCreature, ModuleItem, ModuleObject } from "../module";
 
 import * as THREE from "three";
-import { ModuleCreatureAnimState } from "./enums/module/ModuleCreatureAnimState";
-import { OdysseyModelAnimation } from "./odyssey";
-import { TwoDAManager } from "./managers/TwoDAManager";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { OdysseyModelAnimation } from "../odyssey";
+import { TwoDAManager } from "../managers/TwoDAManager";
 
 /* @file
  * The CombatEngine class.
@@ -41,10 +41,10 @@ export class CombatEngine {
       for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
         let combatant = CombatEngine.combatants[i];
 
-        if(!combatant.combatQueue.length && combatant.combatAction == undefined){
+        if(!combatant.combatData.combatQueue.length && combatant.combatData.combatAction == undefined){
           //continue;
           if(combatant.action && combatant.action.combatAction && combatant.action.combatAction.isCutsceneAttack){
-            combatant.combatAction = combatant.action.combatAction;
+            combatant.combatData.combatAction = combatant.action.combatAction;
           }
         }
 
@@ -52,21 +52,21 @@ export class CombatEngine {
         let group = undefined;
 
         //Update the combatant's combatAction if needed
-        if(combatant.combatQueue.length && combatant.combatAction == undefined){
-          combatant.combatAction = combatant.combatQueue.shift();
+        if(combatant.combatData.combatQueue.length && combatant.combatData.combatAction == undefined){
+          combatant.combatData.combatAction = combatant.combatData.combatQueue.shift();
 
-          if(typeof combatant.combatAction != 'undefined'){
-            if(combatant.combatAction.type == ActionType.ActionPhysicalAttacks){
-              combatant.lastCombatFeatUsed = combatant.combatAction.feat;
+          if(typeof combatant.combatData.combatAction != 'undefined'){
+            if(combatant.combatData.combatAction.type == ActionType.ActionPhysicalAttacks){
+              combatant.combatData.lastCombatFeatUsed = combatant.combatData.combatAction.feat;
             }
 
-            if(combatant.combatAction.type == ActionType.ActionCastSpell){
-              combatant.lastForcePowerUsed = combatant.combatAction.spell;
-              combatant.lastSpellTarget = combatant.combatAction.target;
-              if(combatant.combatAction.target != combatant){
-                combatant.lastAttemptedSpellTarget = combatant.combatAction.target;
+            if(combatant.combatData.combatAction.type == ActionType.ActionCastSpell){
+              combatant.combatData.lastForcePowerUsed = combatant.combatData.combatAction.spell;
+              combatant.combatData.lastSpellTarget = combatant.combatData.combatAction.target;
+              if(combatant.combatData.combatAction.target != combatant){
+                combatant.combatData.lastAttemptedSpellTarget = combatant.combatData.combatAction.target;
               }
-              combatant.casting.push(combatant.combatAction);
+              combatant.casting.push(combatant.combatData.combatAction);
               //console.log('CombatEngine: Adding spell to casting', combatant.combatAction, combatant);
             }
           }
@@ -78,8 +78,8 @@ export class CombatEngine {
             group = combatGroups[j];
           }else{
             //Check to see if the combatant's target is in this group
-            if(combatant.lastAttemptedAttackTarget){
-              if(combatGroups[j].indexOf(combatant.lastAttemptedAttackTarget) >= 0 ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget) ){
+            if(combatant.combatData.lastAttemptedAttackTarget){
+              if(combatGroups[j].indexOf(combatant.combatData.lastAttemptedAttackTarget) >= 0 ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget) ){
                 group = combatGroups[j];
               }
             }
@@ -92,9 +92,9 @@ export class CombatEngine {
           combatGroups.push(group);
 
           //Add the combatant's current target to the group
-          if(combatant.lastAttemptedAttackTarget ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget)){
-            if(group.indexOf(combatant.lastAttemptedAttackTarget) == -1)
-              group.push(combatant.lastAttemptedAttackTarget);
+          if(combatant.combatData.lastAttemptedAttackTarget ){// && combatant.isDuelingObject(combatant.lastAttemptedAttackTarget)){
+            if(group.indexOf(combatant.combatData.lastAttemptedAttackTarget) == -1)
+              group.push(combatant.combatData.lastAttemptedAttackTarget);
           }
         }else{
           if(group.indexOf(combatant) == -1){
@@ -105,7 +105,7 @@ export class CombatEngine {
 
       for (let i = CombatEngine.combatants.length - 1; i >= 0; i--){
         let combatant = CombatEngine.combatants[i];
-        if(!combatant.combatQueue.length && combatant.combatAction == undefined){
+        if(!combatant.combatData.combatQueue.length && combatant.combatData.combatAction == undefined){
           //CombatEngine.RemoveCombatant(combatant);
         }
       }
@@ -422,11 +422,11 @@ export class CombatEngine {
   static AddCombatant(combatant: ModuleObject){
     //console.log('AddCombatant', combatant);
     if(!CombatEngine.IsActiveCombatant(combatant)){
-      combatant.initiative = CombatEngine.DiceRoll(1, 'd20');
+      combatant.combatData.initiative = CombatEngine.DiceRoll(1, 'd20');
       combatant.combatRoundTimer = 0;
       let index = 0;
       for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
-        if(CombatEngine.combatants[i].initiative < combatant.initiative){
+        if(CombatEngine.combatants[i].combatData.initiative < combatant.combatData.initiative){
           index = i;
           return;
         }

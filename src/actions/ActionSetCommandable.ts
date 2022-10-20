@@ -1,8 +1,10 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObject } from "../module";
 import { Action } from "./Action";
 
 export class ActionSetCommandable extends Action {
+  object: ModuleObject;
 
   constructor( groupId = 0 ){
     super(groupId);
@@ -14,8 +16,8 @@ export class ActionSetCommandable extends Action {
   }
 
   update(delta: number = 0){
-    if(this.object instanceof ModuleObject){
-      this.object.setCommandable( this.getParameter(0) ? 1 : 0 );
+    if(this.owner instanceof ModuleObject){
+      this.owner.setCommandable( this.getParameter(0) ? true : false );
       return ActionStatus.COMPLETE;
     }
     return ActionStatus.FAILED;

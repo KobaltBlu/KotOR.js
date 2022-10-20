@@ -8,7 +8,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentFeat, TalentSkill, TalentSpell } from "../talents";
-import { NWScriptEvent } from "./events/NWScriptEvent";
+import { NWScriptEvent } from "./events";
 import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
 export class NWScriptStack {
