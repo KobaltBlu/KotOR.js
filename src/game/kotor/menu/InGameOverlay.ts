@@ -136,6 +136,7 @@ export class InGameOverlay extends GameMenu {
     this.gui_resref = 'mipc28x6';
     this.background = '';
     this.voidFill = false;
+    this.enablePositionScaling = true;
   }
 
   async MenuControlInitializer() {
