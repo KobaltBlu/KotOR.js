@@ -1,3 +1,5 @@
+import { OdysseyTexture } from "../../resource/OdysseyTexture";
+
 export interface GUIControlText {
   color: THREE.Color,
   font: string, //fnt_d16x16b
@@ -9,5 +11,5 @@ export interface GUIControlText {
   geometry: THREE.BufferGeometry,
   material: THREE.ShaderMaterial,
   mesh: THREE.Mesh,
-  texture: THREE.Texture,
+  texture: OdysseyTexture,
 }

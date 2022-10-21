@@ -17,6 +17,7 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 import { GFFObject } from "../../../resource/GFFObject";
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
+import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 
 /* @file
 * The InGameDialog menu class.
@@ -561,7 +562,7 @@ UpdateEntryAnimations(entry: any) {
         } catch (e: any) {
         }
       } else {
-        let actor = GameState.GetObjectByTag(participant.participant);
+        let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
         if (actor && participant.animation >= 10000) {
           let anim = actor.animationConstantToAnimation(participant.animation);
           if (anim) {
@@ -581,7 +582,7 @@ UpdateEntryAnimations(entry: any) {
     }
     for (let i = 0; i < entry.animations.length; i++) {
       let participant = entry.animations[i];
-      let actor = GameState.GetObjectByTag(participant.participant);
+      let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
       if (actor && participant.animation >= 10000) {
         let anim = actor.animationConstantToAnimation(participant.animation);
         if (anim) {

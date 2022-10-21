@@ -7,6 +7,7 @@ import { DLGNode } from "./DLGNode";
 import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
+import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 
 export class DLGObject {
   resref: string;
@@ -283,7 +284,7 @@ export class DLGObject {
         resolve();
 
       }else{
-        let creature = GameState.GetObjectByTag(actor.participant);
+        let creature = ModuleObjectManager.GetObjectByTag(actor.participant);
         if(creature){
           model = creature.model;
           //Load the actor's supermodel

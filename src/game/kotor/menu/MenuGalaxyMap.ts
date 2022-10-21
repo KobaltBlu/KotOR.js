@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
@@ -58,7 +59,7 @@ export class MenuGalaxyMap extends GameMenu {
         //Game.InGameOverlay.Show();
         //this.Hide();
         this.Close();
-        Planetary.SetCurrentPlanet(GameState.getGlobalNumber('K_CURRENT_PLANET'));
+        Planetary.SetCurrentPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
@@ -140,7 +141,7 @@ export class MenuGalaxyMap extends GameMenu {
   Show() {
     super.Show();
     GameState.MenuActive = true;
-    this.selectedPlanet = GameState.getGlobalNumber('K_CURRENT_PLANET');
+    this.selectedPlanet = GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET');
     this.UpdateScale();
     let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;
     for (let i = 0; i < controls.length; i++) {

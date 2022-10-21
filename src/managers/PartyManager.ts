@@ -602,5 +602,38 @@ export class PartyManager {
     });
   }
 
+  public static GetNPCResRefById(nId: number){
+    switch(nId){
+      case 0:
+        return 'p_bastilla'
+      break;
+      case 1:
+        return 'p_cand'
+      break;
+      case 2:
+        return 'p_carth'
+      break;
+      case 3:
+        return 'p_hk47'
+      break;
+      case 4:
+        return 'p_jolee'
+      break;
+      case 5:
+        return 'p_juhani'
+      break;
+      case 6:
+        return 'p_mission'
+      break;
+      case 7:
+        return 'p_t3m4'
+      break;
+      case 8:
+        return 'p_zaalbar'
+      break;
+    }
+    return '';
+  }
+
 }
 PartyManager.Init();

@@ -43,6 +43,8 @@ import { NWScript } from "./NWScript";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
+import { GlobalVariableManager } from "../managers/GlobalVariableManager";
+import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -540,7 +542,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "int", "object", "int", "int", "int", "int", "int"],
     action: function(args: any, _instr: any, action: any){
       //console.log('GetNearestCreature', args);
-      return GameState.GetNearestCreature(
+      return ModuleObjectManager.GetNearestCreature(
       args[0],
       args[1],
       args[2],
@@ -1169,7 +1171,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object", "int"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.GetFirstObjectInArea( args[0], args[1] );
+      return ModuleObjectManager.GetFirstObjectInArea( args[0], args[1] );
     }
   },
   94:{
@@ -1178,7 +1180,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["object", "int"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.GetNextObjectInArea( args[0], args[1] );
+      return ModuleObjectManager.GetNextObjectInArea( args[0], args[1] );
     }
   },
   95:{
@@ -1515,7 +1517,7 @@ NWScriptDefK1.Actions = {
     action: function(args: any, _instr: any, action: any){
       //GetFirstObjectInShape
       this.objectsInShapeIdx = 0;
-      return GameState.GetObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], this.objectsInShapeIdx);
+      return ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], this.objectsInShapeIdx);
     }
   },
   129:{
@@ -1525,7 +1527,7 @@ NWScriptDefK1.Actions = {
     args: ["int", "float", "location", "int", "int", "vector"],
     action: function(args: any, _instr: any, action: any){
       //console.log(this.name, 'GetNextObjectInShape')
-      return GameState.GetObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], ++this.objectsInShapeIdx);
+      return ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], args[3], args[4], args[5], ++this.objectsInShapeIdx);
     }
   },
   130:{
@@ -1905,8 +1907,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "string"],
     action: function(args: any, _instr: any, action: any){
-      if(GameState.Globals.String.has(args[0].toLowerCase()))
-        GameState.Globals.String.get(args[0].toLowerCase()).value = args[1];
+      GlobalVariableManager.SetGlobalString(args[0], args[1]);
     }
   },
   161:{
@@ -2323,7 +2324,7 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.Globals.String.get(args[0].toLowerCase())?.value || '';
+      return GlobalVariableManager.GetGlobalString(args[0]);
     }
   },
   195:{
@@ -2354,7 +2355,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
       //console.log('GetWaypointByTag', args[0])
-      return GameState.GetObjectByTag(args[0], 0, ModuleObjectType.WAYPOINT);
+      return ModuleObjectManager.GetObjectByTag(args[0], 0, ModuleObjectType.WAYPOINT);
     }
   },
   198:{
@@ -2381,7 +2382,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["string", "int"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.GetObjectByTag(args[0], args[1]);
+      return ModuleObjectManager.GetObjectByTag(args[0], args[1]);
     }
   },
   201:{
@@ -2760,7 +2761,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: ["int", "object", "int"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.GetNearestObject(args[0], args[1], args[2]-1);
+      return ModuleObjectManager.GetNearestObject(args[0], args[1], args[2]-1);
     }
   },
   228:{
@@ -2776,7 +2777,7 @@ NWScriptDefK1.Actions = {
     args: ["string", "object", "int"],
     action: function(args: any, _instr: any, action: any){
       //console.log('GetNearestObjectByTag', args);
-      return GameState.GetNearestObjectByTag(args[0], args[1], args[2]-1);
+      return ModuleObjectManager.GetNearestObjectByTag(args[0], args[1], args[2]-1);
     }
   },
   230:{
@@ -6202,7 +6203,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
       //console.log('NWScript: '+this.name, 'GetGlobalBoolean ', args);
-      return GameState.getGlobalBoolean( args[0], ) ? 1 : 0;
+      return GlobalVariableManager.GetGlobalBoolean( args[0], ) ? 1 : 0;
     }
   },
   579:{
@@ -6212,7 +6213,7 @@ NWScriptDefK1.Actions = {
     args: ["string", "int"],
     action: function(args: any, _instr: any, action: any){
       //console.log('NWScript: '+this.name, 'SetGlobalBoolean ', args);
-      GameState.setGlobalBoolean( args[0], args[1] );
+      GlobalVariableManager.SetGlobalBoolean( args[0], args[1] );
     }
   },
   580:{
@@ -6222,7 +6223,7 @@ NWScriptDefK1.Actions = {
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
       //console.log('NWScript: '+this.name, 'GetGlobalNumber ', args);
-      return GameState.getGlobalNumber( args[0] );
+      return GlobalVariableManager.GetGlobalNumber( args[0] );
     }
   },
   581:{
@@ -6232,7 +6233,7 @@ NWScriptDefK1.Actions = {
     args: ["string", "int"],
     action: function(args: any, _instr: any, action: any){
       //console.log('NWScript: '+this.name, 'SetGlobalNumber ', args[0], args[1]); 
-      GameState.setGlobalNumber( args[0], args[1] );
+      GlobalVariableManager.SetGlobalNumber( args[0], args[1] );
     }
   },
   582:{
@@ -7114,7 +7115,7 @@ NWScriptDefK1.Actions = {
     type: 18,
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
-      return GameState.getGlobalLocation(args[0]);
+      return GlobalVariableManager.GetGlobalLocation(args[0]);
     }
   },
   693:{
@@ -7123,7 +7124,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: ["string", "location"],
     action: function(args: any, _instr: any, action: any){
-      GameState.setGlobalLocation(args[0], args[1]);
+      GlobalVariableManager.SetGlobalLocation(args[0], args[1]);
     }
   },
   694:{
@@ -7183,7 +7184,7 @@ NWScriptDefK1.Actions = {
   
         let partyMember = new ModuleCreature();
         partyMember.setTemplateResRef(
-          GameState.getNPCResRefById(args[0])
+          PartyManager.GetNPCResRefById(args[0])
         );
         if(this.isDebugging()){
           //console.log('NWScript: '+this.name, 'partyMember', partyMember);

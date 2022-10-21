@@ -2,6 +2,7 @@ import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { DLGNodeScriptParams } from "../interface/dialog/DLGNodeScriptParams";
+import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 
@@ -94,7 +95,7 @@ export class DLGNode {
 
   initProperties(){
     if(this.speakerTag != ''){
-      this.speaker = GameState.GetObjectByTag(this.speakerTag);
+      this.speaker = ModuleObjectManager.GetObjectByTag(this.speakerTag);
     }else{
       this.speaker = this.dialog.owner;
     }
@@ -107,7 +108,7 @@ export class DLGNode {
       if(this.listenerTag == 'PLAYER'){
         this.listener = GameState.player;
       }else{
-        this.listener = GameState.GetObjectByTag(this.listenerTag);
+        this.listener = ModuleObjectManager.GetObjectByTag(this.listenerTag);
       }
     }else{
       this.listener = GameState.player;

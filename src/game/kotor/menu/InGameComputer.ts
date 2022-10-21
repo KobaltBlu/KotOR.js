@@ -11,6 +11,7 @@ import { GFFObject } from "../../../resource/GFFObject";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { LIPObject } from "../../../resource/LIPObject";
 import * as THREE from "three";
+import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 
 /* @file
 * The InGameComputer menu class.
@@ -242,7 +243,7 @@ export class InGameComputer extends GameMenu {
     this.currentEntry = entry;
     entry.timeout = null;
     if (entry.speakerTag != '') {
-      entry.speaker = GameState.GetObjectByTag(entry.speakerTag);
+      entry.speaker = ModuleObjectManager.GetObjectByTag(entry.speakerTag);
     } else {
       entry.speaker = this.owner;
     }
@@ -250,7 +251,7 @@ export class InGameComputer extends GameMenu {
       if (entry.listenerTag == 'PLAYER') {
         this.listener = GameState.player;
       } else {
-        this.listener = GameState.GetObjectByTag(entry.listenerTag);
+        this.listener = ModuleObjectManager.GetObjectByTag(entry.listenerTag);
       }
     } else {
       entry.listener = GameState.player;

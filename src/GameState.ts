@@ -56,7 +56,9 @@ import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { FilmPass } from "three/examples/jsm/postprocessing/FilmPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
-// import Stats from 'three/examples/jsm/libs/stats.module.js'
+import { ModuleObjectManager } from "./managers/ModuleObjectManager";
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GlobalVariableManager } from "./managers/GlobalVariableManager";
 
 const saturationShader: any = {
   uniforms: {
@@ -96,6 +98,14 @@ export interface GameStateInitializeOptions {
 
 export class GameState implements EngineContext {
 
+  static eventListeners: any = {
+    "init": [],
+    "start": [],
+    "ready": [],
+
+    "beforeRender": [],
+    "afterRender": [],
+  };
 
   static activeMenu: GameMenu;
   static activeGUIElement: any;
@@ -103,7 +113,6 @@ export class GameState implements EngineContext {
 
 
   static Location: any;
-  static objSearchIndex: number;
 
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
@@ -154,15 +163,9 @@ export class GameState implements EngineContext {
   static _emitters = {};
   
   static currentGamepad: Gamepad;
-  static Globals: EngineGlobals = { 
-    Boolean   : new Map(), 
-    Number    : new Map(), 
-    String    : new Map(), 
-    Location  : new Map(), 
-  };
   static models: any[];
   static videoEffect: any;
-  static onScreenShot: any;
+  static onScreenShot?: Function;
   static time: number;
   static deltaTime: number;
 
@@ -170,10 +173,20 @@ export class GameState implements EngineContext {
   static context: WebGLRenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: THREE.WebGLRenderer;
-  static depthTarget: any;
-  static clock: any;
-  static stats: any;
-  static limiter: { fps: number; fpsInterval: number; startTime: number; now: number; then: number; elapsed: number; setFPS: (fps?: number) => void; };
+  static depthTarget: THREE.WebGLRenderTarget;
+  static clock: THREE.Clock;
+  static stats: Stats;
+
+  static limiter: { 
+    fps: number; 
+    fpsInterval: number; 
+    startTime: number; 
+    now: number; 
+    then: number; 
+    elapsed: number; 
+    setFPS: (fps?: number) => void; 
+  };
+
   static visible: boolean;
 
   //Cursor properties
@@ -258,17 +271,33 @@ export class GameState implements EngineContext {
   static loadingTextures: boolean;
   static MenuActive: any;
   static VideoEffect: any;
-  static LoadScreen: any;
-  static MenuTop: any;
-  static InGameDialog: any;
   static octree_walkmesh: any;
-  static MenuContainer: any;
   static octree: any;
-  static InGameBark: any;
-  static FadeOverlay: any;
-  static InGameComputer: any;
+
+  static addEventListener(event: string, callback: Function){
+    if(GameState.eventListeners.hasOwnProperty(event)){
+      const callbacks: any[] = GameState.eventListeners[event];
+      if(callbacks){
+        callbacks.push(callback);
+      }
+    }
+  }
+
+  static processEventListener(event: string, args: any[] = []){
+    if(GameState.eventListeners.hasOwnProperty(event)){
+      const callbacks = GameState.eventListeners[event];
+      if(callbacks && callbacks.length){
+        for(let i = 0, len = callbacks.length; i < len; i++){
+          const cb = callbacks[i];
+          if(typeof cb === 'function')
+            cb(...args);
+        }
+      }
+    }
+  }
 
   static Init(){
+    GameState.processEventListener('init');
     if(GameState.GameKey == 'TSL'){
       GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
     }else{
@@ -325,7 +354,7 @@ export class GameState implements EngineContext {
     (window as any).renderer = GameState.renderer;
 
     GameState.clock = new THREE.Clock();
-    // GameState.stats = Stats();
+    GameState.stats = Stats();
 
     GameState.activeMenu = undefined;
 
@@ -530,54 +559,7 @@ export class GameState implements EngineContext {
     FadeOverlayManager.Initialize();
 
     window.addEventListener('resize', () => {
-
-      let width = window.innerWidth;
-      let height = window.innerHeight;
-
-      GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
-
-      FadeOverlayManager.plane.scale.set(width, height, 1);
-      
-      GameState.camera_gui.left = width / -2;
-      GameState.camera_gui.right = width / 2;
-      GameState.camera_gui.top = height / 2;
-      GameState.camera_gui.bottom = height / -2;
-
-      GameState.camera_gui.updateProjectionMatrix();
-
-      GameState.camera.aspect = width / height;
-      GameState.camera.updateProjectionMatrix();
-
-      GameState.renderer.setSize(width, height);  
-      
-      GameState.camera_dialog.aspect = GameState.camera.aspect;
-      GameState.camera_dialog.updateProjectionMatrix();
-
-      GameState.camera_animated.aspect = GameState.camera.aspect;
-      GameState.camera_animated.updateProjectionMatrix();
-
-      for(let i = 0; i < GameState.staticCameras.length; i++){
-        GameState.staticCameras[i].aspect = GameState.camera.aspect;
-        GameState.staticCameras[i].updateProjectionMatrix();
-      }
-
-      //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
-
-      /*if(GameState.scene_gui.background != null){
-        let x = width / 1600;
-        let y = height / 1200;
-
-        GameState.scene_gui.background.repeat.set(x, y);
-        GameState.scene_gui.background.offset.set( (1.0 - x) / 2, (1.0 - y) / 2);
-      }*/
-
-      GameState.screenCenter.x = ( (window.innerWidth/2) / window.innerWidth ) * 2 - 1;
-      GameState.screenCenter.y = - ( (window.innerHeight/2) / window.innerHeight ) * 2 + 1; 
-
-      MenuManager.Resize();
-
-      GameState.depthTarget.setSize(window.innerWidth * GameState.rendererUpscaleFactor, window.innerHeight * GameState.rendererUpscaleFactor);
-      
+      GameState.EventOnResize();
     });
     console.log('Game: Start')
     try{
@@ -628,28 +610,7 @@ export class GameState implements EngineContext {
     GameState.Mode = EngineMode.MAINMENU;
     GameState.State = EngineState.RUNNING;
     GameState.inMenu = false;
-    let _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
-    for (let key in _initGlobals) {
-      if (_initGlobals.hasOwnProperty(key)) {
-        let globItem = _initGlobals[key];
-
-        switch(globItem.type){
-          case 'Boolean':
-            GameState.Globals.Boolean.set(globItem.name.toLowerCase(), {name: globItem.name, value: false});
-          break;
-          case 'Location':
-            GameState.Globals.Location.set(globItem.name.toLowerCase(), {name: globItem.name, value: new EngineLocation()});
-          break;
-          case 'Number':
-            GameState.Globals.Number.set(globItem.name.toLowerCase(), {name: globItem.name, value: 0});
-          break;
-          case 'String':
-            GameState.Globals.String.set(globItem.name.toLowerCase(), {name: globItem.name, value: ''});
-          break;
-        }
-
-      }
-    }
+    GlobalVariableManager.Init();
     
     console.log('SaveGames: Loading');
     SaveGame.GetSaveGames().then( () => {
@@ -700,6 +661,7 @@ export class GameState implements EngineContext {
   static OnReady(){
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
+      GameState.processEventListener('ready');
       MenuManager.MainMenu.Open();
       window.dispatchEvent(new Event('resize'));
       // this.setTestingGlobals();
@@ -707,6 +669,55 @@ export class GameState implements EngineContext {
       console.log('begin');
       GameState.Update();
     }
+  }
+
+  static EventOnResize(){
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
+
+    FadeOverlayManager.plane.scale.set(width, height, 1);
+    
+    GameState.camera_gui.left = width / -2;
+    GameState.camera_gui.right = width / 2;
+    GameState.camera_gui.top = height / 2;
+    GameState.camera_gui.bottom = height / -2;
+
+    GameState.camera_gui.updateProjectionMatrix();
+
+    GameState.camera.aspect = width / height;
+    GameState.camera.updateProjectionMatrix();
+
+    GameState.renderer.setSize(width, height);  
+    
+    GameState.camera_dialog.aspect = GameState.camera.aspect;
+    GameState.camera_dialog.updateProjectionMatrix();
+
+    GameState.camera_animated.aspect = GameState.camera.aspect;
+    GameState.camera_animated.updateProjectionMatrix();
+
+    for(let i = 0; i < GameState.staticCameras.length; i++){
+      GameState.staticCameras[i].aspect = GameState.camera.aspect;
+      GameState.staticCameras[i].updateProjectionMatrix();
+    }
+
+    //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
+
+    /*if(GameState.scene_gui.background != null){
+      let x = width / 1600;
+      let y = height / 1200;
+
+      GameState.scene_gui.background.repeat.set(x, y);
+      GameState.scene_gui.background.offset.set( (1.0 - x) / 2, (1.0 - y) / 2);
+    }*/
+
+    GameState.screenCenter.x = ( (window.innerWidth/2) / window.innerWidth ) * 2 - 1;
+    GameState.screenCenter.y = - ( (window.innerHeight/2) / window.innerHeight ) * 2 + 1; 
+
+    MenuManager.Resize();
+
+    GameState.depthTarget.setSize(window.innerWidth * GameState.rendererUpscaleFactor, window.innerHeight * GameState.rendererUpscaleFactor);
   }
 
   static initGUIAudio(){
@@ -741,6 +752,10 @@ export class GameState implements EngineContext {
     }catch(e){
 
     }
+  }
+
+  static updateRendererUpscaleFactor(){
+    this.EventOnResize();
   }
 
   public static getCurrentPlayer(): ModuleCreature {
@@ -931,7 +946,7 @@ export class GameState implements EngineContext {
           });
         }else{
           if(!GameState.selectedObject){
-            let closest = GameState.GetNearestInteractableObject();
+            let closest = ModuleObjectManager.GetNearestInteractableObject();
             GameState.setReticleSelectedObject(closest);
             GameState.setReticleHoveredObject(closest);
           }
@@ -1204,6 +1219,7 @@ export class GameState implements EngineContext {
     }
 
     let delta = GameState.clock.getDelta();
+    GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.clampedDelta = Math.max(0, Math.min(delta, 0.016666666666666666 * 5));
 
@@ -1372,7 +1388,8 @@ export class GameState implements EngineContext {
       }
     }
 
-    // GameState.stats.update();
+    GameState.stats.update();
+    GameState.processEventListener('afterRender', [delta]);
   }
 
   static updateTime(delta: number = 0){
@@ -1383,660 +1400,8 @@ export class GameState implements EngineContext {
       GameState.deltaTime = GameState.deltaTime % 1;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  public static GetObjectByTag(sTag = '', iNum = 0, oType = ModuleObjectType.ALL){
-
-    /*ModuleObjectType.CREATURE         = 1;
-    ModuleObjectType.ITEM             = 2;
-    ModuleObjectType.TRIGGER          = 4;
-    ModuleObjectType.DOOR             = 8;
-    ModuleObjectType.AOE   = 16;
-    ModuleObjectType.WAYPOINT         = 32;
-    ModuleObjectType.PLACEABLE        = 64;
-    ModuleObjectType.STORE            = 128;
-    ModuleObjectType.ENCOUNTER        = 256;
-    ModuleObjectType.SOUND            = 512;
-    OBJECT_TYPE_ALL              = 32767;*/
-
-    sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
-    let obj = undefined;
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      for(let i = 0, len = GameState.module.area.placeables.length; i < len; i++){
-        obj = GameState.module.area.placeables[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        obj = GameState.module.area.creatures[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      for(let i = 0, len = PartyManager.party.length; i < len; i++){
-        obj = PartyManager.party[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      for(let i = 0, len = GameState.module.area.stores.length; i < len; i++){
-        obj = GameState.module.area.stores[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      for(let i = 0, len = GameState.module.area.doors.length; i < len; i++){
-        obj = GameState.module.area.doors[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      for(let i = 0, len = GameState.module.area.triggers.length; i < len; i++){
-        obj = GameState.module.area.triggers[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      for(let i = 0, len = GameState.module.area.waypoints.length; i < len; i++){
-        obj = GameState.module.area.waypoints[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      for(let i = 0, len = GameState.module.area.sounds.length; i < len; i++){
-        obj = GameState.module.area.sounds[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      for(let i = 0, len = GameState.module.area.items.length; i < len; i++){
-        obj = GameState.module.area.items[i];
-        if(obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if(sTag == ''){
-      return GameState.player;
-    }else if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
-
-  }
-
-  public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
-    sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
-    let len = GameState.module.area.placeables.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.placeables[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.placeables[i])
-          results.push(GameState.module.area.placeables[i]);
-    }
-
-    len = PartyManager.party.length;
-    for(let i = 0; i < len; i++){
-      if(PartyManager.party[i].getTag().toLowerCase() == sTag)
-        if(oObject != PartyManager.party[i])
-          results.push(PartyManager.party[i]);
-    }
-
-    len = GameState.module.area.creatures.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.creatures[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.creatures[i])
-          results.push(GameState.module.area.creatures[i]);
-    }
-
-    len = GameState.module.area.items.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.items[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.items[i])
-          results.push(GameState.module.area.items[i]);
-    }
-
-    len = GameState.module.area.doors.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.doors[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.doors[i])
-          results.push(GameState.module.area.doors[i]);
-    }
-
-    len = GameState.module.area.triggers.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.triggers[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.triggers[i])
-          results.push(GameState.module.area.triggers[i]);
-    }
-
-    len = GameState.module.area.waypoints.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.waypoints[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.waypoints[i])
-          results.push(GameState.module.area.waypoints[i]);
-    }
-
-    len = GameState.module.area.sounds.length;
-    for(let i = 0; i < len; i++){
-      if(GameState.module.area.sounds[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.sounds[i])
-          results.push(GameState.module.area.sounds[i]);
-    }
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
-
-  }
-
-  public static GetNearestInteractableObject(oObject?: ModuleObject){
-    let results: ModuleObject[] = [];
-
-    results = results.concat(PartyManager.party);
-    results = results.concat(GameState.module.area.creatures);
-    results = results.concat(GameState.module.area.doors);
-    results = results.concat(GameState.module.area.placeables);
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    let result = undefined;
-    let count = results.length;
-
-    for(let i = 0; i < count; i++){
-      result = results[i];
-      if( result != GameState.getCurrentPlayer() && result.isOnScreen() && result.isUseable() ){
-        if( result.hasLineOfSight( GameState.getCurrentPlayer() ) ){
-          break;
-        }
-      }
-      result = undefined;
-    }
-
-    return result;
-
-  }
-
-  public static GetNearestObject(oType = 0, oObject: ModuleObject, iNum = 0){
-    let results: ModuleObject[] = [];
-
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
-    }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
-    }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
-    }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
-    }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
-      //results = results.concat([]);
-    }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
-    }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
-    }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
-    }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
-    }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
-    }
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
-
-  }
-
-  public static GetFirstObjectInArea(oArea = GameState.module.area, oType = 0){
-
-    if(!(oArea instanceof ModuleArea)){
-      console.error(oArea);
-      oArea = GameState.module.area;
-    }
-      
-
-    GameState.objSearchIndex = 0;
-
-    let results: ModuleObject[] = [];
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
-    }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
-    }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
-    }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
-    }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
-      //results = results.concat([]);
-    }
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
-    }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
-    }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
-    }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
-    }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
-    }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
-    }
-
-    if(results.length){
-      return results[GameState.objSearchIndex];
-    }
-    return undefined;
-  }
-
-  public static GetNextObjectInArea(oArea = GameState.module.area, oType = 0){
-    if(!(oArea instanceof ModuleArea)){
-      console.error(oArea);
-      oArea = GameState.module.area;
-    }
-    ++GameState.objSearchIndex;
-
-    let results: ModuleObject[] = [];
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
-    }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
-    }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
-    }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
-    }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
-      //results = results.concat([]);
-    }
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
-    }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
-    }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
-    }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
-    }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
-    }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
-    }
-
-    if(GameState.objSearchIndex < results.length-1){
-      return results[GameState.objSearchIndex];
-    }
-    return undefined;
-  }
-
-  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list?: ModuleCreature[] ): ModuleCreature {
-    
-    if(!list){
-      list = GameState.module.area.creatures;
-      list = list.concat(PartyManager.party);
-    }
-
-    let results: ModuleCreature[] = [];
-    
-    switch(nFirstCriteriaType){
-      case CreatureType.RACIAL_TYPE:
-
-      break;
-      case CreatureType.PLAYER_CHAR:
-
-      break;
-      case CreatureType.CLASS:
-
-      break;
-      case CreatureType.REPUTATION:
-        switch(nFirstCriteriaValue){
-          case ReputationType.FRIEND:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isFriendly(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;
-          case ReputationType.ENEMY:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isHostile(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;  
-          case ReputationType.NEUTRAL:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isNeutral(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;
-        }
-      break;
-      case CreatureType.IS_ALIVE:
-        for(let i = 0; i < list.length; i++){
-          if(!list[i].isDead()){
-            results.push(list[i]);
-          }
-        }
-      break;
-      case CreatureType.HAS_SPELL_EFFECT:
-
-      break;
-      case CreatureType.DOES_NOT_HAVE_SPELL_EFFECT:
-
-      break;
-      case CreatureType.PERCEPTION:
-        for(let i = 0; i < list.length; i++){
-          switch(nFirstCriteriaValue){
-            case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen && o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen && !o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen && o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen && !o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.heard ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && !o.seen ).length){
-                results.push(list[i]);
-              }
-            break;
-            case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o: any) => o.object == list[i] && o.seen ).length){
-                results.push(list[i]);
-              }
-            break;
-          }
-
-        }
-      break;
-    }
-
-    if(nSecondCriteriaType >= 0){
-      return GameState.GetNearestCreature(nSecondCriteriaType, nSecondCriteriaValue, oTarget, nNth, nThirdCriteriaType, nThirdCriteriaValue, -1, -1, results);
-    }
-
-    if(results.length){
-      results.sort((a: any, b: any) => {
-        return oTarget.position.distanceTo(a.position) - oTarget.position.distanceTo(b.position);
-      });
-      return results[nNth-1];
-    }
-
-    return undefined;
-  }
-
-  public static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
-
-    let object_pool: ModuleObject[] = [];
-    let results: ModuleObject[] = [];
-
-    /*
-    int    ModuleObjectType.CREATURE         = 1;
-    int    ModuleObjectType.ITEM             = 2;
-    int    ModuleObjectType.TRIGGER          = 4;
-    int    ModuleObjectType.DOOR             = 8;
-    int    ModuleObjectType.AOE   = 16;
-    int    ModuleObjectType.WAYPOINT         = 32;
-    int    ModuleObjectType.PLACEABLE        = 64;
-    int    ModuleObjectType.STORE            = 128;
-    int    ModuleObjectType.ENCOUNTER        = 256;
-    int    ModuleObjectType.SOUND            = 512;
-    int    OBJECT_TYPE_ALL              = 32767;
-    */
-
-    //console.log('GetObjectsInShape', objectFilter, shape);
-
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){ //CREATURE
-      object_pool = object_pool.concat(GameState.module.area.creatures);
-    }
-
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){ //ITEM
-      object_pool = object_pool.concat(GameState.module.area.items);
-    }
-
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){ //TRIGGER
-      object_pool = object_pool.concat(GameState.module.area.triggers); 
-    }
-
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){ //DOOR
-      object_pool = object_pool.concat(GameState.module.area.doors); 
-    }
-
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){ //AOE
-              
-    }
-
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){ //WAYPOINTS
-      object_pool = object_pool.concat(GameState.module.area.waypoints);
-    }
-    
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){ //PLACEABLE
-      object_pool = object_pool.concat(GameState.module.area.placeables);
-    }
-
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){ //STORE
-          
-    }
-    
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){ //ENCOUNTER
-          
-    }
-    
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){ //SOUND
-      object_pool = object_pool.concat(GameState.module.area.sounds);
-    }
-
-    for(let i = 0, len = object_pool.length; i < len; i++){
-      if(object_pool[i] instanceof ModuleObject){
-        if(object_pool[i].position.distanceTo(target) < size){
-          results.push(object_pool[i]);
-        }
-      }
-    }
-
-    if(idx == -1){
-      return results;
-    }else{
-      return results[idx];
-    }
-
-  }
-
-  public static getNPCResRefById(nId: number){
-    switch(nId){
-      case 0:
-        return 'p_bastilla'
-      break;
-      case 1:
-        return 'p_cand'
-      break;
-      case 2:
-        return 'p_carth'
-      break;
-      case 3:
-        return 'p_hk47'
-      break;
-      case 4:
-        return 'p_jolee'
-      break;
-      case 5:
-        return 'p_juhani'
-      break;
-      case 6:
-        return 'p_mission'
-      break;
-      case 7:
-        return 'p_t3m4'
-      break;
-      case 8:
-        return 'p_zaalbar'
-      break;
-    }
-    return '';
-  }
-
   public static isObjectPC(object: ModuleObject){
     return GameState.player === object;
-  }
-
-  public static setGlobalBoolean(name = '', value = false){
-    if(GameState.Globals.Boolean.has(name.toLowerCase()))
-    GameState.Globals.Boolean.get(name.toLowerCase()).value = value ? true : false;
-  }
-
-  public static getGlobalBoolean(name = ''){
-    if(GameState.Globals.Boolean.has(name.toLowerCase()))
-      return GameState.Globals.Boolean.get(name.toLowerCase()).value ? true : false;
-
-    return false;
-  }
-
-  public static setGlobalNumber(name:string = '', value:number = 0){
-    if(GameState.Globals.Number.has(name.toLowerCase()))
-    GameState.Globals.Number.get(name.toLowerCase()).value = Math.floor(value);
-  }
-
-  public static getGlobalNumber(name:string = ''){
-    if(GameState.Globals.Number.has(name.toLowerCase()))
-      return GameState.Globals.Number.get(name.toLowerCase()).value;
-
-    return 0;
-  }
-
-  public static setGlobalLocation(name = '', value = new EngineLocation){
-    if(GameState.Globals.Location.has(name.toLowerCase()) && value instanceof EngineLocation)
-    GameState.Globals.Location.get(name.toLowerCase()).value = value;
-  }
-
-  public static getGlobalLocation(name = ''){
-    if(GameState.Globals.Location.has(name.toLowerCase()))
-      return GameState.Globals.Location.get(name.toLowerCase()).value;
-
-    return new EngineLocation;
   }
 
   public static async InitializeGameState(options: GameStateInitializeOptions = {} as GameStateInitializeOptions){
