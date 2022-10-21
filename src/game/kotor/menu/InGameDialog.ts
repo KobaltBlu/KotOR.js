@@ -55,6 +55,25 @@ export class InGameDialog extends GameMenu {
   async MenuControlInitializer() {
   await super.MenuControlInitializer();
   return new Promise<void>((resolve, reject) => {
+    this.LBL_MESSAGE.setText('');
+
+    this.LB_REPLIES.extent.left = -(window.innerWidth/2) + this.LB_REPLIES.extent.width/2 + 16;
+    this.LB_REPLIES.extent.top = (window.innerHeight/2) - this.LB_REPLIES.extent.height/2;
+    this.LB_REPLIES.calculatePosition();
+    this.LB_REPLIES.calculateBox();
+    this.LB_REPLIES.padding = 5;
+
+    this.barHeight = 100;
+
+    let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+    this.topBar = new THREE.Mesh( geometry, material );
+    this.bottomBar = new THREE.Mesh( geometry, material );
+
+    this._resetLetterBox();
+
+    this.tGuiPanel.widget.add(this.topBar);
+    this.tGuiPanel.widget.add(this.bottomBar);
     resolve();
   });
 }
