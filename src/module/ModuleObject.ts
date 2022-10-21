@@ -1935,8 +1935,7 @@ export class ModuleObject {
 
       for(let j = 0, jl = GameState.module.area.doors.length; j < jl; j++){
         let door = GameState.module.area.doors[j];
-        //@ts-expect-error
-        if(door && door != this && !door.isOpen()){
+        if(door && door != (this as any) && !door.isOpen()){
           let box3 = door.box;
           if(box3){
             if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){

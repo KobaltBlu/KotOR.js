@@ -1818,14 +1818,12 @@ export class ModuleCreature extends ModuleObject {
           }else if(sndTable['rolling'] != '****'){
             if(!this.footstepEmitter.currentSound){
               this.footstepEmitter.Stop();
-              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: ArrayBuffer) => {
-                //@ts-expect-error
+              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
             }else if(this.footstepEmitter.currentSound && this.footstepEmitter.currentSound.name != sndTable['rolling']){
               this.footstepEmitter.Stop();
-              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: ArrayBuffer) => {
-                //@ts-expect-error
+              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
             }

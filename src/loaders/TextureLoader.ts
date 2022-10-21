@@ -449,8 +449,7 @@ export class TextureLoader {
           if(texture != null){
             if(tex.partGroup instanceof OdysseyEmitter3D){
               tex.partGroup.material.uniforms.map.value = texture;
-              //@ts-expect-error
-              tex.partGroup.material.map = texture;
+              (tex.partGroup.material as any).map = texture;
               tex.partGroup.material.depthWrite = false;
               tex.partGroup.material.needsUpdate = true;
 

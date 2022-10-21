@@ -15,6 +15,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { ConfigClient } from "../utility/ConfigClient";
 
 /* @file
  * The ModuleEncounter class.
@@ -157,7 +158,6 @@ export class ModuleEncounter extends ModuleObject {
       }
     }
 
-    // @ts-expect-error
     this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
 
   }

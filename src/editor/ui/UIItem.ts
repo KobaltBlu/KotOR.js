@@ -69,8 +69,7 @@ export class UIItem {
 
     //Set onClick Event
     if (typeof this.onClick === 'function') {
-      // @ts-expect-error
-      this.$item.on('click', this.onClick);
+      this.$item.on("click", this.onClick as any);
     }else{
       this.$item.on('click', function(e){
         e.preventDefault();

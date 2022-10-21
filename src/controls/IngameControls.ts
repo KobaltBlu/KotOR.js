@@ -737,20 +737,17 @@ export class IngameControls {
     if(this.keys['num-minus'].pressed && this.keys['shift'].down && !this.keys['ctrl'].down){
       GameState.rendererUpscaleFactor -= 0.25;
       if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
-      // @ts-expect-error
       GameState.updateRendererUpscaleFactor();
     }
 
     if(this.keys['0'].pressed && this.keys['shift'].down && !this.keys['ctrl'].down){
       GameState.rendererUpscaleFactor = 1.0;
-      // @ts-expect-error
       GameState.updateRendererUpscaleFactor();
     }
 
     if(this.keys['num-plus'].pressed && this.keys['shift'].down && !this.keys['ctrl'].down){
       GameState.rendererUpscaleFactor += 0.25;
       if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
-      // @ts-expect-error
       GameState.updateRendererUpscaleFactor();
     }
 

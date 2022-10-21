@@ -225,8 +225,7 @@ export class ModuleDoor extends ModuleObject {
   onClick2(callee: ModuleObject){
 
     //You can't interact with yourself
-    //@ts-expect-error
-    if(this === GameState.player && GameState.getCurrentPlayer() === this){
+    if(this === GameState.player && GameState.getCurrentPlayer() === (this as any)){
       return;
     }
 
