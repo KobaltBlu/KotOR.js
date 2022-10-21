@@ -17,7 +17,7 @@ const ProgressBar = require('electron-progressbar');
 const pathToFfmpeg = require('ffmpeg-static');
 const shell = require('any-shell-escape');
 
-const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
 
 const videoSupport = require('./ffmpeg-helper');
@@ -439,22 +439,22 @@ function convertBIKtoMP4( sourceFolder = '' ){
 
 
 function updateThreeJS(){
-  return new Promise( (resolve, reject, ) => {
+  // return new Promise( (resolve, reject, ) => {
 
-    let file_path = path.join(app.getAppPath(), 'js', 'three', 'three.js');
-    if(!fs.existsSync(file_path)){
-      console.log('Downloading: THREE.js...');
-      const file = fs.createWriteStream(file_path);
-      const request = http.get("https://raw.githubusercontent.com/KobaltBlu/kotor.three.js/master/build/three.js", function(response) {
-        response.pipe(file);
-        console.log('Download: Complete');
-        resolve();
-      });
-    }else{
-      resolve();
-    }
+  //   let file_path = path.join(app.getAppPath(), 'js', 'three', 'three.js');
+  //   if(!fs.existsSync(file_path)){
+  //     console.log('Downloading: THREE.js...');
+  //     const file = fs.createWriteStream(file_path);
+  //     const request = http.get("https://raw.githubusercontent.com/KobaltBlu/kotor.three.js/master/build/three.js", function(response) {
+  //       response.pipe(file);
+  //       console.log('Download: Complete');
+  //       resolve();
+  //     });
+  //   }else{
+  //     resolve();
+  //   }
 
-  });
+  // });
 }
 
 function convertFile(command){

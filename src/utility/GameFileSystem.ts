@@ -37,23 +37,36 @@ export class GameFileSystem {
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
-  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<FileSystemFileHandle> {
-    // console.log('open', filepath);
-    filepath = GameFileSystem.normalizePath(filepath);
-    const dirs = filepath.split('/');
-    const filename = dirs.pop();
-    const dirHandle = await GameFileSystem.resolveFilePathDirectoryHandle(filepath);
-    if(dirHandle){
-      const file = await dirHandle.getFileHandle(filename, {
-        create: false
+  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
+    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+      return new Promise<number>( (resolve, reject) => {
+        fs.open(path.join(GameFileSystem.rootDirectoryPath, filepath), (err, fd) => {
+          if(err){
+            console.error(err);
+            reject(err);
+            return;
+          }
+          resolve(fd);
+        });
       });
-      if(file){
-        return file;
-      }else{
-        throw new Error('Failed to read file');
-      }
     }else{
-      throw new Error('Failed to locate file directory');
+      // console.log('open', filepath);
+      filepath = GameFileSystem.normalizePath(filepath);
+      const dirs = filepath.split('/');
+      const filename = dirs.pop();
+      const dirHandle = await GameFileSystem.resolveFilePathDirectoryHandle(filepath);
+      if(dirHandle){
+        const file = await dirHandle.getFileHandle(filename, {
+          create: false
+        });
+        if(file){
+          return file;
+        }else{
+          throw new Error('Failed to read file');
+        }
+      }else{
+        throw new Error('Failed to locate file directory');
+      }
     }
   }
 
@@ -196,7 +209,7 @@ export class GameFileSystem {
 
   private static async readdir_fs(resource_path: string = '', opts: any = {},  files: any[] = []) {
     return new Promise<string[]>( (resolve, reject) => {
-      fs.stat(resource_path, (err, stats: fs.Stats) => {
+      fs.stat(path.join(GameFileSystem.rootDirectoryPath, resource_path), (err, stats: fs.Stats) => {
         if(err){
           reject(err);
           return;
@@ -206,20 +219,21 @@ export class GameFileSystem {
           resolve(files);
           return;
         }else{
-          fs.readdir(resource_path, async (err, files: string[]) => {
+          fs.readdir(path.join(GameFileSystem.rootDirectoryPath, resource_path), async (err, dir_files: string[]) => {
             if(err){
               reject(err);
               return;
             }
             let file: string;
-            for(let i = 0, len = files.length; i < len; i++){
-              file = files[i];
+            for(let i = 0, len = dir_files.length; i < len; i++){
+              file = dir_files[i];
               try{
-                await GameFileSystem.readdir_fs(file, opts, files);
+                await GameFileSystem.readdir_fs(path.join(resource_path, file), opts, files);
               }catch(e){
                 reject(err);
               }
             }
+            resolve(files);
           });
         }
   

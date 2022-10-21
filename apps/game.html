@@ -3,175 +3,208 @@
   <head>
     <title>KotOR</title>
     <link rel="stylesheet" href="../css/game.css" />
-    <script src="../js/libs/jquery-1.12.3.min.js" onload="window.$ = window.jQuery = module.exports;"></script>
   </head>
   <body>
     <div id="renderer-container" class="ui-layout-center"></div>
     <div class="console"><input type="text"></div>
-    <script type="text/javascript" src="../js/_utility.js"></script>
     <script>
-      const THREE = require(require('path').join(require('electron').remote.app.getAppPath(), 'js', 'three', 'three.js'));
-    </script>
-    <!--script type="text/javascript" src="../js/three/Three.js"></script-->
-    <script type="text/javascript" src="../js/three/EffectComposer.js"></script>
-    <script type="text/javascript" src="../js/three/RenderPass.js"></script>
-    <script type="text/javascript" src="../js/three/ShaderPass.js"></script>
-    <script type="text/javascript" src="../js/three/BloomPass.js"></script>
-    <script type="text/javascript" src="../js/three/MaskPass.js"></script>
-    <script type="text/javascript" src="../js/three/BokehPass.js"></script>
-    <script type="text/javascript" src="../js/three/SSAARenderPass.js"></script>
-    <script type="text/javascript" src="../js/three/threeoctree.js"></script>
-    <script type="text/javascript" src="../js/three/TPCLoader.js"></script>
-    <script type="text/javascript" src="../js/three/TGALoader.js"></script>
-    <script type="text/javascript" src="../js/three/MDLLoader.js"></script>
-    <script type="text/javascript" src="../js/three/BufferGeometryUtils.js"></script>
-    <script type="text/javascript" src="../js/three/AuroraEmitter.js"></script>
-    <script type="text/javascript" src="../js/three/AuroraModel.js"></script>
-    <script type="text/javascript" src="../js/three/stats.min.js"></script>
-    <script type="text/javascript" src="../js/three/controls/TrackballControls.js"></script>
-    <script type="text/javascript" src="../js/three/TransformControls.js"></script>
-    <script type="text/javascript" src="../js/three/shaders/CopyShader.js"></script>
-    <script type="text/javascript" src="../js/three/shaders/FilmShader.js"></script>
-    <script type="text/javascript" src="../js/three/shaders/BokehShader.js"></script>
-    <script type="text/javascript" src="../js/three/FilmPass.js"></script>
-    <script type="text/javascript" src="../js/three/shaders/ConvolutionShader.js"></script>
-    <script type="text/javascript" src="../js/three/shaders/ColorCorrectionShader.js"></script>
-    <script type="text/javascript" src="../js/three/Lensflare.js"></script>
-    <script type="text/javascript" src="game.js"></script>
-    <script>
+      window.fs = require('fs');
+      const path = require('path');
+      const remote = require('electron').remote;
+      const app = remote.app;
+      const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
+      const Config = new ConfigManager('settings.json');
 
-      if(!app_profile){
-        alert('Fatal Error: Window Profile Corrupted');
-        window.close();
+      //app_profile is the selected game's profile
+      const app_profile = (() => {
+        let app_profile = remote.getCurrentWindow().state;
+        if(typeof app_profile != 'object' || !app_profile.key){
+          alert('Fatal Error: Window Profile Missing');
+          window.close();
+        }
+        return Config.get(['Profiles', app_profile.key]);
+      })();
+
+      const Games = {
+        KOTOR: 1,
+        TSL: 2
       }
 
-      function initialize(){
+      switch(app_profile.launch.args.gameChoice){
+        case 2:
+          window._Game = Games.TSL;
+          window.GameKey = 'TSL';
+        break;
+        default:
+          window._Game = Games.KOTOR;
+          window.GameKey = 'KOTOR';
+        break;
+      }
 
-        verifyGame({
-          directory: app_profile.directory,
-          onVerify: () => {
-            if(!Config.get('Game.debug.disable_intro_movies')){
-              VideoPlayer.Load('ObsidianEnt', () => {
-                VideoPlayer.Load('biologo', () => {
-                  VideoPlayer.Load('leclogo', () => {
-                    VideoPlayer.Load('Legal', () => {
-                      Game.OpeningMoviesComplete = true;
-                      if(Game.Ready){
-                        Game.OnReady();
-                      }
-                    });
-                  });
-                });
-              });
-            }else{
-              Game.OpeningMoviesComplete = true;
-              if(Game.Ready){
-                Game.OnReady();
-              }
-            }
-            loader.Show();
-            GameInitializer.Init({
-              game: Games[GameKey],
-              onLoad: () => {
-                loader.SetMessage("Loading Game Menus");
-                console.log('Game: Init');
-                GUIListBox.InitTextures();
-                AuroraWalkMesh.Init();
-                Game.Init();
-              }
-            });
-          },
-          onError: async () => {
-            console.log('Failed to verify the path for', GameKey);
-            //loader.Dismiss();
-            
-            dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory', 'createDirectory']}).then(result => {
-              console.log(result.canceled);
-              console.log(result.filePaths);
-              if(result.filePaths.length && !result.canceled){
-                Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
-                window.location.reload();
-              }else{
-                alert('Can\'t continue without locating the game directory');
-                window.close();
-              }
+      console.log(app_profile)
+    </script>
+    <script type="text/javascript" src="../dist/KotOR.js"></script>
+    <script type="module">
+      import { get, set } from 'https://unpkg.com/idb-keyval@5.0.2/dist/esm/index.js';
 
-            }).catch(err => {
-              alert(err);
-              window.close();
-            });
-            
+      KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = app_profile.directory;
+      KotOR.ApplicationProfile.ENV = "ELECTRON";
+      
+      const initializeApp = function(){
+        console.log('loading game...')
+        KotOR.LoadingScreen.main.SetLogo(app_profile.logo);
+        KotOR.LoadingScreen.main.SetBackgroundImage(app_profile.background);
+        KotOR.LoadingScreen.main.Show();
+        
+        KotOR.GameInitializer.Init({
+          game: window.GameKey,
+          onLoad: () => {
+            console.log('loaded')
+            KotOR.GameState.OpeningMoviesComplete = true;
+            KotOR.GUIListBox.InitTextures();
+            KotOR.OdysseyWalkMesh.Init();
+            KotOR.GameState.Init();
+            KotOR.GameState.audioEngine.musicGain.gain.value = 0;
           }
         });
+      };
+      
+      initializeApp();
+    </script>
+    <script>
 
-      }
+      // if(!app_profile){
+      //   alert('Fatal Error: Window Profile Corrupted');
+      //   window.close();
+      // }
 
-      function verifyGame(args = {}){
+      // function initialize(){
 
-        args = $.extend({
-          directory: null,
-          onVerify: null,
-          onError: null
-        }, args);
+      //   verifyGame({
+      //     directory: app_profile.directory,
+      //     onVerify: () => {
+      //       if(!Config.get('Game.debug.disable_intro_movies')){
+      //         VideoPlayer.Load('ObsidianEnt', () => {
+      //           VideoPlayer.Load('biologo', () => {
+      //             VideoPlayer.Load('leclogo', () => {
+      //               VideoPlayer.Load('Legal', () => {
+      //                 Game.OpeningMoviesComplete = true;
+      //                 if(Game.Ready){
+      //                   Game.OnReady();
+      //                 }
+      //               });
+      //             });
+      //           });
+      //         });
+      //       }else{
+      //         Game.OpeningMoviesComplete = true;
+      //         if(Game.Ready){
+      //           Game.OnReady();
+      //         }
+      //       }
+      //       loader.Show();
+      //       GameInitializer.Init({
+      //         game: Games[GameKey],
+      //         onLoad: () => {
+      //           loader.SetMessage("Loading Game Menus");
+      //           console.log('Game: Init');
+      //           GUIListBox.InitTextures();
+      //           AuroraWalkMesh.Init();
+      //           Game.Init();
+      //         }
+      //       });
+      //     },
+      //     onError: async () => {
+      //       console.log('Failed to verify the path for', GameKey);
+      //       //loader.Dismiss();
+            
+      //       dialog.showOpenDialog({title: 'Locate Game Directory', properties: ['openDirectory', 'createDirectory']}).then(result => {
+      //         console.log(result.canceled);
+      //         console.log(result.filePaths);
+      //         if(result.filePaths.length && !result.canceled){
+      //           Config.set(['Profiles', app_profile.key, 'directory'], result.filePaths[0]);
+      //           window.location.reload();
+      //         }else{
+      //           alert('Can\'t continue without locating the game directory');
+      //           window.close();
+      //         }
 
-        if(args.directory != null){
-          try {
-            fs.accessSync(args.directory, fs.F_OK);
-            if(typeof args.onVerify == 'function')
-              args.onVerify();
-          } catch (e) {
-            Config.set(['Profiles', app_profile.key, 'directory'], null);
-            if(typeof args.onError == 'function')
-              args.onError();
-          }
-        }else{
-          Config.set(['Profiles', app_profile.key, 'directory'], null);
-          if(typeof args.onError == 'function')
-              args.onError();
-        }
+      //       }).catch(err => {
+      //         alert(err);
+      //         window.close();
+      //       });
+            
+      //     }
+      //   });
 
-      }
+      // }
 
-      initialize();
+      // function verifyGame(args = {}){
 
-      window.addEventListener('keyup', function(e) {
-        if(e.keyCode == 192){
-          let $ele = $('.console');
-          if($ele.hasClass('on')){
-            $ele.removeClass('on');
-            $('input', $ele).val('');
-          }else{
-            $ele.addClass('on');
-            $('input', $ele).focus();
-          }
-        }
-      });
+      //   args = $.extend({
+      //     directory: null,
+      //     onVerify: null,
+      //     onError: null
+      //   }, args);
 
-      $('.console input').keyup(function(e){
-        if(e.keyCode == 13) {
-          let $ele = $('.console');
-          $ele.removeClass('on');
+      //   if(args.directory != null){
+      //     try {
+      //       fs.accessSync(args.directory, fs.F_OK);
+      //       if(typeof args.onVerify == 'function')
+      //         args.onVerify();
+      //     } catch (e) {
+      //       Config.set(['Profiles', app_profile.key, 'directory'], null);
+      //       if(typeof args.onError == 'function')
+      //         args.onError();
+      //     }
+      //   }else{
+      //     Config.set(['Profiles', app_profile.key, 'directory'], null);
+      //     if(typeof args.onError == 'function')
+      //         args.onError();
+      //   }
 
-          let console_text = $(this).val().toLowerCase();
-          processConsoleText(console_text);
-          $(this).val('');
-        }
-      });
+      // }
 
-      function processConsoleText(text){
+      // initialize();
 
-        text = text.trim();
-        let args = text.split(' ');
+      // window.addEventListener('keyup', function(e) {
+      //   if(e.keyCode == 192){
+      //     let $ele = $('.console');
+      //     if($ele.hasClass('on')){
+      //       $ele.removeClass('on');
+      //       $('input', $ele).val('');
+      //     }else{
+      //       $ele.addClass('on');
+      //       $('input', $ele).focus();
+      //     }
+      //   }
+      // });
 
-        switch(args[0]){
-          case 'warp':
-            if(args[1]){
-              Game.LoadModule(args[1]);
-            }
-          break;
-        }
+      // $('.console input').keyup(function(e){
+      //   if(e.keyCode == 13) {
+      //     let $ele = $('.console');
+      //     $ele.removeClass('on');
 
-      }
+      //     let console_text = $(this).val().toLowerCase();
+      //     processConsoleText(console_text);
+      //     $(this).val('');
+      //   }
+      // });
+
+      // function processConsoleText(text){
+
+      //   text = text.trim();
+      //   let args = text.split(' ');
+
+      //   switch(args[0]){
+      //     case 'warp':
+      //       if(args[1]){
+      //         Game.LoadModule(args[1]);
+      //       }
+      //     break;
+      //   }
+
+      // }
 
     </script>
   </body>

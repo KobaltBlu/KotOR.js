@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "rebuild": "electron-rebuild -f -w dxt",
-    "webpack": "webpack"
+    "webpack": "webpack",
+    "webpack:watch": "webpack --watch"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
