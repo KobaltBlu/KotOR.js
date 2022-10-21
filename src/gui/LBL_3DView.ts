@@ -124,7 +124,7 @@ export class LBL_3DView {
     GameState.renderer.getClearColor(oldClearColor);
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
-    GameState.renderer.clear(true);
+    GameState.renderer.clear();
     GameState.renderer.render(this.scene, this.camera);
     // @ts-expect-error
     this.texture.needsUpdate = true;

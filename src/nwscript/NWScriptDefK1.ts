@@ -4002,7 +4002,7 @@ NWScriptDefK1.Actions = {
     args: ["object"],
     action: function(args: any, _instr: any, action: any){
       if(args[0] instanceof ModuleObject){
-        if(PartyManager.party.indexOf(args[0]) >= 0){
+        if(PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
           // if(InventoryManager.inventory.length){
           //   return InventoryManager.inventory[0];
           // args[0]._inventoryPointer = 0;
@@ -4054,7 +4054,7 @@ NWScriptDefK1.Actions = {
       //   return undefined;
       // }
       if(args[0] instanceof ModuleObject){
-        if(PartyManager.party.indexOf(args[0]) >= 0){
+        if(PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
           return InventoryManager.inventory[++args[0]._inventoryPointer];
         }else{
           return args[0].inventory[++args[0]._inventoryPointer];
@@ -5658,7 +5658,7 @@ NWScriptDefK1.Actions = {
     action: function(args: any, _instr: any, action: any){
       //This will kinda work for now but I think it is supposed to check if any actions in the queue were set by the player
       if(this.caller instanceof ModuleObject){// && this.caller == GameState.player){
-        return this.caller.combatQueue.length ? 1 : 0;//this.caller.actionQueue.length ? 1 : 0;
+        return this.caller.combatData.combatQueue.length ? 1 : 0;//this.caller.actionQueue.length ? 1 : 0;
       }else{
         return 0;
       }
@@ -7834,7 +7834,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(args: any, _instr: any, action: any){
-      return ConfigClient.get('Game.debug.is_shipping_build') ? true : false;
+      return ConfigClient.get('Game.debug.is_shipping_build') ? true : true;
     }
   },
   762:{

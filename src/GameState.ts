@@ -750,7 +750,7 @@ export class GameState implements EngineContext {
 
   public static onMouseHitInteractive( onSuccess?: Function){
     
-    GameState.raycaster.setFromCamera( GameState.mouse, GameState.currentCamera );
+    GameState.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
     let intersects = GameState.raycaster.intersectObjects( GameState.interactableObjects, true );
 
     if(intersects.length){

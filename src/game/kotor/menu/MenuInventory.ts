@@ -39,6 +39,7 @@ export class MenuInventory extends GameMenu {
     this.gui_resref = 'inventory';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

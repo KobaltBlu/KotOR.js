@@ -73,6 +73,7 @@ export class MenuEquipment extends GameMenu {
     this.gui_resref = 'equip';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

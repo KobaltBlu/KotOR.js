@@ -23,6 +23,7 @@ export class MenuJournal extends GameMenu {
     this.gui_resref = 'journal';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

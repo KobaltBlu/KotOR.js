@@ -21,6 +21,7 @@ export class MenuFeedback extends GameMenu {
     this.gui_resref = 'optfeedback';
     this.background = 'blackfill';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

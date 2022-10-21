@@ -55,7 +55,7 @@ export class Action {
   }
 
   runCreatureAvoidance(delta = 0){
-    if(PartyManager.party.indexOf(this) >= 0){
+    if(PartyManager.party.indexOf(this.owner) >= 0){
 
       //Check Creature Avoidance
       let threatening = undefined;
@@ -171,7 +171,7 @@ export class Action {
         param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
       break;
       case ActionParameterType.DWORD:
-        if(param.value instanceof ModuleObject){
+        if(value instanceof ModuleObject){
           param.value = value.id ? value.id : ModuleObject.OBJECT_INVALID;
         }else{
           param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;
@@ -181,7 +181,7 @@ export class Action {
         param.value = value.toString();
       break;
       case ActionParameterType.SCRIPT_SITUATION:
-        if(param.value instanceof NWScriptInstance)
+        if(value instanceof NWScriptInstance)
           param.value = value;
       break;
       default:

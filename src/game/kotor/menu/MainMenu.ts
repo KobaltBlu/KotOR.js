@@ -95,6 +95,7 @@ export class MainMenu extends GameMenu {
           this.tGuiPanel.widget.userData.fill.visible = false;
 
           this._3dView = new LBL_3DView();
+          this._3dView.setControl(this.LBL_3DVIEW);
           this._3dView.visible = true;
           (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
           (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
@@ -114,8 +115,8 @@ export class MainMenu extends GameMenu {
                 AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
                   
                   this.bgMusicBuffer = data;
-                  resolve();
                   this._3dViewModel.playAnimation(0, true);
+                  resolve();
             
                 }, () => {
                   console.error('Background Music not found', bgMusic);

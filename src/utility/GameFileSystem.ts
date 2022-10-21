@@ -38,7 +38,7 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<FileSystemFileHandle> {
-    console.log('open', filepath);
+    // console.log('open', filepath);
     filepath = GameFileSystem.normalizePath(filepath);
     const dirs = filepath.split('/');
     const filename = dirs.pop();
@@ -97,7 +97,7 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async readFile(filepath: string, options: any = {}): Promise<Buffer> {
-    console.log('readFile', filepath);
+    // console.log('readFile', filepath);
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Buffer>( (resolve, reject) => {
         fs.readFile(path.join(GameFileSystem.rootDirectoryPath, filepath), options, (err, buffer) => {

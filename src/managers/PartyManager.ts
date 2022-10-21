@@ -21,7 +21,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 
 export class PartyManager {
 
-  static party: any = [];
+  static party: ModuleCreature[] = [];
   static aiStyle = 0;
   static Player: GFFObject;
   static PortraitOrder: any[] = [];
@@ -548,7 +548,7 @@ export class PartyManager {
 
   }
 
-  static GetFollowPosition(creature: ModuleObject){
+  static GetFollowPosition(creature: ModuleCreature){
 
     //I think party following is FORMATION_LINE in the formations.2da
 

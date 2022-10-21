@@ -33,6 +33,7 @@ export class MenuOptions extends GameMenu {
     this.gui_resref = 'optionsingame';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

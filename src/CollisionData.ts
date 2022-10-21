@@ -26,7 +26,7 @@ export class CollisionData {
   }
 
   updateCollision(delta = 0){
-
+    
     if(!this.object.model || !GameState.module || !GameState.module.area)
       return;
 
@@ -62,7 +62,7 @@ export class CollisionData {
     
     //Check creature collision
     let creature = undefined;
-    if(ConfigClient.options?.Game?.debug?.creature_collision){
+    if(true || ConfigClient.options?.Game?.debug?.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
         if(creature){
@@ -96,13 +96,13 @@ export class CollisionData {
     }
 
     //Check party collision
-    if(ConfigClient.options?.Game?.debug?.creature_collision){
+    if(true || ConfigClient.options?.Game?.debug?.creature_collision){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         creature = PartyManager.party[i];
         if(creature){
           let position = this.object.position.clone().add(this.object.AxisFront);
 
-          if(creature == this || creature.isDead())
+          if(creature == this.object || creature.isDead())
             continue;
 
           let distance = position.distanceTo(creature.position);
@@ -132,7 +132,7 @@ export class CollisionData {
 
       //START: DOOR COLLISION
 
-      if(ConfigClient.options?.Game?.debug?.door_collision){
+      if(true || ConfigClient.options?.Game?.debug?.door_collision){
         for(let j = 0, jl = this.object.room.doors.length; j < jl; j++){
           obj = this.object.room.doors[j];
           if(obj && obj.collisionData.walkmesh && !obj.isOpen()){
@@ -156,7 +156,7 @@ export class CollisionData {
           GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
 
           castableFaces = aabbFaces[k];
-          castableFaces.collisionData.walkmesh.mesh.visible = true;
+          castableFaces.object.collisionData.walkmesh.mesh.visible = true;
           intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
           if (intersects && intersects.length > 0 ) {
             for(let j = 0, jLen = intersects.length; j < jLen; j++){
@@ -246,20 +246,13 @@ export class CollisionData {
           edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.object.tmpPos);
           if(distance < hitdist_half){
-            reflectAngle.copy(this.object.tmpPos).sub(closestPoint);
-            reflectAngle.z = 0;
-            reflectForce.copy(reflectAngle);
-            reflectAngle.normalize();
             plcEdgeLines.push({
-              edge: edge,
               object: this.object.room,
               line: edge.line,
               closestPoint: closestPoint.clone(),
               distance: distance,
               maxDistance: hitdist_half,
-              position: this.object.position,
-              reflectAngle: reflectAngle.clone(),
-              reflectForce: reflectForce.clone(),
+              position: this.object.position
             });
             roomCollision = true;
           }
@@ -305,11 +298,11 @@ export class CollisionData {
             force = edgeLine.closestPoint.clone().sub(edgeLine.position);
             force.multiplyScalar(distanceOffset * 2.5);
             force.z = 0;
-            average.sub( force.negate() );
+            average.add( force.negate() );
             // forceCount++;
           }
           this.object.position.copy(this.object.tmpPos);
-          this.object.AxisFront.copy(average.divideScalar(forceCount));
+          this.object.AxisFront.copy(average.divideScalar(plcEdgeLines.length));
         }
       }else{
         this.object.AxisFront.set(0, 0, 0);

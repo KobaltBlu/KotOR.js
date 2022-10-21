@@ -612,13 +612,13 @@ export class ModuleItem extends ModuleObject {
     }
 
     if(this.template.RootNode.HasField('XPosition'))
-      this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
 
     if(this.template.RootNode.HasField('YPosition'))
-      this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
 
     if(this.template.RootNode.HasField('ZPosition'))
-      this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
 
     if(this.template.RootNode.HasField('XOrientation'))
       this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();

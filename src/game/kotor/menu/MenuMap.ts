@@ -35,6 +35,7 @@ export class MenuMap extends GameMenu {
     this.gui_resref = 'map';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

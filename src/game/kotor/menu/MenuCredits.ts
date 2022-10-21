@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIListBox } from "../../../gui";
+import { GameMenu, GUIListBox, MenuManager } from "../../../gui";
 
 /* @file
 * The MenuCredits menu class.

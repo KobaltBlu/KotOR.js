@@ -94,6 +94,7 @@ export class MenuCharacter extends GameMenu {
     this.gui_resref = 'character';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.childMenu = MenuManager.MenuTop;
   }
 
   async MenuControlInitializer() {

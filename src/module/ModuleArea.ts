@@ -1822,6 +1822,8 @@ export class ModuleArea extends ModuleObject {
                 GameState.group.creatures.add( model );
     
                 crt.getCurrentRoom();
+                crt.updateCollision(0.0000000000000000000001);
+                crt.update(0.0000000000000000000001);
     
                 asyncLoop.next();
               });
