@@ -21,8 +21,7 @@ export class GUIButton extends GUIControl {
 
     this.pulsing = true;
     this.text.color.set(this.defaultHighlightColor);
-    // @ts-expect-error
-    this.text.material.color = this.text.color;
+    (this.text.material as any).color = this.text.color;
     this.text.material.needsUpdate = true;
     
   }
@@ -33,8 +32,7 @@ export class GUIButton extends GUIControl {
 
     this.pulsing = false;
     this.text.color.set(this.defaultColor);
-    // @ts-expect-error
-    this.text.material.color = this.text.color;
+    (this.text.material as any).color = this.text.color;
     this.text.material.needsUpdate = true;
     
   }

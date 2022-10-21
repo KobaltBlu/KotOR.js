@@ -129,8 +129,7 @@ export class GUIListBox extends GUIControl {
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear(true);
     GameState.renderer.render(this.scene, this.camera);
-    // @ts-expect-error
-    this.texture.needsUpdate = true;
+    (this.texture as any).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);
     this.targetMaterial.transparent = true;
     this.targetMaterial.needsUpdate = true;

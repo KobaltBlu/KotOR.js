@@ -295,8 +295,7 @@ export class GUIControl {
     //this.border.fill.material.defines.USE_UV = '';
     //this.border.fill.material.defines.USE_MAP = '';
     this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    // @ts-expect-error
-    this.border.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 ) as BufferGeometry;
+    this.border.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 ) as THREE.BufferGeometry;
     this.border.fill.mesh = new THREE.Mesh( this.border.fill.geometry, this.border.fill.material );
 
     this.widget.userData.border.add( this.border.fill.mesh );
@@ -392,7 +391,7 @@ export class GUIControl {
       geometry: {} as THREE.BufferGeometry,
       mesh: {} as THREE.Mesh,
       material: {} as THREE.ShaderMaterial,
-      texture: {} as THREE.Texture,
+      texture: {} as OdysseyTexture,
     };
 
     this.text.geometry = new THREE.BufferGeometry();
@@ -1189,8 +1188,7 @@ export class GUIControl {
     }
 
     this.border.fill.material.uniforms.map.value = map;
-    // @ts-expect-error
-    this.border.fill.material.map = map;
+    (this.border.fill as any).material.map = map;
 
     if(map instanceof THREE.Texture){
       this.border.fill.material.visible = true;
@@ -1226,8 +1224,7 @@ export class GUIControl {
       texture = null;
 
     material.uniforms.map.value = texture;
-    // @ts-expect-error
-    material.map = texture;
+    (material as any).map = texture;
 
     if(texture instanceof THREE.Texture){
       material.visible = true;
@@ -1907,13 +1904,9 @@ export class GUIControl {
 
     let texRatio = texture.image.width / texture.image.height;
 
-    // @ts-expect-error
     let txi_height = texture.txi.fontheight     * 100;
-    // @ts-expect-error
     let txi_bsline = texture.txi.baselineheight * 100;
-    // @ts-expect-error
     let txi_spaceR = texture.txi.spacingr       * 100;
-    // @ts-expect-error
     let txi_spaceB = texture.txi.spacingb       * 100;
 
     let textCharCount = text.length;
@@ -1955,9 +1948,7 @@ export class GUIControl {
         //Calculate the length of the word to be printed
         for(let i = 0; i < wordLength; i++){
           char = word.charCodeAt(i);
-          // @ts-expect-error
           ul = texture.txi.upperleftcoords[char];
-          // @ts-expect-error
           lr = texture.txi.lowerrightcoords[char];
           wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
         }
@@ -1977,9 +1968,7 @@ export class GUIControl {
         for(let i = 0; i < wordLength; i++){
           char = word.charCodeAt(i);
 
-          // @ts-expect-error
           ul = texture.txi.upperleftcoords[char];
-          // @ts-expect-error
           lr = texture.txi.lowerrightcoords[char];
 
           w = ((lr.x - ul.x) * texture.image.width) * scale;

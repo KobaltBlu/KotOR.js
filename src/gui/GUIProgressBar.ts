@@ -207,10 +207,8 @@ export class GUIProgressBar extends GUIControl {
         sprite.position.y = -offsetY;
     }
     
-    // @ts-expect-error
-    sprite.material.uniforms.opacity.value = 1;
-    // @ts-expect-error
-    sprite.material.transparent = true;
+    (sprite.material as any).uniforms.opacity.value = 1;
+    (sprite.material as any).transparent = true;
 
   }
 
@@ -228,8 +226,7 @@ export class GUIProgressBar extends GUIControl {
     }
 
     this.progress.fill.material.uniforms.map.value = map;
-    // @ts-expect-error
-    this.progress.fill.material.map = map;
+    (this.progress.fill as any).material.map = map;
 
     if(map instanceof THREE.Texture){
       this.progress.fill.material.visible = true;
