@@ -8,6 +8,7 @@ import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
+import { Mouse } from "../controls";
 
 /* @file
  * The GUIListBox class.
@@ -483,7 +484,7 @@ export class GUIListBox extends GUIControl {
       //Check to see if the control is onscreen
       if(control.widget.visible){
         //check to see if the mouse is inside the control
-        if(control.box.containsPoint(GameState.mouseUI)){
+        if(control.box.containsPoint(Mouse.positionUI)){
           controls.push(control);
           controls = controls.concat( control.getActiveControls() );
         }else{
@@ -492,17 +493,17 @@ export class GUIListBox extends GUIControl {
       }
     }
 
-    if(this.scrollbar.box.containsPoint(GameState.mouseUI)){
+    if(this.scrollbar.box.containsPoint(Mouse.positionUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.upArrow.userData.box.containsPoint(GameState.mouseUI)){
+    if(this.scrollbar.upArrow.userData.box.containsPoint(Mouse.positionUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.downArrow.userData.box.containsPoint(GameState.mouseUI)){
+    if(this.scrollbar.downArrow.userData.box.containsPoint(Mouse.positionUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }

@@ -197,7 +197,7 @@ export class GUIScrollBar extends GUIControl{
     }
 
     this.addEventListener('mouseMove', () => {
-      //if(this.inner_box.containsPoint(GameState.mouseUI)){
+      //if(this.inner_box.containsPoint(Mouse.positionUI)){
         this.mouseInside();
       //}
     });
@@ -208,11 +208,11 @@ export class GUIScrollBar extends GUIControl{
 
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      if(this.upArrow.userData.box.containsPoint(GameState.mouseUI)){
+      if(this.upArrow.userData.box.containsPoint(Mouse.positionUI)){
         this.list.scrollUp();
-      }else if(this.downArrow.userData.box.containsPoint(GameState.mouseUI)){
+      }else if(this.downArrow.userData.box.containsPoint(Mouse.positionUI)){
         this.list.scrollDown();
-      }else if(this.inner_box.containsPoint(GameState.mouseUI)){
+      }else if(this.inner_box.containsPoint(Mouse.positionUI)){
         this.mouseInside();
       }
     })
@@ -233,13 +233,13 @@ export class GUIScrollBar extends GUIControl{
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
       //console.log('GUIScrollBar', 'blah');
-      /*if(this.upArrow.box.containsPoint(GameState.mouseUI)){
+      /*if(this.upArrow.box.containsPoint(Mouse.Mouse.positionUI)){
         console.log('GUIScrollBar', 'up');
         this.list.scrollUp();
-      }else if(this.downArrow.box.containsPoint(GameState.mouseUI)){
+      }else if(this.downArrow.box.containsPoint(Mouse.Mouse.positionUI)){
         console.log('GUIScrollBar', 'down');
         this.list.scrollDown();
-      }else */if(this.inner_box.containsPoint(GameState.mouseUI)){
+      }else */if(this.inner_box.containsPoint(Mouse.positionUI)){
         //console.log('GUIScrollBar', 'scroll');
         this.mouseInside();
       }

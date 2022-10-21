@@ -23,6 +23,7 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ShaderManager } from "../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { Mouse } from "../controls";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -1390,7 +1391,7 @@ export class GUIControl {
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
-      if(control.box && control.box.containsPoint(GameState.mouseUI) && (control.allowClick || control.editable)){
+      if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
         controls.push(control);
       }else{
         this.menu.SetWidgetHoverActive(control, false);
@@ -1403,8 +1404,8 @@ export class GUIControl {
 
   updateBounds(){
     let worldPosition: THREE.Vector3 = new THREE.Vector3;
-    // @ts-expect-error
-    this.box.setFromCenterAndSize(worldPosition, new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale))
+    this.widget.getWorldPosition(worldPosition);
+    this.box.setFromCenterAndSize((new THREE.Vector2(worldPosition.x, worldPosition.y)), new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale))
   }
 
   updateScale(){
@@ -1840,7 +1841,7 @@ export class GUIControl {
 
   buildText(){
     let self = this;
-    
+
     if(!this.text.texture)
       return;
 
@@ -2363,11 +2364,11 @@ export class GUIControl {
       args = [GUIControl.generateEventObject()];
 
     if(this.eventListeners.hasOwnProperty(name)){
-      let len = (this.eventListeners as any).length;
+      let len = (this.eventListeners as any)[name].length;
       for(let i = 0; i < len; i++){
-        if(typeof (this.eventListeners as any)[i] === 'function'){
+        if(typeof (this.eventListeners as any)[name][i] === 'function'){
           processed = true;
-          (this.eventListeners as any)[i].apply(null, args);
+          (this.eventListeners as any)[name][i].apply(null, args);
         }
       }
     }
