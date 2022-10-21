@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuJournal as K1_MenuJournal, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuJournal menu class.

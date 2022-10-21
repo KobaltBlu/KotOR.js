@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { LoadScreen as K1_LoadScreen, GUIProgressBar, GUILabel } from "../../../gui";
+import { GUIProgressBar, GUILabel } from "../../../gui";
+import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
 
 /* @file
 * The LoadScreen menu class.

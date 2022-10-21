@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced, GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuGraphicsAdvanced menu class.

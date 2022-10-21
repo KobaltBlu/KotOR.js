@@ -3,13 +3,14 @@
 
 import { GFFDataType } from "../../../enums/resource/GFFDataType";
 import { GameState } from "../../../GameState";
-import { CharGenClass as K1_CharGenClass, GUILabel, GUIButton, GUIControl, MenuManager, LBL_3DView } from "../../../gui";
+import { GUILabel, GUIButton, GUIControl, MenuManager, LBL_3DView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyModel } from "../../../odyssey";
 import { GFFField } from "../../../resource/GFFField";
 import { GFFObject } from "../../../resource/GFFObject";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClass as K1_CharGenClass } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenClass menu class.

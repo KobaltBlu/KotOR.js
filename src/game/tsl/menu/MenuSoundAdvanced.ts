@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuSoundAdvanced as K1_MenuSoundAdvanced, GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
+import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuSoundAdvanced menu class.

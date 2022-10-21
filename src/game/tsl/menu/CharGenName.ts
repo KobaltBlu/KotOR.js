@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenName as K1_CharGenName, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
+import { CharGenName as K1_CharGenName } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenName menu class.

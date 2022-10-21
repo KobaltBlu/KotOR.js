@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenPortCust as K1_CharGenPortCust, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
+import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenPortCust menu class.

@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuGalaxyMap as K1_MenuGalaxyMap, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
+import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuGalaxyMap menu class.

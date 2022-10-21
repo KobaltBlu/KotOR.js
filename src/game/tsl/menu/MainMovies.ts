@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MainMovies as K1_MainMovies, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
 
 /* @file
 * The MainMovies menu class.

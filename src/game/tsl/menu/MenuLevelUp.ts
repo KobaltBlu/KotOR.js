@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuLevelUp as K1_MenuLevelUp, GUIButton, GUIControl, GUILabel } from "../../../gui";
+import { GUIButton, GUIControl, GUILabel } from "../../../gui";
+import { MenuLevelUp as K1_MenuLevelUp } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuLevelUp menu class.

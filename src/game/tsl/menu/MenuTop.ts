@@ -2,8 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuTop as K1_MenuTop, GUIControl, GUIButton, GUILabel, GUIProgressBar, MenuManager } from "../../../gui";
+import { GUIControl, GUIButton, GUILabel, GUIProgressBar, MenuManager } from "../../../gui";
 import { PartyManager } from "../../../managers/PartyManager";
+import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuTop menu class.

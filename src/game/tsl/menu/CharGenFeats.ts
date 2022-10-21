@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenFeats as K1_CharGenFeats, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { CharGenFeats as K1_CharGenFeats } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenFeats menu class.

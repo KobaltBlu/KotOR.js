@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuAutoPause as K1_MenuAutoPause, GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
+import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuAutoPause menu class.

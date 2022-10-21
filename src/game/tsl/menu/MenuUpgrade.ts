@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuUpgrade as K1_MenuUpgrade, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { MenuUpgrade as K1_MenuUpgrade } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuUpgrade menu class.

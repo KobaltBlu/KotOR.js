@@ -2,9 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuCharacter as K1_MenuCharacter, GUILabel, GUIButton, GUISlider } from "../../../gui";
+import { GUILabel, GUIButton, GUISlider } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuCharacter menu class.

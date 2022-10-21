@@ -2,14 +2,15 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameDialog as K1_MenuDialog, GUILabel, GUIListBox } from "../../../gui";
+import { GUILabel, GUIListBox } from "../../../gui";
+import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
 
 /* @file
 * The InGameDialog menu class.
 */
 
-export class InGameDialog extends K1_MenuDialog {
+export class InGameDialog extends K1_InGameDialog {
 
   declare LBL_MESSAGE: GUILabel;
   declare LB_REPLIES: GUIListBox;

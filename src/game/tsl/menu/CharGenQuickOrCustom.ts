@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom, GUIButton, GUIListBox, MenuManager } from "../../../gui";
+import { GUIButton, GUIListBox, MenuManager } from "../../../gui";
+import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenQuickOrCustom menu class.

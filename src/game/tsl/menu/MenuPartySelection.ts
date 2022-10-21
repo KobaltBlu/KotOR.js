@@ -2,9 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuPartySelection as K1_MenuPartySelection, GUILabel, GUICheckBox, GUIButton, MenuManager } from "../../../gui";
+import { GUILabel, GUICheckBox, GUIButton, MenuManager } from "../../../gui";
 import { PartyManager } from "../../../managers/PartyManager";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuPartySelection menu class.

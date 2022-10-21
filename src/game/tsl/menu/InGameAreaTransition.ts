@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameAreaTransition as K1_InGameAreaTransition, GUILabel } from "../../../gui";
+import { GUILabel } from "../../../gui";
+import { InGameAreaTransition as K1_InGameAreaTransition } from "../../kotor/KOTOR";
 
 /* @file
 * The InGameAreaTransition menu class.

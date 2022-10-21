@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuResolutions as K1_MenuResolutions, GUIButton, GUIListBox, GUILabel } from "../../../gui";
+import { GUIButton, GUIListBox, GUILabel } from "../../../gui";
+import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuResolutions menu class.

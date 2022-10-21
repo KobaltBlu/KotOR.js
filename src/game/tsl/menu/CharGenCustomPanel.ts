@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenCustomPanel as K1_CharGenCustomPanel, GUIControl, GUIButton, GUILabel } from "../../../gui";
+import { GUIControl, GUIButton, GUILabel } from "../../../gui";
+import { CharGenCustomPanel as K1_CharGenCustomPanel } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenCustomPanel menu class.

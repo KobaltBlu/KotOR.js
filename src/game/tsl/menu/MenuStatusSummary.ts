@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuStatusSummary as K1_MenuStatusSummary, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
+import { MenuStatusSummary as K1_MenuStatusSummary } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuStatusSummary menu class.

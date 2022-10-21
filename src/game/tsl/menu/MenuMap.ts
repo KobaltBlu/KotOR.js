@@ -2,8 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuMap as K1_MenuMap, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuMap menu class.

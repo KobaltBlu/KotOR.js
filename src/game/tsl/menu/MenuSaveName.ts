@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuSaveName as K1_MenuSaveName, GUIButton, GUILabel } from "../../../gui";
+import { GUIButton, GUILabel } from "../../../gui";
+import { MenuSaveName as K1_MenuSaveName } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuSaveName menu class.

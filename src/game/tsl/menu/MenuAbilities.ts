@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuAbilities as K1_MenuAbilities, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuAbilities menu class.

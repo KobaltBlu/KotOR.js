@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuFeedback as K1_MenuFeedback, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { MenuFeedback as K1_MenuFeedback } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuFeedback menu class.

@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuKeyboardMapping as K1_MenuKeyboardMapping, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuKeyboardMapping menu class.

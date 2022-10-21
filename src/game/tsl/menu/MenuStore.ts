@@ -2,9 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuStore as K1_MenuStore, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { InventoryManager } from "../../../managers/InventoryManager";
 import { PartyManager } from "../../../managers/PartyManager";
+import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuStore menu class.

@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuToolTip as K1_MenuToolTip, GUILabel } from "../../../gui";
+import { GUILabel } from "../../../gui";
+import { MenuToolTip as K1_MenuToolTip } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuToolTip menu class.

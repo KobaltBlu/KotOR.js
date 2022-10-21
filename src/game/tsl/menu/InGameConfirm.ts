@@ -2,7 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameConfirm as K1_InGameConfirm, GUIListBox, GUIButton } from "../../../gui";
+import { GUIListBox, GUIButton } from "../../../gui";
+import { TLKManager } from "../../../managers/TLKManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
 
 /* @file
 * The InGameConfirm menu class.
@@ -53,7 +56,7 @@ export class InGameConfirm extends K1_InGameConfirm {
   ShowTutorialMessage(id = 39, nth = 0) {
     if (!GameState.TutorialWindowTracker[id]) {
       this.LB_MESSAGE.extent.top = 0;
-      let tlkId = parseInt(Global.kotor2DA.tutorial.rows[id]['message_pc' + nth]);
+      let tlkId = parseInt(TwoDAManager.datatables.get('tutorial')?.rows[id]['message_pc' + nth]);
       this.LB_MESSAGE.clearItems();
       this.LB_MESSAGE.addItem(TLKManager.GetStringById(tlkId));
       let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);

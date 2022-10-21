@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameOverlay as K1_InGameOverlay, GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager } from "../../../gui";
+import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager } from "../../../gui";
+import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
 
 /* @file
 * The InGameOverlay menu class.

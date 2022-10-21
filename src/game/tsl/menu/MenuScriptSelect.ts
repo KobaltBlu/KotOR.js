@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuScriptSelect as K1_MenuScriptSelect, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { MenuScriptSelect as K1_MenuScriptSelect } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuScriptSelect menu class.

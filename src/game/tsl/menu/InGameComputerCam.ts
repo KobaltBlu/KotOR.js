@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameComputerCam as K1_InGameComputerCam, GUILabel } from "../../../gui";
+import { GUILabel } from "../../../gui";
+import { InGameComputerCam as K1_InGameComputerCam } from "../../kotor/KOTOR";
 
 /* @file
 * The InGameComputerCam menu class.

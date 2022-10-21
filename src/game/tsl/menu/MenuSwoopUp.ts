@@ -2,13 +2,13 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuSwoopUp as K1_MenuSwoopUp, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton, GameMenu } from "../../../gui";
 
 /* @file
 * The MenuSwoopUp menu class.
 */
 
-export class MenuSwoopUp extends K1_MenuSwoopUp {
+export class MenuSwoopUp extends GameMenu {
 
   declare LB_DESC: GUIListBox;
   declare LB_DESC_LS: GUIListBox;

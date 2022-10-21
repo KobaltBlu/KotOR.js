@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { InGameBark as K1_InGameBark, GUILabel } from "../../../gui";
+import { GUILabel } from "../../../gui";
+import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 import * as THREE from "three";
 
 /* @file

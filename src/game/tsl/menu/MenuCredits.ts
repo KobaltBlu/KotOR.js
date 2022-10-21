@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuCredits as K1_MenuCredits, GUIListBox } from "../../../gui";
+import { GUIListBox } from "../../../gui";
+import { MenuCredits as K1_MenuCredits } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuCredits menu class.

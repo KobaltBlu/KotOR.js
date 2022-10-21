@@ -2,8 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenMain as K1_CharGenMain, GUILabel, LBL_3DView } from "../../../gui";
+import { GUILabel, LBL_3DView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenMain menu class.

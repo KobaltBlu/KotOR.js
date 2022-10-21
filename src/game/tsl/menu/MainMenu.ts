@@ -4,12 +4,13 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { BinaryReader } from "../../../BinaryReader";
 import { GameState } from "../../../GameState";
-import { MainMenu as K1_MainMenu, GUILabel, GUIListBox, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CharGenManager } from "../../../managers/CharGenManager";
 import { OdysseyModel } from "../../../odyssey";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
 
 /* @file
 * The MainMenu menu class.

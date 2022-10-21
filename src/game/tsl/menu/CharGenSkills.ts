@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { CharGenSkills as K1_CharGenSkills, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { CharGenSkills as K1_CharGenSkills } from "../../kotor/KOTOR";
 
 /* @file
 * The CharGenSkill menu class.

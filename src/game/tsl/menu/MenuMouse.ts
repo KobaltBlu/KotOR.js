@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuMouse as K1_MenuMouse, GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "../../../gui";
+import { MenuMouse as K1_MenuMouse } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuMouse menu class.

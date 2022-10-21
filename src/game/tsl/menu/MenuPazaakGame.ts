@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuPazaakGame as K1_MenuPazaakGame, GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
+import { MenuPazaakGame as K1_MenuPazaakGame } from "../../kotor/KOTOR";
 
 /* @file
 * The MenuPazaakGame menu class.
