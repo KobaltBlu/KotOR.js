@@ -19,13 +19,15 @@ export class LoadingScreen {
   constructor(parent?: HTMLElement, isGlobal: boolean = true){
     this.message = 'Loading...';
     this.loader = document.createElement('div');
-    this.loader.id = (isGlobal? 'id="loader"' : '');
+    this.loader.id = (isGlobal? 'loader' : '');
     this.loader.classList.add('loading-screen', 'se-pre-con')
     this.loader.innerHTML = '<div class="background"></div>'+
       '<div class="logo-wrapper"><img src="" /></div>'+
       '<div class="loading-container">'+
-        '<div class="ball"></div>'+
-        '<div class="ball1"></div>'+
+        '<div class="spinner-wrapper">'+
+          '<div class="ball"></div>'+
+          '<div class="ball1"></div>'+
+        '</div>'+
         '<div id="loading-message" class="loading-message">'+this.message+'</div>'+
       '</div>';
 
@@ -53,7 +55,7 @@ export class LoadingScreen {
 
   SetBackgroundImage(src?: string){
     this.background.style.backgroundColor = 'black';
-    this.background.style.backgroundImage = `url({src})`;
+    this.background.style.backgroundImage = `url(${src})`;
     this.background.style.backgroundPosition = 'center';
     this.background.style.backgroundSize = 'cover';
   }
@@ -67,18 +69,25 @@ export class LoadingScreen {
   Show(msg?: string){
     this.SetMessage(msg);
     this.loader.style.display = 'block';
+    this.loader.classList.remove('fade-in');
+    this.loader.classList.remove('fade-out');
+    this.loader.classList.add('fade-in');
     // this.loader.stop(true, true).fadeIn('slow');
     //this.loading_container.css('left', '50%').css('left', '-='+this.message.width()/2+'px');
   }
 
   Hide(){
-    this.loader.style.display = 'none';
-    // this.loader.fadeOut('slow');
+    // this.loader.style.display = 'none';
+    this.loader.classList.remove('fade-in');
+    this.loader.classList.remove('fade-out');
+    this.loader.classList.add('fade-out');
   }
 
   Dismiss(){
-    this.loader.style.display = 'none';
-    // this.loader.fadeOut('slow');
+    // this.loader.style.display = 'none';
+    this.loader.classList.remove('fade-in');
+    this.loader.classList.remove('fade-out');
+    this.loader.classList.add('fade-out');
   }
 
 }
