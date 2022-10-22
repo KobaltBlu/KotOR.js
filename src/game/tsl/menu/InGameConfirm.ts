@@ -47,7 +47,7 @@ export class InGameConfirm extends K1_InGameConfirm {
     super.Show();
   }
 
-  Update(delta) {
+  Update(delta: number) {
     super.Update(delta);
     this.tGuiPanel.widget.position.x = 0;
     this.tGuiPanel.widget.position.y = 0;

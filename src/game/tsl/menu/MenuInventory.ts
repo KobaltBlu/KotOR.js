@@ -3,6 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { InventoryManager } from "../../../managers/InventoryManager";
+import { PartyManager } from "../../../managers/PartyManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
 
 /* @file
@@ -61,20 +66,20 @@ export class MenuInventory extends K1_MenuInventory {
     for (let i = 0; i < PartyManager.party.length; i++) {
       let partyMember = PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
-      let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       if (!i) {
         if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
           this.LBL_PORT.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
+          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
             this.LBL_PORT.setFillTexture(texture);
           });
         }
       } else {
-        this['BTN_CHANGE' + i].show();
-        if (this['BTN_CHANGE' + i].getFillTextureName() != portrait.baseresref) {
-          this['BTN_CHANGE' + i].setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
-            this['BTN_CHANGE' + i].setFillTexture(texture);
+        this.getControlByName('BTN_CHANGE' + i).show();
+        if (this.getControlByName('BTN_CHANGE' + i).getFillTextureName() != portrait.baseresref) {
+          this.getControlByName('BTN_CHANGE' + i).setFillTextureName(portrait.baseresref);
+          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+            this.getControlByName('BTN_CHANGE' + i).setFillTexture(texture);
           });
         }
       }

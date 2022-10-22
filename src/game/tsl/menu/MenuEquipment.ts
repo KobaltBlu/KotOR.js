@@ -1,9 +1,19 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { GUILabel, GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { InventoryManager } from "../../../managers/InventoryManager";
+import { PartyManager } from "../../../managers/PartyManager";
+import { ModuleItem } from "../../../module";
 import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
+import * as THREE from "three";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { TextureType } from "../../../enums/loaders/TextureType";
+import { GFFStruct } from "../../../resource/GFFStruct";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 /* @file
 * The MenuEquipment menu class.
@@ -138,9 +148,9 @@ export class MenuEquipment extends K1_MenuEquipment {
           currentPC.equipItem(this.slot, this.selectedItem, () => {
             this.UpdateSlotIcons();
           });
-          this.slot = null;
+          this.slot = null as any;
           this.equipmentSelectionActive = false;
-          this.UpdateSelected(null);
+          this.UpdateSelected(undefined as any);
           this.UpdateSlotIcons();
         }
       });
@@ -150,13 +160,13 @@ export class MenuEquipment extends K1_MenuEquipment {
 
   UpdateList() {
     this.LB_ITEMS.clearItems();
-    this.selectedItem = null;
-    this.UpdateSelected(null);
+    this.selectedItem = undefined as any;
+    this.UpdateSelected(undefined as any);
     let currentPC = PartyManager.party[0];
     if (this.slot) {
       let inv = InventoryManager.getInventory(this.slot, currentPC);
       for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i], null, (control, type) => {
+        this.LB_ITEMS.addItem(inv[i], undefined, (control: any, type: any) => {
           this.ListItemBuilder(inv[i], control, type);
         });
       }
@@ -164,7 +174,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     }
   }
 
-  ListItemBuilder(item, control, type) {
+  ListItemBuilder(item: any, control: GFFStruct, type: any) {
     control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(item.getName());
     let _ctrl2 = new GUIProtoItem(this, control, this.LB_ITEMS, this.LB_ITEMS.scale);
     _ctrl2.extent.width -= 52;
@@ -180,9 +190,9 @@ export class MenuEquipment extends K1_MenuEquipment {
     iconMaterial.transparent = true;
     let iconSprite = new THREE.Sprite(iconMaterial);
     TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureType.TEXTURE);
-    item2.spriteGroup = new THREE.Group();
-    item2.spriteGroup.position.x = -(_ctrl2.extent.width / 2) - 52 / 2;
-    item2.spriteGroup.position.y += 1;
+    item2.userData.spriteGroup = new THREE.Group();
+    item2.userData.spriteGroup.position.x = -(_ctrl2.extent.width / 2) - 52 / 2;
+    item2.userData.spriteGroup.position.y += 1;
     iconSprite.scale.x = 48;
     iconSprite.scale.y = 48;
     for (let i = 0; i < 7; i++) {
@@ -202,21 +212,23 @@ export class MenuEquipment extends K1_MenuEquipment {
         hexSprite.visible = false;
       }
       hexSprite.scale.x = hexSprite.scale.y = 64;
-      item2.spriteGroup.add(hexSprite);
+      item2.userData.spriteGroup.add(hexSprite);
     }
-    item2.add(item2.spriteGroup);
-    item2.spriteGroup.add(iconSprite);
+    item2.add(item2.userData.spriteGroup);
+    item2.userData.spriteGroup.add(iconSprite);
     this.LB_ITEMS.itemGroup.add(item2);
-    _ctrl2.addEventListener('click', e => {
+    _ctrl2.addEventListener('click', (e: any) => {
       e.stopPropagation();
       this.UpdateSelected(item);
     });
   }
 
-  UpdateSelected(item = null) {
+  UpdateSelected(item: ModuleItem) {
     this.selectedItem = item;
     if (this.selectedItem instanceof ModuleItem) {
+
     } else {
+
     }
   }
 
@@ -228,13 +240,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + implant.getBaseItem().itemclass + '_' + ('000' + implant.getModelVariation()).slice(-3);
         if (this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
           this.LBL_INV_IMPLANT.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_IMPLANT.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
         this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
-        TextureLoader.tpcLoader.fetch('iimplant', texture => {
+        TextureLoader.tpcLoader.fetch('iimplant', (texture: OdysseyTexture) => {
           this.LBL_INV_IMPLANT.setFillTexture(texture);
         });
       }
@@ -243,13 +255,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + head.getBaseItem().itemclass + '_' + ('000' + head.getModelVariation()).slice(-3);
         if (this.LBL_INV_HEAD.getFillTextureName() != icon) {
           this.LBL_INV_HEAD.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_HEAD.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_HEAD.getFillTextureName() != 'ihead') {
         this.LBL_INV_HEAD.setFillTextureName('ihead');
-        TextureLoader.tpcLoader.fetch('ihead', texture => {
+        TextureLoader.tpcLoader.fetch('ihead', (texture: OdysseyTexture) => {
           this.LBL_INV_HEAD.setFillTexture(texture);
         });
       }
@@ -258,13 +270,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + hands.getBaseItem().itemclass + '_' + ('000' + hands.getModelVariation()).slice(-3);
         if (this.LBL_INV_HANDS.getFillTextureName() != icon) {
           this.LBL_INV_HANDS.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_HANDS.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_HANDS.getFillTextureName() != 'ihands') {
         this.LBL_INV_HANDS.setFillTextureName('ihands');
-        TextureLoader.tpcLoader.fetch('ihands', texture => {
+        TextureLoader.tpcLoader.fetch('ihands', (texture: OdysseyTexture) => {
           this.LBL_INV_HANDS.setFillTexture(texture);
         });
       }
@@ -273,13 +285,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + l_arm.getBaseItem().itemclass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
         if (this.LBL_INV_ARM_L.getFillTextureName() != icon) {
           this.LBL_INV_ARM_L.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_ARM_L.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l') {
         this.LBL_INV_ARM_L.setFillTextureName('iforearm_l');
-        TextureLoader.tpcLoader.fetch('iforearm_l', texture => {
+        TextureLoader.tpcLoader.fetch('iforearm_l', (texture: OdysseyTexture) => {
           this.LBL_INV_ARM_L.setFillTexture(texture);
         });
       }
@@ -288,13 +300,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + armor.getBaseItem().itemclass + '_' + ('000' + armor.getModelVariation()).slice(-3);
         if (this.LBL_INV_BODY.getFillTextureName() != icon) {
           this.LBL_INV_BODY.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_BODY.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_BODY.getFillTextureName() != 'iarmor') {
         this.LBL_INV_BODY.setFillTextureName('iarmor');
-        TextureLoader.tpcLoader.fetch('iarmor', texture => {
+        TextureLoader.tpcLoader.fetch('iarmor', (texture: OdysseyTexture) => {
           this.LBL_INV_BODY.setFillTexture(texture);
         });
       }
@@ -303,13 +315,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + r_arm.getBaseItem().itemclass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
         if (this.LBL_INV_ARM_R.getFillTextureName() != icon) {
           this.LBL_INV_ARM_R.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_ARM_R.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r') {
         this.LBL_INV_ARM_R.setFillTextureName('iforearm_r');
-        TextureLoader.tpcLoader.fetch('iforearm_r', texture => {
+        TextureLoader.tpcLoader.fetch('iforearm_r', (texture: OdysseyTexture) => {
           this.LBL_INV_ARM_R.setFillTexture(texture);
         });
       }
@@ -318,13 +330,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + l_weap.getBaseItem().itemclass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
         if (this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_WEAP_L.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l') {
         this.LBL_INV_WEAP_L.setFillTextureName('iweap_l');
-        TextureLoader.tpcLoader.fetch('iweap_l', texture => {
+        TextureLoader.tpcLoader.fetch('iweap_l', (texture: OdysseyTexture) => {
           this.LBL_INV_WEAP_L.setFillTexture(texture);
         });
       }
@@ -333,13 +345,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + belt.getBaseItem().itemclass + '_' + ('000' + belt.getModelVariation()).slice(-3);
         if (this.LBL_INV_BELT.getFillTextureName() != icon) {
           this.LBL_INV_BELT.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_BELT.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_BELT.getFillTextureName() != 'ibelt') {
         this.LBL_INV_BELT.setFillTextureName('ibelt');
-        TextureLoader.tpcLoader.fetch('ibelt', texture => {
+        TextureLoader.tpcLoader.fetch('ibelt', (texture: OdysseyTexture) => {
           this.LBL_INV_BELT.setFillTexture(texture);
         });
       }
@@ -348,13 +360,13 @@ export class MenuEquipment extends K1_MenuEquipment {
         let icon = 'i' + r_weap.getBaseItem().itemclass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
         if (this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, texture => {
+          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
             this.LBL_INV_WEAP_R.setFillTexture(texture);
           });
         }
       } else if (this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r') {
         this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
-        TextureLoader.tpcLoader.fetch('iweap_r', texture => {
+        TextureLoader.tpcLoader.fetch('iweap_r', (texture: OdysseyTexture) => {
           this.LBL_INV_WEAP_R.setFillTexture(texture);
         });
       }
@@ -372,20 +384,20 @@ export class MenuEquipment extends K1_MenuEquipment {
     for (let i = 0; i < PartyManager.party.length; i++) {
       let partyMember = PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
-      let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       if (!i) {
         if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
           this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
+          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
             this.LBL_PORTRAIT.setFillTexture(texture);
           });
         }
       } else {
-        this['BTN_CHANGE' + i].show();
-        if (this['BTN_CHANGE' + i].getFillTextureName() != portrait.baseresref) {
-          this['BTN_CHANGE' + i].setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
-            this['BTN_CHANGE' + i].setFillTexture(texture);
+        this.getControlByName('BTN_CHANGE' + i).show();
+        if (this.getControlByName('BTN_CHANGE' + i).getFillTextureName() != portrait.baseresref) {
+          this.getControlByName('BTN_CHANGE' + i).setFillTextureName(portrait.baseresref);
+          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+            this.getControlByName('BTN_CHANGE' + i).setFillTexture(texture);
           });
         }
       }

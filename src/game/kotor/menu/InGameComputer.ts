@@ -54,6 +54,7 @@ export class InGameComputer extends GameMenu {
   isAnimatedCutscene: boolean;
   ambientTrack: any;
   state: number;
+  startingEntry: any;
 
   constructor(){
     super();
@@ -150,9 +151,6 @@ export class InGameComputer extends GameMenu {
       this.Close();
       GameState.inDialog = false;
     }
-  }
-  startingEntry(startingEntry: any) {
-    throw new Error("Method not implemented.");
   }
 
   getNextEntry(entries: any[] = [], callback?: Function) {

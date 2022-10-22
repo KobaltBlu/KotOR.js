@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel } from "../../../gui";
+import { GUILabel, MenuManager } from "../../../gui";
 import { InGameComputerCam as K1_InGameComputerCam } from "../../kotor/KOTOR";
 
 /* @file
@@ -32,13 +32,13 @@ export class InGameComputerCam extends K1_InGameComputerCam {
     if (cam_id >= 0) {
       MenuManager.InGameDialog.SetPlaceableCamera(cam_id);
     } else {
-      GameState.currenCamera = GameState.camera;
+      GameState.currentCamera = GameState.camera;
     }
   }
 
   Hide() {
     super.Hide();
-    GameState.currenCamera = GameState.camera;
+    GameState.currentCamera = GameState.camera;
   }
   
 }

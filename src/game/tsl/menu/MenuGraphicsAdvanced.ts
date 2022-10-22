@@ -3,6 +3,9 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { TLKManager } from "../../../managers/TLKManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
 
 /* @file
@@ -44,6 +47,8 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
 
+      const texPacks = TwoDAManager.datatables.get('texpacks') || {} as any;
+
       this.BTN_ANTIALIASLEFT.border.dimension = 0;
       this.BTN_ANISOTROPYLEFT.border.dimension = 0;
       this.BTN_TEXQUALLEFT.border.dimension = 0;
@@ -61,7 +66,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       this.BTN_TEXQUALRIGHT.addEventListener('click', (e: any) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
-        if(quality >= Global.kotor2DA.texpacks.RowCount) quality = Global.kotor2DA.texpacks.RowCount-1;
+        if(quality >= texPacks.RowCount) quality = texPacks.RowCount-1;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
@@ -98,17 +103,18 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
 
   Close() {
     super.Close();
-    const quality = iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
+    const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     if (quality != TextureLoader.TextureQuality) {
       TextureLoader.TextureQuality = quality;
       GameState.ReloadTextureCache();
-      iniConfig.save();
+      GameState.iniConfig.save();
     }
   }
 
   updateTextureQualityLabel() {
-    const quality = iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    const _2darow = Global.kotor2DA.texpacks.rows[quality];
+    const texPacks = TwoDAManager.datatables.get('texpacks') || {} as any;
+    const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
+    const _2darow = texPacks.rows[quality];
     if (_2darow) {
       this.BTN_TEXQUAL.setText(TLKManager.GetStringById(_2darow.strrefname));
     }
@@ -117,7 +123,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     } else {
       this.BTN_TEXQUALLEFT.show();
     }
-    if (quality >= Global.kotor2DA.texpacks.RowCount - 1) {
+    if (quality >= texPacks.RowCount - 1) {
       this.BTN_TEXQUALRIGHT.hide();
     } else {
       this.BTN_TEXQUALRIGHT.show();

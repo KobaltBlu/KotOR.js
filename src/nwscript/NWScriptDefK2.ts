@@ -5,6 +5,7 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
 import { FadeOverlayManager } from "../managers/FadeOverlayManager";
+import { GlobalVariableManager } from "../managers/GlobalVariableManager";
 import { PartyManager } from "../managers/PartyManager";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptDef } from "./NWScriptDef";
@@ -5623,8 +5624,8 @@ NWScriptDefK2.Actions = {
     args: [ 'string', 'int' ],
     action: function(args: any, _instr: any, action: any){
       
-      if(typeof GameState.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GameState.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1]);
+      if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1]);
     }	
   },
     800: {
@@ -5633,8 +5634,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ 'string', 'int' ],
     action: function(args: any, _instr: any, action: any){
-      if(typeof GameState.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GameState.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1]);
+      if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1]);
     }	
   },
     801: {

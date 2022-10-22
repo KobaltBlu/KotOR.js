@@ -55,7 +55,7 @@
         KotOR.LoadingScreen.main.SetLogo(app_profile.logo);
         KotOR.LoadingScreen.main.SetBackgroundImage(app_profile.background);
         KotOR.LoadingScreen.main.Show();
-        
+        KotOR.GameState.GameKey = window.GameKey;
         KotOR.GameInitializer.Init({
           game: window.GameKey,
           onLoad: () => {

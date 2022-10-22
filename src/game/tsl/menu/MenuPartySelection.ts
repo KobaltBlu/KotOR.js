@@ -2,8 +2,14 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUICheckBox, GUIButton, MenuManager } from "../../../gui";
+import { GUILabel, GUICheckBox, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
 import { PartyManager } from "../../../managers/PartyManager";
+import { ModuleCreature } from "../../../module";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyModel } from "../../../odyssey";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 
@@ -78,11 +84,12 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   char: any;
   LBL_3D_VIEW: any;
   lbl_count: any;
-  ignoreUnescapable: boolean;
-  forceNPC1: number;
-  forceNPC2: number;
-  onCloseScript: any;
-  selectedNPC: number;
+  // ignoreUnescapable: boolean;
+  // forceNPC1: number;
+  // forceNPC2: number;
+  // onCloseScript: any;
+  // selectedNPC: number;
+  cgmain_light: OdysseyModel;
 
   constructor(){
     super();
@@ -183,7 +190,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
         if(this.onCloseScript instanceof NWScriptInstance){
           this.Close();
-          this.onCloseScript.run(undefined, () => {
+          this.onCloseScript.run(undefined, 0, () => {
             this.onCloseScript = undefined;
           });
         }else{
@@ -202,10 +209,10 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
         //Area Unescapable disables party selection as well as transit
         if(!GameState.module.area.Unescapable || this.ignoreUnescapable){
-          if(this.npcInParty(selected)){
-            PartyManager.RemoveNPCById(selected);
+          if(this.npcInParty(this.selectedNPC)){
+            PartyManager.RemoveNPCById(this.selectedNPC);
             this.UpdateSelection();
-          }else if(this.isSelectable(selected) && PartyManager.CurrentMembers.length < PartyManager.MaxSize){
+          }else if(this.isSelectable(this.selectedNPC) && PartyManager.CurrentMembers.length < PartyManager.MaxSize){
             this.addToParty(this.selectedNPC);
           }
           this.UpdateCount();
@@ -218,11 +225,11 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       GameState.ModelLoader.load({
         file: 'cgmain_light',
-        onLoad: (mdl) => {
+        onLoad: (mdl: OdysseyModel) => {
           this.cgmain_light = mdl;
 
           OdysseyModel3D.FromMDL(this.cgmain_light, { 
-            onComplete: (model) => {
+            onComplete: (model: OdysseyModel3D) => {
               //console.log('Model Loaded', model);
               this.LBL_3D_VIEW.model = model;
               this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
@@ -251,7 +258,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     });
   }
 
-  addToParty(selected) {
+  addToParty(selected: number) {
     let idx = PartyManager.CurrentMembers.push({
       isLeader: false,
       memberID: selected
@@ -266,7 +273,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     this.UpdateSelection();
   }
 
-  npcInParty(nID) {
+  npcInParty(nID: number) {
     for (let i = 0; i < PartyManager.CurrentMembers.length; i++) {
       let cpm = PartyManager.CurrentMembers[i];
       if (cpm.memberID == nID) {
@@ -276,7 +283,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     return false;
   }
 
-  indexOfSelectedNPC(nID) {
+  indexOfSelectedNPC(nID: number) {
     for (let i = 0; i < PartyManager.CurrentMembers.length; i++) {
       let cpm = PartyManager.CurrentMembers[i];
       if (cpm.memberID == nID) {
@@ -293,7 +300,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.BTN_ACCEPT.setText('Add');
     }
     if (!(this.char instanceof ModuleCreature) || this.char instanceof ModuleCreature && this.char.selectedNPC != this.selectedNPC) {
-      PartyManager.LoadPartyMemberCreature(this.selectedNPC, creature => {
+      PartyManager.LoadPartyMemberCreature(this.selectedNPC, (creature: ModuleCreature) => {
         if (creature instanceof ModuleCreature) {
           if (this.char instanceof ModuleCreature) {
             this.char.destroy();
@@ -333,43 +340,41 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.addToParty(this.forceNPC2);
     GameState.MenuActive = true;
     if (this.ignoreUnescapable) {
-      MenuManager.MenuTop.toggleNavUI(false);
+      // MenuManager.MenuTop.toggleNavUI(false);
     }
     for (let i = 0; i < 10; i++) {
-      this['LBL_CHAR' + i].hide();
-      this['LBL_NA' + i].show();
+      this.getControlByName('LBL_CHAR' + i).hide();
+      this.getControlByName('LBL_NA' + i).show();
       if (PartyManager.IsAvailable(i)) {
-        this['LBL_NA' + i].hide();
+        this.getControlByName('LBL_NA' + i).hide();
         let portrait = PartyManager.GetPortraitByIndex(i);
-        if (this['LBL_NA' + i].getFillTextureName() != portrait) {
-          this['LBL_CHAR' + i].setFillTextureName(portrait);
-          TextureLoader.Load(portrait, texture => {
-            this['LBL_CHAR' + i].setFillTexture(texture);
+        if (this.getControlByName('LBL_NA' + i).getFillTextureName() != portrait) {
+          this.getControlByName('LBL_CHAR' + i).setFillTextureName(portrait);
+          TextureLoader.Load(portrait, (texture: OdysseyTexture) => {
+            this.getControlByName('LBL_CHAR' + i).setFillTexture(texture);
             if (this.isSelectable(i)) {
-              this['LBL_CHAR' + i].getFill().material.uniforms.opacity.value = 1;
+              (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 1;
             } else {
-              this['LBL_CHAR' + i].getFill().material.uniforms.opacity.value = 0.5;
+              (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 0.5;
             }
           });
         } else {
           if (this.isSelectable(i)) {
-            this['LBL_CHAR' + i].getFill().material.uniforms.opacity.value = 1;
+            (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 1;
           } else {
-            this['LBL_CHAR' + i].getFill().material.uniforms.opacity.value = 0.5;
+            (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 0.5;
           }
         }
-        this['LBL_CHAR' + i].show();
+        this.getControlByName('LBL_CHAR' + i).show();
       }
     }
-    TextureLoader.LoadQueue(() => {
-    }, texName => {
-    });
+    TextureLoader.LoadQueue(() => { });
     if (scriptName != '' || scriptName != null) {
       this.onCloseScript = await NWScript.Load(scriptName);
     }
   }
 
-  Update(delta) {
+  Update(delta: number) {
     if (!this.bVisible)
       return;
     if (this.char instanceof ModuleCreature)
@@ -389,7 +394,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     return true;
   }
 
-  isSelectable(index) {
+  isSelectable(index: number) {
     if (this.forceNPC1 > -1 || this.forceNPC2 > -1) {
       return (this.forceNPC1 > -1 && this.forceNPC1 == index || this.forceNPC2 > -1 && this.forceNPC2 == index) && PartyManager.IsSelectable(index);
     } else {

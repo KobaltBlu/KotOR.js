@@ -2,8 +2,14 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { CharGenManager } from "../../../managers/CharGenManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClasses } from "../../CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
+import * as THREE from "three";
 
 /* @file
 * The CharGenPortCust menu class.
@@ -54,22 +60,25 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
         }
 
-        for(let i = 0; i < Global.kotor2DA.portraits.RowCount; i++){
-          let port = Global.kotor2DA.portraits.rows[i];
-          if(parseInt(port['appearancenumber']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
-          }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
-          }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
+        const portraits2DA = TwoDAManager.datatables.get('portraits');
+        if(portraits2DA){
+          for(let i = 0; i < portraits2DA.RowCount; i++){
+            let port = portraits2DA.rows[i];
+            if(parseInt(port['appearancenumber']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }
           }
         }
 
-        GameState.player.LoadModel( (model) => {
-          this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
+        GameState.player.LoadModel( (model: any) => {
+          // this.LBL_HEAD._3dView.camera.position.z = model.camerahook.getWorldPosition().z;
           this.UpdatePortrait();
         });
 
@@ -86,22 +95,29 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
         }
 
-        for(let i = 0; i < Global.kotor2DA.portraits.RowCount; i++){
-          let port = Global.kotor2DA.portraits.rows[i];
-          if(parseInt(port['appearancenumber']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
-          }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
-          }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
-            GameState.player.portraidId = i;
-            break;
+        const portraits2DA = TwoDAManager.datatables.get('portraits');
+        if(portraits2DA){
+          for(let i = 0; i < portraits2DA.RowCount; i++){
+            let port = portraits2DA.rows[i];
+            if(parseInt(port['appearancenumber']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
+              GameState.player.portraidId = i;
+              break;
+            }
           }
         }
 
-        GameState.player.LoadModel( (model) => {
-          this.LBL_HEAD._3dView.camera.position.z = model.getObjectByName('camerahook').getWorldPosition().z;
+        GameState.player.LoadModel( (model: OdysseyModel3D) => {
+          let target = new THREE.Vector3;
+          if(model.camerahook){
+            model.camerahook.getWorldPosition(target);
+            this._3dView.camera.position.z = target.z;
+          }
           this.UpdatePortrait();
         });
 
@@ -114,7 +130,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           //Restore previous appearance
           GameState.player.appearance = this.appearance;
           GameState.player.portraidId = this.portraidId;
-          GameState.player.LoadModel( (model) => {
+          GameState.player.LoadModel( (model: any) => {
             this.exiting = false;
             this.Close();
           });
@@ -131,17 +147,17 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         this.Close();
       });
 
-      this.tGuiPanel.widget.fill.position.z = -0.5
+      this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
-      this.LBL_HEAD._3dView = new LBL_3DView();
-      this.LBL_HEAD._3dView.visible = true;
-      this.LBL_HEAD._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
-      this.LBL_HEAD._3dView.camera.updateProjectionMatrix();
-      this.LBL_HEAD.setFillTexture(this.LBL_HEAD._3dView.texture.texture);
+      this._3dView = new LBL_3DView();
+      this._3dView.visible = true;
+      this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
+      this._3dView.camera.updateProjectionMatrix();
+      this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
 
       GameState.ModelLoader.load({
         file: 'cghead_light',
-        onLoad: (mdl) => {
+        onLoad: (mdl: any) => {
           this.cghead_light = mdl;
           this.Init3D();
           resolve();
@@ -151,19 +167,17 @@ export class CharGenPortCust extends K1_CharGenPortCust {
   }
 
   Init3D() {
-    let control = this.LBL_HEAD;
     OdysseyModel3D.FromMDL(this.cghead_light, {
-      onComplete: model => {
-        control._3dViewModel = model;
-        control._3dView.addModel(control._3dViewModel);
-        control.camerahook = control._3dViewModel.getObjectByName('camerahookm');
-        control._3dView.camera.position.set(control.camerahook.position.x, control.camerahook.position.y, control.camerahook.position.z);
-        control._3dView.camera.quaternion.set(control.camerahook.quaternion.x, control.camerahook.quaternion.y, control.camerahook.quaternion.z, control.camerahook.quaternion.w);
-        control._3dView.camera.position.z = 1;
-        control._3dViewModel.playAnimation(0, true);
+      onComplete: (model: any) => {
+        this._3dViewModel = model;
+        this._3dView.addModel(this._3dViewModel);
+        this._3dView.camera.position.copy(model.camerahookm.position);
+        this._3dView.camera.quaternion.copy(model.camerahookm.quaternion);
+        this._3dView.camera.position.z = 1;
+        this._3dViewModel.playAnimation(0, true);
       },
       manageLighting: false,
-      context: control._3dView
+      context: this._3dView
     });
   }
 
@@ -172,11 +186,10 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     if (!this.bVisible)
       return;
     try {
-      let modelControl = this.LBL_HEAD;
       GameState.player.update(delta);
-      modelControl._3dView.render(delta);
-      modelControl.getFill().material.needsUpdate = true;
-      modelControl.getFill().material.transparent = false;
+      this._3dView.render(delta);
+      (this.LBL_HEAD.getFill().material as any).needsUpdate = true;
+      (this.LBL_HEAD.getFill().material as any).transparent = false;
     } catch (e: any) {
       console.error(e);
     }
@@ -184,11 +197,11 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
   UpdatePortrait() {
     let portraitId = GameState.player.getPortraitId();
-    let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+    let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
     this.LBL_PORTRAIT.show();
     if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
       this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-      TextureLoader.tpcLoader.fetch(portrait.baseresref, texture => {
+      TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: any) => {
         this.LBL_PORTRAIT.setFillTexture(texture);
       });
     }
@@ -202,8 +215,13 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       GameState.player.model.parent.remove(GameState.player.model);
     } catch (e: any) {
     }
-    this.LBL_HEAD._3dView.scene.add(GameState.player.model);
-    this.LBL_HEAD._3dView.camera.position.z = GameState.player.model.getObjectByName('camerahook').getWorldPosition().z;
+    this._3dView.scene.add(GameState.player.model);
+    let target = new THREE.Vector3;
+    if(GameState.player.model.camerahook){
+      GameState.player.model.camerahook.getWorldPosition(target);
+      this._3dView.camera.position.z = target.z;
+    }
+    // this._3dView.camera.position.z = GameState.player.model.getObjectByName('camerahook').getWorldPosition().z;
     this.UpdatePortrait();
   }
   

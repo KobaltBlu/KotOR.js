@@ -592,7 +592,7 @@ GUIListBox.InitTextures = function(){
         name = 'lbl_hex_'+(i+1);
       }
       TextureLoader.Load(name, (texture: OdysseyTexture) => {
-        GUIListBox.hexTextures.set(texture.name, texture);
+        GUIListBox.hexTextures.set(texture?.name, texture);
       });
     }
   }

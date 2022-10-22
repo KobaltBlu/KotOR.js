@@ -1,8 +1,16 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox } from "../../../gui";
+import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
+import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
+import { ModuleCreature, ModuleObject } from "../../../module";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { GFFObject } from "../../../resource/GFFObject";
+import { LIPObject } from "../../../resource/LIPObject";
+import { AsyncLoop } from "../../../utility/AsyncLoop";
 import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
 
 /* @file
@@ -47,7 +55,7 @@ export class InGameComputer extends K1_InGameComputer {
     super.Show();
   }
 
-  StartConversation(gff = null, owner, listener = GameState.player) {
+  StartConversation(gff: GFFObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
     this.LB_MESSAGE.clearItems();
     this.Open();
     this.LB_REPLIES.clearItems();
@@ -116,7 +124,7 @@ export class InGameComputer extends K1_InGameComputer {
       this.updateTextPosition();
       let begin = () => {
         if (this.ambientTrack != '') {
-          AudioLoader.LoadMusic(this.ambientTrack, data => {
+          AudioLoader.LoadMusic(this.ambientTrack, (data: any) => {
             GameState.audioEngine.stopBackgroundMusic();
             GameState.audioEngine.SetDialogBackgroundMusic(data);
             this.showEntry(this.startingEntry);
@@ -128,7 +136,7 @@ export class InGameComputer extends K1_InGameComputer {
         }
       };
       this.startingEntry = null;
-      this.getNextEntry(this.startingList, entry => {
+      this.getNextEntry(this.startingList, (entry: any) => {
         this.startingEntry = entry;
         if (entry.replies.length == 1 && this.isEndDialog(this.replyList[entry.replies[0].index])) {
           this.EndConversation();
@@ -142,7 +150,7 @@ export class InGameComputer extends K1_InGameComputer {
     }
   }
 
-  getNextEntry(entries = [], callback = null) {
+  getNextEntry(entries: any[] = [], callback?: Function) {
     if (!entries.length) {
       this.EndConversation();
     }
@@ -168,7 +176,7 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, entry.isActiveParams.Param5);
             script.setScriptStringParam(entry.isActiveParams.String);
             script.name = entry.isActive;
-            script.run(this.owner, 0, async bSuccess => {
+            script.run(this.owner, 0, async (bSuccess: boolean) => {
               console.log('dialog cond1', {
                 entry: entry,
                 script: entry.isActive,
@@ -194,7 +202,7 @@ export class InGameComputer extends K1_InGameComputer {
                     script.setScriptParam(5, entry.isActive2Params.Param5);
                     script.setScriptStringParam(entry.isActive2Params.String);
                     script.name = entry.isActive2;
-                    script.run(this.owner, 0, bSuccess => {
+                    script.run(this.owner, 0, (bSuccess: boolean) => {
                       console.log('dialog cond2', {
                         entry: entry,
                         script: entry.isActive2,
@@ -236,7 +244,7 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, entry.isActive2Params.Param5);
             script.setScriptStringParam(entry.isActive2Params.String);
             script.name = entry.isActive;
-            script.run(this.owner, 0, bSuccess => {
+            script.run(this.owner, 0, (bSuccess: boolean) => {
               console.log('dialog cond2', {
                 entry: entry,
                 script: entry.isActive2,
@@ -264,8 +272,8 @@ export class InGameComputer extends K1_InGameComputer {
     entryLoop();
   }
 
-  isEndDialog(node) {
-    let returnValue = null;
+  isEndDialog(node: any) {
+    let returnValue: any = null;
     if (typeof node.entries !== 'undefined') {
       returnValue = node.text == '' && !node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
@@ -277,7 +285,7 @@ export class InGameComputer extends K1_InGameComputer {
     return returnValue;
   }
 
-  isContinueDialog(node) {
+  isContinueDialog(node: any) {
     if (typeof node.entries !== 'undefined') {
       return node.text == '' && node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
@@ -287,15 +295,15 @@ export class InGameComputer extends K1_InGameComputer {
     }
   }
 
-  PlayerSkipEntry(entry = null) {
-    if (entry != null) {
+  PlayerSkipEntry(entry: any) {
+    if (entry) {
       clearTimeout(entry.timeout);
       this.audioEmitter.Stop();
       this.showReplies(entry);
     }
   }
 
-  async showEntry(entry) {
+  async showEntry(entry: any) {
     if (!GameState.inDialog)
       return;
     this.LB_MESSAGE.clearItems();
@@ -307,7 +315,7 @@ export class InGameComputer extends K1_InGameComputer {
     this.currentEntry = entry;
     entry.timeout = null;
     if (entry.speakerTag != '') {
-      entry.speaker = GameState.GetObjectByTag(entry.speakerTag);
+      entry.speaker = ModuleObjectManager.GetObjectByTag(entry.speakerTag);
     } else {
       entry.speaker = this.owner;
     }
@@ -315,7 +323,7 @@ export class InGameComputer extends K1_InGameComputer {
       if (entry.listenerTag == 'PLAYER') {
         this.listener = GameState.player;
       } else {
-        this.listener = GameState.GetObjectByTag(entry.listenerTag);
+        this.listener = ModuleObjectManager.GetObjectByTag(entry.listenerTag);
       }
     } else {
       entry.listener = GameState.player;
@@ -325,7 +333,7 @@ export class InGameComputer extends K1_InGameComputer {
       alreadyAllowed: false,
       scriptComplete: true,
       delayComplete: true,
-      isComplete: function (entry) {
+      isComplete: function (entry: any) {
         console.log('checkList', entry);
         if (this.alreadyAllowed) {
           return false;
@@ -398,22 +406,22 @@ export class InGameComputer extends K1_InGameComputer {
     this.showReplies(entry);
     if (entry.sound != '') {
       console.log('lip', entry.sound);
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, buffer => {
+      LIPObject.Load(entry.sound).then( (lip: LIPObject) => {
         if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(new LIPObject(buffer));
+          entry.speaker.setLIP(lip);
         }
-      });
-      this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
+      })
+      this.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
         checkList.voiceOverComplete = true;
       });
     } else if (entry.vo_resref != '') {
       console.log('lip', entry.vo_resref);
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, buffer => {
+      LIPObject.Load(entry.vo_resref).then( (lip: LIPObject) => {
         if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(new LIPObject(buffer));
+          entry.speaker.setLIP(lip);
         }
-      });
-      this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
+      })
+      this.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
         checkList.voiceOverComplete = true;
       });
     } else {
@@ -422,7 +430,7 @@ export class InGameComputer extends K1_InGameComputer {
     this.state = 0;
   }
 
-  loadReplies(entry) {
+  loadReplies(entry: any) {
     if (!entry.replies.length) {
     } else {
       if (entry.replies.length == 1 && this.isContinueDialog(entry.replies[0])) {
@@ -433,7 +441,7 @@ export class InGameComputer extends K1_InGameComputer {
     }
   }
 
-  async showReplies(entry) {
+  async showReplies(entry: any) {
     if (!GameState.inDialog)
       return;
     if (!entry.replies.length) {
@@ -451,7 +459,7 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, reply.scriptParams.Param5);
             script.setScriptStringParam(reply.scriptParams.String);
             script.name = reply.script;
-            script.run(this.owner, 0, async bSuccess => {
+            script.run(this.owner, 0, async (bSuccess: boolean) => {
               if (reply.script2 != '') {
                 let script = await NWScript.Load(reply.script2);
                 if (script instanceof NWScriptInstance) {
@@ -462,7 +470,7 @@ export class InGameComputer extends K1_InGameComputer {
                   script.setScriptParam(5, reply.script2Params.Param5);
                   script.setScriptStringParam(reply.script2Params.String);
                   script.name = reply.script2;
-                  script.run(this.owner, 0, bSuccess => {
+                  script.run(this.owner, 0, (bSuccess: boolean) => {
                   });
                   this.getNextEntry(reply.entries);
                 } else {
@@ -495,8 +503,8 @@ export class InGameComputer extends K1_InGameComputer {
     this.state = 1;
   }
 
-  CheckReplyScripts(reply, onComplete = null) {
-    let scripts = [];
+  CheckReplyScripts(reply: any, onComplete?: Function) {
+    let scripts: any[] = [];
     let shouldPass = false;
     if (reply.isActive != '') {
       scripts.push({
@@ -518,7 +526,7 @@ export class InGameComputer extends K1_InGameComputer {
     }
     let loop = new AsyncLoop({
       array: scripts,
-      onLoop: async (scriptObj, asyncLoop) => {
+      onLoop: async (scriptObj: any, asyncLoop: AsyncLoop) => {
         let script = await NWScript.Load(scriptObj.resref);
         if (script instanceof NWScriptInstance) {
           script.name = scriptObj.resref;
@@ -528,7 +536,7 @@ export class InGameComputer extends K1_InGameComputer {
           script.setScriptParam(4, scriptObj.params.Param4);
           script.setScriptParam(5, scriptObj.params.Param5);
           script.setScriptStringParam(scriptObj.params.String);
-          script.run(this.owner, 0, bSuccess => {
+          script.run(this.owner, 0, (bSuccess: boolean) => {
             if (scriptObj.params.Not == 1 && !bSuccess || scriptObj.params.Not == 0 && bSuccess) {
               shouldPass = true;
               asyncLoop.next();
@@ -550,7 +558,7 @@ export class InGameComputer extends K1_InGameComputer {
     });
   }
 
-  GetAvailableReplies(entry) {
+  GetAvailableReplies(entry: any) {
     let totalReplies = entry.replies.length;
     let replyLoop = async (idx = 0) => {
       if (idx < totalReplies) {
@@ -565,7 +573,7 @@ export class InGameComputer extends K1_InGameComputer {
           let script = await NWScript.Load(reply.isActive);
           if (script instanceof NWScriptInstance) {
             script.name = reply.isActive;
-            script.run(this.listener, 0, bSuccess => {
+            script.run(this.listener, 0, (bSuccess: boolean) => {
               if (bSuccess) {
                 let _reply = this.replyList[reply.index];
                 this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + _reply.text.split('##')[0], () => {
@@ -584,7 +592,7 @@ export class InGameComputer extends K1_InGameComputer {
     replyLoop();
   }
 
-  async onReplySelect(reply = null) {
+  async onReplySelect(reply: any) {
     if (reply.script != '') {
       let script = await NWScript.Load(reply.script);
       if (script instanceof NWScriptInstance) {
@@ -595,7 +603,7 @@ export class InGameComputer extends K1_InGameComputer {
         script.setScriptParam(5, reply.scriptParams.Param5);
         script.setScriptStringParam(reply.scriptParams.String);
         script.name = reply.script;
-        script.run(this.owner, 0, async bSuccess => {
+        script.run(this.owner, 0, async (bSuccess: boolean) => {
           if (reply.script2 != '') {
             let script = await NWScript.Load(reply.script2);
             if (script instanceof NWScriptInstance) {
@@ -606,7 +614,7 @@ export class InGameComputer extends K1_InGameComputer {
               script.setScriptParam(5, reply.script2Params.Param5);
               script.setScriptStringParam(reply.script2Params.String);
               script.name = reply.script2;
-              script.run(this.owner, 0, bSuccess => {
+              script.run(this.owner, 0, (bSuccess: boolean) => {
               });
               this.getNextEntry(reply.entries);
             } else {
@@ -624,12 +632,12 @@ export class InGameComputer extends K1_InGameComputer {
     }
   }
 
-  async OnBeforeConversationEnd(onEnd = null) {
+  async OnBeforeConversationEnd(onEnd?: Function) {
     if (this.onEndConversation != '') {
       let script = await NWScript.Load(this.onEndConversation);
       if (script instanceof NWScriptInstance) {
-        script.name = entry.isActive;
-        script.run(this.owner, 0, bSuccess => {
+        script.name = this.currentEntry.isActive;
+        script.run(this.owner, 0, (bSuccess: boolean) => {
           if (typeof onEnd === 'function')
             onEnd();
         });
@@ -655,7 +663,7 @@ export class InGameComputer extends K1_InGameComputer {
           let script = await NWScript.Load(this.onEndConversation);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversation;
-            script.run(this.owner, 0, bSuccess => {
+            script.run(this.owner, 0, (bSuccess: boolean) => {
             });
           }
         }
@@ -664,7 +672,7 @@ export class InGameComputer extends K1_InGameComputer {
           let script = await NWScript.Load(this.onEndConversationAbort);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversationAbort;
-            script.run(this.owner, 0, bSuccess => {
+            script.run(this.owner, 0, (bSuccess: boolean) => {
             });
           }
         }
@@ -672,8 +680,8 @@ export class InGameComputer extends K1_InGameComputer {
     });
   }
 
-  _parseEntryStruct(struct) {
-    let node = {
+  _parseEntryStruct(struct: any) {
+    let node: any = {
       animations: [],
       cameraAngle: 0,
       cameraID: 0,
@@ -795,8 +803,8 @@ export class InGameComputer extends K1_InGameComputer {
     return node;
   }
 
-  _parseReplyStruct(struct) {
-    let node = {
+  _parseReplyStruct(struct: any) {
+    let node: any = {
       animations: [],
       cameraAngle: 0,
       cameraID: 0,

@@ -23,6 +23,7 @@ import { ModuleObject } from "./module";
 import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { MenuManager } from "./gui";
+import { GlobalVariableManager } from "./managers/GlobalVariableManager";
 
 /* @file
  * The SaveGame class.
@@ -360,8 +361,8 @@ export class SaveGame {
       for(let i = 0; i < catNumbers.length; i++){
         let numCat = catNumbers[i];
         let numLabel = numCat.GetFieldByLabel('Name').GetValue();
-        if(GameState.Globals.Number.has(numLabel.toLowerCase())){
-          GameState.Globals.Number.get(numLabel.toLowerCase()).value = numBytes.ReadByte();
+        if(GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
+          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = numBytes.ReadByte();
         }
       }
 
@@ -371,7 +372,7 @@ export class SaveGame {
         let locCat = catLocations[i];
         let locLabel = locCat.GetFieldByLabel('Name').GetValue();
 
-        GameState.Globals.Location.set(
+        GlobalVariableManager.Globals.Location.set(
           locLabel.toLowerCase(), { 
             name: locLabel, 
             value: new EngineLocation(
@@ -397,8 +398,8 @@ export class SaveGame {
           let boolCat = catBooleans[index];
           if(boolCat){
             let boolLabel = boolCat.GetFieldByLabel('Name').GetValue();
-            if(GameState.Globals.Boolean.has(boolLabel.toLowerCase())){
-              GameState.Globals.Boolean.get(boolLabel.toLowerCase()).value = !!bit;
+            if(GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+              GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = !!bit;
             }
           }
         }
@@ -411,8 +412,8 @@ export class SaveGame {
         if(strCat){
           let strLabel = strCat.GetFieldByLabel('Name').GetValue();
           let strValue = stringValues[i].GetFieldByLabel('String').GetValue();
-          if(GameState.Globals.String.has(strLabel.toLowerCase())){
-            GameState.Globals.String.get(strLabel.toLowerCase()).value = strValue;
+          if(GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
+            GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
           }
         }
       }
@@ -650,9 +651,9 @@ export class SaveGame {
 
       //Global Booleans
       let catBooleanList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-      let boolBuffer = Buffer.alloc( ( GameState.Globals.Boolean.size / 8 ) );
+      let boolBuffer = Buffer.alloc( ( GlobalVariableManager.Globals.Boolean.size / 8 ) );
       let i = 0;
-      GameState.Globals.Boolean.forEach( (globBool, key: string) => {
+      GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
         let boolean = globBool;
         let byte_offset = Math.floor( i / 8 );
         let bit_index = (i % 8);
@@ -672,7 +673,7 @@ export class SaveGame {
       let locationBuffer = Buffer.alloc(24 * 100);
 
       i = 0;
-      GameState.Globals.Location.forEach( (location, key: string) => {
+      GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
         locationBuffer.writeFloatLE( location.value.position.x, (24 * i) + 0  );
         locationBuffer.writeFloatLE( location.value.position.y, (24 * i) + 4  );
         locationBuffer.writeFloatLE( location.value.position.z, (24 * i) + 8  );
@@ -688,10 +689,10 @@ export class SaveGame {
 
       //Global Numbers
       let catNumberList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatNumber'));
-      let numberBuffer = Buffer.alloc(GameState.Globals.Number.size);
+      let numberBuffer = Buffer.alloc(GlobalVariableManager.Globals.Number.size);
 
       i = 0;
-      GameState.Globals.Number.forEach( (numberObj, key: string) => {
+      GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
         numberBuffer[i] = (numberObj.value & 0xFF);
 
         let numberStruct = new GFFStruct();
@@ -709,7 +710,7 @@ export class SaveGame {
 
       let valStringList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'ValString'));
       i = 0;
-      GameState.Globals.String.forEach( (stringObj, key: string) => {
+      GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
         let stringCatStruct = new GFFStruct();
         stringCatStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).SetValue(stringObj.name);
         catStringList.AddChildStruct(stringCatStruct);

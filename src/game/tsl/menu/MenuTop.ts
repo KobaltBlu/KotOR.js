@@ -3,7 +3,10 @@
 
 import { GameState } from "../../../GameState";
 import { GUIControl, GUIButton, GUILabel, GUIProgressBar, MenuManager } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
 import { PartyManager } from "../../../managers/PartyManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
 /* @file
@@ -184,17 +187,17 @@ export class MenuTop extends K1_MenuTop {
       let partyMember = PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
       
-      let portrait = Global.kotor2DA['portraits'].rows[portraitId];
+      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       this.TogglePartyMember(i, true);
-      let pmBG = this['LBL_CHAR' + (i + 1)];
+      let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portrait.baseresref) {
         pmBG.setFillTextureName(portrait.baseresref);
-        TextureLoader.Load(portrait.baseresref, texture => {
+        TextureLoader.Load(portrait.baseresref, (texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }
       if (i == 0) {
-        this['PB_VIT' + (i + 1)].setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
+        (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
       }
     }
   }
@@ -202,26 +205,26 @@ export class MenuTop extends K1_MenuTop {
   TogglePartyMember(nth = 0, bVisible = false) {
     switch (nth) {
     case 0:
-      this['LBL_CMBTEFCTRED' + (nth + 1)].hide();
-      this['LBL_CMBTEFCTINC' + (nth + 1)].hide();
-      this['LBL_DEBILATATED' + (nth + 1)].hide();
-      this['LBL_DISABLE' + (nth + 1)].hide();
-      this['LBL_LEVELUP' + (nth + 1)].hide();
-      this['LBL_BACK' + (nth + 1)].show();
-      this['LBL_CHAR' + (nth + 1)].show();
-      this['LBL_BACK' + (nth + 1)].show();
-      this['PB_FORCE' + (nth + 1)].show();
-      this['PB_VIT' + (nth + 1)].show();
+      this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1)).hide();
+      this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1)).hide();
+      this.getControlByName('LBL_DEBILATATED' + (nth + 1)).hide();
+      this.getControlByName('LBL_DISABLE' + (nth + 1)).hide();
+      this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+      this.getControlByName('LBL_BACK' + (nth + 1)).show();
+      this.getControlByName('LBL_CHAR' + (nth + 1)).show();
+      this.getControlByName('LBL_BACK' + (nth + 1)).show();
+      this.getControlByName('PB_FORCE' + (nth + 1)).show();
+      this.getControlByName('PB_VIT' + (nth + 1)).show();
       break;
     default:
       if (!bVisible) {
-        this['LBL_LEVELUP' + (nth + 1)].hide();
-        this['LBL_CHAR' + (nth + 1)].hide();
-        this['BTN_CHANGE' + (nth + 1)].hide();
+        this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+        this.getControlByName('LBL_CHAR' + (nth + 1)).hide();
+        this.getControlByName('BTN_CHANGE' + (nth + 1)).hide();
       } else {
-        this['LBL_LEVELUP' + (nth + 1)].hide();
-        this['LBL_CHAR' + (nth + 1)].show();
-        this['BTN_CHANGE' + (nth + 1)].show();
+        this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+        this.getControlByName('LBL_CHAR' + (nth + 1)).show();
+        this.getControlByName('BTN_CHANGE' + (nth + 1)).show();
       }
       break;
     }

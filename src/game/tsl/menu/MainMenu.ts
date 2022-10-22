@@ -70,76 +70,50 @@ export class MainMenu extends K1_MainMenu {
         window.close();
       });
 
-      let bgMusic = 'mus_sion';            
-    
-      Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('mainmenu01', ResourceTypes['mdl']), (mdlBuffer) => {
-        Global.kotorBIF['models'].GetResourceData(Global.kotorBIF['models'].GetResourceByLabel('mainmenu01', ResourceTypes['mdx']), (mdxBuffer) => {
-          try{
-  
-            let model = new OdysseyModel( new BinaryReader(Buffer.from(mdlBuffer)), new BinaryReader(Buffer.from(mdxBuffer)) );
-
-            this.tGuiPanel.widget.fill.visible = false;
-
-            this._3dView = new LBL_3DView();
-            this._3dView.visible = true;
-            this.lbl_3dview.getFill().material.uniforms.map.value = this._3dView.texture.texture;
-            this.lbl_3dview.getFill().material.transparent = false;
-            
-            
-            OdysseyModel3D.FromMDL(model, { 
-              onComplete: (model) => {
-                console.log('Model Loaded', model);
-                this._3dViewModel = model;
-
-                this.camerahook = this._3dViewModel.getObjectByName('camerahook');
-                
-                this._3dView.camera.position.set(
-                  this.camerahook.position.x,
-                  this.camerahook.position.y,
-                  this.camerahook.position.z
-                );
+      let bgMusic = 'mus_sion'; 
       
-                this._3dView.camera.quaternion.set(
-                  this.camerahook.quaternion.x,
-                  this.camerahook.quaternion.y,
-                  this.camerahook.quaternion.z,
-                  this.camerahook.quaternion.w
-                );
-                this._3dView.addModel(this._3dViewModel);
-                TextureLoader.LoadQueue(() => {
+      GameState.ModelLoader.load({
+        name: 'mainmenu01', 
+        onComplete: (mdl: OdysseyModel) => {
+          (this.tGuiPanel.widget.userData.fill as any).visible = false;
 
-                  AudioLoader.LoadMusic(bgMusic, (data) => {
-                    console.log('Loaded Background Music', bgMusic);
-                    
-                    GameState.audioEngine.SetBackgroundMusic(data);
-                    resolve();
-
-                    this._3dViewModel.playAnimation(0, true);
+          this._3dView = new LBL_3DView();
+          this._3dView.visible = true;
+          (this.LBL_3DVIEW.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+          (this.LBL_3DVIEW.getFill().material as any).transparent = false;
+          
+          
+          OdysseyModel3D.FromMDL(mdl, { 
+            onComplete: (model: OdysseyModel3D) => {
+              console.log('Model Loaded', model);
+              this._3dViewModel = model;
               
-                  }, () => {
-                    console.error('Background Music not found', bgMusic);
-                    resolve();
-                  });
+              this._3dView.camera.position.copy(model.camerahook.position);
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
+              this._3dView.addModel(this._3dViewModel);
+              TextureLoader.LoadQueue(() => {
+
+                AudioLoader.LoadMusic(bgMusic, (data: any) => {
+                  console.log('Loaded Background Music', bgMusic);
+                  
+                  GameState.audioEngine.SetBackgroundMusic(data);
+                  resolve();
+
+                  this._3dViewModel.playAnimation(0, true);
+            
+                }, () => {
+                  console.error('Background Music not found', bgMusic);
+                  resolve();
                 });
 
-              },
-              manageLighting: false,
-              context: this._3dView
-            });
-  
-          }
-          catch (e) {
-            console.log(e);
-            this.Remove();
-          }
-        }, (e: any) => {
-          this.Remove();
-          throw 'Resource not found in BIF archive ';
-        });
-      }, (e: any) => {
-        this.Remove();
-        throw 'Resource not found in BIF archive ';
+              });
+
+            },
+            manageLighting: false,
+            context: this._3dView
+          });
+        }
       });
     });
   }

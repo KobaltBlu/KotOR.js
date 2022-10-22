@@ -3,8 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
 import { InventoryManager } from "../../../managers/InventoryManager";
 import { PartyManager } from "../../../managers/PartyManager";
+import { TLKManager } from "../../../managers/TLKManager";
+import { ModuleCreature, ModuleItem, ModuleObject, ModuleStore } from "../../../module";
 import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
 
 /* @file
@@ -99,19 +102,19 @@ export class MenuStore extends K1_MenuStore {
     });
   }
 
-  getItemSellPrice(item = undefined) {
+  getItemSellPrice(item: ModuleItem) {
     return item.cost + item.cost * this.storeObject.getMarkUp();
   }
 
-  getItemBuyPrice(item = undefined) {
+  getItemBuyPrice(item: ModuleItem) {
     return item.cost + item.cost * this.storeObject.getMarkDown();
   }
 
-  Open(storeObject = undefined, creature = undefined, bonusMarkUp = 0, bonusMarkDown = 0) {
-    this.storeObject = storeObject;
-    this.creature = creature;
-    this.bonusMarkUp = bonusMarkUp;
-    this.bonusMarkDown = bonusMarkDown;
+  Open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
+    // this.storeObject = storeObject;
+    // this.creature = creature;
+    // this.bonusMarkUp = bonusMarkUp;
+    // this.bonusMarkDown = bonusMarkDown;
     super.Open();
   }
 
@@ -124,14 +127,14 @@ export class MenuStore extends K1_MenuStore {
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
       if (this.sellMode) {
-        this.BTN_EXAMINE.setText(TLKManager.GetStringById(41937));
+        this.BTN_Examine.setText(TLKManager.GetStringById(41937));
         this.LBL_COST.setText(TLKManager.GetStringById(41945));
         this.LBL_BUYSELL.setText(TLKManager.GetStringById(32130));
-        this.BTN_ACCEPT.setText(TLKManager.GetStringById(32130));
+        this.BTN_Accept.setText(TLKManager.GetStringById(32130));
         this.LB_INVITEMS.clearItems();
         let inv = InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_INVITEMS.addItem(inv[i], item => {
+          this.LB_INVITEMS.addItem(inv[i], (item: any) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
             this.LB_DESCRIPTION.clearItems();
             this.LB_DESCRIPTION.addItem(item.getDescription());
@@ -142,14 +145,14 @@ export class MenuStore extends K1_MenuStore {
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
         this.LB_INVITEMS.show();
       } else {
-        this.BTN_EXAMINE.setText(TLKManager.GetStringById(41938));
+        this.BTN_Examine.setText(TLKManager.GetStringById(41938));
         this.LBL_COST.setText(TLKManager.GetStringById(41943));
         this.LBL_BUYSELL.setText(TLKManager.GetStringById(32132));
-        this.BTN_ACCEPT.setText(TLKManager.GetStringById(32132));
+        this.BTN_Accept.setText(TLKManager.GetStringById(32132));
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_SHOPITEMS.addItem(inv[i], item => {
+          this.LB_SHOPITEMS.addItem(inv[i], (item: any) => {
             this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
             this.LB_DESCRIPTION.clearItems();
             this.LB_DESCRIPTION.addItem(item.getDescription());

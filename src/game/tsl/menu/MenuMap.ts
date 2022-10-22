@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
 
 /* @file
@@ -47,7 +48,7 @@ export class MenuMap extends K1_MenuMap {
 
   SetMapTexture(sTexture = '') {
     this.LBL_Map.setFillTextureName(sTexture);
-    TextureLoader.tpcLoader.fetch(sTexture, texture => {
+    TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
       this.LBL_Map.setFillTexture(texture);
     });
   }

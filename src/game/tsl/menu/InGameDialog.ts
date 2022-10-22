@@ -2,9 +2,22 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox } from "../../../gui";
+import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
+import { GFFObject } from "../../../resource/GFFObject";
+import { DLGObject } from "../../../resource/DLGObject";
+import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { NWScript } from "../../../nwscript/NWScript";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
+import { ModuleCreature, ModuleObject } from "../../../module";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { ResourceLoader } from "../../../resource/ResourceLoader";
+import { LIPObject } from "../../../resource/LIPObject";
+import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
+import { AudioLoader } from "../../../audio/AudioLoader";
 
 /* @file
 * The InGameDialog menu class.
@@ -68,7 +81,7 @@ export class InGameDialog extends K1_InGameDialog {
     return this.owner;
   }
 
-  StartConversation(dlg, owner, listener = GameState.player, options = {}) {
+  StartConversation(dlg: string, owner: ModuleObject, listener = GameState.player, options: any = {}) {
     options = Object.assign({ onLoad: null }, options);
     this.LBL_MESSAGE.setText(' ');
     this.LB_REPLIES.clearItems();
@@ -99,12 +112,12 @@ export class InGameDialog extends K1_InGameDialog {
       dlg = this.owner.GetConversation();
     }
     if (typeof dlg === 'string' && dlg != '') {
-      this.LoadDialog(dlg, gff => {
+      this.LoadDialog(dlg, (gff: GFFObject) => {
         this.UpdateCamera();
         this.isListening = true;
         this.updateTextPosition();
         this.startingEntry = null;
-        this.getNextEntry(this.dialog.startingList, async entry => {
+        this.getNextEntry(this.dialog.startingList, async (entry: any) => {
           this.startingEntry = entry;
           let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
           if (isBarkDialog) {
@@ -117,7 +130,7 @@ export class InGameDialog extends K1_InGameDialog {
             }
           } else {
             if (this.startingEntry.cameraAngle == 6) {
-              this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID, this.startingEntry.cameraAngle);
+              this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
             } else {
               GameState.currentCamera = GameState.camera_dialog;
               this.UpdateCamera();
@@ -152,7 +165,7 @@ export class InGameDialog extends K1_InGameDialog {
 
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
-      AudioLoader.LoadMusic(this.dialog.ambientTrack, data => {
+      AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: any) => {
         GameState.audioEngine.stopBackgroundMusic();
         GameState.audioEngine.SetDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
@@ -164,7 +177,7 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  async getNextEntry(entryLinks = [], callback = null) {
+  async getNextEntry(entryLinks: any[] = [], callback?: Function) {
     console.log('getNextEntry', entryLinks);
     if (!entryLinks.length) {
       this.EndConversation();
@@ -186,8 +199,8 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  isContinueDialog(node) {
-    let returnValue = null;
+  isContinueDialog(node: any) {
+    let returnValue: any = null;
     if (typeof node.entries !== 'undefined') {
       returnValue = node.text == '' && node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
@@ -198,8 +211,8 @@ export class InGameDialog extends K1_InGameDialog {
     return returnValue;
   }
 
-  isEndDialog(node) {
-    let returnValue = null;
+  isEndDialog(node: any) {
+    let returnValue: any = null;
     if (typeof node.entries !== 'undefined') {
       returnValue = node.text == '' && !node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
@@ -221,7 +234,7 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  async showEntry(entry) {
+  async showEntry(entry: any) {
     this.state = 0;
     entry.initProperties();
     if (!GameState.inDialog)
@@ -300,7 +313,7 @@ export class InGameDialog extends K1_InGameDialog {
         });
       }
     } else if (entry.cameraAngle == 6) {
-      this.SetPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID, entry.cameraAngle);
+      this.SetPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);//, entry.cameraAngle);
     } else {
       GameState.currentCamera = GameState.camera_dialog;
       this.UpdateCamera();
@@ -316,24 +329,25 @@ export class InGameDialog extends K1_InGameDialog {
     }
     entry.runScripts();
     if (entry.sound != '') {
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, buffer => {
+      LIPObject.Load(entry.sound).then( (lip: LIPObject) => {
         if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(new LIPObject(buffer));
+          entry.speaker.setLIP(lip);
         }
-      });
-      this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
+      })
+      this.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
         entry.checkList.voiceOverComplete = true;
         if (entry.checkList.isComplete()) {
           this.showReplies(entry);
         }
       });
     } else if (entry.vo_resref != '') {
-      ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, buffer => {
+      
+      LIPObject.Load(entry.vo_resref).then( (lip: LIPObject) => {
         if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(new LIPObject(buffer));
+          entry.speaker.setLIP(lip);
         }
-      });
-      this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
+      })
+      this.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
         entry.checkList.voiceOverComplete = true;
         if (entry.checkList.isComplete()) {
           this.showReplies(entry);
@@ -350,12 +364,12 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  async GetAvailableReplies(entry) {
+  async GetAvailableReplies(entry: any) {
     let replyLinks = await entry.getActiveReplies();
     for (let i = 0; i < replyLinks.length; i++) {
       let reply = this.dialog.getReplyByIndex(replyLinks[i]);
       if (reply) {
-        this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), e => {
+        this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), (e: any) => {
           this.onReplySelect(reply);
         });
       } else {
@@ -365,7 +379,7 @@ export class InGameDialog extends K1_InGameDialog {
     this.LB_REPLIES.updateList();
   }
 
-  async onReplySelect(reply = null) {
+  async onReplySelect(reply: any) {
     if (reply) {
       reply.runScripts();
       this.getNextEntry(reply.entries);
@@ -374,7 +388,7 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  async showReplies(entry) {
+  async showReplies(entry: any) {
     this.state = 1;
     if (!GameState.inDialog)
       return;
@@ -418,18 +432,18 @@ export class InGameDialog extends K1_InGameDialog {
     this.state = 1;
   }
 
-  LoadDialog(resref = '', onLoad = null) {
+  LoadDialog(resref = '', onLoad?: Function) {
     this.conversation_name = resref;
     this.dialog = new DLGObject(resref);
     this.dialog.owner = this.owner;
     this.dialog.listener = this.listener;
     this.dialog.load().then(() => {
       switch (this.dialog.getConversationType()) {
-      case DLGObject.ConversationType.COMPUTER:
+      case DLGConversationType.COMPUTER:
         this.Close();
         MenuManager.InGameComputer.StartConversation(this.dialog.gff, this.owner, this.listener);
         break;
-      case DLGObject.ConversationType.CONVERSATION:
+      case DLGConversationType.CONVERSATION:
       default:
         if (typeof onLoad === 'function')
           onLoad(this.dialog.gff);
@@ -441,12 +455,12 @@ export class InGameDialog extends K1_InGameDialog {
     });
   }
 
-  async OnBeforeConversationEnd(onEnd = null) {
+  async OnBeforeConversationEnd(onEnd?: Function) {
     if (this.dialog.onEndConversation != '') {
       let script = await NWScript.Load(this.dialog.onEndConversation);
       if (script instanceof NWScriptInstance) {
         script.name = this.dialog.onEndConversation;
-        script.run(this.getCurrentOwner(), 0, bSuccess => {
+        script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
           if (typeof onEnd === 'function')
             onEnd();
         });
@@ -474,7 +488,7 @@ export class InGameDialog extends K1_InGameDialog {
           let script = await NWScript.Load(this.dialog.onEndConversation);
           if (script instanceof NWScriptInstance) {
             script.name = this.dialog.onEndConversation;
-            script.run(this.getCurrentOwner(), 0, bSuccess => {
+            script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
             });
           }
         }
@@ -483,7 +497,7 @@ export class InGameDialog extends K1_InGameDialog {
           let script = await NWScript.Load(this.dialog.onEndConversationAbort);
           if (script instanceof NWScriptInstance) {
             script.name = this.dialog.onEndConversationAbort;
-            script.run(this.getCurrentOwner(), 0, bSuccess => {
+            script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
             });
           }
         }
@@ -522,7 +536,7 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  UpdateEntryAnimations(entry) {
+  UpdateEntryAnimations(entry: any) {
     if (this.dialog.isAnimatedCutscene) {
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
@@ -532,7 +546,7 @@ export class InGameDialog extends K1_InGameDialog {
           } catch (e: any) {
           }
         } else {
-          let actor = GameState.GetObjectByTag(participant.participant);
+          let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
           if (actor && participant.animation >= 10000) {
             let anim = this.GetDialogAnimation(participant.animation - 10000);
             if (anim) {
@@ -552,7 +566,7 @@ export class InGameDialog extends K1_InGameDialog {
       }
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
-        let actor = GameState.GetObjectByTag(participant.participant);
+        let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
         if (actor && participant.animation >= 10000) {
           let anim = this.GetDialogAnimation(participant.animation - 10000);
           if (anim) {
@@ -628,33 +642,34 @@ export class InGameDialog extends K1_InGameDialog {
         };
       }
     } else if (index >= 10000) {
+      const animations2DA = TwoDAManager.datatables.get('animations');
       switch (index) {
       case 30:
-        return Global.kotor2DA.animations.rows[18];
+        return animations2DA?.rows[18];
         break;
       case 35:
-        return Global.kotor2DA.animations.rows[24];
+        return animations2DA?.rows[24];
         break;
       case 38:
-        return Global.kotor2DA.animations.rows[25];
+        return animations2DA?.rows[25];
         break;
       case 39:
-        return Global.kotor2DA.animations.rows[27];
+        return animations2DA?.rows[27];
         break;
       case 40:
-        return Global.kotor2DA.animations.rows[26];
+        return animations2DA?.rows[26];
         break;
       case 41:
-        return Global.kotor2DA.animations.rows[29];
+        return animations2DA?.rows[29];
         break;
       case 42:
-        return Global.kotor2DA.animations.rows[28];
+        return animations2DA?.rows[28];
         break;
       case 121:
-        return Global.kotor2DA.animations.rows[44];
+        return animations2DA?.rows[44];
         break;
       case 127:
-        return Global.kotor2DA.animations.rows[38];
+        return animations2DA?.rows[38];
         break;
       case 403:
         return {
@@ -801,14 +816,14 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  SetPlaceableCamera(nCamera) {
+  SetPlaceableCamera(nCamera: number) {
     let cam = GameState.getCameraById(nCamera);
     if (cam) {
       GameState.currentCamera = cam;
     }
   }
 
-  SetAnimatedCamera(nCamera, onComplete = undefined) {
+  SetAnimatedCamera(nCamera: number, onComplete?: Function) {
     if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
       this.dialog.animatedCamera.playAnimation(this.GetActorAnimation(nCamera), false, () => {
         window.setTimeout(() => {
@@ -949,14 +964,14 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  GetCameraMidPoint(pointA, pointB, percentage = 0.5) {
+  GetCameraMidPoint(pointA: any, pointB: any, percentage = 0.5) {
     let dir = pointB.clone().sub(pointA);
     let len = dir.length();
     dir = dir.normalize().multiplyScalar(len * percentage);
     return pointA.clone().add(dir);
   }
 
-  Update(delta) {
+  Update(delta: number) {
     super.Update(delta);
     if (!this.dialog)
       return;
@@ -1008,15 +1023,17 @@ export class InGameDialog extends K1_InGameDialog {
     if (typeof this.LBL_MESSAGE.text.geometry !== 'undefined') {
       this.LBL_MESSAGE.text.geometry.computeBoundingBox();
       let bb = this.LBL_MESSAGE.text.geometry.boundingBox;
-      let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
-      let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
-      let padding = 10;
-      if (this.isListening) {
-        this.LBL_MESSAGE.widget.position.y = -window.innerHeight / 2 + 50;
-      } else {
-        this.LBL_MESSAGE.widget.position.y = window.innerHeight / 2 - 50;
+      if(bb){
+        let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
+        let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
+        let padding = 10;
+        if (this.isListening) {
+          this.LBL_MESSAGE.widget.position.y = -window.innerHeight / 2 + 50;
+        } else {
+          this.LBL_MESSAGE.widget.position.y = window.innerHeight / 2 - 50;
+        }
+        this.LBL_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LBL_MESSAGE.widget.position.x - width / 2, this.LBL_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LBL_MESSAGE.widget.position.x + width / 2, this.LBL_MESSAGE.widget.position.y + height / 2));
       }
-      this.LBL_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LBL_MESSAGE.widget.position.x - width / 2, this.LBL_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LBL_MESSAGE.widget.position.x + width / 2, this.LBL_MESSAGE.widget.position.y + height / 2));
     }
   }
 

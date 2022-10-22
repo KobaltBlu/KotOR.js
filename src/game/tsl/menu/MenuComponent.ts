@@ -2,13 +2,13 @@
 */
 
 import { GameState } from "../../../GameState";
-import { MenuComponent as K1_MenuComponent, GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, GameMenu } from "../../../gui";
 
 /* @file
 * The MenuComponent menu class.
 */
 
-export class MenuComponent extends K1_MenuComponent {
+export class MenuComponent extends GameMenu {
 
   declare LBL_BAR2: GUILabel;
   declare LB_DESCRIPTIONINV: GUIListBox;

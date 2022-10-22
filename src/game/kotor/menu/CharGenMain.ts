@@ -73,10 +73,10 @@ export class CharGenMain extends GameMenu {
   async MenuControlInitializer() {
     await super.MenuControlInitializer();
     return new Promise<void>((resolve, reject) => {
-      this.LBL_LEVEL.hide();
-      this.LBL_LEVEL_VAL.hide();
-      this.OLD_LBL.hide();
-      this.NEW_LBL.hide();
+      this.LBL_LEVEL?.hide();
+      this.LBL_LEVEL_VAL?.hide();
+      this.OLD_LBL?.hide();
+      this.NEW_LBL?.hide();
 
 
       //Visible Elements

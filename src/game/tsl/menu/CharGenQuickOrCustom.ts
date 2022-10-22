@@ -3,6 +3,9 @@
 
 import { GameState } from "../../../GameState";
 import { GUIButton, GUIListBox, MenuManager } from "../../../gui";
+import { CharGenManager } from "../../../managers/CharGenManager";
+import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { TalentFeat } from "../../../talents";
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
 
 /* @file
@@ -29,9 +32,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         try{
-          let class_data = Global.kotor2DA['classes'].rows[CharGenManager.selectedClass];
-          let saving_throw_data = Global.kotor2DA[class_data['savingthrowtable'].toLowerCase()].rows[0];
-          let feats_table = Global.kotor2DA['feat'];
+          let class_data = TwoDAManager.datatables.get('classes')?.rows[CharGenManager.selectedClass];
+          let saving_throw_data = TwoDAManager.datatables.get(class_data['savingthrowtable'].toLowerCase())?.rows[0];
+          let feats_table = TwoDAManager.datatables.get('feat');
 
           GameState.player.str = parseInt(class_data.str);
           GameState.player.dex = parseInt(class_data.dex);
@@ -47,8 +50,8 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
 
           let featstable_key = class_data['featstable'].toLowerCase();
 
-          for(let i = 0, len = feats_table.rows.length; i < len; i++){
-            let feat_data = feats_table.rows[i];
+          for(let i = 0, len = feats_table?.rows.length; i < len; i++){
+            let feat_data = feats_table?.rows[i];
             if(feat_data[featstable_key+'_granted'] == 1){
               GameState.player.feats.push(new TalentFeat(i));
             }

@@ -1,9 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, GUIProtoItem } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { ModuleCreature, ModuleObject, ModulePlaceable } from "../../../module";
 import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
+import * as THREE from "three";
 
 /* @file
 * The MenuContainer menu class.
@@ -51,15 +55,15 @@ export class MenuContainer extends K1_MenuContainer {
     super.Close();
     if (onClosed && this.container instanceof ModulePlaceable) {
       try {
-        this.container.close(GameState.getCurrentPlayer());
+        this.container.close(GameState.getCurrentPlayer() as any);
       } catch (e: any) {
       }
     }
-    this.container = undefined;
+    this.container = undefined as any;
   }
 
-  Open(object = undefined) {
-    this.container = object;
+  Open() {
+    // this.container = object;
     super.Open();
   }
 
@@ -69,7 +73,7 @@ export class MenuContainer extends K1_MenuContainer {
       let inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
         let item = inventory[i];
-        this.LB_ITEMS.addItem(item, null, (control, type) => {
+        this.LB_ITEMS.addItem(item, undefined, (control: any, type: any) => {
           control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(item.getName());
           let _ctrl2 = new GUIProtoItem(this.LB_ITEMS.menu, control, this.LB_ITEMS, this.LB_ITEMS.scale);
           _ctrl2.extent.width -= 52;
@@ -85,9 +89,9 @@ export class MenuContainer extends K1_MenuContainer {
           iconMaterial.transparent = true;
           let iconSprite = new THREE.Sprite(iconMaterial);
           TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureType.TEXTURE);
-          item2.spriteGroup = new THREE.Group();
-          item2.spriteGroup.position.x = -97;
-          item2.spriteGroup.position.z = 5;
+          item2.userData.spriteGroup = new THREE.Group();
+          item2.userData.spriteGroup.position.x = -97;
+          item2.userData.spriteGroup.position.z = 5;
           iconSprite.scale.x = 40;
           iconSprite.scale.y = 40;
           iconSprite.position.x = -10;
@@ -103,12 +107,12 @@ export class MenuContainer extends K1_MenuContainer {
             hexSprite.visible = true;
             hexSprite.scale.x = hexSprite.scale.y = 40;
             hexSprite.position.x = -10;
-            item2.spriteGroup.add(hexSprite);
+            item2.userData.spriteGroup.add(hexSprite);
           }
-          item2.add(item2.spriteGroup);
-          item2.spriteGroup.add(iconSprite);
+          item2.add(item2.userData.spriteGroup);
+          item2.userData.spriteGroup.add(iconSprite);
           this.LB_ITEMS.itemGroup.add(item2);
-          _ctrl2.addEventListener('click', e => {
+          _ctrl2.addEventListener('click', (e: any) => {
             e.stopPropagation();
           });
         });

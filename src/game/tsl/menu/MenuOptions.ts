@@ -1,8 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { EngineMode } from "../../../enums/engine/EngineMode";
+import { EngineState } from "../../../enums/engine/EngineState";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GUIButton, GUILabel, GUIListBox, MenuManager } from "../../../gui";
+import { Module } from "../../../module";
+import { NWScript } from "../../../nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "../../kotor/KOTOR";
 
 /* @file
@@ -46,13 +51,13 @@ export class MenuOptions extends K1_MenuOptions {
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = 'load';
+        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         MenuManager.MenuSaveLoad.Open();
       });
 
       this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = 'save';
+        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
         MenuManager.MenuSaveLoad.Open();
       });
 
@@ -69,11 +74,11 @@ export class MenuOptions extends K1_MenuOptions {
       this.BTN_QUIT.addEventListener('click', () => {
         GameState.Mode = EngineMode.MAINMENU;
         GameState.UnloadModule();
-        GameState.State = GameState.STATES.RUNNING;
+        GameState.State = EngineState.RUNNING;
               
         if(GameState.module instanceof Module){
           GameState.module.dispose();
-          GameState.module = undefined;
+          GameState.module = undefined as any;
         }
 
         //Remove all cached scripts and kill all running instances

@@ -2,7 +2,11 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, GUIProtoItem } from "../../../gui";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import { Module } from "../../../module";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { SaveGame } from "../../../SaveGame";
 import { MenuSaveLoad as K1_MenuSaveLoad } from "../../kotor/KOTOR";
 
 /* @file
@@ -75,7 +79,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         this.UpdateSelected();
       }
       let save = saves[i];
-      this.LB_GAMES.addItem(save, null, (control, type) => {
+      this.LB_GAMES.addItem(save, undefined, (control: any, type: any) => {
         control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(save.getFullName());
         let _ctrl = new GUIProtoItem(this.LB_GAMES.menu, control, this.LB_GAMES, this.LB_GAMES.scale);
         _ctrl.setList(this.LB_GAMES);
@@ -83,7 +87,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         let idx = this.LB_GAMES.itemGroup.children.length;
         let item = _ctrl.createControl();
         this.LB_GAMES.itemGroup.add(item);
-        _ctrl.addEventListener('click', e => {
+        _ctrl.addEventListener('click', (e: any) => {
           e.stopPropagation();
           this.selected = save;
           this.UpdateSelected();
@@ -95,23 +99,23 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
   UpdateSelected() {
     if (this.selected instanceof SaveGame) {
-      this.selected.GetThumbnail(texture => {
+      this.selected.GetThumbnail((texture: OdysseyTexture) => {
         this.LBL_SCREENSHOT.setFillTexture(texture);
-        this.LBL_SCREENSHOT.getFill().material.transparent = false;
+        (this.LBL_SCREENSHOT.getFill().material as any).transparent = false;
       });
     }
-    this.selected.GetPortrait(0, texture => {
+    this.selected.GetPortrait(0, (texture: OdysseyTexture) => {
       console.log(texture);
       this.LBL_PM1.setFillTexture(texture);
-      this.LBL_PM1.getFill().material.transparent = false;
+      (this.LBL_PM1.getFill().material as any).transparent = false;
     });
-    this.selected.GetPortrait(1, texture => {
+    this.selected.GetPortrait(1, (texture: OdysseyTexture) => {
       this.LBL_PM2.setFillTexture(texture);
-      this.LBL_PM2.getFill().material.transparent = false;
+      (this.LBL_PM2.getFill().material as any).transparent = false;
     });
-    this.selected.GetPortrait(2, texture => {
+    this.selected.GetPortrait(2, (texture: OdysseyTexture) => {
       this.LBL_PM3.setFillTexture(texture);
-      this.LBL_PM3.getFill().material.transparent = false;
+      (this.LBL_PM3.getFill().material as any).transparent = false;
     });
     let areaNames = this.selected.getAreaName().split(' - ');
     if (areaNames.length == 2) {

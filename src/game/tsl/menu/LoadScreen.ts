@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GUIProgressBar, GUILabel } from "../../../gui";
+import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
 
 /* @file
@@ -15,7 +16,7 @@ export class LoadScreen extends K1_LoadScreen {
   declare LBL_HINT: GUILabel;
   declare LBL_LOGO: GUILabel;
   declare LBL_LOADING: GUILabel;
-  defaultTex: any;
+  // defaultTex: any;
 
   constructor(){
     super();
@@ -32,12 +33,12 @@ export class LoadScreen extends K1_LoadScreen {
 
       this.LBL_HINT.visible = false;
 
-      this.defaultTex = this.tGuiPanel.getFill().material.uniforms.map.value;
+      this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
 
       if(this.args.loadscreen.length){
-        this.LoadTexture(this.args.loadscreen, (texture) => {
+        this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
 
-          this.tGuiPanel.getFill().material.uniforms.map.value = texture;
+          (this.tGuiPanel.getFill().material as any).uniforms.map.value = texture;
 
           resolve();
         });
@@ -45,54 +46,6 @@ export class LoadScreen extends K1_LoadScreen {
         resolve();
       }
     });
-  }
-
-  setProgress(val = 0) {
-    this.pb_progress.setProgress(val);
-  }
-
-  setLoadBackground(resref = null, onLoad = null) {
-    if (resref) {
-      this.LoadTexture(resref, texture => {
-        if (texture) {
-          this.tGuiPanel.getFill().material.uniforms.map.value = texture;
-        } else {
-          this.tGuiPanel.getFill().material.uniforms.map.value = this.defaultTex;
-        }
-        if (typeof onLoad === 'function')
-          onLoad();
-      });
-    } else {
-      if (typeof onLoad === 'function')
-        onLoad();
-    }
-  }
-
-  showRandomHint() {
-    this.lbl_name.setText(TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (Global.kotor2DA.loadscreenhints.RowCount - 0 + 1)) + 0;
-    let hint = Global.kotor2DA.loadscreenhints.rows[id];
-    if (!hint) {
-      console.log('showRandomHint', id);
-      hint = Global.kotor2DA.loadscreenhints.rows[0];
-    }
-    this.lbl_hint.setText(TLKManager.TLKStrings[hint.gameplayhint].Value);
-  }
-
-  showSavingMessage() {
-    this.lbl_name.setText(TLKManager.TLKStrings[42528].Value);
-    this.lbl_hint.setText(TLKManager.TLKStrings[41926].Value);
-    this.setProgress(0);
-  }
-
-  Show() {
-    super.Show();
-    FadeOverlayManager.plane.visible = false;
-  }
-
-  Hide() {
-    super.Hide();
-    FadeOverlayManager.plane.visible = true;
   }
   
 }
