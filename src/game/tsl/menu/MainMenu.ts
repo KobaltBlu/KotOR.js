@@ -73,16 +73,16 @@ export class MainMenu extends K1_MainMenu {
 
       let bgMusic = 'mus_sion'; 
       
+      (this.tGuiPanel.widget.userData.fill as any).visible = false;
+
+      this._3dView = new LBL_3DView();
+      this._3dView.visible = true;
+      (this.LBL_3DVIEW.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+      (this.LBL_3DVIEW.getFill().material as any).transparent = false;
+      
       GameState.ModelLoader.load({
         name: 'mainmenu01', 
-        onComplete: (mdl: OdysseyModel) => {
-          (this.tGuiPanel.widget.userData.fill as any).visible = false;
-
-          this._3dView = new LBL_3DView();
-          this._3dView.visible = true;
-          (this.LBL_3DVIEW.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-          (this.LBL_3DVIEW.getFill().material as any).transparent = false;
-          
+        onLoad: (mdl: OdysseyModel) => {
           
           OdysseyModel3D.FromMDL(mdl, { 
             onComplete: (model: OdysseyModel3D) => {
@@ -114,6 +114,9 @@ export class MainMenu extends K1_MainMenu {
             manageLighting: false,
             context: this._3dView
           });
+        },
+        onError: () => {
+          resolve();
         }
       });
     });

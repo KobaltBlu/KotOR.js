@@ -70,7 +70,7 @@ export class CharGenMain extends K1_CharGenMain {
       this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
       (this.MODEL_LBL.getFill().material as any).transparent = false;
 
-      this.Init3D();
+      // this.Init3D();
       resolve(); 
     });
   }

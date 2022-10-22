@@ -156,7 +156,7 @@ export class MenuManager {
 
   static async LoadGameMenus(){
     ActionMenuManager.InitActionMenuPanels();
-    CharGenManager.InitializeCreatureTemplate();
+    await CharGenManager.Init();
     try{
       if(GameState.GameKey == GameEngineType.KOTOR){
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(KOTOR.CharGenAbilities) as KOTOR.CharGenAbilities;

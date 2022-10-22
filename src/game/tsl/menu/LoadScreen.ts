@@ -36,16 +36,14 @@ export class LoadScreen extends K1_LoadScreen {
 
       this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
 
-      if(this.args.loadscreen.length){
-        this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
-
-          (this.tGuiPanel.getFill().material as any).uniforms.map.value = texture;
-
-          resolve();
-        });
-      }else{
+      // if(this.args.loadscreen.length){
+      //   this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
+      //     (this.tGuiPanel.getFill().material as any).uniforms.map.value = texture;
+      //     resolve();
+      //   });
+      // }else{
         resolve();
-      }
+      // }
     });
   }
   

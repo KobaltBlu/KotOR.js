@@ -93,22 +93,26 @@ export class MenuCharacter extends K1_MenuCharacter {
 
       GameState.ModelLoader.load({
         name: 'charmain_light', 
-        onComplete: (mdl: OdysseyModel) => {
+        onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             manageLighting: false,
             onComplete: (model: OdysseyModel3D) => {
-              this._3dView = new LBL_3DView();
-              this._3dView.visible = true;
-              this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
-              this._3dView.camera.updateProjectionMatrix();
-              (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-              (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+              try{
+                this._3dView = new LBL_3DView();
+                this._3dView.visible = true;
+                this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
+                this._3dView.camera.updateProjectionMatrix();
+                (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+                (this.LBL_3DCHAR.getFill().material as any).transparent = false;
 
-              this._3dViewModel = model;
-              this._3dView.addModel(this._3dViewModel);
-              
-              this._3dView.camera.position.copy(model.camerahook.position);
-              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+                this._3dViewModel = model;
+                this._3dView.addModel(this._3dViewModel);
+                
+                this._3dView.camera.position.copy(model.camerahook.position);
+                this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+              }catch(e){
+                console.error(e);
+              }
     
               TextureLoader.LoadQueue(() => {
                 this._3dViewModel.playAnimation(0, true);
@@ -116,6 +120,9 @@ export class MenuCharacter extends K1_MenuCharacter {
               });
             }
           });
+        },
+        onError: () => {
+          resolve();
         }
       });
     });

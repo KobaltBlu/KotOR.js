@@ -60,12 +60,20 @@ export class CharGenManager {
   static Start(){
     MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
       MenuManager.LoadScreen.Open();
-      CharGenManager.InitializeCreatureTemplate();
-      CharGenManager.InitCharBackgroundModel().then( () => {
+      CharGenManager.Init().then( () => {
         MenuManager.CharGenClass.Init( () => {
           MenuManager.LoadScreen.Close();
           MenuManager.CharGenClass.Open();
         });
+      });
+    });
+  }
+
+  static async Init(){
+    return new Promise<void>( async (resolve, reject) => {
+      CharGenManager.InitializeCreatureTemplate();
+      CharGenManager.InitCharBackgroundModel().then( () => {
+        resolve();
       });
     });
   }
