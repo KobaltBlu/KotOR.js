@@ -32,8 +32,9 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();

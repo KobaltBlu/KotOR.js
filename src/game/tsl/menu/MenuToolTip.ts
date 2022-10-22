@@ -20,8 +20,9 @@ export class MenuToolTip extends K1_MenuToolTip {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });

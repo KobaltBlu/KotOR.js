@@ -34,8 +34,9 @@ export class MenuTop extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });

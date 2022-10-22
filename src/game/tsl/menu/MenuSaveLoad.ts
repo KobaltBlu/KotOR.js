@@ -41,8 +41,9 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e: any) => {

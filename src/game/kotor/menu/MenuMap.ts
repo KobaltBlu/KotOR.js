@@ -38,8 +38,9 @@ export class MenuMap extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
       this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
         e.stopPropagation();

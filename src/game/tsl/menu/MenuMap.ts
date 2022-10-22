@@ -34,8 +34,9 @@ export class MenuMap extends K1_MenuMap {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {

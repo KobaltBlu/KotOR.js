@@ -24,12 +24,13 @@ export class InGameBark extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-  await super.MenuControlInitializer();
-  return new Promise<void>((resolve, reject) => {
-    resolve();
-  });
-}
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer();
+    if(skipInit) return;
+    return new Promise<void>((resolve, reject) => {
+      resolve();
+    });
+  }
 
 bark(entry: any = null) {
   if (entry != null) {

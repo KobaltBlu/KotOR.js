@@ -24,8 +24,9 @@ export class MenuFeedback extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this._button_b = this.BTN_BACK;
 

@@ -50,8 +50,9 @@ export class MenuGalaxyMap extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();

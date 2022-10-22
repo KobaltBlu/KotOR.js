@@ -25,8 +25,9 @@ export class CharGenName extends K1_CharGenName {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.NAME_BOX_EDIT.addEventListener('click', (e: any) => {
         e.stopPropagation();

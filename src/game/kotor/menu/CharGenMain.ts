@@ -70,16 +70,10 @@ export class CharGenMain extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LBL_LEVEL?.hide();
-      this.LBL_LEVEL_VAL?.hide();
-      this.OLD_LBL?.hide();
-      this.NEW_LBL?.hide();
-
-
-      //Visible Elements
 
       this.tGuiPanel.getFill().position.z = -0.5;
 
@@ -131,6 +125,10 @@ export class CharGenMain extends GameMenu {
 
   Show() {
     super.Show();
+    this.LBL_LEVEL.hide();
+    this.LBL_LEVEL_VAL.hide();
+    this.OLD_LBL.hide();
+    this.NEW_LBL.hide();
     GameState.MenuActive = true;
     try {
       CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);

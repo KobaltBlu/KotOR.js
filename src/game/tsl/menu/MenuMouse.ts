@@ -30,8 +30,9 @@ export class MenuMouse extends K1_MenuMouse {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });

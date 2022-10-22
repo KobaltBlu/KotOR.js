@@ -27,8 +27,9 @@ export class CharGenQuickOrCustom extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();

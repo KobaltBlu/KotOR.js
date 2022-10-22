@@ -98,8 +98,9 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.default0 = this.LBL_NA0.getFillTextureName();
       this.default1 = this.LBL_NA1.getFillTextureName();

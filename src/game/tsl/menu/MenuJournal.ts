@@ -34,8 +34,9 @@ export class MenuJournal extends K1_MenuJournal {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');

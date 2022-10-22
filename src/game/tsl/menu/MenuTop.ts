@@ -62,8 +62,9 @@ export class MenuTop extends K1_MenuTop {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this.LBLH_OPT.widget.position.z = 5;

@@ -43,8 +43,9 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       const texPacks = TwoDAManager.datatables.get('texpacks') || {} as any;

@@ -39,8 +39,9 @@ export class MainMenu extends K1_MainMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MODULES.hide();
       this.LBL_NEWCONTENT.hide();

@@ -139,8 +139,9 @@ export class InGameOverlay extends GameMenu {
     this.enablePositionScaling = true;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.widget.userData.fill.visible = false;
       //this.TB_STEALTH.hideBorder();

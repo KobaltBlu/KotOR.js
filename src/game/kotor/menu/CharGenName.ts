@@ -25,8 +25,9 @@ export class CharGenName extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
@@ -41,14 +42,13 @@ export class CharGenName extends GameMenu {
         MenuManager.CharGenQuickPanel.step2 = true;
         this.Close();
       });
-
-      this.BTN_RANDOM.hide();
       resolve();
     });
   }
 
   Show() {
     super.Show();
+    this.BTN_RANDOM.hide();
     this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
   }
   

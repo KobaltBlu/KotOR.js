@@ -32,8 +32,9 @@ export class MenuSound extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer() {
+  async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       
       this.BTN_BACK.addEventListener('click', (e: any) => {

@@ -113,7 +113,7 @@ export class GameMenu {
     });
   }
 
-  async MenuControlInitializer(): Promise<any> {
+  async MenuControlInitializer(skipInit: boolean = false): Promise<any> {
     return;
   };
 

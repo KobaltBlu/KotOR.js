@@ -28,8 +28,9 @@ export class MenuContainer extends K1_MenuContainer {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-    await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer(true);
+    if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
   
       this.BTN_CANCEL.addEventListener('click', (e: any) => {

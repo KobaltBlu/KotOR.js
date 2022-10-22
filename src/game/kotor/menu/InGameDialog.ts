@@ -53,8 +53,9 @@ export class InGameDialog extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer() {
-  await super.MenuControlInitializer();
+  async MenuControlInitializer(skipInit: boolean = false) {
+    await super.MenuControlInitializer();
+    if(skipInit) return;
   return new Promise<void>((resolve, reject) => {
     this.LBL_MESSAGE.setText('');
 
