@@ -204,6 +204,7 @@ export class GameState implements EngineContext {
   static camera_dialog: THREE.PerspectiveCamera;
   static camera_animated: THREE.PerspectiveCamera;
   static camera_gui: THREE.OrthographicCamera;
+  static currentCameraPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   static staticCameras: any[];
   static animatedCameras: any[];
   static staticCameraIndex: number;
@@ -1245,6 +1246,8 @@ export class GameState implements EngineContext {
       //GameState.viewportFrustum.setFromProjectionMatrix(GameState.currentCamera.projectionMatrix);
       GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
       GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
+      GameState.currentCameraPosition.set(0, 0, 0);
+      GameState.currentCameraPosition.applyMatrix4(GameState.followerCamera.matrix);
       GameState.updateTime(delta);
 
       //PartyMember cleanup

@@ -462,7 +462,7 @@ export class ModuleObject {
     }
 
     if(GameState.currentCamera){
-      this.distanceToCamera = this.position.distanceTo(GameState.currentCamera.position);
+      this.distanceToCamera = this.position.distanceTo(GameState.currentCameraPosition);
     }
 
     if(this.spawned){
