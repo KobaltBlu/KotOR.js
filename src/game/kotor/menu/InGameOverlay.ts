@@ -148,52 +148,52 @@ export class InGameOverlay extends GameMenu {
       //this.TB_PAUSE.hideBorder();
       //this.TB_SOLO.hideBorder();
 
-      this.LBL_LIGHTSHIFT.hide();
-      this.LBL_DARKSHIFT.hide();
-      this.LBL_JOURNAL.hide();
-      this.LBL_CASH.hide();
-      this.LBL_PLOTXP.hide();
-      this.LBL_STEALTHXP.hide();
-      this.LBL_ITEMRCVD.hide();
-      this.LBL_ITEMLOST.hide();
+      this.LBL_LIGHTSHIFT?.hide();
+      this.LBL_DARKSHIFT?.hide();
+      this.LBL_JOURNAL?.hide();
+      this.LBL_CASH?.hide();
+      this.LBL_PLOTXP?.hide();
+      this.LBL_STEALTHXP?.hide();
+      this.LBL_ITEMRCVD?.hide();
+      this.LBL_ITEMLOST?.hide();
 
       //Map INIT
       //this.LBL_MAPBORDER.hideBorder();
-      this.LBL_MAP.hide();
-      this.LBL_ARROW_MARGIN.hide();
+      this.LBL_MAP?.hide();
+      this.LBL_ARROW_MARGIN?.hide();
 
-      this.LBL_CMBTEFCTRED1.hide();
-      this.LBL_CMBTEFCTINC1.hide();
-      this.LBL_LEVELUP1.hide();
-      this.LBL_LVLUPBG1.hide();
-      this.LBL_DEBILATATED1.hide();
-      this.LBL_DISABLE1.hide();
+      this.LBL_CMBTEFCTRED1?.hide();
+      this.LBL_CMBTEFCTINC1?.hide();
+      this.LBL_LEVELUP1?.hide();
+      this.LBL_LVLUPBG1?.hide();
+      this.LBL_DEBILATATED1?.hide();
+      this.LBL_DISABLE1?.hide();
 
-      this.LBL_CMBTEFCTRED2.hide();
-      this.LBL_CMBTEFCTINC2.hide();
-      this.LBL_LEVELUP2.hide();
-      this.LBL_LVLUPBG2.hide();
-      this.LBL_DEBILATATED2.hide();
-      this.LBL_DISABLE2.hide();
+      this.LBL_CMBTEFCTRED2?.hide();
+      this.LBL_CMBTEFCTINC2?.hide();
+      this.LBL_LEVELUP2?.hide();
+      this.LBL_LVLUPBG2?.hide();
+      this.LBL_DEBILATATED2?.hide();
+      this.LBL_DISABLE2?.hide();
 
-      this.LBL_CMBTEFCTRED3.hide();
-      this.LBL_CMBTEFCTINC3.hide();
-      this.LBL_LEVELUP3.hide();
-      this.LBL_LVLUPBG3.hide();
-      this.LBL_DEBILATATED3.hide();
-      this.LBL_DISABLE3.hide();
+      this.LBL_CMBTEFCTRED3?.hide();
+      this.LBL_CMBTEFCTINC3?.hide();
+      this.LBL_LEVELUP3?.hide();
+      this.LBL_LVLUPBG3?.hide();
+      this.LBL_DEBILATATED3?.hide();
+      this.LBL_DISABLE3?.hide();
 
 
-      this.LBL_ACTIONDESC.hide();
-      this.LBL_ACTIONDESCBG.hide();
+      this.LBL_ACTIONDESC?.hide();
+      this.LBL_ACTIONDESCBG?.hide();
 
-      this.LBL_NAME.hide();
-      this.LBL_NAMEBG.hide();
-      this.PB_HEALTH.hide();
-      this.LBL_HEALTHBG.hide();
+      this.LBL_NAME?.hide();
+      this.LBL_NAMEBG?.hide();
+      this.PB_HEALTH?.hide();
+      this.LBL_HEALTHBG?.hide();
 
-      this.LBL_CMBTMSGBG.hide();
-      this.LBL_CMBTMODEMSG.hide();
+      this.LBL_CMBTMSGBG?.hide();
+      this.LBL_CMBTMODEMSG?.hide();
       //this.BTN_CLEARALL.hideBorder();
 
 
@@ -390,74 +390,74 @@ export class InGameOverlay extends GameMenu {
   }
 
   showCombatUI() {
-    this.BTN_CLEARALL.show();
-    this.BTN_CLEARONE.show();
-    this.LBL_COMBATBG1.show();
-    this.LBL_COMBATBG2.show();
-    this.LBL_COMBATBG3.show();
-    this.LBL_QUEUE0.show();
-    this.LBL_QUEUE1.show();
-    this.LBL_QUEUE2.show();
-    this.LBL_QUEUE3.show();
+    this.BTN_CLEARALL?.show();
+    this.BTN_CLEARONE?.show();
+    this.LBL_COMBATBG1?.show();
+    this.LBL_COMBATBG2?.show();
+    this.LBL_COMBATBG3?.show();
+    this.LBL_QUEUE0?.show();
+    this.LBL_QUEUE1?.show();
+    this.LBL_QUEUE2?.show();
+    this.LBL_QUEUE3?.show();
   }
 
   hideCombatUI() {
-    this.BTN_CLEARALL.hide();
-    this.BTN_CLEARONE.hide();
-    this.LBL_COMBATBG1.hide();
-    this.LBL_COMBATBG2.hide();
-    this.LBL_COMBATBG3.hide();
-    this.LBL_QUEUE0.hide();
-    this.LBL_QUEUE1.hide();
-    this.LBL_QUEUE2.hide();
-    this.LBL_QUEUE3.hide();
-    this.LBL_CMBTMSGBG.hide();
-    this.LBL_CMBTMODEMSG.hide();
+    this.BTN_CLEARALL?.hide();
+    this.BTN_CLEARONE?.hide();
+    this.LBL_COMBATBG1?.hide();
+    this.LBL_COMBATBG2?.hide();
+    this.LBL_COMBATBG3?.hide();
+    this.LBL_QUEUE0?.hide();
+    this.LBL_QUEUE1?.hide();
+    this.LBL_QUEUE2?.hide();
+    this.LBL_QUEUE3?.hide();
+    this.LBL_CMBTMSGBG?.hide();
+    this.LBL_CMBTMODEMSG?.hide();
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
     if (!bVisible) { 
-      this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1)).hide();
-      this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1)).hide();
-      this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
-      this.getControlByName('LBL_LVLUPBG' + (nth + 1)).hide();
-      this.getControlByName('LBL_DEBILATATED' + (nth + 1)).hide();
-      this.getControlByName('LBL_DISABLE' + (nth + 1)).hide();
-      this.getControlByName('LBL_CHAR' + (nth + 1)).hide();
-      this.getControlByName('BTN_CHAR' + (nth + 1)).hide();
-      this.getControlByName('LBL_BACK' + (nth + 1)).hide();
-      this.getControlByName('PB_FORCE' + (nth + 1)).hide();
-      this.getControlByName('PB_VIT' + (nth + 1)).hide();
+      this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1))?.hide();
+      this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1))?.hide();
+      this.getControlByName('LBL_LEVELUP' + (nth + 1))?.hide();
+      this.getControlByName('LBL_LVLUPBG' + (nth + 1))?.hide();
+      this.getControlByName('LBL_DEBILATATED' + (nth + 1))?.hide();
+      this.getControlByName('LBL_DISABLE' + (nth + 1))?.hide();
+      this.getControlByName('LBL_CHAR' + (nth + 1))?.hide();
+      this.getControlByName('BTN_CHAR' + (nth + 1))?.hide();
+      this.getControlByName('LBL_BACK' + (nth + 1))?.hide();
+      this.getControlByName('PB_FORCE' + (nth + 1))?.hide();
+      this.getControlByName('PB_VIT' + (nth + 1))?.hide();
     } else {
-      this.getControlByName('LBL_CHAR' + (nth + 1)).show();
-      this.getControlByName('BTN_CHAR' + (nth + 1)).show();
-      this.getControlByName('LBL_BACK' + (nth + 1)).show();
-      this.getControlByName('PB_FORCE' + (nth + 1)).show();
-      this.getControlByName('PB_VIT' + (nth + 1)).show();
+      this.getControlByName('LBL_CHAR' + (nth + 1))?.show();
+      this.getControlByName('BTN_CHAR' + (nth + 1))?.show();
+      this.getControlByName('LBL_BACK' + (nth + 1))?.show();
+      this.getControlByName('PB_FORCE' + (nth + 1))?.show();
+      this.getControlByName('PB_VIT' + (nth + 1))?.show();
       if (!GameState.module.area.MiniGame && PartyManager.party[nth]) {
         switch (nth) {
         case 0:
           if (PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP1').pulsing = true;
-            this.getControlByName('LBL_LEVELUP1').show();
+            this.getControlByName('LBL_LEVELUP1')?.show();
           } else {
-            this.getControlByName('LBL_LEVELUP1').hide();
+            this.getControlByName('LBL_LEVELUP1')?.hide();
           }
           break;
         case 1:
           if (PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP3').pulsing = true;
-            this.getControlByName('LBL_LEVELUP3').show();
+            this.getControlByName('LBL_LEVELUP3')?.show();
           } else {
-            this.getControlByName('LBL_LEVELUP3').hide();
+            this.getControlByName('LBL_LEVELUP3')?.hide();
           }
           break;
         case 2:
           if (PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP2').pulsing = true;
-            this.getControlByName('LBL_LEVELUP2').show();
+            this.getControlByName('LBL_LEVELUP2')?.show();
           } else {
-            this.getControlByName('LBL_LEVELUP2').hide();
+            this.getControlByName('LBL_LEVELUP2')?.hide();
           }
           break;
         }
@@ -594,10 +594,10 @@ export class InGameOverlay extends GameMenu {
         targetScreenPosition.y = 100;
       }
       this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
-      this.LBL_NAME.show();
-      this.LBL_NAMEBG.show();
-      this.PB_HEALTH.show();
-      this.LBL_HEALTHBG.show();
+      this.LBL_NAME?.show();
+      this.LBL_NAMEBG?.show();
+      this.PB_HEALTH?.show();
+      this.LBL_HEALTHBG?.show();
       this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
       this.LBL_NAME.anchor = Anchor.User;
       this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
@@ -639,30 +639,30 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_TARGET' + i).recalculate();
           this.getControlByName('BTN_TARGETUP' + i).recalculate();
           this.getControlByName('BTN_TARGETDOWN' + i).recalculate();
-          this.getControlByName('BTN_TARGET' + i).show();
-          this.getControlByName('LBL_TARGET' + i).show();
-          this.getControlByName('BTN_TARGETUP' + i).show();
-          this.getControlByName('BTN_TARGETDOWN' + i).show();
+          this.getControlByName('BTN_TARGET' + i)?.show();
+          this.getControlByName('LBL_TARGET' + i)?.show();
+          this.getControlByName('BTN_TARGETUP' + i)?.show();
+          this.getControlByName('BTN_TARGETDOWN' + i)?.show();
         }
       } else {
         for (let i = 0; i < 3; i++) {
-          this.getControlByName('BTN_TARGET' + i).hide();
-          this.getControlByName('LBL_TARGET' + i).hide();
-          this.getControlByName('BTN_TARGETUP' + i).hide();
-          this.getControlByName('BTN_TARGETDOWN' + i).hide();
+          this.getControlByName('BTN_TARGET' + i)?.hide();
+          this.getControlByName('LBL_TARGET' + i)?.hide();
+          this.getControlByName('BTN_TARGETUP' + i)?.hide();
+          this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
         }
       }
     } else {
       ActionMenuManager.SetTarget(undefined);
-      this.LBL_NAME.hide();
-      this.LBL_NAMEBG.hide();
-      this.PB_HEALTH.hide();
-      this.LBL_HEALTHBG.hide();
+      this.LBL_NAME?.hide();
+      this.LBL_NAMEBG?.hide();
+      this.PB_HEALTH?.hide();
+      this.LBL_HEALTHBG?.hide();
       for (let i = 0; i < 3; i++) {
-        this.getControlByName('BTN_TARGET' + i).hide();
-        this.getControlByName('LBL_TARGET' + i).hide();
-        this.getControlByName('BTN_TARGETUP' + i).hide();
-        this.getControlByName('BTN_TARGETDOWN' + i).hide();
+        this.getControlByName('BTN_TARGET' + i)?.hide();
+        this.getControlByName('LBL_TARGET' + i)?.hide();
+        this.getControlByName('BTN_TARGETUP' + i)?.hide();
+        this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
       }
     }
   }
@@ -719,9 +719,9 @@ export class InGameOverlay extends GameMenu {
         (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
         (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
         if (partyMember.isDebilitated()) {
-          this.getControlByName('LBL_DEBILATATED' + (id + 1)).show();
+          this.getControlByName('LBL_DEBILATATED' + (id + 1))?.show();
         } else {
-          this.getControlByName('LBL_DEBILATATED' + (id + 1)).hide();
+          this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
         }
       }
       if (GameState.getCurrentPlayer().combatData.combatAction || GameState.getCurrentPlayer().combatData.combatQueue.length) {
