@@ -3,6 +3,7 @@
 
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { BinaryReader } from "../../../BinaryReader";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
@@ -54,6 +55,7 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         MenuManager.MenuSaveLoad.Open();
       });
 

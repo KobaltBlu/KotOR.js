@@ -198,7 +198,7 @@ class GUIInventoryItem extends GUIProtoItem {
         button.text.material.needsUpdate = true;*/
       }
     };
-    this.onSelect();
+    this.onSelect.call(this);
 
     //StackCount Text
     _buttonIconWidget.add(this.widget.userData.spriteGroup);

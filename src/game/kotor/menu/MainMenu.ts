@@ -3,6 +3,7 @@
 
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { CurrentGame } from "../../../CurrentGame";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
@@ -66,6 +67,7 @@ export class MainMenu extends GameMenu {
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         MenuManager.MenuSaveLoad.Open()
       });
 

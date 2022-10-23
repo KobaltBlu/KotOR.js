@@ -38,6 +38,56 @@ export class MenuTop extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.BTN_MSG.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuMessages.Open();
+      });
+
+      this.BTN_JOU.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuJournal.Open();
+      });
+
+      this.BTN_MAP.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuMap.Open();
+      });
+
+      this.BTN_OPT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuOptions.Open();
+      });
+
+      this.BTN_CHAR.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuCharacter.Open();
+      });
+
+      this.BTN_ABI.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuAbilities.Open();
+      });
+
+      this.BTN_INV.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuInventory.Open();
+      });
+
+      this.BTN_EQU.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.CloseAllOtherMenus();
+        MenuManager.MenuEquipment.Open();
+      });
+
+      this.tGuiPanel.offset.y = 198;
+      this.RecalculatePosition();
       resolve();
     });
   }
