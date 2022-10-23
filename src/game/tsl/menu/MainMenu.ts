@@ -81,7 +81,7 @@ export class MainMenu extends K1_MainMenu {
       (this.LBL_3DVIEW.getFill().material as any).transparent = false;
       
       GameState.ModelLoader.load({
-        name: 'mainmenu01', 
+        file: 'mainmenu01', 
         onLoad: (mdl: OdysseyModel) => {
           
           OdysseyModel3D.FromMDL(mdl, { 

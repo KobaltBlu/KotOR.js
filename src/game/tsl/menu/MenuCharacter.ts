@@ -92,7 +92,7 @@ export class MenuCharacter extends K1_MenuCharacter {
       });
 
       GameState.ModelLoader.load({
-        name: 'charmain_light', 
+        file: 'charmain_light', 
         onLoad: (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             manageLighting: false,
