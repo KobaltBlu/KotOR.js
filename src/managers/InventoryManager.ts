@@ -14,7 +14,7 @@ import { PartyManager } from "./PartyManager";
  */
 
 export class InventoryManager {
-  static inventory: any[];
+  static inventory: any[] = [];
 
   static getInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
