@@ -19,7 +19,7 @@ export class RIMManager {
           return {
             ext: args[1].toLowerCase(), 
             name: args[0], 
-            filename: filename
+            filename: path.join('rims', filename)
           } as any;
         }).filter(function(file_obj: any){
           return file_obj.ext == 'rim';
