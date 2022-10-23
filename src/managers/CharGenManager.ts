@@ -82,7 +82,9 @@ export class CharGenManager {
     return new Promise<void>((resolve, reject) => {
       CharGenManager.LoadCGMainLight().then(() => {
         CharGenManager.LoadCGBodyLight().then(() => {
-          resolve();
+          CharGenManager.LoadCGHeadLight().then(() => {
+            resolve();
+          });
         });
       });
     });
@@ -131,6 +133,8 @@ export class CharGenManager {
       CharGenManager.templates.set(i, template);
       CharGenManager.creatures.set(i, new ModulePlayer(template));
     }
+    let template = CharGenManager.templates.get(CharGenManager.selectedClass);
+    CharGenManager.selectedCreature = new ModulePlayer(template);
   }
 
   static GetPlayerTemplate(nth = 0) {

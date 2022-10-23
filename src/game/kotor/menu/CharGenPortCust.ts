@@ -161,16 +161,20 @@ export class CharGenPortCust extends GameMenu {
     let control = this.LBL_HEAD;
     OdysseyModel3D.FromMDL(this.cghead_light, {
       onComplete: (model: OdysseyModel3D) => {
-        this._3dViewModel = model;
-        this._3dView.addModel(this._3dViewModel);
-        if(CharGenManager.selectedCreature.getGender()){
-          this._3dView.camera.position.copy(this._3dViewModel.camerahookf.position);
-          this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookf.quaternion);
-        }else{
-          this._3dView.camera.position.copy(this._3dViewModel.camerahookm.position);
-          this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookm.quaternion);
+        try{
+          this._3dViewModel = model;
+          this._3dView.addModel(this._3dViewModel);
+          if(CharGenManager.selectedCreature.getGender()){
+            this._3dView.camera.position.copy(this._3dViewModel.camerahookf.position);
+            this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookf.quaternion);
+          }else{
+            this._3dView.camera.position.copy(this._3dViewModel.camerahookm.position);
+            this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookm.quaternion);
+          }
+          this._3dViewModel.playAnimation(0, true);
+        }catch(e){
+          console.error(e);
         }
-        this._3dViewModel.playAnimation(0, true);
       },
       manageLighting: false,
       context: this._3dView

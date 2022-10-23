@@ -104,6 +104,8 @@ export class MenuCharacter extends K1_MenuCharacter {
                 this._3dView.camera.updateProjectionMatrix();
                 (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
                 (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+                this._3dView.setControl(this.LBL_3DCHAR);
+                (this.LBL_3DCHAR.getFill().material as any).visible = true;
 
                 this._3dViewModel = model;
                 this._3dView.addModel(this._3dViewModel);

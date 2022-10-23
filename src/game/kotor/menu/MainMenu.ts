@@ -100,11 +100,12 @@ export class MainMenu extends GameMenu {
           this._3dView.visible = true;
           (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
           (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
-          
+          this._3dView.setControl(this.LBL_3DVIEW);
+          (this.LBL_3DVIEW.getFill().material as any).visible = true;
           
           OdysseyModel3D.FromMDL(mdl, { 
             onComplete: (model: OdysseyModel3D) => {
-              //console.log('Model Loaded', model);
+              console.log('Model Loaded', model);
               this._3dViewModel = model;
               
               this._3dView.camera.position.copy(model.camerahook.position);
@@ -139,8 +140,8 @@ export class MainMenu extends GameMenu {
     super.Update(delta);
     try {
       this._3dView.render(delta);
-      (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
+      console.error(e);
     }
   }
 

@@ -79,6 +79,8 @@ export class MainMenu extends K1_MainMenu {
       this._3dView.visible = true;
       (this.LBL_3DVIEW.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
       (this.LBL_3DVIEW.getFill().material as any).transparent = false;
+      this._3dView.setControl(this.LBL_3DVIEW);
+      (this.LBL_3DVIEW.getFill().material as any).visible = true;
       
       GameState.ModelLoader.load({
         file: 'mainmenu01', 
