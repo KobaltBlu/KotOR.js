@@ -2433,10 +2433,7 @@ export class ModuleArea extends ModuleObject {
 
     return {git: git, are: this.are};
   }
-  getSWVarTableSaveStruct(): import("../resource/GFFStruct").GFFStruct {
-    throw new Error("Method not implemented.");
-  }
-
+  
   toolsetExportGIT(){
     let git = new GFFObject();
     git.FileType = 'GIT ';
