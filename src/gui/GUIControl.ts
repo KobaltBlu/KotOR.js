@@ -711,7 +711,7 @@ export class GUIControl {
       this.border.fill.material.transparent = true;
       this.border.fill.material.visible = false;
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!(texture instanceof THREE.Texture)){
+        if(!(texture)){
           this.border.fill.material.visible = false;
         }else{
           texture.anisotropy = 1;
@@ -789,7 +789,7 @@ export class GUIControl {
         this.highlight.fill.material.visible = false;
         TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           if(this.highlight.fill.material){
-            if(!(texture instanceof THREE.Texture)){
+            if(!(texture)){
               this.highlight.fill.material.visible = false;
             }else{
               texture.anisotropy = 1;
@@ -823,6 +823,7 @@ export class GUIControl {
         if(texture){
           this.text.texture = texture;
           this.text.material.uniforms.map.value = texture;
+          this.text.material.uniforms.color = { value: this.text.color };
           this.text.material.alphaTest = 0;
           this.text.material.transparent = true;
           this.text.material.needsUpdate = true;

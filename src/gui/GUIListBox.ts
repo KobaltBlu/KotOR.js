@@ -295,7 +295,7 @@ export class GUIListBox extends GUIControl {
       for(let i = 0; i < len; i++){
         this.children[i].selected = false;
         if(typeof this.children[i].onSelect === 'function'){
-          this.children[i].onSelect();
+          this.children[i].onSelect.call(this);
         }
       }
 
@@ -303,7 +303,7 @@ export class GUIListBox extends GUIControl {
         item.selected = true;
         this.selectedItem = item;
         if(typeof item.onSelect === 'function'){
-          item.onSelect();
+          item.onSelect.call(this);
         }
         if(typeof this.onSelected === 'function')
           this.onSelected(item.node);
