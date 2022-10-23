@@ -107,6 +107,7 @@ export class NWScript {
     this.globalCache = null;
 
   }
+  
   decompile(binary: Buffer) {
     throw new Error("Method not implemented.");
   }

@@ -27,6 +27,8 @@ export class ModuleTrigger extends ModuleObject {
   lastObjectEntered: any;
   lastObjectExited: any;
   triggered: boolean;
+  trapFlag: any;
+  trapDetectDC: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -615,12 +617,6 @@ export class ModuleTrigger extends ModuleObject {
 
     this.template = gff;
     return gff;
-  }
-  trapDetectDC(trapDetectDC: any) {
-    throw new Error("Method not implemented.");
-  }
-  trapFlag(trapFlag: any) {
-    throw new Error("Method not implemented.");
   }
 
   toToolsetInstance(){

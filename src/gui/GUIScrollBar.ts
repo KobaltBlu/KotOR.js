@@ -246,6 +246,7 @@ export class GUIScrollBar extends GUIControl{
     });
 
   }
+  
   scrollUp() {
     // throw new Error("Method not implemented.");
   }

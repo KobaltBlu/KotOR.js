@@ -564,7 +564,6 @@ export class ModulePlaceable extends ModuleObject {
             if(this.model != null){
               scene = this.model.parent;
               scene.remove(this.model);
-              GameState.octree.remove( this.model );
               this.model.dispose();
             }
 
@@ -574,7 +573,6 @@ export class ModulePlaceable extends ModuleObject {
 
             if(typeof scene != 'undefined'){
               scene.add(this.model);
-              GameState.octree.add( this.model );
             }
 
             this.position = this.model.position.copy(this.position);

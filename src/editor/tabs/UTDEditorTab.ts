@@ -64,6 +64,7 @@ export class UTDEditorTab extends EditorTab {
   ui3DRenderer: UI3DRenderer;
   door: ModuleDoor;
   requestId: any;
+  $firstName: any;
 
   constructor(file: EditorFile){
     super();
@@ -168,9 +169,6 @@ export class UTDEditorTab extends EditorTab {
 
     });
 
-  }
-  $firstName($firstName: any) {
-    throw new Error("Method not implemented.");
   }
 
   onResize(){

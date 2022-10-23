@@ -873,6 +873,7 @@ export class ModuleObject {
     }
 
   }
+
   getName(): any {
     throw new Error("Method not implemented.");
   }
@@ -992,8 +993,6 @@ export class ModuleObject {
   onBlocked(){
     //stub
   }
-
-
   
   resetExcitedDuration() {
     throw new Error("Method not implemented.");
@@ -1014,7 +1013,6 @@ export class ModuleObject {
     if(this instanceof ModuleDoor){
       this.room = undefined;
       let aabbFaces = [];
-      let meshesSearch;// = GameState.octree_walkmesh.search( GameState.raycaster.ray.origin, 10, true, GameState.raycaster.ray.direction );
       let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
       let box = this.model.box.clone();
 
@@ -1175,7 +1173,6 @@ export class ModuleObject {
             try{
               let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
 
           }
@@ -1191,7 +1188,6 @@ export class ModuleObject {
             try{
               let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
 
           }
@@ -1204,7 +1200,6 @@ export class ModuleObject {
             try{
               let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
               GameState.walkmeshList.splice(wmIdx, 1);
-              GameState.octree_walkmesh.remove(this.collisionData.walkmesh.mesh);
             }catch(e){}
             
           }
@@ -1918,7 +1913,6 @@ export class ModuleObject {
       GameState.raycaster.far = max_distance;
 
       let aabbFaces = [];
-      let meshesSearch;// = GameState.octree_walkmesh.search( GameState.raycaster.ray.origin, 10, true, GameState.raycaster.ray.direction );
       let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
 
       let doors = [];
@@ -1976,7 +1970,9 @@ export class ModuleObject {
     throw new Error("Method not implemented.");
   }
 
-  PlaySoundSet(ssfType: SSFObjectType){}
+  PlaySoundSet(ssfType: SSFObjectType){
+    throw new Error("Method not implemented.");
+  }
 
 
 

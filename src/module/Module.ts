@@ -81,6 +81,8 @@ export class Module {
   transWP: any;
   filename: string;
   static path: any;
+  Mod_Transition: any;
+  Mod_Effect_NxtId: any;
 
   constructor(onLoad?: Function){
     this.scripts = {};
@@ -538,10 +540,7 @@ export class Module {
       let wlkmesh = GameState.walkmeshList.shift();
       //wlkmesh.dispose();
       GameState.group.room_walkmeshes.remove(wlkmesh);
-      GameState.octree_walkmesh.remove(wlkmesh);
     }
-
-    GameState.octree_walkmesh.rebuild();
 
     if(GameState.module instanceof Module){
 
@@ -679,12 +678,6 @@ export class Module {
 
     });
 
-  }
-  Mod_Effect_NxtId(Mod_Effect_NxtId: any) {
-    throw new Error("Method not implemented.");
-  }
-  Mod_Transition(Mod_Transition: any) {
-    throw new Error("Method not implemented.");
   }
 
   includeInSave(){

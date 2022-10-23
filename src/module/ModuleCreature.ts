@@ -3392,9 +3392,6 @@ export class ModuleCreature extends ModuleObject {
 
               if(scene){
                 scene.add( this.model );
-                try{
-                  GameState.octree.add( this.model );
-                }catch(e){}
                 //this.model.position.copy(position);
                 //this.model.rotation.set(rotation.x, rotation.y, rotation.z);
               }

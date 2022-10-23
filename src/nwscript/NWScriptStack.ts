@@ -21,6 +21,7 @@ export class NWScriptStack {
     pointer: any; basePointer: any;
   };
   oldBP: any;
+  stackSize: any;
 
 
   constructor(){
@@ -239,9 +240,6 @@ export class NWScriptStack {
     struct.AddField( new GFFField(GFFDataType.INT, 'StackPointer') ).SetValue(this.stackSize);
   
     return struct;
-  }
-  stackSize(stackSize: any) {
-    throw new Error("Method not implemented.");
   }
 
   static FromActionStruct = function( struct: GFFStruct, object_self?: any ){

@@ -38,6 +38,7 @@ export class ModuleSound extends ModuleObject {
   volume: number;
   volumeVariation: number;
   emitter: AudioEmitter;
+  micRange: any;
 
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
@@ -329,7 +330,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.Type = 6;
 
     gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Active') ).SetValue(this.cameraID);
+    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Active') ).SetValue(this.active);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(1);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Continuous') ).SetValue(1);
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).SetValue(this.fixedVariance);
@@ -341,8 +342,8 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).SetValue(this.maxDistance);
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).SetValue(this.minDistance);
     gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).SetValue(this.micRange);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Positional') ).SetValue(this.micRange);
+    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).SetValue(this.pitchVariation);
+    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Positional') ).SetValue(this.positional);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Random') ).SetValue(this.random);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).SetValue(this.randomPosition);
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).SetValue(this.randomRangeX);
@@ -369,12 +370,6 @@ export class ModuleSound extends ModuleObject {
 
     this.template = gff;
     return gff;
-  }
-  cameraID(cameraID: any) {
-    throw new Error("Method not implemented.");
-  }
-  micRange(micRange: any) {
-    throw new Error("Method not implemented.");
   }
   
   toToolsetInstance(){

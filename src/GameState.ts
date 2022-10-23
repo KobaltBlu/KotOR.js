@@ -271,8 +271,6 @@ export class GameState implements EngineContext {
   static loadingTextures: boolean;
   static MenuActive: any;
   static VideoEffect: any;
-  static octree_walkmesh: any;
-  static octree: any;
 
   static addEventListener(event: string, callback: Function){
     if(GameState.eventListeners.hasOwnProperty(event)){
@@ -994,13 +992,17 @@ export class GameState implements EngineContext {
         VideoPlayer.Load(sMovie3, () => {
           VideoPlayer.Load(sMovie4, () => {
             VideoPlayer.Load(sMovie5, () => {
-              VideoPlayer.Load(sMovie6, () => {
+              VideoPlayer.Load(sMovie6, async () => {
                 //MenuManager.InGameOverlay.Hide();
                 GameState.Mode = EngineMode.LOADING;
                 
                 if(GameState.module instanceof Module){
-                  GameState.module.save();
-                  GameState.module.dispose();
+                  try{ await GameState.module.save(); }catch(e){
+                    console.error(e);
+                  }
+                  try{ GameState.module.dispose(); }catch(e){
+                    console.error(e);
+                  }
                 }
 
                 //Remove all cached scripts and kill all running instances

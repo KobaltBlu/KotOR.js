@@ -63,6 +63,8 @@ export class ModuleDoor extends ModuleObject {
   declare audioEmitter: AudioEmitter;
   boxHelper: THREE.Box3Helper;
   props: any;
+  useable: any;
+  bodyBag: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -336,9 +338,6 @@ export class ModuleDoor extends ModuleObject {
       setTimeout( () => {
         if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
           this.collisionData.walkmesh.mesh.remove(this.collisionData.walkmesh.mesh.parent);
-          // if(GameState.octree_walkmesh.objectsMap[this.walkmesh.mesh.uuid] == this.walkmesh.mesh){
-          //   GameState.octree_walkmesh.remove(this.walkmesh.mesh)
-          // }
         }
         //this.model.poseAnimation('opened1');
       }, 100);
@@ -582,7 +581,6 @@ export class ModuleDoor extends ModuleObject {
             if(this.model != null){
               scene = this.model.parent;
               scene.remove(this.model);
-              GameState.octree.remove( this.model );
               this.model.dispose();
             }
 
@@ -592,7 +590,6 @@ export class ModuleDoor extends ModuleObject {
 
             if(typeof scene != 'undefined'){
               scene.add(this.model);
-              GameState.octree.add( this.model );
               //this.model.translateX(position.x);
               //this.model.translateY(position.y);
               //this.model.translateZ(position.z);
@@ -1013,12 +1010,6 @@ export class ModuleDoor extends ModuleObject {
 
     this.template = gff;
     return gff;
-  }
-  bodyBag(bodyBag: any) {
-    throw new Error("Method not implemented.");
-  }
-  useable(useable: any) {
-    throw new Error("Method not implemented.");
   }
 
   toToolsetInstance(){

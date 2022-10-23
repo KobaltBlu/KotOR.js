@@ -74,6 +74,7 @@ export class UTPEditorTab extends EditorTab {
   placeable: ModulePlaceable;
 
   requestId: any;
+  $firstName: any;
 
   constructor(file: EditorFile){
     super();
@@ -194,9 +195,6 @@ export class UTPEditorTab extends EditorTab {
 
     });
 
-  }
-  $firstName($firstName: any) {
-    throw new Error("Method not implemented.");
   }
 
   onResize(){

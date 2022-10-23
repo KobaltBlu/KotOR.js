@@ -1439,13 +1439,6 @@ export class ModuleEditorTab extends EditorTab {
   }
 
   updateFollowerCamera(delta = 0) {
-    
-    /*for(let i = 0; i < this.octree_walkmesh.objects.length; i++){
-      let obj = this.octree_walkmesh.objects[i];
-      if(obj instanceof THREE.Mesh){
-        obj.visible = true;
-      }
-    }*/
 
     let followee = this.player;
 
@@ -1472,25 +1465,7 @@ export class ModuleEditorTab extends EditorTab {
     // this.raycaster.ray.direction.set(Math.cos(this.followerCamera.facing), Math.sin(this.followerCamera.facing), 0).normalize();
     // this.raycaster.ray.origin.set(followee.position.x,followee.position.y,followee.position.z + camHeight);
 
-    // let octreeResults = this.octree_walkmesh.search( this.raycaster.ray.origin, 10, true, this.raycaster.ray.direction )
-    // let intersects = this.raycaster.intersectOctreeObjects( octreeResults );
-    // if ( intersects.length > 0 ) {
-    //   for(let i = 0; i < intersects.length; i++){
-    //     if(intersects[i].distance < distance){
-    //       distance = intersects[i].distance * .75;
-    //       //detect = true
-    //     }
-    //   }
-    // }
-
     // this.raycaster.far = Infinity;
-
-    // for(let i = 0; i < this.octree_walkmesh.objects.length; i++){
-    //   let obj = this.octree_walkmesh.objects[i];
-    //   if(obj instanceof THREE.Mesh){
-    //     obj.visible = false;
-    //   }
-    // }
 
     /*if(this.Mode == this.MODES.MINIGAME){
 

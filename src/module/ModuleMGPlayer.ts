@@ -593,7 +593,6 @@ export class ModuleMGPlayer extends ModuleObject {
     if(this instanceof ModuleObject){
       this.room = undefined;
       let aabbFaces = [];
-      let meshesSearch;// = GameState.octree_walkmesh.search( GameState.raycaster.ray.origin, 10, true, GameState.raycaster.ray.direction );
       let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
       const box = this.box.clone();
 
