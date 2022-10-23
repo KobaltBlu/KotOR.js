@@ -4519,7 +4519,7 @@ export class ModuleCreature extends ModuleObject {
       featList.AddChildStruct( this.feats[i].save() );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue( this.template.RootNode.GetFieldByLabel('FirstName').GetCExoLocString() );
+    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue( this.template.RootNode.GetFieldByLabel('FirstName')?.GetCExoLocString() );
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).SetValue(this.forcePoints);
     gff.RootNode.AddField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).SetValue(this.fortitudeSaveThrow);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Gender') ).SetValue(this.gender);
@@ -4540,7 +4540,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'JoiningXP') ).SetValue( this.joiningXP ? this.joiningXP : 0 );
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).SetValue( this.template.RootNode.GetFieldByLabel('LastName').GetCExoLocString() );
+    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).SetValue( this.template.RootNode.GetFieldByLabel('LastName')?.GetCExoLocString() );
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Listening') ).SetValue( this.isListening );
 
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).SetValue(this.maxForcePoints);
