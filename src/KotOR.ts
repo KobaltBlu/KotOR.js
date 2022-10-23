@@ -16,6 +16,7 @@ export * from "./managers/KEYManager";
 export * from "./managers/RIMManager";
 export * from "./managers/TLKManager";
 export * from "./managers/TwoDAManager";
+export * from "./managers/LightManager";
 export * from "./resource/ResourceLoader";
 
 export * from "./LoadingScreen";
