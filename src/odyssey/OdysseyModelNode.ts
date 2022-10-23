@@ -250,9 +250,12 @@ export class OdysseyModelNode {
                     temp = 0;
                   }
 
-                  x = ((temp & 0x07ff | 0) / 1023.0) - 1.0;
-                  y = (((temp >> 11) & 0x07ff | 0) / 1023.0) - 1.0;
-                  z = (((temp >> 22) & 0x3FF) / 511.0 | 0) - 1.0;
+                  //@ts-expect-error
+                  x = (parseInt(temp & 0x07ff) / 1023.0) - 1.0;
+                  //@ts-expect-error
+                  y = (parseInt((temp >> 11) & 0x07ff) / 1023.0) - 1.0;
+                  //@ts-expect-error
+                  z = (parseInt((temp >> 22) & 0x3FF) / 511.0) - 1.0;
 
                   let fSquares =  (Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0));
 
