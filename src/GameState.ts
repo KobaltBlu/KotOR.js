@@ -466,7 +466,7 @@ export class GameState implements EngineContext {
     // GameState.scene.add(GameState.group.stunt);
     // GameState.scene.add(GameState.group.weather_effects);
 
-    // GameState.scene.add(GameState.group.lights);
+    GameState.scene.add(GameState.group.lights);
     // GameState.scene.add(GameState.group.light_helpers);
     // GameState.scene.add(GameState.group.shadow_lights);
     // GameState.scene.add(GameState.group.path_helpers);
