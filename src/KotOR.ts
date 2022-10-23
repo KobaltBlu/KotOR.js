@@ -1,3 +1,5 @@
+import { floorPowerOfTwo } from "three/src/math/MathUtils";
+
 export * from "./audio";
 export * from "./odyssey";
 export * from "./module";
@@ -17,5 +19,6 @@ export * from "./managers/TwoDAManager";
 export * from "./resource/ResourceLoader";
 
 export * from "./LoadingScreen";
+export * from "./SaveGame";
 
 export * as THREE from "three";

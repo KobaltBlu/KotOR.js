@@ -922,6 +922,7 @@ export class GameState implements EngineContext {
       //}
     }
 
+    CursorManager.arrow.visible = false;
     if(GameState.selectedObject instanceof ModuleObject){
       if(GameState.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
         GameState.selectedObject = undefined;

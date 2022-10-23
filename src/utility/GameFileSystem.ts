@@ -207,7 +207,15 @@ export class GameFileSystem {
     }
   }
 
-  private static async readdir_fs(resource_path: string = '', opts: any = {},  files: any[] = []) {
+  private static async readdir_fs(resource_path: string = '', opts: GameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
+    if(typeof depthState === 'undefined'){
+      depthState = {
+        'folder': resource_path,
+        depth: 0
+      }
+    }else{
+      depthState.depth++;
+    }
     return new Promise<string[]>( (resolve, reject) => {
       fs.stat(path.join(GameFileSystem.rootDirectoryPath, resource_path), (err, stats: fs.Stats) => {
         if(err){
@@ -215,26 +223,35 @@ export class GameFileSystem {
           return;
         }
         if(!stats.isDirectory()){
-          files.push(resource_path);
+          if(!opts.list_dirs){
+            files.push(resource_path);
+          }
           resolve(files);
           return;
         }else{
-          fs.readdir(path.join(GameFileSystem.rootDirectoryPath, resource_path), async (err, dir_files: string[]) => {
-            if(err){
-              reject(err);
-              return;
-            }
-            let file: string;
-            for(let i = 0, len = dir_files.length; i < len; i++){
-              file = dir_files[i];
-              try{
-                await GameFileSystem.readdir_fs(path.join(resource_path, file), opts, files);
-              }catch(e){
+          if((depthState.depth <= 1) || !!opts.recursive ){
+            fs.readdir(path.join(GameFileSystem.rootDirectoryPath, resource_path), {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
+              if(err){
                 reject(err);
+                return;
               }
-            }
+              let file: fs.Dirent;
+              if(!!opts.list_dirs && depthState.depth){
+                files.push(resource_path);
+              }
+              for(let i = 0, len = dir_files.length; i < len; i++){
+                file = dir_files[i];
+                try{
+                  await GameFileSystem.readdir_fs(path.join(resource_path, file.name), opts, files, depthState);
+                }catch(e){
+                  reject(err);
+                }
+              }
+              resolve(files);
+            });
+          }else{
             resolve(files);
-          });
+          }
         }
   
       });
@@ -244,7 +261,7 @@ export class GameFileSystem {
   static async mkdir(dirPath: string, opts: GameFileSystemReadDirOptions = {}){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<boolean>( (resolve, reject) => {
-        fs.mkdir(dirPath, { recursive: !!opts.recursive }, (err) => {
+        fs.mkdir(path.join(GameFileSystem.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, (err) => {
           if(err){
             reject(err);
             return;

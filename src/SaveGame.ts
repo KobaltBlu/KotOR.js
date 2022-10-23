@@ -73,7 +73,7 @@ export class SaveGame {
   constructor(name = ''){
 
     this.folderName = name;
-    this.directory = path.join(SaveGame.base_directory, this.folderName);
+    this.directory = path.join(this.folderName);
     this.isLoaded = false;
 
     this.AREANAME = '';
@@ -451,6 +451,8 @@ export class SaveGame {
       });
     }).catch((err) => {
       console.error('InventoryLoader', err)
+      if(typeof onLoad === 'function')
+        onLoad();
     })
 
   }
@@ -569,15 +571,14 @@ export class SaveGame {
         MenuManager.LoadScreen.Open();
         MenuManager.LoadScreen.showSavingMessage();
 
-        let base_dir = 'Saves';
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
-        if(!(await GameFileSystem.exists(base_dir))){
-          await GameFileSystem.mkdir(base_dir);
+        if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+          await GameFileSystem.mkdir(SaveGame.base_directory);
         }
 
         let save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
-        let save_dir = path.join( base_dir, save_dir_name );
+        let save_dir = path.join( SaveGame.base_directory, save_dir_name );
 
         if(!(await GameFileSystem.exists(save_dir))){
           await GameFileSystem.mkdir(save_dir);
@@ -730,18 +731,18 @@ export class SaveGame {
 
   static GetSaveGames(){
     return new Promise<void>( (resolve, reject) => {
-      GameFileSystem.readdir(SaveGame.base_directory).then( async (folders) => {
+      GameFileSystem.readdir(SaveGame.base_directory, {list_dirs: true}).then( async (folders) => {
         //Loop through and detect the possible savegame paths
         for(let i = 0; i < folders.length; i++){
-          if(SaveGame.FolderRegexValidator.test(folders[i])){
-            if(GameFileSystem.exists(path.join(SaveGame.base_directory, folders[i], 'SAVEGAME.sav'))){
+          // if(SaveGame.FolderRegexValidator.test(folders[i])){
+            if(GameFileSystem.exists(path.join(folders[i], 'SAVEGAME.sav'))){
               SaveGame.AddSaveGame( new SaveGame(folders[i]) );
             }else{
               //console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);
             }
-          }else{
+          // }else{
             //console.log('SaveGame', 'Folder Invalid', folders[i]);
-          }
+          // }
         }
 
         resolve();

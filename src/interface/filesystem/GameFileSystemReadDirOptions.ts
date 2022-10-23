@@ -1,3 +1,4 @@
 export interface GameFileSystemReadDirOptions {
-  recursive?: boolean
+  recursive?: boolean,
+  list_dirs?: boolean;
 }

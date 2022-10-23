@@ -54,7 +54,8 @@ export class CurrentGame {
       if(GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
         GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true }).then( () => {
           resolve();
-        }).catch( () => {
+        }).catch( (e) => {
+          console.error(e);
           resolve();
         });
       }else{
@@ -66,7 +67,11 @@ export class CurrentGame {
   static async InitGameInProgressFolder(){
     await CurrentGame.ClearGameInProgressFolder();
     // fs.mkdirSync(CurrentGame.gameinprogress_dir);
-    return GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+    try{ 
+      await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+    }catch(e){
+      console.error(e);
+    }
   }
 
   static ExtractERFToGameInProgress( erf: ERFObject ){
