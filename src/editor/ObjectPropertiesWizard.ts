@@ -1,4 +1,3 @@
-///<reference path="../../node_modules/@types/jqueryui/index.d.ts"/>
 import { BIFManager } from "../managers/BIFManager";
 import { KEYManager } from "../managers/KEYManager";
 import { TwoDAManager } from "../managers/TwoDAManager";

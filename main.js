@@ -59,6 +59,18 @@ ipcMain.on('movie-kill-stream', (event, data) => {
   }
 });
 
+ipcMain.handle('locate-game-directory', (event, data) => {
+  return new Promise( (resolve, reject) => {
+    dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {
+      if(result.filePaths.length && !result.canceled){
+        resolve(result.filePaths[0]);
+      }
+    }).catch(err => {
+      reject(err)
+    });
+  });
+})
+
 function onVideoFileSeleted(videoFilePath, sender) {
   videoSupport(videoFilePath).then((checkResult) => {
     if (checkResult.videoCodecSupport && checkResult.audioCodecSupport) {
@@ -108,18 +120,19 @@ async function createWindowFromProfile( profile = {} ) {
     backgroundColor: profile.launch.backgroundColor,
     autoHideMenuBar: false,
     webPreferences: {
+      preload: path.join(__dirname, 'dist/game/preload.js'),
       webviewTag: false,
       nodeIntegration: true,
       enableRemoteModule: true,
       //worldSafeExecuteJavaScript: true,
-      contextIsolation: false,
+      contextIsolation: true,
     }
   });
 
   _window.state = profile;
 
   // and load the index.html of the app.
-  _window.loadURL(`file://${__dirname}/apps/${profile.launch.path}`);
+  _window.loadURL(`file://${__dirname}/dist/${profile.launch.path}?key=${profile.key}`);
   _window.setMenuBarVisibility(false);
 
   // Emitted when the window is closed.
@@ -155,15 +168,16 @@ function createLauncherWindow() {
     title: 'KotOR Launcher',
     backgroundColor: "#000000",
     webPreferences: {
+      preload: path.join(__dirname, 'dist/launcher/preload.js'),
       webviewTag: false,
       nodeIntegration: true,
       enableRemoteModule: true,
       //worldSafeExecuteJavaScript: true,
-      contextIsolation: false,
+      contextIsolation: true,
     }
   });
   // and load the index.html of the app.
-  winLauncher.loadURL(`file://${__dirname}/launcher/launcher.html`);
+  winLauncher.loadURL(`file://${__dirname}/dist/launcher/index.html`);
   //winLauncher.openDevTools();
   //winLauncher.on('ready', () => {
     //winLauncher.webcontents.openDevTools();

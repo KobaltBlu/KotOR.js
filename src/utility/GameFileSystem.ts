@@ -13,7 +13,7 @@ import { GameFileSystemReadDirOptions } from "../interface/filesystem/GameFileSy
  * The FileSystem class.
  * Handles file system access for the application.
  * It will use either the File System Access API or the fs module built into node
- * depending on the ENVIRONMENT ( WEB|ELECTRON ) the app was loaded under.
+ * depending on the ENVIRONMENT ( BROWSER|ELECTRON ) the app was loaded under.
  * 
  * This class should only access the directory that the user supplied and not escape it.
  * Under the web this is forced, but the node implementation is not so strict.
@@ -75,7 +75,8 @@ export class GameFileSystem {
       return new Promise<Buffer>( (resolve, reject) => {
         fs.read(handle as number, output, offset, length, position, (err, bytes, buffer) => {
           if(err) reject(err);
-          resolve(buffer);
+          Buffer.from(buffer).copy(output);
+          resolve(Buffer.from(buffer));
         })
       });
     }else{
@@ -115,7 +116,7 @@ export class GameFileSystem {
       return new Promise<Buffer>( (resolve, reject) => {
         fs.readFile(path.join(GameFileSystem.rootDirectoryPath, filepath), options, (err, buffer) => {
           if(err) reject(undefined);
-          resolve(buffer);
+          resolve(Buffer.from(buffer));
         })
       });
     }else{
@@ -222,7 +223,8 @@ export class GameFileSystem {
           reject(err);
           return;
         }
-        if(!stats.isDirectory()){
+        // stats = Object.assign(new fs.Stats(), stats);
+        if(resource_path.split('/').pop().indexOf('.') > 0){
           if(!opts.list_dirs){
             files.push(resource_path);
           }

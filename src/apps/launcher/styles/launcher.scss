@@ -1,12 +1,15 @@
-:focus {
-  outline: -webkit-focus-ring-color auto 0px;
-}
+$fa-font-path: "./fonts";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";  
+
+// our project needs Solid + Brands
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
 
 @font-face {
 	font-family: 'Trajan';
-	src: url('editor/Trajan Pro Regular.woff2') format('woff2'),
-		url('editor/Trajan Pro Regular.woff') format('woff'),
-		url('editor/Trajan Pro Regular.svg#TrajanPro-Regular') format('svg');
+	src: url('./fonts/Trajan-Pro-Regular.woff2') format('woff2'),
+	 url('./fonts/Trajan-Pro-Regular.woff') format('woff'),
+	 url('./fonts/Trajan-Pro-Regular.svg#TrajanPro-Regular') format('svg');
 	font-weight: bold;
 	font-style: normal;
 }
@@ -412,7 +415,7 @@ li.tab-btn.nav-logo img {
 
 .promo-element.video:hover:after {
   content: '';
-  background-image: url('../launcher/images/play-icon.png');
+  background-image: url('./images/play-icon.png');
   background-repeat: no-repeat;
   background-position: center;
   width: 100%;

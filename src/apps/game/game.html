@@ -2,85 +2,31 @@
 <html>
   <head>
     <title>KotOR</title>
-    <link rel="stylesheet" href="../css/game.css" />
   </head>
   <body>
     <div id="renderer-container" class="ui-layout-center"></div>
     <div class="console"><input type="text"></div>
+    <div id="modal-grant-access" class="modal-grant-access-wrapper">
+      <div class="modal-grant-access">
+        <div class="modal-content-wrapper">
+          <h1>Grant Access</h1>
+          <p>Please grant this application acces to your game install directory to continue.</p>
+        </div>
+        <div class="modal-button-wrapper">
+          <button id="btn-grant-access" class="modal-button grant">Grant Access</button>
+          <button id="btn-quit" class="modal-button quit">Quit</button>
+        </div>
+      </div>
+    </div>
     <script>
-      if(window.location.origin === 'file://'){
-        window.fs = require('fs');
-        const path = require('path');
-        const remote = require('electron').remote;
-        const app = remote.app;
-        const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
-        const Config = new ConfigManager('settings.json');
-
-        //app_profile is the selected game's profile
-        window.app_profile = (() => {
-          let app_profile = remote.getCurrentWindow().state;
-          if(typeof app_profile != 'object' || !app_profile.key){
-            alert('Fatal Error: Window Profile Missing');
-            window.close();
-          }
-          return Config.get(['Profiles', app_profile.key]);
-        })();
-
-        window.Games = {
-          KOTOR: 1,
-          TSL: 2
-        }
-
-        switch(app_profile.launch.args.gameChoice){
-          case 2:
-            window._Game = Games.TSL;
-            window.GameKey = 'TSL';
-          break;
-          default:
-            window._Game = Games.KOTOR;
-            window.GameKey = 'KOTOR';
-          break;
-        }
-
-        console.log(app_profile)
-      }
+      // if(typeof window.fs === 'undefined'){
+      //   window.fs = {};
+      // }
     </script>
-    <script type="text/javascript" src="../dist/KotOR.js"></script>
-    <script type="module">
-      import { get, set } from 'https://unpkg.com/idb-keyval@5.0.2/dist/esm/index.js';
-
-      if(window.location.origin === 'file://'){
-        KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = app_profile.directory;
-        KotOR.ApplicationProfile.ENV = "ELECTRON";
-      }else{
-        KotOR.GameFileSystem.rootDirectoryHandle = app_profile.directory_handle;
-        KotOR.ApplicationProfile.ENV = "WEB";
-      }
-
-      
-      const initializeApp = function(){
-        console.log('loading game...')
-        KotOR.LoadingScreen.main.SetLogo(app_profile.logo);
-        KotOR.LoadingScreen.main.SetBackgroundImage(app_profile.background);
-        KotOR.LoadingScreen.main.Show();
-        KotOR.GameState.GameKey = window.GameKey;
-        KotOR.GameInitializer.Init({
-          game: window.GameKey,
-          onLoad: () => {
-            console.log('loaded')
-            KotOR.GameState.OpeningMoviesComplete = true;
-            KotOR.GUIListBox.InitTextures();
-            KotOR.OdysseyWalkMesh.Init();
-            KotOR.GameState.Init();
-            KotOR.GameState.audioEngine.musicGain.gain.value = 0;
-            document.body.append(KotOR.GameState.stats.domElement)
-          }
-        });
-      };
-      
-      initializeApp();
-    </script>
+    <script type="text/javascript" src="../KotOR.js"></script>
     <script>
+      
+
 
       // if(!app_profile){
       //   alert('Fatal Error: Window Profile Corrupted');

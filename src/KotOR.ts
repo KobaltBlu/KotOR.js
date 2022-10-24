@@ -21,5 +21,8 @@ export * from "./resource/ResourceLoader";
 
 export * from "./LoadingScreen";
 export * from "./SaveGame";
+export * from "./utility/ConfigClient";
+export * from "./enums/ApplicationEnvironment";
+export * from "./enums/ApplicationMode";
 
 export * as THREE from "three";

@@ -11,5 +11,5 @@ backup/
 projects/
 Saves/
 tests/
-src/**/*.js
+# src/**/*.js
 dist/
