@@ -54,14 +54,14 @@ export class CreatureAppearanceWizard extends Wizard {
         height: dims.height
       });
       
-      this.appearanceCount = TwoDAManager.datatables.get('appearance').RowCount;
+      this.appearanceCount = TwoDAManager.datatables.get('appearance')?.RowCount;
 
       this.queue = [];
 
       for(let i = 0; i < this.appearanceCount; i++){
         let $appearanceBlock = $('<div class="col-xs-3 appearance-block" />');
 
-        let appearanceData = TwoDAManager.datatables.get('appearance').rows[i];
+        let appearanceData = TwoDAManager.datatables.get('appearance')?.rows[i];
 
         $appearanceBlock.addClass('noselect').addClass('model-thumbnail').attr('tabindex', 1);
         ($appearanceBlock as any).appId = appearanceData['(Row Label)'];
@@ -106,7 +106,7 @@ export class CreatureAppearanceWizard extends Wizard {
   }
 
   GetCellDimensions(){
-    let maxWidth = (this.$list.width() / 4);
+    let maxWidth = (this.$list.width() as number / 4);
     return {width: maxWidth, height: maxWidth * 2};
   }
 

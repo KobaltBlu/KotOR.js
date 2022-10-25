@@ -94,7 +94,7 @@ export class ObjectPropertiesWizard extends Wizard {
 
 
     try {
-      let placeables = TwoDAManager.datatables.get('placeables').rows;
+      let placeables = TwoDAManager.datatables.get('placeables')?.rows;
       this.$list.html('').off('change');
       for (let key in placeables) {
         if (placeables.hasOwnProperty(key)) {
@@ -129,7 +129,7 @@ export class ObjectPropertiesWizard extends Wizard {
     }catch(e){}
 
     try {
-      let doors = TwoDAManager.datatables.get('genericdoors').rows;
+      let doors = TwoDAManager.datatables.get('genericdoors')?.rows;
       this.$list.html('').off('change');
       for (let key in doors) {
         if (doors.hasOwnProperty(key)) {

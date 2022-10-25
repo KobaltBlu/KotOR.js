@@ -399,7 +399,7 @@ export class NewProjectWizard extends Wizard {
                       Mod_Area_list.ChildStructs = [];
 
                       let areaStruct = new GFFStruct();
-                      areaStruct.AddField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).SetValue(this.data.module_name);
+                      areaStruct.AddField( new GFFField(GFFDataType.RESREF, 'Area_Name') )?.SetValue(this.data.module_name);
                       Mod_Area_list.AddChildStruct(areaStruct);
 
                       ifo.GetFieldByLabel('Mod_Entry_Area').SetValue(this.data.module_name);

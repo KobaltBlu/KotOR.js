@@ -63,7 +63,7 @@ export class AppearanceLoader {
 
     if(this.id > -1){
       
-      let appearance = TwoDAManager.datatables.get('appearance').rows[this.id];
+      let appearance = TwoDAManager.datatables.get('appearance')?.rows[this.id];
       //console.log('appearance', this.id);
       let bodyModel = appearance.modelc.replace(/\0[\s\S]*$/g,'').toLowerCase();
       let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -153,7 +153,7 @@ export class AppearanceLoader {
                 }
 
                 if(headId != '****'){
-                  let head = TwoDAManager.datatables.get('heads').rows[headId];
+                  let head = TwoDAManager.datatables.get('heads')?.rows[headId];
                   GameState.ModelLoader.load({
                     file: head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(),
                     onLoad: (mdl: OdysseyModel) => {
@@ -166,13 +166,13 @@ export class AppearanceLoader {
                               this.model.headhook.add(head);
 
                               //TextureLoader.LoadQueue(() => {
-                              //  if(onLoad != null)
+                                if(typeof onLoad === 'function')
                                   onLoad(this.model);
                               //});
                             }catch(e: any){
                               console.error(e);
                               //TextureLoader.LoadQueue(() => {
-                              //  if(typeof onLoad === 'function')
+                                if(typeof onLoad === 'function')
                                   onLoad(this.model);
                               //});
                             }
@@ -180,7 +180,7 @@ export class AppearanceLoader {
                         });
                       }else{
                         //TextureLoader.LoadQueue(() => {
-                        //  if(typeof onLoad === 'function')
+                          if(typeof onLoad === 'function')
                             onLoad(this.model);
                         //});
                       }
@@ -194,7 +194,7 @@ export class AppearanceLoader {
 
                 }else{
                   //TextureLoader.LoadQueue(() => {
-                  //  if(onLoad != null)
+                    if(typeof onLoad === 'function')
                       onLoad(this.model);
                   //});
                 }
@@ -222,7 +222,7 @@ export class AppearanceLoader {
 
     if(this.id > -1) {
       
-      let modelName = TwoDAManager.datatables.get('genericdoors').rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      let modelName = TwoDAManager.datatables.get('genericdoors')?.rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
       GameState.ModelLoader.load({
         file: modelName,
@@ -276,7 +276,7 @@ export class AppearanceLoader {
 
     if(this.id > -1) {
       
-      let modelName = TwoDAManager.datatables.get('placeables').rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      let modelName = TwoDAManager.datatables.get('placeables')?.rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
       //console.log('modelName', modelName);
 
       GameState.ModelLoader.load({

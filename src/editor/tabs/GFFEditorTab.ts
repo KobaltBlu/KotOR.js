@@ -512,7 +512,7 @@ export class GFFEditorTab extends EditorTab {
 
         this.$gffPropertiesGroupCExoLocSubString.show();
         this.$gffPropertiesCExoLocSubStringTextValue.val(field.getString()).on('input', () => {
-          field.setString(this.$gffPropertiesCExoLocSubStringTextValue.val().toString());
+          field.setString(this.$gffPropertiesCExoLocSubStringTextValue.val()?.toString() as string);
         }).prop("disabled", false);
 
       }else if(field instanceof GFFField){
@@ -521,7 +521,7 @@ export class GFFEditorTab extends EditorTab {
 
         this.$gffPropertiesLabel.val(field.Label).on('input', () => {
           if(this.$gffPropertiesLabel.val() != ""){
-            field.Label = this.$gffPropertiesLabel.val().toString();
+            field.Label = this.$gffPropertiesLabel.val()?.toString() as string;
             this.UpdateFieldLabel(field);
           }
         });
@@ -595,7 +595,7 @@ export class GFFEditorTab extends EditorTab {
               if($(this).val() == '-'){
                 $(this).val('-1');
               }
-              field.GetCExoLocString().RESREF = parseInt((isNaN(parseInt($(this).val().toString())) ? '-1' : parseInt($(this).val().toString())).toString());
+              field.GetCExoLocString().RESREF = parseInt((isNaN(parseInt($(this).val()?.toString() as string)) ? '-1' : parseInt($(this).val()?.toString() as string)).toString());
               this.UpdateFieldValue(field);
               this.UpdatePropertiesWindow(field);
               //console.log($(this).val());
@@ -614,7 +614,7 @@ export class GFFEditorTab extends EditorTab {
 
               this.$gffPropertiesStringRefValue.prop("disabled", true);
               this.$gffPropertiesSubStringInfo.prop("disabled", true).on('input', () => {
-                field.GetCExoLocString().GetStrings()[0].setString($(this).val().toString());
+                field.GetCExoLocString().GetStrings()[0].setString($(this).val()?.toString() as string);
                 this.UpdatePropertiesWindow(field);
               });
             }
