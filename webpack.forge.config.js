@@ -90,14 +90,21 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: 'forge.css'
     }),
-    new MonacoWebpackPlugin()
+    new MonacoWebpackPlugin({
+      publicPath: '/monaco',
+      globalAPI: true,
+      languages: []
+    })
   ],
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
-      // "path": require.resolve("path-browserify"),
+      "path": require.resolve("path-browserify"),
       // "buffer": require.resolve("buffer"), 
     }
+  },
+  externals: {
+    fs: 'window.fs',
   },
   output: {
     filename: '[name].js',

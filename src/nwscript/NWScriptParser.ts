@@ -2,8 +2,11 @@
 // const Jison = require("jison").Jison;
 // const grammar = require('./AST/nwscript.jison.js').grammar;
 
-const Jison = require('jison');
+// import jison from "jison";
+
+// const Jison = require('jison');
 import { grammar } from "./AST/nwscript.jison";
+declare const Jison: any;
 
 //const Lexer = require("jison").Lexer;
 
@@ -108,7 +111,7 @@ export class NWScriptParser {
       }
     }
 
-    this.nwscript_gen = new (Jison.Generator(this.grammar) as any);
+    this.nwscript_gen = (Jison.Generator(this.grammar) as any);
     this.nwscript_parser = this.nwscript_gen.createParser();
 
     //console.log(util.inspect(this.grammar, {showHidden: false, depth: null, colors: true}));

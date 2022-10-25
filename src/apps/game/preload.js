@@ -4,6 +4,18 @@ const fs = require('fs');
 const query = new URLSearchParams(window.location.search);
 
 contextBridge.exposeInMainWorld(
+    'dialog', {
+        locateDirectoryDialog: (profile) => {
+          return new Promise( (resolve, reject) => {
+            ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
+              resolve(response);
+            });
+          })
+        }
+    }
+)
+
+contextBridge.exposeInMainWorld(
   'fs', {
     open: (...args) => {
       return fs.open(...args);

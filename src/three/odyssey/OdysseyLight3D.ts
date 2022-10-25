@@ -10,8 +10,6 @@ import { OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
 //THREE.js representation of an OdysseyLight
 export class OdysseyLight3D extends OdysseyObject3D {
 
-  _node: OdysseyModelNodeLight;
-  // odysseyModel: OdysseyModel;
   worldPosition: THREE.Vector3;
   sphere: THREE.Sphere;
   isAnimated: boolean;

@@ -1,7 +1,7 @@
 import { NWScript } from "../../nwscript/NWScript";
 import { NWScriptCompiler } from "../../nwscript/NWScriptCompiler";
 import { NWScriptDefK1 } from "../../nwscript/NWScriptDefK1";
-// import { NWScriptParser } from "../../nwscript/NWScriptParser";
+import { NWScriptParser } from "../../nwscript/NWScriptParser";
 import { ResourceLoader } from "../../resource/ResourceLoader";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { AsyncLoop } from "../../utility/AsyncLoop";
@@ -34,7 +34,7 @@ export class ScriptEditorTab extends EditorTab {
   editor: any;
   loaded: boolean;
   static nwscript_nss: Buffer;
-  static nwScriptParser: any;// NWScriptParser;
+  static nwScriptParser: NWScriptParser;
   constructor(file: EditorFile){
     super({ editorFile: file });
 
@@ -373,7 +373,7 @@ export class ScriptEditorTab extends EditorTab {
     ScriptEditorTab.nwscript_nss = Buffer.alloc(0);
     ResourceLoader.loadResource(ResourceTypes.nss, 'nwscript', (nwscript_nss: any) => {
       ScriptEditorTab.nwscript_nss = nwscript_nss;
-      // ScriptEditorTab.nwScriptParser = new NWScriptParser(ScriptEditorTab.nwscript_nss.toString());
+      ScriptEditorTab.nwScriptParser = new NWScriptParser(ScriptEditorTab.nwscript_nss.toString());
 
       // Register a new language
       monaco.languages.register({ id: 'nwscript' });

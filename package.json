@@ -14,7 +14,7 @@
     "webpack:game-watch": "webpack --watch --config ./webpack.game.config.js",
     "webpack:forge": "webpack --config ./webpack.forge.config.js",
     "webpack:forge-watch": "webpack --watch --config ./webpack.forge.config.js",
-    "webpack:dev-watch": "npm-run-all --parallel webpack:launcher-watch webpack:game-watch"
+    "webpack:dev-watch": "npm-run-all --parallel webpack:launcher-watch webpack:game-watch webpack:forge-watch"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",

@@ -1,3 +1,10 @@
+$fa-font-path: "./fonts";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";  
+
+// our project needs Solid + Brands
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
+
 @import "styles/jquery-layout.scss";
 @import "styles/layout-default.scss";
 @import "../game/styles/grant-access-modal.scss";
@@ -8,18 +15,18 @@
 
 @font-face {
 font-family: 'Trajan';
-src: url('editor/Trajan Pro Regular.woff2') format('woff2'),
-  url('editor/Trajan Pro Regular.woff') format('woff'),
-  url('editor/Trajan Pro Regular.svg#TrajanPro-Regular') format('svg');
+src: url('fonts/Trajan-Pro-Regular.woff2') format('woff2'),
+  url('fonts/Trajan-Pro-Regular.woff') format('woff'),
+  url('fonts/Trajan-Pro-Regular.svg#TrajanPro-Regular') format('svg');
 font-weight: bold;
 font-style: normal;
 }
 
 @font-face {
 font-family: 'Old Republic';
-src: url('editor/OldRepublic-Bold.woff2') format('woff2'),
-  url('editor/OldRepublic-Bold.woff') format('woff'),
-  url('editor/OldRepublic-Bold.svg#OldRepublic-Bold') format('svg');
+src: url('fonts/OldRepublic-Bold.woff2') format('woff2'),
+  url('fonts/OldRepublic-Bold.woff') format('woff'),
+  url('fonts/OldRepublic-Bold.svg#OldRepublic-Bold') format('svg');
 font-weight: bold;
 font-style: normal;
 }

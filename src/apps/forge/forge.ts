@@ -1,8 +1,14 @@
 import * as monaco from 'monaco-editor';
+// import { fstat } from 'original-fs';
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 import { ConfigClient } from "../../utility/ConfigClient";
+import * as fs from "fs";
+const Jison = (window as any).Jison = require("jison").Jison;
+(window as any).monaco = monaco;
 
 declare const KotOR: any;
+declare const dialog: any;
+// declare const fs: any;
 
 const query = new URLSearchParams(window.location.search);
 let env: ApplicationEnvironment;
@@ -33,6 +39,7 @@ if(window.location.origin === 'file://'){
 
 async function getProfile(){
   await ConfigClient.Init();
+  ConfigClient.save();
   return ConfigClient.get(`Profiles.${query.get('key')}`);
 }
 
@@ -171,6 +178,7 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
             KotOR.LoadingScreen.main.loader.style.display = 'none';
           }, 500);
           KotOR.Forge.tabManager.AddTab(new KotOR.QuickStartTab());
+          KotOR.ScriptEditorTab.InitNWScriptLanguage();
         });
 
         // console.log('loaded')
@@ -227,6 +235,17 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
     return false;
   }
 
+  async function validateDirectory(handle: string){
+    if(handle){
+      return new Promise( (resolve, reject) => {
+        fs.exists(handle, (exists) => {
+          resolve(exists);
+        })
+      });
+    }
+    return false;
+  }
+
   ( async () => {
 
     app_profile = await getProfile();
@@ -243,7 +262,23 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
     }
 
     if(env == ApplicationEnvironment.ELECTRON){
-      initializeApp();
+      let validated = await validateDirectory(KotOR.GameFileSystem.rootDirectoryPath);
+      if(validated){
+        initializeApp();
+      }else{
+        try{
+          let dir = await (window as any).dialog.locateDirectoryDialog(); 
+          if(dir){
+            app_profile.directory = dir;
+            initializeApp();
+          }else{
+            console.error('no directory');
+          }
+
+        }catch(e: any){
+          console.error(e);
+        }
+      }
     }else{
       if(KotOR.GameFileSystem.rootDirectoryHandle){
         let validated = await validateDirectoryHandle(KotOR.GameFileSystem.rootDirectoryHandle);
