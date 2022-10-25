@@ -1,4 +1,5 @@
-import { EditorTab } from "./EditorTab";
+import { EditorTab } from "./tabs";
+import { Signal } from "signals";
 
 export class EditorTabManager {
   currentTab: any;
@@ -37,11 +38,8 @@ export class EditorTabManager {
     this.$tabsContainer = $('<div class="tabs tab-content" style="display: block; position:relative; top: 30px; height: calc(100% - 30px);"/>');
 
     this.signals = {
-      //@ts-expect-error
       tabAdded: new Signal(),
-      //@ts-expect-error
       tabRemoved: new Signal(),
-      //@ts-expect-error
       resized: new Signal()
     };
 

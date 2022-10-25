@@ -1,9 +1,9 @@
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { OdysseyModel3D } from "../three/odyssey";
-import { AppearanceLoader } from "./AppearanceLoader";
-import { TemplateEngine } from "./TemplateEngine";
-import { UI3DRenderer } from "./UI3DRenderer";
-import { Wizard } from "./Wizard";
+import { TwoDAManager } from "../../managers/TwoDAManager";
+import { OdysseyModel3D } from "../../three/odyssey";
+import { AppearanceLoader } from "../AppearanceLoader";
+import { TemplateEngine } from "../TemplateEngine";
+import { UI3DRenderer } from "../UI3DRenderer";
+import { Wizard } from "./";
 import * as THREE from "three";
 
 export class CreatureAppearanceWizard extends Wizard {

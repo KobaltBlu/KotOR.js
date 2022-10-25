@@ -9,7 +9,7 @@ import { EditorFile } from "./EditorFile";
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
 import { Forge } from "./Forge";
-import { ModuleEditorTab } from "./tabs/ModuleEditorTab";
+import { ModuleEditorTab } from "./tabs";
 
 export class Project {
 
@@ -51,7 +51,7 @@ export class Project {
 
     if (fs.existsSync(path.join(this.directory, 'project.json'))) {
       try{
-        this.settings = require(path.join(this.directory, 'project.json'));
+        this.settings = {};//require(path.join(this.directory, 'project.json'));
 
         if(typeof this.settings != 'object'){
           console.warn('Project.Load', 'Malformed project.json file data', this.settings);

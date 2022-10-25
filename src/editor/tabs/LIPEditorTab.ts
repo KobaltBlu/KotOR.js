@@ -4,10 +4,8 @@ import { LIPObject } from "../../resource/LIPObject";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { NotificationManager } from "../NotificationManager";
-import * as THREE from "three";
-import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyModel } from "../../odyssey";
@@ -16,6 +14,8 @@ import { AudioLoader } from "../../audio/AudioLoader";
 import * as path from "path";
 import * as fs from "fs";
 import { WindowDialog } from "../../utility/WindowDialog";
+import * as THREE from "three";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 export class LIPEditorTab extends EditorTab {
   animLoop: boolean;

@@ -1,8 +1,7 @@
-import { KeyboardEvent } from "electron/main";
 import * as THREE from "three";
 import { Mouse, MouseState } from "../controls/Mouse";
 import { EditorControls } from "./EditorControls";
-import { EditorTab } from "./EditorTab";
+import { EditorTab } from "./tabs/EditorTab";
 import { EditorControlsTool } from "./enum/EditorControlsTool";
 import { LIPEditorTab } from "./tabs/LIPEditorTab";
 import { ModelViewerTab } from "./tabs/ModelViewerTab";

@@ -1,12 +1,12 @@
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
+import { NewProjectWizard } from "../wizards";
 import { FileTypeManager } from "../FileTypeManager";
 import { Forge } from "../Forge";
-import { NewProjectWizard } from "../NewProjectWizard";
 import { Project } from "../Project";
 import { TemplateEngine } from "../TemplateEngine";
-import * as path from "path";
 import { WindowDialog } from "../../utility/WindowDialog";
 import { ConfigClient } from "../../utility/ConfigClient";
+import * as path from "path";
 
 export class QuickStartTab extends EditorTab {
   $recentProjectsList: JQuery<HTMLElement>;
@@ -34,7 +34,7 @@ export class QuickStartTab extends EditorTab {
 
       $.each(ConfigClient.getRecentProjects(), (i, dir) => {
         try{
-          let project = require(path.join(dir, 'project.json'));
+          let project: any = {};//require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
 
           $('a', $recentProject).on('click', (e: any) => {
@@ -102,7 +102,7 @@ export class QuickStartTab extends EditorTab {
       this.$recentProjectsList.html('');
       $.each(ConfigClient.getRecentProjects(), (i, dir) => {
         try{
-          let project = require(path.join(dir, 'project.json'));
+          let project: any = {};//require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
 
           $('a', $recentProject).on('click', (e: any) => {

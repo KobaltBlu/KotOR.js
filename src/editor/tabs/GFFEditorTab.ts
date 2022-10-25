@@ -5,7 +5,7 @@ import { GFFField } from "../../resource/GFFField";
 import { GFFObject } from "../../resource/GFFObject";
 import { GFFStruct } from "../../resource/GFFStruct";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { NotificationManager } from "../NotificationManager";
 
 import * as path from "path";

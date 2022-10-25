@@ -1,9 +1,8 @@
-import { remote } from "electron";
 import { ERFObject } from "../../resource/ERFObject";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { Utility } from "../../utility/Utility";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { FileTypeManager } from "../FileTypeManager";
 
 export class MODEditorTab extends EditorTab {
@@ -113,7 +112,7 @@ export class MODEditorTab extends EditorTab {
       let $ele = $(e.currentTarget);
       this.$selected_ele = $ele;
       console.log('contextItem', {resref: $ele.data('resref'), reskey: $ele.data('restype')});
-      this.contextMenu.popup({ window: remote.getCurrentWindow() });
+      // this.contextMenu.popup({ window: remote.getCurrentWindow() });
     });
 
   }

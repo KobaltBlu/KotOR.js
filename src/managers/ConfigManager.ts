@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-// const app = require('electron').app || require('electron').remote.app;
-import { ipcRenderer, ipcMain, app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -36,23 +34,23 @@ export class ConfigManager{
       // this.Save(null, true);
     }
 
-    if(typeof ipcRenderer != 'undefined'){
-      ipcRenderer.on('config-changed', (event, data) => {
-        this.options = data;
-        let diffs = this.diff(this.options, this._cache);
-        for(let i = 0, len = diffs.length; i < len; i++){
-          this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
-        }
-      });
-    }else if(typeof ipcMain != 'undefined'){
-      ipcMain.on('config-changed', (event, data) => {
-        this.options = data;
-        let diffs = this.diff(this.options, this._cache);
-        for(let i = 0, len = diffs.length; i < len; i++){
-          this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
-        }
-      });
-    }
+    // if(typeof ipcRenderer != 'undefined'){
+    //   ipcRenderer.on('config-changed', (event, data) => {
+    //     this.options = data;
+    //     let diffs = this.diff(this.options, this._cache);
+    //     for(let i = 0, len = diffs.length; i < len; i++){
+    //       this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+    //     }
+    //   });
+    // }else if(typeof ipcMain != 'undefined'){
+    //   ipcMain.on('config-changed', (event, data) => {
+    //     this.options = data;
+    //     let diffs = this.diff(this.options, this._cache);
+    //     for(let i = 0, len = diffs.length; i < len; i++){
+    //       this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+    //     }
+    //   });
+    // }
 
     //Attempt to create the projects directory if it doesn't exist
     if (!fs.existsSync(this.get('Projects_Directory'))) {
@@ -303,7 +301,7 @@ export class ConfigManager{
     }
 
     //console.log('ConfigManager.save', 'Updating other processes.');
-    ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
+    // ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
 
   }
 
@@ -419,7 +417,7 @@ const defaults: any = {
     top: {open: false},
     bottom: {open: false}
   },
-  Projects_Directory: path.join(app.getAppPath(), 'projects'),
+  Projects_Directory: null,//path.join(app.getAppPath(), 'projects'),
   recent_projects: [],
   recent_files: []
 };

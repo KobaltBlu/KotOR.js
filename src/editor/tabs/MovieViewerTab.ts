@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { BIKObject } from "../../resource/BIKObject";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 
 export class MovieViewerTab extends EditorTab {
   animLoop: boolean;

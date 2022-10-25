@@ -6,19 +6,11 @@ import { EditorFile } from "./EditorFile";
 import { Forge } from "./Forge";
 import { NotificationManager } from "./NotificationManager";
 import { Project } from "./Project";
-import { DLGEditorTab } from "./tabs/DLGEditorTab";
-import { ImageViewerTab } from "./tabs/ImageViewerTab";
-import { LIPEditorTab } from "./tabs/LIPEditorTab";
-import { MODEditorTab } from "./tabs/MODEditorTab";
-import { ModelViewerTab } from "./tabs/ModelViewerTab";
-import { MovieViewerTab } from "./tabs/MovieViewerTab";
-import { ScriptEditorTab } from "./tabs/ScriptEditorTab";
-import { TextEditorTab } from "./tabs/TextEditorTab";
-import { TwoDAEditorTab } from "./tabs/TwoDAEditorTab";
-import { UTCEditorTab } from "./tabs/UTCEditorTab";
-import { UTDEditorTab } from "./tabs/UTDEditorTab";
-import { UTPEditorTab } from "./tabs/UTPEditorTab";
-import { WalkmeshViewerTab } from "./tabs/WalkmeshViewerTab";
+import { 
+  DLGEditorTab, ImageViewerTab, LIPEditorTab, MODEditorTab, ModelViewerTab, MovieViewerTab,
+  ScriptEditorTab, TextEditorTab, TwoDAEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab,
+  WalkmeshViewerTab
+} from "./tabs";
 
 /* @file
  * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine

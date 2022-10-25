@@ -2,7 +2,7 @@
  */
 
 import { GUIControl, GUIProtoItem, MenuManager } from ".";
-import * as THREE from "THREE";
+import * as THREE from "three";
 import { GFFObject } from "../resource/GFFObject";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";

@@ -3,18 +3,18 @@ import { OdysseyModel } from "../../odyssey";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorControls } from "../EditorControls";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { ModelViewerControls } from "../ModelViewerControls";
 import { NotificationManager } from "../NotificationManager";
-import * as THREE from "three";
-import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
 import { GameState } from "../../GameState";
 
 import * as path from "path";
-import * as fs from "fs";
 import { WindowDialog } from "../../utility/WindowDialog";
+
+import * as THREE from "three";
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 export class ModelViewerTab extends EditorTab {
   animLoop: boolean;

@@ -1,5 +1,4 @@
 import * as path from "path";
-import { dialog } from "electron";
 import { ModuleCreatureArmorSlot } from "../../enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
 import { TemplateLoader } from "../../loaders/TemplateLoader";
@@ -14,18 +13,17 @@ import { TPCObject } from "../../resource/TPCObject";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { AsyncLoop } from "../../utility/AsyncLoop";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab, ImageViewerTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
 import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
-import { Wizard } from "../Wizard";
+import { Wizard } from "../wizards";
 import * as THREE from "three";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { Forge } from "../Forge";
 import { BIFManager } from "../../managers/BIFManager";
-import { ImageViewerTab } from "./ImageViewerTab";
 
 export class UTCEditorTab extends EditorTab {
   $firstName: JQuery<HTMLElement>;

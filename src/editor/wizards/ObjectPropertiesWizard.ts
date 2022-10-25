@@ -1,10 +1,10 @@
-import { BIFManager } from "../managers/BIFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ModuleDoor, ModuleObject, ModulePlaceable, ModuleSound } from "../module";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { BIFManager } from "../../managers/BIFManager";
+import { KEYManager } from "../../managers/KEYManager";
+import { TwoDAManager } from "../../managers/TwoDAManager";
+import { ModuleDoor, ModuleObject, ModulePlaceable, ModuleSound } from "../../module";
+import { ResourceTypes } from "../../resource/ResourceTypes";
+import { TemplateEngine } from "../TemplateEngine";
+import { Wizard } from "./";
 
 export class ObjectPropertiesWizard extends Wizard {
   props: { autoShow: boolean; };

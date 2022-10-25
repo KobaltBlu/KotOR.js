@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-// import { ipcRenderer } from "electron";
 import * as path from "path";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 

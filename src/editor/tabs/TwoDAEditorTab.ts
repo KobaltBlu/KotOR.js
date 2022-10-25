@@ -1,7 +1,7 @@
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { TwoDAObject } from "../../resource/TwoDAObject";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 
 export class TwoDAEditorTab extends EditorTab {
   twoDAObject: TwoDAObject;

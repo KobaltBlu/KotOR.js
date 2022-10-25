@@ -1,9 +1,8 @@
 import { BIFManager } from "../../managers/BIFManager";
 import { BIFObject } from "../../resource/BIFObject";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 
 import * as path from "path";
-import * as fs from "fs";
 import { AsyncLoop } from "../../utility/AsyncLoop";
 import { KEYManager } from "../../managers/KEYManager";
 import { ResourceTypes } from "../../resource/ResourceTypes";
@@ -230,9 +229,9 @@ export class ResourceExplorerTab extends EditorTab {
 		});
 		
 		//Sort the array by filename
-		modules = modules.sort( (a, b) => {
-			let nameA = a.file.split(path.sep).pop();
-			let nameB = b.file.split(path.sep).pop();
+		modules = modules.sort( (a: ERFObject|RIMObject, b: ERFObject|RIMObject) => {
+			let nameA = a.resource_path.split(path.sep).pop();
+			let nameB = b.resource_path.split(path.sep).pop();
 			
 			if (nameA < nameB) { return -1; }
 			if (nameA > nameB) { return 1; }

@@ -1,9 +1,9 @@
-import { BIFManager } from "../managers/BIFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { Forge } from "./Forge";
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { BIFManager } from "../../managers/BIFManager";
+import { KEYManager } from "../../managers/KEYManager";
+import { ResourceTypes } from "../../resource/ResourceTypes";
+import { Forge } from "../Forge";
+import { TemplateEngine } from "../TemplateEngine";
+import { Wizard } from "./";
 import "jquery-ui";
 
 export class TemplateResRefPickerWizard extends Wizard {

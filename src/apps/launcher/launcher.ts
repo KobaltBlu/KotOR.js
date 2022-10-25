@@ -425,7 +425,7 @@ function buildProfileElement(profile: any = {}){
       if(env == ApplicationEnvironment.ELECTRON){
         (window as any).electron.launchProfile(clean_profle);
       }else{
-        window.open(`/game/index.html?key=${clean_profle.key}`);
+        window.open(`/${clean_profle.launch.path}?key=${clean_profle.key}`);
       }
     }
   });

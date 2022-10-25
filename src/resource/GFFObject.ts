@@ -13,6 +13,7 @@ import * as THREE from "three";
 import * as fs from "fs";
 import * as path from "path";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { Signal } from "signals";
 
 /* @file
  * The GFFObject class.
@@ -75,10 +76,10 @@ export class GFFObject {
 
     this.exportedLabels = [];
 
-    // this.signals = {
-    //   onSaved: new Signal(),
-    //   onUpdated: new Signal()
-    // };
+    this.signals = {
+      onSaved: new Signal(),
+      onUpdated: new Signal()
+    }; 
 
     this.json = {};
 

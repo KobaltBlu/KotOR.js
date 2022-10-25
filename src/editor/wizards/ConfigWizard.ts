@@ -1,6 +1,6 @@
-import { ConfigClient } from "../utility/ConfigClient";
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { ConfigClient } from "../../utility/ConfigClient";
+import { TemplateEngine } from "../TemplateEngine";
+import { Wizard } from "./";
 
 export class ConfigWizard extends Wizard {
   $content: JQuery<HTMLElement>;

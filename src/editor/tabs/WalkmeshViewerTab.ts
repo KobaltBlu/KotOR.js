@@ -4,7 +4,7 @@ import { BinaryReader } from "../../BinaryReader";
 import { GameState } from "../../GameState";
 import { OdysseyWalkMesh } from "../../odyssey";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { ModelViewerControls } from "../ModelViewerControls";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 

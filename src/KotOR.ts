@@ -1,5 +1,3 @@
-import { floorPowerOfTwo } from "three/src/math/MathUtils";
-
 export * from "./audio";
 export * from "./odyssey";
 export * from "./module";
@@ -24,5 +22,10 @@ export * from "./SaveGame";
 export * from "./utility/ConfigClient";
 export * from "./enums/ApplicationEnvironment";
 export * from "./enums/ApplicationMode";
+
+export * from "./editor/tabs";
+export * from "./editor/wizards";
+export * from "./editor/Forge";
+export * from "./editor/EditorTabManager";
 
 export * as THREE from "three";

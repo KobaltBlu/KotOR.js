@@ -1,7 +1,7 @@
 import { TLKManager } from "../../managers/TLKManager";
 import { GFFObject } from "../../resource/GFFObject";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { TemplateEngine } from "../TemplateEngine";
 
 export class DLGEditorTab extends EditorTab {

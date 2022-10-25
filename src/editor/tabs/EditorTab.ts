@@ -1,11 +1,11 @@
-import { LoadingScreen } from "../LoadingScreen";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { CExoLocStringWizard } from "./CExoLocStringWizard";
-import { EditorFile } from "./EditorFile";
-import { EditorTabManager } from "./EditorTabManager";
-import { Forge } from "./Forge";
-import { Project } from "./Project";
+import { LoadingScreen } from "../../LoadingScreen";
+import { GFFField } from "../../resource/GFFField";
+import { GFFObject } from "../../resource/GFFObject";
+import { CExoLocStringWizard } from "../wizards";
+import { EditorFile } from "../EditorFile";
+import { EditorTabManager } from "../EditorTabManager";
+import { Forge } from "../Forge";
+import { Project } from "../Project";
 
 export class EditorTab {
   isDestroyed: boolean;
@@ -19,7 +19,7 @@ export class EditorTab {
   $tabClose: JQuery<HTMLElement>;
   $tabName: JQuery<HTMLElement>;
   $tabContent: JQuery<HTMLElement>;
-  tabLoader: any;
+  tabLoader: LoadingScreen;
   toolbar: any;
   _tabClickEvent: any;
   _tabCloseClickEvent: any;
@@ -56,12 +56,12 @@ export class EditorTab {
     this.tabLoader = new LoadingScreen(this.$tabContent[0], false);
     this.tabLoader.Hide();
 
-    this.tabLoader.$loader.css({
+    $(this.tabLoader.loader).css({
       'position': 'absolute',
       'top': 0,
     });
 
-    this.tabLoader.$loading_container.css({
+    $(this.tabLoader.loading_container).css({
       'left': 0,
       'top': 0,
       'bottom': 0,

@@ -1,5 +1,5 @@
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { FileTypeManager } from "../FileTypeManager";
 import { Forge } from "../Forge";
 

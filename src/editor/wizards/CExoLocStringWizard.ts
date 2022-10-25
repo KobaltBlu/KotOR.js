@@ -1,8 +1,7 @@
-import { TLKManager } from "../managers/TLKManager";
-import { CExoLocSubString } from "../resource/CExoLocSubString";
-import { CExoLocSubStringWizard } from "./CExoLocSubStringWizard";
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { TLKManager } from "../../managers/TLKManager";
+import { CExoLocSubString } from "../../resource/CExoLocSubString";
+import { CExoLocSubStringWizard, Wizard } from "./";
+import { TemplateEngine } from "../TemplateEngine";
 
 export class CExoLocStringWizard extends Wizard {
   $resref: JQuery<HTMLElement>;

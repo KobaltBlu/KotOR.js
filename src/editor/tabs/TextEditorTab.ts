@@ -1,5 +1,5 @@
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
 import * as fs from "fs";
 import * as path from "path";

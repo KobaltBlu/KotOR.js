@@ -1,20 +1,22 @@
 import { NWScript } from "../../nwscript/NWScript";
 import { NWScriptCompiler } from "../../nwscript/NWScriptCompiler";
 import { NWScriptDefK1 } from "../../nwscript/NWScriptDefK1";
-import { NWScriptParser } from "../../nwscript/NWScriptParser";
+// import { NWScriptParser } from "../../nwscript/NWScriptParser";
 import { ResourceLoader } from "../../resource/ResourceLoader";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { AsyncLoop } from "../../utility/AsyncLoop";
-import { EditorTab } from "../EditorTab";
+import { EditorTab } from "./";
 import { Forge } from "../Forge";
 import { NotificationManager } from "../NotificationManager";
-import * as monaco from "monaco-editor";
+// import * as monaco from "monaco-editor";
 
 import * as fs from "fs";
 import * as path from "path";
 import { EditorFile } from "../EditorFile";
 import { EditorTabManager } from "../EditorTabManager";
 import { FileLocationType } from "../enum/FileLocationType";
+
+declare const monaco: any;
 
 export class ScriptEditorTab extends EditorTab {
   $r_container: JQuery<HTMLElement>;
@@ -32,7 +34,7 @@ export class ScriptEditorTab extends EditorTab {
   editor: any;
   loaded: boolean;
   static nwscript_nss: Buffer;
-  static nwScriptParser: NWScriptParser;
+  static nwScriptParser: any;// NWScriptParser;
   constructor(file: EditorFile){
     super({ editorFile: file });
 
@@ -371,7 +373,7 @@ export class ScriptEditorTab extends EditorTab {
     ScriptEditorTab.nwscript_nss = Buffer.alloc(0);
     ResourceLoader.loadResource(ResourceTypes.nss, 'nwscript', (nwscript_nss: any) => {
       ScriptEditorTab.nwscript_nss = nwscript_nss;
-      ScriptEditorTab.nwScriptParser = new NWScriptParser(ScriptEditorTab.nwscript_nss.toString());
+      // ScriptEditorTab.nwScriptParser = new NWScriptParser(ScriptEditorTab.nwscript_nss.toString());
 
       // Register a new language
       monaco.languages.register({ id: 'nwscript' });
@@ -700,7 +702,7 @@ export class ScriptEditorTab extends EditorTab {
           if(wordObject){
             
             //Engine Constants
-            const nw_constant = ScriptEditorTab.nwScriptParser.engine_constants.find( obj => obj.name == wordObject.word );
+            const nw_constant = ScriptEditorTab.nwScriptParser.engine_constants.find( (obj: any) => obj.name == wordObject.word );
             if(nw_constant){
               return {
                 contents: [

@@ -1,4 +1,3 @@
-import { dialog } from "electron";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { ModulePlaceable } from "../../module";
@@ -7,12 +6,11 @@ import { ResourceTypes } from "../../resource/ResourceTypes";
 import { TPCObject } from "../../resource/TPCObject";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
+import { EditorTab, ImageViewerTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
 import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
-import { ImageViewerTab } from "./ImageViewerTab";
 
 import * as path from "path";
 import * as THREE from "three";

@@ -1,7 +1,7 @@
-import { CExoLocStringLanguage } from "../enums/resource/CExoLocStringLanguage";
-import { CExoLocSubString } from "../resource/CExoLocSubString";
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { CExoLocStringLanguage } from "../../enums/resource/CExoLocStringLanguage";
+import { CExoLocSubString } from "../../resource/CExoLocSubString";
+import { TemplateEngine } from "../TemplateEngine";
+import { Wizard } from "./";
 
 export class CExoLocSubStringWizard extends Wizard {
   $string: JQuery<HTMLElement>;

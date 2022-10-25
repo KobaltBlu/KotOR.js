@@ -1,13 +1,9 @@
-import { dialog } from "electron";
 import { BinaryWriter } from "../../BinaryWriter";
 import { TGAObject } from "../../resource/TGAObject";
 import { TPCObject } from "../../resource/TPCObject";
 import { EditorFile } from "../EditorFile";
-import { EditorTab } from "../EditorTab";
-import { Modal } from "../Modal";
-
-import * as fs from "fs";
-import * as path from "path";
+import { EditorTab } from "./";
+import { Modal } from "../wizards";
 
 export class ImageViewerTab extends EditorTab {
   $contentWrapper: JQuery<HTMLElement>;
@@ -333,16 +329,16 @@ export class ImageViewerTab extends EditorTab {
       console.log(e);
     }
 
-    fs.writeFile(this.file.getLocalPath(), writer.buffer, (err) => {
-      if (err) {
-        return console.error(err);
-      }
+    // fs.writeFile(this.file.getLocalPath(), writer.buffer, (err) => {
+    //   if (err) {
+    //     return console.error(err);
+    //   }
 
-      if(typeof onComplete === 'function')
-        onComplete(err);
+    //   if(typeof onComplete === 'function')
+    //     onComplete(err);
 
-      console.log('Image Saved');//, Object.keys(IMAGE_TYPE)[type]);
-    });
+    //   console.log('Image Saved');//, Object.keys(IMAGE_TYPE)[type]);
+    // });
 
   }
 

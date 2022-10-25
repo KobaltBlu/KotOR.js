@@ -1,5 +1,5 @@
-import { TemplateEngine } from "./TemplateEngine";
-import { Wizard } from "./Wizard";
+import { TemplateEngine } from "../TemplateEngine";
+import { Wizard } from "./";
 
 export class Modal extends Wizard {
   $title: JQuery<HTMLElement>;

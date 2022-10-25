@@ -14,18 +14,16 @@ import { ResourceTypes } from "../../resource/ResourceTypes";
 import { AsyncLoop } from "../../utility/AsyncLoop";
 import { EditorControlsCameraMode } from "../enum/EditorControlsCameraMode";
 import { TemplateEngine } from "../TemplateEngine";
-import { TemplateResRefPickerWizard } from "../TemplateResRefPickerWizard";
+import { TemplateResRefPickerWizard } from "../wizards";
 import { UIItem } from "../ui/UIItem";
 import { Forge } from "../Forge";
 import { GameEngineType } from "../../enums/engine/GameEngineType";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { AudioLoader } from "../../audio/AudioLoader";
 import { TextureLoader } from "../../loaders/TextureLoader";
-import { EditorTab } from "../EditorTab";
-import { UTCEditorTab } from "./UTCEditorTab";
-import { UTDEditorTab } from "./UTDEditorTab";
-import { UTPEditorTab } from "./UTPEditorTab";
+import { EditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "./";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { Signal } from "signals";
 
 export class ModuleEditorTab extends EditorTab {
   scene: THREE.Scene;
@@ -271,15 +269,10 @@ export class ModuleEditorTab extends EditorTab {
     this.group.player.visible = false;
 
     this.signals = {
-      // @ts-expect-error
       objectSelected: new Signal(),
-      // @ts-expect-error
       objectFocused: new Signal(),
-      // @ts-expect-error
       objectAdded: new Signal(),
-      // @ts-expect-error
       objectChanged: new Signal(),
-      // @ts-expect-error
       objectRemoved: new Signal()
     };
 

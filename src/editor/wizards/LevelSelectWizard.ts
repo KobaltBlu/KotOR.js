@@ -1,5 +1,5 @@
-import { Forge } from "./Forge";
-import { Wizard } from "./Wizard";
+import { Forge } from "../Forge";
+import { Wizard } from "./";
 import { Ractive } from "ractive";
 
 export class LevelSelectWizard extends Wizard {
