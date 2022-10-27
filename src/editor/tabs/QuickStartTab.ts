@@ -32,7 +32,7 @@ export class QuickStartTab extends EditorTab {
       this.$newProject = $('#btn-new-project', this.$tabContent);
       this.$openProject = $('#btn-open-project', this.$tabContent);
 
-      $.each(ConfigClient.getRecentProjects(), (i, dir) => {
+      ConfigClient.getRecentProjects().forEach( (dir, i) => {
         try{
           let project: any = {};//require(path.join(dir, 'project.json'));
           let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
@@ -53,7 +53,7 @@ export class QuickStartTab extends EditorTab {
         }catch(e){}
       });
 
-      $.each(ConfigClient.getRecentFiles(), (i, file) => {
+      ConfigClient.getRecentFiles().forEach( (file, i) => {
         try{
           let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
 
