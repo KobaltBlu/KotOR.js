@@ -2,6 +2,7 @@ import { get, set } from 'idb-keyval';
 
 export class ConfigClient {
   static options: any = {};
+  static UUID: string = ConfigClient.uuidv4();
 
   static async Init() {
     ConfigClient.options = Object.assign(
@@ -85,9 +86,25 @@ export class ConfigClient {
 
   static save(onSave?: Function, silent?: boolean){
     set('app_settings', ConfigClient.options);
+    localStorage.setItem('client-config-updated', JSON.stringify({
+      time: Date.now(),
+      id: ConfigClient.UUID
+    }));
+  }
+
+  static uuidv4() {
+    //@ts-expect-error
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, (c:any) =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
   }
 
 }
+
+window.addEventListener('storage', (event: StorageEvent) => {
+  console.log('storage', event);
+  ConfigClient.Init();
+});
 
 const defaults: any = {
   first_run: true,

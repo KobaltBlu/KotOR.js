@@ -2,12 +2,7 @@
  */
 
 import * as path from 'path';
-import { GFFObject } from '../resource/GFFObject';
-import { TLKManager } from '../managers/TLKManager';
-import { ResourceTypes } from '../resource/ResourceTypes';
-import { RIMObject } from '../resource/RIMObject';
-import { ApplicationProfile } from './ApplicationProfile';
-import { GFFStruct } from '../resource/GFFStruct';
+import * as THREE from 'three';
 import { GameFileSystem } from './GameFileSystem';
 
 const PI: number = Math.PI;
