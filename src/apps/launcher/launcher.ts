@@ -5,6 +5,8 @@ import * as swKotOR from "./profiles/kotor";
 import * as swKotOR2 from "./profiles/tsl";
 import * as swForge from "./profiles/forge";
 
+(window as any).ConfigClient = ConfigClient;
+
 let env: ApplicationEnvironment;
 let isMac: boolean = false;
 
@@ -56,6 +58,7 @@ async function initProfiles(){
       ConfigClient.set(['Profiles', profile_key], cached_profile);
     }
   }
+  ConfigClient.set(['Profiles.forge.launch.path'], 'forge/index.html');
   profiles = ConfigClient.get('Profiles');
 }
 
@@ -252,7 +255,7 @@ function buildProfileElement(profile: any = {}){
 
   let launch_buttons = tpl_launch_locate;
 
-  if(env == ApplicationEnvironment.ELECTRON){
+  if(env == ApplicationEnvironment.ELECTRON && !!profile.locate_required){
     if(profile.directory){
       launch_buttons = tpl_launch_buttons;
     }
