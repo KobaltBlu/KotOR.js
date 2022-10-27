@@ -22,7 +22,7 @@ export class FileTypeManager {
     FileTypeManager.onOpenResource(new EditorFile({path: file.path}));
   }
 
-  static onOpenResource(res: any){
+  static onOpenResource(res: EditorFile|string){
 
     let ext = 'NA';
 

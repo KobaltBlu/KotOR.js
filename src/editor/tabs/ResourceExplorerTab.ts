@@ -126,6 +126,7 @@ export class ResourceExplorerTab extends EditorTab {
 											FileTypeManager.onOpenResource(
 												new EditorFile({
 													path: e.target.dataset.path,
+													useGameFileSystem: true,
 												})
 											);
 										});

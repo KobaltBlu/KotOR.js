@@ -45,7 +45,7 @@ export class EditorTab {
     this.tabName = 'Unnamed Tab';
     this.resource = null;
     this.$tab = $('<li class="btn btn-tab"><a href="#tab-'+this.id+'">'+this.tabName+'</a>&nbsp;</li>');
-    this.$tabClose = $('<button type="button" class="close" data-dismiss="modal">×</button>');
+    this.$tabClose = $('<button type="button" class="close" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span></button>');
     this.$tabName = $('a', this.$tab);
     this.$tabContent = $('<div id="tab-'+this.id+'" class="tab-pane" style="position:absolute; top:0; bottom: 0; left:0; right: 0;" />');
 

@@ -27,5 +27,9 @@ export * from "./editor/tabs";
 export * from "./editor/wizards";
 export * from "./editor/Forge";
 export * from "./editor/EditorTabManager";
+export * from "./editor/InlineAudioPlayer";
+
+export * from "./loaders/TextureLoader";
+export * from "./AnimatedTexture";
 
 export * as THREE from "three";

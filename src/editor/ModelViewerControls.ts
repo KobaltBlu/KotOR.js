@@ -280,8 +280,8 @@ export class ModelViewerControls {
     front.y = Math.sin(THREE.MathUtils.degToRad(this.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.pitch));
     front.z = Math.sin(THREE.MathUtils.degToRad(this.pitch));
 
-    if(axisFront != null)
-      front = axisFront;
+    // if(axisFront != null)
+    //   front = axisFront;
 
     this.AxisFront = front.normalize();
 
@@ -300,8 +300,7 @@ export class ModelViewerControls {
       Mouse.Dragging = true;
     } else {
       //console.log('The pointer lock status is now unlocked');
-      //@ts-expect-error
-      document.body.removeEventListener("mousemove", this.plMoveEvent, true);
+      document.body.removeEventListener("mousemove", this.plMoveEvent as any, true);
       //this.plMoveEvent = undefined;
       Mouse.Dragging = false;
       //document.removeEventListener('pointerlockchange', this.plEvent, true);

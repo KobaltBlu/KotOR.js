@@ -10,11 +10,13 @@ import { Forge } from "./Forge";
 import { Project } from "./Project";
 import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
+import { GameFileSystem } from "../KotOR";
 
 export class EditorFile {
 
   //handle - is for file handling inside the web environment
   handle: FileSystemFileHandle;
+  useGameFileSystem: boolean = false;
 
   buffer: Buffer;
   path: any;
@@ -37,7 +39,8 @@ export class EditorFile {
       ext: null,
       archive_path: null,
       location: FileLocationType.OTHER,
-      buffer: []
+      buffer: [],
+      useGameFileSystem: false
     }, options);
 
     console.log(options);
@@ -50,6 +53,7 @@ export class EditorFile {
     this.archive_path = options.archive_path;
     this.location = options.location;
     this.unsaved_changes = false;
+    this.useGameFileSystem = options.useGameFileSystem;
 
     if(!this.ext && this.reskey){
       this.ext = ResourceTypes.getKeyByValue(this.reskey);
@@ -345,17 +349,29 @@ export class EditorFile {
           }
         }else{
           if(typeof this.path === 'string'){
-            fs.readFile(this.path, (err, buffer) => {
+            if(this.useGameFileSystem){
+              GameFileSystem.readFile(this.path).then( (buffer: Buffer) => {
+                this.buffer = buffer;
+  
+                if(typeof onLoad === 'function'){
+                  onLoad(this.buffer);
+                }
+              }).catch( (err) => {
+                throw err;
+              })
+            }else{
+              fs.readFile(this.path, (err, buffer) => {
 
-              if(err) throw err;
+                if(err) throw err;
 
-              this.buffer = buffer;
+                this.buffer = buffer;
 
-              if(typeof onLoad === 'function'){
-                onLoad(this.buffer);
-              }
+                if(typeof onLoad === 'function'){
+                  onLoad(this.buffer);
+                }
 
-            });
+              });
+            }
           }else{
             this.buffer = Buffer.alloc(0);
             if(typeof onLoad === 'function'){

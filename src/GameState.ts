@@ -25,11 +25,10 @@ import { MDLLoader } from "./three/MDLLoader";
 import EngineLocation from "./engine/EngineLocation";
 import { OdysseyModel3D, OdysseyObject3D } from "./three/odyssey";
 import { NWScript } from "./nwscript/NWScript";
-import { AudioEngine } from "./audio/AudioEngine";
+import { AudioEngine, AudioEmitter } from "./audio";
 import { ResourceLoader } from "./resource/ResourceLoader";
 import { TGAObject } from "./resource/TGAObject";
 import { TextureLoader } from "./loaders/TextureLoader";
-import { AudioEmitter } from "./audio/AudioEmitter";
 
 import { EngineGlobals } from "./interface/engine/EngineGlobals";
 import { GameStateGroups } from "./interface/engine/GameStateGroups";

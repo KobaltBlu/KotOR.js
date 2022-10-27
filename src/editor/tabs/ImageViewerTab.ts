@@ -17,14 +17,17 @@ export class ImageViewerTab extends EditorTab {
   width: any;
   height: any;
   bitsPerPixel: any;
+
+  canvasScale: number = 1;
+
   constructor(file: EditorFile){
     super();
 
     $('a', this.$tab).text('Image Viewer');
 
-    this.$contentWrapper = $('<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: scroll;" />');
+    this.$contentWrapper = $(`<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: scroll; display: flex; align-items: center; justify-content: center; transform: scale(${this.canvasScale});" />`);
 
-    this.$canvas = $('<canvas class="checkerboard" style="width: 512px; height: 512px; top: calc(50% - 512px / 2); left: calc(50% - 512px / 2); position: absolute;" />');
+    this.$canvas = $('<canvas class="checkerboard" style="width: 512px; height: 512px;" />');
     this.canvas = this.$canvas[0];
     this.ctx = this.canvas.getContext('2d');
     this.$contentWrapper.append(this.$canvas);
@@ -50,6 +53,25 @@ export class ImageViewerTab extends EditorTab {
 
         }
       }
+    });
+
+    this.$contentWrapper[0].addEventListener('wheel', (e) => {
+      if(e.deltaY < 0){
+        this.canvasScale -= 0.25;
+        if(this.canvasScale < 0.25){
+          this.canvasScale = 0.25;
+        }
+      }else{
+        this.canvasScale += 0.25;
+        if(this.canvasScale > 10){
+          this.canvasScale = 10;
+        }
+      }
+      this.$canvas.css({
+        width: this.width,
+        height: this.height,
+        transform: `scale(${this.canvasScale})`,
+      })
     });
 
     this.OpenFile(file);
@@ -218,8 +240,14 @@ export class ImageViewerTab extends EditorTab {
 
     //If the image is a TPC we will need to times the height by the number of faces
     //to correct the height incase we have a cubemap
-    if(this.image instanceof TPCObject)
-      this.height = this.image.header.height * this.image.header.faces;
+    if(this.image instanceof TPCObject){
+      if(this.image.txi.procedureType == 1){
+        this.width = this.image.header.width;
+        this.height = this.image.header.height;
+      }else{
+        this.height = this.image.header.height * this.image.header.faces;
+      }
+    }
 
     this.bitsPerPixel = this.image.header.bitsPerPixel;
 

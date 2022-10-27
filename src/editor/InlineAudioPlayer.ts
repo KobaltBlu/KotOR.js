@@ -1,4 +1,4 @@
-import { AudioFile } from "../audio/AudioFile";
+import { AudioFile } from "../audio";
 import { GameState } from "../GameState";
 import { LoadingScreen } from "../LoadingScreen";
 import { EditorFile } from "./EditorFile";
@@ -116,7 +116,7 @@ export class InlineAudioPlayer {
     this.$audioPlayer.width(300);
 
     this.loader = new LoadingScreen(this.$audioPlayer[0], false);
-    this.loader.$loader.css({top: '0', zIndex: 100});
+    $(this.loader.loader).css({top: '0', zIndex: 100});
 
     $('body').append(this.$audioPlayer);
   }
@@ -238,6 +238,7 @@ export class InlineAudioPlayer {
         this.ResumeLoop();
         this.UpdateIconStates();
         this.loader.Hide();
+        this.loader.loader.style.display = 'none';
       });
     }
   }

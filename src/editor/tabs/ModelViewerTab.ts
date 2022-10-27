@@ -52,6 +52,13 @@ export class ModelViewerTab extends EditorTab {
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
   groundMesh: THREE.LineSegments<any, any>;
+  $inputCameraSpeed: JQuery<HTMLElement>;
+  $btn_camerahook: JQuery<HTMLElement>;
+  $animSelect: JQuery<HTMLElement>;
+  $animLoop: JQuery<HTMLElement>;
+  $selected_object: JQuery<HTMLElement>;
+  $input_name: JQuery<HTMLElement>;
+  $input_texture: JQuery<HTMLElement>;
   constructor(file: EditorFile, isLocal = false){
     super();
     this.animLoop = false;
@@ -241,14 +248,14 @@ export class ModelViewerTab extends EditorTab {
     $('.tabs > .btn-tab[rel="#animations"]', (this.$ui_selected as any).$tabHost).trigger('click');
 
     //Camera Properties
-    (this.$ui_selected as any).$inputCameraSpeed = $('input#camera_speed', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$inputCameraSpeed.on('change', () => {
-      EditorControls.CameraMoveSpeed = parseInt((this.$ui_selected as any).$inputCameraSpeed.val());
+    this.$inputCameraSpeed = $('input#camera_speed', (this.$ui_selected[0] as any).$content);
+    this.$inputCameraSpeed.on('change', () => {
+      EditorControls.CameraMoveSpeed = parseInt(this.$inputCameraSpeed.val() as any);
       localStorage.setItem('camera_speed', EditorControls.CameraMoveSpeed.toString());
     });
 
-    (this.$ui_selected as any).$btn_camerahook = $('#btn_camerahook', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$btn_camerahook.on('click', (e: any) => {
+    this.$btn_camerahook = $('#btn_camerahook', (this.$ui_selected[0] as any).$content);
+    this.$btn_camerahook.on('click', (e: any) => {
       e.preventDefault();
       if(this.model.camerahook instanceof THREE.Object3D){
         this.model.camerahook.getWorldPosition(this.camera.position);
@@ -260,8 +267,8 @@ export class ModelViewerTab extends EditorTab {
 
     //Animation Properties
 
-    (this.$ui_selected as any).$animSelect = $('select#animation_list', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$animLoop = $('input#anim_loop', (this.$ui_selected[0] as any).$content);
+    this.$animSelect = $('select#animation_list', (this.$ui_selected[0] as any).$content);
+    this.$animLoop = $('input#anim_loop', (this.$ui_selected[0] as any).$content);
 
     let animations = this.model.odysseyAnimations.slice();
     animations.sort( (a: any, b: any) => {
@@ -279,26 +286,26 @@ export class ModelViewerTab extends EditorTab {
 
     for(let i = 0; i < animations.length; i++){
       let name = animations[i].name.replace(/\0[\s\S]*$/g,'');
-      (this.$ui_selected as any).$animSelect.append('<option value="'+name+'">'+name+'</option>')
+      this.$animSelect.append('<option value="'+name+'">'+name+'</option>')
     }
 
-    (this.$ui_selected as any).$animSelect.on('change', () => {
-      let val = (this.$ui_selected as any).$animSelect.val();
+    this.$animSelect.on('change', () => {
+      let val = this.$animSelect.val();
       this.model.stopAnimation();
       if(val != '-1')
         this.model.playAnimation(val, this.animLoop)
 
     });
 
-    (this.$ui_selected as any).$animLoop.on('change', () => {
-      this.animLoop = (this.$ui_selected as any).$animLoop.is(':checked');
-      (this.$ui_selected as any).$animSelect.trigger('change');
+    this.$animLoop.on('change', () => {
+      this.animLoop = this.$animLoop.is(':checked');
+      this.$animSelect.trigger('change');
     });
 
     //Selected Object Properties
-    (this.$ui_selected as any).$selected_object = $('div#selected_object', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$input_name = $('input#selected_name', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$input_texture = $('input#selected_texture', (this.$ui_selected[0] as any).$content);
+    this.$selected_object = $('div#selected_object', (this.$ui_selected[0] as any).$content);
+    this.$input_name = $('input#selected_name', (this.$ui_selected[0] as any).$content);
+    this.$input_texture = $('input#selected_texture', (this.$ui_selected[0] as any).$content);
     (this.$ui_selected as any).$btn_change_texture = $('button#selected_change_texture', (this.$ui_selected[0] as any).$content);
 
     (this.$ui_selected as any).$btn_change_texture.on('click', async (e: any) => {
@@ -542,22 +549,22 @@ export class ModelViewerTab extends EditorTab {
     console.log(this.selectionBox);
 
     if(this.selected instanceof THREE.Mesh){
-      (this.$ui_selected as any).$selected_object.show();
-      (this.$ui_selected as any).$input_name.val(this.selected.userData.node.name);
-      (this.$ui_selected as any).$input_texture.val(this.selected.userData.node.TextureMap1);
+      this.$selected_object.show();
+      this.$input_name.val(this.selected.userData.node.name);
+      this.$input_texture.val(this.selected.userData.node.TextureMap1);
     }else if(this.selected instanceof THREE.Group){
       for(let i = 0; i < this.selected.children.length; i++){
         let child = this.selected.children[i];
         if(child instanceof THREE.Mesh){
           this.selected = child;
-          (this.$ui_selected as any).$selected_object.show();
-          (this.$ui_selected as any).$input_name.val(this.selected.odysseyModelNode.name);
-          (this.$ui_selected as any).$input_texture.val(this.selected.odysseyModelNode.TextureMap1);
+          this.$selected_object.show();
+          this.$input_name.val(this.selected.odysseyModelNode.name);
+          this.$input_texture.val(this.selected.odysseyModelNode.TextureMap1);
           break;
         }
       }
     }else{
-      (this.$ui_selected as any).$selected_object.hide();
+      this.$selected_object.hide();
     }
 
     //let centerX = this.selectionBox.geometry.boundingSphere.center.x;
