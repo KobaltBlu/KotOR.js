@@ -38,8 +38,6 @@ if(window.location.origin === 'file://'){
 }
 
 async function getProfile(){
-  await ConfigClient.Init();
-  ConfigClient.save();
   return ConfigClient.get(`Profiles.${query.get('key')}`);
 }
 
@@ -59,8 +57,45 @@ resourceExplorerTab.Show();
 KotOR.Forge.MenuTop.BuildTopMenu();
 KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
 
+const minimizeToggle = document.getElementById("minimize-toggle");
+const maximizeToggle = document.getElementById("maximize-toggle");
+const closeToggle = document.getElementById("close-toggle");
+
+if(minimizeToggle){
+  if(env == ApplicationEnvironment.BROWSER){
+    minimizeToggle.style.display = 'none';
+  }
+  minimizeToggle.onclick = (e) => {
+    e.preventDefault();
+    if(env == ApplicationEnvironment.ELECTRON){
+      (window as any).electron.minimize();
+    }else{ }
+  };
+}
+
+if(maximizeToggle){
+  if(env == ApplicationEnvironment.BROWSER){
+    maximizeToggle.style.display = 'none';
+  }
+  maximizeToggle.onclick = (e) => {
+    e.preventDefault();
+    if(env == ApplicationEnvironment.ELECTRON){
+      (window as any).electron.maximize();
+    }else{ }
+  };
+}
+
+if(closeToggle){
+  closeToggle.onclick = (e) => {
+    e.preventDefault();
+    window.close();
+  };
+}
+
 ( async () => {
   await ConfigClient.Init();
+  KotOR.GameState.audioEngine = new KotOR.AudioEngine();
+  KotOR.Forge.inlineAudioPlayer = new KotOR.InlineAudioPlayer();
 
   //@ts-expect-error
   $('#container').layout({
@@ -76,7 +111,7 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
           ConfigClient.options.Panes.right.open = true;
         break;
       }
-      ConfigClient.save(undefined, true);
+      // ConfigClient.save(undefined, true);
     },
     'onclose': (pane: any) => {
       switch(pane){
@@ -87,7 +122,7 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
           ConfigClient.options.Panes.right.open = false;
         break;
       }
-      ConfigClient.save(undefined, true);
+      // ConfigClient.save(undefined, true);
     },
     'onresize_end': (pane: any) => {
       //Make sure the ModuleEditorTab canvas is updated on resize
@@ -180,6 +215,14 @@ KotOR.Forge.tabManager.AttachTo($('#renderer-container #tabs-container'));
           KotOR.Forge.tabManager.AddTab(new KotOR.QuickStartTab());
           KotOR.ScriptEditorTab.InitNWScriptLanguage();
         });
+
+        let pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBFormat };
+        KotOR.GameState.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+        KotOR.GameState.depthTarget.texture.generateMipmaps = false;
+        KotOR.GameState.depthTarget.stencilBuffer = false;
+        KotOR.GameState.depthTarget.depthBuffer = true;
+        KotOR.GameState.depthTarget.depthTexture = new KotOR.THREE.DepthTexture();
+        KotOR.GameState.depthTarget.depthTexture.type = KotOR.THREE.UnsignedShortType;
 
         // console.log('loaded')
         // KotOR.GameState.OpeningMoviesComplete = true;

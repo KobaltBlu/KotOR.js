@@ -984,12 +984,12 @@ _options
     }
 
     if ((odysseyNode.NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode instanceof OdysseyModelNodeEmitter) {
-      // let emitter = new OdysseyEmitter3D(odysseyNode);
-      // emitter.context = odysseyModel.context;
-      // emitter.name = odysseyNode.name + '_em'
-      // node.emitter = emitter;
-      // node.add(emitter);
-      // odysseyModel.emitters.push(emitter);
+      let emitter = new OdysseyEmitter3D(odysseyNode);
+      emitter.context = odysseyModel.context;
+      emitter.name = odysseyNode.name + '_em'
+      node.emitter = emitter;
+      node.add(emitter);
+      odysseyModel.emitters.push(emitter);
     }
 
     if((odysseyNode.NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
@@ -1407,7 +1407,7 @@ _options
         uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.odyssey.uniforms]),
         side: THREE.FrontSide,
         lights: true,
-        // fog: odysseyModel.affectedByFog,
+        fog: odysseyModel.affectedByFog,
       });
 
       if(material instanceof THREE.ShaderMaterial){

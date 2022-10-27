@@ -6,8 +6,27 @@ export class ShaderOdysseyEmitter extends Shader {
   constructor(){
     super();
     this.name = 'odyssey-emitter';
-    this.uniforms = [
 
+    this.uniforms = [
+      THREE.ShaderLib.basic.uniforms,
+      { map: { value: null } },
+      { tDepth: { value: null } },
+      { textureAnimation: { value: new THREE.Vector4(1, 1, 1, 1) } },
+      { frameRange: { value: new THREE.Vector2(0, 0) } },
+      { colorStart: { value: new THREE.Color(1, 1, 1) } },
+      { colorMid: { value: new THREE.Color(1, 1, 1) } },
+      { colorEnd: { value: new THREE.Color(1, 1, 1) } },
+      { opacity: { value: new THREE.Vector3(1, 1, 1) } },
+      { scale: { value: new THREE.Vector3(1, 1, 1) } },
+      { mass: { value: new THREE.Vector3(0, 0, 0) } },
+      { matrix: { value: new THREE.Matrix4() } },
+      { rotate: { value: 0 } },
+      { drag: { value: 0 } },
+      { velocity: { value: 0 } },
+      { randVelocity: { value: 0 } },
+      { time: { value: 0.0 } },
+      { fps: { value: 0.0 } },
+      { maxAge: { value: 1.0 } }
     ];
 
     this.vertex = `

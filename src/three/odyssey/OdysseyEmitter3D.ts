@@ -145,12 +145,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   
       this.material = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge( [
-          THREE.ShaderLib.odysseyEmitter.uniforms, {
+          THREE.ShaderLib['odyssey-emitter'].uniforms, {
             textureAnimation: { value: new THREE.Vector4(this.node.GridX, this.node.GridY, this.node.GridX * this.node.GridY, 1) },
           }
         ]),
-        vertexShader: THREE.ShaderLib.odysseyEmitter.vertexShader,
-        fragmentShader: THREE.ShaderLib.odysseyEmitter.fragmentShader,
+        vertexShader: THREE.ShaderLib['odyssey-emitter'].vertexShader,
+        fragmentShader: THREE.ShaderLib['odyssey-emitter'].fragmentShader,
         side: THREE.FrontSide,
         transparent: true,
         fog: false,
