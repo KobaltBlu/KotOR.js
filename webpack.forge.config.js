@@ -12,6 +12,9 @@ module.exports = {
       './src/apps/forge/forge.ts', 
       './src/apps/forge/forge.scss'
     ],
+    "worker-tex": [
+      './src/worker/worker-tex.ts'
+    ],
     // preload: [
     //   './src/apps/forge/preload.ts',
     // ]
@@ -73,7 +76,7 @@ module.exports = {
     // Work around for Buffer is undefined:
     // https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({
-      // Buffer: ['buffer', 'Buffer'],
+      Buffer: ['buffer', 'Buffer'],
       // $: "jquery",
       // jQuery: "jquery"
     }),
@@ -100,7 +103,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"), 
+      "buffer": require.resolve("buffer"), 
     }
   },
   externals: {

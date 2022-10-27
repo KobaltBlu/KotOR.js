@@ -3,7 +3,11 @@ const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
-  entry: './src/KotOR.ts',
+  entry: {
+    KotOR: [
+      './src/KotOR.ts'
+    ]
+  },
   devtool: 'eval-source-map',
   module: {
     rules: [
@@ -33,7 +37,7 @@ module.exports = {
   },
   output: {
     library: 'KotOR',
-    filename: 'KotOR.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
   },
 };

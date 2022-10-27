@@ -163,7 +163,7 @@ export class ShaderOdysseyModel extends Shader {
     uniform float opacity;
     uniform float time;
     uniform vec4 animatedUV; // MDL animatedUV properties
-    uniform vec4 waterAnimation; // Water TXI animation
+    uniform vec4 animationVector; // Water TXI animation
   
     float randF(vec2 co) {
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -178,11 +178,15 @@ export class ShaderOdysseyModel extends Shader {
       float y = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.7812) + (randF(vec2(time, tan(time)))) ) * (animatedUV.w * 0.1));
       return vec2(p.x + x + ((animatedUV.x * 50.0) * time), p.y + y + ((animatedUV.y * 50.0) * time));
     }
+
+    #ifdef CYCLE
+      varying vec2 vUvCycle;
+    #endif
   
     #ifdef WATER
-      varying vec2 vUvWater;
       uniform float waterAlpha;
     #endif
+
     #include <common>
     #include <packing>
     #include <dithering_pars_fragment>
@@ -356,21 +360,20 @@ export class ShaderOdysseyModel extends Shader {
         uniform sampler2D bumpMap;
         uniform float bumpScale;
         vec2 dHdxy_fwd() {
-          vec2 dSTdx = dFdx( vUvWater );
-          vec2 dSTdy = dFdy( vUvWater );
-          float Hll = bumpScale * texture2D( bumpMap, vUvWater ).x;
-          float dBx = bumpScale * texture2D( bumpMap, vUvWater + dSTdx ).x - Hll;
-          float dBy = bumpScale * texture2D( bumpMap, vUvWater + dSTdy ).x - Hll;
+          vec2 dSTdx = dFdx( vUvCycle );
+          vec2 dSTdy = dFdy( vUvCycle );
+          float Hll = bumpScale * texture2D( bumpMap, vUvCycle ).x;
+          float dBx = bumpScale * texture2D( bumpMap, vUvCycle + dSTdx ).x - Hll;
+          float dBy = bumpScale * texture2D( bumpMap, vUvCycle + dSTdy ).x - Hll;
           return vec2( dBx, dBy );
         }
-        vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy ) {
-          vec3 vSigmaX = vec3( dFdx( surf_pos.x ), dFdx( surf_pos.y ), dFdx( surf_pos.z ) );
-          vec3 vSigmaY = vec3( dFdy( surf_pos.x ), dFdy( surf_pos.y ), dFdy( surf_pos.z ) );
-          vec3 vN = surf_norm;
+        vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
+          vec3 vSigmaX = dFdx( surf_pos.xyz );
+          vec3 vSigmaY = dFdy( surf_pos.xyz );
+          vec3 vN = surf_norm; // normalized
           vec3 R1 = cross( vSigmaY, vN );
           vec3 R2 = cross( vN, vSigmaX );
-          float fDet = dot( vSigmaX, R1 );
-          fDet *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+          float fDet = dot( vSigmaX, R1 ) * faceDirection;
           vec3 vGrad = sign( fDet ) * ( dHdxy.x * R1 + dHdxy.y * R2 );
           return normalize( abs( fDet ) * surf_norm - vGrad );
         }
@@ -640,11 +643,11 @@ export class ShaderOdysseyModel extends Shader {
     #ifdef AURORA
       uniform float time;
     #endif
-  
-    #ifdef WATER
-      uniform mat3 waterTransform;
-      varying vec2 vUvWater;
-      uniform vec4 waterAnimation;
+
+    #ifdef CYCLE
+      // varying mat3 cycleTransform;
+      varying vec2 vUvCycle;
+      uniform vec4 animationVector;
     #endif
   
     #ifdef DANGLY
@@ -666,40 +669,41 @@ export class ShaderOdysseyModel extends Shader {
     #include <clipping_planes_pars_vertex>
     
     void main() {
-      #ifdef WATER
+      #ifdef CYCLE
+        //SpriteSheet Calculations
+        float framesX = animationVector.x;
+        float framesY = animationVector.y;
+        float totalFrames = animationVector.z;
+        float fps = animationVector.w;
+        
+        float deltaMax = (1.0 / fps) * totalFrames;
+        float fTime = mod(time, deltaMax) / deltaMax;
+        float frameNumber = floor(mod( fTime * totalFrames, totalFrames ));
+
+        float column = floor(mod( frameNumber, framesX ));
+        float row = floor( (frameNumber - column) / framesX );
+
+        float columnNorm = column / framesX;
+        float rowNorm = row / framesY;
+
+        vec2 cycleUV = vec2(
+          columnNorm,
+          rowNorm
+        );
+        
+        vUvCycle = cycleUV + uv;
+        mat3 cycleTransform = mat3(
+          uvTransform[0][0], uvTransform[0][1], uvTransform[0][2],
+          uvTransform[1][0], uvTransform[1][1], uvTransform[1][2],
+          columnNorm, rowNorm, uvTransform[2][2]
+        );
         #if defined( USE_UV ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
-          vUv = ( uvTransform * vec3( uv, 1 ) ).xy;
+          vUv = ( cycleTransform * vec3( uv, 1 ) ).xy;
         #endif
-          //vec2 waterUV = vec2(0.0, 0.0);
-  
-          //SpriteSheet Calculations
-          float framesX = waterAnimation.x;
-          float framesY = waterAnimation.y;
-          float totalFrames = waterAnimation.z;
-          float fps = waterAnimation.w;
-          
-          float deltaMax = (1.0 / fps) * totalFrames;
-          float fTime = mod(time, deltaMax) / deltaMax;
-          float frameNumber = floor(mod( fTime * totalFrames, totalFrames ));
-  
-          float column = floor(mod( frameNumber, framesX ));
-          float row = floor( (frameNumber - column) / framesX );
-  
-          float columnNorm = column / framesX;
-          float rowNorm = row / framesY;
-  
-          vec2 waterUV = vec2(
-            columnNorm,
-            rowNorm
-          );
-  
-          mat3 waterTrans = mat3(0.0);
-  
-          //vUvWater = vec2(1.0 / framesX, 1.0 / framesY);
-          vUvWater = waterUV + uv;//( waterTransform * vec3( vUvWater, 1 ) ).xy;
       #else
         #include <uv_vertex>
       #endif
+
       #include <uv2_vertex>
       #include <color_vertex>
       #include <beginnormal_vertex>
@@ -707,15 +711,19 @@ export class ShaderOdysseyModel extends Shader {
       #include <skinbase_vertex>
       #include <skinnormal_vertex>
       #include <defaultnormal_vertex>
-    #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
-      vNormal = normalize( transformedNormal );
-    #endif
+
+      #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
+        vNormal = normalize( transformedNormal );
+      #endif
+
       #include <begin_vertex>
       #include <morphtarget_vertex>
       #include <skinning_vertex>
+
       #ifdef USE_DISPLACEMENTMAP
-        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUvWater ).x * displacementScale + displacementBias );
+        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUvCycle ).x * displacementScale + displacementBias );
       #endif
+
       #ifdef DANGLY
         float wind = (1.0 * danglyPeriod) * ( cos(time) );
         transformed += vec3(sin(wind) * constraint.x * 2.0, sin(wind) * constraint.y * 2.0, sin(wind) * constraint.z * 2.0 * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
@@ -749,8 +757,7 @@ export class ShaderOdysseyModel extends Shader {
       { time: { value: 0.0 } },
       { animatedUV: { value: new THREE.Vector4(0, 0, 0, 0) } },
       { waterAlpha: { value: 1 } },
-      { waterAnimation : { value: new THREE.Vector4(0, 0, 0, 0) } },
-      { waterTransform: { value: new THREE.Matrix3() } },
+      { animationVector : { value: new THREE.Vector4(0, 0, 0, 0) } },
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } }

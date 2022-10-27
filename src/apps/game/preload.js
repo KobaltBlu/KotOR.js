@@ -1,18 +1,33 @@
-const { contextBridge, ipcRenderer, shell, dialog } = require('electron');
+const { contextBridge, ipcRenderer, shell, dialog, remote } = require('electron');
 const fs = require('fs');
+// remote.app.allowRendererProcessReuse = false; 
+// const dxt = require('dxt');
 
 const query = new URLSearchParams(window.location.search);
 
+// contextBridge.exposeInMainWorld(
+//   'dxt', {
+//     kDxt1: dxt.kDxt1,
+//     kDxt5: dxt.kDxt5,
+//     decompress: (buffer, frameWidth, frameHeight, encoding) => {
+//       return dxt.decompress(Buffer.from(buffer), frameWidth, frameHeight, encoding);
+//     },
+//     compress: (buffer, frameWidth, frameHeight, encoding) => {
+//       return dxt.compress(Buffer.from(buffer), frameWidth, frameHeight, encoding); 
+//     }
+//   }
+// );
+
 contextBridge.exposeInMainWorld(
-    'dialog', {
-        locateDirectoryDialog: (profile) => {
-          return new Promise( (resolve, reject) => {
-            ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
-              resolve(response);
-            });
-          })
-        }
+  'dialog', {
+    locateDirectoryDialog: (profile) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
+          resolve(response);
+        });
+      })
     }
+  }
 )
 
 contextBridge.exposeInMainWorld(
@@ -53,5 +68,34 @@ contextBridge.exposeInMainWorld(
     statSync: (...args) => {
       return fs.statSync(...args);
     },
+  }
+);
+contextBridge.exposeInMainWorld(
+  'electron',
+  {
+    isMac: () => {
+      process.platform === 'darwin'
+    },
+    minimize: () => {
+      remote.BrowserWindow.getFocusedWindow()?.minimize();
+    },
+    maximize: () => {
+      let win = remote.BrowserWindow.getFocusedWindow();
+      console.log(win.isMaximized());
+      if(win){
+        if(win.isMaximized()){
+          win.unmaximize();
+        }else{
+          win.maximize();
+        } 
+      }
+    },
+    locate_game_directory: (profile) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
+          resolve(response);
+        });
+      })
+    }
   }
 );

@@ -16,6 +16,7 @@ import { TPCLoader } from './TPCLoader';
 import { TGALoader } from './TGALoader';
 import { OdysseyEmitter3D } from '../three/odyssey';
 import { GameFileSystem } from '../utility/GameFileSystem';
+import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
 
 /* @file
  * The TextureLoader class.
@@ -539,6 +540,47 @@ export class TextureLoader {
           
           if(bumpMap != null){
             bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+            
+            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+              if(bumpMap.txi.procedureType){
+                switch(bumpMap.txi.procedureType){
+                  case TXIPROCEDURETYPE.CYCLE:
+                    tex.material.defines.CYCLE = '';
+                  break;
+                  case TXIPROCEDURETYPE.RANDOM:
+                    tex.material.defines.RANDOM = '';
+                  break;
+                  case TXIPROCEDURETYPE.RINGTEXDISTORT:
+                    tex.material.defines.RINGTEXDISTORT = '';
+                  break;
+                  case TXIPROCEDURETYPE.WATER:
+                    tex.material.defines.WATER = '';
+                  break;
+                }
+              }
+
+              if(tex.material.uniforms.animationVector){
+                if(bumpMap.txi.numx){
+                  tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
+                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+                  bumpMap.updateMatrix();
+                }
+
+                if(bumpMap.txi.numy){
+                  tex.material.uniforms.animationVector.value.y = bumpMap.txi.numy;
+                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+                  bumpMap.updateMatrix();
+                }
+
+                if(bumpMap.txi.numx && bumpMap.txi.numy){
+                  tex.material.uniforms.animationVector.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
+                }
+
+                if(bumpMap.txi.fps){
+                  tex.material.uniforms.animationVector.value.w = bumpMap.txi.fps;
+                }
+              }
+            }
 
             (bumpMap as any).material = tex.material;
 
@@ -598,12 +640,12 @@ export class TextureLoader {
               tex.material.blending = THREE.AdditiveBlending;
 
               tex.material.uniforms.waterAlpha.value = texture.txi.waterAlpha;
-              tex.material.uniforms.waterTransform.value = bumpMap.matrix;
+              // tex.material.uniforms.waterTransform.value = bumpMap.matrix;
 
-              tex.material.uniforms.waterAnimation.value.x = bumpMap.txi.numx;
-              tex.material.uniforms.waterAnimation.value.y = bumpMap.txi.numy;
-              tex.material.uniforms.waterAnimation.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
-              tex.material.uniforms.waterAnimation.value.w = bumpMap.txi.fps;
+              tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
+              tex.material.uniforms.animationVector.value.y = bumpMap.txi.numy;
+              tex.material.uniforms.animationVector.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
+              tex.material.uniforms.animationVector.value.w = bumpMap.txi.fps;
 
               //let waterAnim = new AnimatedTexture(bumpMap, bumpMap.txi.numx, bumpMap.txi.numy, bumpMap.txi.fps, true);
               //GameState.AnimatedTextures.push( waterAnim );
@@ -632,12 +674,52 @@ export class TextureLoader {
           tex.material.uniforms.map.value.updateMatrix();
           tex.material.uniformsNeedUpdate = true;
         }
+
+        if(texture.txi.procedureType){
+          switch(texture.txi.procedureType){
+            case TXIPROCEDURETYPE.CYCLE:
+              tex.material.defines.CYCLE = '';
+            break;
+            case TXIPROCEDURETYPE.RANDOM:
+              tex.material.defines.RANDOM = '';
+            break;
+            case TXIPROCEDURETYPE.RINGTEXDISTORT:
+              tex.material.defines.RINGTEXDISTORT = '';
+            break;
+            case TXIPROCEDURETYPE.WATER:
+              tex.material.defines.WATER = '';
+            break;
+          }
+        }
+  
+        if(tex.material.uniforms.animationVector){
+          if(texture.txi.numx){
+            tex.material.uniforms.animationVector.value.x = texture.txi.numx;
+            texture.repeat.x = 1 / tex.material.uniforms.animationVector.value.x;
+            texture.updateMatrix();
+          }
+    
+          if(texture.txi.numy){
+            tex.material.uniforms.animationVector.value.y = texture.txi.numy;
+            texture.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+            texture.updateMatrix();
+          }
+    
+          if(texture.txi.numx && texture.txi.numy){
+            tex.material.uniforms.animationVector.value.z = texture.txi.numx * texture.txi.numy;
+          }
+    
+          if(texture.txi.fps){
+            tex.material.uniforms.animationVector.value.w = texture.txi.fps;
+          }
+        }
       }
 
       //DECAL
       if(texture.txi.decal || texture.txi.procedureType == 2){
         tex.material.side = THREE.DoubleSide;
         tex.material.depthWrite = false;
+        tex.material.transparent = true;
         //For Saber Blades
         tex.material.defines.IGNORE_LIGHTING = '';
       }
@@ -659,7 +741,7 @@ export class TextureLoader {
 
       if(texture.txi.isAnimated){
         //console.log('animated', numx, numy, numx * numy, fps);
-        GameState.AnimatedTextures.push( new AnimatedTexture(texture, texture.txi.numx, texture.txi.numy, texture.txi.fps) );
+        // GameState.AnimatedTextures.push( new AnimatedTexture(texture, texture.txi.numx, texture.txi.numy, texture.txi.fps) );
       }
 
       //tex.material.transparent = true;
