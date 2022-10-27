@@ -5,10 +5,14 @@ import * as fs from "fs";
 import * as path from "path";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 
+declare const monaco: any;
+
 export class TextEditorTab extends EditorTab {
   $nssContainer: JQuery<HTMLElement>;
   $textEditor: JQuery<HTMLElement>;
   editor: any;
+  lastSavedState: any;
+  loaded: boolean;
   constructor(file: EditorFile){
     super();
 
@@ -19,48 +23,61 @@ export class TextEditorTab extends EditorTab {
     this.$nssContainer = $('<div id="nssContainer" style="position: relative; overflow: hidden; height: 100%; width:100%; float: left;" />');
     //this.$nssProperties = $('<div id="nssProperties" style="position: relative; overflow: auto; height: 100%; width:25%; float: left;" />');
     this.$textEditor = $('<div id="texteditor" style="height: 100%;"></div>');
-
     this.$tabContent.append(this.$nssContainer);//.append(this.$nssProperties);
-
     this.$nssContainer.append(this.$textEditor);
 
-    // if(typeof BrowserWindow.getFocusedWindow().ToOpen !== 'undefined'){
-    //   OpenFile(BrowserWindow.getFocusedWindow().ToOpen);
-    // }
+    this.InitEditor(file);
 
-    // trigger extension
-    //@ts-expect-error
-    ace.require("ace/ext/language_tools");
-    //@ts-expect-error
-    this.editor = ace.edit(this.$textEditor[0]);
-    this.editor.session.setMode("ace/mode/nwnscript");
-    this.editor.setTheme("ace/theme/monokai");
-    // enable autocompletion and snippets
-    this.editor.setOptions({
-      enableBasicAutocompletion: true,
-      enableSnippets: true,
-      enableLiveAutocompletion: true
+  }
+
+  InitEditor(file: EditorFile){
+    this.editor = monaco.editor.create(this.$textEditor[0], {
+      language: 'plaintext',
+      theme: 'nwscript-dark',
+      automaticLayout: true,
+      // snippetSuggestions: true,
+      'semanticHighlighting.enabled': false,
+    });
+
+    this.editor.getModel().onDidChangeContent((event: any) => {
+      this.editorFile.unsaved_changes = (this.lastSavedState != this.editor.getModel().getValue());
+      // this.triggerLinterTimeout();
     });
 
     if(file){
       this.OpenFile(file);
     }
-
+    this.loaded = true;
   }
 
   OpenFile(file: EditorFile){
 
-    this.tabLoader.Show();
-    this.tabLoader.SetMessage("Loading Text File");
-    try{
-      if(file instanceof EditorFile){
-        file.readFile( (buffer: Buffer) => {
-          this.$tabName.text(this.file.getFilename());
-          this.editor.setValue(buffer.toString('utf8'));
-          this.tabLoader.Dismiss();
-        });
-      }
-    }catch(e){ console.error(e); this.tabLoader.Dismiss(); }
+    if(file instanceof EditorFile){
+      file.readFile( (buffer: Buffer) => {
+        try{
+          switch(file.reskey){
+            case ResourceTypes.nss:
+              this.lastSavedState = buffer.toString('utf8');
+              this.editor.setValue(buffer.toString('utf8'));
+              //this.tabLoader.Dismiss();
+            break;
+            case ResourceTypes.ncs:
+              this.lastSavedState = buffer.toString('utf8');
+              this.editor.setValue(buffer.toString('utf8'));
+              //this.tabLoader.Dismiss();
+            break;
+            default:
+              //this.tabLoader.Dismiss();
+            break;
+          }
+        }
+        catch (e) {
+          console.log(e);
+          this.Remove();
+        }
+      });
+    }
+    
   }
 
   Save(){
