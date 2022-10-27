@@ -71,6 +71,16 @@ ipcMain.handle('locate-game-directory', (event, data) => {
   });
 })
 
+ipcMain.handle('open-file-dialog', (event, data) => {
+  return new Promise( (resolve, reject) => {
+    dialog.showOpenDialog(...data).then(result => {
+      resolve(result);
+    }).catch(err => {
+      reject(err)
+    });
+  });
+})
+
 function onVideoFileSeleted(videoFilePath, sender) {
   videoSupport(videoFilePath).then((checkResult) => {
     if (checkResult.videoCodecSupport && checkResult.audioCodecSupport) {

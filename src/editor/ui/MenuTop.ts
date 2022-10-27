@@ -1,4 +1,5 @@
 import { AudioEngine } from "../../audio/AudioEngine";
+import { ApplicationEnvironment, ApplicationProfile } from "../../KotOR";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { ConfigClient } from "../../utility/ConfigClient";
 import { EditorFile } from "../EditorFile";
@@ -7,6 +8,7 @@ import { Forge } from "../Forge";
 import { Project } from "../Project";
 import { LIPEditorTab, QuickStartTab, ScriptEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "../tabs";
 import { NewProjectWizard } from "../wizards";
+import * as path from "path";
 
 export class MenuTop {
   
@@ -102,51 +104,224 @@ export class MenuTop {
           }},
         ]},
         {name: 'Open File', onClick: function(){
-          // dialog.showOpenDialog(
-          //   {
-          //     title: 'Open File',
-          //     filters: [
-          //       {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
-          //       {name: 'TPC Image', extensions: ['tpc']},
-          //       {name: 'TGA Image', extensions: ['tga']},
-          //       {name: 'GFF', extensions: ['gff']},
-          //       {name: 'Creature Template', extensions: ['utc']},
-          //       {name: 'Door Template', extensions: ['utd']},
-          //       {name: 'Placeable Template', extensions: ['utp']},
-          //       {name: 'Merchant Template', extensions: ['utm']},
-          //       {name: 'Sound Template', extensions: ['uts']},
-          //       {name: 'Trigger Template', extensions: ['utt']},
-          //       {name: 'Waypoint Template', extensions: ['utw']},
-          //       {name: 'LIP Animation', extensions: ['lip']},
-          //       {name: 'Audio File', extensions: ['wav', 'mp3']},
-          //       {name: 'Video File', extensions: ['bik']},
-          //       {name: 'MOD File', extensions: ['mod']},
-          //       {name: 'ERF File', extensions: ['erf']},
-          //       {name: 'RIM File', extensions: ['rim']},
-          //       {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
-          //       {name: 'Module File', extensions: ['git', 'ifo']},
-          //       {name: 'Area File', extensions: ['are']},
-          //       {name: 'Path File', extensions: ['pth']},
-          //       {name: 'Script Source File', extensions: ['ncs']},
-          //       {name: 'Script Compiled File', extensions: ['nss']},
-          //       {name: 'VIS File', extensions: ['vis']},
-          //       {name: 'Layout File', extensions: ['lyt']},
-          //       {name: 'All Formats', extensions: ['*']},
-          //     ],
-          //     properties: ['createDirectory'],
-          //   }
-          // ).then(result => {
-          //   if(!result.canceled){
-          //     if(result.filePaths.length){
-          //       let filename = result.filePaths[0].split(path.sep).pop();
-          //       let fileParts = filename.split('.');
+          if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+            (window as any).dialog.showOpenDialog({
+              title: 'Open File',
+              filters: [
+                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+                {name: 'TPC Image', extensions: ['tpc']},
+                {name: 'TGA Image', extensions: ['tga']},
+                {name: 'GFF', extensions: ['gff']},
+                {name: 'Creature Template', extensions: ['utc']},
+                {name: 'Door Template', extensions: ['utd']},
+                {name: 'Placeable Template', extensions: ['utp']},
+                {name: 'Merchant Template', extensions: ['utm']},
+                {name: 'Sound Template', extensions: ['uts']},
+                {name: 'Trigger Template', extensions: ['utt']},
+                {name: 'Waypoint Template', extensions: ['utw']},
+                {name: 'LIP Animation', extensions: ['lip']},
+                {name: 'Audio File', extensions: ['wav', 'mp3']},
+                {name: 'Video File', extensions: ['bik']},
+                {name: 'MOD File', extensions: ['mod']},
+                {name: 'ERF File', extensions: ['erf']},
+                {name: 'RIM File', extensions: ['rim']},
+                {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
+                {name: 'Module File', extensions: ['git', 'ifo']},
+                {name: 'Area File', extensions: ['are']},
+                {name: 'Path File', extensions: ['pth']},
+                {name: 'Script Source File', extensions: ['ncs']},
+                {name: 'Script Compiled File', extensions: ['nss']},
+                {name: 'VIS File', extensions: ['vis']},
+                {name: 'Layout File', extensions: ['lyt']},
+                {name: 'All Formats', extensions: ['*']},
+              ],
+              properties: ['createDirectory'],
+            }).then( (result: any) => {
+              if(!result.canceled){
+                if(result.filePaths.length){
+                  let parsed = path.parse(result.filePaths[0]);
+                  let fileParts = parsed.name.split('.');
 
-          //       FileTypeManager.onOpenFile({path: result.filePaths[0], filename: filename, name: fileParts[0], ext: fileParts[1]});
-          //     }
-          //   }
-          //   console.log(result.canceled);
-          //   console.log(result.filePaths);
-          // });
+                  FileTypeManager.onOpenFile({path: result.filePaths[0], filename: parsed.name, name: fileParts[0], ext: fileParts[1]});
+                }
+              }
+              console.log(result.canceled);
+              console.log(result.filePaths);
+            }).catch( (e: any) => {
+
+            })
+          }else{
+            window.showOpenFilePicker({
+              types: [
+                {
+                  description: 'All Supported Formats', 
+                  accept: {
+                    '*': ['.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
+                  }
+                },
+                {
+                  description: 'TPC Image', 
+                  accept: {
+                    '*': ['.tpc']
+                  }
+                },
+                {
+                  description: 'TGA Image', 
+                  accept: {
+                    '*': ['.tga']
+                  }
+                },
+                {
+                  description: '.GFF', 
+                  accept: {
+                    '*': ['.gff']
+                  }
+                },
+                {
+                  description: 'Creature Template', 
+                  accept: {
+                    '*': ['.utc']
+                  }
+                },
+                {
+                  description: 'Door Template', 
+                  accept: {
+                    '*': ['.utd']
+                  }
+                },
+                {
+                  description: 'Placeable Template', 
+                  accept: {
+                    '*': ['.utp']
+                  }
+                },
+                {
+                  description: 'Merchant Template', 
+                  accept: {
+                    '*': ['.utm']
+                  }
+                },
+                {
+                  description: 'Sound Template', 
+                  accept: {
+                    '*': ['.uts']
+                  }
+                },
+                {
+                  description: 'Trigger Template', 
+                  accept: {
+                    '*': ['.utt']
+                  }
+                },
+                {
+                  description: 'Waypoint Template', 
+                  accept: {
+                    '*': ['.utw']
+                  }
+                },
+                {
+                  description: 'LIP Animation', 
+                  accept: {
+                    '*': ['.lip']
+                  }
+                },
+                {
+                  description: 'Audio File', 
+                  accept: {
+                    '*': ['.wav', '.mp3']
+                  }
+                },
+                {
+                  description: 'Video File', 
+                  accept: {
+                    '*': ['.bik']
+                  }
+                },
+                {
+                  description: 'MOD File', 
+                  accept: {
+                    '*': ['.mod']
+                  }
+                },
+                {
+                  description: 'ERF File', 
+                  accept: {
+                    '*': ['.erf']
+                  }
+                },
+                {
+                  description: 'RIM File', 
+                  accept: {
+                    '*': ['.rim']
+                  }
+                },
+                {
+                  description: 'Model File', 
+                  accept: {
+                    '*': ['.mdl', '.mdx', '.wok', '.pwk', '.dwk']
+                  }
+                },
+                {
+                  description: 'Module File', 
+                  accept: {
+                    '*': ['.git', '.ifo']
+                  }
+                },
+                {
+                  description: 'Area File', 
+                  accept: {
+                    '*': ['.are']
+                  }
+                },
+                {
+                  description: 'Path File', 
+                  accept: {
+                    '*': ['.pth']
+                  }
+                },
+                {
+                  description: 'Script Source File', 
+                  accept: {
+                    '*': ['.ncs']
+                  }
+                },
+                {
+                  description: 'Script Compiled File', 
+                  accept: {
+                    '*': ['.nss']
+                  }
+                },
+                {
+                  description: 'VIS File', 
+                  accept: {
+                    '*': ['.vis']
+                  }
+                },
+                {
+                  description: 'Layout File', 
+                  accept: {
+                    '*': ['.lyt']
+                  }
+                },
+                {
+                  description: 'All Formats', 
+                  accept: {
+                    '*': ['*']
+                  }
+                },
+              ],
+              
+            }).then( (handles: FileSystemFileHandle[]) => {
+              let [handle] = handles;
+              if(handle){
+                let parsed = path.parse(handle.name);
+                let fileParts = parsed.name.split('.');
+                FileTypeManager.onOpenFile({path: handle.name, handle: handle, filename: handle.name, name: fileParts[0], ext: fileParts[1]});
+              }
+            }).catch((e: any) => {
+
+            })
+          }
         }},
         {name: 'Save File', accelerator: 'Ctrl+S', onClick: function(){
 

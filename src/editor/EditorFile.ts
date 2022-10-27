@@ -10,7 +10,7 @@ import { Forge } from "./Forge";
 import { Project } from "./Project";
 import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
-import { GameFileSystem } from "../KotOR";
+import { ApplicationEnvironment, ApplicationProfile, GameFileSystem } from "../KotOR";
 
 export class EditorFile {
 
@@ -34,6 +34,7 @@ export class EditorFile {
 
     options = Object.assign({
       path: null,
+      handle: this.handle,
       resref: null,
       restype: null,
       ext: null,
@@ -53,6 +54,7 @@ export class EditorFile {
     this.archive_path = options.archive_path;
     this.location = options.location;
     this.unsaved_changes = false;
+    this.handle = options.handle;
     this.useGameFileSystem = options.useGameFileSystem;
 
     if(!this.ext && this.reskey){
@@ -111,7 +113,7 @@ export class EditorFile {
     return undefined;
   }
 
-  readFile( onLoad?: Function ){
+  async readFile( onLoad?: Function ){
 
     if(this.reskey == ResourceTypes.mdl || this.reskey == ResourceTypes.mdx){
       //Mdl / Mdx Special Loader
@@ -360,17 +362,37 @@ export class EditorFile {
                 throw err;
               })
             }else{
-              fs.readFile(this.path, (err, buffer) => {
+              if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+                fs.readFile(this.path, (err, buffer) => {
 
-                if(err) throw err;
+                  if(err) throw err;
 
-                this.buffer = buffer;
+                  this.buffer = Buffer.from(buffer);
 
-                if(typeof onLoad === 'function'){
-                  onLoad(this.buffer);
+                  if(typeof onLoad === 'function'){
+                    onLoad(this.buffer);
+                  }
+
+                });
+              }else{
+                if(this.handle){
+                  if(await this.handle.queryPermission({mode: 'readwrite'})){
+                    let file = await this.handle.getFile();
+                    this.buffer = Buffer.from( await file.arrayBuffer() );
+                    if(typeof onLoad === 'function'){
+                      onLoad(this.buffer);
+                    }
+                  }else if( await this.handle.requestPermission({mode: 'readwrite'}) ){
+                    let file = await this.handle.getFile();
+                    this.buffer = Buffer.from( await file.arrayBuffer() );
+                    if(typeof onLoad === 'function'){
+                      onLoad(this.buffer);
+                    }
+                  }else{
+                    //cannot open file
+                  }
                 }
-
-              });
+              }
             }
           }else{
             this.buffer = Buffer.alloc(0);

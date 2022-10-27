@@ -26,6 +26,15 @@ contextBridge.exposeInMainWorld(
           resolve(response);
         });
       })
+    },
+    showOpenDialog: (...args) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('open-file-dialog', args).then( (response) => {
+          resolve(response);
+        }).catch( (e) => {
+          reject(e);
+        })
+      });
     }
   }
 )

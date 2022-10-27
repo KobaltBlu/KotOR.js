@@ -33,8 +33,18 @@ switch(query.get('key')){
 
 if(window.location.origin === 'file://'){
   env = ApplicationEnvironment.ELECTRON;
+  if(window.navigator.platform.toLocaleLowerCase() == 'win32'){
+
+  }else{
+
+  }
 }else{
   env = ApplicationEnvironment.BROWSER;
+  if(window.navigator.platform.toLocaleLowerCase() == 'win32'){
+
+  }else{
+    
+  }
 }
 
 async function getProfile(){
