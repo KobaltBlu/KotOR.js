@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor';
 // import { fstat } from 'original-fs';
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
+import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { ConfigClient } from "../../utility/ConfigClient";
 import * as fs from "fs";
 const Jison = (window as any).Jison = require("jison").Jison;
@@ -31,6 +32,7 @@ switch(query.get('key')){
   break;
 }
 
+ApplicationProfile.InitEnvironment()
 if(window.location.origin === 'file://'){
   env = ApplicationEnvironment.ELECTRON;
   if(window.navigator.platform.toLocaleLowerCase() == 'win32'){

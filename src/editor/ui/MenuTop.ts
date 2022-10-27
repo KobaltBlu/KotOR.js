@@ -139,10 +139,29 @@ export class MenuTop {
             }).then( (result: any) => {
               if(!result.canceled){
                 if(result.filePaths.length){
-                  let parsed = path.parse(result.filePaths[0]);
+                  let file_path = result.filePaths[0];
+                  let path_parse = (filepath: string): {root:string, dir: string, base: string, ext: string, name: string} => {
+                    let parsed: {root:string, dir: string, base: string, ext: string, name: string} = 
+                      { root: '', dir: '', base: '', ext: '', name: '' };
+                    let sep = window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
+                    let parts = filepath.split(sep);
+                    let filename = parts.pop();
+                    let filename_parts = filename.split('.');
+                    let name = filename_parts[0];
+                    let ext = '';
+                    if(filename_parts.length > 1){
+                      ext = '.'+filename_parts[1];
+                    }
+                    parsed.dir = parts.join(sep);
+                    parsed.base = filename;
+                    parsed.ext = ext;
+                    parsed.name = name;
+                    return parsed;
+                  };
+                  let parsed = path_parse(file_path);
                   let fileParts = parsed.name.split('.');
 
-                  FileTypeManager.onOpenFile({path: result.filePaths[0], filename: parsed.name, name: fileParts[0], ext: fileParts[1]});
+                  FileTypeManager.onOpenFile({path: file_path, filename: parsed.base, name: parsed.name, ext: fileParts[1]});
                 }
               }
               console.log(result.canceled);

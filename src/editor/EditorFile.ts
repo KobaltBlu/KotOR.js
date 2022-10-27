@@ -12,6 +12,25 @@ import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
 import { ApplicationEnvironment, ApplicationProfile, GameFileSystem } from "../KotOR";
 
+const path_parse = (filepath: string): {root:string, dir: string, base: string, ext: string, name: string} => {
+  let parsed: {root:string, dir: string, base: string, ext: string, name: string} = 
+    { root: '', dir: '', base: '', ext: '', name: '' };
+  let sep = window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
+  let parts = filepath.split(sep);
+  let filename = parts.pop();
+  let filename_parts = filename.split('.');
+  let name = filename_parts[0];
+  let ext = '';
+  if(filename_parts.length > 1){
+    ext = '.'+filename_parts[1];
+  }
+  parsed.dir = parts.join(sep);
+  parsed.base = filename;
+  parsed.ext = ext;
+  parsed.name = name;
+  return parsed;
+};
+
 export class EditorFile {
 
   //handle - is for file handling inside the web environment
@@ -77,7 +96,7 @@ export class EditorFile {
   setPath(filepath: string){
     this.path = filepath;
     if(typeof this.path === 'string'){
-      let path_obj = path.parse(this.path);
+      let path_obj = path_parse(this.path);
 
       this.location = FileLocationType.LOCAL;
 
@@ -87,7 +106,7 @@ export class EditorFile {
         this.path = pth[1];
         this.archive_path = pth[0];
         this.location = FileLocationType.ARCHIVE;
-        path_obj = path.parse(this.path);
+        path_obj = path_parse(this.path);
       }
 
       if(path_obj.name){
@@ -118,7 +137,7 @@ export class EditorFile {
     if(this.reskey == ResourceTypes.mdl || this.reskey == ResourceTypes.mdx){
       //Mdl / Mdx Special Loader
       if(this.archive_path){
-        let archive_path = path.parse(this.archive_path);
+        let archive_path = path_parse(this.archive_path);
         switch(archive_path.ext.slice(1)){
           case 'bif':
             new BIFObject(this.archive_path, (archive: BIFObject) => {
@@ -279,7 +298,7 @@ export class EditorFile {
 
             if(err) throw err;
 
-            let root_dir = path.parse(this.path).dir;
+            let root_dir = path_parse(this.path).dir;
 
             //Load the MDX file
             fs.readFile(path.join(root_dir, this.resref+'.mdx'), (err, buffer2) => {
@@ -308,7 +327,7 @@ export class EditorFile {
       }else{
 
         if(this.archive_path){
-          let archive_path = path.parse(this.archive_path);
+          let archive_path = path_parse(this.archive_path);
           console.log(archive_path.ext.slice(1))
           switch(archive_path.ext.slice(1)){
             case 'bif':
