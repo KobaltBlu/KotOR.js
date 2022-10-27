@@ -3,8 +3,8 @@ import { KEYManager } from "../../managers/KEYManager";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { ModuleDoor, ModuleObject, ModulePlaceable, ModuleSound } from "../../module";
 import { ResourceTypes } from "../../resource/ResourceTypes";
-import { TemplateEngine } from "../TemplateEngine";
 import { Wizard } from "./";
+import template from "../templates/modal-object-props.html";
 
 export class ObjectPropertiesWizard extends Wizard {
   props: { autoShow: boolean; };
@@ -25,34 +25,30 @@ export class ObjectPropertiesWizard extends Wizard {
     //this.selected = selected;
 
     //Load the HTML from the template file
-    TemplateEngine.GetTemplateAsync('templates/modal-object-props.html', null, (tpl: string) => {
-      this.$wizard = $(tpl);
+    this.$wizard = $(template);
 
-      //DOM Elements
-      this.$templateList = $('#modal-object-properties-template-select', this.$wizard);
-      this.$list = $('#modal-object-properties-appearance-select', this.$wizard);
-      this.$update = $('#modal-object-properties-update', this.$wizard);
+    //DOM Elements
+    this.$templateList = $('#modal-object-properties-template-select', this.$wizard);
+    this.$list = $('#modal-object-properties-appearance-select', this.$wizard);
+    this.$update = $('#modal-object-properties-update', this.$wizard);
 
-      this.$update.on('click', (e: any) => {
-        this.Hide();
-      });
-
-      $('body').append(this.$wizard);
-      this.$wizard.filter('.modal').modal({
-          keyboard: false,
-          backdrop: false,
-          // show: this.props.autoShow
-      });
-
-      this.$wizard.draggable({
-        handle: ".modal-header"
-      });
-
-      if(this.props.autoShow)
-        this.Show();
-
+    this.$update.on('click', (e: any) => {
+      this.Hide();
     });
 
+    $('body').append(this.$wizard);
+    this.$wizard.filter('.modal').modal({
+        keyboard: false,
+        backdrop: false,
+        // show: this.props.autoShow
+    });
+
+    this.$wizard.draggable({
+      handle: ".modal-header"
+    });
+
+    if(this.props.autoShow)
+      this.Show();
 
   }
 

@@ -89,7 +89,7 @@ export class ScriptEditorTab extends EditorTab {
   Show(){
     super.Show();
     console.log('script show');
-    //@ts-expect-error
+    
     this.layout = this.$r_container.layout({
       applyDefaultStyles: false,
       south__size:			200,

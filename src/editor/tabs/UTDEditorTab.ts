@@ -8,14 +8,16 @@ import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorFile } from "../EditorFile";
 import { EditorTab, ImageViewerTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
-import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
 import * as THREE from "three";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 
+import template from "../templates/editor-utd.html";
+
 export class UTDEditorTab extends EditorTab {
+  template: string = template;
   $name: JQuery<HTMLElement>;
   $tag: JQuery<HTMLElement>;
   $description: JQuery<HTMLElement>;
@@ -79,93 +81,91 @@ export class UTDEditorTab extends EditorTab {
     this.$tabName.text("Door Editor");
     console.log(this.id);
     let id = this.id;
-    TemplateEngine.GetTemplateAsync('templates/editor-utd.html', {tabId: id}, (tpl: string) => {
-      this.$tabContent.append(tpl);
+    
+    this.initContentTemplate();
 
-      this.$name = $(this.ElementId('#utd-name'), this.$tabContent);
-      this.$tag = $(this.ElementId('#utd-tag'), this.$tabContent);
-      this.$description = $(this.ElementId('#utd-description'), this.$tabContent);
-      this.$doorType = $(this.ElementId('#utd-door-type'), this.$tabContent);
-      this.$plotItem = $(this.ElementId('#utd-plot-item'), this.$tabContent);
-      this.$static = $(this.ElementId('#utd-static'), this.$tabContent);
-      this.$hardness = $(this.ElementId('#utd-hardness'), this.$tabContent);
-      this.$hitPoints = $(this.ElementId('#utd-hit-points'), this.$tabContent);
-      this.$fortitudeSave = $(this.ElementId('#utd-fortitude-save'), this.$tabContent);
-      this.$reflexSave = $(this.ElementId('#utd-reflex-save'), this.$tabContent);
-      this.$willSave = $(this.ElementId('#utd-will-save'), this.$tabContent);
+    this.$name = $(this.ElementId('#utd-name'), this.$tabContent);
+    this.$tag = $(this.ElementId('#utd-tag'), this.$tabContent);
+    this.$description = $(this.ElementId('#utd-description'), this.$tabContent);
+    this.$doorType = $(this.ElementId('#utd-door-type'), this.$tabContent);
+    this.$plotItem = $(this.ElementId('#utd-plot-item'), this.$tabContent);
+    this.$static = $(this.ElementId('#utd-static'), this.$tabContent);
+    this.$hardness = $(this.ElementId('#utd-hardness'), this.$tabContent);
+    this.$hitPoints = $(this.ElementId('#utd-hit-points'), this.$tabContent);
+    this.$fortitudeSave = $(this.ElementId('#utd-fortitude-save'), this.$tabContent);
+    this.$reflexSave = $(this.ElementId('#utd-reflex-save'), this.$tabContent);
+    this.$willSave = $(this.ElementId('#utd-will-save'), this.$tabContent);
 
-      //Lock
-      this.$lock = $(this.ElementId('#utd-locked'), this.$tabContent);
-      this.$lockable = $(this.ElementId('#utd-lockable'), this.$tabContent);
-      this.$autoRemoveKey = $(this.ElementId('#utd-auto-remove-key'), this.$tabContent);
-      this.$keyRequired = $(this.ElementId('#utd-key-required'), this.$tabContent);
-      this.$openLockDC = $(this.ElementId('#utd-open-lock-dc'), this.$tabContent);
-      this.$closeLockDC = $(this.ElementId('#utd-close-lock-dc'), this.$tabContent);
-      this.$keyTag = $(this.ElementId('#utd-key-tag'), this.$tabContent);
+    //Lock
+    this.$lock = $(this.ElementId('#utd-locked'), this.$tabContent);
+    this.$lockable = $(this.ElementId('#utd-lockable'), this.$tabContent);
+    this.$autoRemoveKey = $(this.ElementId('#utd-auto-remove-key'), this.$tabContent);
+    this.$keyRequired = $(this.ElementId('#utd-key-required'), this.$tabContent);
+    this.$openLockDC = $(this.ElementId('#utd-open-lock-dc'), this.$tabContent);
+    this.$closeLockDC = $(this.ElementId('#utd-close-lock-dc'), this.$tabContent);
+    this.$keyTag = $(this.ElementId('#utd-key-tag'), this.$tabContent);
 
-      //Advanced
-      this.$templateResRef = $(this.ElementId('#utd-template-res-ref'), this.$tabContent);
-      this.$faction = $(this.ElementId('#utd-faction'), this.$tabContent);
-      this.$conversation = $(this.ElementId('#utd-conversation'), this.$tabContent);
-      this.$noInterrupt = $(this.ElementId('#utd-no-interrupt'), this.$tabContent);
-      this.$animationState = $(this.ElementId('#utd-animation-state'), this.$tabContent);
+    //Advanced
+    this.$templateResRef = $(this.ElementId('#utd-template-res-ref'), this.$tabContent);
+    this.$faction = $(this.ElementId('#utd-faction'), this.$tabContent);
+    this.$conversation = $(this.ElementId('#utd-conversation'), this.$tabContent);
+    this.$noInterrupt = $(this.ElementId('#utd-no-interrupt'), this.$tabContent);
+    this.$animationState = $(this.ElementId('#utd-animation-state'), this.$tabContent);
 
-      //Script Inputs
-      this.$onClick = $(this.ElementId('#utd-on-click'), this.$tabContent);
-      this.$onClosed = $(this.ElementId('#utd-on-closed'), this.$tabContent);
-      this.$onDamaged = $(this.ElementId('#utd-on-damaged'), this.$tabContent);
-      this.$onDeath = $(this.ElementId('#utd-on-death'), this.$tabContent);
-      this.$onDisarm = $(this.ElementId('#utd-on-disarm'), this.$tabContent);
-      this.$onHeartbeat = $(this.ElementId('#utd-on-heartbeat'), this.$tabContent);
-      this.$onLock = $(this.ElementId('#utd-on-lock'), this.$tabContent);
-      this.$onMeleeAttacked = $(this.ElementId('#utd-on-melee-attacked'), this.$tabContent);
-      this.$onOpen = $(this.ElementId('#utd-on-open'), this.$tabContent);
-      this.$onSpellCastAt = $(this.ElementId('#utd-on-spell-cast-at'), this.$tabContent);
-      this.$onTrapTriggered = $(this.ElementId('#utd-on-trap-triggered'), this.$tabContent);
-      this.$onUnlock = $(this.ElementId('#utd-on-unlock'), this.$tabContent);
-      this.$onUsed = $(this.ElementId('#utd-on-used'), this.$tabContent);
-      this.$onUserDefined = $(this.ElementId('#utd-on-user-defined'), this.$tabContent);
+    //Script Inputs
+    this.$onClick = $(this.ElementId('#utd-on-click'), this.$tabContent);
+    this.$onClosed = $(this.ElementId('#utd-on-closed'), this.$tabContent);
+    this.$onDamaged = $(this.ElementId('#utd-on-damaged'), this.$tabContent);
+    this.$onDeath = $(this.ElementId('#utd-on-death'), this.$tabContent);
+    this.$onDisarm = $(this.ElementId('#utd-on-disarm'), this.$tabContent);
+    this.$onHeartbeat = $(this.ElementId('#utd-on-heartbeat'), this.$tabContent);
+    this.$onLock = $(this.ElementId('#utd-on-lock'), this.$tabContent);
+    this.$onMeleeAttacked = $(this.ElementId('#utd-on-melee-attacked'), this.$tabContent);
+    this.$onOpen = $(this.ElementId('#utd-on-open'), this.$tabContent);
+    this.$onSpellCastAt = $(this.ElementId('#utd-on-spell-cast-at'), this.$tabContent);
+    this.$onTrapTriggered = $(this.ElementId('#utd-on-trap-triggered'), this.$tabContent);
+    this.$onUnlock = $(this.ElementId('#utd-on-unlock'), this.$tabContent);
+    this.$onUsed = $(this.ElementId('#utd-on-used'), this.$tabContent);
+    this.$onUserDefined = $(this.ElementId('#utd-on-user-defined'), this.$tabContent);
 
-      this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
-      this.$utcTabContent = $(this.ElementId('#utd-tab-content'), this.$tabContent);
+    this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
+    this.$utcTabContent = $(this.ElementId('#utd-tab-content'), this.$tabContent);
 
-      $('.texture-canvas', this.$tabContent).each( (i, ele) => {
-        let $ele = $(ele);
-        let $canvas = $('<canvas/>');
-        $ele.append($canvas);
-        this.GameImageToCanvas($canvas[0], $ele.attr('texture'));
-      });
-
-      this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
-
-      this.verticalTabs = new VerticalTabs(this.$verticalTabs);
-
-      this.$tabContent.css({overflow: 'hidden'});
-
-      this.$previewContainer = $(this.ElementId('#utd-preview'), this.$tabContent);
-
-      this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
-
-      this.ui3DRenderer = new UI3DRenderer({
-        width: this.$preview.width(),
-        height: this.$preview.height()
-      });
-
-      this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
-
-      this.$previewContainer.append( this.ui3DRenderer.canvas );
-
-      console.log( this.$firstName );
-
-      this.onResize();
-
-      if(this.gff != null)
-        this.PopulateFields();
-
-      if(this.file != null)
-        this.OpenFile(this.file);
-
+    $('.texture-canvas', this.$tabContent).each( (i, ele) => {
+      let $ele = $(ele);
+      let $canvas = $('<canvas/>');
+      $ele.append($canvas);
+      this.GameImageToCanvas($canvas[0], $ele.attr('texture'));
     });
+
+    this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
+
+    this.verticalTabs = new VerticalTabs(this.$verticalTabs);
+
+    this.$tabContent.css({overflow: 'hidden'});
+
+    this.$previewContainer = $(this.ElementId('#utd-preview'), this.$tabContent);
+
+    this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
+
+    this.ui3DRenderer = new UI3DRenderer({
+      width: this.$preview.width(),
+      height: this.$preview.height()
+    });
+
+    this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+
+    this.$previewContainer.append( this.ui3DRenderer.canvas );
+
+    console.log( this.$firstName );
+
+    this.onResize();
+
+    if(this.gff != null)
+      this.PopulateFields();
+
+    if(this.file != null)
+      this.OpenFile(this.file);
 
   }
 

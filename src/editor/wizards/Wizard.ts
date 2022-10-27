@@ -1,6 +1,7 @@
 import "bootstrap";
 
 export class Wizard {
+  template: any;
   _destroyed: boolean;
   args: any;
   $wizard: JQuery<HTMLElement>;

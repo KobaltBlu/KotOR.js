@@ -8,15 +8,17 @@ import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorFile } from "../EditorFile";
 import { EditorTab, ImageViewerTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
-import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
+
+import template from "../templates/editor-utp.html";
 
 import * as path from "path";
 import * as THREE from "three";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 
 export class UTPEditorTab extends EditorTab {
+  template: string = template;
   $name: JQuery<HTMLElement>;
   $tag: JQuery<HTMLElement>;
   $description: JQuery<HTMLElement>;
@@ -89,109 +91,107 @@ export class UTPEditorTab extends EditorTab {
     this.$tabName.text("Placeable Editor");
     console.log(this.id);
     let id = this.id;
-    TemplateEngine.GetTemplateAsync('templates/editor-utp.html', {tabId: id}, (tpl: string) => {
-      this.$tabContent.append(tpl);
+    
+    this.initContentTemplate();
 
-      this.$name = $(this.ElementId('#utp-name'), this.$tabContent);
-      this.$tag = $(this.ElementId('#utp-tag'), this.$tabContent);
-      this.$description = $(this.ElementId('#utp-description'), this.$tabContent);
-      this.$appearance = $(this.ElementId('#utp-appearance'), this.$tabContent);
-      this.$plotItem = $(this.ElementId('#utp-plot-item'), this.$tabContent);
-      this.$static = $(this.ElementId('#utp-static'), this.$tabContent);
-      this.$minHP = $(this.ElementId('#utp-min-1hp'), this.$tabContent);
-      this.$hardness = $(this.ElementId('#utp-hardness'), this.$tabContent);
-      this.$hitPoints = $(this.ElementId('#utp-hit-points'), this.$tabContent);
-      this.$fortitudeSave = $(this.ElementId('#utp-fortitude-save'), this.$tabContent);
-      this.$reflexSave = $(this.ElementId('#utp-reflex-save'), this.$tabContent);
-      this.$willSave = $(this.ElementId('#utp-will-save'), this.$tabContent);
+    this.$name = $(this.ElementId('#utp-name'), this.$tabContent);
+    this.$tag = $(this.ElementId('#utp-tag'), this.$tabContent);
+    this.$description = $(this.ElementId('#utp-description'), this.$tabContent);
+    this.$appearance = $(this.ElementId('#utp-appearance'), this.$tabContent);
+    this.$plotItem = $(this.ElementId('#utp-plot-item'), this.$tabContent);
+    this.$static = $(this.ElementId('#utp-static'), this.$tabContent);
+    this.$minHP = $(this.ElementId('#utp-min-1hp'), this.$tabContent);
+    this.$hardness = $(this.ElementId('#utp-hardness'), this.$tabContent);
+    this.$hitPoints = $(this.ElementId('#utp-hit-points'), this.$tabContent);
+    this.$fortitudeSave = $(this.ElementId('#utp-fortitude-save'), this.$tabContent);
+    this.$reflexSave = $(this.ElementId('#utp-reflex-save'), this.$tabContent);
+    this.$willSave = $(this.ElementId('#utp-will-save'), this.$tabContent);
 
-      //Lock
-      this.$lock = $(this.ElementId('#utp-locked'), this.$tabContent);
-      this.$lockable = $(this.ElementId('#utp-lockable'), this.$tabContent);
-      this.$autoRemoveKey = $(this.ElementId('#utp-auto-remove-key'), this.$tabContent);
-      this.$keyRequired = $(this.ElementId('#utp-key-required'), this.$tabContent);
-      this.$openLockDC = $(this.ElementId('#utp-open-lock-dc'), this.$tabContent);
-      this.$closeLockDC = $(this.ElementId('#utp-close-lock-dc'), this.$tabContent);
-      this.$keyTag = $(this.ElementId('#utp-key-tag'), this.$tabContent);
+    //Lock
+    this.$lock = $(this.ElementId('#utp-locked'), this.$tabContent);
+    this.$lockable = $(this.ElementId('#utp-lockable'), this.$tabContent);
+    this.$autoRemoveKey = $(this.ElementId('#utp-auto-remove-key'), this.$tabContent);
+    this.$keyRequired = $(this.ElementId('#utp-key-required'), this.$tabContent);
+    this.$openLockDC = $(this.ElementId('#utp-open-lock-dc'), this.$tabContent);
+    this.$closeLockDC = $(this.ElementId('#utp-close-lock-dc'), this.$tabContent);
+    this.$keyTag = $(this.ElementId('#utp-key-tag'), this.$tabContent);
 
-      //Advanced
-      this.$templateResRef = $(this.ElementId('#utp-template-res-ref'), this.$tabContent);
-      this.$faction = $(this.ElementId('#utp-faction'), this.$tabContent);
-      this.$conversation = $(this.ElementId('#utp-conversation'), this.$tabContent);
-      this.$noInterrupt = $(this.ElementId('#utp-no-interrupt'), this.$tabContent);
-      this.$animationState = $(this.ElementId('#utp-animation-state'), this.$tabContent);
-      this.$type = $(this.ElementId('#utp-type'), this.$tabContent);
-      this.$hasInventory = $(this.ElementId('#utp-has-inventory'), this.$tabContent);
-      this.$partyInteract = $(this.ElementId('#utp-party-interact'), this.$tabContent);
-      this.$usable = $(this.ElementId('#utp-usable'), this.$tabContent);
+    //Advanced
+    this.$templateResRef = $(this.ElementId('#utp-template-res-ref'), this.$tabContent);
+    this.$faction = $(this.ElementId('#utp-faction'), this.$tabContent);
+    this.$conversation = $(this.ElementId('#utp-conversation'), this.$tabContent);
+    this.$noInterrupt = $(this.ElementId('#utp-no-interrupt'), this.$tabContent);
+    this.$animationState = $(this.ElementId('#utp-animation-state'), this.$tabContent);
+    this.$type = $(this.ElementId('#utp-type'), this.$tabContent);
+    this.$hasInventory = $(this.ElementId('#utp-has-inventory'), this.$tabContent);
+    this.$partyInteract = $(this.ElementId('#utp-party-interact'), this.$tabContent);
+    this.$usable = $(this.ElementId('#utp-usable'), this.$tabContent);
 
-      //Scripts
-      this.$onClosed = $(this.ElementId('#utp-on-closed'), this.$tabContent);
-      this.$onDamaged = $(this.ElementId('#utp-on-damaged'), this.$tabContent);
-      this.$onDeath = $(this.ElementId('#utp-on-death'), this.$tabContent);
-      this.$onDiarm = $(this.ElementId('#utp-on-disarm'), this.$tabContent);
-      this.$onEndDialog = $(this.ElementId('#utp-on-end-dialog'), this.$tabContent);
-      this.$onHeartbeat = $(this.ElementId('#utp-on-heartbeat'), this.$tabContent);
-      this.$onInvDisturbed = $(this.ElementId('#utp-on-inv-disturbed'), this.$tabContent);
-      this.$onLock = $(this.ElementId('#utp-on-lock'), this.$tabContent);
-      this.$onMeleeAttacked = $(this.ElementId('#utp-on-melee-attacked'), this.$tabContent);
-      this.$onOpen = $(this.ElementId('#utp-on-open'), this.$tabContent);
-      this.$onSpellAttacked = $(this.ElementId('#utp-on-spell-attacked'), this.$tabContent);
-      this.$onOpen = $(this.ElementId('#utp-on-open'), this.$tabContent);
-      this.$onSpellCastAt = $(this.ElementId('#utp-on-spell-cast-at'), this.$tabContent);
-      this.$onTrapTriggered = $(this.ElementId('#utp-on-trap-triggered'), this.$tabContent);
-      this.$onUnlock = $(this.ElementId('#utp-on-unlock'), this.$tabContent);
-      this.$onUsed = $(this.ElementId('#utp-on-used'), this.$tabContent);
-      this.$onUserDefined = $(this.ElementId('#utp-on-user-defined'), this.$tabContent);
+    //Scripts
+    this.$onClosed = $(this.ElementId('#utp-on-closed'), this.$tabContent);
+    this.$onDamaged = $(this.ElementId('#utp-on-damaged'), this.$tabContent);
+    this.$onDeath = $(this.ElementId('#utp-on-death'), this.$tabContent);
+    this.$onDiarm = $(this.ElementId('#utp-on-disarm'), this.$tabContent);
+    this.$onEndDialog = $(this.ElementId('#utp-on-end-dialog'), this.$tabContent);
+    this.$onHeartbeat = $(this.ElementId('#utp-on-heartbeat'), this.$tabContent);
+    this.$onInvDisturbed = $(this.ElementId('#utp-on-inv-disturbed'), this.$tabContent);
+    this.$onLock = $(this.ElementId('#utp-on-lock'), this.$tabContent);
+    this.$onMeleeAttacked = $(this.ElementId('#utp-on-melee-attacked'), this.$tabContent);
+    this.$onOpen = $(this.ElementId('#utp-on-open'), this.$tabContent);
+    this.$onSpellAttacked = $(this.ElementId('#utp-on-spell-attacked'), this.$tabContent);
+    this.$onOpen = $(this.ElementId('#utp-on-open'), this.$tabContent);
+    this.$onSpellCastAt = $(this.ElementId('#utp-on-spell-cast-at'), this.$tabContent);
+    this.$onTrapTriggered = $(this.ElementId('#utp-on-trap-triggered'), this.$tabContent);
+    this.$onUnlock = $(this.ElementId('#utp-on-unlock'), this.$tabContent);
+    this.$onUsed = $(this.ElementId('#utp-on-used'), this.$tabContent);
+    this.$onUserDefined = $(this.ElementId('#utp-on-user-defined'), this.$tabContent);
 
-      //Comment
-      this.$comment = $(this.ElementId('#utp-comment'), this.$tabContent);
+    //Comment
+    this.$comment = $(this.ElementId('#utp-comment'), this.$tabContent);
 
-      //Description
-      this.$description = $(this.ElementId('#utp-description'), this.$tabContent);
+    //Description
+    this.$description = $(this.ElementId('#utp-description'), this.$tabContent);
 
-      this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
-      this.$utcTabContent = $(this.ElementId('#utp-tab-content'), this.$tabContent);
+    this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
+    this.$utcTabContent = $(this.ElementId('#utp-tab-content'), this.$tabContent);
 
-      $('.texture-canvas', this.$tabContent).each( (i, ele) => {
-        let $ele = $(ele);
-        let $canvas = $('<canvas/>');
-        $ele.append($canvas);
-        this.GameImageToCanvas($canvas[0], $ele.attr('texture'));
-      });
-
-      this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
-
-      this.verticalTabs = new VerticalTabs(this.$verticalTabs);
-
-      this.$tabContent.css({overflow: 'hidden'});
-
-      this.$previewContainer = $(this.ElementId('#utp-preview'), this.$tabContent);
-
-      this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
-
-      this.ui3DRenderer = new UI3DRenderer({
-        width: this.$preview.width(),
-        height: this.$preview.height()
-      });
-
-      this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
-
-      this.$previewContainer.append( this.ui3DRenderer.canvas );
-
-      console.log( this.$firstName );
-
-      this.onResize();
-
-      if(this.gff != null)
-        this.PopulateFields();
-
-      if(this.file != null)
-        this.OpenFile(this.file);
-
-      this.Update();
-
+    $('.texture-canvas', this.$tabContent).each( (i, ele) => {
+      let $ele = $(ele);
+      let $canvas = $('<canvas/>');
+      $ele.append($canvas);
+      this.GameImageToCanvas($canvas[0], $ele.attr('texture'));
     });
+
+    this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
+
+    this.verticalTabs = new VerticalTabs(this.$verticalTabs);
+
+    this.$tabContent.css({overflow: 'hidden'});
+
+    this.$previewContainer = $(this.ElementId('#utp-preview'), this.$tabContent);
+
+    this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
+
+    this.ui3DRenderer = new UI3DRenderer({
+      width: this.$preview.width(),
+      height: this.$preview.height()
+    });
+
+    this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+
+    this.$previewContainer.append( this.ui3DRenderer.canvas );
+
+    console.log( this.$firstName );
+
+    this.onResize();
+
+    if(this.gff != null)
+      this.PopulateFields();
+
+    if(this.file != null)
+      this.OpenFile(this.file);
+
+    this.Update();
 
   }
 

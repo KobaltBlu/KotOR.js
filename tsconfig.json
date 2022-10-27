@@ -29,7 +29,7 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/KotOR.ts"],
+  "include": ["src/KotOR.ts", "src/types"],
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],

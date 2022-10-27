@@ -202,7 +202,6 @@ export class MenuTop {
       ]},
       {name: 'View', items: [
         {name: 'Left Pane Toggle', onClick: () => {
-          //@ts-expect-error
           $('#container').layout().toggle('west');
         }},
         /*{name: 'Right Pane Toggle', onClick: () => {

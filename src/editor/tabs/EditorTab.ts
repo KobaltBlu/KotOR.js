@@ -8,6 +8,7 @@ import { Forge } from "../Forge";
 import { Project } from "../Project";
 
 export class EditorTab {
+  template: any = '';
   isDestroyed: boolean;
   editorFile: any;
   id: any;
@@ -85,6 +86,20 @@ export class EditorTab {
     }
     this.editorFileUpdated();
 
+  }
+
+  initContentTemplate(){
+    let data: any = {
+      tabId: this.id
+    };
+
+    let template = this.template.replace(
+      /{(\w*)}/g,
+      function(m: any,key: string){
+        return data.hasOwnProperty(key)?data[key]:"";
+      }
+    );
+    this.$tabContent.append(template);
   }
 
   editorFileUpdated(){

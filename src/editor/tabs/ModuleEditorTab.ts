@@ -13,7 +13,6 @@ import { GFFObject } from "../../resource/GFFObject";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { AsyncLoop } from "../../utility/AsyncLoop";
 import { EditorControlsCameraMode } from "../enum/EditorControlsCameraMode";
-import { TemplateEngine } from "../TemplateEngine";
 import { TemplateResRefPickerWizard } from "../wizards";
 import { UIItem } from "../ui/UIItem";
 import { Forge } from "../Forge";
@@ -25,7 +24,10 @@ import { EditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "./";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { Signal } from "signals";
 
+import template from "../templates/editor-module-3d.html";
+
 export class ModuleEditorTab extends EditorTab {
+  template: string = template;
   scene: THREE.Scene;
   module: Module;
 
@@ -276,20 +278,16 @@ export class ModuleEditorTab extends EditorTab {
       objectRemoved: new Signal()
     };
 
-    TemplateEngine.GetTemplateAsync('templates/editor-module-3d.html', {tabId: this.id}, (tpl: string) => {
-      this.$tabContent.append(tpl);
+    this.initContentTemplate();
 
-      this.$container = $(this.ElementId('#container'), this.$tabContent);
-      this.$containerRenderer = $(this.ElementId('#renderer'), this.$tabContent);
-      this.$containerScene = $(this.ElementId('#project-templates'), this.$tabContent);
-      this.$containerExplorer = $(this.ElementId('#project-explorer'), this.$tabContent);
-      this.$containerObjProps = $(this.ElementId('#object-properties'), this.$tabContent);
+    this.$container = $(this.ElementId('#container'), this.$tabContent);
+    this.$containerRenderer = $(this.ElementId('#renderer'), this.$tabContent);
+    this.$containerScene = $(this.ElementId('#project-templates'), this.$tabContent);
+    this.$containerExplorer = $(this.ElementId('#project-explorer'), this.$tabContent);
+    this.$containerObjProps = $(this.ElementId('#object-properties'), this.$tabContent);
 
-      //@ts-expect-error
-      this.$container.layout();
-      this.Init();
-
-    });
+    this.$container.layout();
+    this.Init();
 
   }
 

@@ -1,10 +1,10 @@
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { AppearanceLoader } from "../AppearanceLoader";
-import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { Wizard } from "./";
 import * as THREE from "three";
+import template from "../templates/modal-creature-appearance.html";
 
 export class CreatureAppearanceWizard extends Wizard {
   appearance_id: number;
@@ -21,77 +21,69 @@ export class CreatureAppearanceWizard extends Wizard {
     this.appearance_id = -1;
 
     //Load the HTML from the template file
-    TemplateEngine.GetTemplateAsync('templates/modal-creature-appearance.html', null, (tpl: string) => {
-      this.$wizard = $(tpl);
+    this.$wizard = $(template);
 
-      //DOM Elements
-      this.$list = $('#modal-creature-appearance-list', this.$wizard);
-      this.$btnChoose = $('#modal-creature-appearance-choose', this.$wizard);
+    //DOM Elements
+    this.$list = $('#modal-creature-appearance-list', this.$wizard);
+    this.$btnChoose = $('#modal-creature-appearance-choose', this.$wizard);
 
-      this.$btnChoose.on('click', (e: any) => {
+    this.$btnChoose.on('click', (e: any) => {
 
-        if(onSelect != null && typeof onSelect === 'function')
-          onSelect(this.appearance_id);
+      if(onSelect != null && typeof onSelect === 'function')
+        onSelect(this.appearance_id);
 
-        this.ui3DRenderer.Destroy();
-        this.ui3DRenderer = null;
+      this.ui3DRenderer.Destroy();
+      this.ui3DRenderer = null;
 
-        this.Close();
-
-      });
-
-      //Add the new wizard to the DOM
-      $('body').append(this.$wizard);
-      this.$wizard.filter('.modal').modal({
-        backdrop: 'static',
-        keyboard: false
-      });
-
-      let dims = this.GetCellDimensions();
-
-      this.ui3DRenderer = new UI3DRenderer({
-        width: dims.width,
-        height: dims.height
-      });
-      
-      this.appearanceCount = TwoDAManager.datatables.get('appearance')?.RowCount;
-
-      this.queue = [];
-
-      for(let i = 0; i < this.appearanceCount; i++){
-        let $appearanceBlock = $('<div class="col-xs-3 appearance-block" />');
-
-        let appearanceData = TwoDAManager.datatables.get('appearance')?.rows[i];
-
-        $appearanceBlock.addClass('noselect').addClass('model-thumbnail').attr('tabindex', 1);
-        ($appearanceBlock as any).appId = appearanceData['(Row Label)'];
-        ($appearanceBlock as any).isRendered = false;
-
-        let $image = $('<img style="visibility: hidden;"/>');
-        $image.width(dims.width).height(dims.height);
-
-        $appearanceBlock.append($image).append('<b>'+appearanceData['label']+'</b>');
-
-        this.$list.append($appearanceBlock);
-
-        this.queue[appearanceData['(Row Label)']] = $appearanceBlock;
-
-        $appearanceBlock.click( (e: any) => {
-          e.preventDefault();
-          $('.appearance-block', this.$list).removeClass('selected');
-          $appearanceBlock.addClass('selected');
-        });
-
-
-
-
-
-      }
-
-      this.Update();
-
+      this.Close();
 
     });
+
+    //Add the new wizard to the DOM
+    $('body').append(this.$wizard);
+    this.$wizard.filter('.modal').modal({
+      backdrop: 'static',
+      keyboard: false
+    });
+
+    let dims = this.GetCellDimensions();
+
+    this.ui3DRenderer = new UI3DRenderer({
+      width: dims.width,
+      height: dims.height
+    });
+    
+    this.appearanceCount = TwoDAManager.datatables.get('appearance')?.RowCount;
+
+    this.queue = [];
+
+    for(let i = 0; i < this.appearanceCount; i++){
+      let $appearanceBlock = $('<div class="col-xs-3 appearance-block" />');
+
+      let appearanceData = TwoDAManager.datatables.get('appearance')?.rows[i];
+
+      $appearanceBlock.addClass('noselect').addClass('model-thumbnail').attr('tabindex', 1);
+      ($appearanceBlock as any).appId = appearanceData['(Row Label)'];
+      ($appearanceBlock as any).isRendered = false;
+
+      let $image = $('<img style="visibility: hidden;"/>');
+      $image.width(dims.width).height(dims.height);
+
+      $appearanceBlock.append($image).append('<b>'+appearanceData['label']+'</b>');
+
+      this.$list.append($appearanceBlock);
+
+      this.queue[appearanceData['(Row Label)']] = $appearanceBlock;
+
+      $appearanceBlock.click( (e: any) => {
+        e.preventDefault();
+        $('.appearance-block', this.$list).removeClass('selected');
+        $appearanceBlock.addClass('selected');
+      });
+
+    }
+
+    this.Update();
 
   }
 

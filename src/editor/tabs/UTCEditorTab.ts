@@ -1,7 +1,6 @@
 import * as path from "path";
 import { ModuleCreatureArmorSlot } from "../../enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
-import { TemplateLoader } from "../../loaders/TemplateLoader";
 import { TLKManager } from "../../managers/TLKManager";
 import { ModuleCreature, ModuleItem } from "../../module";
 import { GFFField } from "../../resource/GFFField";
@@ -15,7 +14,6 @@ import { AsyncLoop } from "../../utility/AsyncLoop";
 import { EditorFile } from "../EditorFile";
 import { EditorTab, ImageViewerTab } from "./";
 import { FileLocationType } from "../enum/FileLocationType";
-import { TemplateEngine } from "../TemplateEngine";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { VerticalTabs } from "../VerticalTabs";
 import { Wizard } from "../wizards";
@@ -24,8 +22,12 @@ import { TextureLoader } from "../../loaders/TextureLoader";
 import { TwoDAManager } from "../../managers/TwoDAManager";
 import { Forge } from "../Forge";
 import { BIFManager } from "../../managers/BIFManager";
+import { TemplateLoader } from "../../loaders/TemplateLoader";
+
+import template from "../templates/editor-utc.html";
 
 export class UTCEditorTab extends EditorTab {
+  template: string = template;
   $firstName: JQuery<HTMLElement>;
   $lastName: JQuery<HTMLElement>;
   $tag: JQuery<HTMLElement>;
@@ -103,126 +105,124 @@ export class UTCEditorTab extends EditorTab {
     this.$tabName.text("Creature Editor");
     console.log(this.id);
     let id = this.id;
-    TemplateEngine.GetTemplateAsync('templates/editor-utc.html', {tabId: id}, (tpl: string) => {
-      this.$tabContent.append(tpl);
-
-      this.$firstName = $(this.ElementId('#utc-first-name'), this.$tabContent);
-      this.$lastName = $(this.ElementId('#utc-last-name'), this.$tabContent);
-      this.$tag = $(this.ElementId('#utc-tag'), this.$tabContent);
-      this.$appearance = $(this.ElementId('#utc-appearance'), this.$tabContent);
-      this.$gender = $(this.ElementId('#utc-gender'), this.$tabContent);
-      this.$description = $(this.ElementId('#utc-description'), this.$tabContent);
-      this.$race = $(this.ElementId('#utc-race'), this.$tabContent);
-      this.$phenotype = $(this.ElementId('#utc-phenotype'), this.$tabContent);
-      this.$bodybag = $(this.ElementId('#utc-bodybag'), this.$tabContent);
-      this.$portrait = $(this.ElementId('#utc-portrait'), this.$tabContent);
-      this.$dialog = $(this.ElementId('#utc-dialog'), this.$tabContent);
-      this.$dialogInterrupt = $(this.ElementId('#utc-dialog-no-interrupt'), this.$tabContent);
-
-      //Stats
-      this.$str = $(this.ElementId('#utc-str'), this.$tabContent);
-      this.$dex = $(this.ElementId('#utc-dex'), this.$tabContent);
-      this.$con = $(this.ElementId('#utc-con'), this.$tabContent);
-      this.$int = $(this.ElementId('#utc-int'), this.$tabContent);
-      this.$wis = $(this.ElementId('#utc-wis'), this.$tabContent);
-      this.$cha = $(this.ElementId('#utc-cha'), this.$tabContent);
-      this.$fortbonus = $(this.ElementId('#utc-fortbonus'), this.$tabContent);
-      this.$refbonus = $(this.ElementId('#utc-refbonus'), this.$tabContent);
-      this.$willbonus = $(this.ElementId('#utc-willbonus'), this.$tabContent);
-
-      this.$naturalAC = $(this.ElementId('#utc-natural-ac'), this.$tabContent);
-      this.$walkRate = $(this.ElementId('#utc-walk-rate'), this.$tabContent);
-      this.$hitPoints = $(this.ElementId('#utc-hit-points'), this.$tabContent);
-      this.$currentHitPoints = $(this.ElementId('#utc-current-hit-points'), this.$tabContent);
-      this.$maxHitPoints = $(this.ElementId('#utc-max-hit-points'), this.$tabContent);
-
-      //Advanced
-      this.$templateResRef = $(this.ElementId('#utc-template-res-ref'), this.$tabContent);
-      this.$disarmable = $(this.ElementId('#utc-disarmable'), this.$tabContent);
-      this.$plot = $(this.ElementId('#utc-plot'), this.$tabContent);
-      this.$noPermDeath = $(this.ElementId('#utc-no-perm-death'), this.$tabContent);
-      this.$isPC = $(this.ElementId('#utc-is-pc'), this.$tabContent);
-      this.$min1HP = $(this.ElementId('#utc-min-1-hp'), this.$tabContent);
-      this.$subrace = $(this.ElementId('#utc-subrace'), this.$tabContent);
-      this.$challengeRating = $(this.ElementId('#utc-challenge-rating'), this.$tabContent);
-      this.$soundSetFile = $(this.ElementId('#utc-sound-set-file'), this.$tabContent);
-      this.$factionID = $(this.ElementId('#utc-faction-id'), this.$tabContent);
-      this.$perceptionRange = $(this.ElementId('#utc-perception-range'), this.$tabContent);
-
-      //Skills
-      this.$computerUse = $(this.ElementId('#utc-computer-use'), this.$tabContent);
-      this.$demolitions = $(this.ElementId('#utc-demolitions'), this.$tabContent);
-      this.$stealth = $(this.ElementId('#utc-stealth'), this.$tabContent);
-      this.$awareness = $(this.ElementId('#utc-awareness'), this.$tabContent);
-      this.$persuade = $(this.ElementId('#utc-persuade'), this.$tabContent);
-      this.$repair = $(this.ElementId('#utc-repair'), this.$tabContent);
-      this.$security = $(this.ElementId('#utc-security'), this.$tabContent);
-      this.$treatInjury = $(this.ElementId('#utc-treat-injury'), this.$tabContent);
-
-      this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
-      this.$utcTabContent = $(this.ElementId('#utc-tab-content'), this.$tabContent);
-
-
-      //Inventory
-      this.$iSlots = $(this.ElementId('#utc-inventory-slots'), this.$tabContent);
-      this.$iSlotImplant = $(this.ElementId('#utc-inventory-slot-implant'), this.$tabContent);
-      this.$iSlotHead = $(this.ElementId('#utc-inventory-slot-head'), this.$tabContent);
-      this.$iSlotWrists = $(this.ElementId('#utc-inventory-slot-wrists'), this.$tabContent);
-      this.$iSlotLArm = $(this.ElementId('#utc-inventory-slot-larm'), this.$tabContent);
-      this.$iSlotArmor = $(this.ElementId('#utc-inventory-slot-chest'), this.$tabContent);
-      this.$iSlotRArm = $(this.ElementId('#utc-inventory-slot-rarm'), this.$tabContent);
-      this.$iSlotLHand = $(this.ElementId('#utc-inventory-slot-lhand'), this.$tabContent);
-      this.$iSlotBelt = $(this.ElementId('#utc-inventory-slot-belt'), this.$tabContent);
-      this.$iSlotRHand = $(this.ElementId('#utc-inventory-slot-rhand'), this.$tabContent);
-
-      $('.texture-canvas', this.$tabContent).each( (i, ele) => {
-        let $ele = $(ele);
-        let $canvas = $('<canvas/>');
-        $ele.append($canvas);
-        this.GameImageToCanvas($canvas[0], $ele.attr('texture'), 60, 60);
-      });
-
-      this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
-
-      this.verticalTabs = new VerticalTabs(this.$verticalTabs);
-
-      this.$tabContent.css({overflow: 'hidden'});
-
-      this.$previewContainer = $(this.ElementId('#utc-preview'), this.$tabContent);
-
-      this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
       
+    this.initContentTemplate();
 
-      /*this.previewWidth = 150;
-      this.previewHeight = this.previewWidth * 2;
+    this.$firstName = $(this.ElementId('#utc-first-name'), this.$tabContent);
+    this.$lastName = $(this.ElementId('#utc-last-name'), this.$tabContent);
+    this.$tag = $(this.ElementId('#utc-tag'), this.$tabContent);
+    this.$appearance = $(this.ElementId('#utc-appearance'), this.$tabContent);
+    this.$gender = $(this.ElementId('#utc-gender'), this.$tabContent);
+    this.$description = $(this.ElementId('#utc-description'), this.$tabContent);
+    this.$race = $(this.ElementId('#utc-race'), this.$tabContent);
+    this.$phenotype = $(this.ElementId('#utc-phenotype'), this.$tabContent);
+    this.$bodybag = $(this.ElementId('#utc-bodybag'), this.$tabContent);
+    this.$portrait = $(this.ElementId('#utc-portrait'), this.$tabContent);
+    this.$dialog = $(this.ElementId('#utc-dialog'), this.$tabContent);
+    this.$dialogInterrupt = $(this.ElementId('#utc-dialog-no-interrupt'), this.$tabContent);
 
-      this.$preview.width(this.previewWidth).height(this.previewHeight);*/
+    //Stats
+    this.$str = $(this.ElementId('#utc-str'), this.$tabContent);
+    this.$dex = $(this.ElementId('#utc-dex'), this.$tabContent);
+    this.$con = $(this.ElementId('#utc-con'), this.$tabContent);
+    this.$int = $(this.ElementId('#utc-int'), this.$tabContent);
+    this.$wis = $(this.ElementId('#utc-wis'), this.$tabContent);
+    this.$cha = $(this.ElementId('#utc-cha'), this.$tabContent);
+    this.$fortbonus = $(this.ElementId('#utc-fortbonus'), this.$tabContent);
+    this.$refbonus = $(this.ElementId('#utc-refbonus'), this.$tabContent);
+    this.$willbonus = $(this.ElementId('#utc-willbonus'), this.$tabContent);
 
-      this.ui3DRenderer = new UI3DRenderer({
-        width: this.$preview.width(),
-        height: this.$preview.height()
-      });
+    this.$naturalAC = $(this.ElementId('#utc-natural-ac'), this.$tabContent);
+    this.$walkRate = $(this.ElementId('#utc-walk-rate'), this.$tabContent);
+    this.$hitPoints = $(this.ElementId('#utc-hit-points'), this.$tabContent);
+    this.$currentHitPoints = $(this.ElementId('#utc-current-hit-points'), this.$tabContent);
+    this.$maxHitPoints = $(this.ElementId('#utc-max-hit-points'), this.$tabContent);
 
-      this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+    //Advanced
+    this.$templateResRef = $(this.ElementId('#utc-template-res-ref'), this.$tabContent);
+    this.$disarmable = $(this.ElementId('#utc-disarmable'), this.$tabContent);
+    this.$plot = $(this.ElementId('#utc-plot'), this.$tabContent);
+    this.$noPermDeath = $(this.ElementId('#utc-no-perm-death'), this.$tabContent);
+    this.$isPC = $(this.ElementId('#utc-is-pc'), this.$tabContent);
+    this.$min1HP = $(this.ElementId('#utc-min-1-hp'), this.$tabContent);
+    this.$subrace = $(this.ElementId('#utc-subrace'), this.$tabContent);
+    this.$challengeRating = $(this.ElementId('#utc-challenge-rating'), this.$tabContent);
+    this.$soundSetFile = $(this.ElementId('#utc-sound-set-file'), this.$tabContent);
+    this.$factionID = $(this.ElementId('#utc-faction-id'), this.$tabContent);
+    this.$perceptionRange = $(this.ElementId('#utc-perception-range'), this.$tabContent);
 
-      this.$previewContainer.append( this.ui3DRenderer.canvas );
+    //Skills
+    this.$computerUse = $(this.ElementId('#utc-computer-use'), this.$tabContent);
+    this.$demolitions = $(this.ElementId('#utc-demolitions'), this.$tabContent);
+    this.$stealth = $(this.ElementId('#utc-stealth'), this.$tabContent);
+    this.$awareness = $(this.ElementId('#utc-awareness'), this.$tabContent);
+    this.$persuade = $(this.ElementId('#utc-persuade'), this.$tabContent);
+    this.$repair = $(this.ElementId('#utc-repair'), this.$tabContent);
+    this.$security = $(this.ElementId('#utc-security'), this.$tabContent);
+    this.$treatInjury = $(this.ElementId('#utc-treat-injury'), this.$tabContent);
 
-      console.log(this.$firstName);
+    this.$navBar = $('.navbar-sidebar-wizard-horizontal', this.$tabContent);
+    this.$utcTabContent = $(this.ElementId('#utc-tab-content'), this.$tabContent);
 
-      this.onResize();
 
-      if(this.gff instanceof GFFObject){
-        try{
-          this.PopulateFields();
-        }catch(e){ console.error(e); }
-      }
+    //Inventory
+    this.$iSlots = $(this.ElementId('#utc-inventory-slots'), this.$tabContent);
+    this.$iSlotImplant = $(this.ElementId('#utc-inventory-slot-implant'), this.$tabContent);
+    this.$iSlotHead = $(this.ElementId('#utc-inventory-slot-head'), this.$tabContent);
+    this.$iSlotWrists = $(this.ElementId('#utc-inventory-slot-wrists'), this.$tabContent);
+    this.$iSlotLArm = $(this.ElementId('#utc-inventory-slot-larm'), this.$tabContent);
+    this.$iSlotArmor = $(this.ElementId('#utc-inventory-slot-chest'), this.$tabContent);
+    this.$iSlotRArm = $(this.ElementId('#utc-inventory-slot-rarm'), this.$tabContent);
+    this.$iSlotLHand = $(this.ElementId('#utc-inventory-slot-lhand'), this.$tabContent);
+    this.$iSlotBelt = $(this.ElementId('#utc-inventory-slot-belt'), this.$tabContent);
+    this.$iSlotRHand = $(this.ElementId('#utc-inventory-slot-rhand'), this.$tabContent);
 
-      if(this.file != null)
-        this.OpenFile(this.file);
-
-      this.Update();
-
+    $('.texture-canvas', this.$tabContent).each( (i, ele) => {
+      let $ele = $(ele);
+      let $canvas = $('<canvas/>');
+      $ele.append($canvas);
+      this.GameImageToCanvas($canvas[0], $ele.attr('texture'), 60, 60);
     });
+
+    this.$verticalTabs = $('.vertical-tabs', this.$tabContent);
+
+    this.verticalTabs = new VerticalTabs(this.$verticalTabs);
+
+    this.$tabContent.css({overflow: 'hidden'});
+
+    this.$previewContainer = $(this.ElementId('#utc-preview'), this.$tabContent);
+
+    this.$preview = $('<img style="visibility: hidden; width: 100%; height: 100%;"/>');
+    
+
+    /*this.previewWidth = 150;
+    this.previewHeight = this.previewWidth * 2;
+
+    this.$preview.width(this.previewWidth).height(this.previewHeight);*/
+
+    this.ui3DRenderer = new UI3DRenderer({
+      width: this.$preview.width(),
+      height: this.$preview.height()
+    });
+
+    this.ui3DRenderer.onBeforeRender = this.RenderCallback.bind(this);
+
+    this.$previewContainer.append( this.ui3DRenderer.canvas );
+
+    console.log(this.$firstName);
+
+    this.onResize();
+
+    if(this.gff instanceof GFFObject){
+      try{
+        this.PopulateFields();
+      }catch(e){ console.error(e); }
+    }
+
+    if(this.file != null)
+      this.OpenFile(this.file);
+
+    this.Update();
 
   }
 

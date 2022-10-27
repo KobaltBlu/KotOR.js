@@ -60,8 +60,7 @@ export class MovieViewerTab extends EditorTab {
 
       }
     });
-
-    //@ts-expect-error
+    
     $('#container').layout({ applyDefaultStyles: false,
       onresize: () => {
         try{

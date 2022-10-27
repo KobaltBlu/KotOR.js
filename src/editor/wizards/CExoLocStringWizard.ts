@@ -1,7 +1,7 @@
 import { TLKManager } from "../../managers/TLKManager";
 import { CExoLocSubString } from "../../resource/CExoLocSubString";
 import { CExoLocSubStringWizard, Wizard } from "./";
-import { TemplateEngine } from "../TemplateEngine";
+import template from "../templates/modal-cexolocstring.html";
 
 export class CExoLocStringWizard extends Wizard {
   $resref: JQuery<HTMLElement>;
@@ -21,86 +21,83 @@ export class CExoLocStringWizard extends Wizard {
     console.log('CExoLocStringWizard', this);
 
     //Load the HTML from the template file
-    TemplateEngine.GetTemplateAsync('templates/modal-cexolocstring.html', null, (tpl: string) => {
-      this.$wizard = $(tpl);
+    this.$wizard = $(template);
 
-      //KotOR Elements
-      this.$resref = $('#modal-cexolocstring-resref', this.$wizard);
-      this.$string = $('#modal-cexolocstring-string', this.$wizard);
-      this.$btnAddString = $('#modal-cexolocstring-btn-add-string', this.$wizard);
-      this.$listStrings = $('#modal-cexolocstring-substrings', this.$wizard);
-      this.$btnSave = $('#modal-cexolocstring-save', this.$wizard);
+    //KotOR Elements
+    this.$resref = $('#modal-cexolocstring-resref', this.$wizard);
+    this.$string = $('#modal-cexolocstring-string', this.$wizard);
+    this.$btnAddString = $('#modal-cexolocstring-btn-add-string', this.$wizard);
+    this.$listStrings = $('#modal-cexolocstring-substrings', this.$wizard);
+    this.$btnSave = $('#modal-cexolocstring-save', this.$wizard);
 
-      this.$resref.val(this.args['CExoLocString'].RESREF);
+    this.$resref.val(this.args['CExoLocString'].RESREF);
 
-      this.$resref.on('input', (e: any) => {
-        let val = parseInt(this.$resref.val() as string);
-        if(val > -1){
-          this.$string.val( TLKManager.TLKStrings[ val ].Value );
-        }else{
-          this.$string.val('')
-        }
-        
-      }).on('keyup', (e: any) => {
-        if(this.$resref.val() == '-'){
-          this.$resref.val(-1);
-        }
-
-        this.$resref.val(this.$resref.val().toString().replace(/^-?[0-9]\d*(\.\d+)?$/,''));
-      });
-
-      let val = parseInt(this.$resref.val().toString());
+    this.$resref.on('input', (e: any) => {
+      let val = parseInt(this.$resref.val() as string);
       if(val > -1){
         this.$string.val( TLKManager.TLKStrings[ val ].Value );
       }else{
         this.$string.val('')
       }
+      
+    }).on('keyup', (e: any) => {
+      if(this.$resref.val() == '-'){
+        this.$resref.val(-1);
+      }
 
-      this.$btnAddString.on('click', (e: any) => {
-        e.preventDefault();
+      this.$resref.val(this.$resref.val().toString().replace(/^-?[0-9]\d*(\.\d+)?$/,''));
+    });
 
-        let wiz = new CExoLocSubStringWizard({
-          onSave: (subString: CExoLocSubString) => {
-            console.log(subString);
-            this.args['CExoLocString'].AddSubString( subString );
-            let $subString = this.BuildSubStringElement( { subString: subString } );
-            if($subString != null){
-              this.$listStrings.append($subString);
-            }
+    let val = parseInt(this.$resref.val().toString());
+    if(val > -1){
+      this.$string.val( TLKManager.TLKStrings[ val ].Value );
+    }else{
+      this.$string.val('')
+    }
+
+    this.$btnAddString.on('click', (e: any) => {
+      e.preventDefault();
+
+      let wiz = new CExoLocSubStringWizard({
+        onSave: (subString: CExoLocSubString) => {
+          console.log(subString);
+          this.args['CExoLocString'].AddSubString( subString );
+          let $subString = this.BuildSubStringElement( { subString: subString } );
+          if($subString != null){
+            this.$listStrings.append($subString);
           }
-        });
-
+        }
       });
 
-      $.each(this.args['CExoLocString'].GetStrings(), (i, substring) => {
-        let $subString = this.BuildSubStringElement( { subString: substring } );
-        this.$listStrings.append( $subString );
-      });
+    });
 
-      this.$btnSave.on('click', (e: any) => {
-        e.preventDefault();
+    $.each(this.args['CExoLocString'].GetStrings(), (i, substring) => {
+      let $subString = this.BuildSubStringElement( { subString: substring } );
+      this.$listStrings.append( $subString );
+    });
 
-        this.args['CExoLocString'].RESREF = this.$resref.val();
+    this.$btnSave.on('click', (e: any) => {
+      e.preventDefault();
 
-        if(this.args.onSave != null)
-          this.args.onSave();
+      this.args['CExoLocString'].RESREF = this.$resref.val();
 
-        this.Close();
+      if(this.args.onSave != null)
+        this.args.onSave();
 
-      });
+      this.Close();
+
+    });
 
 
-      $('body').append(this.$wizard);
-      this.$wizard.filter('.modal').modal({
-          backdrop: 'static',
-          keyboard: false
-      });
+    $('body').append(this.$wizard);
+    this.$wizard.filter('.modal').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
 
-      this.$wizard.on('hidden.bs.modal', () => {
-        this.$wizard.data('bs.modal', null);
-        this.$wizard.remove();
-      });
-
+    this.$wizard.on('hidden.bs.modal', () => {
+      this.$wizard.data('bs.modal', null);
+      this.$wizard.remove();
     });
 
   }

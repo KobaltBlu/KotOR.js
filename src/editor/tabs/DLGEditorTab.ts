@@ -2,9 +2,10 @@ import { TLKManager } from "../../managers/TLKManager";
 import { GFFObject } from "../../resource/GFFObject";
 import { EditorFile } from "../EditorFile";
 import { EditorTab } from "./";
-import { TemplateEngine } from "../TemplateEngine";
+import template from "../templates/editor-dlg.html";
 
 export class DLGEditorTab extends EditorTab {
+  template: string = template;
   treeIndex: number;
   $dialogPanes: JQuery<HTMLElement>;
   $nodeTreeContainer: JQuery<HTMLElement>;
@@ -27,44 +28,37 @@ export class DLGEditorTab extends EditorTab {
 
     this.singleInstance = false;
     this.$tabName.text("Dialog Editor");
-    console.log(this.id);
-    let id = this.id;
-    TemplateEngine.GetTemplateAsync('templates/editor-dlg.html', {tabId: id}, (tpl: string) => {
-      this.$tabContent.append(tpl);
+    
+    this.initContentTemplate();
 
-      this.$dialogPanes = $(this.ElementId('#dialog-panes'), this.$tabContent);
-      this.$nodeTreeContainer = $(this.ElementId('#node-tree-container'), this.$tabContent);
-      this.$nodePropsContainer = $(this.ElementId('#node-properties-container'), this.$tabContent);
+    this.$dialogPanes = $(this.ElementId('#dialog-panes'), this.$tabContent);
+    this.$nodeTreeContainer = $(this.ElementId('#node-tree-container'), this.$tabContent);
+    this.$nodePropsContainer = $(this.ElementId('#node-properties-container'), this.$tabContent);
 
-      this.$nodeTreeRootNode = $('<ul class="tree css-treeview" style="margin: 10px;" />');
+    this.$nodeTreeRootNode = $('<ul class="tree css-treeview" style="margin: 10px;" />');
 
-      this.$nodeTreeContainer.append(this.$nodeTreeRootNode);
+    this.$nodeTreeContainer.append(this.$nodeTreeRootNode);
 
-      //@ts-expect-error
-      this.$dialogPanes.layout({
-        applyDefaultStyles: false,
-        'onopen': (pane: any) => {
-        },
-        'onclose': (pane: any) => {
-        },
-        'onresize': (pane: any) => {
-        },
-        'south': {
-          size: 200
-        }
-      });
-
-      this.$tabContent.css({overflow: 'hidden'});
-
-      if(this.gff != null)
-        this.PopulateFields();
-
-      if(this.file != null)
-        this.OpenFile(this.file);
-
-
-
+    this.$dialogPanes.layout({
+      applyDefaultStyles: false,
+      'onopen': (pane: any) => {
+      },
+      'onclose': (pane: any) => {
+      },
+      'onresize': (pane: any) => {
+      },
+      'south': {
+        size: 200
+      }
     });
+
+    this.$tabContent.css({overflow: 'hidden'});
+
+    if(this.gff != null)
+      this.PopulateFields();
+
+    if(this.file != null)
+      this.OpenFile(this.file);
 
   }
 

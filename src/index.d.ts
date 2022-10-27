@@ -17,3 +17,8 @@ declare global {
     ConfigClient: ConfigClient
   }
 }
+
+declare module '*.html' {
+  const content: string;
+  export default content;
+}
