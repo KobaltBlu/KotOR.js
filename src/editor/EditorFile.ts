@@ -144,19 +144,19 @@ export class EditorFile {
 
               if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
-                  this.buffer = buffer;
+                  this.buffer = Buffer.from(buffer);
                   let mdl_mdx_key = ResourceTypes.mdx;
                   if(this.reskey == ResourceTypes.mdx){
                     mdl_mdx_key = ResourceTypes.mdl;
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(buffer, this.buffer);
                       }
                     });
                   }else{
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(this.buffer, buffer);
                       }
@@ -168,14 +168,14 @@ export class EditorFile {
                 if(this.reskey == ResourceTypes.mdx){
                   mdl_mdx_key = ResourceTypes.mdl;
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(buffer, this.buffer);
                     }
                   });
                 }else{
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(this.buffer, buffer);
                     }
@@ -191,19 +191,19 @@ export class EditorFile {
 
               if(!isBuffer(this.buffer)){
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
-                  this.buffer = buffer;
+                  this.buffer = Buffer.from(buffer);
                   let mdl_mdx_key = ResourceTypes.mdx;
                   if(this.reskey == ResourceTypes.mdx){
                     mdl_mdx_key = ResourceTypes.mdl;
                     archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(buffer, this.buffer);
                       }
                     });
                   }else{
                     archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(this.buffer, buffer);
                       }
@@ -215,14 +215,14 @@ export class EditorFile {
                 if(this.reskey == ResourceTypes.mdx){
                   mdl_mdx_key = ResourceTypes.mdl;
                   archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(buffer, this.buffer);
                     }
                   });
                 }else{
                   archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(this.buffer, buffer);
                     }
@@ -242,14 +242,14 @@ export class EditorFile {
                   if(this.reskey == ResourceTypes.mdx){
                     mdl_mdx_key = ResourceTypes.mdl;
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(buffer, this.buffer);
                       }
                     });
                   }else{
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                      this.buffer2 = buffer;
+                      this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
                         onLoad(this.buffer, buffer);
                       }
@@ -261,14 +261,14 @@ export class EditorFile {
                 if(this.reskey == ResourceTypes.mdx){
                   mdl_mdx_key = ResourceTypes.mdl;
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(buffer, this.buffer);
                     }
                   });
                 }else{
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
-                    this.buffer2 = buffer;
+                    this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
                       onLoad(this.buffer, buffer);
                     }
