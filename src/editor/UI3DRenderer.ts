@@ -2,6 +2,7 @@
  */
 
 import * as THREE from "three";
+import { TextureLoader } from "../loaders/TextureLoader";
 
 /* @file
  * The UI3DRenderer class.
@@ -22,6 +23,7 @@ export class UI3DRenderer {
   $canvas: JQuery<any>;
   scene: THREE.Scene;
   light: THREE.AmbientLight;
+  loadingTextures: any;
 
   constructor( args: any = {} ){
 
@@ -117,6 +119,13 @@ export class UI3DRenderer {
     //Custom render logic can run here
     if(typeof this.onBeforeRender === 'function')
       this.onBeforeRender(this, delta);
+
+    if(!this.loadingTextures && TextureLoader.queue.length){
+      this.loadingTextures = true;
+      TextureLoader.LoadQueue( () => {
+        this.loadingTextures = false;
+      });
+    } 
 
     this.renderer.render( this.scene, this.camera );
   }
