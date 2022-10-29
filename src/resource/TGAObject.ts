@@ -34,7 +34,7 @@ export class TGAObject {
     if(typeof options.file === 'string'){
       this.file = Buffer.alloc(0);
     }else if(isBuffer(options.file)){
-
+      this.file = options.file;
     }
 
     this.filename = options.filename;
@@ -162,7 +162,7 @@ export class TGAObject {
     const tga = new TGAObject();
     if(canvas instanceof HTMLCanvasElement || canvas instanceof OffscreenCanvas){
 
-      let ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D|null = canvas.getContext('2d');
+      let ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
       if(ctx){
         tga.header.width = canvas.width;
         tga.header.height = canvas.height;
