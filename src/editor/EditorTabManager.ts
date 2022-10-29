@@ -2,7 +2,7 @@ import { EditorTab } from "./tabs";
 import { Signal } from "signals";
 
 export class EditorTabManager {
-  currentTab: any;
+  currentTab: EditorTab;
   tabs: EditorTab[] = [];
   $tabs: any;
   $tabsScrollControl: JQuery<HTMLElement>;
