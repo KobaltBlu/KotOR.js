@@ -136,6 +136,47 @@ export class GameInitializer {
     }
   }
 
+  static LoadLips(){
+    let data_dir = 'lips';
+    return new Promise<void>( (resolve, reject) => {
+      GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
+        let modules = filenames.map(function(file) {
+          let filename = file.split(path.sep).pop();
+          let args = filename.split('.');
+          return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+        }).filter(function(file_obj){
+          return file_obj.ext == 'mod';
+        });
+        let loop = new AsyncLoop({
+          array: modules,
+          onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
+            switch(module_obj.ext){
+              case 'mod':
+                new ERFObject(path.join(data_dir, module_obj.filename), (mod: ERFObject) => {
+                  if(mod instanceof ERFObject){
+                    mod.group = 'Lips';
+                    ERFManager.addERF(module_obj.name, mod);
+                  }
+                  asyncLoop.next();
+                });
+              break;
+              default:
+                console.warn('GameInitializer.LoadLips', 'Encountered incorrect filetype', module_obj);
+                asyncLoop.next();
+              break;
+            }
+          }
+        });
+        loop.iterate(() => {
+          resolve();
+        });
+      }).catch( (err) => {
+        console.warn('GameInitializer.LoadLips', err);
+        resolve();
+      });
+    });
+  }
+
   static LoadModules(onSuccess?: Function){
     let data_dir = 'modules';
     LoadingScreen.main.SetMessage('Loading: Module Archives');
@@ -179,8 +220,10 @@ export class GameInitializer {
         }
       });
       loop.iterate(() => {
-        if(typeof onSuccess === 'function')
-          onSuccess();
+        GameInitializer.LoadLips().then( () => {
+          if(typeof onSuccess === 'function')
+            onSuccess();
+        });
       });
     }).catch( (err) => {
       console.warn('GameInitializer.LoadModules', err);
