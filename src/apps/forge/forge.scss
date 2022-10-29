@@ -320,9 +320,9 @@ bottom:0;
 }
 
 #loader .loading-container {
-position: fixed;
-top: calc(50% + 10px);
-left: calc(50% - 24px);
+  // position: fixed;
+  // top: calc(50% + 10px);
+  // left: calc(50% - 24px);
 }
 
 #loader .loading-container .loading-message {
@@ -745,6 +745,11 @@ height: 100%;
   background: #212121;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.tabs-menu.tabs-flex-wrap {
+  display: flex;
+  flex-flow: wrap;
 }
 
 .tabs-menu li {
@@ -1985,6 +1990,20 @@ text-shadow: 0 1px 0 rgb(14, 72, 57);
   color: #777777;
   font-weight: bold;
   margin-left: 5px;
+}
+
+.modal-backdrop {
+  background-color: #00000075;
+}
+
+.modal-buttons-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #272727;
 }
 
 @import '../game/styles/loader.scss';
