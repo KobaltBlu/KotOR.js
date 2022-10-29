@@ -55,16 +55,18 @@ export class ImageViewerTab extends EditorTab {
     });
 
     this.$contentWrapper[0].addEventListener('wheel', (e) => {
-      if(e.deltaY < 0){
-        this.canvasScale -= 0.25;
-        if(this.canvasScale < 0.25){
-          this.canvasScale = 0.25;
+      if(!!e.ctrlKey){
+        if(e.deltaY < 0){
+          this.canvasScale -= 0.25;
+        }else{
+          this.canvasScale += 0.25;
         }
-      }else{
-        this.canvasScale += 0.25;
-        if(this.canvasScale > 10){
-          this.canvasScale = 10;
-        }
+      }
+      if(this.canvasScale < 0.25){
+        this.canvasScale = 0.25;
+      }
+      if(this.canvasScale > 10){
+        this.canvasScale = 10;
       }
       this.$canvas.css({
         width: this.width,
