@@ -1165,7 +1165,7 @@ _options
             //----------------------------//
             if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               //Contstraint
-              const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length * 4 ); //Works with indices
+              const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length ); //Works with indices
               geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyArray( (odysseyNode as OdysseyModelNodeDangly).danglyVec4 ) ); //Works with indices
             }
             

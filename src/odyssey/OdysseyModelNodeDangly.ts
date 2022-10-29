@@ -35,7 +35,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
     
     this.constraints = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.ModelDataOffset + contraintArray.offset, contraintArray.count);
     this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.danglyMDLOffset);
-    this.danglyVec4 = new Array(contraintArray.count);
+    this.danglyVec4 = [];
     for(let i = 0; i < contraintArray.count; i++){
       this.danglyVec4.push(
         this.odysseyModel.mdlReader.ReadSingle(), 
