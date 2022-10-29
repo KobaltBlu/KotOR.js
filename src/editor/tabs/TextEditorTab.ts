@@ -40,7 +40,7 @@ export class TextEditorTab extends EditorTab {
     });
 
     this.editor.getModel().onDidChangeContent((event: any) => {
-      this.editorFile.unsaved_changes = (this.lastSavedState != this.editor.getModel().getValue());
+      this.file.unsaved_changes = (this.lastSavedState != this.editor.getModel().getValue());
       // this.triggerLinterTimeout();
     });
 
