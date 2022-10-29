@@ -562,7 +562,7 @@ export class TextureLoader {
               if(tex.material.uniforms.animationVector){
                 if(bumpMap.txi.numx){
                   tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
-                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.x;
                   bumpMap.updateMatrix();
                 }
 
