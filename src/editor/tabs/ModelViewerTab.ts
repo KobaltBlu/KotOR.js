@@ -59,8 +59,11 @@ export class ModelViewerTab extends EditorTab {
   $selected_object: JQuery<HTMLElement>;
   $input_name: JQuery<HTMLElement>;
   $input_texture: JQuery<HTMLElement>;
+  $btn_reset_position: JQuery<HTMLElement>;
+  $btn_center_position: JQuery<HTMLElement>;
   constructor(file: EditorFile, isLocal = false){
     super();
+    console.log('ModelViewerTab', this);
     this.animLoop = false;
     this.deltaTime = 0;
     console.log('Model Viewer');
@@ -194,10 +197,11 @@ export class ModelViewerTab extends EditorTab {
     (this.$ui_selected[0] as any).$content.html(`
       <div class="tab-host">
         <div class="tabs">
-          <ul class="tabs-menu">
+          <ul class="tabs-menu tabs-flex-wrap">
             <li class="btn btn-tab" rel="#camera">Camera</li>
             <li class="btn btn-tab" rel="#animations">Animation</li>
             <li class="btn btn-tab" rel="#selected_object">Nodes</li>
+            <li class="btn btn-tab" rel="#object_utils">Utils</li>
           </ul>
         </div>
         <div class="tab-container">
@@ -221,6 +225,11 @@ export class ModelViewerTab extends EditorTab {
             <button id="selected_change_texture">Change Texture</button>
 
             <ul id="node_tree_ele" class="tree css-treeview js"></ul>
+          </div>
+          <div class="tab-content" id="object_utils">
+            <b>Position</b><br>
+            <button id="btn_reset_position">Reset</button>
+            <button id="btn_center_position">Center</button>
           </div>
         </div>
       </div>
@@ -356,6 +365,20 @@ export class ModelViewerTab extends EditorTab {
     //this.$nodeTreeTab = $('#node_tree', (this.$ui_selected as any).$tabHost);
     this.$nodeTreeEle = $('#node_tree_ele', (this.$ui_selected as any).$tabHost);
 
+    //Object Utils
+    this.$btn_reset_position = $('#btn_reset_position', (this.$ui_selected[0] as any).$content);
+    this.$btn_center_position = $('#btn_center_position', (this.$ui_selected[0] as any).$content);
+
+    this.$btn_reset_position.on('click', (e) => {
+      e.preventDefault();
+      this.resetObjectPosition();
+    });
+
+    this.$btn_center_position.on('click', (e) => {
+      e.preventDefault();
+      this.centerObjectPosition();
+    });
+
   }
 
   OpenFile(file: EditorFile){
@@ -385,17 +408,7 @@ export class ModelViewerTab extends EditorTab {
                 this.UpdateUI();
                 this.Render();
                 this.BuildNodeTree();
-                setTimeout( () => {
-                  model.box.getCenter(model.position);
-                  // if(!isNaN(center.length())){
-                  //   //Center the object to 0
-                  //   model.position.set(-center.x, -center.y, -center.z);
-                  //   //Stand the object on the floor by adding half it's height back to it's position
-                  //   //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
-                  // }else{
-                  //   model.position.set(0, 0, 0);
-                  // }
-                }, 10);
+                this.resetObjectPosition();
               });
             }
           });
@@ -408,6 +421,25 @@ export class ModelViewerTab extends EditorTab {
 
     }    
 
+  }
+
+  centerObjectPosition(){
+    this.resetObjectPosition();
+    let center = new THREE.Vector3(0, 0, 0);
+    this.model.box.setFromObject(this.model);
+    this.model.box.getCenter(center);
+    if(!isNaN(center.length())){
+      //Center the object to 0
+      this.model.position.set(-center.x, -center.y, -center.z);
+      //Stand the object on the floor by adding half it's height back to it's position
+      //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
+    }else{
+      this.model.position.set(0, 0, 0);
+    }
+  }
+
+  resetObjectPosition(){
+    this.model.position.set(0, 0, 0);
   }
 
   onResize() {
@@ -540,7 +572,7 @@ export class ModelViewerTab extends EditorTab {
 
 
     console.log('Signal', 'objectSelected', this.selected);
-    this.selectionBox.userData.object = this.selected;
+    (this.selectionBox as any).object = this.selected;
     this.selectionBox.visible = true;
     this.selectionBox.update();
 
@@ -548,8 +580,8 @@ export class ModelViewerTab extends EditorTab {
 
     if(this.selected instanceof THREE.Mesh){
       this.$selected_object.show();
-      this.$input_name.val(this.selected.userData.node.name);
-      this.$input_texture.val(this.selected.userData.node.TextureMap1);
+      this.$input_name.val((this.selected as any).odysseyNode.name);
+      this.$input_texture.val((this.selected as any).odysseyNode.TextureMap1);
     }else if(this.selected instanceof THREE.Group){
       for(let i = 0; i < this.selected.children.length; i++){
         let child = this.selected.children[i];
