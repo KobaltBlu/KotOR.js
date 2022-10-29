@@ -6,9 +6,10 @@ import { EditorFile } from "../EditorFile";
 import { FileTypeManager } from "../FileTypeManager";
 import { Forge } from "../Forge";
 import { Project } from "../Project";
-import { LIPEditorTab, QuickStartTab, ScriptEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "../tabs";
+import { EditorTab, LIPEditorTab, QuickStartTab, ScriptEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "../tabs";
 import { NewProjectWizard } from "../wizards";
 import * as path from "path";
+import * as fs from "fs";
 
 export class MenuTop {
   
@@ -103,7 +104,7 @@ export class MenuTop {
             // Forge.tabManager.AddTab(new UTPEditorTab(new EditorFile({ resref: 'new_waypoint', reskey: ResourceTypes.utw })));
           }},
         ]},
-        {name: 'Open File', onClick: function(){
+        {name: 'Open File', onClick: async function(){
           if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
             (window as any).dialog.showOpenDialog({
               title: 'Open File',
@@ -342,15 +343,99 @@ export class MenuTop {
             })
           }
         }},
-        {name: 'Save File', accelerator: 'Ctrl+S', onClick: function(){
-
-          // if(Forge.tabManager.currentTab instanceof EditorTab){
-          //   try{
-          //     Forge.tabManager.currentTab.Save();
-          //   }catch(e){
-          //     console.error(e);
-          //   }
-          // }
+        {name: 'Save File', accelerator: 'Ctrl+S', onClick: async function(){
+          return new Promise<boolean>( async (resolve, reject) => {
+            if(Forge.tabManager.currentTab instanceof EditorTab){
+              try{
+                let currentFile = Forge.tabManager.currentTab.getFile();
+                if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+                  if(currentFile.path?.length){
+                    console.log('saveFile', currentFile.path);
+                    //trigger a Save
+                    try{
+                      let saveBuffer = Forge.tabManager.currentTab.getExportBuffer();
+                      fs.writeFile(currentFile.path, saveBuffer, () => {
+                        resolve(true);
+                      });
+                    }catch(e){
+                      console.error(e);
+                      resolve(false);
+                    }
+                  }else{
+                    //trigger a SaveAs
+                    try{
+                      let savePath = await (window as any).dialog.showSaveFileDialog({
+                        title: 'Save File As'
+                      });
+                      if(savePath){
+                        console.log('savePath', savePath);
+                        let saveBuffer = Forge.tabManager.currentTab.getExportBuffer();
+                        if(saveBuffer){
+                          resolve(true);
+                        }
+                      }
+                    }catch(e){
+                      console.error(e);
+                      resolve(false);
+                    }
+                  }
+                }else{
+                  try{
+                    if(currentFile.handle instanceof FileSystemFileHandle){
+                      if((await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted'){
+                        try{
+                          let saveBuffer = Forge.tabManager.currentTab.getExportBuffer();
+                          let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
+                          await ws.write(saveBuffer);
+                          resolve(true);
+                        }catch(e){
+                          console.error(e);
+                          resolve(false);
+                        }
+                      }else{
+                        if((await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted'){
+                          try{
+                            let saveBuffer = Forge.tabManager.currentTab.getExportBuffer();
+                            let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
+                            await ws.write(saveBuffer);
+                            resolve(true);
+                          }catch(e){
+                            console.error(e);
+                            resolve(false);
+                          }
+                        }else{
+                          console.error('Write permissions could not be obtained to save this file');
+                          resolve(false);
+                        }
+                      }
+                    }else{
+                      let newHandle = await window.showSaveFilePicker();
+                      if(newHandle){
+                        currentFile.handle = newHandle;
+                        try{
+                          let ws: FileSystemWritableFileStream = await newHandle.createWritable();
+                          await ws.write(currentFile.getData());
+                          resolve(true);
+                        }catch(e){
+                          console.error(e);
+                          resolve(false);
+                        }
+                      }else{
+                        console.error('save handle invalid');
+                        resolve(false);
+                      }
+                    }
+                  }catch(e){
+                    console.error(e);
+                    resolve(false);
+                  }
+                }
+              }catch(e){
+                console.error(e);
+                resolve(false);
+              }
+            }
+          });
 
         }},
         {name: 'Compile File', accelerator: 'Ctrl+Shift+C', onClick: function(){
