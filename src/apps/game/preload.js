@@ -35,6 +35,15 @@ contextBridge.exposeInMainWorld(
           reject(e);
         })
       });
+    },
+    showSaveFileDialog: (...args) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('save-file-dialog', args).then( (response) => {
+          resolve(response);
+        }).catch( (e) => {
+          reject(e);
+        })
+      });
     }
   }
 )
