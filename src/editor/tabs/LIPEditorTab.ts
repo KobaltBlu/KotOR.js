@@ -971,6 +971,7 @@ export class LIPEditorTab extends EditorTab {
         this.current_head = model_name;
         localStorage.setItem('lip_head', this.current_head);
         OdysseyModel3D.FromMDL(mdl, {
+          context: GameState,
           castShadow: true,
           receiveShadow: true,
           onComplete: (model: OdysseyModel3D) => {
