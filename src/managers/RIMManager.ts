@@ -55,7 +55,7 @@ export class RIMManager {
   }
 
   static addRIM( name: string, rim: RIMObject ){
-    RIMManager.RIMs
+    RIMManager.RIMs.set(name, rim);
   }
 
 }
