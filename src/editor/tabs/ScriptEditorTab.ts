@@ -37,6 +37,7 @@ export class ScriptEditorTab extends EditorTab {
   static nwScriptParser: NWScriptParser;
   constructor(file: EditorFile){
     super({ editorFile: file });
+    this.file = file;
 
     this.$r_container = $(`
     <div class="content" style="height: 100%;">
@@ -113,7 +114,7 @@ export class ScriptEditorTab extends EditorTab {
     });
 
     this.editor.getModel().onDidChangeContent((event: any) => {
-      this.editorFile.unsaved_changes = (this.lastSavedState != this.editor.getModel().getValue());
+      this.file.unsaved_changes = (this.lastSavedState != this.editor.getModel().getValue());
       this.triggerLinterTimeout();
     });
 
@@ -230,16 +231,16 @@ export class ScriptEditorTab extends EditorTab {
 
   async Save(){
     return new Promise( async ( resolve, reject ) => {
-      if( this.editorFile.location != FileLocationType.LOCAL ){
+      if( this.file.location != FileLocationType.LOCAL ){
         const saved = await this.SaveAs();
         resolve(saved);
       }else{
-        if(fs.existsSync(this.editorFile.path)){
-          fs.writeFile(this.editorFile.path, this.editor.getModel().getValue(), (err) => {
+        if(fs.existsSync(this.file.path)){
+          fs.writeFile(this.file.path, this.editor.getModel().getValue(), (err) => {
             if(!err){
-              this.editorFile.setPath(this.editorFile.path);
+              this.file.setPath(this.file.path);
               this.lastSavedState = this.editor.getModel().getValue();
-              this.editorFile.unsaved_changes = false;
+              this.file.unsaved_changes = false;
               NotificationManager.Notify(NotificationManager.Types.SUCCESS, `File saved`);
             }else{
               NotificationManager.Notify(NotificationManager.Types.ALERT, `Failed to save file`);
@@ -269,9 +270,9 @@ export class ScriptEditorTab extends EditorTab {
       //   if(!context.canceled){
       //     fs.writeFile(context.filePath, this.editor.getModel().getValue(), (err) => {
       //       if(!err){
-      //         this.editorFile.setPath(context.filePath);
+      //         this.file.setPath(context.filePath);
       //         this.lastSavedState = this.editor.getModel().getValue();
-      //         this.editorFile.unsaved_changes = false;
+      //         this.file.unsaved_changes = false;
       //         NotificationManager.Notify(NotificationManager.Types.SUCCESS, `File saved`);
       //       }else{
       //         NotificationManager.Notify(NotificationManager.Types.ALERT, `Failed to save file`);
@@ -335,7 +336,7 @@ export class ScriptEditorTab extends EditorTab {
 
   async Compile(){
 
-    if(this.editorFile.unsaved_changes == true){
+    if(this.file.unsaved_changes == true){
       const saved = await this.Save();
       if(!saved){
         NotificationManager.Notify(NotificationManager.Types.ALERT, `Compile: Aborted.`);
@@ -350,7 +351,7 @@ export class ScriptEditorTab extends EditorTab {
     try{
       this.nwScriptParser.parseScript(source_nss);
 
-      const nss_path = path.parse(this.editorFile.path);
+      const nss_path = path.parse(this.file.path);
       if(!this.nwScriptParser.errors.length){
         NotificationManager.Notify(NotificationManager.Types.INFO, `Compiling... - ${nss_path.name}.nss`);
         const nwScriptCompiler = new NWScriptCompiler(this.nwScriptParser.ast);
@@ -668,7 +669,7 @@ export class ScriptEditorTab extends EditorTab {
               }
             ];
 
-            const parser = Forge.tabManager?.currentTab?.nwScriptParser;
+            const parser = (Forge.tabManager.currentTab as any).nwScriptParser;
             if(parser){
               //Local Variables
               const l_variables = parser.local_variables;
@@ -737,7 +738,7 @@ export class ScriptEditorTab extends EditorTab {
               };
             }
 
-            const parser = Forge.tabManager?.currentTab?.nwScriptParser;
+            const parser = (Forge.tabManager.currentTab as any).nwScriptParser;
             if(parser){
 
               const structPropertyMatches = model.getValue().matchAll(
