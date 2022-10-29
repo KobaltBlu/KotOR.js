@@ -106,32 +106,34 @@ export class ResourceExplorerTab extends EditorTab {
 		bifLoader.iterate(() => {
       this.loadRims(() => {
 				this.loadModules(() => {
-					this.loadTextures(() => {
-						this.loadFolderForFileBrowser('StreamWaves', () => {
-							this.loadFolderForFileBrowser('StreamSounds', () => {
-								this.loadFolderForFileBrowser('StreamMusic', () => {
-									this.loadFolderForFileBrowser('StreamVoice', () => {
-										this.$treeView.html(
-											this.buildNodeList(this.nodeList, false)
-										);
-
-										$('li.link', this.$treeView).on('click', (e: any) => {
-											e.preventDefault();
-
-											let resref = e.target.dataset.resref;
-											let reskey = parseInt(e.target.dataset.resid);
-											let type = e.target.dataset.type;
-											let archive = e.target.dataset.archive;
-
-											FileTypeManager.onOpenResource(
-												new EditorFile({
-													path: e.target.dataset.path,
-													useGameFileSystem: true,
-												})
+					this.loadLips().then( () => {
+						this.loadTextures(() => {
+							this.loadFolderForFileBrowser('StreamWaves', () => {
+								this.loadFolderForFileBrowser('StreamSounds', () => {
+									this.loadFolderForFileBrowser('StreamMusic', () => {
+										this.loadFolderForFileBrowser('StreamVoice', () => {
+											this.$treeView.html(
+												this.buildNodeList(this.nodeList, false)
 											);
-										});
 
-										if (typeof onComplete === 'function') onComplete();
+											$('li.link', this.$treeView).on('click', (e: any) => {
+												e.preventDefault();
+
+												let resref = e.target.dataset.resref;
+												let reskey = parseInt(e.target.dataset.resid);
+												let type = e.target.dataset.type;
+												let archive = e.target.dataset.archive;
+
+												FileTypeManager.onOpenResource(
+													new EditorFile({
+														path: e.target.dataset.path,
+														useGameFileSystem: true,
+													})
+												);
+											});
+
+											if (typeof onComplete === 'function') onComplete();
+										});
 									});
 								});
 							});
@@ -303,6 +305,97 @@ export class ResourceExplorerTab extends EditorTab {
 				if (typeof onComplete === 'function') onComplete();
       }
     });
+  }
+	
+  loadLips() {
+		return new Promise<void>( (resolve, reject) => {
+			let modules: any[] = [];
+
+			RIMManager.RIMs.forEach( (rim: RIMObject) => {
+				if(rim.group == "Lips"){
+					modules.push(rim);
+				}
+			});
+
+			ERFManager.ERFs.forEach( (erf: ERFObject) => {
+				if(erf.group == "Lips"){
+					modules.push(erf);
+				}
+			});
+			
+			//Sort the array by filename
+			modules = modules.sort( (a: ERFObject|RIMObject, b: ERFObject|RIMObject) => {
+				let nameA = a.resource_path.split(path.sep).pop();
+				let nameB = b.resource_path.split(path.sep).pop();
+				
+				if (nameA < nameB) { return -1; }
+				if (nameA > nameB) { return 1; }
+				return 0;
+			});
+
+			const rimList: any = {
+				name: 'Lips',
+				type: 'group',
+				nodeList: [],
+				canOrphan: false,
+			};
+			this.nodeList.push(rimList);
+
+			let rimLoader = new AsyncLoop({
+				array: modules,
+				onLoop: (rim: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
+					let name = rim.resource_path.split(path.sep).pop();
+					let subTypes: any = {};
+
+					let node: any = {
+						name: name,
+						type: 'group',
+						nodeList: [],
+						canOrphan: false,
+					};
+
+					rimList.nodeList.push(node);
+
+					let files = rim instanceof RIMObject ? rim.Resources : rim.KeyList;
+
+					for (let i = 0; i < files.length; i++) {
+						let resource = files[i];
+						let resref = resource.ResRef;
+
+						if (subTypes[resource.ResType] == undefined) {
+							subTypes[resource.ResType] = {
+								name: ResourceTypes.getKeyByValue(resource.ResType),
+								type: 'group',
+								nodeList: [],
+							};
+							node.nodeList.push(subTypes[resource.ResType]);
+						}
+
+						subTypes[resource.ResType].nodeList.push({
+							name:
+								resref +
+								'.' +
+								ResourceTypes.getKeyByValue(resource.ResType),
+							type: 'resource',
+							data: {
+								path:
+									rim.resource_path +
+									'?' +
+									resref +
+									'.' +
+									ResourceTypes.getKeyByValue(resource.ResType),
+							},
+							nodeList: [],
+						});
+					}
+
+					asyncLoop.next();
+				},
+			});
+			rimLoader.iterate(() => {
+				resolve();
+			});
+		});
   }
 	
   loadTextures(onComplete?: Function) {
