@@ -1,7 +1,7 @@
 import { LoadingScreen } from "../../LoadingScreen";
 import { GFFField } from "../../resource/GFFField";
 import { GFFObject } from "../../resource/GFFObject";
-import { CExoLocStringWizard } from "../wizards";
+import { CExoLocStringWizard, ModalMessageBox } from "../wizards";
 import { EditorFile } from "../EditorFile";
 import { EditorTabManager } from "../EditorTabManager";
 import { Forge } from "../Forge";
@@ -10,7 +10,6 @@ import { Project } from "../Project";
 export class EditorTab {
   template: any = '';
   isDestroyed: boolean;
-  editorFile: any;
   id: any;
   tabManager: any;
   visible: boolean;
@@ -38,7 +37,9 @@ export class EditorTab {
       editorFile: undefined
     }, options);
 
-    this.editorFile = options.editorFile;
+    if(options.editorFile instanceof EditorFile){
+      this.file = options.editorFile;
+    }
 
     this.id = EditorTabManager.GetNewTabID();
     this.tabManager = null;
@@ -79,8 +80,8 @@ export class EditorTab {
       this.BuildToolbar();
     }
 
-    if(this.editorFile instanceof EditorFile){
-      this.editorFile.setOnSavedStateChanged( () => {
+    if(this.file instanceof EditorFile){
+      this.file.setOnSavedStateChanged( () => {
         this.editorFileUpdated();
       });
     }
@@ -103,12 +104,12 @@ export class EditorTab {
   }
 
   editorFileUpdated(){
-    if(this.editorFile instanceof EditorFile){
-      console.log('editor file updated', this.editorFile.resref, this.editorFile.ext, this.editorFile)
-      if(this.editorFile.unsaved_changes){
-        this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext} *`);
+    if(this.file instanceof EditorFile){
+      console.log('editor file updated', this.file.resref, this.file.ext, this.file)
+      if(this.file.unsaved_changes){
+        this.$tabName.text(`${this.file.resref}.${this.file.ext} *`);
       }else{
-        this.$tabName.text(`${this.editorFile.resref}.${this.editorFile.ext}`);
+        this.$tabName.text(`${this.file.resref}.${this.file.ext}`);
       }
     }
   }
@@ -126,22 +127,20 @@ export class EditorTab {
     if(typeof this._tabCloseClickEvent != 'function'){
       this._tabCloseClickEvent = (e: any) => {
         e.preventDefault();
-        if(this.editorFile instanceof EditorFile){
-          if(this.editorFile.unsaved_changes){
-            //@ts-expect-error
-            dialog.showMessageBox(
-              //@ts-expect-error
-              remote.getCurrentWindow(), {
-                type: 'question',
-                buttons: ['Yes', 'No'],
-                title: 'You have unsaved changes',
-                message: 'Press Yes to close without saving'
-              }
-            ).then( (confirm: any) => {
-              if(!confirm.response){
-                this.Remove();
+        if(this.file instanceof EditorFile){
+          if(this.file.unsaved_changes){
+            let mb = new ModalMessageBox({
+              type: 'question',
+              buttons: ['Yes', 'No'],
+              title: 'You have unsaved changes',
+              message: 'Press Yes to close without saving',
+              onChoose: (choice: string) => {
+                if(choice == 'Yes'){
+                  this.Remove();
+                }else{ }
               }
             });
+            mb.Show();
           }else{
             this.Remove();
           }
@@ -162,6 +161,14 @@ export class EditorTab {
 
   GetResourceID(): any{
     return;
+  }
+
+  getFile(): EditorFile {
+    return this.file;
+  }
+
+  getExportBuffer(): Buffer {
+    return this.file.buffer;
   }
 
   Show(){
