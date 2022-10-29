@@ -1,5 +1,6 @@
 export * from "./Wizard";
 export * from "./Modal";
+export * from "./ModalMessageBox";
 export * from "./CExoLocStringWizard";
 export * from "./CExoLocSubStringWizard";
 export * from "./ConfigWizard";

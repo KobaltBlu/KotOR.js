@@ -10,6 +10,7 @@ export class Modal extends Wizard {
     super();
 
     this.args = Object.assign({
+      'type': null,
       'title': '',
       'message': '',
       'onClose': null
@@ -23,6 +24,7 @@ export class Modal extends Wizard {
     this.$body = $('#modal-info-body', this.$wizard);
     this.$close = $('#modal-info-close', this.$wizard);
 
+    this.$title.text(this.args.title);
     this.$body.html(this.args.message);
 
     this.$close.on('click', (e: any) => {
@@ -32,8 +34,8 @@ export class Modal extends Wizard {
 
     $('body').append(this.$wizard);
     this.$wizard.filter('.modal').modal({
-        backdrop: 'static',
-        keyboard: false
+      backdrop: 'static',
+      keyboard: false
     });
 
     this.$wizard.on('hidden.bs.modal', () => {
