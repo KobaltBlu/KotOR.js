@@ -279,7 +279,7 @@ export class UTDEditorTab extends EditorTab {
       if(this.door.model instanceof OdysseyModel3D && this.door.model.bonesInitialized && this.door.model.visible){
         this.door.model.update(delta);
 
-        this.door.model.rotation.z += delta;
+        this.door.rotation.z += delta;
       
         let center = new THREE.Vector3;
         this.door.model.box.getCenter(center);

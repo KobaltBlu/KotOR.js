@@ -99,6 +99,7 @@ export class UTCEditorTab extends EditorTab {
       this.gff = file;
     }else{
       file = file;
+      this.file = file;
     }
 
     this.singleInstance = false;

@@ -301,7 +301,7 @@ export class UTPEditorTab extends EditorTab {
       if(this.placeable.model instanceof OdysseyModel3D && this.placeable.model.bonesInitialized && this.placeable.model.visible){
         this.placeable.model.update(delta);
 
-        this.placeable.model.rotation.z += delta;
+        this.placeable.rotation.z += delta;
       
         let center = new THREE.Vector3;
         this.placeable.model.box.getCenter(center);
