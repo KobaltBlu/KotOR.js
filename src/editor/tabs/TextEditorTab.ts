@@ -67,6 +67,8 @@ export class TextEditorTab extends EditorTab {
               //this.tabLoader.Dismiss();
             break;
             default:
+              this.lastSavedState = buffer.toString('utf8');
+              this.editor.setValue(buffer.toString('utf8'));
               //this.tabLoader.Dismiss();
             break;
           }
