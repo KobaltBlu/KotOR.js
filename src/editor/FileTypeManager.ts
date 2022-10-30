@@ -4,6 +4,7 @@
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { EditorFile } from "./EditorFile";
 import { Forge } from "./Forge";
+import { EditorFileOptions } from "./interface/EditorFileOptions";
 import { NotificationManager } from "./NotificationManager";
 import { Project } from "./Project";
 import { 
@@ -18,8 +19,8 @@ import {
 
 export class FileTypeManager {
 
-  static onOpenFile(file: any){
-    FileTypeManager.onOpenResource(new EditorFile({path: file.path}));
+  static onOpenFile(options: EditorFileOptions){
+    FileTypeManager.onOpenResource(new EditorFile(options));
   }
 
   static onOpenResource(res: EditorFile|string){

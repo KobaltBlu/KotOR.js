@@ -3,6 +3,7 @@ import { ERFObject } from "../resource/ERFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { RIMObject } from "../resource/RIMObject";
 import { FileLocationType } from "./enum/FileLocationType";
+import { EditorFileOptions } from "./interface/EditorFileOptions";
 
 import * as path from "path";
 import * as fs from "fs";
@@ -35,45 +36,98 @@ export class EditorFile {
 
   //handle - is for file handling inside the web environment
   handle: FileSystemFileHandle;
+  handle2: FileSystemFileHandle; //for dual file types like mdl/mdx
   useGameFileSystem: boolean = false;
 
   buffer: Buffer;
+  buffer2: Buffer; //for dual file types like mdl/mdx
+  
   path: any;
+  path2: any; //for dual file types like mdl/mdx
   archive_path: any;
+  archive_path2: any; //for dual file types like mdl/mdx
+
   location: any;
-  onSavedStateChanged: any;
-  buffer2: Buffer;
   _unsaved_changes: any;
   _resref: any;
-  onNameChanged: any;
   _reskey: any;
   _ext: any;
 
-  constructor( options: any = {} ){
+  onNameChanged: Function;
+  onSavedStateChanged: Function;
+
+  get unsaved_changes(){
+    return this._unsaved_changes;
+  };
+
+  set unsaved_changes(value){
+    this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
+    if(typeof this.onSavedStateChanged === 'function') this.onSavedStateChanged(this);
+    if(!this.unsaved_changes) this.updateOpenedFiles();
+  }
+
+  get resref(){
+    return this._resref;
+  }
+
+  set resref(value){
+    this._resref = value;
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+  }
+
+  get reskey(){
+    return this._reskey;
+  }
+
+  set reskey(value){
+    console.log('reskey', value);
+    this._reskey = value;
+    this._ext = ResourceTypes.getKeyByValue(this.reskey);
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+  }
+
+  get ext(){
+    return this._ext;
+  }
+
+  set ext(value){
+    console.log('ext', value);
+    this._ext = value;
+    this._reskey = ResourceTypes[value];
+    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+  }
+
+  constructor( options: EditorFileOptions = {} ){
 
     options = Object.assign({
       path: null,
+      path2: null,
       handle: this.handle,
+      handle2: this.handle2,
+      buffer: [],
+      buffer2: [],
       resref: null,
-      restype: null,
+      reskey: null,
       ext: null,
       archive_path: null,
       location: FileLocationType.OTHER,
-      buffer: [],
       useGameFileSystem: false
     }, options);
 
     console.log(options);
 
-    this.resref = options.resref;
     this.buffer = options.buffer;
+    this.buffer2 = options.buffer2;
     this.path = options.path;
+    this.path2 = options.path2;
     this.ext = options.ext;
+    this.resref = options.resref;
     this.reskey = options.reskey;
     this.archive_path = options.archive_path;
     this.location = options.location;
     this.unsaved_changes = false;
     this.handle = options.handle;
+    this.handle2 = options.handle2;
     this.useGameFileSystem = options.useGameFileSystem;
 
     if(!this.ext && this.reskey){
@@ -288,27 +342,24 @@ export class EditorFile {
             }
           }else{
             if(typeof onLoad === 'function'){
-              onLoad(this.buffer, Buffer.alloc(0));
+              this.buffer2 = Buffer.alloc(0);
+              onLoad(this.buffer, this.buffer2);
             }
           }
 
         }else{
           //Load the MDL file
           fs.readFile(this.path, (err, buffer) => {
-
             if(err) throw err;
 
-            let root_dir = path_parse(this.path).dir;
-
             //Load the MDX file
-            fs.readFile(path.join(root_dir, this.resref+'.mdx'), (err, buffer2) => {
-
+            fs.readFile(this.path2, (err, buffer2) => {
               if(err) throw err;
 
               if(typeof onLoad === 'function'){
-                this.buffer = buffer;
-                this.buffer2 = buffer2;
-                onLoad(buffer, buffer2);
+                this.buffer = Buffer.from(buffer);
+                this.buffer2 = Buffer.from(buffer2);
+                onLoad(this.buffer, this.buffer2);
               }
 
             });
@@ -448,14 +499,17 @@ export class EditorFile {
   updateOpenedFiles(){
     const recent_files = ConfigClient.getRecentFiles();
     //Update the opened files list
-    if(this.getPath()){
-      const index = recent_files.indexOf(this.getPath());
+    let file_path = this.getPath();
+    if(file_path){
+      const index = recent_files.findIndex( (file: EditorFile) => {
+        return file.getPath() == file_path;
+      })
       if (index >= 0) {
         recent_files.splice(index, 1);
       }
 
       //Append this file to the beginning of the list
-      recent_files.unshift(this.getPath());
+      recent_files.unshift(this);
       ConfigClient.save(null, true); //Save the configuration silently
 
       //Notify the project we have opened a new file
@@ -471,47 +525,6 @@ export class EditorFile {
 
   saveAs(){
     //stub
-  }
-
-  get unsaved_changes(){
-    return this._unsaved_changes;
-  };
-
-  set unsaved_changes(value){
-    this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
-    if(typeof this.onSavedStateChanged === 'function') this.onSavedStateChanged(this);
-    if(!this.unsaved_changes) this.updateOpenedFiles();
-  }
-
-  get resref(){
-    return this._resref;
-  }
-
-  set resref(value){
-    this._resref = value;
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
-  }
-
-  get reskey(){
-    return this._reskey;
-  }
-
-  set reskey(value){
-    console.log('reskey', value);
-    this._reskey = value;
-    this._ext = ResourceTypes.getKeyByValue(this.reskey);
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
-  }
-
-  get ext(){
-    return this._ext;
-  }
-
-  set ext(value){
-    console.log('ext', value);
-    this._ext = value;
-    this._reskey = ResourceTypes[value];
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
   }
 
 }

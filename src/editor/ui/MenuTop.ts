@@ -109,7 +109,7 @@ export class MenuTop {
             (window as any).dialog.showOpenDialog({
               title: 'Open File',
               filters: [
-                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+                {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
                 {name: 'TPC Image', extensions: ['tpc']},
                 {name: 'TGA Image', extensions: ['tga']},
                 {name: 'GFF', extensions: ['gff']},
@@ -126,7 +126,7 @@ export class MenuTop {
                 {name: 'MOD File', extensions: ['mod']},
                 {name: 'ERF File', extensions: ['erf']},
                 {name: 'RIM File', extensions: ['rim']},
-                {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
+                {name: 'Model File', extensions: ['mdl', 'wok', 'pwk', 'dwk']},
                 {name: 'Module File', extensions: ['git', 'ifo']},
                 {name: 'Area File', extensions: ['are']},
                 {name: 'Path File', extensions: ['pth']},
@@ -162,7 +162,32 @@ export class MenuTop {
                   let parsed = path_parse(file_path);
                   let fileParts = parsed.name.split('.');
 
-                  FileTypeManager.onOpenFile({path: file_path, filename: parsed.base, name: parsed.name, ext: fileParts[1]});
+                  if(parsed.ext == '.mdl'){
+                    (window as any).dialog.showOpenDialog({
+                      title: `Open MDX File (${fileParts[0]}.mdx)`,
+                      filters: [
+                        {name: 'Model File', extensions: ['mdx']},
+                        {name: 'All Formats', extensions: ['*']},
+                      ],
+                      properties: ['createDirectory'],
+                    }).then( (result: any) => {
+                      let file_path2 = result.filePaths[0];
+                      FileTypeManager.onOpenFile({
+                        path: file_path, 
+                        path2: file_path2, 
+                        filename: parsed.base, 
+                        resref: parsed.name, 
+                        ext: fileParts[1]
+                      });
+                    });
+                  }else{
+                    FileTypeManager.onOpenFile({
+                      path: file_path, 
+                      filename: parsed.base, 
+                      resref: parsed.name, 
+                      ext: fileParts[1]
+                    });
+                  }
                 }
               }
               console.log(result.canceled);
@@ -336,7 +361,7 @@ export class MenuTop {
               if(handle){
                 let parsed = path.parse(handle.name);
                 let fileParts = parsed.name.split('.');
-                FileTypeManager.onOpenFile({path: handle.name, handle: handle, filename: handle.name, name: fileParts[0], ext: fileParts[1]});
+                FileTypeManager.onOpenFile({path: handle.name, handle: handle, filename: handle.name, resref: fileParts[0], ext: fileParts[1]});
               }
             }).catch((e: any) => {
 

@@ -8,6 +8,7 @@ import { ConfigClient } from "../../utility/ConfigClient";
 import * as path from "path";
 
 import template from "../templates/tabs/tab-quick-start.html";
+import { EditorFile } from "../EditorFile";
 
 export class QuickStartTab extends EditorTab {
   template: string = template;
@@ -33,39 +34,8 @@ export class QuickStartTab extends EditorTab {
     this.$newProject = $('#btn-new-project', this.$tabContent);
     this.$openProject = $('#btn-open-project', this.$tabContent);
 
-    ConfigClient.getRecentProjects().forEach( (dir, i) => {
-      try{
-        let project: any = {};//require(path.join(dir, 'project.json'));
-        let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
-
-        $('a', $recentProject).on('click', (e: any) => {
-          e.preventDefault();
-          console.log(dir);
-          Forge.Project = new Project(dir);
-          Forge.Project.Open(() => {
-            Forge.loader.SetMessage("Project Loaded");
-            //loader.Dismiss();
-
-            this.tabManager.RemoveTab(this);
-          });
-        });
-
-        this.$recentProjectsList.append($recentProject);
-      }catch(e){}
-    });
-
-    ConfigClient.getRecentFiles().forEach( (file, i) => {
-      try{
-        let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
-
-        $('a', $recentFile).on('click', (e: any) => {
-          e.preventDefault();
-          FileTypeManager.onOpenResource(file);
-        });
-
-        this.$recentFilesList.append($recentFile);
-      }catch(e){}
-    });
+    this.buildRecentProjects();
+    this.buildRecentFiles();
 
     this.$newProject.on('click', (e: any) => {
       e.preventDefault();
@@ -95,44 +65,51 @@ export class QuickStartTab extends EditorTab {
 
   }
 
+  buildRecentProjects(){
+    this.$recentProjectsList.html('');
+    ConfigClient.getRecentProjects().forEach( (dir, i) => {
+      try{
+        let project: any = {};//require(path.join(dir, 'project.json'));
+        let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
+
+        $('a', $recentProject).on('click', (e: any) => {
+          e.preventDefault();
+          console.log(dir);
+          Forge.Project = new Project(dir);
+          Forge.Project.Open(() => {
+            Forge.loader.SetMessage("Project Loaded");
+            //loader.Dismiss();
+
+            this.tabManager.RemoveTab(this);
+          });
+        });
+
+        this.$recentProjectsList.append($recentProject);
+      }catch(e){}
+    });
+  }
+
+  buildRecentFiles(){
+    this.$recentFilesList.html('');
+    ConfigClient.getRecentFiles().forEach( (file: EditorFile, i) => {
+      try{
+        let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file.path+'</a></span></li>'); 
+
+        $('a', $recentFile).on('click', (e: any) => {
+          e.preventDefault();
+          FileTypeManager.onOpenResource(file);
+        });
+
+        this.$recentFilesList.append($recentFile);
+      }catch(e){}
+    });
+  }
+
   Show(){
     super.Show();
     try{
-      this.$recentProjectsList.html('');
-      $.each(ConfigClient.getRecentProjects(), (i, dir) => {
-        try{
-          let project: any = {};//require(path.join(dir, 'project.json'));
-          let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
-
-          $('a', $recentProject).on('click', (e: any) => {
-            e.preventDefault();
-            console.log(dir);
-            Forge.Project = new Project(dir);
-            Forge.Project.Open(() => {
-              Forge.loader.SetMessage("Project Loaded");
-              //Forge.loader.Dismiss();
-
-              this.tabManager.RemoveTab(this);
-            });
-          });
-
-          this.$recentProjectsList.append($recentProject);
-        }catch(e){}
-      });
-
-      this.$recentFilesList.html('');
-      $.each(ConfigClient.getRecentFiles(), (i, file) => {
-        try{
-          let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file+'</a></span></li>');
-
-          $('a', $recentFile).on('click', (e: any) => {
-            e.preventDefault();
-            FileTypeManager.onOpenResource(file);
-          });
-
-          this.$recentFilesList.append($recentFile);
-        }catch(e){}
-      });
+      this.buildRecentProjects();
+      this.buildRecentFiles();
     }catch(e){}
   }
 

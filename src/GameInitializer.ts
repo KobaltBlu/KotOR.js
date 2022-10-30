@@ -17,6 +17,7 @@ import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { AsyncLoop } from "./utility/AsyncLoop";
 import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
+import { ConfigClient } from "./KotOR";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -37,25 +38,29 @@ export class GameInitializer {
 
     if(GameInitializer.currentGame != props.game){
       GameInitializer.currentGame = props.game;
+
+      ConfigClient.Init().then( () => {
       
-      LoadingScreen.main.SetMessage("Loading Keys");
-      KEYManager.Load('chitin.key', () => {
-        LoadingScreen.main.SetMessage("Loading Game Resources");
-        GameInitializer.LoadGameResources( () => {
-          //Load the TLK File
-          LoadingScreen.main.SetMessage("Loading TLK File");
-          TLKManager.LoadTalkTable().then( () => {
-            if(typeof props.onLoad === 'function'){
-              props.onLoad();
-            }
-          })
-          //   if(props.onLoad != null)
-          //     props.onLoad();
-          // }, function(num: any, total: any){
-          //   //onProgress
-          //   LoadingScreen.main.SetMessage("Loading TLK File: "+num+" / "+total);
-          // });
+        LoadingScreen.main.SetMessage("Loading Keys");
+        KEYManager.Load('chitin.key', () => {
+          LoadingScreen.main.SetMessage("Loading Game Resources");
+          GameInitializer.LoadGameResources( () => {
+            //Load the TLK File
+            LoadingScreen.main.SetMessage("Loading TLK File");
+            TLKManager.LoadTalkTable().then( () => {
+              if(typeof props.onLoad === 'function'){
+                props.onLoad();
+              }
+            })
+            //   if(props.onLoad != null)
+            //     props.onLoad();
+            // }, function(num: any, total: any){
+            //   //onProgress
+            //   LoadingScreen.main.SetMessage("Loading TLK File: "+num+" / "+total);
+            // });
+          });
         });
+
       });
 
     }else{
