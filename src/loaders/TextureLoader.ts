@@ -342,7 +342,12 @@ export class TextureLoader {
                 }
 
                 if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXIBlending.PUNCHTHROUGH){
-                  tex.material.alphaTest = texture.header.alphaTest;
+                  if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+                    tex.material.alphaTest = texture.header.alphaTest;
+                    if(tex.material.uniforms?.alphaTest){
+                      tex.material.uniforms.alphaTest.value = texture.header.alphaTest;
+                    }
+                  }
                   tex.material.transparent = false;
                 }
 
@@ -562,7 +567,7 @@ export class TextureLoader {
               if(tex.material.uniforms.animationVector){
                 if(bumpMap.txi.numx){
                   tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
-                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.x;
+                  bumpMap.repeat.x = 1 / tex.material.uniforms.animationVector.value.x;
                   bumpMap.updateMatrix();
                 }
 
