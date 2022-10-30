@@ -1,5 +1,5 @@
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { ConfigClient } from "../../utility/ConfigClient";
+// import { ConfigClient } from "../../utility/ConfigClient";
 
 const query = new URLSearchParams(window.location.search);
 let env: ApplicationEnvironment;
@@ -19,8 +19,8 @@ if(window.location.origin === 'file://'){
 }
 
 async function getProfile(){
-  await ConfigClient.Init();
-  return ConfigClient.get(`Profiles.${query.get('key')}`);
+  await KotOR.ConfigClient.Init();
+  return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
 }
 
 declare const KotOR: any;
@@ -75,7 +75,7 @@ async function spawnRequestDirectory(){
       let handle = await showRequestDirectoryDialog();
       if(handle){
         KotOR.GameFileSystem.rootDirectoryHandle = handle;
-        ConfigClient.set(`Profiles.${app_profile.key}.directory_handle`, handle);
+        KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory_handle`, handle);
         modal?.classList.remove('show');
         initializeApp();
       }

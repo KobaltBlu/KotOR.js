@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor';
 // import { fstat } from 'original-fs';
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { ConfigClient } from "../../utility/ConfigClient";
+// import { ConfigClient } from "../../utility/ConfigClient";
 import * as fs from "fs";
 const Jison = (window as any).Jison = require("jison").Jison;
 (window as any).monaco = monaco;
@@ -50,7 +50,7 @@ if(window.location.origin === 'file://'){
 }
 
 async function getProfile(){
-  return ConfigClient.get(`Profiles.${query.get('key')}`);
+  return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
 }
 
 KotOR.Forge.tabManager = new KotOR.EditorTabManager();
@@ -105,11 +105,10 @@ if(closeToggle){
 }
 
 ( async () => {
-  await ConfigClient.Init();
+  await KotOR.ConfigClient.Init();
   KotOR.GameState.audioEngine = new KotOR.AudioEngine();
   KotOR.Forge.inlineAudioPlayer = new KotOR.InlineAudioPlayer();
 
-  //@ts-expect-error
   $('#container').layout({
     applyDefaultStyles: false,
     west__spacing_open:		8,		// no resizer-bar when open (zero height)
@@ -117,24 +116,24 @@ if(closeToggle){
     'onopen': (pane: any) => {
       switch(pane){
         case 'west':
-          ConfigClient.options.Panes.left.open = true;
+          KotOR.ConfigClient.options.Panes.left.open = true;
         break;
         case 'east':
-          ConfigClient.options.Panes.right.open = true;
+          KotOR.ConfigClient.options.Panes.right.open = true;
         break;
       }
-      // ConfigClient.save(undefined, true);
+      KotOR.ConfigClient.save(undefined, true);
     },
     'onclose': (pane: any) => {
       switch(pane){
         case 'west':
-          ConfigClient.options.Panes.left.open = false;
+          KotOR.ConfigClient.options.Panes.left.open = false;
         break;
         case 'east':
-          ConfigClient.options.Panes.right.open = false;
+          KotOR.ConfigClient.options.Panes.right.open = false;
         break;
       }
-      // ConfigClient.save(undefined, true);
+      KotOR.ConfigClient.save(undefined, true);
     },
     'onresize_end': (pane: any) => {
       //Make sure the ModuleEditorTab canvas is updated on resize
@@ -157,12 +156,12 @@ if(closeToggle){
     }
   });
 
-  if(!ConfigClient.options.Panes.left.open){
+  if(!KotOR.ConfigClient.options.Panes.left.open){
     //@ts-expect-error
     $('#container').layout().close('west');
   }
 
-  if(!ConfigClient.options.Panes.right.open){
+  if(!KotOR.ConfigClient.options.Panes.right.open){
     //@ts-expect-error
     $('#container').layout().close('east');
   }
@@ -217,7 +216,7 @@ if(closeToggle){
       game: GameKey,
       onLoad: () => {
         KotOR.OdysseyWalkMesh.Init();
-        KotOR.LightManager.toggleLightHelpers(ConfigClient.get('Game.debug.light_helpers') ? true : false);
+        KotOR.LightManager.toggleLightHelpers(KotOR.ConfigClient.get('Game.debug.light_helpers') ? true : false);
               
         resourceExplorerTab.initialize( () => {
           KotOR.LoadingScreen.main.Hide();
@@ -271,7 +270,7 @@ if(closeToggle){
         let handle = await showRequestDirectoryDialog();
         if(handle){
           KotOR.GameFileSystem.rootDirectoryHandle = handle;
-          ConfigClient.set(`Profiles.${app_profile.key}.directory_handle`, handle);
+          KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory_handle`, handle);
           modal?.classList.remove('show');
           initializeApp();
         }

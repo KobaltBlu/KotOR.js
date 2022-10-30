@@ -67,7 +67,7 @@ export class QuickStartTab extends EditorTab {
 
   buildRecentProjects(){
     this.$recentProjectsList.html('');
-    ConfigClient.getRecentProjects().forEach( (dir, i) => {
+    Forge.getRecentProjects().forEach( (dir, i) => {
       try{
         let project: any = {};//require(path.join(dir, 'project.json'));
         let $recentProject = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+project.name+'</a></span></li>');
@@ -91,7 +91,7 @@ export class QuickStartTab extends EditorTab {
 
   buildRecentFiles(){
     this.$recentFilesList.html('');
-    ConfigClient.getRecentFiles().forEach( (file: EditorFile, i) => {
+    Forge.getRecentFiles().forEach( (file: EditorFile, i) => {
       try{
         let $recentFile = $('<li><span class="glyphicon glyphicon-file"></span>&nbsp;<a href="#">'+file.path+'</a></span></li>'); 
 

@@ -1,5 +1,4 @@
 import { get, set } from 'idb-keyval';
-import { EditorFile } from '../editor/EditorFile';
 
 export class ConfigClient {
   static options: any = {};
@@ -11,21 +10,6 @@ export class ConfigClient {
       await get('app_settings')
     );
 
-    if(Array.isArray(ConfigClient.options.recent_files)){
-      ConfigClient.options.recent_files = ConfigClient.options.recent_files.map( (file: any) => {
-        return Object.assign(new EditorFile(), file);
-      })
-    }
-
-  }
-
-  static getRecentFiles(): any[] {
-    return ConfigClient.options.recent_files;
-  }
-
-
-  static getRecentProjects(): any[]{
-    return ConfigClient.options.recent_projects;
   }
 
   static get(path: string|any[] = '', defaultValue?:any){

@@ -28,7 +28,7 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/game/game.ts"],
+  "include": ["src/apps/game/game.ts", "src/types"],
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],

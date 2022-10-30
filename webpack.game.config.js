@@ -58,6 +58,10 @@ module.exports = {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       },
+      {
+        test: /\.html$/,
+        use: 'raw-loader'
+      },
     ],
   },
   plugins: [
@@ -88,6 +92,9 @@ module.exports = {
       "path": require.resolve("path-browserify"),
       // "buffer": require.resolve("buffer"), 
     }
+  },
+  externals: {
+    fs: 'window.fs',
   },
   output: {
     filename: '[name].js',

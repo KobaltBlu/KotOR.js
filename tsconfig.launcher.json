@@ -28,7 +28,7 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/launcher/launcher.ts"],
+  "include": ["src/apps/launcher/launcher.ts", "src/types"],
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],

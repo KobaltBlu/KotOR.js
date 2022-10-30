@@ -497,7 +497,7 @@ export class EditorFile {
   }
 
   updateOpenedFiles(){
-    const recent_files = ConfigClient.getRecentFiles();
+    const recent_files = Forge.getRecentFiles();
     //Update the opened files list
     let file_path = this.getPath();
     if(file_path){
