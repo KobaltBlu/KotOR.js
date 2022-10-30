@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer, shell, dialog, remote } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 const fs = require('fs');
 // remote.app.allowRendererProcessReuse = false; 
 // const dxt = require('dxt');
@@ -95,18 +95,18 @@ contextBridge.exposeInMainWorld(
       process.platform === 'darwin'
     },
     minimize: () => {
-      remote.BrowserWindow.getFocusedWindow()?.minimize();
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('win-minimize', profile).then( (response) => {
+          resolve(response);
+        });
+      })
     },
     maximize: () => {
-      let win = remote.BrowserWindow.getFocusedWindow();
-      console.log(win.isMaximized());
-      if(win){
-        if(win.isMaximized()){
-          win.unmaximize();
-        }else{
-          win.maximize();
-        } 
-      }
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('win-maximize', profile).then( (response) => {
+          resolve(response);
+        });
+      })
     },
     locate_game_directory: (profile) => {
       return new Promise( (resolve, reject) => {

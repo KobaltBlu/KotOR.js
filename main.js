@@ -34,6 +34,30 @@ ipcMain.on('config-changed', (event, data) => {
   }
 });
 
+ipcMain.handle('win-minimize', (event, data) => {
+  let win = BrowserWindow.getFocusedWindow();
+  if(win){
+    win.minimize();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('win-maximize', (event, data) => {
+  let win = BrowserWindow.getFocusedWindow();
+  if(win){
+    console.log(win.isMaximized());
+    if(win.isMaximized()){
+      win.unmaximize();
+      return true;
+    }else{
+      win.maximize();
+      return true;
+    } 
+  }
+  return false;
+});
+
 ipcMain.handle('locate-game-directory', (event, data) => {
   return new Promise( (resolve, reject) => {
     dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {
@@ -81,7 +105,7 @@ async function createWindowFromProfile( profile = {} ) {
       preload: path.join(__dirname, 'dist/game/preload.js'),
       webviewTag: false,
       nodeIntegration: true,
-      enableRemoteModule: true,
+      enableRemoteModule: false,
       //worldSafeExecuteJavaScript: true,
       contextIsolation: true,
     }
@@ -129,7 +153,7 @@ function createLauncherWindow() {
       preload: path.join(__dirname, 'dist/launcher/preload.js'),
       webviewTag: false,
       nodeIntegration: true,
-      enableRemoteModule: true,
+      enableRemoteModule: false,
       //worldSafeExecuteJavaScript: true,
       contextIsolation: true,
     }
