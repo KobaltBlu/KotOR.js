@@ -61,6 +61,10 @@ export class ModelViewerTab extends EditorTab {
   $input_texture: JQuery<HTMLElement>;
   $btn_reset_position: JQuery<HTMLElement>;
   $btn_center_position: JQuery<HTMLElement>;
+
+  camerahook_cameras: THREE.PerspectiveCamera[] = [];
+  $selectCameras: JQuery<HTMLElement>;
+
   constructor(file: EditorFile, isLocal = false){
     super();
     console.log('ModelViewerTab', this);
@@ -206,6 +210,11 @@ export class ModelViewerTab extends EditorTab {
         </div>
         <div class="tab-container">
           <div class="tab-content" id="camera">
+            <b>Selected Camera</b><br>
+            <select id="camera_list">
+              <option value="-1">Main</option>
+            </select>
+
             <b>Camera Speed</b><br>
             <input id="camera_speed" type="range" min="1" max="25" value="${EditorControls.CameraMoveSpeed}" />
             <button id="btn_camerahook">Align to camera hook</button>
@@ -255,6 +264,23 @@ export class ModelViewerTab extends EditorTab {
     $('.tabs > .btn-tab[rel="#animations"]', (this.$ui_selected as any).$tabHost).trigger('click');
 
     //Camera Properties
+    this.$selectCameras = $('select#camera_list', (this.$ui_selected[0] as any).$content);
+    this.$selectCameras.on('change', () => {
+      if(this.$selectCameras.val() == -1){
+        this.currentCamera = this.camera;
+      }else{
+        this.currentCamera = this.camerahook_cameras[this.$selectCameras.val() as any];
+      }
+      if(!this.currentCamera){
+        this.currentCamera = this.camera;
+      }
+    });
+
+    for(let i = 0; i < this.camerahook_cameras.length; i++){
+      let name = this.camerahook_cameras[i].parent.name.replace(/\0[\s\S]*$/g,'');
+      this.$selectCameras.append('<option value="'+i+'">'+name+'</option>')
+    }
+
     this.$inputCameraSpeed = $('input#camera_speed', (this.$ui_selected[0] as any).$content);
     this.$inputCameraSpeed.on('change', () => {
       EditorControls.CameraMoveSpeed = parseInt(this.$inputCameraSpeed.val() as any);
@@ -400,6 +426,15 @@ export class ModelViewerTab extends EditorTab {
             context: this, 
             onComplete: (model: OdysseyModel3D) => {
               this.model = model;
+
+              if(model.camerahook){
+                const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+                const helper = new THREE.CameraHelper( camera );
+                this.scene.add( helper );
+                model.camerahook.add(camera);
+                this.camerahook_cameras.push(camera);
+              }
+
               this.selectable.add(model);
               model.position.set(0, 0, 0);
               TextureLoader.LoadQueue(() => {
@@ -467,6 +502,11 @@ export class ModelViewerTab extends EditorTab {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
     this.depthTarget.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
+
+    for(let i = 0; i < this.camerahook_cameras.length; i++){
+      this.camerahook_cameras[i].aspect = this.camera.aspect;
+      this.camerahook_cameras[i].updateProjectionMatrix();
+    }
   }
 
   BuildNodeTree(){
@@ -541,6 +581,11 @@ export class ModelViewerTab extends EditorTab {
     let delta = this.clock.getDelta();
     this.controls.Update(delta);
     this.deltaTime += delta;
+
+    for(let i = 0; i < this.camerahook_cameras.length; i++){
+      this.camerahook_cameras[i].updateProjectionMatrix();
+    }
+
     for(let i = 0; i < this.selectable.children.length; i++){
       let obj = this.selectable.children[i];
       if(obj instanceof OdysseyModel3D){
