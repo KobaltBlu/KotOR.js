@@ -48,9 +48,9 @@ export class GFFEditorTab extends EditorTab {
   $gffPropertiesOrientationYValue: JQuery<HTMLElement>;
   $gffPropertiesOrientationZValue: JQuery<HTMLElement>;
   $gffPropertiesOrientationWValue: JQuery<HTMLElement>;
-  constructor(){
+  constructor(file: EditorFile){
     super();
-
+    this.file = file;
     this.structIndex = 0;
     this.fieldsIndex = 0;
 
@@ -159,7 +159,9 @@ export class GFFEditorTab extends EditorTab {
 
     this.$tabContent.append(this.$gffContainer).append(this.$gffProperties);
 
-
+    if(this.file){
+      this.OpenFile(this.file);
+    }
 
   }
 
@@ -169,20 +171,23 @@ export class GFFEditorTab extends EditorTab {
       this.tabLoader.Show();
       this.tabLoader.SetMessage("Loading GFF File");
       this.$tabName.text(file.path.split(path.sep).pop());
-      this.gff = new GFFObject(file.path, () => {
-        this.tabLoader.SetMessage("Building Editor Tree");
-        //Fade out the loading screen because the app is ready
+      file.readFile( (buffer: Buffer) => {
+        new GFFObject(buffer, (gff) => {
+          this.gff = gff;
+          this.tabLoader.SetMessage("Building Editor Tree");
+          //Fade out the loading screen because the app is ready
 
-        this.$gffContainer.html('');
-        let $scrollContainer = $('<div style="height: 100%;" />');
-        let $rootUL = $('<ul class="gff-struct gff-root-struct" />');
-        this.$gffContainer.append($scrollContainer);
-        $scrollContainer.append($rootUL);
-        this.$gffContainer.css({'overflow': 'auto'});
-        this.parseStruct(this.gff.RootNode, $rootUL, true);
-        this.tabLoader.SetMessage("Loading Complete");
-        this.tabLoader.Dismiss();
-        this.$gffProperties.children().hide();
+          this.$gffContainer.html('');
+          let $scrollContainer = $('<div style="height: 100%;" />');
+          let $rootUL = $('<ul class="gff-struct gff-root-struct" />');
+          this.$gffContainer.append($scrollContainer);
+          $scrollContainer.append($rootUL);
+          this.$gffContainer.css({'overflow': 'auto'});
+          this.parseStruct(gff.RootNode, $rootUL, true);
+          this.tabLoader.SetMessage("Loading Complete");
+          this.tabLoader.Dismiss();
+          this.$gffProperties.children().hide();
+        });
       });
     }else{
       this.tabLoader.Dismiss();

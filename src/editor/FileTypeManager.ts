@@ -8,7 +8,7 @@ import { EditorFileOptions } from "./interface/EditorFileOptions";
 import { NotificationManager } from "./NotificationManager";
 import { Project } from "./Project";
 import { 
-  DLGEditorTab, ImageViewerTab, LIPEditorTab, MODEditorTab, ModelViewerTab, MovieViewerTab,
+  DLGEditorTab, GFFEditorTab, ImageViewerTab, LIPEditorTab, MODEditorTab, ModelViewerTab, MovieViewerTab,
   ScriptEditorTab, TextEditorTab, TwoDAEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab,
   WalkmeshViewerTab
 } from "./tabs";
@@ -87,6 +87,13 @@ export class FileTypeManager {
       break;
       case 'utp':
         let newUTPTab = Forge.tabManager.AddTab(new UTPEditorTab(res));
+      break;
+      case 'gui': 
+      case 'utt': 
+      case 'uts': 
+      case 'utw': 
+      case 'ute': 
+        let newGFFTab = Forge.tabManager.AddTab(new GFFEditorTab(res));
       break;
       case 'bik': 
         let newBIKTab = Forge.tabManager.AddTab(new MovieViewerTab(res));
