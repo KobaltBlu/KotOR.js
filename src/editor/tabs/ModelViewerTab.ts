@@ -15,6 +15,9 @@ import { WindowDialog } from "../../utility/WindowDialog";
 
 import * as THREE from "three";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { LYTObject } from "../../resource/LYTObject";
+import { KEYManager } from "../../KotOR";
+import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
 
 export class ModelViewerTab extends EditorTab {
   animLoop: boolean;
@@ -65,6 +68,13 @@ export class ModelViewerTab extends EditorTab {
   camerahook_cameras: THREE.PerspectiveCamera[] = [];
   $selectCameras: JQuery<HTMLElement>;
 
+  layout: LYTObject;
+  layout_group: THREE.Group;
+  $btn_load_layout: JQuery<HTMLElement>;
+  loading_layout: any;
+  $select_layout_list: JQuery<HTMLElement>;
+  $btn_dispose_layout: JQuery<HTMLElement>;
+
   constructor(file: EditorFile, isLocal = false){
     super();
     console.log('ModelViewerTab', this);
@@ -91,9 +101,12 @@ export class ModelViewerTab extends EditorTab {
     this.selectable = new THREE.Group();
     this.unselectable = new THREE.Group();
 
+    this.layout_group = new THREE.Group();
+
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
     this.scene.add(this.referenceNode);
+    this.scene.add(this.layout_group);
 
     this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.01, 15000 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
@@ -210,35 +223,57 @@ export class ModelViewerTab extends EditorTab {
         </div>
         <div class="tab-container">
           <div class="tab-content" id="camera">
-            <b>Selected Camera</b><br>
+            <div class="toolbar-header">
+              <b>Camera</b>
+            </div>
             <select id="camera_list">
               <option value="-1">Main</option>
             </select>
 
-            <b>Camera Speed</b><br>
+            <div class="toolbar-header">
+              <b>Camera Speed</b>
+            </div>
             <input id="camera_speed" type="range" min="1" max="25" value="${EditorControls.CameraMoveSpeed}" />
             <button id="btn_camerahook">Align to camera hook</button>
           </div>
           <div class="tab-content" id="animations">
-            <b>Animation List</b><br>
+            <div class="toolbar-header">
+              <b>Animations</b>
+            </div>
             <select id="animation_list">
               <option value="-1">None</option>
             </select>
             <b>Loop? </b><input type="checkbox" id="anim_loop"/>
           </div>
           <div class="tab-content" id="selected_object">
-            <b>Name</b><br>
+            <div class="toolbar-header">
+              <b>Name</b>
+            </div>
             <input id="selected_name" type="text" class="input" disabled />
-            <b>Texture</b><br>
+
+            <div class="toolbar-header">
+              <b>Texture</b>
+            </div>
             <input id="selected_texture" type="text" class="input" disabled />
             <button id="selected_change_texture">Change Texture</button>
 
             <ul id="node_tree_ele" class="tree css-treeview js"></ul>
           </div>
           <div class="tab-content" id="object_utils">
-            <b>Position</b><br>
+            <div class="toolbar-header">
+              <b>Position</b>
+            </div>
             <button id="btn_reset_position">Reset</button>
             <button id="btn_center_position">Center</button>
+            <br>
+            <div class="toolbar-header">
+              <b>Layout</b>
+            </div>
+            <select id="layout_list">
+              <option value="-1">None</option>
+            </select><br>
+            <button id="btn_load_layout">Load Layout</button>
+            <button id="btn_dispose_layout">Dispose Layout</button>
           </div>
         </div>
       </div>
@@ -405,6 +440,60 @@ export class ModelViewerTab extends EditorTab {
       this.centerObjectPosition();
     });
 
+    this.$select_layout_list = $('#layout_list', (this.$ui_selected[0] as any).$content);
+    let layouts = KEYManager.Key.GetFilesByResType(3000);
+    layouts.forEach( (res, index) => {
+      let key = KEYManager.Key.GetFileKeyByRes(res);
+      this.$select_layout_list[0].innerHTML += `<option value="${index}">${key.ResRef}</option>`;
+    });
+    this.$select_layout_list.on('change', (e) => {
+      let val = this.$select_layout_list.val();
+    })
+
+    this.$btn_load_layout = $('#btn_load_layout', (this.$ui_selected[0] as any).$content);
+    this.$btn_load_layout.on('click', (e) => {
+      if(this.loading_layout) return;
+      if(!this.layout){
+        let index = parseInt(this.$select_layout_list.val() as any);
+        this.disposeLayout();
+        if(index >= 0){
+          this.loading_layout = true;
+          KEYManager.Key.GetFileData(KEYManager.Key.GetFileKeyByRes(layouts[index]), (data: Buffer) => {
+            this.loadLayout(new LYTObject(data)).then( () => {
+              this.loading_layout = false;
+            });
+          })
+        }else{
+          this.layout = undefined;
+          this.loading_layout = false;
+        }
+      }
+    });
+    
+    this.$btn_dispose_layout = $('#btn_dispose_layout', (this.$ui_selected[0] as any).$content);
+    this.$btn_dispose_layout.on('click', (e) => {
+      this.disposeLayout();
+    });
+
+  }
+
+  disposeLayout(){
+    try{
+      if(this.layout_group.children.length){
+        let modelIndex = this.layout_group.children.length - 1;
+        while(modelIndex >= 0){
+          let model = this.layout_group.children[modelIndex] as OdysseyModel3D;
+          if(model){
+            model.dispose();
+            this.layout_group.remove(model);
+          }
+          modelIndex--;
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
+    this.layout = undefined;
   }
 
   OpenFile(file: EditorFile){
@@ -456,6 +545,40 @@ export class ModelViewerTab extends EditorTab {
 
     }    
 
+  }
+
+  async loadLayout(lyt: LYTObject){
+    return new Promise<void>( async (resolve, reject) => {
+      this.layout = lyt;
+      for(let i = 0, len = this.layout.rooms.length; i < len; i++){
+        let room = this.layout.rooms[i];
+        let mdl = await GameState.ModelLoader.loadAsync(room.name);
+        if(mdl){
+          let model = await OdysseyModel3D.FromMDL(mdl, {
+            manageLighting: false,
+            context: this, 
+            mergeStatic: true,
+          });
+          if(model){
+            model.position.set( parseFloat(room.x), parseFloat(room.y), parseFloat(room.z) )
+            this.layout_group.add(model);
+          }
+        }
+      }
+      TextureLoader.LoadQueue(() => {
+        this.renderer.compile(this.scene, this.currentCamera);
+        resolve();
+      }, (texObj: TextureLoaderQueuedRef) => {
+        if(texObj.material){
+          if(texObj.material instanceof THREE.ShaderMaterial){
+            if(texObj.material.uniforms.map.value){
+              console.log('iniTexture', texObj.name);
+              this.renderer.initTexture(texObj.material.uniforms.map.value);
+            }
+          }
+        }
+      });
+    });
   }
 
   centerObjectPosition(){
@@ -572,8 +695,8 @@ export class ModelViewerTab extends EditorTab {
   }
 
   Render(){
-    requestAnimationFrame( () => { this.Render(); } );
-    if(!this.visible)
+    requestAnimationFrame( this.Render.bind(this) );
+    if(!this.visible || !!this.loading_layout)
       return;
 
     this.selectionBox.update();
