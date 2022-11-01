@@ -149,7 +149,7 @@ export class ERFObject {
             onComplete(this);
 
         }else{
-          console.log('erf', this.resource_path);
+          // console.log('erf', this.resource_path);
           GameFileSystem.open(this.resource_path, 'r').then( (fd) => {
             let header = Buffer.alloc(HeaderSize);
             GameFileSystem.read(fd, header, 0, HeaderSize, 0).then( () => {
@@ -214,7 +214,7 @@ export class ERFObject {
                   if(typeof onComplete == 'function')
                     onComplete(this);
 
-                  console.log('ERFObject', "File was closed!");
+                  // console.log('ERFObject', "File was closed!");
                 }).catch( (err) => {
                   if (err) {
                     console.error('ERFObject', "close error:  ", err);
@@ -373,10 +373,10 @@ export class ERFObject {
                     if(typeof onComplete === 'function')
                       onComplete(buffer);
                   }).catch( (err) => {
-                    console.log(err);
+                    console.error(err);
                   })
                 }).catch( (err) => {
-                  console.log(err);
+                  console.error(err);
                 });
               }else{
                 if(typeof onComplete === 'function')
@@ -390,7 +390,7 @@ export class ERFObject {
                 onComplete(undefined);
             }
           }).catch( (err) => {
-            console.log('ERF Read', err.message);
+            console.error('ERF Read', err.message);
           });
         }
       }else{
@@ -435,7 +435,7 @@ export class ERFObject {
 
         resolve();
       }).catch( (err) => {
-        console.log(err);
+        console.error(err);
         if(typeof onError === 'function')
           onError(err);
         reject();
