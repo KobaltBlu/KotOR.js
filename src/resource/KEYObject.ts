@@ -118,7 +118,7 @@ export class KEYObject {
     return null;
   }
 
-  GetFileKeyByRes(Res: BIFResource): KEY|any {
+  GetFileKeyByRes(Res: BIFResource): KEY {
     for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
       if ( key.ResID == Res.ID && key.ResType == Res.ResType){
