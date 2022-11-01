@@ -20,7 +20,7 @@ export class OdysseyModelNode {
   childOffsets: number[] = [];
   controllers: Map<any, any> = new Map();
 
-  roomStatic: boolean = false;
+  roomStatic: boolean = true;
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   quaternion: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
   Supernode: number;
