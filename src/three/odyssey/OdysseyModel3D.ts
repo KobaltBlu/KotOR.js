@@ -863,7 +863,7 @@ _options
           //Merge Basic Geometries
           if(odysseyModel.mergedGeometries.length){
 
-            odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedGeometries);
+            odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedGeometries, true);
             odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, odysseyModel.mergedMaterials);
             odysseyModel.mergedMesh.receiveShadow = true;
             odysseyModel.add(odysseyModel.mergedMesh);
@@ -878,7 +878,7 @@ _options
           //Merge Dangly Geometries
           if(odysseyModel.mergedDanglyGeometries.length){
 
-            odysseyModel.mergedBufferDanglyGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedDanglyGeometries);
+            odysseyModel.mergedBufferDanglyGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedDanglyGeometries, true);
             odysseyModel.mergedDanglyMesh = new THREE.Mesh(odysseyModel.mergedBufferDanglyGeometry, odysseyModel.mergedDanglyMaterials);
             //odysseyModel.mergedDanglyMesh.receiveShadow = true;
             odysseyModel.add(odysseyModel.mergedDanglyMesh);
@@ -1132,7 +1132,7 @@ _options
             geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) ); //Works with indices
 
             //Normals
-            const normals = new Float32Array( odysseyNode.normals.length * 3 ); //Works with indices
+            const normals = new Float32Array( odysseyNode.normals.length ); //Works with indices
             geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).copyArray( odysseyNode.normals ) ); //Works with indices
 
             //Color
@@ -1140,11 +1140,11 @@ _options
             // geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(odysseyNode.vertices.length).fill(1, 0, odysseyNode.vertices.length) ) ); //Works with indices
             
             //UV1
-            const uv1 = new Float32Array( odysseyNode.tvectors[0].length * 2 ); //Works with indices
+            const uv1 = new Float32Array( odysseyNode.tvectors[0].length ); //Works with indices
             geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyArray( odysseyNode.tvectors[0] ) ); //Works with indices
             
             //UV2
-            const uv2 = new Float32Array( odysseyNode.tvectors[1].length * 2 ); //Works with indices
+            const uv2 = new Float32Array( odysseyNode.tvectors[1].length ); //Works with indices
             geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyArray( odysseyNode.tvectors[1] ) ); //Works with indices
             
             //--------------------------//
