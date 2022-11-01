@@ -1346,26 +1346,26 @@ _options
             }
 
             if(odysseyNode.HasLightmap && options.manageLighting){
-              mesh.onBeforeRender = (renderer, scene, camera, geometry, material: THREE.ShaderMaterial, group) => {
-                if(material.type == "ShaderMaterial"){
-                  (material.uniforms.pointLights as any).properties.animated = {} as any;
-                  let odysseyLight: OdysseyLight3D;
-                  for(let i = 0, len = LightManager.lights.length; i < len; i++){
-                    odysseyLight = LightManager.lights[i];
-                    if(odysseyLight.isAnimated){
-                      let light = material.uniforms.pointLights.value.findIndex( (light: THREE.PointLight) => {
-                        return light.position.equals(odysseyLight.worldPosition);
-                      });
-                      if(light >= 0){
-                        material.uniforms.pointLights.value[i].animated = 1;
-                      }
-                    }else{
-                      material.uniforms.pointLights.value[i].animated = 0;
-                    }
-                  }
-                  // console.log(renderer, camera, material, LightManager);
-                }
-              }
+              // mesh.onBeforeRender = (renderer, scene, camera, geometry, material: THREE.ShaderMaterial, group) => {
+              //   if(material.type == "ShaderMaterial"){
+              //     (material.uniforms.pointLights as any).properties.animated = {} as any;
+              //     let odysseyLight: OdysseyLight3D;
+              //     for(let i = 0, len = LightManager.lights.length; i < len; i++){
+              //       odysseyLight = LightManager.lights[i];
+              //       if(odysseyLight.isAnimated){
+              //         let light = material.uniforms.pointLights.value.findIndex( (light: THREE.PointLight) => {
+              //           return light.position.equals(odysseyLight.worldPosition);
+              //         });
+              //         if(light >= 0){
+              //           material.uniforms.pointLights.value[i].animated = 1;
+              //         }
+              //       }else{
+              //         material.uniforms.pointLights.value[i].animated = 0;
+              //       }
+              //     }
+              //     // console.log(renderer, camera, material, LightManager);
+              //   }
+              // }
             }
 
           }
