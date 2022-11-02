@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
+import { LayoutTrack } from "../interface/resource/LayoutTrack";
 
 /* @file
  * The ModuleMGTrack class.
@@ -14,20 +15,15 @@ import { OdysseyModel } from "../odyssey";
 export class ModuleMGTrack extends ModuleObject {
   index: number;
   track: any;
+  layout: LayoutTrack;
 
-  constructor(args: any = {}){
+  constructor(layout: LayoutTrack){
     super();
 
-    args = Object.assign({
-      track: '',
-      x: 0,
-      y: 0,
-      z: 0
-    }, args);
-
     this.index = 0;
-    this.track = args.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.position = new THREE.Vector3(parseFloat(args.x), parseFloat(args.y), parseFloat(args.z));
+    this.track = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.position = layout.position.clone();
+    this.layout = layout;
 
   }
 

@@ -2,6 +2,7 @@
  */
 
 import { ModuleObject } from ".";
+import { LayoutObstacle } from "../interface/resource/LayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
@@ -16,11 +17,18 @@ export class ModuleMGObstacle extends ModuleObject {
   hit_points: number;
   max_hps: number = 0;
   invince_period: number;
+  layout: LayoutObstacle;
 
-  constructor(template: GFFObject){
+  constructor(template: GFFObject, layout: LayoutObstacle){
     super(template);
     this.name = '';
     this.invince = 0;
+    this.layout = layout;
+  }
+
+  setTemplate(template: GFFObject){
+    this.template = template;
+    this.InitProperties();
   }
 
   update(delta: number = 0){
@@ -123,10 +131,9 @@ export class ModuleMGObstacle extends ModuleObject {
 
   InitProperties(){
     if(this.template.RootNode.HasField('Name'))
-      this.name = this.template.GetFieldByLabel('Name').GetValue();
+      this.name = this.template.GetFieldByLabel('Name').GetValue().toLowerCase();
 
     this.initialized = true;
-
   }
 
 

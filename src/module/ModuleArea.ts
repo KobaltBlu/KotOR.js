@@ -159,8 +159,8 @@ export class ModuleArea extends ModuleObject {
   fog: any;
   // _locals: any;
   path: any;
-  visObject: any;
-  layout: any;
+  visObject: VISObject;
+  layout: LYTObject;
   walkmesh_rooms: any[];
   restrictMode: number;
 
@@ -926,11 +926,7 @@ export class ModuleArea extends ModuleObject {
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
           if(room.roomName.toLowerCase() == roomLYT['name'].toLowerCase()){
-            room.setPosition(
-              parseFloat(roomLYT.x),
-              parseFloat(roomLYT.y),
-              parseFloat(roomLYT.z)
-            );
+            room.position.copy(roomLYT.position);
             sortedRooms.push(room);
           }
         }
@@ -948,8 +944,7 @@ export class ModuleArea extends ModuleObject {
       }
 
       for(let i = 0; i < this.layout.obstacles.length; i++){
-        let _obstacle = this.layout.obstacles[i];
-        this.obstacles.push(_obstacle);
+        this.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
       }
 
       //Room Linking Pass 1

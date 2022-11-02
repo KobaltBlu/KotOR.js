@@ -74,6 +74,7 @@ export class ModelViewerTab extends EditorTab {
   loading_layout: any;
   $select_layout_list: JQuery<HTMLElement>;
   $btn_dispose_layout: JQuery<HTMLElement>;
+  $infoOverlay: JQuery<HTMLElement>;
 
   constructor(file: EditorFile, isLocal = false){
     super();
@@ -169,9 +170,12 @@ export class ModelViewerTab extends EditorTab {
     this.controls = new ModelViewerControls(this.currentCamera, this.canvas, this);
     this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
 
+    this.$infoOverlay = $('<div class="info-overlay" />')
+
     this.$tabContent.append($(this.stats.dom));
     this.$tabContent.append(this.$canvas);
     this.$tabContent.append(this.$controls);
+    this.$tabContent.append(this.$infoOverlay)
 
     this.$ui_selected = $('<div style="position: absolute; top: 0; right: 0; bottom: 0;" />');
 
@@ -234,7 +238,9 @@ export class ModelViewerTab extends EditorTab {
               <b>Camera Speed</b>
             </div>
             <input id="camera_speed" type="range" min="1" max="25" value="${EditorControls.CameraMoveSpeed}" />
-            <button id="btn_camerahook">Align to camera hook</button>
+            <div class="button-group">
+              <button id="btn_camerahook">Align to camera hook</button>
+            </div>
           </div>
           <div class="tab-content" id="animations">
             <div class="toolbar-header">
@@ -250,30 +256,33 @@ export class ModelViewerTab extends EditorTab {
               <b>Name</b>
             </div>
             <input id="selected_name" type="text" class="input" disabled />
-
             <div class="toolbar-header">
               <b>Texture</b>
             </div>
             <input id="selected_texture" type="text" class="input" disabled />
-            <button id="selected_change_texture">Change Texture</button>
-
+            <div class="button-group">
+              <button id="selected_change_texture">Change Texture</button>
+            </div>
             <ul id="node_tree_ele" class="tree css-treeview js"></ul>
           </div>
           <div class="tab-content" id="object_utils">
             <div class="toolbar-header">
               <b>Position</b>
             </div>
-            <button id="btn_reset_position">Reset</button>
-            <button id="btn_center_position">Center</button>
-            <br>
+            <div class="button-group">
+              <button id="btn_reset_position">Reset</button>
+              <button id="btn_center_position">Center</button>
+            </div>
             <div class="toolbar-header">
               <b>Layout</b>
             </div>
             <select id="layout_list">
               <option value="-1">None</option>
-            </select><br>
-            <button id="btn_load_layout">Load Layout</button>
-            <button id="btn_dispose_layout">Dispose Layout</button>
+            </select>
+            <div class="button-group">
+              <button id="btn_load_layout">Load</button>
+              <button id="btn_dispose_layout">Dispose</button>
+            </div>
           </div>
         </div>
       </div>
@@ -549,9 +558,12 @@ export class ModelViewerTab extends EditorTab {
 
   async loadLayout(lyt: LYTObject){
     return new Promise<void>( async (resolve, reject) => {
+      this.tabLoader.SetMessage(`Loading: Layout...`);
+      this.tabLoader.Show();
       this.layout = lyt;
       for(let i = 0, len = this.layout.rooms.length; i < len; i++){
         let room = this.layout.rooms[i];
+        this.tabLoader.SetMessage(`Loading: ${room.name}`);
         let mdl = await GameState.ModelLoader.loadAsync(room.name);
         if(mdl){
           let model = await OdysseyModel3D.FromMDL(mdl, {
@@ -560,18 +572,20 @@ export class ModelViewerTab extends EditorTab {
             mergeStatic: true,
           });
           if(model){
-            model.position.set( parseFloat(room.x), parseFloat(room.y), parseFloat(room.z) )
+            model.position.copy( room.position )
             this.layout_group.add(model);
           }
         }
       }
       TextureLoader.LoadQueue(() => {
         this.renderer.compile(this.scene, this.currentCamera);
+        this.tabLoader.Hide();
         resolve();
       }, (texObj: TextureLoaderQueuedRef) => {
         if(texObj.material){
           if(texObj.material instanceof THREE.ShaderMaterial){
             if(texObj.material.uniforms.map.value){
+              this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
               console.log('iniTexture', texObj.name);
               this.renderer.initTexture(texObj.material.uniforms.map.value);
             }
@@ -716,14 +730,22 @@ export class ModelViewerTab extends EditorTab {
       }
     }
 
-    for(let i = 0; i < GameState.AnimatedTextures.length; i++){
-      GameState.AnimatedTextures[i].Update(delta);
+    for(let i = 0; i < this.layout_group.children.length; i++){
+      let obj = this.layout_group.children[i];
+      if(obj instanceof OdysseyModel3D){
+        obj.update(delta);
+      }
     }
+    
     //this.scene.children[1].rotation.z += 0.01;
     this.renderer.clear();
     this.renderer.render( this.scene, this.currentCamera );
     this.stats.update();
-
+    this.$infoOverlay[0].innerHTML = `
+    <b>Camera</b><br>
+    <span>Position - x: ${this.currentCamera.position.x.toFixed(4)}, y: ${this.currentCamera.position.y.toFixed(4)}, z: ${this.currentCamera.position.z.toFixed(4)}</span><br>
+    <span>Rotation - x: ${this.currentCamera.quaternion.x.toFixed(4)}, y: ${this.currentCamera.quaternion.y.toFixed(4)}, z: ${this.currentCamera.quaternion.z.toFixed(4)}, w: ${this.currentCamera.quaternion.w.toFixed(4)}</span><br>
+    `
   }
 
   select ( object: any ) {

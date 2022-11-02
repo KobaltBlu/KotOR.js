@@ -2,16 +2,21 @@
  */
 
 import { StringDecoder } from "string_decoder";
+import { LayoutRoom } from "../interface/resource/LayoutRoom";
+import { LayoutDoorHook } from "../interface/resource/LayoutDoorHook";
+import { LayoutObstacle } from "../interface/resource/LayoutObstacle";
+import { LayoutTrack } from "../interface/resource/LayoutTrack";
+import * as THREE from "three";
 
 /* @file
  * The LYTObject class.
  */
 
 export class LYTObject {
-  rooms: any[];
-  doorhooks: any[];
-  tracks: any[];
-  obstacles: any[];
+  rooms: LayoutRoom[];
+  doorhooks: LayoutDoorHook[];
+  tracks: LayoutTrack[];
+  obstacles: LayoutObstacle[];
   text: any;
 
   constructor( data?: Buffer ){
@@ -59,34 +64,27 @@ export class LYTObject {
           case MODES.ROOMS:
             this.rooms.push({
               name: params[0].toLowerCase(),
-              x: params[1],
-              y: params[2],
-              z: params[3]
+              position: new THREE.Vector3(params[1], params[2], params[3])
             });
           break;
           case MODES.TRACKS:
             this.tracks.push({
               name: params[0].toLowerCase(),
-              x: params[1],
-              y: params[2],
-              z: params[3]
+              position: new THREE.Vector3(params[1], params[2], params[3])
             });
           break;
           case MODES.OBSTACLES:
             this.obstacles.push({
               name: params[0].toLowerCase(),
-              x: params[1],
-              y: params[2],
-              z: params[3]
+              position: new THREE.Vector3(params[1], params[2], params[3])
             });
           break;
           case MODES.DOORS:
             this.doorhooks.push({
               room: params[0].toLowerCase(),
               name: params[1].toLowerCase(),
-              x: params[2],
-              y: params[3],
-              z: params[4]
+              position: new THREE.Vector3(params[1], params[2], params[3]),
+              quaternion: new THREE.Quaternion(params[4], params[5], params[6], params[7])
             });
           break;
         }

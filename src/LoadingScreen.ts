@@ -16,6 +16,8 @@ export class LoadingScreen {
   loading_container: HTMLElement;
   messageElement: HTMLElement;
 
+  fadeOutTimeout: any;
+
   constructor(parent?: HTMLElement, isGlobal: boolean = true){
     this.message = 'Loading...';
     this.loader = document.createElement('div');
@@ -67,6 +69,7 @@ export class LoadingScreen {
   }
 
   Show(msg?: string){
+    clearTimeout(this.fadeOutTimeout);
     this.SetMessage(msg);
     this.loader.style.display = 'block';
     this.loader.classList.remove('fade-in');
@@ -77,17 +80,19 @@ export class LoadingScreen {
   }
 
   Hide(){
+    clearTimeout(this.fadeOutTimeout);
     // this.loader.style.display = 'none';
     this.loader.classList.remove('fade-in');
     this.loader.classList.remove('fade-out');
     this.loader.classList.add('fade-out');
+
+    this.fadeOutTimeout = setTimeout( () => {
+      this.loader.style.display = 'none';
+    }, 1000);
   }
 
   Dismiss(){
-    // this.loader.style.display = 'none';
-    this.loader.classList.remove('fade-in');
-    this.loader.classList.remove('fade-out');
-    this.loader.classList.add('fade-out');
+    this.Hide();
   }
 
 }
