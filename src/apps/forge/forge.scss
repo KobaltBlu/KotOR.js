@@ -2007,3 +2007,46 @@ text-shadow: 0 1px 0 rgb(14, 72, 57);
 }
 
 @import '../game/styles/loader.scss';
+
+.info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
+.windowpane-content {
+  .tab-host {
+    margin: -5px;
+  }
+
+  .tab-container {
+    padding: 10px;
+  }
+}
+
+.tab-host {
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-header {
+  border-bottom: 1px solid #0006;
+  margin-bottom: 10px;
+  padding-top: 2px;
+  background: rgb(0 0 0 / 40%);
+  padding-left: 5px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-evenly;
+  align-content: center;
+  padding: 10px;
+  flex-wrap: wrap;
+  button {
+    margin-bottom: 5px;
+    margin-left: 0;
+  }
+}
