@@ -567,7 +567,7 @@ export class EditorTab {
 
   }
 
-  BuildToolbarItem(item: JQuery<HTMLElement>, $parent?: JQuery<HTMLElement>){
+  BuildToolbarItem(item: any, $parent?: JQuery<HTMLElement>){
 
     let ddid = EditorTab.dropdownId++;
 
@@ -578,54 +578,36 @@ export class EditorTab {
       $parent = this.$toolbar; topLevel = true;
     }
 
-    //@ts-expect-error
     if (typeof item.type == 'undefined'){
-      //@ts-expect-error
       item.type = 'item';
     }
 
-    //@ts-expect-error
     if (typeof item.name == 'undefined'){
-      //@ts-expect-error
       item.name = '';
     }
 
-    //@ts-expect-error
     if (typeof item.icon != 'undefined'){
-      //@ts-expect-error
       item.type = 'icon';
     }
 
-    //@ts-expect-error
     if (typeof item.glyphicon != 'undefined'){
-      //@ts-expect-error
       item.type = 'glyphicon';
     }
     
-    //@ts-expect-error
     if (typeof item.color === 'undefined'){
-      //@ts-expect-error
       item.color = 'white';
     }
 
     //Build Item
-      //@ts-expect-error
     if(item.type === 'separator' || item.type === 'sep'){
       $item = $('<li role="separator" class="divider" />');
-    //@ts-expect-error
     }else if(item.type === 'title'){
-      //@ts-expect-error
       $item = $('<li class="title">'+item.name+'</li>');
-      //@ts-expect-error
     }else if(item.type === 'icon'){
-      //@ts-expect-error
       $item = $('<li><a href="#"><img src="'+item.icon+'" title="'+( item.name ? item.name : '' )+'" style="width: 20px; height: 20px;"/></a></li>');
-      //@ts-expect-error
     }else if(item.type === 'glyphicon'){
-      //@ts-expect-error
       $item = $('<li><a href="#" class="glyphicon '+item.glyphicon+'" style="color: '+item.color+';"></a></li>');
     }else{
-      //@ts-expect-error
       $item = $('<li><a href="#">'+item.name+'</a></li>');
     }
 
@@ -638,14 +620,11 @@ export class EditorTab {
         $('.dropdown-submenu .show', $item).removeClass("show");
       }
       
-      //@ts-expect-error
       if (typeof item.onClick == 'function'){
-        //@ts-expect-error
         item.onClick(e);
       }
     });
     //If there are child items
-    //@ts-expect-error
     let items: any = item.items;
     if(items instanceof Array){
       if(items.length){
