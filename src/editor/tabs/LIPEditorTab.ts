@@ -16,6 +16,7 @@ import * as fs from "fs";
 import { WindowDialog } from "../../utility/WindowDialog";
 import * as THREE from "three";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { UI3DRenderer } from "../UI3DRenderer";
 
 export class LIPEditorTab extends EditorTab {
   animLoop: boolean;
@@ -31,18 +32,13 @@ export class LIPEditorTab extends EditorTab {
   max_timeline_zoom: number;
   min_timeline_zoom: number;
   timeline_zoom: number;
-  renderer: THREE.WebGLRenderer;
-  clock: THREE.Clock;
-  stats: Stats;
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+
+  clock: THREE.Clock = new THREE.Clock();
+  pointLight: THREE.PointLight;
+  renderComponent: UI3DRenderer;
+
   CameraMode: { EDITOR: number; STATIC: number; ANIMATED: number; };
-  staticCameraIndex: number;
-  animatedCameraIndex: number;
-  cameraMode: any;
-  currentCamera: any;
-  canvas: any;
-  $canvas: JQuery<any>;
+
   $ui_controls: JQuery<HTMLElement>;
   $ui_picker: JQuery<HTMLElement>;
   $ui_keyframe_options: JQuery<HTMLElement>;
@@ -50,8 +46,6 @@ export class LIPEditorTab extends EditorTab {
   $ui_lip: JQuery<HTMLElement>;
   $ui_bar: JQuery<HTMLElement>;
   $ui_canvas: JQuery<HTMLCanvasElement>;
-  globalLight: THREE.AmbientLight;
-  pointLight: THREE.PointLight;
   lip: any;
   head: OdysseyModel3D;
   head_hook: THREE.Object3D<THREE.Event>;
@@ -109,40 +103,13 @@ export class LIPEditorTab extends EditorTab {
       this.preview_gain = parseFloat(localStorage.getItem('lip_gain'));
     }
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      // autoClear: false,
-      logarithmicDepthBuffer: true
-    });
-    this.renderer.autoClear = false;
-    this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
-
-    this.clock = new THREE.Clock();
-    this.stats = Stats();
-
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.1, 15000 );
-    this.camera.up = new THREE.Vector3( 0, 0, 1 );
-    this.camera.position.set(0, .5, .1);              // offset the camera a bit
-    this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
-
-    this.camera.rotation.set(-Math.PI/2, 0, Math.PI);
+    this.renderComponent = new UI3DRenderer();
 
     this.CameraMode = {
       EDITOR: 0,
       STATIC: 1,
       ANIMATED: 2
     };
-
-    this.staticCameraIndex = 0;
-    this.animatedCameraIndex = 0;
-    this.cameraMode = this.CameraMode.EDITOR;
-    this.currentCamera = this.camera;
-
-    this.canvas = this.renderer.domElement;
-    this.$canvas = $(this.canvas);
-
-    this.$canvas.addClass('noselect').attr('tabindex', 1);
 
     this.$ui_controls = $('<div class="keyframe-controls" />');
     this.$ui_picker = $('<div style="position: absolute; top: 5px; right: 5px;" />');
@@ -173,32 +140,27 @@ export class LIPEditorTab extends EditorTab {
     });
 
     //0x60534A
-    this.globalLight = new THREE.AmbientLight('#3f3f3f'); //0x60534A
-    this.globalLight.position.x = 0;
-    this.globalLight.position.y = 0;
-    this.globalLight.position.z = 0;
-    this.globalLight.intensity  = 1;
+    this.renderComponent.globalLight.color.setHex(0x3F3F3F);
 
     this.pointLight = new THREE.PointLight('#FFFFFF');
+    this.pointLight.name = 'Point Light';
     this.pointLight.position.x = 0;
     this.pointLight.position.y = 1;
     this.pointLight.position.z = 1;
     this.pointLight.distance = 10;
-
-    this.scene.add(this.globalLight);
-    this.scene.add(this.pointLight);
+    this.renderComponent.lights.add(this.pointLight);
 
     this.lip = undefined;
 
     this.head = undefined;
     this.head_hook = new THREE.Object3D;
-    this.scene.add(this.head_hook);
+    this.renderComponent.scene.add(this.head_hook);
 
     //this.controls = new ModelViewerControls(this.currentCamera, this.canvas, this);
     //this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
 
-    this.$tabContent.append($(this.stats.dom));
-    this.$tabContent.append(this.$canvas);
+    this.$tabContent.append($(this.renderComponent.stats.dom));
+    this.$tabContent.append(this.renderComponent.$canvas);
 
     this.$tabContent.append(this.$ui_controls);
     this.$tabContent.append(this.$ui_keyframe_options);
@@ -215,24 +177,6 @@ export class LIPEditorTab extends EditorTab {
     this.gainNode = GameState.audioEngine.audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
     this.source = GameState.audioEngine.audioCtx.createBufferSource();
-
-    window.addEventListener('resize', () => {
-      try{
-        this.TabSizeUpdate();
-      }catch(e){
-
-      }
-    });
-
-    $('#container').layout({ applyDefaultStyles: false,
-      onresize: () => {
-        try{
-          this.TabSizeUpdate();
-        }catch(e){
-
-        }
-      }
-    });
 
     this.BuildGround();
 
@@ -950,7 +894,7 @@ export class LIPEditorTab extends EditorTab {
             this.LoadHead(this.current_head, () => {
               TextureLoader.LoadQueue(() => {
                 console.log('Textures Loaded');
-                this.TabSizeUpdate();
+                this.onResize();
                 this.UpdateUI();
                 this.BuildKeyframes();
                 this.Render();
@@ -971,7 +915,7 @@ export class LIPEditorTab extends EditorTab {
         this.current_head = model_name;
         localStorage.setItem('lip_head', this.current_head);
         OdysseyModel3D.FromMDL(mdl, {
-          context: GameState,
+          context: this.renderComponent,
           castShadow: true,
           receiveShadow: true,
           onComplete: (model: OdysseyModel3D) => {
@@ -1115,28 +1059,17 @@ export class LIPEditorTab extends EditorTab {
     super.onResize();
     this._ResetAudio();
     try{
-      this.TabSizeUpdate();
+      this.renderComponent.camera.aspect = this.$tabContent.innerWidth() / this.$tabContent.innerHeight();
+      this.renderComponent.camera.updateProjectionMatrix();
+      this.renderComponent.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
     }catch(e){
-
+      console.error(e);
     }
   }
 
   onDestroy() {
     this.Stop();
     super.onDestroy();
-
-    try{
-      this.TabSizeUpdate();
-    }catch(e){
-
-    }
-  }
-
-  TabSizeUpdate(){
-    this.camera.aspect = this.$tabContent.innerWidth() / this.$tabContent.innerHeight();
-    this.camera.updateProjectionMatrix();
-
-    this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
   }
 
   UpdateTimeLineScroll(){
@@ -1190,8 +1123,8 @@ export class LIPEditorTab extends EditorTab {
 
     }
 
-    for(let i = 0; i < this.scene.children.length; i++){
-      let obj = this.scene.children[i];
+    for(let i = 0; i < this.renderComponent.scene.children.length; i++){
+      let obj = this.renderComponent.scene.children[i];
       if(obj instanceof OdysseyModel3D){
         obj.update(delta);
       }
@@ -1213,9 +1146,7 @@ export class LIPEditorTab extends EditorTab {
     }
 
 
-    this.renderer.clear();
-    this.renderer.render( this.scene, this.currentCamera );
-    this.stats.update();
+    this.renderComponent.Render();
     this.seeking = false;
   }
 
@@ -1225,7 +1156,7 @@ export class LIPEditorTab extends EditorTab {
     let cbgeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 25, 25, 25, 25 ));
     let mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
     let wireframe = new THREE.LineSegments( cbgeometry, mat );
-    this.scene.add( wireframe );
+    this.renderComponent.scene.add( wireframe );
 
   }
 

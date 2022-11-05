@@ -148,13 +148,13 @@ export class EditorControls {
         if(Mouse.ButtonState == MouseState.LEFT){
           //if(this.CurrentTool == EditorControlsTool.SELECT){
             let axisMoverSelected = false;
-            this.editor.axes.selected = null;
+            this.editor.axes.object = null;
             this.editor.raycaster.setFromCamera( Mouse.Vector, this.editor.currentCamera );
             let axisMoverIntersects = this.editor.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
             if(axisMoverIntersects.length){
               //console.log(Mouse.MouseDownX, Mouse.MouseDownY);
               //console.log('axisMoverIntersects', axisMoverIntersects);
-              this.editor.axes.selected = axisMoverIntersects[0].object.name;
+              this.editor.axes.object = axisMoverIntersects[0].object;
               axisMoverSelected = true;
             }
 

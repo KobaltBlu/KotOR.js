@@ -150,7 +150,7 @@ if(closeToggle){
 
   window.addEventListener('resize', () => {
     try{
-      //tabManager.TriggerResize();
+      KotOR.Forge.tabManager.TriggerResize();
     }catch(e){
       console.error(e);
     }
@@ -313,6 +313,13 @@ if(closeToggle){
         _Game = Games.KOTOR;
         GameKey = 'KOTOR';
       break;
+    }
+
+    KotOR.ApplicationProfile.ENV = env;
+    if(env == ApplicationEnvironment.ELECTRON){
+      KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = app_profile.directory;
+    }else{
+      KotOR.GameFileSystem.rootDirectoryHandle = app_profile.directory_handle;
     }
 
     if(env == ApplicationEnvironment.ELECTRON){

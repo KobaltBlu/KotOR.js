@@ -53,24 +53,6 @@ export class MovieViewerTab extends EditorTab {
       abs_path: true
     });
 
-    window.addEventListener('resize', () => {
-      try{
-        this.TabSizeUpdate();
-      }catch(e){
-
-      }
-    });
-    
-    $('#container').layout({ applyDefaultStyles: false,
-      onresize: () => {
-        try{
-          this.TabSizeUpdate();
-        }catch(e){
-
-        }
-      }
-    });
-
     this.OpenFile(file);
 
   }
@@ -89,7 +71,7 @@ export class MovieViewerTab extends EditorTab {
 
       this.binkVideo.play(file.path);
 
-      this.TabSizeUpdate();
+      this.onResize();
       this.UpdateUI();
       this.Render();
 
@@ -101,9 +83,21 @@ export class MovieViewerTab extends EditorTab {
     super.onResize();
 
     try{
-      this.TabSizeUpdate();
-    }catch(e){
+      let width = this.$tabContent.innerWidth(), height = this.$tabContent.innerHeight();
 
+      if(this.width != width || this.height != height){
+        this.camera.left = width / -2;
+        this.camera.right = width / 2;
+        this.camera.top = height / 2;
+        this.camera.bottom = height / -2;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize( width, width );
+  
+        this.width = width;
+        this.height = height;
+      }
+    }catch(e){
+      console.error(e);
     }
   }
 
@@ -115,29 +109,6 @@ export class MovieViewerTab extends EditorTab {
 
     this.renderer.dispose();
     this.renderer = undefined;
-
-    try{
-      this.TabSizeUpdate();
-    }catch(e){
-
-    }
-  }
-
-  TabSizeUpdate(){
-
-    let width = this.$tabContent.innerWidth(), height = this.$tabContent.innerHeight();
-
-    if(this.width != width || this.height != height){
-      this.camera.left = width / -2;
-      this.camera.right = width / 2;
-      this.camera.top = height / 2;
-      this.camera.bottom = height / -2;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize( width, width );
-
-      this.width = width;
-      this.height = height;
-    }
   }
 
   Render(){
@@ -148,7 +119,7 @@ export class MovieViewerTab extends EditorTab {
     if(!this.visible)
       return;
 
-    this.TabSizeUpdate();
+    this.onResize();
 
     let delta = this.clock.getDelta();
 

@@ -10,16 +10,16 @@ export class ColorController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
-    // if ((manager.modelNode.odysseyNode.NodeType & NODETYPE.Light) == NODETYPE.Light) {
-    //   manager.modelNode.odysseyNode.light.color.setRGB( data.x, data.y, data.z );
+    // if ((manager.modelNode.odysseyModelNode.NodeType & NODETYPE.Light) == NODETYPE.Light) {
+    //   manager.modelNode.odysseyModelNode.light.color.setRGB( data.x, data.y, data.z );
     // }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
-    // if ((manager.modelNode.odysseyNode.NodeType & NODETYPE.Light) == NODETYPE.Light) {
-    //   manager.modelNode.odysseyNode.light.color.r = ((next.x - last.x) * fl + last.x);
-    //   manager.modelNode.odysseyNode.light.color.g = ((next.y - last.y) * fl + last.y);
-    //   manager.modelNode.odysseyNode.light.color.b = ((next.z - last.z) * fl + last.z);
+    // if ((manager.modelNode.odysseyModelNode.NodeType & NODETYPE.Light) == NODETYPE.Light) {
+    //   manager.modelNode.odysseyModelNode.light.color.r = ((next.x - last.x) * fl + last.x);
+    //   manager.modelNode.odysseyModelNode.light.color.g = ((next.y - last.y) * fl + last.y);
+    //   manager.modelNode.odysseyModelNode.light.color.b = ((next.z - last.z) * fl + last.z);
     // }
   }
 

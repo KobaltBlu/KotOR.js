@@ -36,24 +36,6 @@ export class ImageViewerTab extends EditorTab {
     this.data = new Uint8Array(0);
     this.workingData = new Uint8Array(0);
 
-    window.addEventListener('resize', () => {
-      try{
-        this.TabSizeUpdate();
-      }catch(e){
-
-      }
-    });
-
-    $('#container').layout({ applyDefaultStyles: false,
-      onresize: () => {
-        try{
-          this.TabSizeUpdate();
-        }catch(e){
-
-        }
-      }
-    });
-
     this.$contentWrapper[0].addEventListener('wheel', (e) => {
       if(!!e.ctrlKey){
         if(e.deltaY < 0){
@@ -308,10 +290,6 @@ export class ImageViewerTab extends EditorTab {
     this.$canvas.off('click').on('click', (e: any) => {
       e.preventDefault();
     });
-
-  }
-
-  TabSizeUpdate(){
 
   }
 

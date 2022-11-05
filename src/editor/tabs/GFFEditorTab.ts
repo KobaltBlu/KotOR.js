@@ -202,7 +202,7 @@ export class GFFEditorTab extends EditorTab {
     if(isRoot)
       $struct.addClass('gff-root-struct');
 
-    $struct.append('<input class="node-toggle" type="checkbox" id="struct-'+this.structIndex+'" /><label for="struct-'+this.structIndex+'"></label><span>[Struct ID: '+struct.GetType()+']</span>');
+    $struct.append('<input class="node-toggle" type="checkbox" id="struct-'+this.structIndex+'" /><label for="struct-'+this.structIndex+'"><span>[Struct ID: '+struct.GetType()+']</span></label>');
 
     let $fields = $('<ul class="gff-fields strt" />');
 
@@ -364,7 +364,7 @@ export class GFFEditorTab extends EditorTab {
     let _hasList = false;
 
     //Create the Label element
-    field.$label = $('<label for="fields-'+this.fieldsIndex+'"></label><span><span class="field-label">'+field.Label+'</span> <span class="field-type">['+GFFObject.TypeValueToString(field.GetType())+']</span> <span class="field-value"></span></span>');
+    field.$label = $('<label for="fields-'+this.fieldsIndex+'"><span><span class="field-label">'+field.Label+'</span> <span class="field-type">['+GFFObject.TypeValueToString(field.GetType())+']</span> <span class="field-value"></span></span></label>');
 
     $field.on('onSubStringAdded', () => {
       console.log($(this));

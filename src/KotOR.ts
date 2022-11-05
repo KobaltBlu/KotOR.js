@@ -1,3 +1,4 @@
+export * from "./utility/polyfills";
 export * from "./audio";
 export * from "./odyssey";
 export * from "./module";

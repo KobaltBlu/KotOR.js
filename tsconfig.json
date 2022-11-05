@@ -8,7 +8,7 @@
     "removeComments": true,
     "experimentalDecorators": true,
     "rootDir": ".",
-    "sourceMap": true,
+    "sourceMap": false,
     "listFiles": true,
     "newLine": "LF",
     "noEmitOnError": true,

@@ -29,9 +29,42 @@ export class EditorTab {
   singleInstance: boolean;
   file: EditorFile;
 
+  enableLayoutContainers: boolean = false;
+
+  //Layout Containers
+  $layoutContainer: JQuery<HTMLElement>;
+  $layoutContainerCenter: JQuery<HTMLElement>;
+  $layoutContainerEast: JQuery<HTMLElement>;
+  $layoutContainerSouth: JQuery<HTMLElement>;
+  layout_south_size: number;
+  layout_east_size: number;
+  layout_west_size: number;
+  layout_north_size: number;
+  layout_north_enabled: boolean;
+  layout_south_enabled: boolean;
+  layout_east_enabled: boolean;
+  layout_west_enabled: boolean;
+  layout_bar_open_size: number;
+  layout_bar_closed_size: number;
+  $layoutContainerNorth: JQuery<HTMLElement>;
+  $layoutContainerWest: JQuery<HTMLElement>;
+  layout_north_open: boolean;
+  layout_south_open: boolean;
+  layout_east_open: boolean;
+  layout_west_open: boolean;
+  $layoutContainerNorthHandle: JQuery<HTMLElement>;
+  $layoutContainerSouthHandle: JQuery<HTMLElement>;
+  $layoutContainerEastHandle: JQuery<HTMLElement>;
+  $layoutContainerWestHandle: JQuery<HTMLElement>;
+  $layoutContainerNorthHandleToggle: JQuery<HTMLElement>;
+  $layoutContainerSouthHandleToggle: JQuery<HTMLElement>;
+  $layoutContainerEastHandleToggle: JQuery<HTMLElement>;
+  $layoutContainerWestHandleToggle: JQuery<HTMLElement>;
+
   constructor(options: any = {}){
     this.isDestroyed = true;
     options = Object.assign({
+      enableLayoutContainers: false,
       toolbar: undefined,
       closeable: true,
       editorFile: undefined
@@ -40,6 +73,8 @@ export class EditorTab {
     if(options.editorFile instanceof EditorFile){
       this.file = options.editorFile;
     }
+
+    this.enableLayoutContainers = options.enableLayoutContainers;
 
     this.id = EditorTabManager.GetNewTabID();
     this.tabManager = null;
@@ -86,6 +121,283 @@ export class EditorTab {
       });
     }
     this.editorFileUpdated();
+    this.initLayoutContainers();
+  }
+
+  initLayoutContainers(){
+    if(!this.enableLayoutContainers) return;
+
+    this.$layoutContainer = $(`
+<div class="content">
+  <div class="3d-layout-north"></div>
+  <div class="3d-layout-west"></div>
+  <div class="3d-layout-center"></div>
+  <div class="3d-layout-east"></div>
+  <div class="3d-layout-south"></div>
+  <div class="ui-layout-resizer ui-layout-resizer-north ui-draggable-handle ui-layout-resizer-open ui-layout-resizer-north-open" title="Resize"><div class="ui-layout-toggler ui-layout-toggler-north ui-layout-toggler-open ui-layout-toggler-north-open" title="Close"></div></div>
+  <div class="ui-layout-resizer ui-layout-resizer-south ui-draggable-handle ui-layout-resizer-open ui-layout-resizer-south-open" title="Resize"><div class="ui-layout-toggler ui-layout-toggler-south ui-layout-toggler-open ui-layout-toggler-south-open" title="Close"></div></div>
+  <div class="ui-layout-resizer ui-layout-resizer-east ui-draggable-handle ui-layout-resizer-open ui-layout-resizer-est-open" title="Resize"><div class="ui-layout-toggler ui-layout-toggler-east ui-layout-toggler-open ui-layout-toggler-east-open" title="Close"></div></div>
+  <div class="ui-layout-resizer ui-layout-resizer-west ui-draggable-handle ui-layout-resizer-open ui-layout-resizer-west-open" title="Resize"><div class="ui-layout-toggler ui-layout-toggler-west ui-layout-toggler-open ui-layout-toggler-west-open" title="Close"></div></div>
+</div>`);
+
+    this.$layoutContainer.css({
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+    });
+
+    this.$layoutContainerNorth = $('.3d-layout-north', this.$layoutContainer);
+    this.$layoutContainerSouth = $('.3d-layout-south', this.$layoutContainer);
+    this.$layoutContainerCenter = $('.3d-layout-center', this.$layoutContainer);
+    this.$layoutContainerEast = $('.3d-layout-east', this.$layoutContainer);
+    this.$layoutContainerWest = $('.3d-layout-west', this.$layoutContainer);
+
+    this.$layoutContainerNorthHandle = $('.ui-layout-resizer-north', this.$layoutContainer);
+    this.$layoutContainerSouthHandle = $('.ui-layout-resizer-south', this.$layoutContainer);
+    this.$layoutContainerEastHandle = $('.ui-layout-resizer-east', this.$layoutContainer);
+    this.$layoutContainerWestHandle = $('.ui-layout-resizer-west', this.$layoutContainer);
+
+    
+    this.$layoutContainerNorthHandle.draggable({
+      axis: "y",
+      stop: (e, ui) => {
+        this.layout_north_size = ui.position.top - this.layout_bar_open_size/2;
+        this.onResize();
+        console.log(e, ui);
+      }
+    });
+    this.$layoutContainerSouthHandle.draggable({ 
+      axis: "y" ,
+      stop: (e, ui) => {
+        this.layout_south_size = this.$tabContent.height() - ui.position.top - this.layout_bar_open_size/2;
+        this.onResize();
+        console.log(e, ui);
+      }
+    });
+    this.$layoutContainerEastHandle.draggable({ 
+      axis: "x",
+      stop: (e, ui) => {
+        this.layout_east_size = this.$tabContent.width() - ui.position.left - this.layout_bar_open_size/2;
+        this.onResize();
+        console.log(e, ui);
+      }
+    });
+    this.$layoutContainerWestHandle.draggable({ 
+      axis: "x",
+      stop: (e, ui) => {
+        this.layout_west_size = ui.position.left - this.layout_bar_open_size/2;
+        this.onResize();
+        console.log(e, ui);
+      }
+    });
+
+    this.$layoutContainerNorthHandleToggle = $('.ui-layout-toggler-north', this.$layoutContainerNorthHandle);
+    this.$layoutContainerSouthHandleToggle = $('.ui-layout-toggler-south', this.$layoutContainerSouthHandle);
+    this.$layoutContainerEastHandleToggle = $('.ui-layout-toggler-east', this.$layoutContainerEastHandle);
+    this.$layoutContainerWestHandleToggle = $('.ui-layout-toggler-west', this.$layoutContainerWestHandle);
+
+    this.layout_north_size = 0;
+    this.layout_west_size = 0;
+    this.layout_east_size = 250;
+    this.layout_south_size = 100;
+
+    this.layout_north_enabled = false;
+    this.layout_south_enabled = true;
+    this.layout_east_enabled = true;
+    this.layout_west_enabled = false;
+
+    this.layout_north_open = false;
+    this.layout_south_open = true;
+    this.layout_east_open = true;
+    this.layout_west_open = false;
+
+    this.layout_bar_open_size = 8;
+    this.layout_bar_closed_size = 14;
+  }
+
+  updateLayoutContainers(){
+    if(!this.enableLayoutContainers) return;
+
+    let tabWidth = this.$tabContent.width();
+    let tabHeight = this.$tabContent.height();
+
+    let north_gutter_size = 
+      this.layout_north_enabled ? (this.layout_north_open ? this.layout_bar_open_size : this.layout_bar_closed_size) : 0;
+      
+    let south_gutter_size = 
+      this.layout_south_enabled ? (this.layout_south_open ? this.layout_bar_open_size : this.layout_bar_closed_size) : 0;
+
+    let east_gutter_size = 
+      this.layout_east_enabled ? (this.layout_east_open ? this.layout_bar_open_size : this.layout_bar_closed_size) : 0;
+
+    let west_gutter_size = 
+      this.layout_west_enabled ? (this.layout_west_open ? this.layout_bar_open_size : this.layout_bar_closed_size) : 0;
+
+    let west_bounds = {
+      top: 0,
+      left: 0,
+      width: this.layout_west_enabled ? this.layout_west_size - (west_gutter_size/2) : 0,
+      height: this.layout_west_enabled ? tabHeight : 0,
+    };
+
+    let east_bounds = {
+      top: 0,
+      right: 0,
+      width: this.layout_east_enabled ? this.layout_east_size - (east_gutter_size/2) : 0,
+      height: this.layout_east_enabled ? tabHeight : 0,
+    };
+
+    let north_bounds = {
+      top: 0,
+      right: east_bounds.width + east_gutter_size,
+      left: west_bounds.width + west_gutter_size,
+      width: this.layout_north_enabled ? (tabWidth - west_bounds.width) - east_bounds.width : 0,
+      height: this.layout_north_enabled ? this.layout_north_size - (north_gutter_size/2) : 0,
+    };
+
+    let south_bounds = {
+      bottom: 0,
+      right: east_bounds.width + east_gutter_size,
+      left: west_bounds.width + west_gutter_size,
+      width: this.layout_south_enabled ? (tabWidth - west_bounds.width) - east_bounds.width : 0,
+      height: this.layout_south_enabled ? this.layout_south_size  - (south_gutter_size/2) : 0,
+    };
+
+    let center_bounds = {
+      top: north_bounds.height + north_gutter_size,
+      bottom: south_bounds.height + south_gutter_size,
+      left: west_bounds.width + west_gutter_size,
+      right: east_bounds.width + east_gutter_size,
+
+      width: ((tabWidth - east_bounds.width) - west_bounds.width) - west_gutter_size - east_gutter_size,
+      height: ((tabHeight - north_bounds.height) - north_bounds.height) - north_gutter_size - south_gutter_size,
+    };
+
+    this.$layoutContainerCenter.css({
+      position: 'absolute',
+      top: center_bounds.top,
+      bottom: center_bounds.bottom,
+      left: center_bounds.left,
+      right: center_bounds.right,
+    });
+
+    this.$layoutContainerEast.css({
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      right: 0,
+      left: tabWidth - east_bounds.width
+    });
+
+    this.$layoutContainerWest.css({
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      right: this.layout_west_size,
+      left: 0
+    });
+
+    this.$layoutContainerNorth.css({
+      position: 'absolute',
+      top: 0,
+      bottom: north_bounds.height,
+      right: this.layout_east_size,
+      left: this.layout_west_size,
+    });
+
+    this.$layoutContainerSouth.css({
+      position: 'absolute',
+      top: tabHeight - south_bounds.height,
+      bottom: 0,
+      right: this.layout_east_size,
+      left: this.layout_west_size,
+    });    
+
+    if(!north_gutter_size){
+      this.$layoutContainerNorthHandle.hide();
+    }else{
+      this.$layoutContainerNorthHandle.show();
+      this.$layoutContainerNorthHandle.css({
+        position: 'absolute',
+        top: north_bounds.height,
+        left: north_bounds.left,
+        right: north_bounds.right,
+        height: north_gutter_size,
+        display: 'flex',
+        justifyContent: 'center',
+        alignContent: 'center',
+        cursor: 'n-resize'
+      });
+      this.$layoutContainerNorthHandleToggle.css({
+        width: 50,
+        height: '100%'
+      })
+    }
+
+    if(!south_gutter_size){
+      this.$layoutContainerSouthHandle.hide();
+    }else{
+      this.$layoutContainerSouthHandle.show();
+      this.$layoutContainerSouthHandle.css({
+        position: 'absolute',
+        top: tabHeight - south_bounds.height - south_gutter_size,
+        left: south_bounds.left,
+        right: south_bounds.right,
+        height: south_gutter_size,
+        display: 'flex',
+        justifyContent: 'center',
+        alignContent: 'center',
+        cursor: 's-resize'
+      });
+      this.$layoutContainerSouthHandleToggle.css({
+        width: 50,
+        height: '100%'
+      })
+    }
+
+    if(!east_gutter_size){
+      this.$layoutContainerEastHandle.hide();
+    }else{
+      this.$layoutContainerEastHandle.show();
+      this.$layoutContainerEastHandle.css({
+        position: 'absolute',
+        bottom: 0,
+        top: 0,
+        left: tabWidth - east_bounds.width - east_gutter_size,
+        width: east_gutter_size,
+        display: 'flex',
+        justifyContent: 'center',
+        alignContent: 'center',
+        alignItems: 'center',
+        cursor: 'e-resize'
+      });
+      this.$layoutContainerEastHandleToggle.css({
+        height: 50,
+        width: '100%'
+      })
+    }
+
+    if(!west_gutter_size){
+      this.$layoutContainerWestHandle.hide();
+    }else{
+      this.$layoutContainerWestHandle.show();
+      this.$layoutContainerWestHandle.css({
+        position: 'absolute',
+        bottom: 0,
+        top: 0,
+        left: west_bounds.width,
+        width: west_gutter_size,
+        display: 'flex',
+        justifyContent: 'center',
+        alignContent: 'center',
+        alignItems: 'center',
+        cursor: 'w-resize'
+      });
+      this.$layoutContainerWestHandleToggle.css({
+        height: 50,
+        width: '100%'
+      })
+    }
 
   }
 
@@ -356,12 +668,10 @@ export class EditorTab {
 
   }
 
-  Destroy() {
-
-  }
+  Destroy() {}
 
   onResize() {
-
+    this.updateLayoutContainers();
   }
 
   onRemove(){

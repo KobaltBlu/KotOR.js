@@ -86,6 +86,9 @@ contextBridge.exposeInMainWorld(
     statSync: (...args) => {
       return fs.statSync(...args);
     },
+    exists: (...args) => {
+      return fs.exists(...args);
+    }
   }
 );
 contextBridge.exposeInMainWorld(

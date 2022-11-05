@@ -52,7 +52,7 @@ export class ModelViewerControls {
 
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
-    this.editor.$canvas.keydown( ( event: any ) => {
+    this.editor.renderComponent.$canvas.keydown( ( event: any ) => {
       //console.log(event.which)
       if ( event.which == 87 )
         this.keys['w'] = true;
@@ -92,7 +92,7 @@ export class ModelViewerControls {
         //console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
-        let parentOffset = this.editor.$canvas.offset();
+        let parentOffset = this.editor.renderComponent.$canvas.offset();
         Mouse.MouseDownX = event.pageX - parentOffset.left;
         Mouse.MouseDownY = event.pageY - parentOffset.top;
 
@@ -161,11 +161,11 @@ export class ModelViewerControls {
     }).mousemove((event: any) => {
 
 
-      let parentOffset = this.editor.$canvas.offset();
+      let parentOffset = this.editor.renderComponent.$canvas.offset();
       Mouse.MouseX = event.pageX - parentOffset.left;
       Mouse.MouseY = event.pageY - parentOffset.top;
-      Mouse.Vector.x = ( (Mouse.MouseX) / this.editor.$canvas.width() ) * 2 - 1;
-      Mouse.Vector.y = - ( (Mouse.MouseY) / this.editor.$canvas.height() ) * 2 + 1;
+      Mouse.Vector.x = ( (Mouse.MouseX) / this.editor.renderComponent.$canvas.width() ) * 2 - 1;
+      Mouse.Vector.y = - ( (Mouse.MouseY) / this.editor.renderComponent.$canvas.height() ) * 2 + 1;
 
       if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT){
         Mouse.Dragging = true;

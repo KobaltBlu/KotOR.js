@@ -22,9 +22,12 @@ import { AudioLoader } from "../../audio/AudioLoader";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { EditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "./";
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Signal } from "signals";
 
 import template from "../templates/editor-module-3d.html";
+import { ConfigClient } from "../../KotOR";
 
 export class ModuleEditorTab extends EditorTab {
   template: string = template;
@@ -36,7 +39,10 @@ export class ModuleEditorTab extends EditorTab {
   $sidebar: any;
   $toolsUI: JQuery<HTMLElement>;
   toolsUI: any;
-  axes: any;
+  
+  axes: TransformControls;
+  cam_controls: OrbitControls;
+
   controls: any;
   mode: ModuleEditorTabMode;
   walkmeshVisibility: boolean;
@@ -66,7 +72,6 @@ export class ModuleEditorTab extends EditorTab {
   viewportFrustum: any;
   clock: any;
   player: ModuleCreature;
-  cam_controls: any;
   stats: any;
   $infoPane: JQuery<HTMLElement>;
   $canvas: JQuery<any>;
@@ -255,18 +260,12 @@ export class ModuleEditorTab extends EditorTab {
     this.emitters = {};
     this._emitters = {};
 
-    //@ts-expect-error
     this.group.creatures.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'creature', 'visible']);
-    //@ts-expect-error
     this.group.doors.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'door', 'visible']);
-    //@ts-expect-error
     this.group.placeables.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'placeable', 'visible']);
     //this.group.rooms.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'room', 'visible']);
-    //@ts-expect-error
     this.group.sounds.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'sound', 'visible']);
-    //@ts-expect-error
     this.group.triggers.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'trigger', 'visible']);
-    //@ts-expect-error
     this.group.waypoints.visible = ConfigClient.get(['Editor', 'Module', 'Helpers', 'waypoint', 'visible']);
     this.group.player.visible = false;
 
@@ -492,9 +491,8 @@ export class ModuleEditorTab extends EditorTab {
 
     this.raycaster = new THREE.Raycaster();
 
-    // @ts-expect-error
-    this.axes = new THREE.TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
-    this.axes.selected = null;
+    this.axes = new TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
+    // this.axes.selected = null;
     this.scene.add(this.axes);
 
     //This works
@@ -507,8 +505,7 @@ export class ModuleEditorTab extends EditorTab {
     this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
     this.controls.SetCameraMode(EditorControlsCameraMode.EDITOR);
     
-    // @ts-expect-error
-    this.cam_controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+    this.cam_controls = new OrbitControls( this.camera, this.renderer.domElement );
     this.cam_controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     this.cam_controls.dampingFactor = 0.25;
     this.cam_controls.screenSpacePanning = false;
@@ -807,32 +804,26 @@ export class ModuleEditorTab extends EditorTab {
       break;
       case ModuleEditorTabNode.CREATURE:
         this.group.creatures.visible = !this.group.creatures.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'creature', 'visible'], this.group.creatures.visible);
       break;
       case ModuleEditorTabNode.PLACEABLE:
         this.group.placeables.visible = !this.group.placeables.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'placeable', 'visible'], this.group.placeables.visible);
       break;
       case ModuleEditorTabNode.DOOR:
         this.group.doors.visible = !this.group.doors.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'door', 'visible'], this.group.doors.visible);
       break;
       case ModuleEditorTabNode.WAYPOINT:
         this.group.waypoints.visible = !this.group.waypoints.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'waypoint', 'visible'], this.group.waypoints.visible);
       break;
       case ModuleEditorTabNode.TRIGGER:
         this.group.triggers.visible = !this.group.triggers.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'trigger', 'visible'], this.group.triggers.visible);
       break;
       case ModuleEditorTabNode.SOUND:
         this.group.sounds.visible = !this.group.sounds.visible;
-        //@ts-expect-error
         ConfigClient.set(['Editor', 'Module', 'Helpers', 'sound', 'visible'], this.group.sounds.visible);
       break;
       case ModuleEditorTabNode.WALKMESH:
@@ -852,7 +843,6 @@ export class ModuleEditorTab extends EditorTab {
 
       break;
     }
-    //@ts-expect-error
     ConfigClient.save(null, true);
   }
 
@@ -996,7 +986,6 @@ export class ModuleEditorTab extends EditorTab {
     for (let i = 0, len = areaGroups.length; i < len; i++) {
       let group = areaGroups[i];
 
-      //@ts-expect-error
       let $nodeGroup = $('<li><input class="node-toggle" type="checkbox" checked="" id="module-scene-tree-'+(treeIndex)+'"><label for="module-scene-tree-'+(treeIndex++)+'">'+group.name.titleCase()+'</label><span></span><ul></ul></li>');
       let $nodeGroupUL = $('ul', $nodeGroup);
 
@@ -1007,7 +996,6 @@ export class ModuleEditorTab extends EditorTab {
         let child = children[j];
         let nth = j+1;
 
-        //@ts-expect-error
         let name = group.name.slice(0, -1).titleCase()+' '+((nth < 10) ? ("0" + nth) : nth);
 
         if(typeof child.getName === 'function')

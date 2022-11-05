@@ -14,105 +14,71 @@ import * as path from "path";
 import { WindowDialog } from "../../utility/WindowDialog";
 
 import * as THREE from "three";
-import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { LYTObject } from "../../resource/LYTObject";
 import { KEYManager } from "../../KotOR";
 import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
+import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
+import { UI3DRenderer } from "../UI3DRenderer";
+import { ModelViewSideBarComponent, KeyFrameTimelineComponent } from "../components";
 
 export class ModelViewerTab extends EditorTab {
   animLoop: boolean;
   deltaTime: number;
-  renderer: THREE.WebGLRenderer;
+  
   referenceNode: THREE.Object3D<THREE.Event>;
-  clock: THREE.Clock;
-  stats: Stats;
-  scene: THREE.Scene;
+  clock: THREE.Clock = new THREE.Clock();
   selectable: THREE.Group;
   unselectable: THREE.Group;
-  camera: THREE.PerspectiveCamera;
   CameraMode: { EDITOR: number; STATIC: number; ANIMATED: number; };
-  staticCameras: any[];
-  animatedCameras: any[];
-  staticCameraIndex: number;
-  animatedCameraIndex: number;
   cameraMode: any;
-  currentCamera: any;
-  canvas: any;
-  $canvas: JQuery<any>;
   $controls: JQuery<HTMLElement>;
-  globalLight: THREE.AmbientLight;
   raycaster: THREE.Raycaster;
-  depthTarget: THREE.WebGLRenderTarget;
   selectionBox: THREE.BoxHelper;
+
   controls: ModelViewerControls;
-  $ui_selected: JQuery<HTMLElement>;
   data: Uint8Array;
-  model: any;
-  selected: any;
-  $nodeTreeEle: JQuery<HTMLElement>;
-  treeIndex: number;
+  model: OdysseyModel3D;
   groundColor: THREE.Color;
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
   groundMesh: THREE.LineSegments<any, any>;
-  $inputCameraSpeed: JQuery<HTMLElement>;
-  $btn_camerahook: JQuery<HTMLElement>;
-  $animSelect: JQuery<HTMLElement>;
-  $animLoop: JQuery<HTMLElement>;
-  $selected_object: JQuery<HTMLElement>;
-  $input_name: JQuery<HTMLElement>;
-  $input_texture: JQuery<HTMLElement>;
-  $btn_reset_position: JQuery<HTMLElement>;
-  $btn_center_position: JQuery<HTMLElement>;
+  $infoOverlay: JQuery<HTMLElement>;
 
   camerahook_cameras: THREE.PerspectiveCamera[] = [];
-  $selectCameras: JQuery<HTMLElement>;
 
   layout: LYTObject;
   layout_group: THREE.Group;
-  $btn_load_layout: JQuery<HTMLElement>;
-  loading_layout: any;
-  $select_layout_list: JQuery<HTMLElement>;
-  $btn_dispose_layout: JQuery<HTMLElement>;
-  $infoOverlay: JQuery<HTMLElement>;
+
+  renderComponent: UI3DRenderer;
+  modelViewSideBarComponent: ModelViewSideBarComponent;
+  modelViewTimelineComponent: any;
 
   constructor(file: EditorFile, isLocal = false){
-    super();
+    super({
+      enableLayoutContainers: true
+    });
     console.log('ModelViewerTab', this);
     this.animLoop = false;
     this.deltaTime = 0;
     console.log('Model Viewer');
     $('a', this.$tab).text('Model Viewer');
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      // autoClear: false,
-      logarithmicDepthBuffer: true
-    });
-    this.renderer.autoClear = false;
-    this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
-
-    this.referenceNode = new THREE.Object3D();
-
-    this.clock = new THREE.Clock();
-    this.stats = Stats();
-
-    this.scene = new THREE.Scene();
+    this.renderComponent = new UI3DRenderer();
 
     this.selectable = new THREE.Group();
     this.unselectable = new THREE.Group();
 
     this.layout_group = new THREE.Group();
 
-    this.scene.add(this.selectable);
-    this.scene.add(this.unselectable);
-    this.scene.add(this.referenceNode);
-    this.scene.add(this.layout_group);
+    this.renderComponent.scene.add(this.selectable);
+    this.renderComponent.scene.add(this.unselectable);
+    this.renderComponent.scene.add(this.referenceNode);
+    this.renderComponent.scene.add(this.layout_group);
 
-    this.camera = new THREE.PerspectiveCamera( 55, this.$tabContent.innerWidth() / this.$tabContent.innerHeight(), 0.01, 15000 );
-    this.camera.up = new THREE.Vector3( 0, 0, 1 );
-    this.camera.position.set( .1, 5, 1 );              // offset the camera a bit
-    this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
+    this.renderComponent.camera = new THREE.PerspectiveCamera( 55, this.$layoutContainerCenter.innerWidth() / this.$layoutContainerCenter.innerHeight(), 0.01, 15000 );
+    this.renderComponent.camera.up = new THREE.Vector3( 0, 0, 1 );
+    this.renderComponent.camera.position.set( .1, 5, 1 );              // offset the camera a bit
+    this.renderComponent.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
 
     this.CameraMode = {
       EDITOR: 0,
@@ -120,42 +86,15 @@ export class ModelViewerTab extends EditorTab {
       ANIMATED: 2
     };
 
-    //Static Camera's that are in the .git file of the module
-    this.staticCameras = [];
-    //Animates Camera's are MDL files that have a camera_hook and animations for use in dialog
-    this.animatedCameras = [];
-
-    this.staticCameraIndex = 0;
-    this.animatedCameraIndex = 0;
     this.cameraMode = this.CameraMode.EDITOR;
-    this.currentCamera = this.camera;
-
-    this.canvas = this.renderer.domElement;
-    this.$canvas = $(this.canvas);
-
-    this.$canvas.addClass('noselect').attr('tabindex', 1);
+    this.renderComponent.currentCamera = this.renderComponent.camera;
 
     this.$controls = $('<div style="position: absolute; top: 25px; right: 25px; z-index:1000; height: auto!important;" />');
 
-    //0x60534A
-    this.globalLight = new THREE.AmbientLight(0xFFFFFF); //0x60534A
-    this.globalLight.position.x = 0
-    this.globalLight.position.y = 0
-    this.globalLight.position.z = 0
-    this.globalLight.intensity  = 1
-
-    this.unselectable.add(this.globalLight);
+    // this.unselectable.add(this.globalLight);
 
     //Raycaster
     this.raycaster = new THREE.Raycaster();
-
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
-		this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
-    this.depthTarget.texture.generateMipmaps = false;
-    this.depthTarget.stencilBuffer = false;
-    this.depthTarget.depthBuffer = true;
-    this.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
-    this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     //this.axes = new THREE.TransformControls( this.currentCamera, this.canvas );//new THREE.AxisHelper(10);            // add axes
     //this.axes.selected = null;
@@ -167,323 +106,30 @@ export class ModelViewerTab extends EditorTab {
     this.selectionBox.visible = false;
     this.unselectable.add( this.selectionBox );
 
-    this.controls = new ModelViewerControls(this.currentCamera, this.canvas, this);
+    this.controls = new ModelViewerControls(this.renderComponent.currentCamera, this.renderComponent.canvas, this);
     this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
 
     this.$infoOverlay = $('<div class="info-overlay" />')
 
-    this.$tabContent.append($(this.stats.dom));
-    this.$tabContent.append(this.$canvas);
-    this.$tabContent.append(this.$controls);
-    this.$tabContent.append(this.$infoOverlay)
+    this.$layoutContainerCenter.append($(this.renderComponent.stats.dom));
+    this.$layoutContainerCenter.append(this.renderComponent.$canvas);
+    this.$layoutContainerCenter.append(this.$controls);
+    this.$layoutContainerCenter.append(this.$infoOverlay)
 
-    this.$ui_selected = $('<div style="position: absolute; top: 0; right: 0; bottom: 0;" />');
+    this.modelViewSideBarComponent = new ModelViewSideBarComponent(this);
+    this.modelViewSideBarComponent.attachTo(this.$layoutContainerEast);
+    // this.$layoutContainerEast.append(this.$ui_selected);
 
-    this.$ui_selected.windowPane({
-      title: 'Model Viewer Tools'
-    });
+    this.modelViewTimelineComponent = new KeyFrameTimelineComponent(this);
+    this.modelViewTimelineComponent.attachTo(this.$layoutContainerSouth);
 
-    this.$tabContent.append(this.$ui_selected);
-
+    this.$tabContent.append(this.$layoutContainer);
 
     this.data = new Uint8Array(0);
     this.file = file;
 
-    window.addEventListener('resize', () => {
-      try{
-        this.TabSizeUpdate();
-      }catch(e){
-
-      }
-    });
-
-    $('#container').layout({ applyDefaultStyles: false,
-      onresize: () => {
-        try{
-          this.TabSizeUpdate();
-        }catch(e){
-
-        }
-      }
-    });
-
     this.BuildGround();
-
     this.OpenFile(file);
-
-  }
-
-  UpdateUI(){
-
-    (this.$ui_selected[0] as any).$content.html(`
-      <div class="tab-host">
-        <div class="tabs">
-          <ul class="tabs-menu tabs-flex-wrap">
-            <li class="btn btn-tab" rel="#camera">Camera</li>
-            <li class="btn btn-tab" rel="#animations">Animation</li>
-            <li class="btn btn-tab" rel="#selected_object">Nodes</li>
-            <li class="btn btn-tab" rel="#object_utils">Utils</li>
-          </ul>
-        </div>
-        <div class="tab-container">
-          <div class="tab-content" id="camera">
-            <div class="toolbar-header">
-              <b>Camera</b>
-            </div>
-            <select id="camera_list">
-              <option value="-1">Main</option>
-            </select>
-
-            <div class="toolbar-header">
-              <b>Camera Speed</b>
-            </div>
-            <input id="camera_speed" type="range" min="1" max="25" value="${EditorControls.CameraMoveSpeed}" />
-            <div class="button-group">
-              <button id="btn_camerahook">Align to camera hook</button>
-            </div>
-          </div>
-          <div class="tab-content" id="animations">
-            <div class="toolbar-header">
-              <b>Animations</b>
-            </div>
-            <select id="animation_list">
-              <option value="-1">None</option>
-            </select>
-            <b>Loop? </b><input type="checkbox" id="anim_loop"/>
-          </div>
-          <div class="tab-content" id="selected_object">
-            <div class="toolbar-header">
-              <b>Name</b>
-            </div>
-            <input id="selected_name" type="text" class="input" disabled />
-            <div class="toolbar-header">
-              <b>Texture</b>
-            </div>
-            <input id="selected_texture" type="text" class="input" disabled />
-            <div class="button-group">
-              <button id="selected_change_texture">Change Texture</button>
-            </div>
-            <ul id="node_tree_ele" class="tree css-treeview js"></ul>
-          </div>
-          <div class="tab-content" id="object_utils">
-            <div class="toolbar-header">
-              <b>Position</b>
-            </div>
-            <div class="button-group">
-              <button id="btn_reset_position">Reset</button>
-              <button id="btn_center_position">Center</button>
-            </div>
-            <div class="toolbar-header">
-              <b>Layout</b>
-            </div>
-            <select id="layout_list">
-              <option value="-1">None</option>
-            </select>
-            <div class="button-group">
-              <button id="btn_load_layout">Load</button>
-              <button id="btn_dispose_layout">Dispose</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
-
-    //Setup the tabs
-    (this.$ui_selected as any).$tabHost = $('.tab-host', (this.$ui_selected[0] as any).$content);
-
-    $('.tabs-menu', (this.$ui_selected as any).$tabHost).css({
-      whiteSpace: 'initial',
-      width: '100%',
-      height: 'initial'
-    });
-
-    $('.tabs-menu > .btn-tab', (this.$ui_selected as any).$tabHost).on('click', (e: any) => {
-      e.preventDefault();
-      $('.tabs-menu > .btn-tab', (this.$ui_selected as any).$tabHost).removeClass('current');
-      $(e.target).addClass('current');
-      $('.tab-container .tab-content', (this.$ui_selected as any).$tabHost).hide()
-      $('.tab-container .tab-content'+e.target.attributes.rel.value, (this.$ui_selected as any).$tabHost).show();
-    });
-
-    $('.tabs > .btn-tab[rel="#animations"]', (this.$ui_selected as any).$tabHost).trigger('click');
-
-    //Camera Properties
-    this.$selectCameras = $('select#camera_list', (this.$ui_selected[0] as any).$content);
-    this.$selectCameras.on('change', () => {
-      if(this.$selectCameras.val() == -1){
-        this.currentCamera = this.camera;
-      }else{
-        this.currentCamera = this.camerahook_cameras[this.$selectCameras.val() as any];
-      }
-      if(!this.currentCamera){
-        this.currentCamera = this.camera;
-      }
-    });
-
-    for(let i = 0; i < this.camerahook_cameras.length; i++){
-      let name = this.camerahook_cameras[i].parent.name.replace(/\0[\s\S]*$/g,'');
-      this.$selectCameras.append('<option value="'+i+'">'+name+'</option>')
-    }
-
-    this.$inputCameraSpeed = $('input#camera_speed', (this.$ui_selected[0] as any).$content);
-    this.$inputCameraSpeed.on('change', () => {
-      EditorControls.CameraMoveSpeed = parseInt(this.$inputCameraSpeed.val() as any);
-      localStorage.setItem('camera_speed', EditorControls.CameraMoveSpeed.toString());
-    });
-
-    this.$btn_camerahook = $('#btn_camerahook', (this.$ui_selected[0] as any).$content);
-    this.$btn_camerahook.on('click', (e: any) => {
-      e.preventDefault();
-      if(this.model.camerahook instanceof THREE.Object3D){
-        this.model.camerahook.getWorldPosition(this.camera.position);
-        this.model.camerahook.getWorldQuaternion(this.camera.quaternion);
-      }else{
-        NotificationManager.Notify(NotificationManager.Types.WARNING, 'There is no camerahook present in this model.');
-      }
-    })
-
-    //Animation Properties
-
-    this.$animSelect = $('select#animation_list', (this.$ui_selected[0] as any).$content);
-    this.$animLoop = $('input#anim_loop', (this.$ui_selected[0] as any).$content);
-
-    let animations = this.model.odysseyAnimations.slice();
-    animations.sort( (a: any, b: any) => {
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-
-      let comparison = 0;
-      if (nameA > nameB) {
-        comparison = 1;
-      } else if (nameA < nameB) {
-        comparison = -1;
-      }
-      return comparison;
-    });
-
-    for(let i = 0; i < animations.length; i++){
-      let name = animations[i].name.replace(/\0[\s\S]*$/g,'');
-      this.$animSelect.append('<option value="'+name+'">'+name+'</option>')
-    }
-
-    this.$animSelect.on('change', () => {
-      let val = this.$animSelect.val();
-      this.model.stopAnimation();
-      if(val != '-1')
-        this.model.playAnimation(val, this.animLoop)
-
-    });
-
-    this.$animLoop.on('change', () => {
-      this.animLoop = this.$animLoop.is(':checked');
-      this.$animSelect.trigger('change');
-    });
-
-    //Selected Object Properties
-    this.$selected_object = $('div#selected_object', (this.$ui_selected[0] as any).$content);
-    this.$input_name = $('input#selected_name', (this.$ui_selected[0] as any).$content);
-    this.$input_texture = $('input#selected_texture', (this.$ui_selected[0] as any).$content);
-    (this.$ui_selected as any).$btn_change_texture = $('button#selected_change_texture', (this.$ui_selected[0] as any).$content);
-
-    (this.$ui_selected as any).$btn_change_texture.on('click', async (e: any) => {
-
-      let originalTextureName = this.selected.odysseyModelNode.TextureMap1;
-
-      let payload = await WindowDialog.showOpenDialog({
-        title: 'Replace Texture',
-        filters: [
-          {name: 'TPC Image', extensions: ['tpc']},
-          {name: 'TGA Image', extensions: ['tga']}
-        ],
-        properties: ['createDirectory'],
-      });
-
-      if(!payload.canceled && payload.filePaths.length){
-        if(payload.filePaths.length){
-          let file = payload.filePaths[0];
-          let file_info = path.parse(file);
-          TextureLoader.tpcLoader.fetch_local(file, (texture: OdysseyTexture) => {
-            this.selected.odysseyModelNode.TextureMap1 = file_info.name;
-            this.selected.material.uniforms.map.value = texture;
-            this.selected.material.uniformsNeedsUpdate = true;
-
-            let replaceAll = WindowDialog.showMessageBox({
-                type: 'question',
-                buttons: ['Yes', 'No'],
-                title: 'Replace All',
-                message: 'Would you like to replace all occurrences of the texture?'
-              });
-
-            if(replaceAll == 0){
-              this.model.traverse( (obj: any) => {
-                if(obj instanceof THREE.Mesh){
-                  if(obj.userData.node.TextureMap1.equalsIgnoreCase(originalTextureName)){
-                    obj.userData.node.TextureMap1 = file_info.name;
-                    obj.material.uniforms.map.value = texture;
-                    obj.material.uniformsNeedsUpdate = true;
-                  }
-                }
-              });
-            }
-
-          });
-        }
-      }
-    });
-
-    //Node Tree Tab
-    //this.$nodeTreeTab = $('#node_tree', (this.$ui_selected as any).$tabHost);
-    this.$nodeTreeEle = $('#node_tree_ele', (this.$ui_selected as any).$tabHost);
-
-    //Object Utils
-    this.$btn_reset_position = $('#btn_reset_position', (this.$ui_selected[0] as any).$content);
-    this.$btn_center_position = $('#btn_center_position', (this.$ui_selected[0] as any).$content);
-
-    this.$btn_reset_position.on('click', (e) => {
-      e.preventDefault();
-      this.resetObjectPosition();
-    });
-
-    this.$btn_center_position.on('click', (e) => {
-      e.preventDefault();
-      this.centerObjectPosition();
-    });
-
-    this.$select_layout_list = $('#layout_list', (this.$ui_selected[0] as any).$content);
-    let layouts = KEYManager.Key.GetFilesByResType(3000);
-    layouts.forEach( (res, index) => {
-      let key = KEYManager.Key.GetFileKeyByRes(res);
-      this.$select_layout_list[0].innerHTML += `<option value="${index}">${key.ResRef}</option>`;
-    });
-    this.$select_layout_list.on('change', (e) => {
-      let val = this.$select_layout_list.val();
-    })
-
-    this.$btn_load_layout = $('#btn_load_layout', (this.$ui_selected[0] as any).$content);
-    this.$btn_load_layout.on('click', (e) => {
-      if(this.loading_layout) return;
-      if(!this.layout){
-        let index = parseInt(this.$select_layout_list.val() as any);
-        this.disposeLayout();
-        if(index >= 0){
-          this.loading_layout = true;
-          KEYManager.Key.GetFileData(KEYManager.Key.GetFileKeyByRes(layouts[index]), (data: Buffer) => {
-            this.loadLayout(new LYTObject(data)).then( () => {
-              this.loading_layout = false;
-            });
-          })
-        }else{
-          this.layout = undefined;
-          this.loading_layout = false;
-        }
-      }
-    });
-    
-    this.$btn_dispose_layout = $('#btn_dispose_layout', (this.$ui_selected[0] as any).$content);
-    this.$btn_dispose_layout.on('click', (e) => {
-      this.disposeLayout();
-    });
-
   }
 
   disposeLayout(){
@@ -499,6 +145,7 @@ export class ModelViewerTab extends EditorTab {
           modelIndex--;
         }
       }
+      this.modelViewSideBarComponent.buildNodeTree();
     }catch(e){
       console.error(e);
     }
@@ -521,14 +168,17 @@ export class ModelViewerTab extends EditorTab {
 
           OdysseyModel3D.FromMDL(odysseyModel, {
             manageLighting: false,
-            context: this, 
+            context: this.renderComponent, 
             onComplete: (model: OdysseyModel3D) => {
               this.model = model;
+              model.traverse( (node) => {
+                node.frustumCulled = false
+              });
 
               if(model.camerahook){
                 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
                 const helper = new THREE.CameraHelper( camera );
-                this.scene.add( helper );
+                this.renderComponent.scene.add( helper );
                 model.camerahook.add(camera);
                 this.camerahook_cameras.push(camera);
               }
@@ -537,10 +187,10 @@ export class ModelViewerTab extends EditorTab {
               model.position.set(0, 0, 0);
               TextureLoader.LoadQueue(() => {
                 console.log('Textures Loaded');
-                this.TabSizeUpdate();
-                this.UpdateUI();
+                this.onResize();
+                this.modelViewSideBarComponent.buildUI();
                 this.Render();
-                this.BuildNodeTree();
+                this.modelViewSideBarComponent.buildNodeTree();
                 this.resetObjectPosition();
               });
             }
@@ -554,45 +204,6 @@ export class ModelViewerTab extends EditorTab {
 
     }    
 
-  }
-
-  async loadLayout(lyt: LYTObject){
-    return new Promise<void>( async (resolve, reject) => {
-      this.tabLoader.SetMessage(`Loading: Layout...`);
-      this.tabLoader.Show();
-      this.layout = lyt;
-      for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-        let room = this.layout.rooms[i];
-        this.tabLoader.SetMessage(`Loading: ${room.name}`);
-        let mdl = await GameState.ModelLoader.loadAsync(room.name);
-        if(mdl){
-          let model = await OdysseyModel3D.FromMDL(mdl, {
-            manageLighting: false,
-            context: this, 
-            mergeStatic: true,
-          });
-          if(model){
-            model.position.copy( room.position )
-            this.layout_group.add(model);
-          }
-        }
-      }
-      TextureLoader.LoadQueue(() => {
-        this.renderer.compile(this.scene, this.currentCamera);
-        this.tabLoader.Hide();
-        resolve();
-      }, (texObj: TextureLoaderQueuedRef) => {
-        if(texObj.material){
-          if(texObj.material instanceof THREE.ShaderMaterial){
-            if(texObj.material.uniforms.map.value){
-              this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
-              console.log('iniTexture', texObj.name);
-              this.renderer.initTexture(texObj.material.uniforms.map.value);
-            }
-          }
-        }
-      });
-    });
   }
 
   centerObjectPosition(){
@@ -618,99 +229,29 @@ export class ModelViewerTab extends EditorTab {
     super.onResize();
 
     try{
-      this.TabSizeUpdate();
+      this.renderComponent.triggerResize();
+  
+      for(let i = 0; i < this.camerahook_cameras.length; i++){
+        this.camerahook_cameras[i].aspect = this.renderComponent.camera.aspect;
+        this.camerahook_cameras[i].updateProjectionMatrix();
+      }
     }catch(e){
-
+      console.error(e);
     }
   }
 
   onDestroy() {
     super.onDestroy();
-
-    try{
-      this.TabSizeUpdate();
-    }catch(e){
-
-    }
   }
 
-  TabSizeUpdate(){
-    this.camera.aspect = this.$tabContent.innerWidth() / this.$tabContent.innerHeight();
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
-    this.depthTarget.setSize( this.$tabContent.innerWidth(), this.$tabContent.innerHeight() );
-
-    for(let i = 0; i < this.camerahook_cameras.length; i++){
-      this.camerahook_cameras[i].aspect = this.camera.aspect;
-      this.camerahook_cameras[i].updateProjectionMatrix();
-    }
-  }
-
-  BuildNodeTree(){
-
-    let nodeList = [];
-    this.treeIndex = 0;
-
-    for (const [key, value] of this.model.nodes) {
-      nodeList.push({
-        name: key,
-        type: 'resource',
-        data: {
-          node: value,
-        },
-        nodeList: []
-      });
-    }
-
-    this.$nodeTreeEle.html(
-      this.buildNodeList(nodeList)
-    );
-
-    $('li.link', this.$nodeTreeEle).off('click').on('click', (e: any) => {
-      e.preventDefault();
-      if(this.model.nodes.has(e.target.dataset.node)){
-        this.select(this.model.nodes.get(e.target.dataset.node));
-      }
-      console.log(e.target.dataset.node);
-    });
-
-  }
-
-  buildNodeList(nodeList: any = [], canOrphan = false){
-
-    let str = '';
-    if(nodeList instanceof Array){
-      for(let i = 0; i < nodeList.length; i++){
-        str += this.buildNodeList(nodeList[i], canOrphan);
-      }
-    }else{
-
-      let node = nodeList;
-      if(node.type == 'group'){
-        if(node.nodeList.length == 1 && canOrphan){
-          for(let i = 0; i < node.nodeList.length; i++){
-            str += this.buildNodeList(node.nodeList[i], false);
-          }
-        }else{
-          str += '<li><input type="checkbox" checked id="list-'+this.treeIndex+'"><label for="list-'+(this.treeIndex++)+'">'+node.name+'</label><span></span><ul>';
-          for(let i = 0; i < node.nodeList.length; i++){
-            str += this.buildNodeList(node.nodeList[i], true);
-          }
-          str += '</ul></li>';
-        }
-      }else{
-        str += '<li class="link" data-node="'+node.name+'">'+node.name+'</li>';
-      }
-
-    }
-
-    return str;
-
+  Show(): void {
+    super.Show();
+    this.onResize();
   }
 
   Render(){
     requestAnimationFrame( this.Render.bind(this) );
-    if(!this.visible || !!this.loading_layout)
+    if(!this.visible || !!this.modelViewSideBarComponent.loading_layout)
       return;
 
     this.selectionBox.update();
@@ -737,66 +278,16 @@ export class ModelViewerTab extends EditorTab {
       }
     }
     
+    this.renderComponent.Render();
     //this.scene.children[1].rotation.z += 0.01;
-    this.renderer.clear();
-    this.renderer.render( this.scene, this.currentCamera );
-    this.stats.update();
+    // this.renderer.clear();
+    // this.renderer.render( this.scene, this.currentCamera );
+    // this.stats.update();
     this.$infoOverlay[0].innerHTML = `
     <b>Camera</b><br>
-    <span>Position - x: ${this.currentCamera.position.x.toFixed(4)}, y: ${this.currentCamera.position.y.toFixed(4)}, z: ${this.currentCamera.position.z.toFixed(4)}</span><br>
-    <span>Rotation - x: ${this.currentCamera.quaternion.x.toFixed(4)}, y: ${this.currentCamera.quaternion.y.toFixed(4)}, z: ${this.currentCamera.quaternion.z.toFixed(4)}, w: ${this.currentCamera.quaternion.w.toFixed(4)}</span><br>
+    <span>Position - x: ${this.renderComponent.currentCamera.position.x.toFixed(4)}, y: ${this.renderComponent.currentCamera.position.y.toFixed(4)}, z: ${this.renderComponent.currentCamera.position.z.toFixed(4)}</span><br>
+    <span>Rotation - x: ${this.renderComponent.currentCamera.quaternion.x.toFixed(4)}, y: ${this.renderComponent.currentCamera.quaternion.y.toFixed(4)}, z: ${this.renderComponent.currentCamera.quaternion.z.toFixed(4)}, w: ${this.renderComponent.currentCamera.quaternion.w.toFixed(4)}</span><br>
     `
-  }
-
-  select ( object: any ) {
-    //console.log('ModuleEditorTab', 'select', object);
-    if(this.selected === object) return;
-
-    if(object == null || object == undefined) return;
-
-    //this.axes.detach();
-    //this.axes.attach( object );
-    //this.axes.visible = true;
-
-    this.selected = object;
-
-
-    console.log('Signal', 'objectSelected', this.selected);
-    (this.selectionBox as any).object = this.selected;
-    this.selectionBox.visible = true;
-    this.selectionBox.update();
-
-    console.log(this.selectionBox);
-
-    if(this.selected instanceof THREE.Mesh){
-      this.$selected_object.show();
-      this.$input_name.val((this.selected as any).odysseyNode.name);
-      this.$input_texture.val((this.selected as any).odysseyNode.TextureMap1);
-    }else if(this.selected instanceof THREE.Group){
-      for(let i = 0; i < this.selected.children.length; i++){
-        let child = this.selected.children[i];
-        if(child instanceof THREE.Mesh){
-          this.selected = child;
-          this.$selected_object.show();
-          this.$input_name.val(this.selected.odysseyModelNode.name);
-          this.$input_texture.val(this.selected.odysseyModelNode.TextureMap1);
-          break;
-        }
-      }
-    }else{
-      this.$selected_object.hide();
-    }
-
-    //let centerX = this.selectionBox.geometry.boundingSphere.center.x;
-    //let centerY = this.selectionBox.geometry.boundingSphere.center.y;
-    //let centerZ = this.selectionBox.geometry.boundingSphere.center.z;
-
-    //console.log(this.editor.axes, centerX, centerY, centerZ);
-
-    //this.editor.axes.position.set(centerX, centerY, centerZ);
-    //this.editor.axes.visible = true;
-
-    //this.signals.objectSelected.dispatch( object );
   }
 
   BuildGround(){
@@ -807,7 +298,7 @@ export class ModelViewerTab extends EditorTab {
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
     this.unselectable.add( this.groundMesh );
 
-    this.renderer.setClearColor(0x222222);
+    this.renderComponent.renderer.setClearColor(0x222222);
   }
 
 }

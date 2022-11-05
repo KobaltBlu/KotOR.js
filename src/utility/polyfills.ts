@@ -5,11 +5,13 @@
  * The utility polyfill holds random utility functions that are used throughout the project
  */
 
+//@ts-ignore
 String.prototype.titleCase = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
 //Adding a java like string.equalsIgnoreCase method to the String prototype in Javascript
+//@ts-ignore
 String.prototype.equalsIgnoreCase = function(value: string){
 
 	if(typeof value !== 'string')
@@ -52,3 +54,5 @@ if ( Math.sign === undefined ) {
 	};
 
 }
+
+export {};
