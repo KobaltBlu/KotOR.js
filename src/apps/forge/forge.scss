@@ -2103,3 +2103,44 @@ text-shadow: 0 1px 0 rgb(14, 72, 57);
     margin-left: 0;
   }
 }
+
+.keyframe-track-wrapper {
+  background: #00000047;
+}
+
+.keyframe-track-wrapper:hover {
+  background: #0095ff3d;
+}
+
+.keyframe-track-wrapper:hover .track-label {
+  background: #000;
+}
+
+.keyframe-track-wrapper:nth-child(even) {
+  background: #33333347;
+}
+
+.keyframe-track-wrapper .keyframe {
+  top: 8px!important;
+}
+
+.track-keyframes {
+  height: 100%;
+}
+
+.track-label {
+  border-right: 1px solid #000;
+  padding: 2.5px 0;
+  background: #00000059;
+  font-weight: bold;
+}
+
+.controller .track-label {
+  text-indent: 25px;
+  color: #337ab7;
+}
+
+.node .track-label {
+  text-indent: 10px;
+  color: #a9a9a9;
+}

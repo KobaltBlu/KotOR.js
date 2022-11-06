@@ -8,7 +8,7 @@ import { WindowDialog } from "../../utility/WindowDialog";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
 import * as path from "path";
-import { GameState, KEYManager } from "../../KotOR";
+import { GameState, KEYManager, OdysseyModelAnimation } from "../../KotOR";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
@@ -36,7 +36,11 @@ export class ModelViewSideBarComponent extends Component {
   loading_layout: any;
   $select_layout_list: JQuery<HTMLElement>;
   $btn_dispose_layout: JQuery<HTMLElement>;
-  animLoop: boolean = false;
+
+  eventListeners: any = {
+    onAnimationChange: [],
+    onLoopChange: [],
+  }
 
   constructor(tab: ModelViewerTab){
     super();
@@ -198,22 +202,20 @@ export class ModelViewSideBarComponent extends Component {
       return comparison;
     });
 
+    let animation: OdysseyModelAnimation;
     for(let i = 0; i < animations.length; i++){
-      let name = animations[i].name.replace(/\0[\s\S]*$/g,'');
-      this.$animSelect.append('<option value="'+name+'">'+name+'</option>')
+      animation = animations[i];
+      let $option = $(`<option value="${animation.name.replace(/\0[\s\S]*$/g,'')}">${animation.name.replace(/\0[\s\S]*$/g,'')}</option>`);
+      $option.data('animation', animation);
+      this.$animSelect.append($option);
     }
 
     this.$animSelect.on('change', () => {
-      let val = this.$animSelect.val();
-      this.tab.model.stopAnimation();
-      if(val != '-1')
-        this.tab.model.playAnimation(val, this.animLoop)
-
+      this.processEventListener('onAnimationChange', $(':selected', this.$animSelect).data('animation'));
     });
 
     this.$animLoop.on('change', () => {
-      this.animLoop = this.$animLoop.is(':checked');
-      this.$animSelect.trigger('change');
+      this.processEventListener('onLoopChange', this.$animLoop.is(':checked') ? true : false);
     });
 
     //Selected Object Properties

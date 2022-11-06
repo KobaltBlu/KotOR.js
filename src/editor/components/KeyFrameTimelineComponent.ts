@@ -1,10 +1,15 @@
 import { ModelViewerTab } from "../tabs";
 import { Component } from ".";
+import { OdysseyModelAnimation, OdysseyModelAnimationNode } from "../../odyssey";
+import { OdysseyController } from "../../odyssey/controllers";
+import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 
 export class KeyFrameTimelineComponent extends Component {
   declare tab: ModelViewerTab;
   keyframes: any[] = [];
   selected: any;
+  name: string = '';
 
   $ui_controls: JQuery<HTMLElement>;
   $ui_bar: JQuery<HTMLElement>;
@@ -21,18 +26,20 @@ export class KeyFrameTimelineComponent extends Component {
   $ui_bar_keyframes: JQuery<HTMLElement>;
   $ui_canvas: JQuery<HTMLElement>;
 
+  timelineOffset: number = 200;
+
   audio_buffer: AudioBuffer;
 
-  timeline_zoom: any;
+  timeline_zoom: number = 250;
   seeking: boolean;
-  playing: any;
-  mim_timeline_zoom: any;
-  max_timeline_zoom: any;
+  playing: boolean = false;
+  min_timeline_zoom: any = 1000;
+  max_timeline_zoom: any = 50;
   dragging_frame: any;
   selected_frame: any;
 
   elapsed: number = 0;
-  max_time: number = 1;
+  duration: number = 1;
 
   eventListeners: any = {
     onPlay: [],
@@ -45,9 +52,18 @@ export class KeyFrameTimelineComponent extends Component {
     onAddKeyframe: [],
     onSeekPrevious: [],
     onSeekNext: [],
+    onSeek: [],
     onTimelineZoomIn: [],
     onTimelineZoomOut: [],
+    onAnimationChange: [],
+    onLoopChange: [],
   };
+  $btn_wrapper_left: JQuery<HTMLElement>;
+  $btn_wrapper_center: JQuery<HTMLElement>;
+  $btn_wrapper_right: JQuery<HTMLElement>;
+  $select_animation: JQuery<HTMLElement>;
+  $label_loop: JQuery<HTMLElement>;
+  $checkbox_loop: JQuery<HTMLElement>;
 
   constructor(tab: ModelViewerTab){
     super();
@@ -56,6 +72,27 @@ export class KeyFrameTimelineComponent extends Component {
     this.$ui_controls = $('<div class="keyframe-controls" />');
     this.$ui_bar = $('<div class="keyframe-bar">');
     this.$ui_canvas = $('<canvas style="position: absolute; bottom: 0;"/>');
+
+    this.$btn_wrapper_left = $('<div style="display: flex; flex-basis: 25%; justify-content: flex-start; font-size: 12pt; align-items: center;" />');
+    this.$btn_wrapper_center = $('<div style="flex: 1; font-size: 18pt; flex-basis: 100%;" />');
+    this.$btn_wrapper_right = $('<div style="display: flex; flex-basis: 25%; justify-content: flex-end;" />');
+
+    this.$select_animation = $('<select />');
+
+    this.$label_loop = $('<b>Loop:</b>');
+    this.$checkbox_loop = $('<input type="checkbox" />');
+
+    this.$label_loop.css({
+      marginLeft: '10px',
+      marginRight: '5px',
+    });
+
+    this.$checkbox_loop.css({
+      marginTop: 0,
+      marginBottom: 0,
+      marginLeft: 0,
+      marginRight: 0,
+    })
 
     this.$btn_key_left = $('<a href="#" title="Previous Keyframe" class="glyphicon glyphicon-chevron-left" style="text-decoration: none;"></a>');
     this.$btn_key_right = $('<a href="#" title="Next Keyframe" class="glyphicon glyphicon-chevron-right" style="text-decoration: none;"></a>');
@@ -67,6 +104,10 @@ export class KeyFrameTimelineComponent extends Component {
     
     this.$btn_timeline_zoom_in = $('<a href="#" title="Timeline Zoom In" class="glyphicon glyphicon-zoom-in" style="text-decoration: none; float:right;"></a>');
     this.$btn_timeline_zoom_out = $('<a href="#" title="Timeline Zoom Out" class="glyphicon glyphicon-zoom-out" style="text-decoration: none; float:right;"></a>');
+    
+    this.$ui_bar_seek = $('<div class="keyframe-track-seeker"><div class="seeker-thumb"></div></div>');
+    this.$ui_bar_keyframe_time = $('<div class="keyframe-time-track" />');
+    this.$ui_bar_keyframes = $('<div class="keyframe-track" />');
     
     this.$component.append(this.$ui_controls);
     this.$component.append(this.$ui_bar);
@@ -80,7 +121,7 @@ export class KeyFrameTimelineComponent extends Component {
     });
 
     this.$ui_controls.css({
-      position: 'initial',
+      position: 'relative',
       top: 'initial',
       bottom: 'initial',
       left: 'initial',
@@ -88,20 +129,32 @@ export class KeyFrameTimelineComponent extends Component {
     });
 
     this.$ui_bar.css({
-      position: 'initial',
+      position: 'relative',
       top: 'initial',
       bottom: 'initial',
       left: 'initial',
       right: 'initial',
       height: '100%',
-    })
+    });
 
+    this.initEventListeners();
     this.buildUI();
+    this.setElapsed(0);
   }
 
-  buildUI(){
-    this.$ui_controls.html('');
-    this.$ui_bar.append(this.$ui_canvas);
+  initEventListeners(){
+
+    this.$select_animation.on('change', (e) => {
+      this.processEventListener('onAnimationChange', 
+        $(':selected', this.$select_animation).data('animation')
+      );
+    });
+
+    this.$checkbox_loop.on('input', (e) => {
+      this.processEventListener('onLoopChange', 
+        this.$checkbox_loop.is(':checked') ? true : false
+      );
+    })
 
     this.$btn_play.on('click', (e: any) => {
       e.preventDefault();
@@ -113,10 +166,6 @@ export class KeyFrameTimelineComponent extends Component {
       this.btnStop();
     });
 
-    this.$ui_controls.append(this.$btn_key_delete)
-    .append(this.$btn_key_left).append(this.$btn_play).append(this.$btn_stop)
-    .append(this.$btn_key_right).append(this.$btn_key_add).append(this.$btn_timeline_zoom_in).append(this.$btn_timeline_zoom_out);
-
     this.$btn_timeline_zoom_in.on('click', (e: any) => {
       e.preventDefault();
       this.TimeLineZoomIn();
@@ -127,54 +176,35 @@ export class KeyFrameTimelineComponent extends Component {
       this.TimeLineZoomOut();
     });
 
-
-    
-    this.$ui_bar_seek = $('<div class="keyframe-track-seeker"><div class="seeker-thumb"></div></div>');
-    this.$ui_bar_keyframe_time = $('<div class="keyframe-time-track" />');
-    this.$ui_bar_keyframes = $('<div class="keyframe-track" />');
-
-    this.$ui_bar_keyframe_time.css({
-      width: 100,//this.max_time * this.timeline_zoom + 50,
-    });
-
-    this.$ui_bar_keyframes.css({
-      width: 100,//this.max_time * this.timeline_zoom + 50,
-    });
-
-    this.$ui_bar.append(this.$ui_bar_keyframe_time).append(this.$ui_bar_keyframes).append(this.$ui_bar_seek);
-
     this.$ui_bar_keyframe_time.on('click', (e: any) => {
-
       if(e.target == this.$ui_bar_seek[0])
         return;
 
       let was_playing = this.playing;
 
-      // this.Pause();
+      this.pause();
 
       //Update the lips elapsed time based on the seekbar position
       let offset = this.$ui_bar.offset();
       if(offset && this.$ui_bar){
         let position = e.pageX - offset.left + (this.$ui_bar.scrollLeft() as any);
 
-        // let percentage = position / (this.max_time * this.timeline_zoom);
+        // let percentage = position / (this.duration * this.timeline_zoom);
         // if(this.lip instanceof LIPObject){
-        //   this.elapsed = this.max_time * percentage;
+        //   this.elapsed = this.duration * percentage;
         // }
       }
 
-      // if(was_playing)
-      //   this.Play();
+      if(was_playing)
+        this.play();
 
       console.log(e);
     });
 
     $('.seeker-thumb', this.$ui_bar_seek).on('mousedown', (e: any) => {
-
-      // this.Pause();
+      this.pause();
       this.$ui_bar_seek.removeClass('targeted').addClass('targeted');
       this.seeking = true;
-
     });
 
     this.$btn_key_left.on('click', (e: any) => {
@@ -197,23 +227,106 @@ export class KeyFrameTimelineComponent extends Component {
       this.btnDeleteKeyFrame();
     });
 
+  }
 
+  setAnimations(animations: OdysseyModelAnimation[] = []){
+    animations = animations.slice().sort( (a: OdysseyModelAnimation, b: OdysseyModelAnimation) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+
+      let comparison = 0;
+      if (nameA > nameB) {
+        comparison = 1;
+      } else if (nameA < nameB) {
+        comparison = -1;
+      }
+      return comparison;
+    });
+
+    this.$select_animation.html('<option value="-1">None</option>');
+    let animation: OdysseyModelAnimation;
+    for(let i = 0; i < animations.length; i++){
+      animation = animations[i];
+      if(animation){
+        let $option = $(`<option value="${animation.name.replace(/\0[\s\S]*$/g,'')}">${animation.name.replace(/\0[\s\S]*$/g,'')}</option>`);
+        $option.data('animation', animation);
+        this.$select_animation.append($option);
+      }
+    }
+  }
+
+  buildUI(){
+    this.$ui_controls.html('');
+    this.$ui_bar.append(this.$ui_canvas);
+
+    this.$btn_wrapper_left
+      .append(this.$select_animation)
+      .append(this.$label_loop)
+      .append(this.$checkbox_loop);
+    
+    this.$btn_wrapper_center.append(this.$btn_key_delete)
+      .append(this.$btn_key_left).append(this.$btn_play).append(this.$btn_stop)
+      .append(this.$btn_key_right).append(this.$btn_key_add);
+    
+    this.$btn_wrapper_right
+      .append(this.$btn_timeline_zoom_in)
+      .append(this.$btn_timeline_zoom_out);
+
+    this.$ui_controls
+      .append(this.$btn_wrapper_left)
+      .append(this.$btn_wrapper_center)
+      .append(this.$btn_wrapper_right);
+
+    this.$ui_controls.css({
+      display: 'flex'
+    });
+
+    this.$btn_wrapper_center.css({
+      flex: '1',
+      flexBasis: '100%',
+    });
+
+    this.setAnimations();
+    
+    this.$ui_bar_seek.html('<div class="seeker-thumb"></div>');
+    this.$ui_bar_keyframe_time.html('');
+    this.$ui_bar_keyframes.html('').css({
+      bottom: 'initial',
+      height: 'initial',
+      top: '25px',
+    });
+
+    this.$select_animation.css({
+      fontSize: '12pt',
+      marginBottom: 0,
+    });
+
+    this.$ui_bar_seek.css({
+      height: 'calc(100% - 10px)'
+    });
+
+    this.setDuration(this.duration);
+
+    this.$ui_bar
+      .append(this.$ui_bar_keyframe_time)
+      .append(this.$ui_bar_keyframes)
+      .append(this.$ui_bar_seek);
+
+    this.buildKeyframes();
 
   }
 
   btnPlayPause(){
     console.log('$btn_play', this.playing);
     if(this.playing){
-      this.processEventListener('onPause');
-      // this.Pause();
+      this.pause();
     }else{
-      this.processEventListener('onPlay');
-      // this.Play();
+      this.play();
     }
   }
 
   btnStop(){
-    // this.Stop();
+    this.stop();
     this.processEventListener('onStop');
   }
 
@@ -302,7 +415,7 @@ export class KeyFrameTimelineComponent extends Component {
   }
 
   btnSeekPrevious(){
-    // this.Pause();
+    this.pause();
     // if(this.lip instanceof LIPObject){
     //   this.elapsed -= 0.01;
     //   if(this.elapsed < 0) this.elapsed = 0;
@@ -313,10 +426,10 @@ export class KeyFrameTimelineComponent extends Component {
   }
 
   btnSeekNext(){
-    // this.Pause();
+    this.pause();
     // if(this.lip instanceof LIPObject){
     //   this.elapsed += 0.01;
-    //   if(this.elapsed > this.max_time) this.elapsed = this.max_time;
+    //   if(this.elapsed > this.duration) this.elapsed = this.duration;
     // }
     
     // this.SeekAudio(this.elapsed);
@@ -324,6 +437,23 @@ export class KeyFrameTimelineComponent extends Component {
     
     // this.updateLip(0);
     this.processEventListener('onSeekNext');
+  }
+
+  play(){
+    this.$btn_play.removeClass('glyphicon-play').removeClass('glyphicon-pause').addClass('glyphicon-pause');
+    this.playing = true;
+    this.processEventListener('onPlay');
+  }
+
+  pause(){
+    this.$btn_play.removeClass('glyphicon-pause').removeClass('glyphicon-play').addClass('glyphicon-play');
+    this.playing = false;
+    this.processEventListener('onPause');
+  }
+
+  stop(){
+    this.pause();
+    this.processEventListener('onStop');
   }
 
   TimeLineZoomIn(){
@@ -340,8 +470,8 @@ export class KeyFrameTimelineComponent extends Component {
   TimeLineZoomOut(){
     this.timeline_zoom -= 25;
 
-    if(this.timeline_zoom < this.mim_timeline_zoom){
-      this.timeline_zoom = this.mim_timeline_zoom;
+    if(this.timeline_zoom < this.min_timeline_zoom){
+      this.timeline_zoom = this.min_timeline_zoom;
     }
     
     this.ResetTimeLineAfterZoom();
@@ -350,11 +480,11 @@ export class KeyFrameTimelineComponent extends Component {
 
   ResetTimeLineAfterZoom(){
     this.$ui_bar_keyframe_time.css({
-      width: this.max_time * this.timeline_zoom + 50
+      width: this.duration * this.timeline_zoom + 50
     });
 
     this.$ui_bar_keyframes.css({
-      width: this.max_time * this.timeline_zoom + 50
+      // width: this.duration * this.timeline_zoom + 50
     });
 
     this.buildKeyframes();
@@ -371,13 +501,32 @@ export class KeyFrameTimelineComponent extends Component {
 
   }
 
+  buildAnimationControllers(animation: OdysseyModelAnimation){
+    this.$ui_bar_keyframes.html('');
+    if(animation instanceof OdysseyModelAnimation){
+      animation.nodes.forEach( (node: OdysseyModelAnimationNode) => {
+        let $nodeTrack = $(`<div class="keyframe-track-wrapper node" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;">${node.name}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
+        this.$ui_bar_keyframes.append($nodeTrack);
+        node.controllers.forEach( (controller: OdysseyControllerGeneric) => {
+          let $controllerTrack = $(`<div class="keyframe-track-wrapper controller" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;">${OdysseyModelControllerType[controller.type]}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
+          if(Array.isArray(controller.data)){
+            controller.data.forEach( (frame: any) => {
+              this.buildKeyframe(frame, $('.track-keyframes', $controllerTrack));
+            })
+          }
+          this.$ui_bar_keyframes.append($controllerTrack);
+        })
+      });
+    }
+  }
+
   buildKeyframes(){
     this.$ui_bar_keyframes.html('');
     this.$ui_bar_keyframe_time.html('');
     if(Array.isArray(this.keyframes)){
       for(let i = 0, il = this.keyframes.length; i < il; i++){
         let keyframe = this.keyframes[i];
-        this.buildKeyframe(keyframe, i);
+        // this.buildKeyframe(keyframe);
       }
     }
 
@@ -393,15 +542,15 @@ export class KeyFrameTimelineComponent extends Component {
     }
 
     let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(this.max_time) / nthTime);
+    let count = Math.ceil(Math.ceil(this.duration) / nthTime);
 
-    for(let i = 0; i < count; i++){
+    for(let i = 0; i <= count; i++){
       let $lbl_timestamp = $('<span></span>');
       let s = factor*i;
       $lbl_timestamp.text((s-(s%=60))/60+(9<s?':':':0')+s);
       $lbl_timestamp.css({
         position: 'absolute',
-        left: (nthTime * i) * this.timeline_zoom,
+        left: this.timelineOffset + ((nthTime * i) * this.timeline_zoom),
         width: 30,
         marginLeft: -15,
         textAlign: 'center'
@@ -409,26 +558,25 @@ export class KeyFrameTimelineComponent extends Component {
       this.$ui_bar_keyframe_time.append($lbl_timestamp);
     }
 
-
   }
 
-  buildKeyframe(keyframe: any, index: any){
+  buildKeyframe(keyframe: any, $parent: JQuery<HTMLElement>){
     
     let $keyframe = $('<div class="keyframe" />');
     keyframe.$ele = $keyframe;
 
     $keyframe.css({
-      left: keyframe.time * this.timeline_zoom //(keyframe.time / this.max_time) * 100 +'%',
+      left: (keyframe.time * this.timeline_zoom)
     });
 
-    this.$ui_bar_keyframes.append($keyframe);
+    $parent.append($keyframe);
 
     $keyframe.on('click', (e: any) => {
       e.stopPropagation();
       this.processEventListener('onKeyframeSelected', keyframe);
       // this.elapsed = keyframe.time;
       // this.selected_frame = keyframe;
-      // this.Pause();
+      this.pause();
       // this.UpdateKeyframeOptions();
     });
 
@@ -475,52 +623,36 @@ export class KeyFrameTimelineComponent extends Component {
         
   }
 
-  setElapsed(elapsed: number = 0){
-    this.$ui_bar_seek.css({
-      left: elapsed * this.timeline_zoom//(this.elapsed / this.max_time) * 100 + '%'
+  updateTimeLineScroll(){
+    // setTimeout( () => {
+      if(parseFloat(this.$ui_bar_seek.css('left')) > this.$ui_bar.width() + this.$ui_bar.scrollLeft()){
+        this.$ui_bar.scrollLeft(parseFloat(this.$ui_bar_seek.css('left')) - 50);
+      }
+  
+      if(parseFloat(this.$ui_bar_seek.css('left')) < this.$ui_bar.scrollLeft()){
+        this.$ui_bar.scrollLeft(parseFloat(this.$ui_bar_seek.css('left')) - 50);
+      }
+    // }, 100);
+  }
+
+  setDuration(duration: number = 1){
+    this.duration = duration;
+    
+    this.$ui_bar_keyframe_time.css({
+      width: this.duration * this.timeline_zoom + 50,
+    });
+
+    this.$ui_bar_keyframes.css({
+      // width: this.duration * this.timeline_zoom + 50,
     });
   }
 
-  addEventListener(key: string = '', cb?: Function){
-    if(typeof cb === 'function'){
-      if(this.eventListeners.hasOwnProperty('key')){
-        let ev = this.eventListeners[key];
-        if(Array.isArray(ev)){
-          let exists = ev.indexOf(cb) >= 0 ? true : false;
-          if(!exists){
-            ev.push(cb);
-          }
-        }
-      }
-    }
-  }
-
-  removeEventListener(key: string = '', cb?: Function){
-    if(typeof cb === 'function'){
-      if(this.eventListeners.hasOwnProperty('key')){
-        let ev = this.eventListeners[key];
-        if(Array.isArray(ev)){
-          let index = ev.indexOf(cb);
-          if(index >= 0){
-            ev.splice(index, 1);
-          }
-        }
-      }
-    }
-  }
-
-  processEventListener(key: string = '', data: any = {}){
-    if(this.eventListeners.hasOwnProperty('key')){
-      let ev = this.eventListeners[key];
-      if(Array.isArray(ev)){
-        for(let i = 0, len = ev.length; i < len; i++){
-          let event = ev[i];
-          if(typeof event === 'function'){
-            event(data);
-          }
-        }
-      }
-    }
+  setElapsed(elapsed: number = 0){
+    this.elapsed = elapsed;
+    this.$ui_bar_seek.css({
+      left: this.timelineOffset + (this.elapsed * this.timeline_zoom)
+    });
+    this.updateTimeLineScroll();
   }
 
 }

@@ -34,6 +34,8 @@ export class LIPEditorTab extends EditorTab {
   timeline_zoom: number;
 
   clock: THREE.Clock = new THREE.Clock();
+  selectable: THREE.Group =  new THREE.Group();
+  unselectable: THREE.Group =  new THREE.Group();
   pointLight: THREE.PointLight;
   renderComponent: UI3DRenderer;
 
@@ -1050,8 +1052,11 @@ export class LIPEditorTab extends EditorTab {
 
   SeekAudio(time: number){
     if(this.source){
-      //@ts-expect-error
-      this.source.currentTime = time;
+      try{
+        this.source.start(0, time);
+      }catch(e){
+        console.error(e);
+      }
     }
   }
 

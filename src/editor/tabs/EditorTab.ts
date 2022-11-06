@@ -36,22 +36,22 @@ export class EditorTab {
   $layoutContainerCenter: JQuery<HTMLElement>;
   $layoutContainerEast: JQuery<HTMLElement>;
   $layoutContainerSouth: JQuery<HTMLElement>;
-  layout_south_size: number;
-  layout_east_size: number;
-  layout_west_size: number;
-  layout_north_size: number;
-  layout_north_enabled: boolean;
-  layout_south_enabled: boolean;
-  layout_east_enabled: boolean;
-  layout_west_enabled: boolean;
-  layout_bar_open_size: number;
-  layout_bar_closed_size: number;
+  layout_south_size: number = 0;
+  layout_east_size: number = 0;
+  layout_west_size: number = 0;
+  layout_north_size: number = 0;
+  layout_north_enabled: boolean = false;
+  layout_south_enabled: boolean = false;
+  layout_east_enabled: boolean = false;
+  layout_west_enabled: boolean = false;
+  layout_bar_open_size: number = 8;
+  layout_bar_closed_size: number = 14;
   $layoutContainerNorth: JQuery<HTMLElement>;
   $layoutContainerWest: JQuery<HTMLElement>;
-  layout_north_open: boolean;
-  layout_south_open: boolean;
-  layout_east_open: boolean;
-  layout_west_open: boolean;
+  layout_north_open: boolean = false;
+  layout_south_open: boolean = false;
+  layout_east_open: boolean = false;
+  layout_west_open: boolean = false;
   $layoutContainerNorthHandle: JQuery<HTMLElement>;
   $layoutContainerSouthHandle: JQuery<HTMLElement>;
   $layoutContainerEastHandle: JQuery<HTMLElement>;
@@ -195,21 +195,6 @@ export class EditorTab {
     this.$layoutContainerSouthHandleToggle = $('.ui-layout-toggler-south', this.$layoutContainerSouthHandle);
     this.$layoutContainerEastHandleToggle = $('.ui-layout-toggler-east', this.$layoutContainerEastHandle);
     this.$layoutContainerWestHandleToggle = $('.ui-layout-toggler-west', this.$layoutContainerWestHandle);
-
-    this.layout_north_size = 0;
-    this.layout_west_size = 0;
-    this.layout_east_size = 250;
-    this.layout_south_size = 100;
-
-    this.layout_north_enabled = false;
-    this.layout_south_enabled = true;
-    this.layout_east_enabled = true;
-    this.layout_west_enabled = false;
-
-    this.layout_north_open = false;
-    this.layout_south_open = true;
-    this.layout_east_open = true;
-    this.layout_west_open = false;
 
     this.layout_bar_open_size = 8;
     this.layout_bar_closed_size = 14;

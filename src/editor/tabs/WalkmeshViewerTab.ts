@@ -17,8 +17,8 @@ export class WalkmeshViewerTab extends EditorTab {
   clock: THREE.Clock = new THREE.Clock();
   cameraMode: any;
   CameraMode: { EDITOR: number; STATIC: number; ANIMATED: number; };
-  selectable: THREE.Group;
-  unselectable: THREE.Group;
+  selectable: THREE.Group =  new THREE.Group();
+  unselectable: THREE.Group =  new THREE.Group();
 
   $controls: JQuery<HTMLElement>;
   selectionBox: any;

@@ -20,6 +20,46 @@ export class ModelViewerControls {
   keys: any = {};
   plMoveEvent: Function;
 
+  eventListeners: any = {
+    onMouseDown: [],
+    onMouseUp: [],
+    onKeyDown: [],
+    onKeyUp: [],
+    onSelect: []
+  };
+
+  attachEventListener(key: string, cb: Function){
+    let event = this.eventListeners.hasOwnProperty(key);
+    if(!!event){
+      event = this.eventListeners[key];
+      let cbIndex = event.indexOf(cb);
+      if(cbIndex == -1){
+        event.push(cb);
+      }
+    }
+  }
+
+  removeEventListener(key: string, cb: Function){
+    let event = this.eventListeners.hasOwnProperty(key);
+    if(!!event){
+      event = this.eventListeners[key];
+      let cbIndex = event.indexOf(cb);
+      if(cbIndex >= 0){
+        event.splice(cbIndex, 1);
+      }
+    }
+  }
+
+  processEventListener(key: string, data: any = {}){
+    let event = this.eventListeners.hasOwnProperty(key);
+    if(!!event){
+      event = this.eventListeners[key];
+      event.forEach( (cb: Function) => {
+        cb(data);
+      });
+    }
+  }
+
   constructor(camera: THREE.PerspectiveCamera, element: HTMLElement, editor: LIPEditorTab|ModelViewerTab|WalkmeshViewerTab){
 
     this.camera = camera;
@@ -99,55 +139,21 @@ export class ModelViewerControls {
         if(Mouse.ButtonState == MouseState.LEFT){
           //let axisMoverSelected = false;
           //this.editor.axes.selected = null;
-          //@ts-expect-error
-          this.editor.raycaster.setFromCamera( Mouse.Vector, this.camera );
-          /*let axisMoverIntersects = this.editor.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
+          this.editor.renderComponent.raycaster.setFromCamera( Mouse.Vector, this.camera );
+          /*let axisMoverIntersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
           if(axisMoverIntersects.length){
             this.editor.axes.selected = axisMoverIntersects[0].object.name;
             axisMoverSelected = true;
           }*/
 
           //if(!axisMoverSelected){
-            //@ts-expect-error
-            let intersects = this.editor.raycaster.intersectObjects( this.editor.selectable.children, true );
-
-      //@ts-expect-error
-            this.editor.selectionBox.visible = false;
-            //@ts-expect-error
-            this.editor.selectionBox.update();
-            //@ts-expect-error
-            this.editor.selected = null;
-
-      //@ts-expect-error
-            if(this.editor.$ui_selected.$selected_object){
-              //@ts-expect-error
-              this.editor.$ui_selected.$selected_object.hide();
-            }
-
+            let intersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.selectable.children, true );
             if(intersects.length){
-
               let intersection = intersects[ 0 ],
                 obj = intersection.object;
-
-              if(obj instanceof THREE.Mesh){
-                //@ts-expect-error
-                if(typeof this.editor.select === 'function'){
-                  //@ts-expect-error
-                  this.editor.select(obj);
-                }
-              }else{
-                obj.traverseAncestors( (obj: any) => {
-                  if(obj instanceof THREE.Mesh){
-                    //@ts-expect-error
-                    if(typeof this.editor.select === 'function'){
-                      //@ts-expect-error
-                      this.editor.select(obj);
-                    }
-                    return;
-                  }
-                });
-              }
-              
+              this.processEventListener('onSelect', obj);
+            }else{
+              this.processEventListener('onSelect', undefined);
             }
           //}
         }else{
@@ -159,7 +165,6 @@ export class ModelViewerControls {
       }
 
     }).mousemove((event: any) => {
-
 
       let parentOffset = this.editor.renderComponent.$canvas.offset();
       Mouse.MouseX = event.pageX - parentOffset.left;
@@ -243,8 +248,11 @@ export class ModelViewerControls {
     }
 
     if(this.keys['escape']){
-      //@ts-expect-error
-      this.editor.selected = null;
+      if(this.editor instanceof ModelViewerTab){
+        this.editor.selectionBox.visible = false;
+        this.editor.selectionBox.update();
+        this.editor.modelViewSideBarComponent.selected = null;
+      }
     }
 
     if(this.CurrentTool == EditorControlsTool.CAMERA_MOVE){

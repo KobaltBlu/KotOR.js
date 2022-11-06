@@ -1,5 +1,5 @@
 import { BinaryReader } from "../../BinaryReader";
-import { OdysseyModel } from "../../odyssey";
+import { OdysseyModel, OdysseyModelAnimation } from "../../odyssey";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { EditorControls } from "../EditorControls";
 import { EditorFile } from "../EditorFile";
@@ -27,12 +27,13 @@ export class ModelViewerTab extends EditorTab {
   
   referenceNode: THREE.Object3D<THREE.Event>;
   clock: THREE.Clock = new THREE.Clock();
-  selectable: THREE.Group;
-  unselectable: THREE.Group;
+  selectable: THREE.Group =  new THREE.Group();
+  unselectable: THREE.Group =  new THREE.Group();
   CameraMode: { EDITOR: number; STATIC: number; ANIMATED: number; };
   cameraMode: any;
   $controls: JQuery<HTMLElement>;
   raycaster: THREE.Raycaster;
+
   selectionBox: THREE.BoxHelper;
 
   controls: ModelViewerControls;
@@ -51,7 +52,10 @@ export class ModelViewerTab extends EditorTab {
 
   renderComponent: UI3DRenderer;
   modelViewSideBarComponent: ModelViewSideBarComponent;
-  modelViewTimelineComponent: any;
+  modelViewTimelineComponent: KeyFrameTimelineComponent;
+  odysseyModel: OdysseyModel;
+
+  currentAnimation: OdysseyModelAnimation;
 
   constructor(file: EditorFile, isLocal = false){
     super({
@@ -62,6 +66,21 @@ export class ModelViewerTab extends EditorTab {
     this.deltaTime = 0;
     console.log('Model Viewer');
     $('a', this.$tab).text('Model Viewer');
+
+    this.layout_north_size = 0;
+    this.layout_west_size = 0;
+    this.layout_east_size = 250;
+    this.layout_south_size = 200;
+
+    this.layout_north_enabled = false;
+    this.layout_south_enabled = true;
+    this.layout_east_enabled = true;
+    this.layout_west_enabled = false;
+
+    this.layout_north_open = false;
+    this.layout_south_open = true;
+    this.layout_east_open = true;
+    this.layout_west_open = false;
 
     this.renderComponent = new UI3DRenderer();
 
@@ -108,6 +127,33 @@ export class ModelViewerTab extends EditorTab {
 
     this.controls = new ModelViewerControls(this.renderComponent.currentCamera, this.renderComponent.canvas, this);
     this.controls.AxisUpdate(); //always call this after the Yaw or Pitch is updated
+    this.controls.attachEventListener('onSelect', (obj?: any) => {
+      this.selectionBox.visible = false;
+      this.selectionBox.update();
+      this.modelViewSideBarComponent.selected = null;
+
+      if(this.modelViewSideBarComponent.$selected_object){
+        this.modelViewSideBarComponent.$selected_object.hide();
+      }
+
+      if(obj instanceof THREE.Object3D){
+        if(obj instanceof THREE.Mesh){
+          if(typeof this.modelViewSideBarComponent.select === 'function'){
+            this.modelViewSideBarComponent.select(obj);
+          }
+        }else{
+          obj.traverseAncestors( (obj: any) => {
+            if(obj instanceof THREE.Mesh){
+              if(typeof this.modelViewSideBarComponent.select === 'function'){
+                this.modelViewSideBarComponent.select(obj);
+              }
+              return;
+            }
+          });
+        }
+        
+      }
+    })
 
     this.$infoOverlay = $('<div class="info-overlay" />')
 
@@ -130,6 +176,64 @@ export class ModelViewerTab extends EditorTab {
 
     this.BuildGround();
     this.OpenFile(file);
+
+    this.modelViewTimelineComponent.addEventListener('onStop', () => {
+      if(!!this.model){
+        if(!!this.model.animationManager.currentAnimation){
+          this.model.animationManager.currentAnimation.data.elapsed = 0;
+          this.model.update(0);
+        }
+      }
+    });
+
+    this.modelViewTimelineComponent.addEventListener('onAnimationChange', (animation: OdysseyModelAnimation) => {
+      console.log('timeline', 'onAnimationChange');
+      this.model.stopAnimation();
+      this.currentAnimation = undefined;
+      if(animation instanceof OdysseyModelAnimation){
+        this.currentAnimation = animation;
+        this.model.playAnimation(animation, this.animLoop);
+        this.modelViewSideBarComponent.$animSelect.val(animation.name.replace(/\0[\s\S]*$/g, ``));
+      }
+      this.modelViewTimelineComponent.buildAnimationControllers(this.currentAnimation);
+    });
+
+    this.modelViewSideBarComponent.addEventListener('onAnimationChange', (animation: OdysseyModelAnimation) => {
+      console.log('sidebar', 'onAnimationChange');
+      this.model.stopAnimation();
+      this.currentAnimation = undefined;
+      if(animation instanceof OdysseyModelAnimation){
+        this.currentAnimation = animation;
+        this.model.playAnimation(animation, this.animLoop);
+        this.modelViewTimelineComponent.$select_animation.val(animation.name.replace(/\0[\s\S]*$/g, ``));
+      }
+      this.modelViewTimelineComponent.buildAnimationControllers(this.currentAnimation);
+    });
+
+    this.modelViewTimelineComponent.addEventListener('onLoopChange', (loop: boolean) => {
+      console.log('timeline', 'onLoopChange');
+      this.animLoop = loop;
+      this.modelViewSideBarComponent.$animLoop.prop('checked', this.animLoop);
+      this.modelViewSideBarComponent.$animSelect.trigger('change');
+    });
+
+    this.modelViewSideBarComponent.addEventListener('onLoopChange', (loop: boolean) => {
+      console.log('sidebar', 'onLoopChange');
+      this.animLoop = loop;
+      this.modelViewTimelineComponent.$checkbox_loop.prop('checked', this.animLoop);
+      this.modelViewTimelineComponent.$select_animation.trigger('change');
+    });
+
+    this.modelViewTimelineComponent.addEventListener('onPlay', () => {
+      if(!this.currentAnimation){
+        this.modelViewTimelineComponent.stop();
+        return; 
+      }
+      if(this.model.animationManager.currentAnimation != this.currentAnimation){
+        this.model.playAnimation(this.currentAnimation, this.animLoop);
+      }
+    });
+
   }
 
   disposeLayout(){
@@ -161,6 +265,7 @@ export class ModelViewerTab extends EditorTab {
       file.readFile( (mdlBuffer: Buffer, mdxBuffer: Buffer) => {
         try{
           let odysseyModel = new OdysseyModel(new BinaryReader(mdlBuffer), new BinaryReader(mdxBuffer));
+          this.odysseyModel = odysseyModel;
 
           try{
             this.$tabName.text(file.getFilename());
@@ -191,6 +296,7 @@ export class ModelViewerTab extends EditorTab {
                 this.modelViewSideBarComponent.buildUI();
                 this.Render();
                 this.modelViewSideBarComponent.buildNodeTree();
+                this.modelViewTimelineComponent.setAnimations(odysseyModel.animations);
                 this.resetObjectPosition();
               });
             }
@@ -267,7 +373,9 @@ export class ModelViewerTab extends EditorTab {
     for(let i = 0; i < this.selectable.children.length; i++){
       let obj = this.selectable.children[i];
       if(obj instanceof OdysseyModel3D){
-        obj.update(delta);
+        if(!!this.modelViewTimelineComponent.playing){
+          obj.update(delta);
+        }
       }
     }
 
@@ -275,6 +383,23 @@ export class ModelViewerTab extends EditorTab {
       let obj = this.layout_group.children[i];
       if(obj instanceof OdysseyModel3D){
         obj.update(delta);
+      }
+    }
+
+    if(!!this.model.animationManager.currentAnimation){
+      let animation = this.model.animationManager.currentAnimation;
+      let data = animation.data;
+      if(this.modelViewTimelineComponent.duration != animation.length){
+        this.modelViewTimelineComponent.setDuration(animation.length);
+        this.modelViewTimelineComponent.buildKeyframes();
+      }
+      if(this.modelViewTimelineComponent.elapsed != data.elapsed){
+        this.modelViewTimelineComponent.setElapsed(data.elapsed);
+      }
+    }else{
+      if(this.modelViewTimelineComponent.elapsed){
+        this.modelViewTimelineComponent.stop();
+        this.modelViewTimelineComponent.setElapsed(0);
       }
     }
     
