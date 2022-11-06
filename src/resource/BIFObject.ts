@@ -84,7 +84,6 @@ export class BIFObject {
     GameFileSystem.open(this.resourceDiskInfo.path, 'r').then((fd) => {
       const header = Buffer.alloc(this.HeaderSize);
       GameFileSystem.read(fd, header, 0, this.HeaderSize, 0).then( (buffer) => {
-        console.log('header', header);
         this.reader = new BinaryReader(header);
 
         this.FileType = this.reader.ReadChars(4);
@@ -112,7 +111,6 @@ export class BIFObject {
           this.reader.dispose();
 
           GameFileSystem.close(fd).then( () => {
-            // console.log("File was closed!");
             if(typeof onComplete == 'function')
               onComplete(this);
           }).catch( (err) => {
@@ -130,10 +128,9 @@ export class BIFObject {
         if(typeof onComplete == 'function')
           onComplete(this);
       })
-    }).catch((err) => {
-      if (err) {
-        // try{ fs.close(fd); }catch(e){}
-        console.log('BIF Header Read', err.message);
+    }).catch((e) => {
+      if (e) {
+        console.error(e);
         throw 'BIFObject: Failed to open '+this.resourceDiskInfo.path+' for reading.';
       }
     });

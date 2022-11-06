@@ -52,8 +52,8 @@ export class RIMObject {
         this.LoadFromDisk(file).then( (rim: RIMObject) => {
           if(typeof onComplete === 'function')
             onComplete(rim);
-        }).catch( (err: any) => {
-          console.log('RIM Open Error', err);
+        }).catch( (e: any) => {
+          console.error(e);
           if(typeof onError === 'function')
             onError();
         });
@@ -62,15 +62,15 @@ export class RIMObject {
         this.LoadFromBuffer(this.buffer).then( (rim: RIMObject) => {
           if(typeof onComplete === 'function')
             onComplete(rim);
-        }).catch( (err: any) => {
-          console.log('RIM Open Error', err);
+        }).catch( (e: any) => {
+          console.error(e);
           if(typeof onError === 'function')
             onError();
         });
       }
       
     }catch(e){
-      console.log('RIM Open Error', e);
+      console.error(e);
       if(typeof onError === 'function')
         onError();
     }
@@ -287,7 +287,7 @@ export class RIMObject {
         }
       }
       catch (e) {
-        console.log(e);
+        console.error(e);
         if(onComplete != null)
           onComplete(new ArrayBuffer(0));
       }
@@ -335,7 +335,7 @@ export class RIMObject {
 
           }
           catch (e) {
-            console.log(e);
+            console.error(e);
             if(onComplete != null)
               onComplete();
           }
