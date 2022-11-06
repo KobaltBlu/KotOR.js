@@ -132,8 +132,7 @@ function initGalleryPromoElement($gallery: JQuery<HTMLElement>){
   let $btnRight = $('.gallery-right', $gallery);
 
   $images.on('click', function(e){
-    //@ts-expect-error
-    clearTimeout($gallery.timer);
+    clearTimeout($gallery.data('timer'));
     let $lightbox = $('#lightbox');
     $('body').removeClass('lightbox_open').addClass('lightbox_open');
     $lightbox.removeClass('active').addClass('active');
@@ -145,8 +144,7 @@ function initGalleryPromoElement($gallery: JQuery<HTMLElement>){
   });
 
   $btnLeft.on('click', function(e) {
-    //@ts-expect-error
-    clearTimeout($gallery.timer);
+    clearTimeout($gallery.data('timer'));
     let count = $('.gallery-images', $gallery).children().length;
     let $current = $('.gallery-image.active', $gallery);
     let index = $current.index() - 1;
@@ -160,8 +158,7 @@ function initGalleryPromoElement($gallery: JQuery<HTMLElement>){
   });
 
   $btnRight.on('click', function(e) {
-    //@ts-expect-error
-    clearTimeout($gallery.timer);
+    clearTimeout($gallery.data('timer'));
     let count = $('.gallery-images', $gallery).children().length;
     let $current = $('.gallery-image.active', $gallery);
     let index = $current.index() + 1;
@@ -176,8 +173,7 @@ function initGalleryPromoElement($gallery: JQuery<HTMLElement>){
 
   let cycle = function(){
     $btnRight.click();
-    //@ts-expect-error
-    $gallery.timer = setTimeout(cycle, 2500);
+    $gallery.data('timer', setTimeout(cycle, 2500))
   };
   cycle();
 
