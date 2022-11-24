@@ -181,7 +181,7 @@ export class ModelViewerTab extends EditorTab {
       if(!!this.model){
         if(!!this.model.animationManager.currentAnimation){
           this.model.animationManager.currentAnimation.data.elapsed = 0;
-          this.model.update(0);
+          this.model.update(0.00000000001);
         }
       }
     });
@@ -195,7 +195,6 @@ export class ModelViewerTab extends EditorTab {
         this.model.playAnimation(animation, this.animLoop);
         this.modelViewSideBarComponent.$animSelect.val(animation.name.replace(/\0[\s\S]*$/g, ``));
       }
-      this.modelViewTimelineComponent.buildAnimationControllers(this.currentAnimation);
     });
 
     this.modelViewSideBarComponent.addEventListener('onAnimationChange', (animation: OdysseyModelAnimation) => {
@@ -207,7 +206,6 @@ export class ModelViewerTab extends EditorTab {
         this.model.playAnimation(animation, this.animLoop);
         this.modelViewTimelineComponent.$select_animation.val(animation.name.replace(/\0[\s\S]*$/g, ``));
       }
-      this.modelViewTimelineComponent.buildAnimationControllers(this.currentAnimation);
     });
 
     this.modelViewTimelineComponent.addEventListener('onLoopChange', (loop: boolean) => {
@@ -231,6 +229,13 @@ export class ModelViewerTab extends EditorTab {
       }
       if(this.model.animationManager.currentAnimation != this.currentAnimation){
         this.model.playAnimation(this.currentAnimation, this.animLoop);
+      }
+    });
+
+    this.modelViewTimelineComponent.addEventListener('onSeek', (elapsed: number = 0) => {
+      if(this.model.animationManager.currentAnimation){
+        this.model.animationManager.currentAnimation.data.elapsed = elapsed;
+        this.model.update(0.00000000001);
       }
     });
 

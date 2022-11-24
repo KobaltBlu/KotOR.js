@@ -226,7 +226,7 @@ export class ModelViewSideBarComponent extends Component {
 
     (this.$ui_selected as any).$btn_change_texture.on('click', async (e: any) => {
 
-      let originalTextureName = this.selected.odysseyModelNode.TextureMap1;
+      let originalTextureName = this.selected.odysseyNode.TextureMap1;
 
       let payload = await WindowDialog.showOpenDialog({
         title: 'Replace Texture',
@@ -242,7 +242,7 @@ export class ModelViewSideBarComponent extends Component {
           let file = payload.filePaths[0];
           let file_info = path.parse(file);
           TextureLoader.tpcLoader.fetch_local(file, (texture: OdysseyTexture) => {
-            this.selected.odysseyModelNode.TextureMap1 = file_info.name;
+            this.selected.odysseyNode.TextureMap1 = file_info.name;
             this.selected.material.uniforms.map.value = texture;
             this.selected.material.uniformsNeedsUpdate = true;
 
@@ -572,16 +572,16 @@ export class ModelViewSideBarComponent extends Component {
 
     if(this.selected instanceof THREE.Mesh){
       this.$selected_object.show();
-      this.$input_name.val((this.selected as any).odysseyModelNode.name);
-      this.$input_texture.val((this.selected as any).odysseyModelNode.TextureMap1);
+      this.$input_name.val((this.selected as any).odysseyNode.name);
+      this.$input_texture.val((this.selected as any).odysseyNode.TextureMap1);
     }else if(this.selected instanceof THREE.Group){
       for(let i = 0; i < this.selected.children.length; i++){
         let child = this.selected.children[i];
         if(child instanceof THREE.Mesh){
           this.selected = child;
           this.$selected_object.show();
-          this.$input_name.val(this.selected.odysseyModelNode.name);
-          this.$input_texture.val(this.selected.odysseyModelNode.TextureMap1);
+          this.$input_name.val(this.selected.odysseyNode.name);
+          this.$input_texture.val(this.selected.odysseyNode.TextureMap1);
           break;
         }
       }

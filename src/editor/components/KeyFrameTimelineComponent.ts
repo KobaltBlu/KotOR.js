@@ -79,7 +79,7 @@ export class KeyFrameTimelineComponent extends Component {
 
     this.$select_animation = $('<select />');
 
-    this.$label_loop = $('<b>Loop:</b>');
+    this.$label_loop = $('<i class="fa-solid fa-rotate"></i>');
     this.$checkbox_loop = $('<input type="checkbox" />');
 
     this.$label_loop.css({
@@ -188,11 +188,8 @@ export class KeyFrameTimelineComponent extends Component {
       let offset = this.$ui_bar.offset();
       if(offset && this.$ui_bar){
         let position = e.pageX - offset.left + (this.$ui_bar.scrollLeft() as any);
-
-        // let percentage = position / (this.duration * this.timeline_zoom);
-        // if(this.lip instanceof LIPObject){
-        //   this.elapsed = this.duration * percentage;
-        // }
+        let percentage = position / (this.duration * this.timeline_zoom);
+        this.processEventListener('onSeek', this.duration * percentage);
       }
 
       if(was_playing)
@@ -226,7 +223,39 @@ export class KeyFrameTimelineComponent extends Component {
       e.preventDefault();
       this.btnDeleteKeyFrame();
     });
+    
+    this.$ui_bar.on('scroll', (e) => {
+      this.updateScrollPositions();
+    })
 
+  }
+
+  updateScrollPositions(){
+    let $target = this.$ui_bar;
+    let target = $target[0];
+
+    let left = target.scrollLeft;
+    let top = target.scrollTop;
+
+    this.$ui_bar_keyframe_time.css({
+      top: top
+    });
+
+    $('.track-label', target).css({
+      left: left,
+      width: this.timelineOffset,
+      zIndex: 1,
+    });
+
+    $('.track-keyframes', target).css({
+      left: this.timelineOffset,
+      width: target.scrollWidth - this.timelineOffset,
+      zIndex: 0,
+    });
+
+    this.$ui_bar_keyframes.css({
+      width: target.scrollWidth
+    });
   }
 
   setAnimations(animations: OdysseyModelAnimation[] = []){
@@ -284,6 +313,9 @@ export class KeyFrameTimelineComponent extends Component {
     this.$btn_wrapper_center.css({
       flex: '1',
       flexBasis: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      display: 'flex',
     });
 
     this.setAnimations();
@@ -501,14 +533,14 @@ export class KeyFrameTimelineComponent extends Component {
 
   }
 
-  buildAnimationControllers(animation: OdysseyModelAnimation){
+  buildAnimationControllers(animation?: OdysseyModelAnimation){
     this.$ui_bar_keyframes.html('');
-    if(animation instanceof OdysseyModelAnimation){
-      animation.nodes.forEach( (node: OdysseyModelAnimationNode) => {
-        let $nodeTrack = $(`<div class="keyframe-track-wrapper node" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;">${node.name}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
+    if(this.tab.currentAnimation instanceof OdysseyModelAnimation){
+      this.tab.currentAnimation.nodes.forEach( (node: OdysseyModelAnimationNode) => {
+        let $nodeTrack = $(`<div class="keyframe-track-wrapper node" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;"><i class="fa-regular fa-square"></i> ${node.name}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
         this.$ui_bar_keyframes.append($nodeTrack);
         node.controllers.forEach( (controller: OdysseyControllerGeneric) => {
-          let $controllerTrack = $(`<div class="keyframe-track-wrapper controller" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;">${OdysseyModelControllerType[controller.type]}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
+          let $controllerTrack = $(`<div class="keyframe-track-wrapper controller" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;"><i class="fa-solid fa-circle"></i> ${OdysseyModelControllerType[controller.type]}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
           if(Array.isArray(controller.data)){
             controller.data.forEach( (frame: any) => {
               this.buildKeyframe(frame, $('.track-keyframes', $controllerTrack));
@@ -518,10 +550,11 @@ export class KeyFrameTimelineComponent extends Component {
         })
       });
     }
+    this.updateScrollPositions();
   }
 
   buildKeyframes(){
-    this.$ui_bar_keyframes.html('');
+    this.buildAnimationControllers();
     this.$ui_bar_keyframe_time.html('');
     if(Array.isArray(this.keyframes)){
       for(let i = 0, il = this.keyframes.length; i < il; i++){

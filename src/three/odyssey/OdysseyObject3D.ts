@@ -4,13 +4,14 @@ import { OdysseyController } from "../../odyssey/controllers/OdysseyController";
 import { GUIControl } from "../../gui/GUIControl";
 import { OdysseyEmitter3D, OdysseyModel3D } from "./";
 import { ModuleObject } from "../../module";
+import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 export class OdysseyObject3D extends THREE.Object3D {
   odysseyModel: OdysseyModel3D;
   odysseyModelNode: OdysseyModelNode;
   moduleObject: ModuleObject;
   NodeType: number;
   isWalkmesh: boolean;
-  controllers: Map<number, OdysseyController>;
+  controllers: Map<number, OdysseyControllerGeneric>;
   controllerCache: any;
   controllerHelpers: any = {
     hasOrientation: false,
