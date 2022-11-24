@@ -1897,7 +1897,7 @@ export class GUIControl {
 
   updateTextGeometry(text: string){
 
-    if(!this.text.texture)
+    if(!(this.text.texture instanceof THREE.Texture))
       return;
 
     let scale = 1;
