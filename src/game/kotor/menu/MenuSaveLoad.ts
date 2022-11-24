@@ -64,7 +64,7 @@ export class MenuSaveLoad extends GameMenu {
           if(this.selected instanceof NewSaveItem){
             MenuManager.MenuSaveName.Show();
             MenuManager.MenuSaveName.onSave = ( name = '' ) => {
-              console.log('SavGame', name);
+              console.log('SaveGame', name);
             };
           }else{
 
