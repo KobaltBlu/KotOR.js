@@ -183,7 +183,11 @@ export class GameFileSystem {
       if(pathOrHandle instanceof FileSystemDirectoryHandle){
         for await (const entry of pathOrHandle.values()) {
           if (entry.kind === "file"){
-            files.push(path.join(dirbase, entry.name));
+            if(!opts.list_dirs){
+              files.push(path.join(dirbase, entry.name));
+            }else{
+              //don't push a file when we are only listing directories
+            }
           }
           if (entry.kind === "directory"){
             let newdirbase = path.join(dirbase, entry.name);
@@ -191,6 +195,8 @@ export class GameFileSystem {
             // files.push(entry.name);
             if(opts.recursive){
               await GameFileSystem.readdir_web(entry, opts, files, newdirbase);
+            }else{
+              files.push(path.join(dirbase, entry.name));
             }
           }
         }
@@ -369,10 +375,25 @@ export class GameFileSystem {
       try{
         if(details.ext){
           let handle = await GameFileSystem.resolveFilePathDirectoryHandle(dirOrFilePath);
-          return true;
+          if(handle){
+            let fileHandle = await handle.getFileHandle(details.base);
+            if(fileHandle){
+              console.log('handle-file', handle);
+              return true;
+            }else{
+              return false;
+            }
+          }else{
+            return false;
+          }
         }else{
           let handle = await GameFileSystem.resolvePathDirectoryHandle(dirOrFilePath);
-          return true;
+          if(handle){
+            console.log('handle-dir', handle);
+            return true;
+          }else{
+            return false;
+          }
         }
       }catch(e){
         console.error(e);
