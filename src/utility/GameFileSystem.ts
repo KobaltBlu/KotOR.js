@@ -208,6 +208,19 @@ export class GameFileSystem {
     }
   }
 
+  private static async isDirectory(resource_path: string = ''){
+    return (resource_path.indexOf('.') == -1);
+    // return new Promise( (resolve, reject) => {
+    //   fs.readdir(path.join(GameFileSystem.rootDirectoryPath, resource_path), (err, stats: fs.Stats) => {
+    //     if(err){
+    //       resolve(false);
+    //     }else{
+    //       resolve(true);
+    //     }
+    //   });
+    // });
+  }
+
   private static async readdir_fs(resource_path: string = '', opts: GameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
     if(typeof depthState === 'undefined'){
       depthState = {
@@ -217,46 +230,70 @@ export class GameFileSystem {
     }else{
       depthState.depth++;
     }
-    return new Promise<string[]>( (resolve, reject) => {
-      fs.stat(path.join(GameFileSystem.rootDirectoryPath, resource_path), (err, stats: fs.Stats) => {
-        if(err){
-          reject(err);
-          return;
-        }
-        // stats = Object.assign(new fs.Stats(), stats);
-        if(resource_path.split('/').pop().indexOf('.') > 0){
-          if(!opts.list_dirs){
-            files.push(resource_path);
+    return new Promise<string[]>( async (resolve, reject) => {
+      let dir_path = path.join(GameFileSystem.rootDirectoryPath, resource_path);
+
+      if(await GameFileSystem.isDirectory(resource_path)){
+        fs.stat(dir_path, async (err, stats: fs.Stats) => {
+          if(err){
+            reject(err);
+            return;
           }
-          resolve(files);
-          return;
-        }else{
-          if((depthState.depth <= 1) || !!opts.recursive ){
-            fs.readdir(path.join(GameFileSystem.rootDirectoryPath, resource_path), {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
-              if(err){
-                reject(err);
-                return;
-              }
-              let file: fs.Dirent;
-              if(!!opts.list_dirs && depthState.depth){
-                files.push(resource_path);
-              }
-              for(let i = 0, len = dir_files.length; i < len; i++){
-                file = dir_files[i];
-                try{
-                  await GameFileSystem.readdir_fs(path.join(resource_path, file.name), opts, files, depthState);
-                }catch(e){
-                  reject(err);
-                }
-              }
-              resolve(files);
-            });
-          }else{
+          // stats = Object.assign(new fs.Stats(), stats);
+          if(!(await GameFileSystem.isDirectory(resource_path))){
+            if(!opts.list_dirs){
+              files.push(resource_path);
+            }
             resolve(files);
+            return;
+          }else{
+            if((depthState.depth <= 1) || !!opts.recursive ){
+              // let dir_base = path.join(GameFileSystem.rootDirectoryPath, resource_path);
+              fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
+                if(err){
+                  console.error(err);
+                  reject(err);
+                  return;
+                }
+                let file: fs.Dirent;
+                let file_path = '';
+                let is_dir = false;
+                if(!!opts.list_dirs && depthState.depth){
+                  files.push(resource_path);
+                }
+                for(let i = 0, len = dir_files.length; i < len; i++){
+                  file = dir_files[i];
+                  file_path = path.join(resource_path, file.name);
+                  is_dir = (await GameFileSystem.isDirectory(file_path));
+                  try{
+                    if(!!is_dir){
+                      if(!!opts.recursive){
+                        await GameFileSystem.readdir_fs(file_path, opts, files, depthState);
+                      }else{
+                        files.push(path.join(file_path));
+                      }
+                    }else{
+                      if(!opts.list_dirs){
+                        files.push(path.join(file_path));
+                      }else{
+                        //don't push a file when we are only listing directories
+                      }
+                    }
+                  }catch(e){
+                    console.error(e);
+                    // reject(e);
+                  }
+                }
+                resolve(files);
+              });
+            }else{
+              resolve(files);
+            }
           }
-        }
-  
-      });
+        });
+      }else{
+        resolve(files);
+      }
     });
   }
 
