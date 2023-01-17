@@ -9,6 +9,7 @@ html {
 body {
   background: black;
   color:white;
+  font-family: 'Roboto', sans-serif;
   margin: 0;
   overflow: hidden;
   cursor: none;
@@ -57,12 +58,14 @@ body {
   right: 0;
   left: 0;
   background:rgba(0, 0, 0, 0.5);
+  z-index: 1000000;
 
   &.show {
-    display: flex;
+    display: flex!important;
     align-items: center;
     justify-content: center;
     cursor: auto;
+    text-align: center;
   }
 
   .modal-grant-access {
@@ -76,7 +79,7 @@ body {
         .grant {
 
         }
-        .quit {
+        .quit { 
 
         }
       }

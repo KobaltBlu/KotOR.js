@@ -113,6 +113,10 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
       GameKey = 'KOTOR';
     break;
   }
+  
+  KotOR.LoadingScreen.main.SetLogo(app_profile.logo);
+  KotOR.LoadingScreen.main.SetBackgroundImage(app_profile.background);
+  KotOR.LoadingScreen.main.Show();
 
   if(env == ApplicationEnvironment.ELECTRON){
     initializeApp();
