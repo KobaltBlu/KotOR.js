@@ -19,6 +19,7 @@ import { Project } from "../Project";
 import { Wizard } from "./";
 import { ConfigClient } from "../../utility/ConfigClient";
 import { GameFileSystem } from "../../utility/GameFileSystem";
+import { ProjectType } from "../enum/ProjectType";
 
 export class NewProjectWizard extends Wizard {
   data: any = {};
@@ -42,7 +43,7 @@ export class NewProjectWizard extends Wizard {
       name: 'New Project',
       project_directory: ConfigClient.get('Projects_Directory'),
       project_location: '',
-      project_type: Project.Types.MODULE,
+      project_type: ProjectType.MODULE,
       template_id: -1,
       template_name: 'None',
       module_name: 'mm01aa',
