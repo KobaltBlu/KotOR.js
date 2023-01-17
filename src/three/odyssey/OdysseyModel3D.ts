@@ -699,9 +699,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       let originalSkinMesh = this.skins[i];
       let skinMesh = originalSkinMesh.clone();
       let skinMaterial = new THREE.ShaderMaterial({
-        vertexShader: ShaderManager.Shaders.get('odyssey').getVertex(),
-        fragmentShader: ShaderManager.Shaders.get('odyssey').getFragment(),
-        uniforms: THREE.UniformsUtils.merge([ShaderManager.Shaders.get('odyssey').getUniforms()]),
+        fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
+        vertexShader: THREE.ShaderLib.odyssey.vertexShader,
+        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.odyssey.uniforms]),
         side:THREE.FrontSide,
         lights: true,
         fog: true,
@@ -718,6 +718,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       // skinMaterial.needsUpdate = true;
 
       if(typeof shieldTexName == 'string' && shieldTexName.length){
+        skinMaterial.userData.shield = shieldTexName;
         TextureLoader.enQueue(shieldTexName, skinMaterial, TextureType.TEXTURE);
       }
 
@@ -1421,7 +1422,7 @@ _options
           material.uniforms.tweakColor.value.setRGB(1, 1, 1);
           material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//odysseyNode.Diffuse.r, odysseyNode.Diffuse.g, odysseyNode.Diffuse.b );
         }
-        material.uniforms.time.value = options.context.time;
+        material.uniforms.time.value = options?.context?.time || 0;
         material.defines = material.defines || {};
         material.defines.AURORA = "";
 
@@ -1456,6 +1457,7 @@ _options
       odysseyModel.materials.push(material);
       
       if(odysseyNode.HasLightmap && tMap2.length){
+        material.userData.lightmap = tMap2;
         TextureLoader.enQueue(tMap2, material, TextureType.LIGHTMAP);
       }
 
@@ -1522,6 +1524,7 @@ _options
       });
 
       if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
+        material.userData.map = tMap1;
         TextureLoader.enQueue(tMap1, material, TextureType.TEXTURE, undefined, fallbackTexture);
       }else{
         if(material instanceof THREE.ShaderMaterial){

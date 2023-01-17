@@ -30,6 +30,7 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
 import { MenuManager } from "../gui";
+import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
 
 /* @file
  * The ModuleArea class.
@@ -583,9 +584,9 @@ export class ModuleArea extends ModuleObject {
               TextureLoader.LoadQueue(() => {
                 MenuManager.LoadScreen.Close();
                 GameState.loadingTextures = false;
-              }, (textureName: string, index: number, count: number) => {
+              }, (ref: TextureLoaderQueuedRef, index: number, count: number) => {
                 MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
-                MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+textureName);
+                MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
                 //console.log('tex', textureName, index, count);
               });
             });

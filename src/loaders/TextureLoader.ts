@@ -223,11 +223,9 @@ export class TextureLoader {
       name = name.toLowerCase();
       let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
       if(TextureLoader.textures.has(name)){
-        setTimeout(() => {
-          TextureLoader.UpdateMaterial(obj);
-          if(typeof onLoad == 'function')
-            onLoad(TextureLoader.textures.get(name), obj)
-        }, 0);
+        TextureLoader.UpdateMaterial(obj);
+        if(typeof onLoad == 'function')
+          onLoad(TextureLoader.textures.get(name), obj)
       }else{
         TextureLoader.queue.push(obj);
       }
@@ -243,6 +241,9 @@ export class TextureLoader {
           TextureLoader.queue.push(obj);
         }
       }
+    }else{
+      console.warn('unhandled enQueue', name);
+      console.log('enQueue', name, material, type);
     }
   }
 
@@ -252,8 +253,10 @@ export class TextureLoader {
   }
 
   static LoadQueue(onLoad?: Function, onProgress?: Function){
+    let queue = TextureLoader.queue.slice(0);
+    TextureLoader.queue = [];
     let loop = new AsyncLoop({
-      array: TextureLoader.queue.slice(0),
+      array: queue,
       onLoop: async (tex: TextureLoaderQueuedRef, asyncLoop: AsyncLoop, index: number, count: number) => {
         await TextureLoader.UpdateMaterial(tex);
         if(typeof onProgress == 'function'){
@@ -263,7 +266,6 @@ export class TextureLoader {
       }
     });
     loop.iterate(() => {
-      TextureLoader.queue = [];
       if(typeof onLoad === 'function')
         onLoad();
     });

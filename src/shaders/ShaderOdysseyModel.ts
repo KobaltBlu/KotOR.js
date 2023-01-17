@@ -85,11 +85,13 @@ void main() {
 
 THREE.ShaderChunk.meshodyssey_frag = `
 #define PHONG
+
 uniform vec3 diffuse;
 uniform vec3 emissive;
 uniform vec3 specular;
 uniform float shininess;
 uniform float opacity;
+
 #include <common>
 #include <packing>
 #include <dithering_pars_fragment>
@@ -104,7 +106,7 @@ uniform float opacity;
 #include <emissivemap_pars_fragment>
 #include <envmap_common_pars_fragment>
 #include <envmap_pars_fragment>
-#include <cube_uv_reflection_fragment>
+// #include <cube_uv_reflection_fragment>
 #include <fog_pars_fragment>
 #include <bsdfs>
 #include <lights_pars_begin>
@@ -117,10 +119,13 @@ uniform float opacity;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 void main() {
+
   #include <clipping_planes_fragment>
+
   vec4 diffuseColor = vec4( diffuse, opacity );
   ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
   vec3 totalEmissiveRadiance = emissive;
+
   #include <logdepthbuf_fragment>
   #include <map_fragment>
   #include <color_fragment>
@@ -130,12 +135,18 @@ void main() {
   #include <normal_fragment_begin>
   #include <normal_fragment_maps>
   #include <emissivemap_fragment>
+  
+  // accumulation
   #include <lights_phong_fragment>
   #include <lights_fragment_begin>
   #include <lights_fragment_maps>
   #include <lights_fragment_end>
+
+  // modulation
   #include <aomap_fragment>
+
   vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+  
   #include <envmap_fragment>
   #include <output_fragment>
   #include <tonemapping_fragment>
@@ -154,6 +165,7 @@ export class ShaderOdysseyModel extends Shader {
 
     this.fragment = `
     #define PHONG
+    
     uniform vec3 diffuse;
     uniform vec3 emissive;
     uniform vec3 selfIllumColor;
@@ -410,14 +422,14 @@ export class ShaderOdysseyModel extends Shader {
 
       #include <logdepthbuf_fragment>
 
-      //#include <map_fragment>
+      // #include <map_fragment> 
       #ifdef USE_MAP
-        vec4 texelColor = texture2D( map, vUv );
+        vec4 sampledDiffuseColor = texture2D( map, vUv );
         #if defined( ANIMATED_UV )
-          texelColor = texture2D( map, UVJitter(vUv) );
+          sampledDiffuseColor = texture2D( map, UVJitter(vUv) );
         #endif
-        // texelColor = mapTexelToLinear( texelColor );
-        diffuseColor *= texelColor;
+        // sampledDiffuseColor = mapTexelToLinear( sampledDiffuseColor );
+        diffuseColor *= sampledDiffuseColor;
       #endif
 
       #include <color_fragment>
@@ -522,8 +534,10 @@ export class ShaderOdysseyModel extends Shader {
   
       #include <lights_fragment_maps>
       #include <lights_fragment_end>
+
       // modulation
       #include <aomap_fragment>
+
       #ifndef AURORA
         vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
       #else
@@ -596,8 +610,8 @@ export class ShaderOdysseyModel extends Shader {
         #endif
       #endif
       #ifdef SABER
-        texelColor = texture2D( map, vUv );
-        gl_FragColor = texelColor;
+        sampledDiffuseColor = texture2D( map, vUv );
+        gl_FragColor = sampledDiffuseColor;
       #else
         gl_FragColor = vec4( outgoingLight, diffuseColor.a );
       #endif
