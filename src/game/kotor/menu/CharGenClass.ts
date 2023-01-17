@@ -203,14 +203,14 @@ export class CharGenClass extends GameMenu {
     let _3dViewModel = CharGenManager.models.get(nth);
     let creature = CharGenManager.creatures.get(nth);
 
-    if (_3dViewModel instanceof OdysseyModel3D) {
-      _3dViewModel.dispose();
-      _3dViewModel = undefined;
-    }
-    if (creature instanceof ModuleCreature) {
-      creature.destroy();
-      creature = undefined;
-    }
+    // if (_3dViewModel instanceof OdysseyModel3D) {
+    //   _3dViewModel.dispose();
+    //   _3dViewModel = undefined;
+    // }
+    // if (creature instanceof ModuleCreature) {
+    //   creature.destroy();
+    //   creature = undefined;
+    // }
     OdysseyModel3D.FromMDL(CharGenManager.cgmain_light, {
       onComplete: (model: OdysseyModel3D) => {
         CharGenManager.models.set(nth, model);
