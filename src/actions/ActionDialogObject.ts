@@ -59,8 +59,8 @@ export class ActionDialogObject extends Action {
           this.owner.force = 0;
           this.owner.speed = 0;
 
-          this.target._conversation = this.owner.conversation;
-          this._conversation = this.owner.conversation;
+          this.target._conversation = conversation;
+          this._conversation = conversation;
 
           this.owner.heardStrings = [];
           this.target.heardStrings = [];
