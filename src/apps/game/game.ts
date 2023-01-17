@@ -88,10 +88,15 @@ async function spawnRequestDirectory(){
 }
 
 async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
-  if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-    return true;
+  try{
+    if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+      return true;
+    }
+    return false;
+  }catch(e){
+    console.error(e);
+    return false;
   }
-  return false;
 }
 
 ( async () => {
