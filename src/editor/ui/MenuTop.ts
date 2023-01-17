@@ -7,7 +7,7 @@ import { FileTypeManager } from "../FileTypeManager";
 import { Forge } from "../Forge";
 import { Project } from "../Project";
 import { EditorTab, LIPEditorTab, QuickStartTab, ScriptEditorTab, UTCEditorTab, UTDEditorTab, UTPEditorTab } from "../tabs";
-import { NewProjectWizard } from "../wizards";
+import { ModalMessageBox, NewProjectWizard } from "../wizards";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -46,6 +46,18 @@ export class MenuTop {
         }},
         {type: 'separator'},
         {name: 'Change Game', onClick: async function(){
+
+          let compatible_profiles: any[] = [];
+          let all_profiles = (ConfigClient.get(['Profiles']) || {});
+          let all_profile_keys = Object.keys(all_profiles);
+          
+          for(let i = 0, len = all_profile_keys.length; i < len; i++){
+            console.log(all_profile_keys[i])
+            let profile = all_profiles[all_profile_keys[i]];
+            if(profile.isForgeCompatible){
+              compatible_profiles.push(profile);
+            }
+          }
           
           // let game_choice = await dialog.showMessageBox({
           //   type: 'info',
@@ -70,6 +82,23 @@ export class MenuTop {
           // }
 
           // console.log(game_choice.response);
+
+          let mb = new ModalMessageBox({
+            type: 'question',
+            buttons: compatible_profiles.map( (p) => p.name ),
+            title: 'Switch Game?',
+            message: 'Choose which game you would like to switch to.',
+            onChoose: (choice: string) => {
+              let profile = compatible_profiles.find( (p) => {
+                return p.name == choice;
+              });
+              console.log('change', choice, profile);
+              if(profile){
+                window.location.search = `?key=${profile.key}`;
+              }
+            }
+          });
+          mb.Show();
 
         }},
         {type: 'separator'},

@@ -315,6 +315,8 @@ if(closeToggle){
       break;
     }
 
+    document.body.classList.add(GameKey);
+
     KotOR.ApplicationProfile.ENV = env;
     if(env == ApplicationEnvironment.ELECTRON){
       KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = app_profile.directory;
