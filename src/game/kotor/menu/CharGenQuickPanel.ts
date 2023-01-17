@@ -5,6 +5,7 @@ import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel, GUIButton, GUIControl, MenuManager } from "../../../gui";
 import { CharGenManager } from "../../../managers/CharGenManager";
+import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { PartyManager } from "../../../managers/PartyManager";
 
 /* @file
@@ -56,7 +57,7 @@ export class CharGenQuickPanel extends GameMenu {
         e.stopPropagation();
         CharGenManager.selectedCreature.equipment.ARMOR = undefined;
         CharGenManager.selectedCreature.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
-        GameState.player = CharGenManager.selectedCreature;
+        GlobalVariableManager.Init();
         PartyManager.Player = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder().then( () => {

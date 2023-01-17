@@ -1252,10 +1252,12 @@ export class GameState implements EngineContext {
       //PartyMember cleanup
       for(let i = 0; i < GameState.group.party.children.length; i++){
         let pm = (GameState.group.party.children[i] as any).moduleObject;
-        if(GameState.player != pm){
+        if(pm && GameState.player != pm){
           if(PartyManager.party.indexOf(pm) == -1){
             pm.destroy();
           }
+        }else if(!pm){
+          GameState.group.party.remove(GameState.group.party.children[i]);
         }
       }
 

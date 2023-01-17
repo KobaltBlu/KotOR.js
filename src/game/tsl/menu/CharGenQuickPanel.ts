@@ -4,6 +4,7 @@
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import { GUIButton, GUIControl, GUILabel, MenuManager } from "../../../gui";
+import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { PartyManager } from "../../../managers/PartyManager";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
 
@@ -50,6 +51,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         e.stopPropagation();
         GameState.player.equipment.ARMOR = undefined;
         GameState.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
+        GlobalVariableManager.Init();
         PartyManager.Player = GameState.player.template;
         PartyManager.AddPortraitToOrder(GameState.player.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder().then( () => {
