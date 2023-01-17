@@ -534,6 +534,9 @@ export class MenuTop {
         }}
       ]},
       {name: 'View', items: [
+        {name: 'Start Page', onClick: () => {
+          Forge.tabManager.AddTab(new QuickStartTab());
+        }},
         {name: 'Left Pane Toggle', onClick: () => {
           $('#container').layout().toggle('west');
         }},
