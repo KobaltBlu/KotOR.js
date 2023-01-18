@@ -5,7 +5,6 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "rebuild": "electron-rebuild -f -w dxt",
     "webpack:dev": "webpack",
     "webpack:dev-watch": "webpack --watch"
   },
