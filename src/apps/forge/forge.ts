@@ -4,7 +4,7 @@ import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
 // import { ConfigClient } from "../../utility/ConfigClient";
 import * as fs from "fs";
-const Jison = (window as any).Jison = require("jison").Jison;
+// const Jison = (window as any).Jison = require("jison").Jison;
 (window as any).monaco = monaco;
 
 declare const KotOR: any;
