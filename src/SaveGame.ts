@@ -93,16 +93,15 @@ export class SaveGame {
         GameFileSystem.exists(path.join(this.directory, 'pifo.ifo')).then( (exists) => {
           if(exists){
             this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo: GFFObject) => {
-      
               if(pifo.RootNode.HasField('Mod_PlayerList')){
                 let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
                 if(playerList.length){
                   PartyManager.Player = GFFObject.FromStruct(playerList[0]);
                 }
               }
-  
               resolve();
-        
+            }, () => {
+              resolve();
             });
           }else{
             resolve();
