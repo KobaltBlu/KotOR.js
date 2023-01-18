@@ -11,7 +11,7 @@ export const LauncherConfig: any = {
   "height": 600,
   "launch": {
     "type": "electron",
-    "path": "forge/index.html",
+    "path": "forge/",
     "backgroundColor": "#212121",
     "frameless": true,
     "fullscreen": false

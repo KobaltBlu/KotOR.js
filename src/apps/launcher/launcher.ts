@@ -58,7 +58,7 @@ async function initProfiles(){
       ConfigClient.set(['Profiles', profile_key], cached_profile);
     }
   }
-  ConfigClient.set(['Profiles.forge.launch.path'], 'forge/index.html');
+  ConfigClient.set(['Profiles.forge.launch.path'], 'forge/');
   profiles = ConfigClient.get('Profiles');
 }
 

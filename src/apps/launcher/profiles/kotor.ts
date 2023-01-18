@@ -17,7 +17,7 @@ export const LauncherConfig: any = {
   },
   "launch": {
     "type": "electron",
-    "path": "game/index.html",
+    "path": "game/",
     "backgroundColor": "#000000",
     "args": { "gameChoice": 1 },
     "fullscreen": true
