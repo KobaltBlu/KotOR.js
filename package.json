@@ -63,7 +63,6 @@
     "bit-buffer": "^0.2.5",
     "blueimp-md5": "^2.18.0",
     "electron-is-running-in-asar": "^1.0.0",
-    "electron-progressbar": "^2.0.1",
     "jison": "^0.4.18",
     "jquery": "^3.6.1",
     "monaco-editor": "^0.33.0",
