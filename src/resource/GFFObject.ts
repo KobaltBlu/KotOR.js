@@ -56,7 +56,7 @@ export class GFFObject {
   exportedStructs: GFFStruct[];
   exportedFields: GFFField[];
 
-  constructor(file?: string|Buffer, onComplete?: GFFObjectOnCompleteCallback){
+  constructor(file?: string|Buffer, onComplete?: GFFObjectOnCompleteCallback, onError?: Function){
 
     //START EXPORT VARS
 
@@ -88,33 +88,40 @@ export class GFFObject {
     if(file == null){
       this.RootNode = new GFFStruct(-1);
     }else{
-
       if(typeof file == 'string'){
-        this.file = file;
+        try{
+          this.file = file;
 
-        let fileInfo = path.parse(this.file);
-        this.path = fileInfo.dir;
-        this.file = fileInfo.name;
-        this.ext = fileInfo.ext.substr(1);
+          let fileInfo = path.parse(this.file);
+          this.path = fileInfo.dir;
+          this.file = fileInfo.name;
+          this.ext = fileInfo.ext.substr(1);
 
-        GameFileSystem.readFile(file).then( (binary) => {
-          this.resourceID = file;
-          this.Parse(binary, onComplete);
-        }).catch( () => {
-
-        });
-
-      }else{
-        //if file is not a string then its a binary array
-        this.Parse(file, onComplete);
-
-        let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
-        if(templateResRef instanceof GFFField){
-          this.file = templateResRef.Value;
+          GameFileSystem.readFile(file).then( (binary) => {
+            this.resourceID = file;
+            this.Parse(binary, onComplete);
+          }).catch( () => {
+            if(typeof onError === 'function')
+              onError();
+          });
+        }catch(e){
+          if(typeof onError === 'function')
+            onError(e);
         }
+      }else{
+        try{
+          //if file is not a string then its a binary array
+          this.Parse(file, onComplete);
 
+          let templateResRef = this.RootNode.GetFieldByLabel('TemplateResRef');
+          if(templateResRef instanceof GFFField){
+            this.file = templateResRef.Value;
+          }
+        }catch(e){
+          if(typeof onError === 'function')
+            onError(e);
+        }
       }
-
     }
 
   }
