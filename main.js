@@ -12,7 +12,6 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { exec } = require('child_process');
 const fs = require('fs');
-const shell = require('any-shell-escape');
 
 const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
