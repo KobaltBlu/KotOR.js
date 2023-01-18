@@ -74,7 +74,6 @@
     "node-abi": "^3.0.0",
     "node-int64": "^0.4.0",
     "object-hash": "^1.3.1",
-    "quad-indices": "^2.0.1",
     "recursive-readdir": "^2.2.2",
     "request": "^2.88.2",
     "soundbank-reverb": "^1.1.2",
