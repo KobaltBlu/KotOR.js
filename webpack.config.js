@@ -13,6 +13,22 @@ const libraryConfig = (name, color) => ({
       './src/KotOR.ts'
     ]
   },
+  stats: {
+    colors: true,
+    hash: false,
+    version: false,
+    timings: false,
+    assets: false,
+    chunks: false,
+    modules: false,
+    reasons: false,
+    children: false,
+    source: false,
+    errors: false,
+    errorDetails: false,
+    warnings: false,
+    publicPath: false
+  },
   devtool: 'eval-source-map',
   module: {
     rules: [
@@ -66,6 +82,22 @@ const launcherConfig = (name, color) => ({
     // preload: [
     //   './src/launcher/preload.ts',
     // ]
+  },
+  stats: {
+    colors: true,
+    hash: false,
+    version: false,
+    timings: false,
+    assets: false,
+    chunks: false,
+    modules: false,
+    reasons: false,
+    children: false,
+    source: false,
+    errors: false,
+    errorDetails: false,
+    warnings: false,
+    publicPath: false
   },
   devtool: 'eval-source-map',
   module: {
@@ -169,6 +201,22 @@ const gameConfig = (name, color) => ({
     // preload: [
     //   './src/apps/game/preload.ts',
     // ]
+  },
+  stats: {
+    colors: true,
+    hash: false,
+    version: false,
+    timings: false,
+    assets: false,
+    chunks: false,
+    modules: false,
+    reasons: false,
+    children: false,
+    source: false,
+    errors: false,
+    errorDetails: false,
+    warnings: false,
+    publicPath: false
   },
   devtool: 'eval-source-map',
   module: {
@@ -275,6 +323,22 @@ const forgeConfig = (name, color) => ({
     // preload: [
     //   './src/apps/forge/preload.ts',
     // ]
+  },
+  stats: {
+    colors: true,
+    hash: false,
+    version: false,
+    timings: false,
+    assets: false,
+    chunks: false,
+    modules: false,
+    reasons: false,
+    children: false,
+    source: false,
+    errors: false,
+    errorDetails: false,
+    warnings: false,
+    publicPath: false
   },
   devtool: 'eval-source-map',
   module: {
