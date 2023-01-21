@@ -1,6 +1,6 @@
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ApplicationMode } from "../enums/ApplicationMode";
-import * as path from "path";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 export class ApplicationProfile {
 
@@ -10,6 +10,9 @@ export class ApplicationProfile {
   static key: string;
   static launch: any;
   static path_sep: string = '/';
+  static GameKey: GameEngineType = GameEngineType.KOTOR;
+  static profile: any = {};
+  static isMac: boolean = false;
 
   static InitEnvironment(){
     if(window.location.origin === 'file://'){

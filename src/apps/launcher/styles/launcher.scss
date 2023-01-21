@@ -26,6 +26,24 @@ html, body {
 }
 
 #container {
+  display: none;
+  opacity: 0;
+}
+
+#container.ready {
+  display: block!important;
+  opacity: 0;
+  animation: body-fade 1.5s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+
+@keyframes body-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+#container {
   position: absolute;
   left: 0;
   right: 0;
@@ -245,6 +263,7 @@ li.tab-btn.nav-logo img {
 
 .launcher-option {
   position: relative;
+  cursor: pointer;
 }
 
 .launcher-option:hover {

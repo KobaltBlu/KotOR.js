@@ -24,7 +24,7 @@ const libraryConfig = (name, color) => ({
     reasons: false,
     children: false,
     source: false,
-    errors: false,
+    errors: true,
     errorDetails: false,
     warnings: false,
     publicPath: false
@@ -76,7 +76,7 @@ const launcherConfig = (name, color) => ({
   mode: 'development',
   entry: {
     launcher: [
-      './src/apps/launcher/launcher.ts', 
+      './src/apps/launcher/launcher.tsx', 
       './src/apps/launcher/app.scss'
     ],
     // preload: [
@@ -94,7 +94,7 @@ const launcherConfig = (name, color) => ({
     reasons: false,
     children: false,
     source: false,
-    errors: false,
+    errors: true,
     errorDetails: false,
     warnings: false,
     publicPath: false
@@ -213,7 +213,7 @@ const gameConfig = (name, color) => ({
     reasons: false,
     children: false,
     source: false,
-    errors: false,
+    errors: true,
     errorDetails: false,
     warnings: false,
     publicPath: false
@@ -335,7 +335,7 @@ const forgeConfig = (name, color) => ({
     reasons: false,
     children: false,
     source: false,
-    errors: false,
+    errors: true,
     errorDetails: false,
     warnings: false,
     publicPath: false
@@ -407,8 +407,9 @@ const forgeConfig = (name, color) => ({
     // https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-      // $: "jquery",
-      // jQuery: "jquery"
+      // "$":"jquery",
+      // "jQuery":"jquery",
+      // "window.jQuery":"jquery"
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',

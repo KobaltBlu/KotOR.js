@@ -16,6 +16,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowJs": true,
+    "jsx": "react",
     "types": [
       "@types/wicg-file-system-access",
       "node",
