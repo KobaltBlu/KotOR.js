@@ -6,6 +6,12 @@ import * as swForge from "../profiles/forge";
 import { ConfigClient } from "../../../utility/ConfigClient";
 
 export class Launcher {
+
+  static PROFILE_ID: number = 0;
+  static GetProfileID(){
+    return Launcher.PROFILE_ID++;
+  }
+
   static AppCategories: any = {
     game: { name: 'Games', profiles: [] },
     tools: { name: 'Modding Tools', profiles: [] }
@@ -14,6 +20,7 @@ export class Launcher {
 
   static async InitProfiles(){
     await ConfigClient.Init();
+    Launcher.PROFILE_ID = 0;
 
     Launcher.AppProfiles['kotor'] = swKotOR.LauncherConfig;
     Launcher.AppProfiles['kotor'].key = 'kotor';
@@ -36,13 +43,14 @@ export class Launcher {
         cached_profile = Launcher.AppProfiles[profile_key];
         cached_profile.key = profile_key;
         cached_profile.sort = i;
-        ConfigClient.set(['Profiles', profile_key], cached_profile);
+        cached_profile.id = Launcher.GetProfileID();
       }else{
         cached_profile = Object.assign(Launcher.AppProfiles[profile_key], cached_profile);
         cached_profile.key = profile_key;
         cached_profile.sort = i;
-        ConfigClient.set(['Profiles', profile_key], cached_profile);
+        cached_profile.id = Launcher.GetProfileID();
       }
+      ConfigClient.set(['Profiles', profile_key], cached_profile);
     }
     Launcher.AppProfiles = ConfigClient.get('Profiles');
     for (const [key, category] of Object.entries(Launcher.AppCategories) as any[]) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppProvider, useApp } from "./context/AppContext";
 
@@ -37,10 +37,16 @@ const App = function() {
   const [selectedProfileValue, setSelectedProfile] = myContext.selectedProfile;
   const [profileCategoriesValue, setProfilesCategories] = myContext.profileCategories;
 
+  let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
+    return acc + cat.profiles.length;
+  }, 0)).fill(0).map(i=> React.createRef());
+
   let resizeEndTimeout: ReturnType<typeof setTimeout>;
   const onResizeEnd = () => {
+    console.log('end');
     ConfigClient.set(['Launcher', 'width'], window.outerWidth);
     ConfigClient.set(['Launcher', 'height'], window.outerHeight);
+    console.log(tabRefs);
   };
 
   const onResize = () => {
@@ -61,8 +67,33 @@ const App = function() {
     })
   };
 
+  const onFullscreenChange = (event: Event) => {
+    console.log(document.fullscreenElement);
+    console.log("FULL SCREEN CHANGE", event)
+    if(document.fullscreenElement == null){
+      if(event.target instanceof HTMLVideoElement){
+        event.target.volume = 0;
+        event.target.loop = true;
+        if(event.target.currentTime == event.target.duration){
+          event.target.currentTime = 0;
+        }
+        event.target.play();
+      }
+    }
+  };
+
+  useEffect(() => {
+    console.log('sp', selectedProfileValue, tabRefs);
+
+    if(!selectedProfileValue) return;
+    if(!tabRefs[selectedProfileValue.id]?.current) return;
+
+    tabRefs[selectedProfileValue.id].current.showTab();
+  }, [selectedProfileValue])
+
   //on-mount
   useEffect(() => {
+    console.log(tabRefs);
     window.addEventListener('resize', onResize);
     Launcher.InitProfiles().then( () => {
       setProfilesCategories(Launcher.AppCategories);
@@ -72,14 +103,20 @@ const App = function() {
         )
       );
       document.body.style.display = '';
+      tabRefs = Array(Object.values(Launcher.AppCategories).reduce((acc, cat: any) => {
+        return acc + cat.profiles.length;
+      }, 0)).fill(0).map(i=> React.createRef());
+      console.log(tabRefs);
       setAppReady(true);
     })
     window.addEventListener('focus', onFocus);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
     //on-unmount
     return () => {
       // console.log('destruct');
       window.removeEventListener('resize', onResize);
       window.removeEventListener('resize', onFocus);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       clearTimeout(resizeEndTimeout);
     }
   }, []);
@@ -115,7 +152,7 @@ const App = function() {
           <div className="menu-accent"><div className="inner"></div></div>
           <ul className="top-nav">
             <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" /></li>
-            <li className="tab-btn"><a href="#games">Games</a></li>
+            <li className="tab-btn"><a href="#apps">Apps</a></li>
           </ul>
           <div id="launcher-menu-top-right" className="launcher-menu-top-right">
             <div className="launcher-min" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
@@ -124,7 +161,7 @@ const App = function() {
           </div>
         </div>
         <div className="tab-host">
-          <div id="games" className="tab selected">
+          <div className="tab selected" data-tab-id="apps">
             <div className="launcher-options">
               {Object.values(profileCategoriesValue).map((category: any, i: number) => {
                 return (
@@ -133,11 +170,11 @@ const App = function() {
               })}
             </div>
             <div className="launcher-contents">
-              {Object.values(profileCategoriesValue).map((category: any, catI: number) => {
+              {Object.values(profileCategoriesValue).map((category: any, index: number) => {
                 return (
-                  category.profiles.map((profile: any, profI: number) => {
+                  category.profiles.map((profile: any, index: number) => {
                     return (
-                      <ProfileTabContent profile={profile} active={selectedProfileValue == profile ? true : false} key={`profile-content-item-${((catI*100) + profI)}`}></ProfileTabContent>
+                      <ProfileTabContent ref={tabRefs[profile.id]} profile={profile} active={selectedProfileValue == profile ? true : false} key={`profile-content-item-${profile.id}`}></ProfileTabContent>
                     )
                   })
                 )

@@ -345,7 +345,8 @@ li.tab-btn.nav-logo img {
   display: block;
   white-space: nowrap;
   overflow: visible;
-  /* position: relative; */
+  position: relative;
+  height: 250px;
 }
 
 .launcher-content.active .promo-elements {

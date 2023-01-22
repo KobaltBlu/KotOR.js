@@ -1,21 +1,40 @@
-import React, { useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ProfilePromoItem } from "./ProfilePromoItem";
 import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
 import { ApplicationProfile } from "../../../utility/ApplicationProfile";
 import { ConfigClient } from "../../../utility/ConfigClient";
 import { useApp } from "../context/AppContext";
+import { ProfilePromoItems } from "./ProfilePromoItems";
 
 export interface ProfileTabContentProps {
   profile: any;
   active: boolean
+  // ref?: React.RefObject<any>;
 };
 
-export const ProfileTabContent = function(props: ProfileTabContentProps){
+export const ProfileTabContent = forwardRef(function(props: ProfileTabContentProps, ref: any){
   const [render, rerender] = useState(false);
   const myContext = useApp();
   const [selectedProfileValue, setSelectedProfile] = myContext.selectedProfile;
   const profile = props.profile;
   const active = props.active;
+  const tabRef = useRef<HTMLDivElement>(null);
+  const promoRef = useRef<any>(null);
+
+  useEffect(() => {
+    
+  }, [ref]);
+
+  // The component instance will be extended
+  // with whatever you return from the callback passed
+  // as the second argument
+
+  useImperativeHandle(ref, () => ({
+    showTab() {
+      // console.warn(`showTab: ${profile.name}`);
+      if(promoRef.current) promoRef.current.recalculate();
+    }
+  }));
 
   const btnLocate = () => {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
@@ -83,22 +102,26 @@ export const ProfileTabContent = function(props: ProfileTabContentProps){
     //}
   }
 
+  let onComponentResize = () => {
+    // updateScroll();
+    // updateScrollButtons();
+  }
+
+  useEffect(() => {
+    window.addEventListener('resize', onComponentResize);
+    // updateScroll();
+    // updateScrollButtons();
+    return () => {
+      window.removeEventListener('resize', onComponentResize);
+    };
+  }, []);
+
   return (
-    <div id={profile.key} className={`launcher-content ${active ? `active` : ''}`}>
+    <div ref={tabRef} id={profile.name} className={`launcher-content ${active ? `active` : ''}`}>
       <div className="logo-wrapper">
         <img className="logo" src={ profile.steam_id ? `https://steamcdn-a.akamaihd.net/steam/apps/${profile.steam_id}/logo.png?t=1437496165` : profile.logo } />
       </div>
-      <div className="promo-elements">
-        <div className="promo-elements-left"><i className="fas fa-chevron-left"></i></div>
-        <div className="promo-elements-container">
-          {
-            profile.elements.map( (element: any, i: number) => {
-              return <ProfilePromoItem element={element} key={`profile-proto-item-${i}`}></ProfilePromoItem>
-            })
-          }
-        </div>
-        <div className="promo-elements-right"><i className="fas fa-chevron-right"></i></div>
-      </div>
+      <ProfilePromoItems ref={promoRef} profile={profile} tabRef={tabRef}></ProfilePromoItems>
       <div className="launch-btns">
         {
           launch_buttons.map( (element: JSX.Element, i: number) => {
@@ -108,4 +131,4 @@ export const ProfileTabContent = function(props: ProfileTabContentProps){
       </div>
     </div>
   );
-}
+});
