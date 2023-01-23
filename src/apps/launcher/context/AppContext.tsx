@@ -5,8 +5,7 @@ import { ConfigClient } from "../../../utility/ConfigClient";
 export interface AppProviderValues {
   profileCategories: [any, React.Dispatch<any>]
   selectedProfile: [any, React.Dispatch<any>],
-  lightboxImage: [ any,  React.Dispatch<any>],
-  lightboxActive: [ any, React.Dispatch<any>],
+  backgroundImage: [ any,  React.Dispatch<any>],
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -15,25 +14,46 @@ export function useApp(){
 }
 
 export const AppProvider = (props: any) => {
-  /* ENVIRONMENT API URL */
   const [profileCategoriesValue, setProfilesCategories] = useState<any>({});
   const [selectedProfileValue, setSelectedProfile] = useState<any|undefined>();
-
-  const [lightboxImageValue, setLightboxImage] = useState<string>('');
-  const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
+  const [backgroundImageValue, setBackgroundImage] = useState<string>('');
 
   useEffect(() => {
-    console.log('useEffect selectedProfile', selectedProfileValue);
     ConfigClient.set(['Launcher', 'selected_profile'], selectedProfileValue?.key || 'kotor');
+    if(selectedProfileValue){
+      try{
+        const img = new Image();
+        img.onload = async () => {
+          const width = img.width;
+          const height = img.height;
+          const canvas = new OffscreenCanvas(width, height);
+          const ctx = canvas.getContext('2d');
+          const gradientStart = {x: 0, y: (height-(height * 0.25))};
+          const gradientEnd = {x: width, y: height};
+          if(ctx instanceof OffscreenCanvasRenderingContext2D){
+            ctx.drawImage(img, 0, 0);
+            const gradient = ctx.createLinearGradient(0, gradientStart.y, 0, gradientEnd.y);
+            gradient.addColorStop(1, "black");
+            gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(gradientStart.x, gradientStart.y, gradientEnd.x, gradientEnd.y);
+            const newBackgroundURL = URL.createObjectURL(await canvas.convertToBlob({type: 'image/webp', quality:  100}));
+            setBackgroundImage(newBackgroundURL);
+          }
+        }
+        img.onerror = () => {
+          setBackgroundImage(selectedProfileValue.background);
+        }
+        img.src = selectedProfileValue.background;
+      }catch(e){
+        setBackgroundImage(selectedProfileValue?.background);
+      }
+    }
   }, [selectedProfileValue]);
 
-  useEffect(() => {
-    // console.log('useEffect lightboxActive', lightboxActiveValue);
-  }, [lightboxActiveValue]);
-
   useEffect( () => {
-    // console.log('useEffect lightboxImage', lightboxImageValue);
-  }, [lightboxImageValue]);
+
+  }, [backgroundImageValue]);
 
 
   useEffect(() => {
@@ -43,8 +63,7 @@ export const AppProvider = (props: any) => {
   const providerValue: AppProviderValues = {
     profileCategories: [profileCategoriesValue, setProfilesCategories], 
     selectedProfile: [selectedProfileValue, setSelectedProfile], 
-    lightboxImage: [lightboxImageValue, setLightboxImage], 
-    lightboxActive: [lightboxActiveValue, setLightboxActive],
+    backgroundImage: [backgroundImageValue, setBackgroundImage],
   };
 
   return (

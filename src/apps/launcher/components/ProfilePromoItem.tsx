@@ -10,7 +10,7 @@ export interface ProfilePromoItemProps {
 
 export const ProfilePromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
-  const myContext = useApp();
+  const appContext = useApp();
 
   let jsxElement: JSX.Element = (
     <div className="promo-element">

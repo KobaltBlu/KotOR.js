@@ -4,7 +4,7 @@ import { useApp } from "../context/AppContext";
 
 
 export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
-  const myContext = useApp();
+  const appContext = useApp();
   const profile: any = props.profile;
   const tabRef: any = props.tabRef;
   const promoElementsRef = useRef<HTMLDivElement>(null);

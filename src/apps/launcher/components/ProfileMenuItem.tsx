@@ -8,8 +8,8 @@ export interface ProfileMenuItemProps {
 export const ProfileMenuItem = function(props: ProfileMenuItemProps){
   const profile: any = props.profile;
 
-  const myContext = useApp();
-  const [selectedProfileValue, setSelectedProfile] = myContext.selectedProfile;
+  const appContext = useApp();
+  const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
 
   return (
     <li className={`launcher-option ${profile.key} ${selectedProfileValue == profile ? 'selected' : ''}`} data-sort={profile.sort} key={profile.key} onClick={(e) => { e.preventDefault(); setSelectedProfile(profile); }}>

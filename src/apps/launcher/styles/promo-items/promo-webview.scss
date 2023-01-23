@@ -1,0 +1,13 @@
+
+/* WEBVIEW ELEMENT */
+
+.promo-element.webview {
+  white-space: nowrap;
+  width: 446px;
+  height: 250px;
+  iframe {
+    float: left;
+    width: 100%!important;
+    height: 100%!important;
+  }
+}

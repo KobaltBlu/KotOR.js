@@ -1,0 +1,104 @@
+
+
+/* Launcher Options */
+
+.launcher-options {
+  position: absolute;
+  top: 0;
+  left:0;
+  width: 220px;
+  bottom:0;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0,0,0,0.50);
+  h3 {
+    font-family: Trajan;
+    padding: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    cursor: default;
+    backdrop-filter: blur(100px);
+  }
+  ul {
+    list-style: none;
+    margin-bottom: 25px;
+  }
+}
+
+.launcher-option {
+
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  &.selected {
+    background: rgba(255,255,255,0.10);
+    &:before {
+      content: '';
+      width: 3px;
+      height: 100%;
+      background: #cb9e5a;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  }
+
+  a {
+    display: block;
+    line-height: 50px;
+    color: grey;
+    position: relative;
+    padding-left: 50px;
+    text-decoration: none;
+    font-family: Trajan;
+    font-size: small;
+  }
+
+  .icon {
+    content: '';
+    background-size: contain;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    display: block;
+  }
+
+  &:hover, &.selected {
+    a {
+      color: white;
+    }
+  }
+
+}
+
+.launcher-contents {
+  position: absolute;
+  top: 0;
+  left: 220px;
+  right: 0;
+  bottom:0;
+  background: rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+
+.launcher-content {
+  display: none;
+  &.active {
+    display: block;
+    .logo {
+      opacity: 1;
+      filter: drop-shadow(0px 0px 10px #000);
+    }
+  }
+  .logo {
+    max-height: 120px;
+    opacity: 0;
+    -webkit-transition: opacity 0.2s ease-in-out;
+    transition: opacity 0.2s ease-in-out;
+  }
+}

@@ -8,7 +8,7 @@ export interface ProfilePromoItemProps {
 export const VideoPromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
 
-  const myContext = useApp();
+  const appContext = useApp();
 
   const videoElement = useRef(null) as React.RefObject<HTMLVideoElement>;
   const onVideoClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {

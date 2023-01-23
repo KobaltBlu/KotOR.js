@@ -7,7 +7,7 @@ export interface ProfilePromoItemProps {
 
 export const WebviewPromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
-  const myContext = useApp();
+  const appContext = useApp();
 
   return (
     <div className="promo-element webview">

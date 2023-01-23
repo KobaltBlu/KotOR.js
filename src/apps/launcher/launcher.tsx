@@ -31,11 +31,12 @@ if(window.location.origin === 'file://'){
 }
 
 const App = function() {
-  const myContext = useApp();
+  const appContext = useApp();
   const [appReady, setAppReady] = useState<boolean>(false);
 
-  const [selectedProfileValue, setSelectedProfile] = myContext.selectedProfile;
-  const [profileCategoriesValue, setProfilesCategories] = myContext.profileCategories;
+  const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
+  const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
+  const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
 
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
@@ -122,8 +123,8 @@ const App = function() {
   }, []);
 
   useEffect(() => {
-    // console.log('cat', myContext.profileCategories);
-  }, [myContext.profileCategories])
+    // console.log('cat', appContext.profileCategories);
+  }, [appContext.profileCategories])
 
   const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
     // e.preventDefault();
@@ -146,7 +147,7 @@ const App = function() {
 
   return (
     <>
-      <div id="container" className={`${appReady ? 'ready': ''}`} style={{'backgroundImage': `url("${selectedProfileValue?.background}")`}}>
+      <div id="container" className={`${appReady ? 'ready': ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
           <div className="launcher-menu-background"></div>
           <div className="menu-accent"><div className="inner"></div></div>
@@ -183,7 +184,6 @@ const App = function() {
           </div>
         </div>
       </div>
-      <LightboxComponent />
     </>
   );
 

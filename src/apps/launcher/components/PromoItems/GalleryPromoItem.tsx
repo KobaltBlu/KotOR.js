@@ -1,5 +1,6 @@
 import React, { createRef, useEffect, useState } from "react";
 import { useApp } from "../../context/AppContext";
+import { useProfile } from "../../context/ProfileContext";
 
 export interface ProfilePromoItemProps {
   element: any;
@@ -7,10 +8,10 @@ export interface ProfilePromoItemProps {
 
 export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
-
-  const myContext = useApp();
-  const [lightboxActiveValue, setLightboxActive] = myContext.lightboxActive;
-  const [lightboxImageValue, setLightboxImage] = myContext.lightboxImage;
+  
+  const profileContext = useProfile();
+  const [lightboxActiveValue, setLightboxActive] = profileContext.lightboxActive;
+  const [lightboxImageValue, setLightboxImage] = profileContext.lightboxImage;
 
   const [index, setIndex] = useState(0);
 
