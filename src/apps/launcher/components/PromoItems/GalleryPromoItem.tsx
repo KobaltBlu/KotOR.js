@@ -75,7 +75,3 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   );
 
 }
-
-function setState(arg0: number): [any, any] {
-  throw new Error("Function not implemented.");
-}
