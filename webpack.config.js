@@ -314,7 +314,7 @@ const forgeConfig = (name, color) => ({
   mode: 'development',
   entry: {
     forge: [
-      './src/apps/forge/forge.ts', 
+      './src/apps/forge/forge.tsx', 
       './src/apps/forge/forge.scss'
     ],
     "worker-tex": [

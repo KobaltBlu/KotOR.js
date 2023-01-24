@@ -256,7 +256,7 @@ export class RIMObject {
     return this.getResourceByKey(label, ResType);
   }
 
-  GetResourceData(resource: RIMResource, onComplete?: Function) {
+  GetResourceData(resource?: RIMResource, onComplete?: Function) {
     if(!!resource){
       try {
 

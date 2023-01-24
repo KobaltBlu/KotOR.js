@@ -73,10 +73,11 @@ export class CExoLocSubStringWizard extends Wizard {
 
 
     $('body').append(this.$wizard);
-    this.$wizard.filter('.modal').modal({
-        backdrop: 'static',
-        keyboard: false
+    this.$wizard.modal({
+      backdrop: 'static',
+      keyboard: false
     });
+    this.$wizard.modal('show');
 
     this.$wizard.on('hidden.bs.modal', () => {
       this.$wizard.data('bs.modal', null);

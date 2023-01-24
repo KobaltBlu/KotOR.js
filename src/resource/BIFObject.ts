@@ -177,9 +177,8 @@ export class BIFObject {
     return undefined;
   }
 
-  GetResourceData(res: BIFResource, onComplete?: Function, onError?: Function){
-    if(res != null){
-
+  GetResourceData(res?: BIFResource, onComplete?: Function, onError?: Function){
+    if(!!res){
       if(res.FileSize){
         GameFileSystem.open(this.resourceDiskInfo.path, 'r').then( (fd) => {
           let buffer = Buffer.alloc(res.FileSize);

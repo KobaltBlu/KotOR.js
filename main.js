@@ -2,7 +2,7 @@ const electron = require('electron');
 // In main process.
 const {ipcMain} = require('electron');
 // Module to control application life.
-const {app} = electron;
+const {app, session} = electron;
 // Module to create native browser window.
 const {BrowserWindow, Tray, Menu, globalShortcut} = electron;
 const {dialog} = electron;
@@ -12,6 +12,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { exec } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 
 const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
@@ -234,6 +235,26 @@ ipcMain.on('launch_executable', (event, exe_path) => {
 // Some APIs can only be used after this event occurs.
 
 app.on('ready', async () => {
+
+  // fs.readdirSync()
+
+  // on macOS
+  if (process.platform === 'win32') {
+    const reactDevToolsPath = path.join(
+      os.homedir(),
+      '\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.27.1_0'
+    );
+    await session.defaultSession.loadExtension(reactDevToolsPath);
+  }else if(process.platform === 'darwin'){
+    const reactDevToolsPath = path.join(
+      os.homedir(),
+      '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.27.1_0'
+    );
+    await session.defaultSession.loadExtension(reactDevToolsPath);
+  }else if(process.platform === 'linux'){
+
+  }
+
   // console.log(__dirname);
   if(!fs.existsSync(path.join(__dirname, 'icon.png'))){
     fs.copyFileSync(path.join(app.getAppPath(), 'icon.png'), path.join(__dirname, 'icon.png'));

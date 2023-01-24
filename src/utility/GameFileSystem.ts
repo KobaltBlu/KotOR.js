@@ -508,4 +508,43 @@ export class GameFileSystem {
     }
   }
 
+  
+
+  static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
+    try{
+      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+        return true;
+      }
+      return false;
+    }catch(e){
+      console.error(e);
+      return false;
+    }
+  }
+
+  static async validateDirectory(handle: string){
+    if(handle){
+      return new Promise( (resolve, reject) => {
+        fs.exists(handle, (exists) => {
+          resolve(exists);
+        })
+      });
+    }
+    return false;
+  }
+
+  static async showRequestDirectoryDialog(){
+    let handle = await window.showDirectoryPicker({
+      id: ApplicationProfile.profile?.key,
+      mode: "readwrite"
+    });
+    if(handle){
+      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+        return handle;
+      }
+    }
+    return;
+  }
+
+
 }

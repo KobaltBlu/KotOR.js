@@ -22,14 +22,6 @@ if(window.location.origin === 'file://'){
   if(menuTopRight) menuTopRight.style.display = 'none';
 }
 
-//create your forceUpdate hook
-(window as any).useForceUpdate = function(){
-  const [value, setValue] = React.useState(0); // integer state
-  return () => setValue(value => value + 1); // update state to force render
-  // A function that increment 👆🏻 the previous state like here 
-  // is better than directly setting `setValue(value + 1)`
-}
-
 const App = function() {
   const appContext = useApp();
   const [appReady, setAppReady] = useState<boolean>(false);

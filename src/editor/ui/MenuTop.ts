@@ -562,27 +562,25 @@ export class MenuTop {
 
   BuildTopMenu() {
 
-    let $newMenu = $(`<nav class="top-menu navbar navbar-default" role="navigation">
-      <div class="menu-accent"><span class="inner"></span></div>
-      <b id="app-title"></b>
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-      </div>
-      <div class="navbar-collapse collapse">
-        <ul id="topmenu-left" class="nav navbar-nav navbar-left">
-        </ul>
-        <ul id="topmenu-right" class="nav navbar-nav navbar-right">
-          <li><a href="#" id="devtools-toggle"><span class="glyphicon glyphicon-cog"></span></a></li>
-          <li><a href="#" id="minimize-toggle"><span class="glyphicon glyphicon-minus"></span></a></li>
-          <li><a href="#" id="maximize-toggle"><span class="glyphicon glyphicon-resize-full"></span></a></li>
-          <li><a href="#" id="close-toggle"><span class="glyphicon glyphicon-remove"></span></a></li>
-        </ul>
-      </div>
-    </nav>`);
+    let $newMenu = $(`<nav class="top-menu navbar navbar-expand-lg navbar-light bg-light">
+  <div class="menu-accent"><span class="inner"></span></div>
+  <div class="container-fluid">
+    <a id="app-title" class="navbar-brand" href="#"></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#top-menu" aria-controls="top-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="top-menu">
+      <ul id="topmenu-left" class="navbar-nav me-auto mb-2 mb-lg-0">
+      </ul>
+      <ul id="topmenu-right" class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li><a href="#" id="devtools-toggle"><span class="glyphicon glyphicon-cog"></span></a></li>
+        <li><a href="#" id="minimize-toggle"><span class="glyphicon glyphicon-minus"></span></a></li>
+        <li><a href="#" id="maximize-toggle"><span class="glyphicon glyphicon-resize-full"></span></a></li>
+        <li><a href="#" id="close-toggle"><span class="glyphicon glyphicon-remove"></span></a></li>
+      </ul>
+    </div>
+  </div>
+</nav>`);
 
     // if (typeof global.TopMenu.title == 'undefined') {
     //   global.TopMenu.title = 'KotOR Modding Suite';
@@ -625,13 +623,13 @@ export class MenuTop {
 
     //Build Item
     if(item.type === 'separator' || item.type === 'sep')
-      $item = $(`<li role="d-flex separator" class="divider" ></li>`);
+      $item = $(`<li><hr class="dropdown-divider"></li>`);
     else if(item.type === 'title')
-      $item = $(`<li class="title"><span class="d-flex "><span class="flex-grow-1">${item.name}</span></span></li>`);
+      $item = $(`<li class="nav-item title"><span class="d-flex "><span class="flex-grow-1">${item.name}</span></span></li>`);
     else
       $item = $(
-      `<li class="dropdown-item">
-        <a href="#">
+      `<li class="nav-item dropdown-item">
+        <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <span class="dropdown-item-name-wrapper d-flex">
             <span class="flex-grow-1 dropdown-item-name">${item.name}</span>
             <span class="dropdown-item-action">${item.accelerator ? item.accelerator : ''}</span>

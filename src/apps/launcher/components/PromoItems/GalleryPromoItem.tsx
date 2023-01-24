@@ -41,12 +41,6 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
     }
   }
 
-  let jsxElement: JSX.Element = (
-    <div className="promo-element">
-      <p>[Invalid Promo Element]</p>
-    </div>
-  );
-
   useEffect(() => {
     const interval = setInterval(() => {
       galleryNextImage();

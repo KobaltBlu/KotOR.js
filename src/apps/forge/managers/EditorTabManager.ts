@@ -1,5 +1,5 @@
-import { EditorTab } from "./tabs";
-import { Signal } from "signals";
+import { TabState } from "../states/tabs/TabState";
+// import { Signal } from "signals";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
@@ -12,8 +12,8 @@ export interface TabManagerEventListeners {
 }
 
 export class EditorTabManager {
-  currentTab: EditorTab;
-  tabs: EditorTab[] = [];
+  currentTab?: TabState;
+  tabs: TabState[] = [];
   $tabs: any;
   $tabsScrollControl: JQuery<HTMLElement>;
   $tabsScrollControlLeft: JQuery<HTMLElement>;
@@ -21,7 +21,6 @@ export class EditorTabManager {
   $tabsContainer: JQuery<HTMLElement>;
   scrollTimer: any;
   scrollSpeed: number;
-  signals: { tabAdded: any; tabRemoved: any; resized: any; };
   timer: any;
 
   eventListeners: TabManagerEventListeners = {
@@ -99,12 +98,6 @@ export class EditorTabManager {
 
     // this.$tabsContainer = $('<div class="tabs tab-content" style="display: block; position:relative; top: 30px; height: calc(100% - 30px);"/>');
 
-    this.signals = {
-      tabAdded: new Signal(),
-      tabRemoved: new Signal(),
-      resized: new Signal()
-    };
-
     // this.$tabs.bind('mousewheel', (e: any) => {
     //   let amount = e.originalEvent.wheelDelta /120;
     //   if(amount > 0) { //LEFT
@@ -122,11 +115,11 @@ export class EditorTabManager {
     // this.tabManagerView = view;
   }
 
-  AddTab(tab: EditorTab){
+  AddTab(tab: TabState){
     //Check to see if the tab has the singleInstance flag set to TRUE
     if(tab.singleInstance){
       if(this.TabTypeExists(tab)){
-        this.GetTabByType(tab.constructor.name).Show();
+        this.GetTabByType(tab.constructor.name)?.Show();
         return; //Return because the TabManager can only have one of these
       }
     }
@@ -143,7 +136,6 @@ export class EditorTabManager {
     tab.Attach(this);
     tab.Show();
     this.tabs.push(tab);
-    this.signals.tabAdded.dispatch(tab);
 
     this.processEventListener('onTabAdded');
 
@@ -173,7 +165,7 @@ export class EditorTabManager {
     return;
   }
 
-  TabTypeExists(tab: EditorTab){
+  TabTypeExists(tab: TabState){
     let tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
@@ -188,14 +180,13 @@ export class EditorTabManager {
     }
   }
 
-  RemoveTab(tab: EditorTab){
+  RemoveTab(tab: TabState){
     let length = this.tabs.length;
     for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
         console.log('Tab found. Deleting');
         // this.tabs[i].$tab.remove();
         // this.tabs[i].$tabContent.remove();
-        this.signals.tabRemoved.dispatch(this.tabs[i]);
         this.tabs.splice(i, 1);
         break;
       }
@@ -216,46 +207,6 @@ export class EditorTabManager {
   //Attaches the TabManager to the DOM
   AttachTo($dom: JQuery<HTMLElement>){
     return;
-    //$dom.append(this.$tabs).append(this.$tabsScrollControl).append(this.$tabsContainer);
-    $dom.append(this.$tabs).append(this.$tabsContainer);
-
-    this.$tabsScrollControlLeft.off('mouseenter').off('mouseleave').on('mouseenter', () => {
-
-      if(this.timer != null)
-        global.clearTimeout(this.timer)
-
-      let func_scrollL = () => {
-        this.ScrollTabsMenuLeft();
-        this.timer = setTimeout( () => {
-          func_scrollL();
-        }, 100);
-      };
-      func_scrollL();
-
-    }).on('mouseleave', () => {
-      if(this.timer != null)
-        global.clearTimeout(this.timer)
-    });
-
-    this.$tabsScrollControlRight.off('mouseenter').off('mouseleave').on('mouseenter', () => {
-
-      if(this.timer != null)
-        global.clearTimeout(this.timer)
-
-      let func_scrollR = () => {
-        this.ScrollTabsMenuRight();
-        this.timer = setTimeout( () => {
-          func_scrollR();
-        }, 100);
-      };
-      func_scrollR();
-
-    }).on('mouseleave', () => {
-      if(this.timer != null)
-        global.clearTimeout(this.timer)
-    });
-
-
   }
 
   ScrollTabsMenuLeft(){
