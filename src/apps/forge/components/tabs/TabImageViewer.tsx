@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
-import { TPCObject } from "../../../../resource/TPCObject";
-import { TGAObject } from "../../../../resource/TGAObject";
+import type { TPCObject } from "../../../../resource/TPCObject";
+import type { TGAObject } from "../../../../resource/TGAObject";
+import { LayoutContainer } from "../LayoutContainer";
 
 declare const KotOR: any;
 
@@ -12,10 +13,14 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasScale, setCanvasScale] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
+  const [txiObject, setTXIObject] = useState<object>();
+  const [txiPane, setTXIPane] = useState<JSX.Element|undefined>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const setPixelData = (image: TPCObject|TGAObject) => {
     const tab = props.tab as TabImageViewerState;
+    updateTXIPane(image);
     if(canvasRef.current){
       const canvas = canvasRef.current;
       image.getPixelData( (pixelData: any) => {
@@ -99,6 +104,46 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }
 
+  const updateTXIPane = (image: TPCObject|TGAObject) => {
+    if(image instanceof KotOR.TPCObject){
+      if(image.txi){
+        setTXIPane((
+          <div className="txi-pane">
+            {
+              Object.entries(image.txi).map( (element: [string, any]) => {
+                return (
+                  <div className="txi-element" key={element[0]}>{element[0]}: {element[1]}</div>
+                )
+              })
+            }
+          </div>
+        ))
+        return;
+      }
+    }
+    setTXIPane(undefined);
+  }
+
+  let tmpCanvasScale = 1;
+
+  const onMouseWheel = (e: WheelEvent) => {
+    // let tmpCanvasScale = canvasScale;
+    if(!!e.ctrlKey){
+      if(e.deltaY < 0){
+        tmpCanvasScale -= 0.25;
+      }else{
+        tmpCanvasScale += 0.25;
+      }
+    }
+    if(tmpCanvasScale < 0.25){
+      tmpCanvasScale = 0.25;
+    }
+    if(tmpCanvasScale > 10){
+      tmpCanvasScale = 10;
+    }
+    setCanvasScale(tmpCanvasScale);
+  }
+
   useEffectOnce( () => {
     const tab = props.tab as TabImageViewerState;
     if(tab){
@@ -106,15 +151,32 @@ export const TabImageViewer = function(props: BaseTabProps){
         setPixelData(image);
       });
     }
-    return () => {
 
+    return () => {
+      
     }
   });
 
+  useEffect(() => {
+    console.log('containerRef', containerRef);
+    if(containerRef.current){
+      containerRef.current.addEventListener('wheel', onMouseWheel);
+    }
+    return () => {
+      if(containerRef.current){
+        containerRef.current.removeEventListener('wheel', onMouseWheel);
+      }
+    }
+  }, [containerRef]);
+
   return (
-    <div style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${canvasScale})` }}>
-      <canvas ref={canvasRef} className="checkerboard" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`}} />
-    </div>
+    <>
+      <LayoutContainer eastContent={txiPane}>
+        <div ref={containerRef} style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <canvas ref={canvasRef} className="checkerboard" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvasScale})`}} />
+        </div>
+      </LayoutContainer>
+    </>
   );
 
 }
