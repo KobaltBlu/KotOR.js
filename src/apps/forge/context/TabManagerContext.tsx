@@ -20,7 +20,6 @@ export interface TabManagerProviderProps {
 }
 
 export const TabManagerProvider = (props: TabManagerProviderProps) => {
-  console.log('props', props);
   const managerPrime = props.manager as EditorTabManager;
   const [manager, setManager] = useState<EditorTabManager>(managerPrime);
   const [tabs, setTabs] = useState<TabState[]>(managerPrime.tabs);

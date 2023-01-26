@@ -115,7 +115,7 @@ export class InlineAudioPlayer {
 
     this.$audioPlayer.width(300);
 
-    this.loader = new LoadingScreen(this.$audioPlayer[0], false);
+    this.loader;// = new LoadingScreen(this.$audioPlayer[0], false);
     $(this.loader.loader).css({top: '0', zIndex: 100});
 
     $('body').append(this.$audioPlayer);

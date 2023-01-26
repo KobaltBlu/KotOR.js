@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ApplicationProfile } from "../../../../utility/ApplicationProfile";
-import { ApplicationEnvironment } from "../../../../enums/ApplicationEnvironment";
+import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { ForgeState } from "../../states/ForgeState";
+import { useApp } from "../../context/AppContext";
 
 declare const KotOR: any;
 
@@ -11,37 +12,51 @@ export interface ModalGrantAccessProps {
 
 export const ModalGrantAccess = function(props: ModalGrantAccessProps){
 
-  const [show, setShow] = useState(false);
+  const appContext = useApp();
+  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
 
   useEffect(() => {
-    if(ApplicationProfile.ENV == ApplicationEnvironment.BROWSER){
-      // KotOR.GameFileSystem.
-      setShow(true);
-    }
-    return () => {
-
-    };
   }, []);
+
+  
+
+  useEffectOnce( () => {
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+      // KotOR.GameFileSystem.
+      setShowGrantModal(true);
+    }
+    
+    return () => {
+      //Deconstructor
+    }
+  });
 
   const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
     let handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
     if(handle){
       KotOR.GameFileSystem.rootDirectoryHandle = handle;
-      KotOR.ConfigClient.set(`Profiles.${ApplicationProfile.profile.key}.directory_handle`, handle);
-      // modal?.classList.remove('show');
-      setShow(false);
-      props.onUserGrant();
+      KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);
+      
+
+      ForgeState.VerifyGameDirectory(() => {
+        console.log('Game Directory', 'verified');
+        setShowGrantModal(false);
+        props.onUserGrant();
+      }, () => {
+        console.warn('Game Directory', 'not found');
+        // setShowGrantModal(true);
+      });
     }
   }
 
   const onBtnClose = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setShow(false);
+    setShowGrantModal(false);
     props.onUserCancel();
   }
 
   return (
-    <div id="modal-grant-access" className={`modal-grant-access-wrapper ${(show ? 'show': '' )}`}>
+    <div id="modal-grant-access" className={`modal-grant-access-wrapper ${(showGrantModal ? 'show': '' )}`}>
       <div className="modal-grant-access">
         <div className="modal-content-wrapper">
           <h1>Grant Access</h1>

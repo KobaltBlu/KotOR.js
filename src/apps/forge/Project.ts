@@ -80,8 +80,8 @@ export class Project {
 
   //Opens a project from it's location
   Open(onSuccess?: Function, deferInit = false){
-    ForgeState.loader.SetMessage("Loading Project..");
-    ForgeState.loader.Show();
+    // ForgeState.loader.SetMessage("Loading Project..");
+    // ForgeState.loader.Show();
     //load project.json
     this.Load( () => {
       try{
@@ -113,7 +113,7 @@ export class Project {
               //This is where we initialize ProjectType specific operations
               if(!deferInit){
                 project.InitializeProject( () => {
-                  ForgeState.loader.SetMessage("Loading Complete");
+                  // ForgeState.loader.SetMessage("Loading Complete");
                   //When everything is done
                   if(typeof onSuccess == 'function')
                     onSuccess();

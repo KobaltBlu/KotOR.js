@@ -124,6 +124,12 @@ export class EditorTabManager {
       }
     }
 
+    let alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
+    if(alreadyAdded){
+      console.warn('Tab already added to the TabManager', tab);
+      return;
+    }
+
     //Check to see if a tab is already editing this resource
     let alreadyOpen = this.IsResourceIdOpenInTab(tab.GetResourceID());
     if(alreadyOpen != null){

@@ -7,18 +7,15 @@
 
 import * as path from "path";
 import * as fs from "fs";
-// import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
-import { RIMObject } from "../../resource/RIMObject";
 import { ResourceTypes } from "../../resource/ResourceTypes";
-import { BIFObject } from "../../resource/BIFObject";
-import { ERFObject } from "../../resource/ERFObject";
-import { GameFileSystem } from "../../utility/GameFileSystem";
+import type { RIMObject } from "../../resource/RIMObject";
+import type { BIFObject } from "../../resource/BIFObject";
+import type { ERFObject } from "../../resource/ERFObject";
 import { ForgeState } from "./states/ForgeState";
 import { FileLocationType } from "../../editor/enum/FileLocationType";
 import { EditorFileOptions } from "../../editor/interface/EditorFileOptions";
 import { Project } from "./Project";
-// import { ApplicationEnvironment, ApplicationProfile, GameFileSystem } from "../KotOR";
 declare const KotOR: any;
 
 const path_parse = (filepath: string): {root:string, dir: string, base: string, ext: string, name: string} => {
@@ -26,7 +23,7 @@ const path_parse = (filepath: string): {root:string, dir: string, base: string, 
     { root: '', dir: '', base: '', ext: '', name: '' };
   let sep = window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
   let parts = filepath.split(sep);
-  let filename = parts.pop();
+  let filename = parts.pop() || '';
   let filename_parts = filename?.split('.') || [];
   let name = filename_parts[0];
   let ext = '';
@@ -202,7 +199,7 @@ export class EditorFile {
         let archive_path = path_parse(this.archive_path);
         switch(archive_path.ext.slice(1)){
           case 'bif':
-            new BIFObject(this.archive_path, (archive: BIFObject) => {
+            new KotOR.BIFObject(this.archive_path, (archive: BIFObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
@@ -249,7 +246,7 @@ export class EditorFile {
           break;
           case 'erf':
           case 'mod':
-            new ERFObject(this.archive_path, (archive: ERFObject) => {
+            new KotOR.ERFObject(this.archive_path, (archive: ERFObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
@@ -295,7 +292,7 @@ export class EditorFile {
             });
           break;
           case 'rim':
-            new RIMObject(this.archive_path, (archive: RIMObject) => {
+            new KotOR.RIMObject(this.archive_path, (archive: RIMObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
@@ -390,7 +387,7 @@ export class EditorFile {
           console.log(archive_path.ext.slice(1))
           switch(archive_path.ext.slice(1)){
             case 'bif':
-              new BIFObject(this.archive_path, (archive: BIFObject) => {
+              new KotOR.BIFObject(this.archive_path, (archive: BIFObject) => {
 
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -403,7 +400,7 @@ export class EditorFile {
             break;
             case 'erf':
             case 'mod':
-              new ERFObject(this.archive_path, (archive: ERFObject) => {
+              new KotOR.ERFObject(this.archive_path, (archive: ERFObject) => {
 
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -415,7 +412,7 @@ export class EditorFile {
               })
             break;
             case 'rim':
-              new RIMObject(this.archive_path, (archive: RIMObject) => {
+              new KotOR.RIMObject(this.archive_path, (archive: RIMObject) => {
 
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -430,13 +427,13 @@ export class EditorFile {
         }else{
           if(typeof this.path === 'string'){
             if(this.useGameFileSystem){
-              GameFileSystem.readFile(this.path).then( (buffer: Buffer) => {
+              KotOR.GameFileSystem.readFile(this.path).then( (buffer: Buffer) => {
                 this.buffer = buffer;
   
                 if(typeof onLoad === 'function'){
                   onLoad(this.buffer);
                 }
-              }).catch( (err) => {
+              }).catch( (err: any) => {
                 throw err;
               })
             }else{

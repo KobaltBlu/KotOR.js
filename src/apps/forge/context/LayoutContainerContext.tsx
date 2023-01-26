@@ -15,8 +15,6 @@ export interface LayoutContainerProviderProps {
 }
 
 export const LayoutContainerProvider = (props: LayoutContainerProviderProps) => {
-  console.log('props', props);
-  // const managerPrime = props.manager as EditorLayoutContainer;
 
   useEffect(() => {
   }, []);

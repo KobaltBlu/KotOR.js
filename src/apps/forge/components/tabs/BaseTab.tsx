@@ -2,14 +2,7 @@ import React from "react";
 import {TabState} from "../../states/tabs/TabState";
 import {LayoutContainer} from "../LayoutContainer";
 import {LayoutContainerProvider} from "../../context/LayoutContainerContext";
-
-export interface BaseTabProps {
-  tab: TabState;
-  northContent?: JSX.Element;
-  southContent?: JSX.Element;
-  eastContent?: JSX.Element;
-  westContent?: JSX.Element;
-}
+import { BaseTabProps } from "../../interfaces/BaseTabProps";
 
 class BaseTab extends React.Component<BaseTabProps, {}> {
   northContent?: JSX.Element;

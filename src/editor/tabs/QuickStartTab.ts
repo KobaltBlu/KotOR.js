@@ -9,7 +9,7 @@ import * as path from "path";
 
 import template from "../templates/tabs/tab-quick-start.html";
 import { EditorFile } from "../EditorFile";
-import TabQuickStart from "../../apps/forge/components/tabs/TabQuickStart";
+// import TabQuickStart from "../../apps/forge/components/tabs/TabQuickStart";
 
 export class QuickStartTab extends EditorTab {
   
@@ -25,7 +25,7 @@ export class QuickStartTab extends EditorTab {
     // this.singleInstance = true;
     this.tabName = `Start Page`;
 
-    this.tabContentView = new TabQuickStart({tab: this});
+    // this.tabContentView = new TabQuickStart({tab: this});
 
     if(this.singleInstance){
       // this.$tabContent.addClass('QuickStartTab');

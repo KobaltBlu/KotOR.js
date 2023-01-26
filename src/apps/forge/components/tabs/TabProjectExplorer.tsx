@@ -1,16 +1,15 @@
 import React from "react";
-import BaseTab, { BaseTabProps } from "./BaseTab";
+import BaseTab from "./BaseTab";
+import { BaseTabProps } from "../../interfaces/BaseTabProps";
 
-export default class TabProjectExplorer extends BaseTab {
+export const TabProjectExplorer = function(props: BaseTabProps) {
 
-  constructor(props: BaseTabProps){
-    super(props);
-  }
-
-  render(): React.ReactNode {
-    return (
-      <></>
-    );
-  }
+  return (
+    <div className="scroll-container" style={{ width:'100%', overflow: 'auto' }}>
+      <ul className="tree css-treeview js">
+        
+      </ul>
+    </div>
+  );
 
 }

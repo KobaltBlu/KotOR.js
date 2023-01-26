@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Draggable from 'react-draggable';
 
 declare const KotOR: any;
@@ -137,7 +137,9 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   //   window.removeEventListener('resize', onWindowResize.bind(this));
   // }
 
+  const [render, rerender] = useState<boolean>(false);
   useEffect( () => {
+    rerender(!render);
     window.addEventListener('resize', onWindowResize);
     return () => {
       window.removeEventListener('resize', onWindowResize);

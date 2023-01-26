@@ -1,4 +1,6 @@
+import React from "react";
 import { EditorFile } from "../../EditorFile";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorTabManager } from "../../managers/EditorTabManager";
 
 export class TabState {
@@ -12,7 +14,7 @@ export class TabState {
   resource: any;
   isClosable: boolean = true;
   // tabLoader: LoadingScreen;
-  toolbar: any;
+  // toolbar: any;
   _tabClickEvent: any;
   _tabCloseClickEvent: any;
   gff: any;
@@ -22,14 +24,18 @@ export class TabState {
   tabView: any;
   tabContentView: any;
 
-  constructor(options: any = {}){
+  constructor(options: BaseTabStateOptions = {}){
     this.isDestroyed = true;
     options = Object.assign({
       enableLayoutContainers: false,
-      toolbar: undefined,
       closeable: true,
-      editorFile: undefined
+      editorFile: undefined,
+      singleInstance: false,
     }, options);
+
+    if(options.singleInstance){
+      this.singleInstance = true;
+    }
 
     if(options.editorFile instanceof EditorFile){
       this.file = options.editorFile;
@@ -44,10 +50,10 @@ export class TabState {
       this.isClosable = options.closeable;
     }
 
-    this.toolbar = options.toolbar;
-    if(typeof this.toolbar != 'undefined' && typeof this.toolbar == 'object'){
+    // this.toolbar = options.toolbar;
+    // if(typeof this.toolbar != 'undefined' && typeof this.toolbar == 'object'){
       // this.BuildToolbar();
-    }
+    // }
 
     if(this.file instanceof EditorFile){
       this.file.setOnSavedStateChanged( () => {
@@ -78,10 +84,8 @@ export class TabState {
   }
 
   render(){
-    if(this.tabContentView){
-      return this.tabContentView.render();
-    }
-    return ('');
+    if(!this.tabContentView) return (<></>);
+    return this.tabContentView;
   }
 
   InvalidateStyles(){

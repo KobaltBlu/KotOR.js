@@ -7,18 +7,22 @@ import 'bootstrap';
 import './forge.scss';
 import MenuTop from './components/MenuTop';
 import {LayoutContainer} from './components/LayoutContainer'; 
-import { GameEngineType } from '../../enums/engine/GameEngineType';
 import ModalGrantAccess from './components/modal/ModalGrantAccess';
-import { TabManagerProvider } from './context/TabManagerContext';
 import TabManager from './components/tabs/TabManager';
-import { AppProvider } from './context/AppContext';
+import { LoadingScreen } from './components/LoadingScreen';
+import { TabManagerProvider } from './context/TabManagerContext';
+import { AppProvider, useApp } from './context/AppContext';
 import { ForgeState } from './states/ForgeState';
 import { TabQuickStartState } from './states/tabs/TabQuickStartState';
-import { LoadingScreen } from './components/LoadingScreen';
+import { useLoadingScreen } from './context/LoadingScreenContext';
+import { useEffectOnce } from './helpers/UseEffectOnce';
+import { TabResourceExplorerState } from './states/tabs/TabResourceExplorerState';
+import { TabProjectExplorerState } from './states/tabs/TabProjectExplorerState';
+
+console.log('script', 'begin');
 
 declare const KotOR: any;
 declare const dialog: any;
-// declare const fs: any;
 
 const query = new URLSearchParams(window.location.search);
 
@@ -34,31 +38,56 @@ switch(query.get('key')){
 
 const App = (props: any) => {
 
-  const [showGrantAccessModal, setShowGrantAccessModal] = useState<boolean>(false);
+  const appContext = useApp();
+  const [appReady, setAppReady] = appContext.appReady;
+  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
+
 
   const onUserGrant = () => {
-    setShowGrantAccessModal(false);
+    setShowGrantModal(false);
+    beginInit();
   }
 
+  const beginInit = () => {
+    ForgeState.InitializeApp().then( () => {
+      onInitComplete();
+    });
+  };
+
+  const onInitComplete = () => {
+    setAppReady(true);
+
+    // console.log('start');
+    // TabResourceExplorerState.GenerateResourceList().then( () => {
+    //   console.log('end');
+    // })
+  };
+
   const onUserCancel = () => {
-    setShowGrantAccessModal(true);
+    setShowGrantModal(true);
     window.close();
   }
 
-  useEffect( () => {
-    ForgeState.tabManager.AddTab(new TabQuickStartState());
-    ForgeState.explorerTabManager.AddTab(ForgeState.resourceExplorerTab);
-    ForgeState.explorerTabManager.AddTab(ForgeState.projectExplorerTab);
+  useEffectOnce( () => {
+
+    ForgeState.VerifyGameDirectory(() => {
+      console.log('Game Directory', 'verified');
+      beginInit();
+    }, () => {
+      console.warn('Game Directory', 'not found');
+      setShowGrantModal(true);
+    });
+
     return () => {
       //Deconstructor
     }
-  }, []);
+  });
 
-  console.log('render');
-  let modalGrantAccess: JSX.Element|undefined;
-  if(showGrantAccessModal){
-    modalGrantAccess = <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>;
-  }
+  // console.log('render');
+  // let modalGrantAccess: JSX.Element|undefined;
+  // if(showGrantAccessModal){
+  //   modalGrantAccess = ;
+  // }
 
   const westContent = (
     <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
@@ -69,7 +98,7 @@ const App = (props: any) => {
   );
 
   return (
-    <div id="app">
+    <div id="app" style={{ display: (appReady) ? 'block': 'none' }}>
       <MenuTop />
       <div id="container">
         <LayoutContainer westContent={westContent}>
@@ -78,8 +107,7 @@ const App = (props: any) => {
           </TabManagerProvider>
         </LayoutContainer>
       </div>
-      <LoadingScreen />
-      {modalGrantAccess}
+      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
     </div>
   );
 
@@ -104,6 +132,7 @@ const App = (props: any) => {
 
   document.body.classList.add(KotOR.ApplicationProfile.GameKey);
 
+  console.log('root', 'init');
   const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
   ( async () => {
     root.render(
@@ -115,7 +144,3 @@ const App = (props: any) => {
     );
   })();
 })();
-
-(window as any).test = () => {
-  ForgeState.tabManager.AddTab(new TabQuickStartState());
-}

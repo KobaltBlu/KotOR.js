@@ -10,18 +10,8 @@ export const TabButton = function(props: TabButtonProps) {
 
   const tab: TabState = props.tab;
   const tabManager = useTabManager();
-
   const [selectedTab, setSelectedTab] = tabManager.selectedTab;
-
-  // constructor(){
-  //   super(props);
-  //   this.onTabClick = this.onTabClick.bind(this);
-  //   this.onTabCloseClick = this.onTabCloseClick.bind(this);
-  // }
-
-  // componentDidMount(): void {
-  //   this.props.tab.attachTabView(this);
-  // }
+  
   useEffect( () => {
     console.log('tabName', tab.tabName);
   }, [tab.tabName]);
