@@ -301,7 +301,7 @@ export const supportedFilePickerTypes: any[] = [
   {
     description: 'All Supported Formats', 
     accept: {
-      '*': ['.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
+      '*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
     }
   },
   {
@@ -449,6 +449,12 @@ export const supportedFilePickerTypes: any[] = [
     }
   },
   {
+    description: '2D Array File', 
+    accept: {
+      '*': ['.2da']
+    }
+  },
+  {
     description: 'All Formats', 
     accept: {
       '*': ['*']
@@ -457,7 +463,7 @@ export const supportedFilePickerTypes: any[] = [
 ];
 
 export const supportedFileDialogTypes: any[] = [
-  {name: 'All Supported Formats', extensions: ['tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
   {name: 'TPC Image', extensions: ['tpc']},
   {name: 'TGA Image', extensions: ['tga']},
   {name: 'GFF', extensions: ['gff']},
@@ -482,5 +488,6 @@ export const supportedFileDialogTypes: any[] = [
   {name: 'Script Compiled File', extensions: ['nss']},
   {name: 'VIS File', extensions: ['vis']},
   {name: 'Layout File', extensions: ['lyt']},
+  {name: '2D Array File', extensions: ['2da']},
   {name: 'All Formats', extensions: ['*']},
 ];
