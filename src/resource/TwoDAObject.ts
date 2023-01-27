@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import isBuffer from 'is-buffer';
 import { BinaryReader } from "../BinaryReader";
 import { GameFileSystem } from '../utility/GameFileSystem';
+import { BinaryWriter } from '../BinaryWriter';
 
 /* @file
  * The TwoDAObject class.
@@ -31,7 +32,7 @@ export class TwoDAObject {
     if(!!file){
       if(isBuffer(file)) {
         let br = new BinaryReader(file as Buffer);
-        this.Read2DA(br);
+        this.read2DA(br);
 
         if(onComplete != null)
           onComplete();
@@ -39,7 +40,7 @@ export class TwoDAObject {
         this.file = file;
         GameFileSystem.readFile(this.file).then((buffer) => {
           let br = new BinaryReader(buffer);
-          this.Read2DA(br);
+          this.read2DA(br);
 
           if(onComplete != null)
             onComplete();
@@ -54,11 +55,11 @@ export class TwoDAObject {
     }
   }
 
-  Read2DA(br: BinaryReader): void {
+  read2DA(br: BinaryReader): void {
     this.FileType = br.ReadChars(4);
     this.FileVersion = br.ReadChars(4);
 
-    br.position += 1; //10 = Newline (Skip)
+    br.position += 1; //0x0A = Newline (Skip)
 
     let str = "";
     let ch;
@@ -95,7 +96,7 @@ export class TwoDAObject {
       offsets[i] = br.ReadUInt16();
     }
 
-    br.position += 2;
+    const dataSize = br.ReadUInt16();
     let dataOffset = br.position;
 
     //Get the Row Data
@@ -130,6 +131,62 @@ export class TwoDAObject {
 
     }
 
+  }
+
+  toExportBuffer(): Buffer {
+    try{
+      const bw = new BinaryWriter();
+      bw.WriteChars('2DA ');
+      bw.WriteChars('V2.b');
+      bw.WriteByte(0x0A);//NewLine
+
+      for(let i = 1; i < this.columns.length; i++){
+        bw.WriteChars(this.columns[i]);
+        bw.WriteByte(0x09); //HT Delineate Column Entry 
+      }
+
+      bw.WriteByte(0x00); //Null Terminate Columns List
+
+      const indexes = Object.keys(this.rows);
+      //Write the row count as a UInt32
+      bw.WriteUInt32(indexes.length);
+
+      for(let i = 0; i < indexes.length; i++){
+        bw.WriteChars(indexes[i]);
+        bw.WriteByte(0x09); //HT Delineate Row Index Entry 
+      }
+
+      const valuesWriter = new BinaryWriter();
+      const values = new Map<string, number>(); //value, offset
+      // values.set('Some Value', 0);
+      for(let i = 0; i < indexes.length; i++){
+        const index = indexes[i];
+        const row = this.rows[index];
+        const rowKeys = Object.keys(row);
+        for(let j = 0; j < rowKeys.length; j++){
+          const key = rowKeys[j];
+          if(key != '__rowlabel' && key != '__index'){
+            const value: string = row[key] == '****' ? '' : String(row[key]);
+            if(values.has(value)){
+              bw.WriteUInt16(values.get(value));
+            }else{
+              const offset = valuesWriter.position;
+              bw.WriteUInt16(offset);
+              valuesWriter.WriteStringNullTerminated(value);
+              values.set(value, offset);
+            }
+          }
+        }
+      }
+
+      bw.WriteUInt16(valuesWriter.buffer.length);
+      bw.WriteBytes(valuesWriter.buffer);
+
+      return bw.buffer;
+    }catch(e){
+      console.error(e);
+      return Buffer.alloc(0);
+    }
   }
 
   getRowByIndex(index = -1){
