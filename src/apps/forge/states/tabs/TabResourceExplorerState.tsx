@@ -20,6 +20,7 @@ export class FileBrowserNode {
   type: 'group'|'resource' = 'group';
   data: any = {};
   open: boolean = false;
+  parent: FileBrowserNode;
 
   constructor(options: any = {}){
     options = Object.assign({
@@ -38,8 +39,23 @@ export class FileBrowserNode {
   }
 
   addChildNode(node: FileBrowserNode): number{
+    node.parent = this;
     return this.nodes.push(node);
   }
+
+  searchFor(query: string, results: FileBrowserNode[] = []){
+    if(this.type == 'resource'){
+      if(this.name.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >= 0){
+        return [...results, this];
+      }
+    }else{
+      for(let i = 0; i < this.nodes.length; i++){
+        results = this.nodes[i].searchFor(query, results);
+      }
+    }
+    return results;
+  }
+
 
 }
 
