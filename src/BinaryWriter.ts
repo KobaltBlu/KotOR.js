@@ -154,6 +154,11 @@ export class BinaryWriter {
     this.WriteChars(string, encoding);
   }
 
+  WriteStringNullTerminated(string: string, encoding='ascii'){
+    this.WriteChars(string, encoding);
+    this.WriteByte(0);
+  }
+
   WriteByte(byte: number){
     this.WriteUInt8(byte);
   }
