@@ -40,6 +40,7 @@ export * from "./resource/SSFObject";
 export * from "./resource/TGAObject";
 export * from "./resource/TLKObject";
 export * from "./resource/TPCObject";
+export * from "./resource/TwoDAObject";
 export * from "./resource/VISObject";
 
 export * as THREE from "three";

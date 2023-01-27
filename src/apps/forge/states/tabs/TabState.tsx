@@ -10,13 +10,14 @@ declare const KotOR: any;
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
-  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onEditorFileChange'|'onEditorFileSaved';
+  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved';
 
 export interface TabStateEventListeners {
   onTabDestroyed: Function[],
   onTabRemoved: Function[],
   onTabShow: Function[],
   onTabHide: Function[],
+  onEditorFileLoad: Function[],
   onEditorFileChange: Function[],
   onEditorFileSaved: Function[],
 }
@@ -42,6 +43,7 @@ export class TabState {
     onTabRemoved: [],
     onTabShow: [],
     onTabHide: [],
+    onEditorFileLoad: [],
     onEditorFileChange: [],
     onEditorFileSaved: [],
   };

@@ -8,6 +8,7 @@ import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
 import { TabImageViewerState } from "./states/tabs/TabImageViewerState";
+import { TabTwoDAEditorState } from "./states/tabs/TabTwoDAEditorState";
 
 /* @file
  * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine
@@ -40,76 +41,76 @@ export class FileTypeManager {
       case 'vis':
       case 'txi':
       case 'txt':
-        // let textTab = Forge.tabManager.addTab(new TextEditorTab(res));
+        // ForgeState.tabManager.addTab(new TextEditorTab({editorFile: res}));
       break;
       case '2da':
-        // let twodaTab = Forge.tabManager.addTab(new TwoDAEditorTab(res));
+        ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
-        // let newDLGTab = Forge.tabManager.addTab(new DLGEditorTab(res));
+        // ForgeState.tabManager.addTab(new DLGEditorTab({editorFile: res}));
       break;
       case 'lip':
-        // let lipTab = Forge.tabManager.addTab(new LIPEditorTab(res));
+        // ForgeState.tabManager.addTab(new LIPEditorTab({editorFile: res}));
       break;
       case 'erf':
       case 'mod':
       case 'sav':
-        // let erfTab = Forge.tabManager.addTab(new MODEditorTab(res));
+        // ForgeState.tabManager.addTab(new MODEditorTab({editorFile: res}));
       break;
       case 'mdl':
       case 'mdx':
-        // let modelTab = Forge.tabManager.addTab(new ModelViewerTab(res));
+        // ForgeState.tabManager.addTab(new ModelViewerTab({editorFile: res}));
       break;
       case 'dwk':
       case 'pwk':
       case 'wok':
-        // let walkmeshTab = Forge.tabManager.addTab(new WalkmeshViewerTab(res));
+        // ForgeState.tabManager.addTab(new WalkmeshViewerTab({editorFile: res}));
       break;
       case 'nss':
-        // let nssTab = Forge.tabManager.addTab(new ScriptEditorTab(res));
+        // ForgeState.tabManager.addTab(new ScriptEditorTab({editorFile: res}));
       break;
       case 'ncs':
-        // let ncsTab = Forge.tabManager.addTab(new ScriptEditorTab(res));
+        // ForgeState.tabManager.addTab(new ScriptEditorTab({editorFile: res}));
       break;
       case 'tpc':
       case 'tga':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':
-        // let newUTCTab = Forge.tabManager.addTab(new UTCEditorTab(res));
+        // ForgeState.tabManager.addTab(new UTCEditorTab({editorFile: res}));
       break;
       case 'utd':
-        // let newUTDTab = Forge.tabManager.addTab(new UTDEditorTab(res));
+        // ForgeState.tabManager.addTab(new UTDEditorTab({editorFile: res}));
       break;
       case 'utp':
-        // let newUTPTab = Forge.tabManager.addTab(new UTPEditorTab(res));
+        // ForgeState.tabManager.addTab(new UTPEditorTab({editorFile: res}));
       break;
       case 'gui': 
       case 'utt': 
       case 'uts': 
       case 'utw': 
       case 'ute': 
-        // let newGFFTab = Forge.tabManager.addTab(new GFFEditorTab(res));
+        // ForgeState.tabManager.addTab(new GFFEditorTab({editorFile: res}));
       break;
       case 'bik': 
-        // let newBIKTab = Forge.tabManager.addTab(new MovieViewerTab(res));
+        // ForgeState.tabManager.addTab(new MovieViewerTab({editorFile: res}));
       break;
       case 'wav':
       case 'mp3':
         console.log('audio file', res);
         AudioPlayerState.OpenAudio(res);
-        // Forge.inlineAudioPlayer.OpenAudio(res);
+        // ForgeState.inlineAudioPlayer.OpenAudio({editorFile: res});
 
-        // if(Forge.Project instanceof Project){
-        //   Forge.Project.removeFromOpenFileList(res);
+        // if(ForgeState.Project instanceof Project){
+        //   ForgeState.Project.removeFromOpenFileList({editorFile: res});
         // }
       break;
       default:
         // NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
         // console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
         
-        // if(Forge.Project instanceof Project){
-        //   Forge.Project.removeFromOpenFileList(res);
+        // if(ForgeState.Project instanceof Project){
+        //   ForgeState.Project.removeFromOpenFileList({editorFile: res});
         // }
       break;
     }
