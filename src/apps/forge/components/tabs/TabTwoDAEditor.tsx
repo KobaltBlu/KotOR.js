@@ -5,6 +5,8 @@ import type { TwoDAObject } from "../../../../resource/TwoDAObject";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { TabTwoDAEditorState } from "../../states/tabs/TabTwoDAEditorState";
 import { ProgressBar } from "react-bootstrap";
+import { TwoDAEditorRow } from "../TwoDAEditorRow";
+import { TwoDAEditorColumnHeader } from "../TwoDAEditorColumnHeader";
 
 declare const KotOR: any;
 
@@ -33,9 +35,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
               {
                 twoDAObject.columns.map( (column: string, cIndex: number) => {
                   return (
-                    <th key={cIndex}>
-                      {column}
-                    </th>
+                    <TwoDAEditorColumnHeader key={cIndex} twoDAObject={twoDAObject} column={column}></TwoDAEditorColumnHeader>
                   )
                 })
               }
@@ -71,52 +71,4 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       </div>
     )
   )
-}
-
-export const TwoDAEditorRow = function(props: any){
-  const [render, rerender] = useState<boolean>(false);
-
-  const twoDAObject = props.twoDAObject;
-  const row = props.row;
-  const rIndex = props.index;
-
-  const onCellChange = (row: any, column: string, value: any,) => {
-    // console.log('change', column, value);
-    row[column] = value;
-    rerender(!render);
-  };
-
-  return (
-    <tr tabIndex={rIndex * twoDAObject.ColumnCount}>
-      {
-        twoDAObject.columns.map( (column: string, cIndex: number) => {
-          const value: string = row[column];
-          return (
-            <td 
-              key={`cell-${(rIndex * twoDAObject.ColumnCount) + cIndex}`} 
-              tabIndex={(rIndex * twoDAObject.ColumnCount) + cIndex} 
-              contentEditable={true} 
-              suppressContentEditableWarning={true}
-              spellCheck={false}
-
-              // onInput={
-              //   (e: React.ChangeEvent<HTMLTableCellElement>) => {
-              //     onCellChange(row, column, e.target.innerText);
-              //   }
-              // }
-
-              onBlur={
-                (e: React.ChangeEvent<HTMLTableCellElement>) => {
-                  onCellChange(row, column, e.target.innerText);
-                }
-              }
-
-              data-value={value}
-            >{value}</td>
-          )
-        })
-      }
-    </tr>
-  );
-
 }
