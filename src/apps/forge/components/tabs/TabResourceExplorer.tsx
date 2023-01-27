@@ -8,11 +8,13 @@ import { EditorFile } from "../../EditorFile";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
+  depth?: number;
   children?: any;
 }
 
 export const ResourceListNode = function(props: ResourceListNodeProps){
-  const [openState, setOpenState] = useState<boolean>(props.node.open);
+  const node = props.node;
+  const [openState, setOpenState] = useState<boolean>(node.open);
 
   const onClickNode = (e: React.MouseEvent<HTMLLIElement>, node: FileBrowserNode) => {
     e.stopPropagation();
@@ -36,16 +38,17 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
     setOpenState(!openState);
   };
 
-  if(props.node.nodes.length){
+  const childDepth = (props?.depth ? props.depth : 0) + 1;
+
+  if(node.nodes.length){
     return (
       <li onClick={(e) => onClickNode(e, props.node)}>
-        <input type="checkbox" checked={!openState} id={`list-${props.node.id}`} onChange={(e) => onChangeCheckbox(e, props.node)} />
-        <label htmlFor={`list-${props.node.id}`}>{props.node.name}</label>
-        <span></span>
+        <input type="checkbox" checked={!openState} id={`list-${node.id}`} onChange={(e) => onChangeCheckbox(e, props.node)} />
+        <label htmlFor={`list-${node.id}`}>{node.name}</label>
         <ul>
           {
-            props.node.nodes.map( (child: FileBrowserNode) => (
-              <ResourceListNode key={child.id} node={child} />
+            node.nodes.map( (child: FileBrowserNode) => (
+              <ResourceListNode key={child.id} node={child} depth={childDepth} />
             ))
           }
         </ul>
@@ -53,8 +56,8 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
     );
   }else{
     return (
-      <li className="link" data-path={props.node.data.path} onClick={(e) => onClickNode(e, props.node)}>
-        {props.node.name}
+      <li className="link" data-path={node.data.path} onClick={(e) => onClickNode(e, props.node)}>
+        {node.name}
       </li>
     );
   }
@@ -83,7 +86,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         {
           resourceList.map( (node: FileBrowserNode) => {
             return (
-              <ResourceListNode key={node.id} node={node} />
+              <ResourceListNode key={node.id} node={node} depth={0} />
             )
           })
         }

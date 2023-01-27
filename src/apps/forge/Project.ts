@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { DeepObject } from "../../DeepObject";
 import { ForgeState } from "./states/ForgeState";
+import { TabQuickStartState } from "./states/tabs/TabQuickStartState";
 declare const KotOR: any;
 
 export class Project {
@@ -88,10 +89,10 @@ export class Project {
 
         console.log('project', this.settings);
 
-        let quickStart = ForgeState.tabManager.GetTabByType('QuickStartTab');
+        let quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
         if(quickStart){
           console.log(quickStart);
-          ForgeState.tabManager.RemoveTab(quickStart);
+          ForgeState.tabManager.removeTab(quickStart);
         }
 
         let pjIndex = KotOR.ConfigClient.options.recent_projects.indexOf(this.directory);

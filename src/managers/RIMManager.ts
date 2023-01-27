@@ -27,7 +27,8 @@ export class RIMManager {
 
         for(let i = 0, len = rims.length; i < len; i++){
           try{
-            await RIMManager.LoadRIMObject(rims[i]);
+            let rim = await RIMManager.LoadRIMObject(rims[i]);
+            rim.group = 'RIMs';
           }catch(e){ 
             console.error(e);
           }

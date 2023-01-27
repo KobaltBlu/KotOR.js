@@ -37,11 +37,12 @@ export class ForgeState {
           KotOR.OdysseyWalkMesh.Init();
           //ConfigClient.get('Game.debug.light_helpers') ? true : false
           KotOR.LightManager.toggleLightHelpers();
+          KotOR.GameState.audioEngine = new KotOR.AudioEngine();
           
-          ForgeState.tabManager.AddTab(new TabQuickStartState());
-          ForgeState.explorerTabManager.AddTab(ForgeState.resourceExplorerTab);
-          ForgeState.explorerTabManager.AddTab(ForgeState.projectExplorerTab);
-          ForgeState.resourceExplorerTab.Show();
+          ForgeState.tabManager.addTab(new TabQuickStartState());
+          ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
+          ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
+          ForgeState.resourceExplorerTab.show();
                 
           TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
             // ForgeState.resourceExplorerTab.tabContentView.setResourceList(TabResourceExplorerState.Resources);

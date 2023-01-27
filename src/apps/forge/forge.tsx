@@ -18,6 +18,7 @@ import { useLoadingScreen } from './context/LoadingScreenContext';
 import { useEffectOnce } from './helpers/UseEffectOnce';
 import { TabResourceExplorerState } from './states/tabs/TabResourceExplorerState';
 import { TabProjectExplorerState } from './states/tabs/TabProjectExplorerState';
+import { ModalChangeGame } from './components/modal/ModalChangeGame';
 
 console.log('script', 'begin');
 
@@ -108,6 +109,7 @@ const App = (props: any) => {
         </LayoutContainer>
       </div>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
+      <ModalChangeGame></ModalChangeGame>
     </div>
   );
 

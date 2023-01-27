@@ -15,7 +15,7 @@ export class FileBrowserNode {
   static NODE_ID = 0;
   id: number = 0;
   name: string = '';
-  canOrphan: boolean = false;
+  canOrphan: boolean = true;
   nodes: FileBrowserNode[] = [];
   type: 'group'|'resource' = 'group';
   data: any = {};
@@ -24,7 +24,7 @@ export class FileBrowserNode {
   constructor(options: any = {}){
     options = Object.assign({
       name: '',
-      canOrphan: false,
+      canOrphan: true,
       nodes: [],
       type: 'group',
       data: {}
@@ -79,17 +79,17 @@ export class TabResourceExplorerState extends TabState {
     KotOR.LoadingScreen.main.Show('Loading [Textures]...');
     const textures  = await TabResourceExplorerState.LoadTextures();
     KotOR.LoadingScreen.main.Show('Loading [StreamWaves]...');
-    const waves     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves');
+    const waves     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves');   //KOTOR
     KotOR.LoadingScreen.main.Show('Loading [StreamSounds]...');
-    const sounds    = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds');
+    const sounds    = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds');  //KOTOR & TSL
     KotOR.LoadingScreen.main.Show('Loading [StreamMusic]...');
-    const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');
+    const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
     KotOR.LoadingScreen.main.Show('Loading [StreamVoice]...');
-    const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');
+    const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
     TabResourceExplorerState.Resources.push( 
       ...[
         bifs, rims, modules, lips, textures, waves, sounds, music, voice
-      ].filter((node: FileBrowserNode) => (node instanceof FileBrowserNode)) 
+      ].filter((node: FileBrowserNode) => (node instanceof FileBrowserNode && node.nodes.length)) 
     );
     state.reload();
     KotOR.LoadingScreen.main.Hide();
@@ -133,6 +133,7 @@ export class TabResourceExplorerState extends TabState {
               subTypes[resource.ResType] = new FileBrowserNode({
                 name: ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
+                canOrphan: true,
               });
               node.addChildNode(subTypes[resource.ResType]);
             }
@@ -152,6 +153,12 @@ export class TabResourceExplorerState extends TabState {
         },
       });
       bifLoader.iterate(() => {
+        for(let i = 0; i < bifList.nodes.length; i++){
+          const bif = bifList.nodes[i];
+          if(bif.nodes.length == 1 && bif.nodes[0].type == 'group'){
+            bif.nodes = bif.nodes[0].nodes;
+          }
+        }
         resolve(bifList);
       });
     });
@@ -194,8 +201,9 @@ export class TabResourceExplorerState extends TabState {
 
             if (subTypes[resource.ResType] == undefined) {
               subTypes[resource.ResType] = new FileBrowserNode({
-                name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
+                name: ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
+                canOrphan: false,
               });
               node.addChildNode(subTypes[resource.ResType]);
             }
@@ -213,6 +221,12 @@ export class TabResourceExplorerState extends TabState {
         },
       });
       rimLoader.iterate(() => {
+        for(let i = 0; i < rimList.nodes.length; i++){
+          const rim = rimList.nodes[i];
+          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+            rim.nodes = rim.nodes[0].nodes;
+          }
+        }
         resolve(rimList);
       });
     });
@@ -276,6 +290,7 @@ export class TabResourceExplorerState extends TabState {
               subTypes[resource.ResType] = new FileBrowserNode({
                 name: ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
+                canOrphan: true,
               });
               node.addChildNode(subTypes[resource.ResType]);
             }
@@ -293,6 +308,12 @@ export class TabResourceExplorerState extends TabState {
         },
       });
       rimLoader.iterate(() => {
+        for(let i = 0; i < rimList.nodes.length; i++){
+          const rim = rimList.nodes[i];
+          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+            rim.nodes = rim.nodes[0].nodes;
+          }
+        }
         resolve(rimList);
       });
     });
@@ -325,7 +346,7 @@ export class TabResourceExplorerState extends TabState {
 			});
 
 			const rimList: FileBrowserNode = new FileBrowserNode({
-				name: 'Lips',
+				name: 'LIPs',
 				type: 'group',
 				nodes: [],
 				canOrphan: false,
@@ -373,6 +394,12 @@ export class TabResourceExplorerState extends TabState {
 				},
 			});
 			rimLoader.iterate(() => {
+        for(let i = 0; i < rimList.nodes.length; i++){
+          const rim = rimList.nodes[i];
+          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+            rim.nodes = rim.nodes[0].nodes;
+          }
+        }
 				resolve(rimList);
 			});
 		});
@@ -446,16 +473,13 @@ export class TabResourceExplorerState extends TabState {
 
 	static LoadFolderForFileBrowser(folder_name = '') {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
-      console.log('Loading: ', folder_name);
       //Load StreamWaves
       let folder: FileBrowserNode =  new FileBrowserNode({ 
         name: folder_name, 
         type: 'group', 
         nodes: [] 
       });
-      console.log('DIR Read: ', folder_name, 'BEGIN');
       KotOR.GameFileSystem.readdir( folder_name, { recursive: true } ).then( (files: string[]) => {
-        console.log('DIR Read: ', folder_name, 'END');
         (folder.nodes as any)._indexes = {};
 
         for (let i = 0; i < files.length; i++) {
@@ -508,8 +532,6 @@ export class TabResourceExplorerState extends TabState {
 
           return compareType || compareName;
         });
-
-        console.log('Compile Structure: ', folder_name, 'END');
 
         resolve(folder);
       }).catch( (err: any) => {

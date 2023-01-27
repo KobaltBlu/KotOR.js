@@ -26,14 +26,12 @@ export const TabManagerProvider = (props: TabManagerProviderProps) => {
   const [selectedTab, setSelectedTab] = useState<TabState|undefined>(managerPrime.currentTab);
 
   useEffect(() => {
-    console.log('TabManagerProvider');
-    // managerPrime.attachComponent(this);
   }, []);
 
   useEffect(() => {
-    if(selectedTab){
-      selectedTab.Show();
-    }
+    // if(selectedTab){
+    //   selectedTab.show();
+    // }
   }, [selectedTab]);
 
   const providerValue: TabManagerProviderValues = {

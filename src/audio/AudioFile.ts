@@ -379,6 +379,8 @@ export class AudioFile {
       break;
     }
 
+    return Buffer.allocUnsafe(0);
+
   }
 
   GetExportExtension(){

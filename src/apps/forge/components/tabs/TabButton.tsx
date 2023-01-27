@@ -13,24 +13,24 @@ export const TabButton = function(props: TabButtonProps) {
   const [selectedTab, setSelectedTab] = tabManager.selectedTab;
   
   useEffect( () => {
-    console.log('tabName', tab.tabName);
+    // console.log('tabName', tab.tabName);
   }, [tab.tabName]);
 
   //onCreate
   useEffect( () => {
-    console.log('tab', 'onCreate');
+    // console.log('tab', 'onCreate');
   }, []);
 
   const onTabClick = (e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
-    tab.Show();
+    tab.show();
     setSelectedTab(tab);
   }
 
   const onTabCloseClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     //TODO: Handle unsaved changes modal
-    e.isPropagationStopped();
-    tab.Remove();
+    e.stopPropagation();
+    tab.remove();
   }
 
   return (

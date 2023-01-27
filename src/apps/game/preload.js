@@ -36,7 +36,7 @@ contextBridge.exposeInMainWorld(
         })
       });
     },
-    showSaveFileDialog: (...args) => {
+    showSaveDialog: (...args) => {
       return new Promise( (resolve, reject) => {
         ipcRenderer.invoke('save-file-dialog', args).then( (response) => {
           resolve(response);

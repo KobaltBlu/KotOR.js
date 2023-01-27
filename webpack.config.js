@@ -56,6 +56,9 @@ const libraryConfig = (name, color) => ({
     }),
   ],
   resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three')
+    },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
@@ -159,7 +162,7 @@ const launcherConfig = (name, color) => ({
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
       $: "jquery",
-      jQuery: "jquery"
+      jQuery: "jquery",
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -176,6 +179,9 @@ const launcherConfig = (name, color) => ({
     }),
   ],
   resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three')
+    },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
@@ -295,6 +301,9 @@ const gameConfig = (name, color) => ({
     }),
   ],
   resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three')
+    },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
@@ -431,6 +440,9 @@ const forgeConfig = (name, color) => ({
     }),
   ],
   resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three')
+    },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),

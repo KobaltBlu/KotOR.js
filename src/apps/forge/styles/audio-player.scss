@@ -1,0 +1,48 @@
+.inline-audio-player {
+  padding: 5px;
+  background: #212121;
+  z-index: 99;
+  cursor: all-scroll;
+  display: flex;
+  align-items: center;
+  -webkit-app-region: no-drag;
+
+  .audio-player-controls {
+
+    cursor: initial;
+    display:flex;
+
+    span .fa-solid {
+      color: #258CE4;
+    }
+
+    input[type=range].track {
+      flex-grow: 100;
+      margin: 0 5px;
+      width: auto;
+      display:inline-block;
+      vertical-align: middle;
+      border: none!important;
+    }
+
+    .track-pop {
+      background: #212121;
+      border-radius:10px;
+      padding: 0 5px;
+    }
+    .btn-play, .btn-save, .btn-stop {
+      padding: 0 0.15em;
+    }
+
+    .btn-play {
+      min-width: 15px;
+    }
+
+    .time {
+      min-width: 80px;
+      text-align: left;
+    }
+
+  }
+
+}

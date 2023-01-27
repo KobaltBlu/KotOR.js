@@ -11,7 +11,21 @@ contextBridge.exposeInMainWorld(
           resolve(response);
         });
       })
-    }
+    },
+    showSaveDialog: (args) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('save-file-dialog', args).then( (response) => {
+          resolve(response);
+        });
+      })
+    },
+    showOpenDialog: (args) => {
+      return new Promise( (resolve, reject) => {
+        ipcRenderer.invoke('open-file-dialog', args).then( (response) => {
+          resolve(response);
+        }); 
+      })
+    },
   }
 )
 

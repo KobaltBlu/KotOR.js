@@ -1,11 +1,3 @@
-// import { BIFObject } from "../resource/BIFObject";
-// import { ERFObject } from "../resource/ERFObject";
-// import { ResourceTypes } from "../resource/ResourceTypes";
-// import { RIMObject } from "../resource/RIMObject";
-// import { FileLocationType } from "./enum/FileLocationType";
-// import { EditorFileOptions } from "./interface/EditorFileOptions";
-
-import * as path from "path";
 import * as fs from "fs";
 import isBuffer from "is-buffer";
 import { ResourceTypes } from "../../resource/ResourceTypes";
@@ -16,26 +8,18 @@ import { ForgeState } from "./states/ForgeState";
 import { FileLocationType } from "../../editor/enum/FileLocationType";
 import { EditorFileOptions } from "../../editor/interface/EditorFileOptions";
 import { Project } from "./Project";
+import { pathParse } from "./helpers/PathParse";
+
 declare const KotOR: any;
 
-const path_parse = (filepath: string): {root:string, dir: string, base: string, ext: string, name: string} => {
-  let parsed: {root:string, dir: string, base: string, ext: string, name: string} = 
-    { root: '', dir: '', base: '', ext: '', name: '' };
-  let sep = window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
-  let parts = filepath.split(sep);
-  let filename = parts.pop() || '';
-  let filename_parts = filename?.split('.') || [];
-  let name = filename_parts[0];
-  let ext = '';
-  if(filename_parts.length > 1){
-    ext = '.'+filename_parts[1];
-  }
-  parsed.dir = parts.join(sep);
-  parsed.base = filename;
-  parsed.ext = ext;
-  parsed.name = name;
-  return parsed;
-};
+export type EditorFileEventListenerTypes =
+  'onNameChanged'|'onSaveStateChanged'|'onSaved'
+
+export interface EditorFileEventListeners {
+  onNameChanged: Function[],
+  onSaveStateChanged: Function[],
+  onSaved: Function[],
+}
 
 export class EditorFile {
 
@@ -58,8 +42,57 @@ export class EditorFile {
   _reskey: any;
   _ext: any;
 
-  onNameChanged: Function;
-  onSavedStateChanged?: Function;
+  private eventListeners: EditorFileEventListeners = {
+    onNameChanged: [],
+    onSaveStateChanged: [],
+    onSaved: [],
+  };
+
+  addEventListener(type: EditorFileEventListenerTypes, cb: Function){
+    if(Array.isArray(this.eventListeners[type])){
+      let ev = this.eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index == -1){
+        ev.push(cb);
+      }else{
+        console.warn('Event Listener: Already added', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  removeEventListener(type: EditorFileEventListenerTypes, cb: Function){
+    if(Array.isArray(this.eventListeners[type])){
+      let ev = this.eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index >= 0){
+        ev.splice(index, 1);
+      }else{
+        console.warn('Event Listener: Already removed', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  processEventListener(type: EditorFileEventListenerTypes, args: any[] = []){
+    if(Array.isArray(this.eventListeners[type])){
+      let ev = this.eventListeners[type];
+      for(let i = 0; i < ev.length; i++){
+        const callback = ev[i];
+        if(typeof callback === 'function'){
+          callback(...args);
+        }
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  triggerEventListener(type: EditorFileEventListenerTypes, args: any[] = []){
+    this.processEventListener(type, args);
+  }
 
   get unsaved_changes(){
     return this._unsaved_changes;
@@ -67,7 +100,7 @@ export class EditorFile {
 
   set unsaved_changes(value){
     this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
-    if(typeof this.onSavedStateChanged === 'function') this.onSavedStateChanged(this);
+    this.processEventListener('onSaveStateChanged', [this]);
     if(!this.unsaved_changes) this.updateOpenedFiles();
   }
 
@@ -77,7 +110,7 @@ export class EditorFile {
 
   set resref(value){
     this._resref = value;
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+    this.processEventListener('onNameChanged', [this]);
   }
 
   get reskey(){
@@ -85,10 +118,10 @@ export class EditorFile {
   }
 
   set reskey(value){
-    console.log('reskey', value);
+    // console.log('reskey', value);
     this._reskey = value;
     this._ext = ResourceTypes.getKeyByValue(this.reskey);
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+    this.processEventListener('onNameChanged', [this]);
   }
 
   get ext(){
@@ -96,10 +129,10 @@ export class EditorFile {
   }
 
   set ext(value){
-    console.log('ext', value);
+    // console.log('ext', value);
     this._ext = value;
     this._reskey = ResourceTypes[value];
-    if(typeof this.onNameChanged === 'function') this.onNameChanged(this);
+    this.processEventListener('onNameChanged', [this]);
   }
 
   constructor( options: EditorFileOptions = {} ){
@@ -118,8 +151,6 @@ export class EditorFile {
       location: FileLocationType.OTHER,
       useGameFileSystem: false
     }, options);
-
-    console.log(options);
 
     this.buffer = options.buffer;
     this.buffer2 = options.buffer2;
@@ -148,14 +179,12 @@ export class EditorFile {
     if(this.location == FileLocationType.OTHER)
       this.unsaved_changes = true;
 
-    this.onSavedStateChanged = undefined;
-
   }
 
   setPath(filepath: string){
     this.path = filepath;
     if(typeof this.path === 'string'){
-      let path_obj = path_parse(this.path);
+      let path_obj = pathParse(this.path);
 
       this.location = FileLocationType.LOCAL;
 
@@ -165,7 +194,7 @@ export class EditorFile {
         this.path = pth[1];
         this.archive_path = pth[0];
         this.location = FileLocationType.ARCHIVE;
-        path_obj = path_parse(this.path);
+        path_obj = pathParse(this.path);
       }
 
       if(path_obj.name){
@@ -196,7 +225,7 @@ export class EditorFile {
     if(this.reskey == ResourceTypes.mdl || this.reskey == ResourceTypes.mdx){
       //Mdl / Mdx Special Loader
       if(this.archive_path){
-        let archive_path = path_parse(this.archive_path);
+        let archive_path = pathParse(this.archive_path);
         switch(archive_path.ext.slice(1)){
           case 'bif':
             new KotOR.BIFObject(this.archive_path, (archive: BIFObject) => {
@@ -383,7 +412,7 @@ export class EditorFile {
       }else{
 
         if(this.archive_path){
-          let archive_path = path_parse(this.archive_path);
+          let archive_path = pathParse(this.archive_path);
           console.log(archive_path.ext.slice(1))
           switch(archive_path.ext.slice(1)){
             case 'bif':
@@ -495,10 +524,6 @@ export class EditorFile {
 
   getFilename(){
     return this.resref+'.'+this.ext;
-  }
-
-  setOnSavedStateChanged( listener: Function ){
-    if(typeof listener === 'function') this.onSavedStateChanged = listener;
   }
 
   updateOpenedFiles(){

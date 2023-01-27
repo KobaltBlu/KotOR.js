@@ -1,5 +1,4 @@
 import { TabState } from "../states/tabs/TabState";
-// import { Signal } from "signals";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
@@ -14,14 +13,6 @@ export interface TabManagerEventListeners {
 export class EditorTabManager {
   currentTab?: TabState;
   tabs: TabState[] = [];
-  $tabs: any;
-  $tabsScrollControl: JQuery<HTMLElement>;
-  $tabsScrollControlLeft: JQuery<HTMLElement>;
-  $tabsScrollControlRight: JQuery<HTMLElement>;
-  $tabsContainer: JQuery<HTMLElement>;
-  scrollTimer: any;
-  scrollSpeed: number;
-  timer: any;
 
   eventListeners: TabManagerEventListeners = {
     onTabAdded: [],
@@ -58,13 +49,13 @@ export class EditorTabManager {
     }
   }
 
-  processEventListener(type: TabManagerEventListenerTypes){
+  processEventListener(type: TabManagerEventListenerTypes, args: any[] = []){
     if(Array.isArray(this.eventListeners[type])){
       let ev = this.eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
-          callback();
+          callback(...args);
         }
       }
     }else{
@@ -72,54 +63,27 @@ export class EditorTabManager {
     }
   }
 
+  triggerEventListener(type: TabManagerEventListenerTypes, args: any[] = []){
+    this.processEventListener(type, args);
+  }
+
   static __tabId: number = 0;
   react: any;
-  // tabManagerView: any;
 
   static GetNewTabID(): number {
-    console.log(EditorTabManager.__tabId);
-    let id = EditorTabManager.__tabId++;
-    return id;
+    return EditorTabManager.__tabId++;
   }
 
   constructor(){
     this.currentTab = undefined;
     this.tabs = [];
-    // this.$tabs = $('<ul class="tabs-menu" />').sortable();
-
-    // this.$tabsScrollControl = $('<div class="tabs-scroll-control" />');
-    // this.$tabsScrollControlLeft = $('<div class="tabs-scroll-control-btn left" />');
-    // this.$tabsScrollControlRight = $('<div class="tabs-scroll-control-btn right" />');
-
-    // this.scrollTimer = null;
-    // this.scrollSpeed = 25;
-
-    // this.$tabsScrollControl.append(this.$tabsScrollControlLeft).append(this.$tabsScrollControlRight);
-
-    // this.$tabsContainer = $('<div class="tabs tab-content" style="display: block; position:relative; top: 30px; height: calc(100% - 30px);"/>');
-
-    // this.$tabs.bind('mousewheel', (e: any) => {
-    //   let amount = e.originalEvent.wheelDelta /120;
-    //   if(amount > 0) { //LEFT
-    //     this.ScrollTabsMenuLeft();
-    //   }
-    //   else{ //RIGHT
-    //     this.ScrollTabsMenuRight();
-    //   }
-    // });
-
   }
 
-  attachComponent(view: any){
-    console.log('attach', view);
-    // this.tabManagerView = view;
-  }
-
-  AddTab(tab: TabState){
+  addTab(tab: TabState){
     //Check to see if the tab has the singleInstance flag set to TRUE
     if(tab.singleInstance){
-      if(this.TabTypeExists(tab)){
-        this.GetTabByType(tab.constructor.name)?.Show();
+      if(this.tabTypeExists(tab)){
+        this.getTabByType(tab.constructor.name)?.show();
         return; //Return because the TabManager can only have one of these
       }
     }
@@ -131,16 +95,16 @@ export class EditorTabManager {
     }
 
     //Check to see if a tab is already editing this resource
-    let alreadyOpen = this.IsResourceIdOpenInTab(tab.GetResourceID());
+    let alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
     if(alreadyOpen != null){
       //Show the tab that is already open
-      alreadyOpen.Show();
+      alreadyOpen.show();
       //return so that the rest of the function is not called
       return;
     }
 
-    tab.Attach(this);
-    tab.Show();
+    tab.attach(this);
+    tab.show();
     this.tabs.push(tab);
 
     this.processEventListener('onTabAdded');
@@ -148,12 +112,36 @@ export class EditorTabManager {
     return tab;
   }
 
+  removeTab(tab: TabState){
+    let length = this.tabs.length;
+    for(let i = 0; i < length; i++){
+      if(tab == this.tabs[i]){
+        console.log('removeTab', 'Tab found. Deleting');
+        this.tabs.splice(i, 1);
+        break;
+      }
+    }
+    try{
+      console.log('removeTab', 'Trying to show');
+      if(this.tabs.length){
+        let t = this.tabs[this.tabs.length-1];
+        if(t){
+          console.log(t);
+          t.show();
+        }
+      }
+    }catch(e){ console.log(e); }
+
+    this.processEventListener('onTabRemoved');
+
+  }
+
   //Checks the supplied resource ID against all open tabs and returns tab if it is found
-  IsResourceIdOpenInTab(resID: number){
+  isResourceIdOpenInTab(resID: number){
 
     if(resID){
       for(let i = 0; i < this.tabs.length; i++){
-        if(this.tabs[i].GetResourceID() == resID){
+        if(this.tabs[i].getResourceID() == resID){
           return this.tabs[i];
         }
       }
@@ -163,7 +151,7 @@ export class EditorTabManager {
 
   }
 
-  GetTabByType(tabClass: any){
+  getTabByType(tabClass: any){
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return this.tabs[i];
@@ -171,7 +159,7 @@ export class EditorTabManager {
     return;
   }
 
-  TabTypeExists(tab: TabState){
+  tabTypeExists(tab: TabState){
     let tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
@@ -180,56 +168,9 @@ export class EditorTabManager {
     return false;
   }
 
-  HideAll(){
+  hideAll(){
     for(let i = 0; i < this.tabs.length; i++){
-      this.tabs[i].Hide();
-    }
-  }
-
-  RemoveTab(tab: TabState){
-    let length = this.tabs.length;
-    for(let i = 0; i < length; i++){
-      if(tab == this.tabs[i]){
-        console.log('Tab found. Deleting');
-        // this.tabs[i].$tab.remove();
-        // this.tabs[i].$tabContent.remove();
-        this.tabs.splice(i, 1);
-        break;
-      }
-    }
-    try{
-      console.log('Trying to show');
-      if(this.tabs.length){
-        let t = this.tabs[this.tabs.length-1];
-        console.log(t);
-        t.Show();
-      }
-    }catch(e){ console.log(e); }
-
-    this.processEventListener('onTabRemoved');
-
-  }
-
-  //Attaches the TabManager to the DOM
-  AttachTo($dom: JQuery<HTMLElement>){
-    return;
-  }
-
-  ScrollTabsMenuLeft(){
-    return;
-    this.$tabs[0].scrollLeft -= this.scrollSpeed;
-  }
-
-  ScrollTabsMenuRight(){
-    return;
-    this.$tabs[0].scrollLeft += this.scrollSpeed;
-  }
-
-  TriggerResize(){
-    return;
-    let len = this.tabs.length;
-    for(let i = 0; i < len; i++){
-      this.tabs[i].onResize();
+      this.tabs[i].hide();
     }
   }
 

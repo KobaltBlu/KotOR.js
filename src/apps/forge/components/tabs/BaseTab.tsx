@@ -20,7 +20,7 @@ class BaseTab extends React.Component<BaseTabProps, {}> {
   }
 
   render(): React.ReactNode {
-    let content = this.props.tab.tabContentView.render();
+    let content = this.props.tab.render();
     return (
       <div className={`tab-pane ${this.props.tab.visible ? 'show': ''}`} key={this.props.tab.id}>
         <LayoutContainerProvider>

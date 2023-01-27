@@ -434,41 +434,7 @@ div#editor-content {
   border-right: 1px solid #252525;
 }
 
-.inline-audio-player {
-  position: fixed;
-  bottom: 5px;
-  right: 5px;
-  padding: 5px;
-  background: #212121;
-  /* box-shadow: 1px 1px 5px #000; */
-  z-index: 99;
-  cursor: all-scroll;
-}
-
-.inline-audio-player .audio-player-controls {
-  cursor: initial;
-  display:flex;
-}
-
-.inline-audio-player .audio-player-controls span.glyphicon {
-  color: #258CE4;
-}
-
-.inline-audio-player .audio-player-controls input[type=range].track
-{
-  flex-grow: 100;
-  margin: 0 5px;
-  width: auto;
-  display:inline-block;
-  vertical-align: middle;
-  border: none!important;
-}
-
-.inline-audio-player .audio-player-controls .track-pop {
-  background: #212121;
-  border-radius:10px;
-  padding: 0 5px;
-}
+@import "styles/audio-player.scss";
 
 .css-treeview ul,
 .css-treeview li
@@ -505,7 +471,7 @@ div#editor-content {
   margin: 0 0 0 22px;
 }
 
-.css-treeview input + label + span + ul {
+.css-treeview input + label + ul {
   display: block;
   padding-left: 0px;
 }
@@ -522,7 +488,7 @@ div#editor-content {
   opacity: .6;
 }
 
-.css-treeview input:checked:not(:disabled) + label + span + ul {
+.css-treeview input:checked:not(:disabled) + label + ul {
   display: none;
   padding-left: 0;
 }
