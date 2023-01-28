@@ -2,9 +2,26 @@
 <html>
   <head>
     <title>Forge</title>
+    <style>
+      .page-pre-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top:0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 99999999999999;
+      }
+    </style>
   </head> 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="page-pre-loader">
+        <h1>Initializing...</h1>
+      </div>
+    </div>
     <script type="text/javascript" src="../KotOR.js"></script>
   </body>
 </html>
