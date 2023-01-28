@@ -48,16 +48,18 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
         <label htmlFor={`list-${node.id}`}>{node.name}</label>
         <ul>
           {
-            node.nodes.map( (child: FileBrowserNode) => (
-              <ResourceListNode key={child.id} node={child} depth={childDepth} />
-            ))
+            (openState) ? (
+              node.nodes.map( (child: FileBrowserNode) => (
+                <ResourceListNode key={child.id} node={child} depth={childDepth} />
+              ))
+            ) : (<></>)
           }
         </ul>
       </li>
     );
   }else{
     return (
-      <li className="link" data-path={node.data.path} onClick={(e) => onClickNode(e, props.node)}>
+      <li className="link" data-path={node.data.path} onDoubleClick={(e) => onClickNode(e, props.node)}>
         {node.name}
       </li>
     );
@@ -89,6 +91,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     searchQuery = e.target.value.trim();
     setLoading(true);
     searchDelay = setTimeout(() => {
+      console.log('TimeOut');
       search(searchQuery)
     }, 500);
   }
