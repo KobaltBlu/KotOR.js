@@ -19,14 +19,13 @@ export class TabTwoDAEditorState extends TabState {
 
   openFile(file?: EditorFile){
     return new Promise<TwoDAObject>( (resolve, reject) => {
-      // this.image = null;
-      // this.file = null;
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
   
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
+        this.tabName = this.file.getFilename();
   
         file.readFile( (buffer: Buffer) => {
           this.twoDAObject = new KotOR.TwoDAObject(buffer);
