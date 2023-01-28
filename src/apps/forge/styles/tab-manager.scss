@@ -31,9 +31,10 @@
       border-left: 3px solid #212121;
       border-radius: 0;
 
-      &.current {
+      &.current, &.active {
         position: relative;
         background-color: #333333;
+        border: none;
         border-left: 3px solid #128EC7;
         z-index: 5;
         a {

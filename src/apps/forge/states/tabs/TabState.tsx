@@ -10,13 +10,14 @@ declare const KotOR: any;
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
-  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved';
+  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabNameChange'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved';
 
 export interface TabStateEventListeners {
   onTabDestroyed: Function[],
   onTabRemoved: Function[],
   onTabShow: Function[],
   onTabHide: Function[],
+  onTabNameChange: Function[],
   onEditorFileLoad: Function[],
   onEditorFileChange: Function[],
   onEditorFileSaved: Function[],
@@ -43,6 +44,7 @@ export class TabState {
     onTabRemoved: [],
     onTabShow: [],
     onTabHide: [],
+    onTabNameChange: [],
     onEditorFileLoad: [],
     onEditorFileChange: [],
     onEditorFileSaved: [],
@@ -136,11 +138,16 @@ export class TabState {
     if(this.file instanceof EditorFile){
       console.log('editor file updated', this.file.resref, this.file.ext, this.file)
       if(this.file.unsaved_changes){
-        this.tabName = (`${this.file.resref}.${this.file.ext} *`);
+        this.setTabName(`${this.file.resref}.${this.file.ext} *`);
       }else{
-        this.tabName =(`${this.file.resref}.${this.file.ext}`);
+        this.setTabName(`${this.file.resref}.${this.file.ext}`);
       }
     }
+  }
+
+  setTabName(name: string){
+    this.tabName = name;
+    this.processEventListener('onTabNameChange', [this]);
   }
 
   render(){

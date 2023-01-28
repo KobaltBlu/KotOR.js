@@ -103,6 +103,7 @@ export class EditorTabManager {
       return;
     }
 
+    this.currentTab = tab;
     tab.attach(this);
     tab.show();
     this.tabs.push(tab);
