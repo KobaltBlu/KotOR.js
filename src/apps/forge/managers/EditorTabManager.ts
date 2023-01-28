@@ -114,7 +114,9 @@ export class EditorTabManager {
   }
 
   removeTab(tab: TabState){
-    let length = this.tabs.length;
+    const length = this.tabs.length;
+    const tabIndex = this.tabs.indexOf(tab);
+
     for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
         console.log('removeTab', 'Tab found. Deleting');
@@ -123,12 +125,16 @@ export class EditorTabManager {
       }
     }
     try{
-      console.log('removeTab', 'Trying to show');
-      if(this.tabs.length){
-        let t = this.tabs[this.tabs.length-1];
-        if(t){
-          console.log(t);
-          t.show();
+      if(this.currentTab == tab){
+        let tabIndexToSelect = tabIndex-1;
+        if(tabIndexToSelect < 0) tabIndexToSelect = 0;
+        if(this.tabs.length){
+          console.log('removeTab', 'Current tab removed. Trying to show sibling child');
+          const t = this.tabs[tabIndexToSelect];
+          if(t){
+            console.log(t);
+            t.show();
+          }
         }
       }
     }catch(e){ console.log(e); }
