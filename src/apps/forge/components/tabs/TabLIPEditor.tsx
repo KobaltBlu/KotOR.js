@@ -268,7 +268,9 @@ export const UILIPKeyframePanel = function(props: any){
                   //onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }
                   return (
                     <Draggable key={`keyframe-${index}`} bounds="parent" axis="x" >
-                      <div className="keyframe" style={{left: (keyframe.time * zoom)}}></div>
+                      <div className="keyframe" style={{left: (keyframe.time * zoom)}}>
+                      <i className="fa-solid fa-diamond"></i>
+                      </div>
                     </Draggable>
                   )
                 }) 
