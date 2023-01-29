@@ -1,8 +1,8 @@
 import React from "react";
 import { TabState } from "./TabState";
-import { BIFObject } from "../../../../resource/BIFObject";
-import { RIMObject, RIMResource } from "../../../../resource/RIMObject";
-import { ERFKeyEntry, ERFObject } from "../../../../resource/ERFObject";
+import type { BIFObject } from "../../../../resource/BIFObject";
+import type { RIMObject, RIMResource } from "../../../../resource/RIMObject";
+import type { ERFKeyEntry, ERFObject } from "../../../../resource/ERFObject";
 import { TabResourceExplorer } from "../../components/tabs/TabResourceExplorer";
 import { AsyncLoop } from "../../../../utility/AsyncLoop";
 import { ResourceTypes } from "../../../../resource/ResourceTypes";
@@ -56,6 +56,14 @@ export class FileBrowserNode {
     return results;
   }
 
+  sort(){
+    if(this.nodes.length){
+      this.nodes.sort( (a: FileBrowserNode, b :FileBrowserNode) => {
+        return (a?.name && b?.name) ? a.name.localeCompare(b.name) : 0;
+      });
+      this.nodes.map( (node: FileBrowserNode) => node.sort() );
+    }
+  }
 
 }
 
@@ -102,6 +110,17 @@ export class TabResourceExplorerState extends TabState {
     const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
     KotOR.LoadingScreen.main.Show('Loading [StreamVoice]...');
     const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
+
+    bifs.sort();
+    rims.sort();
+    modules.sort();
+    lips.sort();
+    textures.sort();
+    // waves.sort();
+    // sounds.sort();
+    // music.sort();
+    // voice.sort();
+
     TabResourceExplorerState.Resources.push( 
       ...[
         bifs, rims, modules, lips, textures, waves, sounds, music, voice

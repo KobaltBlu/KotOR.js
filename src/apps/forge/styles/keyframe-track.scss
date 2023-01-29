@@ -1,0 +1,94 @@
+
+
+
+.keyframe-controls {
+  position: absolute;
+  /*left: calc( 50% - (75px / 2) );*/
+  top: 0;
+  z-index: 1000;
+  height: auto!important;
+  font-size: 28pt;
+  text-align: center;
+  width: 100%;
+  white-space: nowrap;
+  background: #1f1f25;
+  border-bottom: 2px solid #111;
+  padding: 10px;
+  line-height: 0;
+  user-select: none;
+  a {
+    margin-left: 15px;
+    &:nth-child(1) {
+      margin-left: initial;
+    }
+  }
+}
+
+.keyframe-bar {
+  position: absolute;
+  top: 59px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #30303D;
+  overflow-x: scroll;
+  user-select: none;
+
+  .keyframe-time-track {
+    position: absolute;
+    top:0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    background: #222;
+    min-width: 100%;
+    cursor: pointer;
+  }
+
+  .keyframe-track {
+    height: 38px;
+    bottom: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+
+    .keyframe {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      background: #777;
+      top: calc( (38px / 2) - 5px );
+      transform: rotate(45deg)!important;
+    
+      &:hover, &.selected {
+        border: 1px solid #f0ad4e;
+        box-shadow: 0 0 5px 1px #f0ad4e;
+        background: radial-gradient(#fff 0%, #f0ad4e 100%);
+        z-index: 1;
+        cursor: col-resize;
+      }
+    }
+  }
+
+  .keyframe-track-seeker {
+    position: absolute;
+    left: 100%;
+    height: 50px;
+    width: 1px;
+    background: #5bc0de;
+    bottom: 0;
+  
+    .seeker-thumb {
+      position: absolute;
+      margin-left: -9.5px;
+      margin-top: -12px;
+      cursor: col-resize;
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 20px solid #5bc0de;
+    }
+  }
+}

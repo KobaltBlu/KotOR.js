@@ -19,6 +19,7 @@ import { useEffectOnce } from './helpers/UseEffectOnce';
 import { TabResourceExplorerState } from './states/tabs/TabResourceExplorerState';
 import { TabProjectExplorerState } from './states/tabs/TabProjectExplorerState';
 import { ModalChangeGame } from './components/modal/ModalChangeGame';
+import { LayoutContainerProvider } from './context/LayoutContainerContext';
 
 console.log('script', 'begin');
 
@@ -57,6 +58,9 @@ const App = (props: any) => {
 
   const onInitComplete = () => {
     setAppReady(true);
+    setTimeout( () => {
+      dispatchEvent( new Event('resize'));
+    }, 100);
 
     // console.log('start');
     // TabResourceExplorerState.GenerateResourceList().then( () => {
@@ -99,14 +103,16 @@ const App = (props: any) => {
   );
 
   return (
-    <div id="app" style={{ display: (appReady) ? 'block': 'none' }}>
+    <div id="app" style={{ opacity: (appReady) ? '1': '0' }}>
       <MenuTop />
       <div id="container">
-        <LayoutContainer westContent={westContent}>
-          <TabManagerProvider manager={ForgeState.tabManager}>
-            <TabManager></TabManager>
-          </TabManagerProvider>
-        </LayoutContainer>
+        <LayoutContainerProvider>
+          <LayoutContainer westContent={westContent}>
+            <TabManagerProvider manager={ForgeState.tabManager}>
+              <TabManager></TabManager>
+            </TabManagerProvider>
+          </LayoutContainer>
+        </LayoutContainerProvider>
       </div>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
       <ModalChangeGame></ModalChangeGame>

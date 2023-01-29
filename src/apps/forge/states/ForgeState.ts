@@ -43,24 +43,14 @@ export class ForgeState {
           ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
           ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
           ForgeState.resourceExplorerTab.show();
-                
-          TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
-            // ForgeState.resourceExplorerTab.tabContentView.setResourceList(TabResourceExplorerState.Resources);
-            KotOR.LoadingScreen.main.Hide();
-            setTimeout( () => {
-              KotOR.LoadingScreen.main.loader.style.display = 'none';
-            }, 500);
-            // Forge.tabManager.AddTab(new QuickStartTab());
-            // ScriptEditorTab.InitNWScriptLanguage();
-          });
 
-          let pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBFormat };
-          KotOR.GameState.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
-          KotOR.GameState.depthTarget.texture.generateMipmaps = false;
-          KotOR.GameState.depthTarget.stencilBuffer = false;
-          KotOR.GameState.depthTarget.depthBuffer = true;
-          KotOR.GameState.depthTarget.depthTexture = new KotOR.THREE.DepthTexture(window.innerWidth, window.innerHeight);
-          KotOR.GameState.depthTarget.depthTexture.type = KotOR.THREE.UnsignedShortType;
+          // let pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBFormat };
+          // KotOR.GameState.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+          // KotOR.GameState.depthTarget.texture.generateMipmaps = false;
+          // KotOR.GameState.depthTarget.stencilBuffer = false;
+          // KotOR.GameState.depthTarget.depthBuffer = true;
+          // KotOR.GameState.depthTarget.depthTexture = new KotOR.THREE.DepthTexture(window.innerWidth, window.innerHeight);
+          // KotOR.GameState.depthTarget.depthTexture.type = KotOR.THREE.UnsignedShortType;
 
           // console.log('loaded')
           // GameState.OpeningMoviesComplete = true;
@@ -69,7 +59,16 @@ export class ForgeState {
           // GameState.Init();
           // GameState.audioEngine.musicGain.gain.value = 0;
           // document.body.append(GameState.stats.domElement)
-          resolve();
+          TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
+            // ForgeState.resourceExplorerTab.tabContentView.setResourceList(TabResourceExplorerState.Resources);
+            KotOR.LoadingScreen.main.Hide();
+            setTimeout( () => {
+              KotOR.LoadingScreen.main.loader.style.display = 'none';
+              resolve();
+            }, 500);
+            // Forge.tabManager.AddTab(new QuickStartTab());
+            // ScriptEditorTab.InitNWScriptLanguage();
+          });
         }
       });
     });
@@ -137,3 +136,4 @@ export class ForgeState {
     return KotOR.ConfigClient.options.recent_files;
   }
 }
+(window as any).ForgeState = ForgeState;

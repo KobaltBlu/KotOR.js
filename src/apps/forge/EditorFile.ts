@@ -5,8 +5,8 @@ import type { RIMObject } from "../../resource/RIMObject";
 import type { BIFObject } from "../../resource/BIFObject";
 import type { ERFObject } from "../../resource/ERFObject";
 import { ForgeState } from "./states/ForgeState";
-import { FileLocationType } from "../../editor/enum/FileLocationType";
-import { EditorFileOptions } from "../../editor/interface/EditorFileOptions";
+import { FileLocationType } from "./enum/FileLocationType";
+import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { Project } from "./Project";
 import { pathParse } from "./helpers/PathParse";
 

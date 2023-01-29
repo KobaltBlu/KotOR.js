@@ -6,7 +6,7 @@ export interface LayoutContainerProviderValues {
 }
 export const LayoutContainerContext = createContext<LayoutContainerProviderValues>({} as any);
 
-export function useLayoutContainer(){
+export function useLayoutContext(){
   return useContext(LayoutContainerContext);
 }
 
@@ -16,11 +16,13 @@ export interface LayoutContainerProviderProps {
 
 export const LayoutContainerProvider = (props: LayoutContainerProviderProps) => {
 
+  // const [parent, setParent] = useState(useContext(LayoutContainerContext));
+
   useEffect(() => {
   }, []);
 
   const providerValue: LayoutContainerProviderValues = {
-    // manager: [manager, setManager],
+    // parent: [parent, setParent],
   };
 
   return (

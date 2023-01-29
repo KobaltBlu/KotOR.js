@@ -43,4 +43,7 @@ export * from "./resource/TPCObject";
 export * from "./resource/TwoDAObject";
 export * from "./resource/VISObject";
 
+export * from "./three/odyssey";
+export * from "./three/MDLLoader";
+
 export * as THREE from "three";

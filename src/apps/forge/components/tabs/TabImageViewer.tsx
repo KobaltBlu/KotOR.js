@@ -10,17 +10,19 @@ declare const KotOR: any;
 
 export const TabImageViewer = function(props: BaseTabProps){
 
+  const tab = props.tab as TabImageViewerState;
+  const [render, rerender] = useState<boolean>(false);
   const [canvasScale, setCanvasScale] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
   const [txiObject, setTXIObject] = useState<object>();
-  const [txiPane, setTXIPane] = useState<JSX.Element|undefined>();
+  const [txiPane, setTXIPane] = useState<JSX.Element>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const setPixelData = (image: TPCObject|TGAObject) => {
     const tab = props.tab as TabImageViewerState;
-    updateTXIPane(image);
+    rerender(!render);
     if(canvasRef.current){
       const canvas = canvasRef.current;
       image.getPixelData( (pixelData: any) => {
@@ -50,13 +52,6 @@ export const TabImageViewer = function(props: BaseTabProps){
 
           canvas.width = width;
           canvas.height = height;
-          // this.$canvas.css({
-          //   width: this.width,
-          //   height: this.height,
-          //   position: 'absolute',
-          //   left: 'calc(50% - '+this.width+'px / 2)',
-          //   top: 'calc(50% - '+this.height+'px / 2)',
-          // });
 
           let imageData = ctx.getImageData(0, 0, width, height);
           let data = imageData.data;
@@ -104,26 +99,6 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }
 
-  const updateTXIPane = (image: TPCObject|TGAObject) => {
-    if(image instanceof KotOR.TPCObject){
-      if(image.txi){
-        setTXIPane((
-          <div className="txi-pane">
-            {
-              Object.entries(image.txi).map( (element: [string, any]) => {
-                return (
-                  <div className="txi-element" key={element[0]}>{element[0]}: {element[1]}</div>
-                )
-              })
-            }
-          </div>
-        ))
-        return;
-      }
-    }
-    setTXIPane(undefined);
-  }
-
   let tmpCanvasScale = 1;
 
   const onMouseWheel = (e: WheelEvent) => {
@@ -169,9 +144,25 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }, [containerRef]);
 
+  const eastContent = (
+    (tab.image instanceof KotOR.TPCObject) ? (
+      <div className="txi-pane">
+        {
+          Object.entries(tab.image.txi).map( (element: [string, any]) => {
+            return (
+              <div className="txi-element" key={element[0]}>{element[0]}: {element[1]}</div>
+            )
+          })
+        }
+      </div>
+    ) : (
+      <></>
+    )
+  );
+
   return (
     <>
-      <LayoutContainer eastContent={txiPane}>
+      <LayoutContainer eastContent={eastContent}>
         <div ref={containerRef} style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <canvas ref={canvasRef} className="checkerboard" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvasScale})`}} />
         </div>

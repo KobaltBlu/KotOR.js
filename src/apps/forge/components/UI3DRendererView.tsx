@@ -1,0 +1,29 @@
+import React, { useEffect, useRef } from "react";
+import { useEffectOnce } from "../helpers/UseEffectOnce";
+import { UI3DRenderer } from "../UI3DRenderer";
+
+export interface UI3DRendererViewProps {
+  context: UI3DRenderer;
+  children?: any;
+}
+
+export const UI3DRendererView = function(props: UI3DRendererViewProps){
+  const canvasRef: any = useRef<HTMLCanvasElement>();
+
+  useEffectOnce(() => {
+    if(!(props.context instanceof UI3DRenderer)){
+      props.context = new UI3DRenderer(canvasRef.current);
+    }
+  });
+
+  useEffect( () => {
+    props.context.setCanvas(canvasRef.current);
+  }, [canvasRef.current]);
+
+  return (
+    <div className="UI3DRendererView-container" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,}}>
+      <canvas ref={canvasRef} className="UI3DRendererView-canvas" />
+    </div>
+  );
+
+}

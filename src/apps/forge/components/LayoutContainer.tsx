@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Draggable from 'react-draggable';
+import { useLayoutContext } from "../context/LayoutContainerContext";
 
 declare const KotOR: any;
 
@@ -8,34 +9,40 @@ export interface LayoutContainerProps {
   southContent?: JSX.Element;
   eastContent?: JSX.Element;
   westContent?: JSX.Element;
+  northSize?: number;
+  southSize?: number;
+  eastSize?: number;
+  westSize?: number;
   children?: React.ReactNode;
 }
 
 export const LayoutContainer = function(props: LayoutContainerProps) {
-  const containerRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const centerRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const northRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const northHandleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const northHandleToggleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const southRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const southHandleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const southHandleToggleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const eastRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const eastHandleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const eastHandleToggleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const westRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const westHandleRef: React.RefObject<HTMLDivElement> = React.useRef();
-  const westHandleToggleRef: React.RefObject<HTMLDivElement> = React.useRef();
+  const layoutContext = useLayoutContext();
+  console.log('ctx', layoutContext);
+  const containerRef = useRef<HTMLDivElement>();
+  const centerRef = useRef<HTMLDivElement>();
+  const northRef = useRef<HTMLDivElement>();
+  const northHandleRef = useRef<HTMLDivElement>();
+  const northHandleToggleRef = useRef<HTMLDivElement>();
+  const southRef = useRef<HTMLDivElement>();
+  const southHandleRef = useRef<HTMLDivElement>();
+  const southHandleToggleRef = useRef<HTMLDivElement>();
+  const eastRef = useRef<HTMLDivElement>();
+  const eastHandleRef = useRef<HTMLDivElement>();
+  const eastHandleToggleRef = useRef<HTMLDivElement>();
+  const westRef = useRef<HTMLDivElement>();
+  const westHandleRef = useRef<HTMLDivElement>();
+  const westHandleToggleRef = useRef<HTMLDivElement>();
 
   const northContent: JSX.Element = props.northContent;
   const southContent: JSX.Element = props.southContent;
   const eastContent: JSX.Element = props.eastContent;
   const westContent: JSX.Element = props.westContent;
   
-  let layout_south_size: number = 250;
-  let layout_east_size: number = 250;
-  let layout_west_size: number = 250;
-  let layout_north_size: number = 250;
+  let layout_south_size: number = (typeof props?.southSize === 'number') ? props.southSize : 250;
+  let layout_east_size: number = (typeof props?.eastSize === 'number') ? props.eastSize : 250;
+  let layout_west_size: number = (typeof props?.westSize === 'number') ? props.westSize : 250;
+  let layout_north_size: number = (typeof props?.northSize === 'number') ? props.northSize : 250;
   let layout_north_enabled: boolean = northContent ? true : false;
   let layout_south_enabled: boolean = southContent ? true : false;
   let layout_east_enabled: boolean = eastContent ? true : false;
@@ -72,6 +79,11 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     if(containerRef.current){
       offsetLeft = containerRef.current.offsetLeft;
       offsetTop = containerRef.current.offsetTop;
+
+      const rect: DOMRect = containerRef.current.getBoundingClientRect();
+      offsetLeft = rect.left;
+      offsetTop = rect.top;
+
     }
 
     let x = e.clientX - offsetLeft;
@@ -124,18 +136,14 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     calculateLayout();
   }
 
-  const onWindowResize = () => {
+  const onWindowResize =  function() {
     calculateLayout();
   }
 
-  // componentDidMount(): void{
-  //   window.addEventListener('resize', onWindowResize.bind(this));
-  //   calculateLayout();
-  // }
-
-  // componentWillUnmount(): void {
-  //   window.removeEventListener('resize', onWindowResize.bind(this));
-  // }
+  useEffect(() => {
+    // console.log('containerRef', containerRef);
+    calculateLayout();
+  }, [containerRef.current]);
 
   const [render, rerender] = useState<boolean>(false);
   useEffect( () => {
@@ -450,19 +458,19 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   calculateLayout();
   return (
     <div ref={containerRef} className="layout-container">
-      <div ref={northRef} id="main-north-container" className="ui-layout-north" style={northStyle}>
+      <div ref={northRef} className="ui-layout-north" style={northStyle}>
         {northContent}
       </div>
-      <div ref={westRef} id="main-west-container" className="ui-layout-west" style={westStyle}>
+      <div ref={westRef} className="ui-layout-west" style={westStyle}>
         {westContent}
       </div>
-      <div ref={centerRef} id="main-center-container" className="ui-layout-center" style={centerStyle}>
+      <div ref={centerRef} className="ui-layout-center" style={centerStyle}>
         {props.children}
       </div>
-      <div ref={eastRef} id="main-east-container" className="ui-layout-east" style={eastStyle}>
+      <div ref={eastRef} className="ui-layout-east" style={eastStyle}>
         {eastContent}
       </div>
-      <div ref={southRef} id="main-south-container" className="ui-layout-south" style={southStyle}>
+      <div ref={southRef} className="ui-layout-south" style={southStyle}>
         {southContent}
       </div>
       <Draggable bounds="parent" axis="y" onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }>

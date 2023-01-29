@@ -29,15 +29,11 @@ export class TabImageViewerState extends TabState {
 
   openFile(file?: EditorFile){
     return new Promise<TPCObject|TGAObject>( (resolve, reject) => {
-      // this.image = null;
-      // this.file = null;
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
-  
         file.readFile( (buffer: Buffer) => {
           switch(file?.ext){
             case 'tga':

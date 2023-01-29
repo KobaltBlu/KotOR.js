@@ -8,6 +8,7 @@ import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
 import { TabImageViewerState } from "./states/tabs/TabImageViewerState";
+import { TabLIPEditorState } from "./states/tabs/TabLIPEditorState";
 import { TabTwoDAEditorState } from "./states/tabs/TabTwoDAEditorState";
 
 /* @file
@@ -41,59 +42,59 @@ export class FileTypeManager {
       case 'vis':
       case 'txi':
       case 'txt':
-        // ForgeState.tabManager.addTab(new TextEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
       break;
       case '2da':
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
-        // ForgeState.tabManager.addTab(new DLGEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
       break;
       case 'lip':
-        // ForgeState.tabManager.addTab(new LIPEditorTab({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabLIPEditorState({editorFile: res}));
       break;
       case 'erf':
       case 'mod':
       case 'sav':
-        // ForgeState.tabManager.addTab(new MODEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabMODEditorState({editorFile: res}));
       break;
       case 'mdl':
       case 'mdx':
-        // ForgeState.tabManager.addTab(new ModelViewerTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabModelViewerState({editorFile: res}));
       break;
       case 'dwk':
       case 'pwk':
       case 'wok':
-        // ForgeState.tabManager.addTab(new WalkmeshViewerTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabWalkmeshViewerState({editorFile: res}));
       break;
       case 'nss':
-        // ForgeState.tabManager.addTab(new ScriptEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
       break;
       case 'ncs':
-        // ForgeState.tabManager.addTab(new ScriptEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
       break;
       case 'tpc':
       case 'tga':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':
-        // ForgeState.tabManager.addTab(new UTCEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabUTCEditorState({editorFile: res}));
       break;
       case 'utd':
-        // ForgeState.tabManager.addTab(new UTDEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabUTDEditorState({editorFile: res}));
       break;
       case 'utp':
-        // ForgeState.tabManager.addTab(new UTPEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabUTPEditorState({editorFile: res}));
       break;
       case 'gui': 
       case 'utt': 
       case 'uts': 
       case 'utw': 
       case 'ute': 
-        // ForgeState.tabManager.addTab(new GFFEditorTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik': 
-        // ForgeState.tabManager.addTab(new MovieViewerTab({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabMovieViewerState({editorFile: res}));
       break;
       case 'wav':
       case 'mp3':
