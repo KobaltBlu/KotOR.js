@@ -255,7 +255,8 @@ export class TabState extends EventListenerModel {
       try{
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           let savePath = await dialog.showSaveDialog({
-            title: 'Save File As'
+            title: 'Save File As',
+            defaultPath: currentFile.path,
           });
           if(savePath && !savePath.cancelled){
             console.log('savePath', savePath.filePath);
