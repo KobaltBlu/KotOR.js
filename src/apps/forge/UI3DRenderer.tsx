@@ -2,6 +2,8 @@
  */
 
 import type * as THREE from "three";
+import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
+import { EventListenerModel } from "./EventListenerModel";
 
 /* @file
  * The UI3DRenderer class.
@@ -22,61 +24,16 @@ export interface UI3DRendererEventListeners {
   onResize:       Function[],
 }
 
-export class UI3DRenderer {
+export class UI3DRenderer extends EventListenerModel {
 
-  eventListeners: UI3DRendererEventListeners = {
+  protected eventListeners: UI3DRendererEventListeners = {
     onBeforeRender: [],
     onAfterRender:  [],
     onCreate:       [],
     onDispose:      [],
     onResize:       [],
   }
-
-  addEventListener(type: UI3DRendererEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
-        ev.push(cb);
-      }else{
-        console.warn('Event Listener: Already added', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  removeEventListener(type: UI3DRendererEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
-        ev.splice(index, 1);
-      }else{
-        console.warn('Event Listener: Already removed', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  processEventListener(type: UI3DRendererEventListenerTypes, args: any[] = []){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
-        const callback = ev[i];
-        if(typeof callback === 'function'){
-          callback(...args);
-        }
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  triggerEventListener(type: UI3DRendererEventListenerTypes, args: any[] = []){
-    this.processEventListener(type, args);
-  }
+  sceneGraphManager: SceneGraphTreeViewManager;
   
   time: number;
   deltaTime: number;
@@ -101,7 +58,8 @@ export class UI3DRenderer {
   enabled: boolean = false;
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
-
+    super();
+    this.sceneGraphManager = new SceneGraphTreeViewManager();
     this.canvas = canvas;
     this.width = width;
     this.height = height;

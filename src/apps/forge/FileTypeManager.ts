@@ -8,7 +8,7 @@ import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
 import { TabImageViewerState } from "./states/tabs/TabImageViewerState";
-import { TabLIPEditorState } from "./states/tabs/TabLIPEditorState";
+import { TabLIPEditorState } from "./states/tabs/tab-lip-editor/TabLIPEditorState";
 import { TabTwoDAEditorState } from "./states/tabs/TabTwoDAEditorState";
 
 /* @file

@@ -275,11 +275,11 @@ export class LIPEditorTab extends EditorTab {
     this.$ui_bar_keyframes = $('<div class="keyframe-track" />');
 
     this.$ui_bar_keyframe_time.css({
-      width: this.lip.Header.Length * this.timeline_zoom + 50
+      width: this.lip.duration * this.timeline_zoom + 50
     });
 
     this.$ui_bar_keyframes.css({
-      width: this.lip.Header.Length * this.timeline_zoom + 50
+      width: this.lip.duration * this.timeline_zoom + 50
     });
 
     this.$ui_bar.append(this.$ui_bar_keyframe_time).append(this.$ui_bar_keyframes).append(this.$ui_bar_seek);
@@ -296,10 +296,10 @@ export class LIPEditorTab extends EditorTab {
       //Update the lips elapsed time based on the seekbar position
       let offset = this.$ui_bar.offset();
       let position = e.pageX - offset.left + this.$ui_bar.scrollLeft();
-      let percentage = position / (this.lip.Header.Length * this.timeline_zoom);
+      let percentage = position / (this.lip.duration * this.timeline_zoom);
 
       if(this.lip instanceof LIPObject){
-        this.lip.elapsed = this.lip.Header.Length * percentage;
+        this.lip.elapsed = this.lip.duration * percentage;
       }
 
       if(was_playing)
@@ -531,10 +531,10 @@ export class LIPEditorTab extends EditorTab {
     //Lip Sync Properties
 
     this.$input_lip_length = $('<input type="number" step="0.005" />');
-    this.$input_lip_length.val(this.lip.Header.Length);
+    this.$input_lip_length.val(this.lip.duration);
     this.$input_lip_length.on('input', (e: any) => {
       if(this.lip instanceof LIPObject){
-        this.lip.Header.Length = parseFloat(this.$input_lip_length.val().toString());
+        this.lip.duration = parseFloat(this.$input_lip_length.val().toString());
         //Rebuild the timeline because the length has changed
         this.BuildKeyframes();
       }
@@ -547,10 +547,10 @@ export class LIPEditorTab extends EditorTab {
       let result = confirm("Are you sure you want to modify the length of the LIP Sync File?");
       if(result){
         if(this.audio_buffer instanceof AudioBuffer){
-          this.lip.Header.Length = this.audio_buffer.duration;
+          this.lip.duration = this.audio_buffer.duration;
           //Rebuild the timeline because the length has changed
           this.BuildKeyframes();
-          this.$input_lip_length.val(this.lip.Header.Length);
+          this.$input_lip_length.val(this.lip.duration);
         }else{
           WindowDialog.showErrorBox('KotOR Forge', 'Failed: No audio file present.');
         }
@@ -712,7 +712,7 @@ export class LIPEditorTab extends EditorTab {
     this.Pause();
     if(this.lip instanceof LIPObject){
       this.lip.elapsed += 0.01;
-      if(this.lip.elapsed > this.lip.Header.Length) this.lip.elapsed = this.lip.Header.Length;
+      if(this.lip.elapsed > this.lip.duration) this.lip.elapsed = this.lip.duration;
     }
     
     this.SeekAudio(this.lip.elapsed);
@@ -795,7 +795,7 @@ export class LIPEditorTab extends EditorTab {
     }
 
     let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(this.lip.Header.Length) / nthTime);
+    let count = Math.ceil(Math.ceil(this.lip.duration) / nthTime);
 
     for(let i = 0; i < count; i++){
       let $lbl_timestamp = $('<span></span>');
@@ -820,7 +820,7 @@ export class LIPEditorTab extends EditorTab {
     keyframe.$ele = $keyframe;
 
     $keyframe.css({
-      left: keyframe.time * this.timeline_zoom //(keyframe.time / this.lip.Header.Length) * 100 +'%',
+      left: keyframe.time * this.timeline_zoom //(keyframe.time / this.lip.duration) * 100 +'%',
     });
 
     this.$ui_bar_keyframes.append($keyframe);
@@ -862,11 +862,11 @@ export class LIPEditorTab extends EditorTab {
 
   ResetTimeLineAfterZoom(){
     this.$ui_bar_keyframe_time.css({
-      width: this.lip.Header.Length * this.timeline_zoom + 50
+      width: this.lip.duration * this.timeline_zoom + 50
     });
 
     this.$ui_bar_keyframes.css({
-      width: this.lip.Header.Length * this.timeline_zoom + 50
+      width: this.lip.duration * this.timeline_zoom + 50
     });
 
     this.BuildKeyframes();
@@ -1030,7 +1030,7 @@ export class LIPEditorTab extends EditorTab {
     
     this.playing = true;
     if(this.lip instanceof LIPObject){
-      if(this.lip.elapsed >= this.lip.Header.Length){
+      if(this.lip.elapsed >= this.lip.duration){
         this.lip.elapsed = 0;
       }
     }
@@ -1121,8 +1121,8 @@ export class LIPEditorTab extends EditorTab {
         this.lip.elapsed = last_time;
       }
 
-      if(this.lip.elapsed > this.lip.Header.Length){
-        this.lip.elapsed = this.lip.Header.Length;
+      if(this.lip.elapsed > this.lip.duration){
+        this.lip.elapsed = this.lip.duration;
         this.Stop();
       }
 
@@ -1142,7 +1142,7 @@ export class LIPEditorTab extends EditorTab {
 
     //if(this.playing){
       this.$ui_bar_seek.css({
-        left: this.lip.elapsed * this.timeline_zoom//(this.lip.elapsed / this.lip.Header.Length) * 100 + '%'
+        left: this.lip.elapsed * this.timeline_zoom//(this.lip.elapsed / this.lip.duration) * 100 + '%'
       });
     //}
 
@@ -1443,9 +1443,9 @@ export class LIPEditorTab extends EditorTab {
             }
 
             this.lip.keyframes.push(keyframe);
-            this.lip.Header.Length = parseFloat(keyframe_data[1]) * .001;
+            this.lip.duration = parseFloat(keyframe_data[1]) * .001;
 
-            this.$input_lip_length.val(this.lip.Header.Length);
+            this.$input_lip_length.val(this.lip.duration);
 
             last_shape = keyframe.shape;
 
@@ -1475,10 +1475,10 @@ export class LIPEditorTab extends EditorTab {
         //Update the lips elapsed time based on the seekbar position
         let offset = this.$ui_bar.offset();
         let position = e.pageX - offset.left + this.$ui_bar.scrollLeft();
-        let percentage = position / (this.lip.Header.Length * this.timeline_zoom);
+        let percentage = position / (this.lip.duration * this.timeline_zoom);
 
         if(this.lip instanceof LIPObject){
-          this.lip.elapsed = this.lip.Header.Length * percentage;
+          this.lip.elapsed = this.lip.duration * percentage;
         }
         
         this.SeekAudio(this.lip.elapsed);
@@ -1496,8 +1496,8 @@ export class LIPEditorTab extends EditorTab {
         //Update the keyframe time based on the drag position
         let offset = this.$ui_bar.offset();
         let position = e.pageX - offset.left + this.$ui_bar.scrollLeft();
-        let percentage = position / (this.lip.Header.Length * this.timeline_zoom);
-        keyframe.time = this.lip.Header.Length * percentage;
+        let percentage = position / (this.lip.duration * this.timeline_zoom);
+        keyframe.time = this.lip.duration * percentage;
 
         keyframe.$ele.css({
           left: keyframe.time * this.timeline_zoom

@@ -22,6 +22,7 @@ export const TabButton = function(props: TabButtonProps) {
   }, [tabName]);
 
   const onTabNameChange = () => {
+    console.log('onTabNameChange', tab.tabName)
     setTabName(tab.tabName);
   };
 

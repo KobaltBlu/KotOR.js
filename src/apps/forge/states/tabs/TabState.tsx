@@ -1,10 +1,11 @@
 import React from "react";
-import { EditorFile } from "../../EditorFile";
+import { EditorFile, EditorFileEventListenerTypes } from "../../EditorFile";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorTabManager } from "../../managers/EditorTabManager";
 import { ForgeState } from "../ForgeState";
 import * as fs from "fs";
 import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../components/MenuTop";
+import { EventListenerModel } from "../../EventListenerModel";
 
 declare const KotOR: any;
 declare const dialog: any;
@@ -23,7 +24,7 @@ export interface TabStateEventListeners {
   onEditorFileSaved: Function[],
 }
 
-export class TabState {
+export class TabState extends EventListenerModel {
 
   id: number;
 
@@ -39,7 +40,7 @@ export class TabState {
   
   tabContentView: JSX.Element = (<></>);
 
-  eventListeners: TabStateEventListeners = {
+  protected eventListeners: TabStateEventListeners = {
     onTabDestroyed: [],
     onTabRemoved: [],
     onTabShow: [],
@@ -50,53 +51,8 @@ export class TabState {
     onEditorFileSaved: [],
   };
 
-  addEventListener(type: TabStateEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
-        ev.push(cb);
-      }else{
-        console.warn('Event Listener: Already added', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  removeEventListener(type: TabStateEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
-        ev.splice(index, 1);
-      }else{
-        console.warn('Event Listener: Already removed', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  processEventListener(type: TabStateEventListenerTypes, args: any[] = []){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
-        const callback = ev[i];
-        if(typeof callback === 'function'){
-          callback(...args);
-        }
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  triggerEventListener(type: TabStateEventListenerTypes, args: any[] = []){
-    this.processEventListener(type, args);
-  }
-
   constructor(options: BaseTabStateOptions = {}){
+    super();
     this.isDestroyed = false;
 
     options = Object.assign({
@@ -123,7 +79,10 @@ export class TabState {
     }
 
     if(this.file instanceof EditorFile){
-      this.file.addEventListener('onSaveStateChanged', (file: EditorFile) => {
+      this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', (file: EditorFile) => {
+        this.editorFileUpdated();
+      });
+      this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', (file: EditorFile) => {
         this.editorFileUpdated();
       });
     }
@@ -193,10 +152,6 @@ export class TabState {
     this.isDestroyed = false;
   }
 
-  onResize() {
-    // this.updateLayoutContainers();
-  }
-
   destroy() {
     this.isDestroyed = true;
     this.processEventListener('onTabDestroyed', [this]);
@@ -211,9 +166,12 @@ export class TabState {
   }
   
   async save() {
+    let currentFile = this.getFile();
+    if(currentFile.archive_path || currentFile.archive_path2){
+      return this.saveAs();
+    }
     return new Promise<boolean>( async (resolve, reject) => {
       try{
-        let currentFile = this.getFile();
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           if(currentFile.path?.length){
             console.log('saveFile', currentFile.path);
@@ -221,6 +179,7 @@ export class TabState {
             try{
               let saveBuffer = this.getExportBuffer();
               fs.writeFile(currentFile.path, saveBuffer, () => {
+                currentFile.unsaved_changes = false;
                 resolve(true);
               });
             }catch(e){
@@ -228,22 +187,9 @@ export class TabState {
               resolve(false);
             }
           }else{
-            //trigger a SaveAs
-            try{
-              let savePath = await dialog.showSaveDialog({
-                title: 'Save File As'
-              });
-              if(savePath){
-                console.log('savePath', savePath);
-                let saveBuffer = this.getExportBuffer();
-                if(saveBuffer){
-                  resolve(true);
-                }
-              }
-            }catch(e){
-              console.error(e);
-              resolve(false);
-            }
+            this.saveAs().then( (status: boolean) => {
+              resolve(status);
+            })
           }
         }else{
           try{
@@ -304,7 +250,53 @@ export class TabState {
   }
 
   async saveAs() {
-    throw new Error("Method not implemented.");
+    let currentFile = this.getFile();
+    return new Promise<boolean>( async (resolve, reject) => {
+      try{
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+          let savePath = await dialog.showSaveDialog({
+            title: 'Save File As'
+          });
+          if(savePath && !savePath.cancelled){
+            console.log('savePath', savePath.filePath);
+            try{
+              let saveBuffer = this.getExportBuffer();
+              fs.writeFile(savePath.filePath, saveBuffer, () => {
+                currentFile.setPath(savePath.filePath);
+                currentFile.archive_path = undefined;
+                currentFile.archive_path2 = undefined;
+                currentFile.unsaved_changes = false;
+                resolve(true);
+              });
+            }catch(e){
+              console.error(e);
+              resolve(false);
+            }
+          }
+        }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.WEB){
+          let newHandle = await window.showSaveFilePicker();
+          if(newHandle){
+            currentFile.handle = newHandle;
+            console.log('handle', newHandle.name, newHandle);
+            try{
+              currentFile.setPath(newHandle.name);
+              let ws: FileSystemWritableFileStream = await newHandle.createWritable();
+              await ws.write(currentFile.getData() || Buffer.allocUnsafe(0));
+              resolve(true);
+            }catch(e){
+              console.error(e);
+              resolve(false);
+            }
+          }else{
+            console.error('save handle invalid');
+            resolve(false);
+          }
+        }
+      }catch(e: any){
+        console.error(e);
+        resolve(false);
+      }
+    });
   }
 
   async compile() {

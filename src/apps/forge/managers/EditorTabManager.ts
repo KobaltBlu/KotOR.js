@@ -1,3 +1,4 @@
+import { EventListenerModel } from "../EventListenerModel";
 import { TabState } from "../states/tabs/TabState";
 
 export type TabManagerEventListenerTypes =
@@ -10,7 +11,7 @@ export interface TabManagerEventListeners {
   onTabHide: Function[],
 }
 
-export class EditorTabManager {
+export class EditorTabManager extends EventListenerModel {
   currentTab?: TabState;
   tabs: TabState[] = [];
 
@@ -21,52 +22,6 @@ export class EditorTabManager {
     onTabHide: []
   };
 
-  addEventListener(type: TabManagerEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
-        ev.push(cb);
-      }else{
-        console.warn('Event Listener: Already added', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  removeEventListener(type: TabManagerEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
-        ev.splice(index, 1);
-      }else{
-        console.warn('Event Listener: Already removed', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  processEventListener(type: TabManagerEventListenerTypes, args: any[] = []){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
-        const callback = ev[i];
-        if(typeof callback === 'function'){
-          callback(...args);
-        }
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  triggerEventListener(type: TabManagerEventListenerTypes, args: any[] = []){
-    this.processEventListener(type, args);
-  }
-
   static __tabId: number = 0;
   react: any;
 
@@ -75,6 +30,7 @@ export class EditorTabManager {
   }
 
   constructor(){
+    super();
     this.currentTab = undefined;
     this.tabs = [];
   }

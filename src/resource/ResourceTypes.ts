@@ -6,7 +6,7 @@
  */
 
 export const ResourceTypes: any = {
-  "NA" : 0x000F,
+  "NA" : 0xFFFF,
   "res" : 0,
   "bmp" : 1,
   "tga" : 3,

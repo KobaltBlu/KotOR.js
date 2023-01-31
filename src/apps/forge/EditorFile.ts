@@ -9,6 +9,7 @@ import { FileLocationType } from "./enum/FileLocationType";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { Project } from "./Project";
 import { pathParse } from "./helpers/PathParse";
+import { EventListenerModel } from "./EventListenerModel";
 
 declare const KotOR: any;
 
@@ -21,7 +22,7 @@ export interface EditorFileEventListeners {
   onSaved: Function[],
 }
 
-export class EditorFile {
+export class EditorFile extends EventListenerModel {
 
   //handle - is for file handling inside the web environment
   handle?: FileSystemFileHandle;
@@ -42,57 +43,11 @@ export class EditorFile {
   _reskey: any;
   _ext: any;
 
-  private eventListeners: EditorFileEventListeners = {
+  protected eventListeners: EditorFileEventListeners = {
     onNameChanged: [],
     onSaveStateChanged: [],
     onSaved: [],
   };
-
-  addEventListener(type: EditorFileEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
-        ev.push(cb);
-      }else{
-        console.warn('Event Listener: Already added', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  removeEventListener(type: EditorFileEventListenerTypes, cb: Function){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
-        ev.splice(index, 1);
-      }else{
-        console.warn('Event Listener: Already removed', type);
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  processEventListener(type: EditorFileEventListenerTypes, args: any[] = []){
-    if(Array.isArray(this.eventListeners[type])){
-      let ev = this.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
-        const callback = ev[i];
-        if(typeof callback === 'function'){
-          callback(...args);
-        }
-      }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
-    }
-  }
-
-  triggerEventListener(type: EditorFileEventListenerTypes, args: any[] = []){
-    this.processEventListener(type, args);
-  }
 
   get unsaved_changes(){
     return this._unsaved_changes;
@@ -100,7 +55,7 @@ export class EditorFile {
 
   set unsaved_changes(value){
     this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
-    this.processEventListener('onSaveStateChanged', [this]);
+    this.processEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', [this]);
     if(!this.unsaved_changes) this.updateOpenedFiles();
   }
 
@@ -110,7 +65,7 @@ export class EditorFile {
 
   set resref(value){
     this._resref = value;
-    this.processEventListener('onNameChanged', [this]);
+    this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
   get reskey(){
@@ -121,7 +76,7 @@ export class EditorFile {
     // console.log('reskey', value);
     this._reskey = value;
     this._ext = ResourceTypes.getKeyByValue(this.reskey);
-    this.processEventListener('onNameChanged', [this]);
+    this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
   get ext(){
@@ -132,11 +87,11 @@ export class EditorFile {
     // console.log('ext', value);
     this._ext = value;
     this._reskey = ResourceTypes[value];
-    this.processEventListener('onNameChanged', [this]);
+    this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
   constructor( options: EditorFileOptions = {} ){
-
+    super();
     options = Object.assign({
       path: null,
       path2: null,
@@ -527,25 +482,29 @@ export class EditorFile {
   }
 
   updateOpenedFiles(){
-    const recent_files = ForgeState.getRecentFiles();
-    //Update the opened files list
-    let file_path = this.getPath();
-    if(file_path){
-      const index = recent_files.findIndex( (file: EditorFile) => {
-        return file.getPath() == file_path;
-      })
-      if (index >= 0) {
-        recent_files.splice(index, 1);
-      }
+    try{
+      const recent_files = ForgeState.getRecentFiles();
+      //Update the opened files list
+      let file_path = this.getPath();
+      if(file_path){
+        const index = recent_files.findIndex( (file: EditorFile) => {
+          return file.getPath() == file_path;
+        })
+        if (index >= 0) {
+          recent_files.splice(index, 1);
+        }
 
-      //Append this file to the beginning of the list
-      recent_files.unshift(this);
-      KotOR.ConfigClient.save(null, true); //Save the configuration silently
+        //Append this file to the beginning of the list
+        recent_files.unshift(this);
+        KotOR.ConfigClient.save(null, true); //Save the configuration silently
 
-      //Notify the project we have opened a new file
-      if(ForgeState.Project instanceof Project){
-        ForgeState.Project.addToOpenFileList(this);
+        //Notify the project we have opened a new file
+        if(ForgeState.Project instanceof Project){
+          ForgeState.Project.addToOpenFileList(this);
+        }
       }
+    }catch(e){
+      console.error(e);
     }
   }
 

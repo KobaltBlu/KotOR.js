@@ -1,15 +1,12 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as path from "path";
-import * as fs from "fs";
 import { LIPHeader } from "../interface/resource/LIPHeader";
 import { LIPKeyFrame } from "../interface/resource/LIPKeyFrame";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "./ResourceTypes";
-import { OdysseyModel } from "../odyssey";
 import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
@@ -19,26 +16,25 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 
 export class LIPObject {
+  static FILE_TYPE  = 'LIP ';
+  static FILE_VER   = 'V1.0'
   file: string|Buffer;
   HeaderSize: number;
-  Header: LIPHeader;
   keyframes: LIPKeyFrame[];
   time: number;
   lastTime: number;
+  duration: number;
   elapsed: number;
   anim: any;
   lipDataOffset: number;
+
+  static readonly MAX_LIP_SHAPES = 16;
 
   constructor(file: string|Buffer, onComplete?: Function){
     this.file = file;
     this.HeaderSize = 16;
 
-    this.Header = {
-      FileType: 'LIP ',
-      FileVersion: 'V1.0',
-      Length: 1,
-      EntryCount: 0
-    } as LIPHeader;
+    this.duration = 1;
 
     this.keyframes = [];
 
@@ -65,10 +61,10 @@ export class LIPObject {
 
         if(!this.file.length){
 
-          this.Header.Length = 1;
-          this.Header.EntryCount = 1;
+          this.duration = 1;
 
           this.keyframes.push({
+            uuid: crypto.randomUUID(),
             time: 0.5,
             shape: 6
           });
@@ -100,20 +96,19 @@ export class LIPObject {
 
       let reader = new BinaryReader(buffer);
 
-      this.Header = {} as LIPHeader;
-      this.Header.FileType = reader.ReadChars(4);
-      this.Header.FileVersion = reader.ReadChars(4);
-      this.Header.Length = reader.ReadSingle();
-      this.Header.EntryCount = reader.ReadUInt32();
+      const fileType = reader.ReadChars(4);
+      const fileVersion = reader.ReadChars(4);
+      this.duration = reader.ReadSingle();
+      const entryCount = reader.ReadUInt32();
 
       this.lipDataOffset = 16;
       reader.Seek(this.lipDataOffset);
 
-      for (let i = 0; i < this.Header.EntryCount; i++) {
-        let keyframe: LIPKeyFrame = {} as LIPKeyFrame;
-        keyframe.time = reader.ReadSingle();
-        keyframe.shape = reader.ReadByte();
-        this.keyframes.push(keyframe);
+      for (let i = 0; i < entryCount; i++) {
+        this.addKeyFrame(
+          reader.ReadSingle(),
+          reader.ReadByte(),
+        );
       }
 
       reader.dispose();
@@ -122,6 +117,17 @@ export class LIPObject {
         onComplete(this);
 
     }
+  }
+
+  addKeyFrame(time: number = 0, shape: number = 0){
+    let keyframe: LIPKeyFrame = {
+      uuid: crypto.randomUUID(),
+      time: time,
+      shape: shape,
+    } as LIPKeyFrame;
+    this.keyframes.push(keyframe);
+    this.reIndexKeyframes();
+    return keyframe;
   }
 
   update(delta = 0, model: any = null){
@@ -143,6 +149,7 @@ export class LIPObject {
 
       if(!last){
         last = {
+          uuid: '',
           time: 0,
           shape: 0
         };
@@ -214,7 +221,7 @@ export class LIPObject {
 
       }
 
-      if(this.elapsed >= this.Header.Length){
+      if(this.elapsed >= this.duration){
         
         if(model.moduleObject)
           model.moduleObject.lipObject = undefined;
@@ -239,32 +246,34 @@ export class LIPObject {
 
   reIndexKeyframes(){
     this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0)); 
-    this.Header.EntryCount = this.keyframes.length;
+  }
+
+  toExportBuffer(): Buffer {
+    let writer = new BinaryWriter();
+
+    //Write the header to the buffer
+    writer.WriteChars(LIPObject.FILE_TYPE);
+    writer.WriteChars(LIPObject.FILE_VER);
+    writer.WriteSingle(this.duration);
+    writer.WriteUInt32(this.keyframes.length);
+
+    //Write the keyframe data to the buffer
+    for (let i = 0; i < this.keyframes.length; i++) {
+      let keyframe = this.keyframes[i];
+      writer.WriteSingle(keyframe.time);
+      writer.WriteByte(keyframe.shape);
+    }
+    return writer.buffer;
   }
 
   export( onComplete?: Function ){
 
     //this.reIndexKeyframes();
 
-    let writer = new BinaryWriter();
-
-    //Write the header to the buffer
-    writer.WriteChars(this.Header.FileType);
-    writer.WriteChars(this.Header.FileVersion);
-    writer.WriteSingle(this.Header.Length);
-    writer.WriteUInt32(this.Header.EntryCount);
-
-    //Write the keyframe data to the buffer
-    for (let i = 0; i < this.Header.EntryCount; i++) {
-      let keyframe = this.keyframes[i];
-      writer.WriteSingle(keyframe.time);
-      writer.WriteByte(keyframe.shape);
-    }
-
     console.log('Exporting LIP file to ', this.file);
 
     if(typeof this.file == 'string'){
-      GameFileSystem.writeFile(this.file, writer.buffer).then( () => {
+      GameFileSystem.writeFile(this.file, this.toExportBuffer()).then( () => {
         console.log('LIP file exported to ', this.file);
         if(typeof onComplete === 'function')
           onComplete();
@@ -308,5 +317,25 @@ export class LIPObject {
     });
   }
 
+  static GetLIPShapeLabels(): string[] {
+    return [
+      "ee (teeth) ",
+      "eh (bet, red) ",
+      "schwa (a in sofa) ",
+      "ah (bat, cat) ",
+      "oh (or, boat) ",
+      "oo (blue) wh in wheel ",
+      "y (you) ",
+      "s, ts ",
+      "f, v ",
+      "n, ng ",
+      "th ",
+      "m, p, b ",
+      "t, d ",
+      "j, sh ",
+      "l, r ",
+      "k, g ",
+    ];
+  }
 
 }

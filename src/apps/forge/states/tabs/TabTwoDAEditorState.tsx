@@ -3,7 +3,7 @@ import { TabTwoDAEditor } from "../../components/tabs/TabTwoDAEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
-import { TwoDAObject } from "../../../../resource/TwoDAObject";
+import type { TwoDAObject } from "../../../../resource/TwoDAObject";
 
 declare const KotOR: any;
 

@@ -39,18 +39,20 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
     setOpenState(!openState);
   };
 
-  const childDepth = (props?.depth ? props.depth : 0) + 1;
+  const onLabelClick = (e: React.MouseEvent<HTMLLabelElement>, node: FileBrowserNode) => {
+    setOpenState(!openState);
+  }
 
   if(node.nodes.length){
     return (
       <li onClick={(e) => onClickNode(e, props.node)}>
-        <input type="checkbox" checked={!openState} id={`list-${node.id}`} onChange={(e) => onChangeCheckbox(e, props.node)} />
-        <label htmlFor={`list-${node.id}`}>{node.name}</label>
+        <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
+        <label onClick={(e) => onLabelClick(e, props.node)}>{node.name}</label>
         <ul>
           {
             (openState) ? (
               node.nodes.map( (child: FileBrowserNode) => (
-                <ResourceListNode key={child.id} node={child} depth={childDepth} />
+                <ResourceListNode key={child.id} node={child} />
               ))
             ) : (<></>)
           }

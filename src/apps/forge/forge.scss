@@ -382,7 +382,7 @@ body {
   }
 }
 
-select {
+select, .form-select {
   height: 100%!important;
   border-radius: 5px;
   border: 2px solid #2196F3;
@@ -396,12 +396,13 @@ select {
   margin-bottom: 5px;
   box-shadow: 2px 2px 10px #1d1d1d;
   width: 100%;
+  color: #FFFFFF;
   &:focus {
-    color: #ffffff;
+    color: #FFFFFF;
   }
 }
 
-select:focus {
+select:focus, .form-select:focus {
   border-color: #2196F3;
   outline: none;
 }
