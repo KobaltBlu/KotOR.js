@@ -82,14 +82,20 @@ export class TabLIPEditorState extends TabState {
   animLoop: boolean;
   playing: boolean = false;
   seeking: boolean;
+  scrubbing: boolean = false;
+  preScrubbingPlayState: boolean = false;
+  scrubbingTimeout: NodeJS.Timeout|number;
   current_head: string;
   audio_name: string;
   selected_frame: LIPKeyFrame;
-  dragging_frame: LIPKeyFrame;
+  dragging_frame: LIPKeyFrame|undefined;
+  dragging_frame_snapshot: LIPKeyFrame;
   poseFrame: boolean;
   max_timeline_zoom: number = 1000;
   min_timeline_zoom: number = 50;
   timeline_zoom: number = 250;
+
+  scrubDuration: number|undefined;
 
   head: OdysseyModel3D;
   head_hook: THREE.Object3D<THREE.Event> = new KotOR.THREE.Object3D();
@@ -259,6 +265,13 @@ export class TabLIPEditorState extends TabState {
 
       if(this.playing || this.poseFrame){
         this.updateLip(delta);
+        if(typeof this.scrubDuration === 'number'){
+          this.scrubDuration -= delta;
+          if(this.scrubDuration <= 0){
+            this.scrubDuration = undefined;
+            this.pause();
+          }
+        }
       }
 
       if(this.poseFrame){
@@ -288,7 +301,7 @@ export class TabLIPEditorState extends TabState {
     }catch(e){ }
   }
 
-  play(){
+  play(duration: number|undefined = undefined){
 
     this.resetAudio();
     this.source = KotOR.GameState.audioEngine.audioCtx.createBufferSource();
@@ -300,14 +313,15 @@ export class TabLIPEditorState extends TabState {
       this.source.loop = false;
 
       if(this.lip instanceof KotOR.LIPObject){
-        this.source.start(0, this.lip.elapsed);
+        this.source.start(0, this.lip.elapsed, duration);
       }else{
-        this.source.start(0, 0);
+        this.source.start(0, 0, duration);
       }
     }catch(e){}
     
     this.poseFrame = true;
     this.playing = true;
+    this.scrubDuration = duration;
     if(this.lip instanceof KotOR.LIPObject){
       if(this.lip.elapsed >= this.lip.duration){
         this.lip.elapsed = 0;

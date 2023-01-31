@@ -151,6 +151,7 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onPlay', onPlay);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onPause', onPause);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onStop', onStop);
+    window.addEventListener('mouseup', onMouseUpWindow);
     rebuildTimelineLabels();
     return () => {
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', onLoad);
@@ -162,6 +163,7 @@ export const UILIPKeyFramePanel = function(props: any){
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onPlay', onPlay);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onPause', onPause);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onStop', onStop);
+      window.removeEventListener('mouseup', onMouseUpWindow);
       if(waveformCanvasRef?.current?.parentElement) barObserver.unobserve(waveformCanvasRef?.current?.parentElement);
     }
   });
@@ -265,15 +267,36 @@ export const UILIPKeyFramePanel = function(props: any){
     // setTimelineWidth(Math.ceil(duration) * zoom);
   }
 
-  const onClickKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+  const getTimelinePixelPositionRelativeToMouseEvent = (e: React.MouseEvent<HTMLDivElement>) => {
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
+      let maxPixels = (tab.lip.duration * tab.timeline_zoom);
+      
+      let position = (e.pageX - bRect.left + keyframeWindowElement.scrollLeft);
+      if(position < 0) return 0;
+      if(position > maxPixels) return maxPixels;
+      return position;
+    }
+    return 0;
+  }
+
+  const getTimelinePixelPositionAsTime = (position: number = 0) => {
+    let percentage = position / (tab.lip.duration * tab.timeline_zoom);
+    let time = tab.lip.duration * percentage;
+    if(time < 0) return 0;
+    if(time > tab.lip.duration) return tab.lip.duration;
+    return time;
+  };
+
+  const onClickKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+    if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
+
       //Update the lips elapsed time based on the seekbar position
-      let position = e.pageX - bRect.left + keyframeWindowElement.scrollLeft;
-      let percentage = position / (tab.lip.duration * tab.timeline_zoom);
-      tab.seek(tab.lip.duration * percentage)
+      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      let time = getTimelinePixelPositionAsTime(position);
+      tab.seek(time);
       
       const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
       setSeekPositionLeft(seekPosition);
@@ -298,14 +321,19 @@ export const UILIPKeyFramePanel = function(props: any){
 
   const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: LIPKeyFrame) => {
     e.stopPropagation();
+    e.preventDefault();
     tab.selectKeyFrame(keyframe);
-    tab.seek(keyframe.time);
-    updateSeekerPosition();
-    updateScrollBoundsFocus(true);
+    tab.dragging_frame_snapshot = Object.assign({}, keyframe);
+    tab.dragging_frame = keyframe;
   }
 
   const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: LIPKeyFrame) => {
     e.stopPropagation();
+    e.preventDefault();
+    tab.seek(keyframe.time);
+    updateSeekerPosition();
+    updateScrollBoundsFocus(true);
+    tab.dragging_frame = undefined;
   }
 
   const onClickAddKeyFrame = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -313,6 +341,56 @@ export const UILIPKeyFramePanel = function(props: any){
       tab.lip.elapsed, 0
     );
     tab.selectKeyFrame(newFrame);
+  }
+
+  const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+    let position = getTimelinePixelPositionRelativeToMouseEvent(e);
+    let time = getTimelinePixelPositionAsTime(position);
+    if(tab.scrubbing){
+      tab.seek(time);
+      
+      const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
+      setSeekPositionLeft(seekPosition);
+    
+      tab.play(0.05);
+      clearTimeout(tab.scrubbingTimeout);
+      tab.scrubbingTimeout = setTimeout( () => {
+        // tab.pause();
+      }, 25);
+    }
+    
+    if(tab.dragging_frame){
+      tab.dragging_frame.time = time;
+      setKeyFrames([...tab.lip.keyframes]);
+    }
+  }
+
+  const onMouseDownKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+    tab.dragging_frame = undefined;
+    tab.scrubbing = true;
+    tab.pause();
+  }
+
+  const onMouseUpKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+    clearTimeout(tab.scrubbingTimeout);
+    if(tab.scrubbing){
+      tab.pause();
+      const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
+      setSeekPositionLeft(seekPosition);
+    }
+    tab.scrubbing = false;
+    tab.dragging_frame = undefined;
+  }
+
+  const onMouseUpWindow = (e: MouseEvent) => {
+    clearTimeout(tab.scrubbingTimeout);
+    if(tab.scrubbing){
+      tab.pause();
+      const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
+      setSeekPositionLeft(seekPosition);
+    }
+    tab.scrubbing = false;
+    tab.dragging_frame = undefined;
   }
 
   return (
@@ -328,7 +406,7 @@ export const UILIPKeyFramePanel = function(props: any){
         <a href="#" title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" style={{textDecoration: 'none', float:'right'}} onClick={onClickZoomIn}></a>
         <a href="#" title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" style={{textDecoration: 'none', float:'right'}} onClick={onClickZoomOut}></a>
       </div>
-      <div className="keyframe-bar" onClick={onClickKeyFrameWindow}>
+      <div className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow}>
         <canvas ref={waveformCanvasRef as any} style={{position: 'absolute', top: 25, left: 0 }} />
         <div className="keyframe-time-track" style={{width: (Math.ceil(duration) * zoom)}}>
           {
@@ -352,15 +430,13 @@ export const UILIPKeyFramePanel = function(props: any){
                 (keyframe: LIPKeyFrame, index: number) => {
                   //onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }
                   return (
-                    <Draggable key={`${keyframe.uuid}`} bounds="parent" axis="x" >
-                      <div className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}} 
-                        onClick={(e: any) => onKeyFrameMouseDown(e, keyframe)} 
-                        onMouseDown={(e: any) => onKeyFrameMouseDown(e, keyframe)} 
-                        onMouseUp={(e: any) => onKeyFrameMouseUp(e, keyframe)}
-                      >
-                        <i className="fa-solid fa-diamond"></i>
-                      </div>
-                    </Draggable>
+                    <div key={`${keyframe.uuid}`} className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}} 
+                      onClick={(e: any) => onKeyFrameMouseUp(e, keyframe)} 
+                      onMouseDown={(e: any) => onKeyFrameMouseDown(e, keyframe)} 
+                      onMouseUp={(e: any) => onKeyFrameMouseUp(e, keyframe)}
+                    >
+                      <i className="fa-solid fa-diamond"></i>
+                    </div>
                   )
                 }) 
               : <></>
