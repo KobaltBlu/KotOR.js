@@ -5,7 +5,7 @@ import { SceneGraphNode } from "../../../SceneGraphNode";
 
 export class TabLIPEditorOptionsState extends TabState {
 
-  tabName: string = 'Options';
+  tabName: string = 'LIP';
 
   sceneGraphNodes: SceneGraphNode[] = [];
   sceneGraphNode: SceneGraphNode = new SceneGraphNode({name: 'Scene'});

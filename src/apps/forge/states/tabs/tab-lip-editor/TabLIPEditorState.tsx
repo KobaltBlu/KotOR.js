@@ -75,6 +75,7 @@ export class TabLIPEditorState extends TabState {
   source: AudioBufferSourceNode;
   preview_gain: number = 0.5;
   audio_buffer: AudioBuffer;
+  playbackRate: number = 1;
   
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
   lipOptionsTab: TabLIPEditorOptionsState;
@@ -242,6 +243,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   animate(delta: number = 0){
+    delta *= this.playbackRate;
     if(this.head){
       this.head.update(delta);
 
@@ -311,6 +313,7 @@ export class TabLIPEditorState extends TabState {
       this.source.connect(this.gainNode);
       this.gainNode.connect(KotOR.GameState.audioEngine.audioCtx.destination);
       this.source.loop = false;
+      this.source.playbackRate.value = this.playbackRate;
 
       if(this.lip instanceof KotOR.LIPObject){
         this.source.start(0, this.lip.elapsed, duration);
