@@ -334,19 +334,26 @@ export class GUIListBox extends GUIControl {
         this.maxScroll++;
     }
 
-    let topY = this.extent.height/2;
-    let nodeOffset = (-this.scroll * (this.getNodeHeight()) + this.padding) | 0;
-
-    for(let i = 0; i < this.children.length; i++){
-      let node = this.children[i];
-      let height = this.getNodeHeight(node);
-      if(this.getProtoItemType() == 6){
-        node.widget.position.y = (topY - nodeOffset - this.getNodeHeight()/2);
-      }else{
-        node.widget.position.y = (topY - nodeOffset - height/2) + 5;
-        height += 5;
+    if (this.children.length) {
+      const topY = this.extent.height / 2;
+      if (this.getProtoItemType() == 6) {
+        let nodeOffset = (-this.scroll * (this.getNodeHeight()) + (-topY + this.getNodeHeight()/2 )) + this.padding;
+        for (let i = 0; i < this.children.length; i++) {
+          const node = this.children[i];
+          const height = this.getNodeHeight(node);
+          node.widget.position.y = -nodeOffset;
+          nodeOffset += height;
+        }
       }
-      nodeOffset += height | 0;
+      else {
+        let nodeOffset = (-this.scroll * (this.getNodeHeight())) + (-topY + this.getNodeHeight());
+        for (let i = 0; i < this.children.length; i++) {
+          const node = this.children[i];
+          const height = this.getNodeHeight(node);
+          node.widget.position.y = -nodeOffset;
+          nodeOffset += height;
+        }
+      }
     }
     
     if(this.scrollbar){
@@ -414,7 +421,8 @@ export class GUIListBox extends GUIControl {
       if(control.text.geometry){
         //console.log('tSize')
         control.text.geometry.computeBoundingBox();
-        let tSize = control.text.geometry.boundingBox.getSize(new THREE.Vector3());
+        let tSize = new THREE.Vector3();
+        control.text.geometry.boundingBox.getSize(tSize);
         if(tSize.y > cHeight){
           cHeight = tSize.y;
         }

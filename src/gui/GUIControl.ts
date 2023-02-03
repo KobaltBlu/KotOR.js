@@ -421,6 +421,7 @@ export class GUIControl {
     this.text.material.uniforms.diffuse.value = this.text.color;
     //new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
     this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
+    this.text.mesh.frustumCulled = false;
     //this.widget.userData.text.add(this.text.mesh);
 
     //--------//
