@@ -51,23 +51,25 @@ export class JournalManager {
   }
 
   static AddJournalQuestEntry(szPlotID: string = '', state: number = 0, allowOverrideHigher: boolean = false): boolean {
-    let entry = JournalManager.GeJournalEntryByTag(szPlotID);
-    if(entry){
-      if(entry.state > state && allowOverrideHigher){
+    if(JournalManager.PlotExists(szPlotID)){
+      let entry = JournalManager.GeJournalEntryByTag(szPlotID);
+      if(entry){
+        if(entry.state > state && allowOverrideHigher){
+          entry.state = state;
+        }else {
+          entry.state = state;
+        }
+        // entry.date; //TODO
+        // entry.time ; //TODO
+        entry.load();
+      }else{
+        entry = new JournalEntry();
+        entry.plot_id = szPlotID;
         entry.state = state;
-      }else {
-        entry.state = state;
+        entry.date = 0; //TODO
+        entry.time = 0; //TODO
+        entry.load();
       }
-      // entry.date; //TODO
-      // entry.time ; //TODO
-      entry.load();
-    }else{
-      entry = new JournalEntry();
-      entry.plot_id = szPlotID;
-      entry.state = state;
-      entry.date = 0; //TODO
-      entry.time = 0; //TODO
-      entry.load();
     }
     return false;
   }
@@ -77,6 +79,15 @@ export class JournalManager {
     const index = JournalManager.Entries.indexOf(entry);
     if(index >= 0){
       JournalManager.Entries.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  static PlotExists(szPlotID: string = ''): boolean {
+    const plotTable = TwoDAManager.datatables.get('plot');
+    const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
+    if(plot){
       return true;
     }
     return false;
