@@ -20,6 +20,7 @@
   z-index: 999;
   opacity: 0;
   transition: all .5s ease-in-out;
+  -webkit-app-region: no-drag;
 }
 
 .lightbox.active {
