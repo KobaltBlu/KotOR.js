@@ -256,9 +256,9 @@ export class AudioEmitter {
             this.currentSound.onended = () => {
               try{
                 if(typeof onEnd === 'function')
-                  onEnd();
+                  onEnd(false);
               }catch(e: any){
-
+                console.error(e);
               }
             };
 

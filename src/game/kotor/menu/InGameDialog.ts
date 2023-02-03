@@ -18,6 +18,7 @@ import { GFFObject } from "../../../resource/GFFObject";
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
+import { DLGNode } from "../../../resource/DLGNode";
 
 /* @file
 * The InGameDialog menu class.
@@ -28,7 +29,7 @@ export class InGameDialog extends GameMenu {
   LBL_MESSAGE: GUILabel;
   LB_REPLIES: GUIListBox;
   dialog: any;
-  currentEntry: any;
+  currentEntry: DLGNode;
   listener: any;
   owner: any;
   nodeIndex: number;
@@ -42,7 +43,7 @@ export class InGameDialog extends GameMenu {
   letterBoxed: boolean;
   topBar: any;
   bottomBar: any;
-  startingEntry: any;
+  startingEntry: DLGNode;
   conversation_name: string;
   barHeight: any;
 
@@ -85,14 +86,14 @@ Hide() {
   GameState.currentCamera = GameState.camera;
 }
 
-getCurrentListener() {
+getCurrentListener(): ModuleObject {
   if (this.currentEntry) {
     return this.currentEntry.listener;
   }
   return this.listener;
 }
 
-getCurrentOwner() {
+getCurrentOwner(): ModuleObject {
   if (this.currentEntry) {
     return this.currentEntry.owner;
   }
@@ -242,7 +243,7 @@ isEndDialog(node: any) {
   return returnValue;
 }
 
-PlayerSkipEntry(currentEntry: any) {
+PlayerSkipEntry(currentEntry: DLGNode) {
   if (this.currentEntry != null) {
     this.currentEntry.checkList.isSkipped = true;
     clearTimeout(this.currentEntry.timeout);
@@ -252,20 +253,24 @@ PlayerSkipEntry(currentEntry: any) {
   }
 }
 
-async showEntry(entry: any) {
+async showEntry(entry: DLGNode) {
   this.state = 0;
   entry.initProperties();
   if (!GameState.inDialog)
     return;
-  GameState.VideoEffect = entry.videoEffect == -1 ? null : entry.videoEffect;
-  this.LBL_MESSAGE.setText(entry.getCompiledString(), entry);
+  GameState.VideoEffect = entry.getVideoEffect();
+  this.LBL_MESSAGE.setText(entry.getCompiledString());
   this.LB_REPLIES.hide();
   this.LB_REPLIES.clearItems();
   this.updateTextPosition();
   this.currentEntry = entry;
-  clearTimeout(entry.timeout);
-  entry.timeout = null;
+
+  entry.updateJournal();
+
+  //participant animations
   this.UpdateEntryAnimations(entry);
+
+  //participant facing
   if (!this.dialog.isAnimatedCutscene) {
     if (this.currentEntry.listener instanceof ModuleObject && this.currentEntry.speaker instanceof ModuleObject) {
       if (!this.currentEntry.listener.lockDialogOrientation && this.currentEntry.listener instanceof ModuleCreature) {
@@ -276,40 +281,15 @@ async showEntry(entry: any) {
       }
     }
   }
-  entry.checkList = {
-    isSkipped: false,
-    cameraAnimationComplete: MenuManager.InGameDialog.dialog.isAnimatedCutscene ? false : true,
-    voiceOverComplete: false,
-    alreadyAllowed: false,
-    isComplete: function () {
-      if (this.alreadyAllowed || this.isSkipped) {
-        return false;
-      }
-      if (MenuManager.InGameDialog.dialog.isAnimatedCutscene) {
-        if (this.cameraAnimationComplete) {
-          this.alreadyAllowed = true;
-          if (MenuManager.InGameDialog.paused) {
-            return false;
-          } else {
-            return true;
-          }
-        }
-      } else {
-        if (this.voiceOverComplete) {
-          this.alreadyAllowed = true;
-          if (MenuManager.InGameDialog.paused) {
-            return false;
-          } else {
-            return true;
-          }
-        }
-      }
-    }
-  };
+
+  //Node Delay
   let nodeDelay = 3000;
   if (!this.dialog.isAnimatedCutscene && entry.delay > -1) {
     nodeDelay = entry.delay * 1000;
   }
+  entry.setNodeDelay(nodeDelay);
+
+  //Node camera
   if (entry.camFieldOfView != -1) {
     GameState.camera_animated.fov = entry.camFieldOfView;
   }
@@ -336,49 +316,12 @@ async showEntry(entry: any) {
     GameState.currentCamera = GameState.camera_dialog;
     this.UpdateCamera();
   }
-  if (entry.fade.type == 3) {
-    setTimeout(() => {
-      FadeOverlayManager.FadeIn(entry.fade.length, 0, 0, 0);
-    }, entry.fade.delay * 1000);
-  } else if (entry.fade.type == 4) {
-    setTimeout(() => {
-      FadeOverlayManager.FadeOut(entry.fade.length, 0, 0, 0);
-    }, entry.fade.delay * 1000);
-  }
+
+  //scripts
   entry.runScripts();
-  if (entry.sound != '') {
-    LIPObject.Load(entry.sound).then( (lip: LIPObject) => {
-      if (entry.speaker instanceof ModuleCreature) {
-        entry.speaker.setLIP(lip);
-      }
-    })
-    this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
-      entry.checkList.voiceOverComplete = true;
-      if (entry.checkList.isComplete()) {
-        this.showReplies(entry);
-      }
-    });
-  } else if (entry.vo_resref != '') {
-    LIPObject.Load(entry.vo_resref).then( (lip: LIPObject) => {
-      if (entry.speaker instanceof ModuleCreature) {
-        entry.speaker.setLIP(lip);
-      }
-    });
-    this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
-      entry.checkList.voiceOverComplete = true;
-      if (entry.checkList.isComplete()) {
-        this.showReplies(entry);
-      }
-    });
-  } else {
-    console.error('VO ERROR', entry);
-    entry.timeout = setTimeout(() => {
-      entry.checkList.voiceOverComplete = true;
-      if (entry.checkList.isComplete()) {
-        this.showReplies(entry);
-      }
-    }, nodeDelay);
-  }
+
+  //vo
+  entry.playVoiceOver(this.audioEmitter);
 }
 
 async GetAvailableReplies(entry: any) {
@@ -396,8 +339,9 @@ async GetAvailableReplies(entry: any) {
   this.LB_REPLIES.updateList();
 }
 
-async onReplySelect(reply: any) {
+async onReplySelect(reply: DLGNode) {
   if (reply) {
+    reply.updateJournal();
     reply.runScripts();
     this.getNextEntry(reply.entries);
   } else {
@@ -434,11 +378,15 @@ async showReplies(entry: any) {
     return;
   }
   try {
-    this.getCurrentOwner().dialogPlayAnimation('listen', true);
+    if(this.getCurrentOwner() instanceof ModuleCreature){
+      (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
+    }
   } catch (e: any) {
   }
   try {
-    this.getCurrentListener().dialogPlayAnimation('listen', true);
+    if(this.getCurrentListener() instanceof ModuleCreature){
+      (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
+    }
   } catch (e: any) {
   }
   this.isListening = false;
@@ -645,25 +593,25 @@ UpdateCamera() {
                 x: 0,
                 y: 0,
                 z: this.currentEntry.speaker.getCameraHeight()
-              });
+              } as THREE.Vector3);
             }
           }
           if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
             if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
               lposition = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
             } else {
-              lposition.add({
-                x: 0,
-                y: 0,
-                z: this.currentEntry.listener.getCameraHeight()
-              });
+              lposition.add(
+                new THREE.Vector3(
+                  0, 0, this.currentEntry.listener.getCameraHeight()
+                )
+              );
             }
           }
           position.add({
             x: -0.5,
             y: 0.25,
             z: 0
-          });
+          } as THREE.Vector3);
           let AxisFront = new THREE.Vector3();
           let tangent = lookAt.clone().sub(lposition.clone());
           let atan = Math.atan2(-tangent.y, -tangent.x);
@@ -683,31 +631,19 @@ UpdateCamera() {
                 x: 0,
                 y: 0,
                 z: 0.5
-              });
+              } as THREE.Vector3);
             } else {
-              position.add({
-                x: 0,
-                y: 0,
-                z: 1.5
-              });
+              position.add(new THREE.Vector3(0, 0, 1.5));
             }
           }
           if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
             if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
               position = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
             } else {
-              position.add({
-                x: 0,
-                y: 0,
-                z: 1.5
-              });
+              position.add(new THREE.Vector3(0, 0, 1.5));
             }
           }
-          position.add({
-            x: -1,
-            y: 1,
-            z: 0
-          });
+          position.add(new THREE.Vector3(-1, 1, 0));
           let AxisFront = new THREE.Vector3();
           let tangent = lookAt.clone().sub(position.clone());
           let atan = Math.atan2(-tangent.y, -tangent.x);
@@ -724,27 +660,29 @@ UpdateCamera() {
             x: 0,
             y: 0,
             z: this.currentEntry.speaker.getCameraHeight()
-          }));
+          } as THREE.Vector3));
         }
       }
     } else {
       let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(-1.5 * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4), -1.5 * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4), -1.75));
       GameState.camera_dialog.position.set(position.x, position.y, position.z);
-      GameState.camera_dialog.lookAt(this.getCurrentOwner().position.clone().add({
-        x: 0,
-        y: 0,
-        z: this.getCurrentOwner().getCameraHeight()
-      }));
+      GameState.camera_dialog.lookAt(
+        this.getCurrentOwner().position.clone().add(
+          new THREE.Vector3(
+            0, 0, this.getCurrentOwner().getCameraHeight()
+          )
+        )
+      );
     }
   } else {
     GameState.currentCamera = GameState.camera_dialog;
     let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(0.5 * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), 0.5 * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), -1.75));
     GameState.camera_dialog.position.set(position.x, position.y, position.z);
-    GameState.camera_dialog.lookAt(this.getCurrentListener().position.clone().add({
-      x: 0,
-      y: 0,
-      z: this.getCurrentListener().getCameraHeight()
-    }));
+    GameState.camera_dialog.lookAt(
+      this.getCurrentListener().position.clone().add(
+        new THREE.Vector3(0, 0, this.getCurrentListener().getCameraHeight())
+      )
+    );
   }
 }
 
@@ -801,6 +739,13 @@ Update(delta: number = 0) {
       }
     }
   }
+
+  if(this.currentEntry){
+    if(this.currentEntry.update(delta)){
+      this.showReplies(this.currentEntry);
+    }
+  }
+
 }
 
 updateTextPosition() {

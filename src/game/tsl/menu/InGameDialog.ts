@@ -18,6 +18,7 @@ import { ResourceLoader } from "../../../resource/ResourceLoader";
 import { LIPObject } from "../../../resource/LIPObject";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { AudioLoader } from "../../../audio/AudioLoader";
+import { DLGNode } from "../../../resource/DLGNode";
 
 /* @file
 * The InGameDialog menu class.
@@ -235,17 +236,18 @@ export class InGameDialog extends K1_InGameDialog {
     }
   }
 
-  async showEntry(entry: any) {
+  async showEntry(entry: DLGNode) {
     this.state = 0;
     entry.initProperties();
     if (!GameState.inDialog)
       return;
     GameState.VideoEffect = entry.videoEffect == -1 ? null : entry.videoEffect;
-    this.LBL_MESSAGE.setText(entry.getCompiledString(), entry);
+    this.LBL_MESSAGE.setText(entry.getCompiledString());
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
     this.updateTextPosition();
     this.currentEntry = entry;
+    entry.updateJournal();
     clearTimeout(entry.timeout);
     entry.timeout = null;
     this.UpdateEntryAnimations(entry);
@@ -380,8 +382,9 @@ export class InGameDialog extends K1_InGameDialog {
     this.LB_REPLIES.updateList();
   }
 
-  async onReplySelect(reply: any) {
+  async onReplySelect(reply: DLGNode) {
     if (reply) {
+      reply.updateJournal();
       reply.runScripts();
       this.getNextEntry(reply.entries);
     } else {
@@ -862,7 +865,7 @@ export class InGameDialog extends K1_InGameDialog {
                   x: 0,
                   y: 0,
                   z: this.currentEntry.speaker.getCameraHeight()
-                });
+                } as THREE.Vector3);
               }
             }
             if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
@@ -873,14 +876,14 @@ export class InGameDialog extends K1_InGameDialog {
                   x: 0,
                   y: 0,
                   z: this.currentEntry.listener.getCameraHeight()
-                });
+                } as THREE.Vector3);
               }
             }
             position.add({
               x: -0.5,
               y: 0.25,
               z: 0
-            });
+            } as THREE.Vector3);
             let AxisFront = new THREE.Vector3();
             let tangent = lookAt.clone().sub(lposition.clone());
             let atan = Math.atan2(-tangent.y, -tangent.x);
@@ -900,13 +903,13 @@ export class InGameDialog extends K1_InGameDialog {
                   x: 0,
                   y: 0,
                   z: 0.5
-                });
+                } as THREE.Vector3);
               } else {
                 position.add({
                   x: 0,
                   y: 0,
                   z: 1.5
-                });
+                } as THREE.Vector3);
               }
             }
             if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
@@ -917,14 +920,14 @@ export class InGameDialog extends K1_InGameDialog {
                   x: 0,
                   y: 0,
                   z: 1.5
-                });
+                } as THREE.Vector3);
               }
             }
             position.add({
               x: -1,
               y: 1,
               z: 0
-            });
+            } as THREE.Vector3);
             let AxisFront = new THREE.Vector3();
             let tangent = lookAt.clone().sub(position.clone());
             let atan = Math.atan2(-tangent.y, -tangent.x);
@@ -941,7 +944,7 @@ export class InGameDialog extends K1_InGameDialog {
               x: 0,
               y: 0,
               z: this.currentEntry.speaker.getCameraHeight()
-            }));
+            } as THREE.Vector3));
           }
         }
       } else {

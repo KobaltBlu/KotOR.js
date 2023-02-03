@@ -1,10 +1,15 @@
+import type { AudioEmitter } from "../audio";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { DLGNodeScriptParams } from "../interface/dialog/DLGNodeScriptParams";
+import { FadeOverlayManager } from "../managers/FadeOverlayManager";
+import { JournalManager } from "../managers/JournalManager";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import { ModuleCreature, ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { LIPObject } from "./LIPObject";
 
 export class DLGNode {
   nodeType: DLGNodeType;
@@ -21,6 +26,7 @@ export class DLGNode {
   plotIndex: number;
   plotXPPercentage: number;
   quest: string;
+  questEntry: number;
   replies: any[];
   entries: any[];
   script: string;
@@ -40,10 +46,17 @@ export class DLGNode {
   text: string;
   vo_resref: string;
   waitFlags: number;
-  fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; }; };
-  speaker: any;
+  elapsed: number = 0;
+  fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
+  speaker: ModuleObject;
   dialog: any;
-  listener: any;
+  videoEffect: number;
+
+  listener: ModuleObject;
+  owner: ModuleObject;
+
+  checkList: any = {};
+  timeout: any;
 
   constructor(args = {}){
     this.nodeType = DLGNodeType.K1;
@@ -61,6 +74,7 @@ export class DLGNode {
     this.plotIndex = -1;
     this.plotXPPercentage = 1;
     this.quest = '';
+    this.questEntry = 0;
     this.replies = [];
     this.entries = [];
 
@@ -89,7 +103,8 @@ export class DLGNode {
       type: 0,
       length: 0,
       delay: 0,
-      color: {r:0, g:0, b:0}
+      color: {r:0, g:0, b:0},
+      started: false,
     };
   }
 
@@ -117,6 +132,9 @@ export class DLGNode {
     if(typeof this.listener == 'undefined'){
       this.listener = this.dialog.listener;
     }
+
+    //Checklist
+    this.resetChecklist();
   }
 
   async runScript1(){
@@ -247,8 +265,156 @@ export class DLGNode {
     return replyIds;
   }
 
+  updateJournal(){
+    if(this.quest){
+      const allowOverrideHigher = false;
+      JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
+    }
+  }
+
+  update(delta: number = 0): boolean {
+    this.elapsed += delta;
+    this.processFadeOverlay();
+    if(!!this.checkList.voiceOverError){
+      if(this.elapsed >= this.delay){
+        this.checkList.voiceOverComplete = true;
+      }
+    }
+    return this.checkList.isComplete();
+  }
+
+  setNodeDelay(delay: number = 0){
+    this.delay = delay;
+  }
+
+  processFadeOverlay(){
+    if(this.checkList.fadeComplete) return;
+    if(!this.fade.length){
+      this.checkList.fadeComplete = true;
+      return;
+    }
+    if(this.elapsed > this.fade.delay && !this.fade.started){
+      this.fade.started = true;
+      switch(this.fade.type){
+        case 3:
+          FadeOverlayManager.FadeIn(this.fade.length, 0, 0, 0);
+        break;
+        case 4:
+          FadeOverlayManager.FadeOut(this.fade.length, 0, 0, 0);
+        break;
+      }
+    }
+    if(this.elapsed >= (this.fade.delay + this.fade.length)){
+      this.checkList.fadeComplete = true;
+    }
+  }
+
+  loadResources(): Promise<void> {
+    return new Promise( (resolve, reject) => {
+
+    });
+  }
+
+  loadLIP(): Promise<boolean> {
+    return new Promise( (resolve, reject) => {
+      const resref = this.getVoiceResRef();
+      if(resref){
+        LIPObject.Load(resref).then( (lip: LIPObject) => {
+          if (this.speaker instanceof ModuleCreature) {
+            this.speaker.setLIP(lip);
+          }
+          resolve(true);
+        });
+      }else{
+        resolve(false);
+      }
+    });
+  }
+
+  playVoiceOver(audioEmitter: AudioEmitter): Promise<boolean> {
+    return new Promise( (resolve, reject) => {
+      const resref = this.getVoiceResRef();
+      if(resref){
+        this.loadLIP();
+        audioEmitter.PlayStreamWave(resref, null, (error: boolean = false) => {
+          if(!error){
+            this.checkList.voiceOverComplete = true;
+          }else{
+            this.checkList.voiceOverError = true;
+          }
+          resolve(error);
+        });
+      }else{
+        this.checkList.voiceOverError = true;
+        resolve(false);
+      }
+    });
+  }
+
+  getVoiceResRef(): string {
+    if (this.sound != '') {
+      return this.sound;
+    }else if (this.vo_resref != '') {
+      return this.vo_resref;
+    }else{
+      return '';
+    }
+  }
+
+  getVideoEffect(): any {
+    return this.videoEffect == -1 ? null : this.videoEffect
+  }
+
+  resetChecklist(){
+    this.checkList = {
+      isSkipped: false,
+      cameraAnimationComplete: MenuManager.InGameDialog.dialog.isAnimatedCutscene ? false : true,
+      voiceOverComplete: false,
+      alreadyAllowed: false,
+      fadeComplete: false,
+      voiceOverError: false,
+      isComplete: function(): boolean {
+        if (this.alreadyAllowed || this.isSkipped) {
+          return false;
+        }
+        if (MenuManager.InGameDialog.dialog.isAnimatedCutscene) {
+          if (this.cameraAnimationComplete) {
+            this.alreadyAllowed = true;
+            if (MenuManager.InGameDialog.paused) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+        } else {
+          if (this.voiceOverComplete && this.fadeComplete) {
+            this.alreadyAllowed = true;
+            if (MenuManager.InGameDialog.paused) {
+              return false;
+            } else {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+    };
+  }
+
   static FromDialogStruct( struct: any ){
     let node = new DLGNode();
+
+    if(typeof struct.Quest !== 'undefined')
+      node.quest = struct.Quest.value;
+
+    if(typeof struct.QuestEntry !== 'undefined')
+      node.questEntry = struct.QuestEntry.value;
+
+    if(typeof struct.PlotXPPercentage !== 'undefined')
+      node.plotXPPercentage = struct.PlotXPPercentage.value;
+
+    if(typeof struct.PlotIndex !== 'undefined')
+      node.plotIndex = struct.PlotIndex.value;
 
     if(typeof struct.Listener !== 'undefined')
       node.listenerTag = struct.Listener.value;

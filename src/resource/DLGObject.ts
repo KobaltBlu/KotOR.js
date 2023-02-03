@@ -13,8 +13,8 @@ export class DLGObject {
   resref: string;
   gff: GFFObject;
   conversationType: number;
-  entryList: any[] = [];
-  replyList: any[] = [];
+  entryList: DLGNode[] = [];
+  replyList: DLGNode[] = [];
   startingList: any[] = [];
   stuntActors: any[] = [];
   stunt: any[] = [];
