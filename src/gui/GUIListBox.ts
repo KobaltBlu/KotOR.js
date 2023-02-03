@@ -346,7 +346,7 @@ export class GUIListBox extends GUIControl {
         }
       }
       else {
-        let nodeOffset = (-this.scroll * (this.getNodeHeight())) + (-topY + this.getNodeHeight());
+        let nodeOffset = (-this.scroll * (this.getNodeHeight())) + (-topY + this.getNodeHeight()/2);
         for (let i = 0; i < this.children.length; i++) {
           const node = this.children[i];
           const height = this.getNodeHeight(node);
