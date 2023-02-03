@@ -18,6 +18,7 @@ import { AsyncLoop } from "./utility/AsyncLoop";
 import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { ConfigClient } from "./KotOR";
+import { JournalManager } from "./managers/JournalManager";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -45,19 +46,17 @@ export class GameInitializer {
         KEYManager.Load('chitin.key', () => {
           LoadingScreen.main.SetMessage("Loading Game Resources");
           GameInitializer.LoadGameResources( () => {
-            //Load the TLK File
-            LoadingScreen.main.SetMessage("Loading TLK File");
-            TLKManager.LoadTalkTable().then( () => {
-              if(typeof props.onLoad === 'function'){
-                props.onLoad();
-              }
-            })
-            //   if(props.onLoad != null)
-            //     props.onLoad();
-            // }, function(num: any, total: any){
-            //   //onProgress
-            //   LoadingScreen.main.SetMessage("Loading TLK File: "+num+" / "+total);
-            // });
+            //Load JRL File
+            LoadingScreen.main.SetMessage("Loading JRL File");
+            JournalManager.LoadJournal().then( () => {
+              //Load TLK File
+              LoadingScreen.main.SetMessage("Loading TLK File");
+              TLKManager.LoadTalkTable().then( () => {
+                if(typeof props.onLoad === 'function'){
+                  props.onLoad();
+                }
+              })
+            });
           });
         });
 

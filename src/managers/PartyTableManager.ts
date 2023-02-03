@@ -12,6 +12,9 @@ import * as fs from "fs";
 import * as path from "path";
 import { TwoDAManager } from "./TwoDAManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { JournalManager, JournalEntry } from "./JournalManager";
+import { DialogMessageManager, DialogMessageEntry } from "./DialogMessageManager";
+import { FeedbackMessageManager, FeedbackMessageEntry } from "./FeedbackMessageManager";
 
 export class PartyTableManager {
 
@@ -98,6 +101,27 @@ export class PartyTableManager {
         });
 
       }
+
+      if(gff.RootNode.HasField('JNL_Entries')){
+        const entries = gff.RootNode.GetFieldByLabel('JNL_Entries').GetChildStructs();
+        for(let i = 0; i < entries.length; i++){
+          JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
+        }
+      }
+
+      if(gff.RootNode.HasField('PT_DLG_MSG_LIST')){
+        const entries = gff.RootNode.GetFieldByLabel('PT_DLG_MSG_LIST').GetChildStructs();
+        for(let i = 0; i < entries.length; i++){
+          DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
+        }
+      }
+
+      if(gff.RootNode.HasField('PT_FB_MSG_LIST')){
+        const entries = gff.RootNode.GetFieldByLabel('PT_FB_MSG_LIST').GetChildStructs();
+        for(let i = 0; i < entries.length; i++){
+          FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
+        }
+      }
     }else{
       console.error('PartyTableManager', 'gff', gff);
       throw 'PartyTableManager expected gff to be of type GFFObject';
@@ -111,9 +135,13 @@ export class PartyTableManager {
       let partytable = new GFFObject();
       partytable.FileType = 'PT  ';
       partytable.RootNode.AddField(new GFFField(GFFDataType.STRUCT, 'GlxyMap')).AddChildStruct( Planetary.SaveStruct() );
-      partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
+      const jnl_list = partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
 
-      //TODO: Journal Entries
+      for(let i = 0; i <  JournalManager.Entries.length; i++){
+        jnl_list.AddChildStruct(
+          JournalManager.Entries[i].toStruct()
+        );
+      }
 
       partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).SetValue(0);
       partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).SetValue(0);
@@ -135,13 +163,21 @@ export class PartyTableManager {
 
       //TODO: COST MULT LIST
 
-      partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
+      const dlg_list = partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
 
-      //TODO: Dialog Messages LIST
+      for(let i = 0; i <  DialogMessageManager.Entries.length; i++){
+        dlg_list.AddChildStruct(
+          DialogMessageManager.Entries[i].toStruct()
+        );
+      }
 
-      partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_FB_MSG_LIST'));
+      const fb_list = partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_FB_MSG_LIST'));
 
-      //TODO: Feedback Messages LIST
+      for(let i = 0; i <  FeedbackMessageManager.Entries.length; i++){
+        fb_list.AddChildStruct(
+          FeedbackMessageManager.Entries[i].toStruct()
+        );
+      }
 
       partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).SetValue(0);
       partytable.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).SetValue(PartyManager.Gold);
