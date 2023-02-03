@@ -11,6 +11,7 @@ import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import * as THREE from "three";
 import { TextureType } from "../../../enums/loaders/TextureType";
+import { ModuleItem } from "../../../module";
 
 /* @file
 * The MenuInventory menu class.
@@ -34,6 +35,8 @@ export class MenuInventory extends GameMenu {
   BTN_USEITEM: GUIButton;
   BTN_EXIT: GUIButton;
 
+  selected: ModuleItem;
+
   constructor(){
     super();
     this.gui_resref = 'inventory';
@@ -52,10 +55,24 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
+      
+
+      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+        this.selected = item;
+        this.UpdateSelected();
+      }
+
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
       resolve();
     });
+  }
+
+  UpdateSelected(){
+    if(this.selected instanceof ModuleItem){
+      this.LB_DESCRIPTION.clearItems();
+      this.LB_DESCRIPTION.addItem(this.selected.getDescription());
+    }
   }
 
   Show() {
@@ -210,7 +227,7 @@ class GUIInventoryItem extends GUIProtoItem {
           this.hideBorder();
           this.pulsing = true;
           this.text.color.setRGB(1, 1, 0);
-          this.text.material.uniforms.color.value = this.text.color;
+          this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
           button.showHighlight();
@@ -221,14 +238,14 @@ class GUIInventoryItem extends GUIProtoItem {
           buttonIcon.pulsing = true;
 
           button.text.color.setRGB(1, 1, 0);
-          button.text.material.uniforms.color.value = button.text.color;
+          button.text.material.uniforms.diffuse.value = button.text.color;
           button.text.material.needsUpdate = true;
         }else{
           this.hideHighlight();
           this.showBorder();
           this.pulsing = false;
           this.text.color.setRGB(0, 0.658824, 0.980392);
-          this.text.material.uniforms.color.value = this.text.color;
+          this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
           button.hideHighlight();
@@ -239,7 +256,7 @@ class GUIInventoryItem extends GUIProtoItem {
           buttonIcon.pulsing = false;
 
           button.text.color.setRGB(0, 0.658824, 0.980392);
-          button.text.material.uniforms.color.value = button.text.color;
+          button.text.material.uniforms.diffuse.value = button.text.color;
           button.text.material.needsUpdate = true;
         }
       };

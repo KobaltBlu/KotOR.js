@@ -772,7 +772,7 @@ class GUIInventoryItem extends GUIProtoItem {
           this.hideBorder();
           this.pulsing = true;
           this.text.color.setRGB(1, 1, 0);
-          this.text.material.uniforms.color.value = this.text.color;
+          this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
           button.showHighlight();
@@ -783,14 +783,14 @@ class GUIInventoryItem extends GUIProtoItem {
           buttonIcon.pulsing = true;
 
           button.text.color.setRGB(1, 1, 0);
-          button.text.material.uniforms.color.value = button.text.color;
+          button.text.material.uniforms.diffuse.value = button.text.color;
           button.text.material.needsUpdate = true;
         }else{
           this.hideHighlight();
           this.showBorder();
           this.pulsing = false;
           this.text.color.setRGB(0, 0.658824, 0.980392);
-          this.text.material.uniforms.color.value = this.text.color;
+          this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
           button.hideHighlight();
@@ -801,7 +801,7 @@ class GUIInventoryItem extends GUIProtoItem {
           buttonIcon.pulsing = false;
 
           button.text.color.setRGB(0, 0.658824, 0.980392);
-          button.text.material.uniforms.color.value = button.text.color;
+          button.text.material.uniforms.diffuse.value = button.text.color;
           button.text.material.needsUpdate = true;
         }
       };

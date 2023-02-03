@@ -824,7 +824,7 @@ export class GUIControl {
         if(texture){
           this.text.texture = texture;
           this.text.material.uniforms.map.value = texture;
-          this.text.material.uniforms.color = { value: this.text.color };
+          this.text.material.uniforms.diffuse = { value: this.text.color };
           this.text.material.alphaTest = 0;
           this.text.material.transparent = true;
           this.text.material.needsUpdate = true;
