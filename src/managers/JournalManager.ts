@@ -5,6 +5,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { TwoDAManager } from "./TwoDAManager";
 
 export class JournalManager {
   static Categories: JournalCategory[] = [];
@@ -21,9 +22,64 @@ export class JournalManager {
   }
 
   static GetCategoryByTag(tag: string = ''): JournalCategory {
-    return JournalManager.Categories.find( (cat) => {
+    return JournalManager.Categories.find( (cat: JournalCategory) => {
       return cat.tag.toLocaleLowerCase() == tag.toLocaleLowerCase();
     });
+  }
+
+  static GeJournalEntryByTag(tag: string = ''): JournalEntry {
+    return JournalManager.Entries.find( (entry: JournalEntry) => {
+      return entry.plot_id.toLocaleLowerCase() == tag.toLocaleLowerCase();
+    });
+  }
+
+  static GetJournalEntryState(szPlotID: string = ''): number {
+    const entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    if(entry){
+      return entry.state;
+    }
+    return 0;
+  }
+
+  static GetJournalQuestExperience(szPlotID: string = ''): number {
+    const plotTable = TwoDAManager.datatables.get('plot');
+    const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
+    if(plot){
+      return parseInt(plot.xp);
+    }
+    return 0;
+  }
+
+  static AddJournalQuestEntry(szPlotID: string = '', state: number = 0, allowOverrideHigher: boolean = false): boolean {
+    let entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    if(entry){
+      if(entry.state > state && allowOverrideHigher){
+        entry.state = state;
+      }else {
+        entry.state = state;
+      }
+      // entry.date; //TODO
+      // entry.time ; //TODO
+      entry.load();
+    }else{
+      entry = new JournalEntry();
+      entry.plot_id = szPlotID;
+      entry.state = state;
+      entry.date = 0; //TODO
+      entry.time = 0; //TODO
+      entry.load();
+    }
+    return false;
+  }
+
+  static RemoveJournalQuestEntry(szPlotID: string = ''): boolean {
+    const entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    const index = JournalManager.Entries.indexOf(entry);
+    if(index >= 0){
+      JournalManager.Entries.splice(index, 1);
+      return true;
+    }
+    return false;
   }
 
   static LoadJournal(){
@@ -58,6 +114,7 @@ export class JournalEntry {
 
   category: JournalCategory;
   entry: JournalCategoryEntry;
+  plot: any;
 
   constructor(){
 
@@ -71,7 +128,7 @@ export class JournalEntry {
     return this.entry.text.GetTLKValue().Value;
   }
 
-  load(){
+  load(): void{
     this.category = JournalManager.GetCategoryByTag(this.plot_id);
     if(this.category){
       this.entry = this.category.getEntryById(this.state);
@@ -81,6 +138,18 @@ export class JournalEntry {
     }else{
       console.warn(`JournalEntry.load: Invalid Category "${this.plot_id}"`);
     }
+    const plotTable = TwoDAManager.datatables.get('plot');
+    const plot = plotTable.getRowByColumnAndValue('label', this.plot_id.toLocaleLowerCase());
+    if(plot){
+      this.plot = plot;
+    }
+  }
+
+  getExperience(): number {
+    if(this.plot){
+      return parseInt(this.plot.xp);
+    }
+    return 0;
   }
 
   toStruct(id: number = 0){

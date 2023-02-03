@@ -45,6 +45,7 @@ import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
 import { GlobalVariableManager } from "../managers/GlobalVariableManager";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import { JournalManager } from "../managers/JournalManager";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -4296,13 +4297,19 @@ NWScriptDefK1.Actions = {
     comment: "367: Add a journal quest entry to the player.\n- szPlotID: the plot identifier used in the toolset's Journal Editor\n- nState: the state of the plot as seen in the toolset's Journal Editor\n- bAllowOverrideHigher: If this is TRUE, you can set the state to a lower\nnumber than the one it is currently on\n",
     name: "AddJournalQuestEntry",
     type: 0,
-    args: ["string", "int", "int"]
+    args: ["string", "int", "int"],
+    action: function(args: any, _instr: any, action: any){
+      return JournalManager.AddJournalQuestEntry(args[0], args[1], args[2]);
+    }
   },
   368:{
     comment: "368: Remove a journal quest entry from the player.\n- szPlotID: the plot identifier used in the toolset's Journal Editor\n",
     name: "RemoveJournalQuestEntry",
     type: 0,
-    args: ["string"]
+    args: ["string"],
+    action: function(args: any, _instr: any, action: any){
+      return JournalManager.RemoveJournalQuestEntry(args[0]);
+    }
   },
   369:{
     comment: "369: Gets the State value of a journal quest.  Returns 0 if no quest entry has been added for this szPlotID.\n- szPlotID: the plot identifier used in the toolset's Journal Editor\n",
@@ -4310,7 +4317,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: ["string"],
     action: function(args: any, _instr: any, action: any){
-      return 0;
+      return JournalManager.GetJournalEntryState(args[0]);
     }
   },
   370:{
@@ -4471,7 +4478,10 @@ NWScriptDefK1.Actions = {
     comment: "384: Get the experience assigned in the journal editor for szPlotID.\n",
     name: "GetJournalQuestExperience",
     type: 3,
-    args: ["string"]
+    args: ["string"],
+    action: function(args: any, _instr: any, action: any){
+      return JournalManager.GetJournalQuestExperience(args[0]);
+    }
   },
   385:{
     comment: "385: Jump to oToJumpTo (the action is added to the top of the action queue).\n",
@@ -6943,13 +6953,19 @@ NWScriptDefK1.Actions = {
     comment: "669: AddJournalWorldEntry\nAdds a user entered entry to the world notices\n",
     name: "AddJournalWorldEntry",
     type: 0,
-    args: ["int", "string", "string"]
+    args: ["int", "string", "string"],
+    action: function(args: any, _instr: any, action: any){
+      //UNUSED
+    }
   },
   670:{
     comment: "670: AddJournalWorldEntryStrref\nAdds an entry to the world notices using stringrefs\n",
     name: "AddJournalWorldEntryStrref",
     type: 0,
-    args: ["int", "int"]
+    args: ["int", "int"],
+    action: function(args: any, _instr: any, action: any){
+      //UNUSED
+    }
   },
   671:{
     comment: "671: BarkString\nthis will cause a creature to bark the strRef from the talk table\nIf creature is specefied as OBJECT_INVALID a general bark is made.\n",
@@ -6964,19 +6980,28 @@ NWScriptDefK1.Actions = {
     comment: "672: DeleteJournalWorldAllEntries\nNuke's 'em all, user entered or otherwise.\n",
     name: "DeleteJournalWorldAllEntries",
     type: 0,
-    args: []
+    args: [],
+    action: function(args: any, _instr: any, action: any){
+      //UNUSED
+    }
   },
   673:{
     comment: "673: DeleteJournalWorldEntry\nDeletes a user entered world notice\n",
     name: "DeleteJournalWorldEntry",
     type: 0,
-    args: ["int"]
+    args: ["int"],
+    action: function(args: any, _instr: any, action: any){
+      //UNUSED
+    }
   },
   674:{
     comment: "674: DeleteJournalWorldEntryStrref\nDeletes the world notice pertaining to the string ref\n",
     name: "DeleteJournalWorldEntryStrref",
     type: 0,
-    args: ["int"]
+    args: ["int"],
+    action: function(args: any, _instr: any, action: any){
+      //UNUSED
+    }
   },
   675:{
     comment: "675: EffectForceDrain\nThis command will reduce the force points of a creature.\n",
