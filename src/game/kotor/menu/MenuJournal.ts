@@ -4,15 +4,33 @@
 import { GameState } from "../../../GameState";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { JournalEntry, JournalManager } from "../../../managers/JournalManager";
+import { TLKManager } from "../../../managers/TLKManager";
 
 /* @file
 * The MenuJournal menu class.
 */
 
-enum JournalSortMode {
-  BY_NAME = 0,
-  BY_RECIEVED = 1,
+enum JournalSort {
+  RECIEVED = 0,
+  NAME = 1,
+  PRIORITY = 2,
+  PLANET = 3,
 }
+
+enum JournalQuestMode {
+  ACTIVE = 0,
+  COMPLETED = 1,
+}
+
+const STRREF_TITLE = 32178;
+
+const STRREF_BY_RECIEVED  = 32173;
+const STRREF_BY_NAME      = 32174;
+const STRREF_BY_PRIORITY  = 32175;
+const STRREF_BY_PLANET    = 32176;
+
+const STRREF_MODE_ACTIVE    = 32177;
+const STRREF_MODE_COMPLETED = 32178;
 
 export class MenuJournal extends GameMenu {
 
@@ -25,7 +43,8 @@ export class MenuJournal extends GameMenu {
   BTN_EXIT: GUIButton;
 
   selected: JournalEntry;
-  mode: number = 0;
+  sort: JournalSort = JournalSort.RECIEVED;
+  mode: JournalQuestMode = JournalQuestMode.ACTIVE;
 
   constructor(){
     super();
@@ -48,6 +67,39 @@ export class MenuJournal extends GameMenu {
         this.selected = item;
         this.UpdateSelected();
       }
+
+      this.BTN_SORT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        switch(this.sort){
+          case JournalSort.RECIEVED:
+            this.sort = JournalSort.NAME;
+          break;
+          case JournalSort.NAME:
+            this.sort = JournalSort.PRIORITY;
+          break;
+          case JournalSort.PRIORITY:
+            this.sort = JournalSort.PLANET;
+          break;
+          case JournalSort.PLANET:
+            this.sort = JournalSort.RECIEVED;
+          break;
+        }
+        this.UpdateLabels();
+      });
+
+      this.BTN_SWAPTEXT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        switch(this.mode){
+          case JournalQuestMode.ACTIVE:
+            this.mode = JournalQuestMode.COMPLETED;
+          break;
+          case JournalQuestMode.COMPLETED:
+            this.mode = JournalQuestMode.ACTIVE;
+          break;
+        }
+        this.UpdateLabels();
+      });
+
       resolve();
     });
   }
@@ -56,6 +108,50 @@ export class MenuJournal extends GameMenu {
     this.LBL_ITEM_DESCRIPTION.clearItems();
     if(this.selected)
       this.LBL_ITEM_DESCRIPTION.addItem(this.selected.getEntryText());
+  }
+
+  GetQuestModeBTNLabel(): string {
+    switch(this.mode){
+      case JournalQuestMode.ACTIVE:
+        return TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value;
+      case JournalQuestMode.COMPLETED:
+        return TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value;
+    }
+  }
+
+  GetSortModeBTNLabel(): string {
+    switch(this.sort){
+      case JournalSort.RECIEVED:
+        return TLKManager.GetStringById(STRREF_BY_NAME).Value;
+      case JournalSort.NAME:
+        return TLKManager.GetStringById(STRREF_BY_PRIORITY).Value;
+      case JournalSort.PRIORITY:
+        return TLKManager.GetStringById(STRREF_BY_PLANET).Value;
+      case JournalSort.PLANET:
+        return TLKManager.GetStringById(STRREF_BY_RECIEVED).Value;
+      break;
+    }
+  }
+
+  GetMenuTitle(): string {
+    let questModeLabel = (
+      this.mode == JournalQuestMode.ACTIVE ? TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value :
+      this.mode == JournalQuestMode.COMPLETED ? TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value : ''
+    );
+    let sortModeLabel = (
+      this.sort == JournalSort.RECIEVED ? TLKManager.GetStringById(STRREF_BY_RECIEVED).Value :
+      this.sort == JournalSort.NAME ? TLKManager.GetStringById(STRREF_BY_NAME).Value :
+      this.sort == JournalSort.PRIORITY ? TLKManager.GetStringById(STRREF_BY_PRIORITY).Value :
+      this.sort == JournalSort.PLANET ? TLKManager.GetStringById(STRREF_BY_PLANET).Value : ''
+    );
+
+    return `${questModeLabel} - ${sortModeLabel}`;
+  }
+
+  UpdateLabels(){
+    this.BTN_SORT.setText(this.GetSortModeBTNLabel());
+    this.BTN_SWAPTEXT.setText(this.GetQuestModeBTNLabel());
+    this.LBL_TITLE.setText(this.GetMenuTitle());
   }
 
   Show() {
@@ -68,6 +164,8 @@ export class MenuJournal extends GameMenu {
     for(let i = 0; i < entries.length; i++){
       this.LB_ITEMS.addItem(entries[i]);
     }
+
+    this.UpdateLabels();
 
     GameState.MenuActive = true;
   }
