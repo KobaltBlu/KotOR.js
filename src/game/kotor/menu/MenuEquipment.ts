@@ -226,7 +226,7 @@ export class MenuEquipment extends GameMenu {
   UpdateList() {
     if (!this.equipmentSelectionActive) {
       this.BTN_EQUIP.hide();
-      this.BTN_BACK.setText(TLKManager.GetStringById(1582));
+      this.BTN_BACK.setText(TLKManager.GetStringById(1582).Value);
       this.LB_DESC.hide();
       this.BTN_INV_IMPLANT.show();
       this.BTN_INV_HEAD.show();
@@ -253,8 +253,8 @@ export class MenuEquipment extends GameMenu {
       this.LBL_SELECTTITLE.setText('');
     } else {
       this.BTN_EQUIP.show();
-      this.BTN_EQUIP.setText(TLKManager.GetStringById(31387));
-      this.BTN_BACK.setText(TLKManager.GetStringById(1581));
+      this.BTN_EQUIP.setText(TLKManager.GetStringById(31387).Value);
+      this.BTN_BACK.setText(TLKManager.GetStringById(1581).Value);
       this.LB_DESC.show();
       this.BTN_INV_IMPLANT.hide();
       this.BTN_INV_HEAD.hide();
@@ -667,7 +667,7 @@ class GUIItemNone {
 
   getName(){
     //None String
-    return TLKManager.TLKStrings[363].Value;
+    return TLKManager.GetStringById(363).Value;
   }
 
 }
