@@ -11,7 +11,7 @@ export class ActionResumeDialog extends Action {
     this.type = ActionType.ActionResumeDialog;
   }
 
-  update(){
+  update(delta: number = 0): ActionStatus {
     MenuManager.InGameDialog.ResumeConversation();
     console.log('ActionResumeDialog', this.owner.getName(), this.owner.getTag());
     return ActionStatus.COMPLETE;

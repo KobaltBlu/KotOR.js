@@ -19,7 +19,7 @@ export class ActionLockObject extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if(!(this.target instanceof ModuleDoor) && !(this.target instanceof ModulePlaceable))
       return ActionStatus.FAILED;
 

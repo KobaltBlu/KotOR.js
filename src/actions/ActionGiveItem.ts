@@ -13,7 +13,7 @@ export class ActionGiveItem extends Action {
     this.type = ActionType.ActionGiveItem;
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
 
     if(!(this.item instanceof ModuleItem))
       return ActionStatus.FAILED;

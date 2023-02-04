@@ -14,7 +14,7 @@ export class ActionDoCommand extends Action {
 
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     let script = this.getParameter(0);
     if(script instanceof NWScriptInstance){
       script.setCaller(this.owner);

@@ -15,7 +15,7 @@ export class ActionPhysicalAttacks extends Action {
     this.type = ActionType.ActionPhysicalAttacks;
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     
     this.target = this.getParameter(1);
 

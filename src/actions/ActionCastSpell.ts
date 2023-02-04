@@ -31,7 +31,7 @@ export class ActionCastSpell extends Action {
 
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     //console.log('ActionCastSpell', this);
     this.target = this.getParameter(5);
     this.spell = new TalentSpell( this.getParameter(0) );

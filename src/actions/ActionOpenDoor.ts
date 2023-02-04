@@ -20,7 +20,7 @@ export class ActionOpenDoor extends Action {
 
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
 
     this.target = this.getParameter(0);
 

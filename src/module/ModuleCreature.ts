@@ -312,7 +312,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatAction = undefined;
     this.combatData.combatState = false;
     this.combatData.combatQueue = [];
-    this.combatData.lastAttackAction = -1;
+    this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.collisionData.blockingTimer = 0;
 
     this.fp_push_played = false;

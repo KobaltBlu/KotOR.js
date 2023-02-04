@@ -20,7 +20,7 @@ export class ActionPlayAnimation extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if(this.overlayAnimation)
       return ActionStatus.FAILED;
 

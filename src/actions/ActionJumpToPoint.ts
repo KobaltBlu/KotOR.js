@@ -32,7 +32,7 @@ export class ActionJumpToPoint extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     this.target = this.getParameter(3);
 
     //if(!(this.target instanceof ModuleObject))

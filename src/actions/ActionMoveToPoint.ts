@@ -37,7 +37,7 @@ export class ActionMoveToPoint extends Action {
 
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if(!(this.owner instanceof ModuleCreature))
       return ActionStatus.FAILED;
 

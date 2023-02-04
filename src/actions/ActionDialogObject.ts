@@ -28,7 +28,7 @@ export class ActionDialogObject extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     //console.log('ActionDialogObject', this);
 
     this.target = this.getParameter(0);

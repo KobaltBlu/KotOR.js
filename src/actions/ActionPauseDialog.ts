@@ -11,7 +11,7 @@ export class ActionPauseDialog extends Action {
     this.type = ActionType.ActionPauseDialog;
   }
 
-  update(){
+  update(delta: number = 0): ActionStatus {
     MenuManager.InGameDialog.PauseConversation();
     return ActionStatus.COMPLETE;
   }

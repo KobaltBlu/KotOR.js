@@ -15,7 +15,7 @@ export class ActionSetCommandable extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if(this.owner instanceof ModuleObject){
       this.owner.setCommandable( this.getParameter(0) ? true : false );
       return ActionStatus.COMPLETE;

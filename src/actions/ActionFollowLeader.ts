@@ -21,7 +21,7 @@ export class ActionFollowLeader extends Action {
 
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if(this.owner instanceof ModuleCreature){
       if(GameState.inDialog){
         this.owner.animState = ModuleCreatureAnimState.IDLE;

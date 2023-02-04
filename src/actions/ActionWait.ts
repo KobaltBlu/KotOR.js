@@ -13,7 +13,7 @@ export class ActionWait extends Action {
     
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     if( this.setParameter(0, 1, this.getParameter(0) - delta) <= 0 ){
       return ActionStatus.COMPLETE;
     }

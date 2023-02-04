@@ -1,6 +1,8 @@
 
 
 export enum ActionType {
+  ActionInvalid = -1,
+  
   ActionMoveToPoint = 0x01,
   ActionCheckMoveToObject = 0x02,
   ActionCheckMoveAwayFromObject = 0x03,

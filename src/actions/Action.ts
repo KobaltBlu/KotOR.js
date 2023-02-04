@@ -34,7 +34,7 @@ export class Action {
     this.openSpot = undefined;
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0): ActionStatus {
     return ActionStatus.FAILED;
   }
 
