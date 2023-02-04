@@ -461,7 +461,7 @@ export class NWScript {
         }
   
         if(typeof action.action === 'function'){
-          const actionValue = await action.action.call(this, args, scope.instr, action);
+          const actionValue = await action.action.call(this, args);
           if(action.type != NWScriptDataType.VOID){
             this.stack.push( actionValue, action.type );
           }

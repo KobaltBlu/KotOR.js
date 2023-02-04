@@ -5398,7 +5398,7 @@ NWScriptDefK2.Actions = {
     name: 'GetScriptParameter',
     type: NWScriptDataType.INTEGER,
     args: [ 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return parseInt(this.params[args[0] - 1]);
     }
   },
@@ -5407,7 +5407,7 @@ NWScriptDefK2.Actions = {
     name: 'SetFadeUntilScript',
     type: NWScriptDataType.VOID,
     args: [],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       FadeOverlayManager.holdForScript = true;
       //console.log('SetFadeUntilScript', FadeOverlayManager.holdForScript);
     }	
@@ -5501,7 +5501,7 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_GetSwoopUpgrade',
     type: NWScriptDataType.INTEGER,
     args: [ 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return 0;
     }	
   },
@@ -5622,7 +5622,7 @@ NWScriptDefK2.Actions = {
     name: 'IncrementGlobalNumber',
     type: NWScriptDataType.VOID,
     args: [ 'string', 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       
       if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
       GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1]);
@@ -5633,7 +5633,7 @@ NWScriptDefK2.Actions = {
     name: 'DecrementGlobalNumber',
     type: NWScriptDataType.VOID,
     args: [ 'string', 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
       GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1]);
     }	
@@ -5713,7 +5713,7 @@ NWScriptDefK2.Actions = {
     name: 'IsMeditating',
     type: NWScriptDataType.INTEGER,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return 0;
     }	
   },
@@ -5729,7 +5729,7 @@ NWScriptDefK2.Actions = {
     name: 'SetHealTarget',
     type: NWScriptDataType.VOID,
     args: [ 'object', 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleObject){
         args[0]._healTarget = args[1];
       }
@@ -5740,7 +5740,7 @@ NWScriptDefK2.Actions = {
     name: 'GetHealTarget',
     type: NWScriptDataType.OBJECT,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return args[0]._healTarget;
     }	
   },
@@ -5812,7 +5812,7 @@ NWScriptDefK2.Actions = {
     name: 'IsRunning',
     type: NWScriptDataType.INTEGER,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleCreature){
         return args[0].animState == ModuleCreatureAnimState.RUNNING;
       }
@@ -5866,7 +5866,7 @@ NWScriptDefK2.Actions = {
     name: 'GetScriptStringParameter',
     type: NWScriptDataType.STRING,
     args: [],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return this.paramString;
     }	
   },
@@ -5875,7 +5875,7 @@ NWScriptDefK2.Actions = {
     name: 'GetObjectPersonalSpace',
     type: NWScriptDataType.FLOAT,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleCreature){
         return args[0].getPersonalSpace()
       }else{
@@ -5965,7 +5965,7 @@ NWScriptDefK2.Actions = {
     name: 'GetIsPartyLeader',
     type: NWScriptDataType.INTEGER,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleCreature){
         if(args[0] == PartyManager.party[0]){
           return 1;
@@ -5982,7 +5982,7 @@ NWScriptDefK2.Actions = {
     name: 'GetPartyLeader',
     type: NWScriptDataType.OBJECT,
     args: [],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return PartyManager.party[0];
     }	
   },
@@ -5991,7 +5991,7 @@ NWScriptDefK2.Actions = {
     name: 'RemoveNPCFromPartyToBase',
     type: NWScriptDataType.INTEGER,
     args: [ 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       PartyManager.RemoveNPCById(args[0], true);
       return 1;
     }	
@@ -6001,7 +6001,7 @@ NWScriptDefK2.Actions = {
     name: 'CreatureFlourishWeapon',
     type: NWScriptDataType.VOID,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleCreature){
         args[0].flourish();
       }
@@ -6033,7 +6033,7 @@ NWScriptDefK2.Actions = {
     name: 'GetIsXBox',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return 0;
     }	
   },
@@ -6056,7 +6056,7 @@ NWScriptDefK2.Actions = {
     name: 'PlayOverlayAnimation',
     type: NWScriptDataType.VOID,
     args: [ 'object', 'int' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleCreature){
         args[0].playOverlayAnimation(args[1]);
       }
@@ -6144,7 +6144,7 @@ NWScriptDefK2.Actions = {
     name: 'RemoveHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       if(args[0] instanceof ModuleObject){
         args[0].scripts.onHeartbeat = '';
       }
@@ -6211,7 +6211,7 @@ NWScriptDefK2.Actions = {
     name: 'GetIsPlayerMadeCharacter',
     type: NWScriptDataType.INTEGER,
     args: [ 'object' ],
-    action: function(args: any, _instr: any, action: any){
+    action: function(args: any){
       return  GameState.player == args[0] ? 1 : 0;
     }
   },
