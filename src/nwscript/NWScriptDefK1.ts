@@ -7588,7 +7588,10 @@ NWScriptDefK1.Actions = {
     comment: "734. SaveNPCState\nTells the party table to save the state of a party member NPC\n",
     name: "SaveNPCState",
     type: 0,
-    args: ["int"]
+    args: ["int"],
+    action: function(args: any){
+      PartyManager.SavePartyMember(args[0]);
+    }
   },
   735:{
     comment: "735: Get the Category of tTalent.\n",

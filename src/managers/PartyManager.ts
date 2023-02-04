@@ -19,6 +19,18 @@ import { OdysseyModel3D } from "../three/odyssey";
  * The PartyManager class.
  */
 
+export interface PartyNPC {
+  available: boolean;
+  canSelect: boolean;
+  spawned: boolean;
+  template?: GFFObject;
+  moduleObject?: ModuleCreature;
+}
+
+export interface PartyNPCList {
+  [key: string]: PartyNPC;
+}
+
 export class PartyManager {
 
   static party: ModuleCreature[] = [];
@@ -26,65 +38,65 @@ export class PartyManager {
   static Player: GFFObject;
   static PortraitOrder: any[] = [];
   static MaxSize = 2;
-  static NPCS: any = {
+  static NPCS: PartyNPCList = {
     0: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     1: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     2: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     3: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     4: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     5: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     6: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     7: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     8: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     9: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     10: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     },
     11: {
-      available: 0,
-      canSelect: 0,
+      available: false,
+      canSelect: false,
       spawned: false
     }
   }
@@ -240,6 +252,7 @@ export class PartyManager {
       PartyManager.NPCS[slot].available = true;
       //PartyManager.NPCS[nID].canSelect = true;
       PartyManager.NPCS[slot].template = creature.template;
+      PartyManager.NPCS[slot].moduleObject = creature;
       //Add the creature to the party array
       PartyManager.party.push(creature);
       //Check to see if the creature needs to be removed from the creatures array
@@ -600,6 +613,17 @@ export class PartyManager {
       }
       resolve();
     });
+  }
+
+  public static async SavePartyMember(index: number = 0){
+    const pm = PartyManager.party.find( (pm) => pm.partyID == index );
+    if(pm) pm.save();
+    const npc = PartyManager.NPCS[index];
+    if(npc){
+      if(npc.template instanceof GFFObject){
+        await PartyManager.ExportPartyMemberTemplate(index, npc.template);
+      }
+    }
   }
 
   public static GetNPCResRefById(nId: number){

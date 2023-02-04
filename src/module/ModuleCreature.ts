@@ -4620,6 +4620,10 @@ export class ModuleCreature extends ModuleObject {
 
     this.template = gff;
 
+    if(this.partyID >= 0){
+      PartyManager.NPCS[this.partyID].template = this.template;
+    }
+
     return gff;
 
   }
