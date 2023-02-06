@@ -153,7 +153,7 @@ export class TPCObject {
           // 8bpp grayscale
         break;
         case ENCODING.RGB:
-    			dds.format = THREE.RGBFormat;
+    			dds.format = THREE.RGBAFormat
         break;
         case ENCODING.RGBA:
           dds.format = THREE.RGBAFormat;
@@ -202,7 +202,20 @@ export class TPCObject {
 
   			if ( !this.header.compressed ) {
   				dataLength = width * height * this.header.minDataSize;
-          byteArray = Buffer.from( this.file.buffer, dataOffset, dataLength );
+          const rawBuffer = Buffer.from( this.file.buffer, dataOffset, dataLength );
+          if(this.header.encoding == ENCODING.RGB){
+            byteArray = Buffer.alloc( (rawBuffer.length/3) * 4 );
+            let n = 4 * width * height;
+            let s = 0, d = 0;
+            while (d < n) {
+              byteArray[d++] = rawBuffer[s++];
+              byteArray[d++] = rawBuffer[s++];
+              byteArray[d++] = rawBuffer[s++];
+              byteArray[d++] = 255;
+            }
+          }else{
+            byteArray = rawBuffer;
+          }
   			} else {
           if(this.header.encoding == ENCODING.RGB){
             dataLength = Math.max(this.header.minDataSize, width * height * 0.5);
