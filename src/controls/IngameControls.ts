@@ -278,6 +278,7 @@ export class IngameControls {
                 //GameState.guiAudioEmitter.PlaySound('gui_click');
                 if(GameState.debug.controls)
                   console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
+                Mouse.leftClick = false;
               }catch(e){
 
               }
@@ -304,6 +305,7 @@ export class IngameControls {
                   GameState.guiAudioEmitter.PlaySound('gui_click');
                   if(GameState.debug.controls)
                     console.log('MouseClick', control, control.name);
+                  Mouse.leftClick = false;
                 }catch(e){
 
                 }
@@ -367,7 +369,7 @@ export class IngameControls {
     });
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
-      if(e.deltaY > 0){
+      if(e.deltaY < 0){
         if(GameState.hoveredGUIElement instanceof GUIListBox){
           GameState.hoveredGUIElement.scrollUp();
         }else if(GameState.hoveredGUIElement instanceof GUIScrollBar){
@@ -517,21 +519,21 @@ export class IngameControls {
                 console.log('Tried to press 1');
               try{ MenuManager.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['2'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['3'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['4'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['5'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['6'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['7'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['8'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }else if(this.keys['9'].pressed){
-              try{ MenuManager.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){}
+              try{ MenuManager.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
             }
           }else{
             if(this.keys['space'].pressed || this.gamePad.button_a.pressed){
