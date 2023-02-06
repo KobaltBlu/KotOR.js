@@ -104,17 +104,11 @@ export class MenuInventory extends GameMenu {
       if (!i) {
         if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
           this.LBL_PORT.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            this.LBL_PORT.setFillTexture(texture);
-          });
         }
       } else {
         btn_change.show();
         if (btn_change.getFillTextureName() != portrait.baseresref) {
           btn_change.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            btn_change.setFillTexture(texture);
-          });
         }
       }
     }

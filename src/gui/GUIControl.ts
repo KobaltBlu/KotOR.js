@@ -1172,6 +1172,31 @@ export class GUIControl {
     return this.highlight.fill.mesh;
   }
 
+  setHighlightFillTexture(map: THREE.Texture){
+    if(!(map instanceof THREE.Texture)){
+      map = TextureLoader.textures.get('fx_static');
+    }
+
+    this.highlight.fill.material.uniforms.map.value = map;
+    (this.highlight.fill as any).material.map = map;
+
+    if(map instanceof THREE.Texture){
+      this.highlight.fill.material.visible = true;
+      this.highlight.fill.material.uniforms.opacity.value = 1;
+      this.highlight.fill.material.uniforms.uvTransform.value = this.highlight.fill.material.uniforms.map.value.matrix;
+      this.highlight.fill.material.uniforms.map.value.updateMatrix();
+      this.highlight.fill.material.defines.USE_UV = '';
+      this.highlight.fill.material.defines.USE_MAP = '';
+    }else{
+      this.highlight.fill.material.visible = false;
+    }
+
+    this.highlight.fill.material.needsUpdate = true;
+    this.highlight.fill.material.uniformsNeedUpdate = true;
+    this.highlight.fill.material.visible = (map instanceof THREE.Texture);
+    this.highlightFillEnabled = true;
+  }
+
   setFillColor(r = 1, g = 1, b = 1){
     //0.0, 0.658824, 0.980392
     if(typeof this.getFill() != 'undefined'){
@@ -1213,9 +1238,17 @@ export class GUIControl {
     return this.border.fill.texture;
   }
 
-  setFillTextureName(name = ''){
-    this.border.fill.texture = name;
-    this.borderFillEnabled = true;
+  setFillTextureName(name = ''): Promise<OdysseyTexture> {
+    return new Promise<OdysseyTexture>( (resolve, reject) => {
+      this.border.fill.texture = name;
+      this.borderFillEnabled = true;
+      if(name.length){
+        TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          this.setFillTexture(texture)
+          resolve(texture);
+        });
+      }
+    });
   }
 
   setMaterialTexture(material: THREE.ShaderMaterial, texture: THREE.Texture|null){
@@ -1395,7 +1428,9 @@ export class GUIControl {
       }else{
         this.menu.SetWidgetHoverActive(control, false);
       }
-      controls = controls.concat( control.getActiveControls() );
+      if(control.box && control.box.containsPoint(Mouse.positionUI)){
+        controls = controls.concat( control.getActiveControls() );
+      }
     }
     
     return controls;

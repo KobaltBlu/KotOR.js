@@ -5,13 +5,19 @@ import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
-import { ModuleCreature, ModuleObject, ModulePlaceable } from "../../../module";
+import { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
 import { GFFStruct } from "../../../resource/GFFStruct";
+import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
 import * as THREE from "three";
+import { TLKManager } from "../../../KotOR";
 
 /* @file
 * The MenuContainer menu class.
 */
+
+const STR_SWITCH_TO = 47884;
+const STR_GET_ITEMS = 38542;
+const STR_GIVE_ITEMS = 38543;
 
 export class MenuContainer extends GameMenu {
 
@@ -21,6 +27,7 @@ export class MenuContainer extends GameMenu {
   BTN_GIVEITEMS: GUIButton;
   BTN_CANCEL: GUIButton;
   container: ModuleObject;
+  mode: MenuContainerMode = MenuContainerMode.TAKE_ITEMS;
 
   constructor(){
     super();
@@ -33,6 +40,57 @@ export class MenuContainer extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.LB_ITEMS.clearItems();
+        if(this.container instanceof ModulePlaceable){
+          this.container.close(GameState.player);
+        }
+        this.Close();
+      });
+      this._button_b = this.BTN_CANCEL;
+
+      this.BTN_OK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(this.mode == MenuContainerMode.TAKE_ITEMS){
+          this.LB_ITEMS.clearItems();
+          if(this.container instanceof ModulePlaceable){
+            this.container.retrieveInventory();
+            this.container.close(GameState.player);
+          }else if(this.container instanceof ModuleCreature){
+            this.container.retrieveInventory();
+            //this.container.close(Game.player);
+          }
+          this.Close();
+        }else{
+
+        }
+      });
+      this._button_a = this.BTN_OK;
+
+      this.BTN_GIVEITEMS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+
+        switch(this.mode){
+          case MenuContainerMode.TAKE_ITEMS:
+            this.setMode(MenuContainerMode.GIVE_ITEMS);
+          break;
+          case MenuContainerMode.GIVE_ITEMS:
+            this.setMode(MenuContainerMode.TAKE_ITEMS);
+          break;
+        }
+      });
+      this._button_x = this.BTN_GIVEITEMS;
+
+      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+        if(this.mode == MenuContainerMode.TAKE_ITEMS){
+
+        }else{
+          
+        }
+      }
+
       resolve();
     });
   }
@@ -43,6 +101,7 @@ export class MenuContainer extends GameMenu {
       try {
         this.container.close(GameState.getCurrentPlayer());
       } catch (e: any) {
+
       }
     }
   }
@@ -57,6 +116,30 @@ export class MenuContainer extends GameMenu {
 
   Show() {
     super.Show();
+    this.setMode(MenuContainerMode.TAKE_ITEMS);
+  }
+
+  setMode(mode: MenuContainerMode){
+    this.mode = mode;
+
+    switch(this.mode){
+      case MenuContainerMode.TAKE_ITEMS:
+        this.BTN_OK.setText(TLKManager.GetStringById(STR_GET_ITEMS).Value);
+        this.BTN_GIVEITEMS.setText(
+          TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
+          TLKManager.GetStringById(STR_GIVE_ITEMS).Value
+        )
+      break;
+      case MenuContainerMode.GIVE_ITEMS:
+        this.BTN_OK.setText(TLKManager.GetStringById(STR_GIVE_ITEMS).Value);
+        this.BTN_GIVEITEMS.setText(
+          TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
+          TLKManager.GetStringById(STR_GET_ITEMS).Value
+        )
+      break;
+    }
+
+    //Update list items
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     if (this.container instanceof ModuleCreature || this.container instanceof ModulePlaceable) {
@@ -67,6 +150,7 @@ export class MenuContainer extends GameMenu {
       }
       TextureLoader.LoadQueue();
     }
+
   }
   
 }

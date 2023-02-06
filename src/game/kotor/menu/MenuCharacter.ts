@@ -349,9 +349,6 @@ export class MenuCharacter extends GameMenu {
         btn_change.show();
         if (btn_change.getFillTextureName() != portrait.baseresref) {
           btn_change.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            btn_change.setFillTexture(texture);
-          });
         }
       }
     }

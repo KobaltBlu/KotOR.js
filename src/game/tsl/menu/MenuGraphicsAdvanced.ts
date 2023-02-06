@@ -117,7 +117,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     const _2darow = texPacks.rows[quality];
     if (_2darow) {
-      this.BTN_TEXQUAL.setText(TLKManager.GetStringById(_2darow.strrefname));
+      this.BTN_TEXQUAL.setText(TLKManager.GetStringById(_2darow.strrefname).Value);
     }
     if (quality <= 0) {
       this.BTN_TEXQUALLEFT.hide();

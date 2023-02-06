@@ -1,6 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import * as THREE from "three";
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
@@ -29,6 +30,7 @@ export class MenuMap extends GameMenu {
 
   onTransitScript: NWScriptInstance;
   transitScript: string;
+  texture: THREE.Texture;
 
   constructor(){
     super();
@@ -74,10 +76,17 @@ export class MenuMap extends GameMenu {
   }
 
   SetMapTexture(sTexture = '') {
-    this.LBL_Map.setFillTextureName(sTexture);
-    TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
-      this.LBL_Map.setFillTexture(texture);
+    this.LBL_Map.setFillTextureName(sTexture).then( (texture: OdysseyTexture) => {
+      this.texture = texture;
     });
+  }
+
+  Update(delta: number = 0): void {
+    if(this.texture instanceof THREE.Texture){
+      this.texture.offset.set(0, 0);
+      this.texture.repeat.set(1, 1);
+      this.texture.updateMatrix();
+    }
   }
 
   Show() {
@@ -86,6 +95,12 @@ export class MenuMap extends GameMenu {
     GameState.MenuActive = true;
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
+
+    if(this.texture instanceof THREE.Texture){
+      this.texture.offset.set(0, 0);
+      this.texture.repeat.set(1, 1);
+      this.texture.updateMatrix();
+    }
   }
 
   triggerControllerBumperLPress() {

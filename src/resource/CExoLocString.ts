@@ -37,7 +37,7 @@ export class CExoLocString {
   }
 
   GetTLKValue() {
-    return TLKManager.GetStringById(this.RESREF);
+    return TLKManager.GetStringById(this.RESREF).Value;
   }
 
   GetRESREF() {

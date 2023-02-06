@@ -304,143 +304,90 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  UpdateSlotIcons() {
+  UpdateSlotIcons(force: boolean = false) {
     let currentPC = PartyManager.party[0];
     if (currentPC.getRace() == 6) {
       let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
       if (implant) {
         let icon = 'i' + implant.getBaseItem().itemclass + '_' + ('000' + implant.getModelVariation()).slice(-3);
-        if (this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
           this.LBL_INV_IMPLANT.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_IMPLANT.setFillTexture(texture);
-          });
+
         }
-      } else if (this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
+      } else if (force || this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
         this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
-        TextureLoader.tpcLoader.fetch('iimplant', (texture: OdysseyTexture) => {
-          this.LBL_INV_IMPLANT.setFillTexture(texture);
-        });
       }
       let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
       if (head) {
         let icon = 'i' + head.getBaseItem().itemclass + '_' + ('000' + head.getModelVariation()).slice(-3);
-        if (this.LBL_INV_HEAD.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_HEAD.getFillTextureName() != icon) {
           this.LBL_INV_HEAD.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_HEAD.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_HEAD.getFillTextureName() != 'ihead') {
+      } else if (force || this.LBL_INV_HEAD.getFillTextureName() != 'ihead') {
         this.LBL_INV_HEAD.setFillTextureName('ihead');
-        TextureLoader.tpcLoader.fetch('ihead', (texture: OdysseyTexture) => {
-          this.LBL_INV_HEAD.setFillTexture(texture);
-        });
       }
       let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
       if (hands) {
         let icon = 'i' + hands.getBaseItem().itemclass + '_' + ('000' + hands.getModelVariation()).slice(-3);
-        if (this.LBL_INV_HANDS.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_HANDS.getFillTextureName() != icon) {
           this.LBL_INV_HANDS.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_HANDS.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_HANDS.getFillTextureName() != 'ihands') {
+      } else if (force || this.LBL_INV_HANDS.getFillTextureName() != 'ihands') {
         this.LBL_INV_HANDS.setFillTextureName('ihands');
-        TextureLoader.tpcLoader.fetch('ihands', (texture: OdysseyTexture) => {
-          this.LBL_INV_HANDS.setFillTexture(texture);
-        });
       }
       let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
       if (l_arm) {
         let icon = 'i' + l_arm.getBaseItem().itemclass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
-        if (this.LBL_INV_ARM_L.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_ARM_L.getFillTextureName() != icon) {
           this.LBL_INV_ARM_L.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_ARM_L.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l') {
+      } else if (force || this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l') {
         this.LBL_INV_ARM_L.setFillTextureName('iforearm_l');
-        TextureLoader.tpcLoader.fetch('iforearm_l', (texture: OdysseyTexture) => {
-          this.LBL_INV_ARM_L.setFillTexture(texture);
-        });
       }
       let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
       if (armor) {
         let icon = 'i' + armor.getBaseItem().itemclass + '_' + ('000' + armor.getModelVariation()).slice(-3);
-        if (this.LBL_INV_BODY.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_BODY.getFillTextureName() != icon) {
           this.LBL_INV_BODY.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_BODY.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_BODY.getFillTextureName() != 'iarmor') {
+      } else if (force || this.LBL_INV_BODY.getFillTextureName() != 'iarmor') {
         this.LBL_INV_BODY.setFillTextureName('iarmor');
-        TextureLoader.tpcLoader.fetch('iarmor', (texture: OdysseyTexture) => {
-          this.LBL_INV_BODY.setFillTexture(texture);
-        });
       }
       let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
       if (r_arm) {
         let icon = 'i' + r_arm.getBaseItem().itemclass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
-        if (this.LBL_INV_ARM_R.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_ARM_R.getFillTextureName() != icon) {
           this.LBL_INV_ARM_R.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_ARM_R.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r') {
+      } else if (force || this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r') {
         this.LBL_INV_ARM_R.setFillTextureName('iforearm_r');
-        TextureLoader.tpcLoader.fetch('iforearm_r', (texture: OdysseyTexture) => {
-          this.LBL_INV_ARM_R.setFillTexture(texture);
-        });
       }
       let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
       if (l_weap) {
         let icon = 'i' + l_weap.getBaseItem().itemclass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
-        if (this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_WEAP_L.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l') {
+      } else if (force || this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l') {
         this.LBL_INV_WEAP_L.setFillTextureName('iweap_l');
-        TextureLoader.tpcLoader.fetch('iweap_l', (texture: OdysseyTexture) => {
-          this.LBL_INV_WEAP_L.setFillTexture(texture);
-        });
       }
       let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
       if (belt) {
         let icon = 'i' + belt.getBaseItem().itemclass + '_' + ('000' + belt.getModelVariation()).slice(-3);
-        if (this.LBL_INV_BELT.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_BELT.getFillTextureName() != icon) {
           this.LBL_INV_BELT.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_BELT.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_BELT.getFillTextureName() != 'ibelt') {
+      } else if (force || this.LBL_INV_BELT.getFillTextureName() != 'ibelt') {
         this.LBL_INV_BELT.setFillTextureName('ibelt');
-        TextureLoader.tpcLoader.fetch('ibelt', (texture: OdysseyTexture) => {
-          this.LBL_INV_BELT.setFillTexture(texture);
-        });
       }
       let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
       if (r_weap) {
         let icon = 'i' + r_weap.getBaseItem().itemclass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
-        if (this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
+        if (force || this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R.setFillTextureName(icon);
-          TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-            this.LBL_INV_WEAP_R.setFillTexture(texture);
-          });
         }
-      } else if (this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r') {
+      } else if (force || this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r') {
         this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
-        TextureLoader.tpcLoader.fetch('iweap_r', (texture: OdysseyTexture) => {
-          this.LBL_INV_WEAP_R.setFillTexture(texture);
-        });
       }
     } else {
     }
@@ -455,7 +402,7 @@ export class MenuEquipment extends GameMenu {
     this.UpdateList();
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
-    this.UpdateSlotIcons();
+    this.UpdateSlotIcons(true);
     let currentPC = PartyManager.party[0];
     if (currentPC) {
       this.LBL_VITALITY.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
@@ -470,17 +417,17 @@ export class MenuEquipment extends GameMenu {
       if (!i) {
         if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
           this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            this.LBL_PORTRAIT.setFillTexture(texture);
-          });
+          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+          //   this.LBL_PORTRAIT.setFillTexture(texture);
+          // });
         }
       } else {
         btn_change.show();
         if (btn_change.getFillTextureName() != portrait.baseresref) {
           btn_change.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            btn_change.setFillTexture(texture);
-          });
+          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+          //   btn_change.setFillTexture(texture);
+          // });
         }
       }
     }

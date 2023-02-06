@@ -2871,7 +2871,7 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: ["int"],
     action: function(args: any){
-      return TLKManager.GetStringById( args[0] );
+      return TLKManager.GetStringById( args[0] ).Value;
     }
   },
   240:{

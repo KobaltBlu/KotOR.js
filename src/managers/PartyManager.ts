@@ -19,6 +19,11 @@ import { OdysseyModel3D } from "../three/odyssey";
  * The PartyManager class.
  */
 
+export interface CurrentMember {
+  isLeader: boolean,
+  memberID: number
+}
+
 export interface PartyNPC {
   available: boolean;
   canSelect: boolean;
@@ -102,7 +107,7 @@ export class PartyManager {
   }
 
   static Gold = 0;
-  static CurrentMembers: any = [];
+  static CurrentMembers: CurrentMember[] = [];
 
   static Init(){
 
@@ -372,17 +377,17 @@ export class PartyManager {
   }
 
   //Get the creatures reference in the CurrentMembers array
-  static GetCreatureMemberDetails( creature: ModuleObject ){
-    if(creature instanceof ModulePlayer){
-      return undefined;
-    }
+  // static GetCreatureMemberDetails( creature: ModuleObject ){
+  //   if(creature instanceof ModulePlayer){
+  //     return undefined;
+  //   }
 
-    if(creature instanceof ModuleCreature){
-      return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature) ]
-    }
+  //   if(creature instanceof ModuleCreature){
+  //     return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature.partyID) ]
+  //   }
 
-    return undefined;
-  }
+  //   return undefined;
+  // }
 
   //Load the PartyMember by it's index in the CurrentMembers array.
   static LoadPartyMember(nIdx = 0, onLoad?: Function){

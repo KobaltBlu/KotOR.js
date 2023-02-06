@@ -9,6 +9,7 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { Mouse } from "../controls";
+import { GUIControlType } from "../enums/gui/GUIControlType";
 
 /* @file
  * The GUIListBox class.
@@ -197,7 +198,8 @@ export class GUIListBox extends GUIControl {
 
       if(typeof this.GUIProtoItemClass === 'undefined'){
         switch(type){
-          case 4:
+          case GUIControlType.Label:
+          case GUIControlType.ProtoItem:
             ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
             ctrl.text.text = node;
             ctrl.isProtoItem = false;
@@ -221,7 +223,7 @@ export class GUIListBox extends GUIControl {
             //this.cullOffscreen();
 
           break;
-          case 6:
+          case GUIControlType.Button:
             try{
               ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
               ctrl.isProtoItem = false;

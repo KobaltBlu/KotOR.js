@@ -201,8 +201,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
     this.LBL_PORTRAIT.show();
     if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
-      this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-      TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: any) => {
+      this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref).then( (texture: any) => {
         this.LBL_PORTRAIT.setFillTexture(texture);
       });
     }

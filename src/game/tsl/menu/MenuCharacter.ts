@@ -174,12 +174,10 @@ export class MenuCharacter extends K1_MenuCharacter {
       let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       if (!i) {
       } else {
-        this.getControlByName('BTN_CHANGE' + i).show();
-        if (this.getControlByName('BTN_CHANGE' + i).getFillTextureName() != portrait.baseresref) {
-          this.getControlByName('BTN_CHANGE' + i).setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            this.getControlByName('BTN_CHANGE' + i).setFillTexture(texture);
-          });
+        const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
+        BTN_CHANGE.show();
+        if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
+          BTN_CHANGE.setFillTextureName(portrait.baseresref);
         }
       }
     }

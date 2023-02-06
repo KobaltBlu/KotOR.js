@@ -6,6 +6,7 @@ import { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
+import * as THREE from "three";
 
 /* @file
 * The MenuMap menu class.
@@ -48,10 +49,17 @@ export class MenuMap extends K1_MenuMap {
   }
 
   SetMapTexture(sTexture = '') {
-    this.LBL_Map.setFillTextureName(sTexture);
-    TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
-      this.LBL_Map.setFillTexture(texture);
+    this.LBL_Map.setFillTextureName(sTexture).then( (texture: OdysseyTexture) => {
+      this.texture = texture;
     });
+  }
+
+  Update(delta: number = 0): void {
+    if(this.texture instanceof THREE.Texture){
+      this.texture.offset.set(0, 0);
+      this.texture.repeat.set(1, 1);
+      this.texture.updateMatrix();
+    }
   }
 
   Show() {

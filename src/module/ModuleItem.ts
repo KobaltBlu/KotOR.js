@@ -751,9 +751,9 @@ export class ItemProperty {
     const property = this.getProperty();
     if(property){
       if(property.name != '****'){
-        return TLKManager.GetStringById(property.name);
+        return TLKManager.GetStringById(property.name).Value;
       }else{
-        return TLKManager.GetStringById(0);
+        return TLKManager.GetStringById(0).Value;
       }
     }
     return new Error(`Invalid Item Property`);
@@ -773,9 +773,9 @@ export class ItemProperty {
     const subType = this.getSubType();
     if(subType){
       if(subType.name != '****'){
-        return TLKManager.GetStringById(subType.name);
+        return TLKManager.GetStringById(subType.name).Value;
       }else{
-        return TLKManager.GetStringById(0);
+        return TLKManager.GetStringById(0).Value;
       }
     }
     return new Error(`Invalid Item Property Sub Type`);

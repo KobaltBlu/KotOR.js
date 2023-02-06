@@ -183,6 +183,30 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
+      this.BTN_NPC9.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(PartyManager.IsAvailable(9)){
+          this.selectedNPC = 9;
+          this.UpdateSelection();
+        }
+      });
+
+      this.BTN_NPC10.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(PartyManager.IsAvailable(10)){
+          this.selectedNPC = 10;
+          this.UpdateSelection();
+        }
+      });
+
+      this.BTN_NPC11.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(PartyManager.IsAvailable(11)){
+          this.selectedNPC = 11;
+          this.UpdateSelection();
+        }
+      });
+
       this.BTN_DONE.addEventListener('click', (e: any) => {
         e.stopPropagation();
 
@@ -343,7 +367,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     if (this.ignoreUnescapable) {
       // MenuManager.MenuTop.toggleNavUI(false);
     }
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       const LBL_CHAR = this.getControlByName('LBL_CHAR' + i);
       const LBL_NA = this.getControlByName('LBL_NA' + i);
       LBL_CHAR.hide();

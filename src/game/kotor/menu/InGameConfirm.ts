@@ -65,7 +65,7 @@ export class InGameConfirm extends GameMenu {
       this.LB_MESSAGE.extent.top = 0;
       let tlkId = parseInt(TwoDAManager.datatables.get('tutorial').rows[id]['message' + nth]);
       this.LB_MESSAGE.clearItems();
-      this.LB_MESSAGE.addItem(TLKManager.GetStringById(tlkId));
+      this.LB_MESSAGE.addItem(TLKManager.GetStringById(tlkId).Value);
       let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
       this.LB_MESSAGE.extent.height = messageHeight;
       this.tGuiPanel.extent.height = 87 + messageHeight;

@@ -243,7 +243,7 @@ export class GameState implements EngineContext {
   static interactableObjects: any[];
 
   static scene_cursor_holder: THREE.Group;
-  static controls: any;
+  static controls: IngameControls;
 
   //Render pass properties
   static composer: any;
@@ -1267,6 +1267,8 @@ export class GameState implements EngineContext {
         }else{
           GameState.module.tickPaused(delta);
         }
+      }else if(MenuManager.GetCurrentMenu() == MenuManager.MenuContainer){
+        GameState.module.tickPaused(delta);
       }
       
       if(GameState.inDialog){

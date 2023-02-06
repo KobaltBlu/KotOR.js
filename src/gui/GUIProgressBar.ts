@@ -218,6 +218,9 @@ export class GUIProgressBar extends GUIControl {
 
   setFillTextureName(name = ''){
     this.progress.fill.texture = name;
+    return new Promise<OdysseyTexture>( (resolve, reject) => {
+      TextureLoader.enQueue(this.progress.fill.texture, this.progress.fill.material, TextureType.TEXTURE, resolve);
+    })
   }
 
   setFillTexture(map: THREE.Texture){

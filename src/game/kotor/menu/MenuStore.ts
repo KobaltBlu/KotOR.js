@@ -82,10 +82,10 @@ export class MenuStore extends GameMenu {
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
       if (this.sellMode) {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41937));
-        this.LBL_COST.setText(TLKManager.GetStringById(41945));
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32130));
-        this.BTN_Accept.setText(TLKManager.GetStringById(32130));
+        this.BTN_Examine.setText(TLKManager.GetStringById(41937).Value);
+        this.LBL_COST.setText(TLKManager.GetStringById(41945).Value);
+        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32130).Value);
+        this.BTN_Accept.setText(TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
         let inv = InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
@@ -100,10 +100,10 @@ export class MenuStore extends GameMenu {
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
         this.LB_INVITEMS.show();
       } else {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41938));
-        this.LBL_COST.setText(TLKManager.GetStringById(41943));
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32132));
-        this.BTN_Accept.setText(TLKManager.GetStringById(32132));
+        this.BTN_Examine.setText(TLKManager.GetStringById(41938).Value);
+        this.LBL_COST.setText(TLKManager.GetStringById(41943).Value);
+        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32132).Value);
+        this.BTN_Accept.setText(TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {

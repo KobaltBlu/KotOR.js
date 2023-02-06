@@ -33,11 +33,11 @@ export class CreatureClass {
   }
 
   getName(){
-    return TLKManager.GetStringById(this.name);
+    return TLKManager.GetStringById(this.name).Value;
   }
 
   getDescription(){
-    return TLKManager.GetStringById(this.description);
+    return TLKManager.GetStringById(this.description).Value;
   }
 
   setLevel(nLevel = 0){
