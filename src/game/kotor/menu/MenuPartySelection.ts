@@ -146,9 +146,9 @@ export class MenuPartySelection extends GameMenu {
       btn.pulsing = true;
     }
     if (this.npcInParty(this.selectedNPC)) {
-      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38456));
+      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38456).Value);
     } else {
-      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38455));
+      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38455).Value);
     }
   }
 
