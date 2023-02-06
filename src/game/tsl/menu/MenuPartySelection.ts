@@ -344,29 +344,31 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       // MenuManager.MenuTop.toggleNavUI(false);
     }
     for (let i = 0; i < 10; i++) {
-      this.getControlByName('LBL_CHAR' + i).hide();
-      this.getControlByName('LBL_NA' + i).show();
+      const LBL_CHAR = this.getControlByName('LBL_CHAR' + i);
+      const LBL_NA = this.getControlByName('LBL_NA' + i);
+      LBL_CHAR.hide();
+      LBL_NA.show();
       if (PartyManager.IsAvailable(i)) {
-        this.getControlByName('LBL_NA' + i).hide();
+        LBL_NA.hide();
         let portrait = PartyManager.GetPortraitByIndex(i);
-        if (this.getControlByName('LBL_NA' + i).getFillTextureName() != portrait) {
-          this.getControlByName('LBL_CHAR' + i).setFillTextureName(portrait);
+        if (LBL_NA.getFillTextureName() != portrait) {
+          LBL_CHAR.setFillTextureName(portrait);
           TextureLoader.Load(portrait, (texture: OdysseyTexture) => {
-            this.getControlByName('LBL_CHAR' + i).setFillTexture(texture);
+            LBL_CHAR.setFillTexture(texture);
             if (this.isSelectable(i)) {
-              (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 1;
+              (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 1;
             } else {
-              (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 0.5;
+              (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 0.5;
             }
           });
         } else {
           if (this.isSelectable(i)) {
-            (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 1;
+            (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 1;
           } else {
-            (this.getControlByName('LBL_CHAR' + i).getFill().material as any).uniforms.opacity.value = 0.5;
+            (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 0.5;
           }
         }
-        this.getControlByName('LBL_CHAR' + i).show();
+        LBL_CHAR.show();
       }
     }
     TextureLoader.LoadQueue(() => { });

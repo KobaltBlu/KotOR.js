@@ -180,34 +180,34 @@ export class MenuPartySelection extends GameMenu {
     if (this.forceNPC2 > -1)
       this.addToParty(this.forceNPC2);
 
-    let lbl_party: GUIControl;
-    let lbl_na: GUIControl;
+    let LBL_CHAR: GUIControl;
+    let LBL_NA: GUIControl;
     for (let i = 0; i < 9; i++) {
-      lbl_party = this.getControlByName('lbl_party' + i);
-      lbl_na = this.getControlByName('lbl_na' + i);
-      lbl_party.hide();
-      lbl_na.show();
+      LBL_CHAR = this.getControlByName('LBL_CHAR' + i);
+      LBL_NA = this.getControlByName('LBL_NA' + i);
+      LBL_CHAR.hide();
+      LBL_NA.show();
       if (PartyManager.IsAvailable(i)) {
-        lbl_na.hide();
+        LBL_NA.hide();
         let portrait = PartyManager.GetPortraitByIndex(i);
-        if (lbl_na.getFillTextureName() != portrait) {
-          lbl_party.setFillTextureName(portrait);
+        if (LBL_NA.getFillTextureName() != portrait) {
+          LBL_CHAR.setFillTextureName(portrait);
           TextureLoader.Load(portrait, (texture: OdysseyTexture) => {
-            lbl_party.setFillTexture(texture);
+            LBL_CHAR.setFillTexture(texture);
             if (this.isSelectable(i)) {
-              (lbl_party.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
+              (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
             } else {
-              (lbl_party.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
+              (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
             }
           });
         } else {
           if (this.isSelectable(i)) {
-            (lbl_party.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
+            (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
           } else {
-            (lbl_party.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
+            (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
           }
         }
-        lbl_party.show();
+        LBL_CHAR.show();
       }
       this.UpdateSelection();
     }
