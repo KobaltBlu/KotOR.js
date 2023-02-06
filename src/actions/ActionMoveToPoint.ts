@@ -128,8 +128,8 @@ export class ActionMoveToPoint extends Action {
   calculatePath(){
     if(!(this.owner instanceof ModuleCreature)) return;
     if(this.owner.openSpot){
-      this.owner.computedPath.realtime = true;
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
+      this.owner.computedPath.realtime = true;
     }else{
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
       if(this.target instanceof ModuleCreature){

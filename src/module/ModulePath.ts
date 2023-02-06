@@ -429,23 +429,33 @@ export class ComputedPath {
   prunePathPoints(){
     if(this.points.length){
       const pruneList: number[] = [];
+      let pruneRest = false;
       for(let i = 0; i < this.points.length; i++){
         const cPoint = this.points[i];
         const nPoint = this.points[i+1];
-        if(nPoint && (cPoint != this.origin)){
-          //Check to see if we have LOS to the next point, which would make the current point useless
-          if(this.origin.hasLOS(nPoint)){
-            //Contine: prune and continue
-            pruneList.push(i);
-          }else{
-            //Exit: prune mode
-            break;
+
+        if(this.destination == cPoint) continue;
+
+        if(!pruneRest){
+          if(cPoint.hasLOS(this.destination)){
+            pruneRest = true;
+          }else if(nPoint && (cPoint != this.origin)){
+            //Check to see if we have LOS to the next point, which would make the current point useless
+            if(this.origin.hasLOS(nPoint)){
+              //Contine: prune and continue
+              pruneList.push(i);
+            }else{
+              //Exit: prune mode
+              // break;
+            }
           }
+        }else{
+          pruneList.push(i);
         }
       }
 
       if(pruneList.length){
-        console.log('ComputedPath:pruneList', pruneList.length, this);
+        // console.log('ComputedPath:pruneList', pruneList.length, this);
         while(pruneList.length){
           const index = pruneList.pop();
           this.points.splice(index, 1);
