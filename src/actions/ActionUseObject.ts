@@ -3,7 +3,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { ModuleObject } from "../module";
+import { ModuleCreature, ModuleObject } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import { ActionMoveToPoint } from "./ActionMoveToPoint";
@@ -30,7 +30,7 @@ export class ActionUseObject extends Action {
     let distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 1.5){
         
-      this.owner.openSpot = undefined;
+      (this.owner as ModuleCreature).openSpot = undefined;
       let actionMoveToTarget = new ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);

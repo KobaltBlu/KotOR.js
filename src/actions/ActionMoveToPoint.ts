@@ -8,21 +8,13 @@ import { GameState } from "../GameState";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 
 export class ActionMoveToPoint extends Action {
-  target_position: THREE.Vector3;
-  real_target_position: any;
-  range: any;
-  run: any;
-  distance: number;
-  path_realtime: boolean;
-  path_timer: number;
-  blockingTimer: number;
-  collisionTimer: number;
+
+  target_position: THREE.Vector3 = new THREE.Vector3();
+  real_target_position: THREE.Vector3 = new THREE.Vector3();
 
   constructor( groupId = 0 ){
     super(groupId);
     this.type = ActionType.ActionMoveToPoint;
-
-    this.target_position = new THREE.Vector3();
 
     //PARAMS
     // 0 - float: x
@@ -47,83 +39,75 @@ export class ActionMoveToPoint extends Action {
       this.getParameter(2),
     );
 
-    this.real_target_position = this.target_position.clone();
+    this.real_target_position.copy(this.target_position);
 
     this.target = this.getParameter(4);
     if(this.target instanceof ModuleObject){
       this.real_target_position.copy(this.target.position);
       if( this.target instanceof ModuleCreature && this.target.isDead() ){
+        if(this.owner.computedPath) this.owner.computedPath.dispose();
+        this.owner.computedPath = undefined;
         return ActionStatus.FAILED;
       }
     }
 
-    this.range = this.getParameter(6) || 0.1;
-    this.run = this.getParameter(5);
+    const range = this.getParameter(6) || 0.1;
+    const run = this.getParameter(5) ? true : false;
 
-    this.distance = Utility.Distance2D(this.owner.position, this.target_position);
-    if(this.distance > (this.path?.length > 1 ? 0.5 : this.range)){
+    if(this.owner.computedPath == undefined){
+      this.calculatePath();
+    }
+
+    const distance = Utility.Distance2D(this.owner.position, this.target_position);
+    if(distance > (this.owner.computedPath.points.length > 1 ? 0.5 : range)){
+  
+      if(this.owner.blockingTimer >= 5 || this.owner.collisionTimer >= 1){
+        this.owner.blockingTimer = 0;
+        this.owner.collisionTimer = 0;
+      }
 
       let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
-      if(this.path == undefined){
-        if(this.owner.openSpot){
-          this.path_realtime = true;
-          this.path = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
-          //this.path.unshift(this.target.position.clone());
-        }else{
-          this.path = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
-          if(this.target instanceof ModuleCreature){
-            this.path_realtime = true;
-          }
-        }
-        distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
-        this.path_timer = 20;
-      }
 
       if(this.owner.openSpot){
         distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
       }
   
-      let point = this.path[0];
-  
-      if(this.blockingTimer >= 5 || this.collisionTimer >= 1){
-        this.owner.blockingTimer = 0;
-        this.owner.collisionTimer = 0;
-      }
-  
-      if(!(point instanceof THREE.Vector3))
-        point = point.vector;
-  
-      let pointDistance = Utility.Distance2D(this.owner.position, point);
-      if(pointDistance > (this.path?.length > 1 ? 0.5 : this.range)){
-        let tangent = point.clone().sub(this.owner.position.clone());
-        let atan = Math.atan2(-tangent.y, -tangent.x);
-        this.owner.setFacing(atan + Math.PI/2, false);
-        this.owner.AxisFront.x = Math.cos(atan);
-        this.owner.AxisFront.y = Math.sin(atan);
-  
-        this.runCreatureAvoidance(delta);
-  
-        let arrivalDistance = this.range;
-        if( this.openSpot ){
-          arrivalDistance = 1.5;
-        }
+      let point = this.owner.computedPath.points[0];
+      if(point){
+        let pointDistance = Utility.Distance2D(this.owner.position, point.vector);
+        if(pointDistance > (this.owner.computedPath.points.length > 1 ? 0.5 : range)){
+          let tangent = point.vector.clone().sub(this.owner.position.clone());
+          let atan = Math.atan2(-tangent.y, -tangent.x);
+          this.owner.setFacing(atan + Math.PI/2, false);
+          this.owner.AxisFront.x = Math.cos(atan);
+          this.owner.AxisFront.y = Math.sin(atan);
+    
+          this.runCreatureAvoidance(delta);
+    
+          let arrivalDistance = range;
+          if( this.openSpot ){
+            arrivalDistance = 1.5;
+          }
 
-        this.owner.AxisFront.negate();
-        this.owner.force = Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
-        this.owner.walk = !this.run;
-        this.owner.animState = this.run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING;
+          this.owner.AxisFront.negate();
+          this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
+          this.owner.walk = !run;
+          this.owner.animState = run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING;
+        }else{
+          this.owner.computedPath.points.shift();
+        }
       }else{
-        this.path.shift();
+        // console.warn(`No more points on path`, this.owner.getTag(), this.owner.computedPath);
       }
   
-      if(this.path_timer < 0){
-        if(this.path_realtime){
-          this.path = undefined;
-          this.path_timer = 20;
+      if(this.owner.computedPath.timer < 0){
+        if(this.owner.computedPath.realtime){
+          if(this.owner.computedPath) this.owner.computedPath.dispose();
+          this.owner.computedPath = undefined;
           //console.log('Path invalidated');
         }
       }else{
-        this.path_timer -= 10*delta;
+        this.owner.computedPath.timer -= 10*delta;
       }
 
       return ActionStatus.IN_PROGRESS;
@@ -131,10 +115,33 @@ export class ActionMoveToPoint extends Action {
       this.owner.animState = ModuleCreatureAnimState.IDLE;
       this.owner.force = 0;
       this.owner.speed = 0;
+      if(this.owner.computedPath) this.owner.computedPath.dispose();
+      this.owner.computedPath = undefined;
       return ActionStatus.COMPLETE;
     }
 
+    if(this.owner.computedPath) this.owner.computedPath.dispose();
+    this.owner.computedPath = undefined;
     return ActionStatus.FAILED;
+  }
+
+  calculatePath(){
+    if(!(this.owner instanceof ModuleCreature)) return;
+    if(this.owner.openSpot){
+      this.owner.computedPath.realtime = true;
+      this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
+    }else{
+      this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
+      if(this.target instanceof ModuleCreature){
+        this.owner.computedPath.realtime = true;
+      }
+    }
+    // distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
+    this.owner.computedPath.timer = 20;
+    if(this.owner.computedPath){
+      // this.owner.computedPath.buildHelperLine();
+      // (this.owner.computedPath.line.material as THREE.LineBasicMaterial).color.copy(this.owner.helperColor);
+    }
   }
 
 }

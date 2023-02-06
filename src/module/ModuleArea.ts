@@ -159,7 +159,7 @@ export class ModuleArea extends ModuleObject {
   // scripts: { onEnter: any; onExit: any; onHeartbeat: any; onUserDefined: any; };
   fog: any;
   // _locals: any;
-  path: any;
+  path: ModulePath;
   visObject: VISObject;
   layout: LYTObject;
   walkmesh_rooms: any[];
@@ -1628,6 +1628,7 @@ export class ModuleArea extends ModuleObject {
                 }
     
                 plc.getCurrentRoom();
+                plc.computeBoundingBox();
     
                 asyncLoop.next()
               });
@@ -1820,6 +1821,7 @@ export class ModuleArea extends ModuleObject {
                 crt.getCurrentRoom();
                 crt.updateCollision(0.0000000000000000000001);
                 crt.update(0.0000000000000000000001);
+                crt.computeBoundingBox();
     
                 asyncLoop.next();
               });

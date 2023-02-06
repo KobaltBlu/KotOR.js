@@ -4,7 +4,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { ModuleObject } from "../module";
+import { ModuleCreature, ModuleObject } from "../module";
 import { TalentSpell } from "../talents";
 
 export class ActionCastSpell extends Action {
@@ -39,7 +39,7 @@ export class ActionCastSpell extends Action {
     if(this.spell instanceof TalentSpell){
       if(!this.spell.inRange(this.target, this.owner)){
 
-        this.owner.openSpot = undefined;
+        (this.owner as ModuleCreature).openSpot = undefined;
         let actionMoveToTarget = new ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);

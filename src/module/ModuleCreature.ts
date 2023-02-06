@@ -62,7 +62,6 @@ export class ModuleCreature extends ModuleObject {
   classes: any[];
   comment: string;
   con: number;
-  conversation: string;
   currentForce: number;
   currentHitPoints: number;
   deity: string;

@@ -13,7 +13,7 @@ export class Action {
   static NEXT_GROUP_ID = 0;
   type: number;
   groupId: number;
-  owner: any;
+  owner: ModuleObject;
   target: any;
   parameters: any[];
   path: any;
@@ -55,6 +55,7 @@ export class Action {
   }
 
   runCreatureAvoidance(delta = 0){
+    if(!(this.owner instanceof ModuleCreature)) return;
     if(PartyManager.party.indexOf(this.owner) >= 0){
 
       //Check Creature Avoidance

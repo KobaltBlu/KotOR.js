@@ -40,7 +40,6 @@ export class ModuleDoor extends ModuleObject {
   lastUsedBy: any;
   animationState: number;
   closeLockDC: number;
-  conversation: string;
   disarmDC: number;
   fort: number;
   genericType: number;

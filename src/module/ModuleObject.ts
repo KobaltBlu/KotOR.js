@@ -35,13 +35,15 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
+import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
 
 /* @file
  * The ModuleObject class.
  */
 
 export class ModuleObject {
+  helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
+
   combatOrder: number;
   combatRoundTimer: number;
   controlled: boolean;
@@ -179,6 +181,8 @@ export class ModuleObject {
   //Actions
   actionQueue: ActionQueue;
   action: Action;
+
+  computedPath: ComputedPath;
   
   lipObject: LIPObject;
 
@@ -200,6 +204,7 @@ export class ModuleObject {
   lastPlaceableExited: ModuleObject;
   lastAoeEntered: ModuleObject;
   lastAoeExited: ModuleObject;
+  conversation: string;
 
   static ResetPlayerId(){
     ModuleObject.PLAYER_ID = 0x7fffffff;
@@ -232,7 +237,7 @@ export class ModuleObject {
   static DY_LIST: number[] = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
 
   constructor (gff = new GFFObject) {
-
+    this.helperColor.setHex( Math.random() * 0xFFFFFF );
     this.initialized = false;
 
     //this.moduleObject = null;

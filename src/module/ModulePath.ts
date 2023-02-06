@@ -6,15 +6,16 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import * as THREE from "three";
 import { GameState } from "../GameState";
+import { Utility } from "../utility/Utility";
 
 /* @file
  * The ModulePath class.
  */
 
 interface ClosestPathPointData {
-  startingPoint: PathPoint, 
-  endingPoint: PathPoint, 
-  closestPoint: THREE.Vector3
+  point_a: PathPoint, 
+  point_b: PathPoint, 
+  closest_position_on_line: THREE.Vector3
 }
 
 interface PathPointOptions {
@@ -31,6 +32,7 @@ class PathPoint {
   first_connection: number;
   num_connections: number;
   vector: THREE.Vector3;
+  isTemp: boolean = false;
 
   //search state
   h: number = 0;
@@ -40,6 +42,7 @@ class PathPoint {
   visited: boolean = false;
   closed: boolean = false;
   parent?: PathPoint;
+  end: boolean = false;
 
   constructor(options: PathPointOptions){
     options = Object.assign({
@@ -55,7 +58,7 @@ class PathPoint {
     this.first_connection = options.first_connection;
     this.num_connections = options.num_connections;
     this.vector = options.vector;
-
+    this.isTemp = false;
   }
 
   reset(){
@@ -64,10 +67,33 @@ class PathPoint {
     this.visited = false;
     this.closed = false;
     this.parent = undefined;
+    this.end = false;
   }
 
   isWall(): boolean {
     return false;
+  }
+
+  hasLOS(point_b: PathPoint): boolean {
+    let has_los = true;
+    const path_line = new THREE.Line3(this.vector, point_b.vector)
+    for(let i = 0; i < GameState.module.area.rooms.length; i++){
+      const room = GameState.module.area.rooms[i];
+      if(room.model.wok){
+        const walkmesh = room.model.wok;
+        const edges: any[] = Object.values(walkmesh.edges);
+        for(let j = 0; j < edges.length; j++){
+          const edge = edges[j];
+          if(edge.transition == -1){
+            if(Utility.THREELineLineIntersection(path_line, edge.line)){
+              has_los = false;
+              break;
+            }
+          }
+        }
+      }
+    }
+    return has_los;
   }
 
   addConnection(node: PathPoint) {
@@ -83,6 +109,13 @@ class PathPoint {
     }
   }
 
+  closestPointFromLine(point_b: PathPoint, target: THREE.Vector3): PathPoint {
+    const _tempPoint= new THREE.Vector3();
+    const line3 = new THREE.Line3(this.vector, point_b.vector)
+    line3.closestPointToPoint(target, true, _tempPoint);
+    return PathPoint.FromVector3(target);
+  }
+
   static FromVector3(vector: THREE.Vector3): PathPoint {
     const p = new PathPoint({
       id: -1,
@@ -91,6 +124,7 @@ class PathPoint {
       num_connections: 0,
       vector: vector
     });
+    p.isTemp = true;
     return p;
   }
 
@@ -178,6 +212,7 @@ export class ModulePath {
 
       }
 
+
       geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
           
       this.line = new THREE.LineSegments( geometry, material );
@@ -190,6 +225,25 @@ export class ModulePath {
     
   }
 
+  cleanupConnections(){
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+      const toPrune: PathPoint[] = [];
+      for(let j = 0; j < point.connections.length; j++){
+        const con = point.connections[j];
+        if(!point.hasLOS(con)){
+          toPrune.push(con);
+        }
+      }
+      while(toPrune.length){
+        const con = toPrune.pop();
+        console.log('los', 'pruning connection', point, con);
+        point.removeConnection(con);
+        con.removeConnection(point);
+      }
+    }
+  }
+
   setPathHelpersVisibility(state = false){
     this.line.visible = state;
   }
@@ -198,9 +252,9 @@ export class ModulePath {
     const targetPoint = new THREE.Vector3().copy(target);
     targetPoint.z = 0;
     const line3 = new THREE.Line3();
-    const closestPoint = new THREE.Vector3(0, 0, 0);
-    let startingPoint: PathPoint;
-    let endingPoint: PathPoint;
+    const closest_position_on_line = new THREE.Vector3(0, 0, 0);
+    let point_a: PathPoint;
+    let point_b: PathPoint;
     let distance = Infinity;
     let pDistance = 0;
 
@@ -214,44 +268,73 @@ export class ModulePath {
         pDistance = targetPoint.distanceTo(_tempPoint);
         if(pDistance < distance){
           distance = pDistance;
-          startingPoint = point;
-          endingPoint = connection;
-          closestPoint.copy(_tempPoint);
+          point_a = point;
+          point_b = connection;
+          closest_position_on_line.copy(_tempPoint);
         }
       }
     }
     
     return { 
-      startingPoint: startingPoint, 
-      endingPoint: endingPoint, 
-      closestPoint: closestPoint 
+      point_a: point_a, 
+      point_b: point_b, 
+      closest_position_on_line: closest_position_on_line 
     };
   }
 
-  traverseToPoint(origin: any, dest: any){
+  getClosestPathPoint(origin: THREE.Vector3): PathPoint{
+    let point: PathPoint;
+    let distance = Infinity;
+    for(let i = 0; i < this.points.length; i++){
+      const p = this.points[i];
+      const d = origin.distanceTo(p.vector);
+      if(d < distance){
+        point = p;
+        distance = d;
+      }
+    }
+    return point;
+  }
+
+  traverseToPoint(origin: THREE.Vector3, dest: THREE.Vector3): ComputedPath {
     this.reset();
-    if(!this.points.length) return [dest];
 
-    const startingPoint = this.getClosestPathPointData(origin);
-    const endingPoint = this.getClosestPathPointData(dest);
+    const originPoint = PathPoint.FromVector3(origin);
+    const destPoint = PathPoint.FromVector3(dest);
+    const fallbackPath = ComputedPath.FromPointsList([destPoint]);
+    if(!this.points.length) return fallbackPath;
 
-    if(startingPoint.startingPoint == endingPoint.endingPoint) return [dest];
-    if(!startingPoint.startingPoint || !endingPoint.endingPoint) return [dest];
+    if(originPoint.hasLOS(destPoint)) return fallbackPath;
 
-    const tmpStart = PathPoint.FromVector3(startingPoint.closestPoint);
-    const tmpEnd = PathPoint.FromVector3(endingPoint.closestPoint);
+    const closest_origin_point = this.getClosestPathPoint(origin);
+    const closest_destination_point = this.getClosestPathPoint(dest);
 
-    tmpStart.addConnection(startingPoint.startingPoint);
-    endingPoint.endingPoint.addConnection(tmpEnd);
+    //origin
+    originPoint.addConnection(closest_origin_point);
+    closest_origin_point.addConnection(originPoint);
 
-    const path = new ComputedPath(tmpStart, tmpEnd);
+    //dest
+    closest_destination_point.addConnection(destPoint);
+    destPoint.addConnection(closest_destination_point);
+
+    originPoint.connections = this.points.slice(0).filter( (p) => {
+      return p.hasLOS(originPoint);
+    });
+
+    const path = new ComputedPath(originPoint, destPoint);
     path.search();
 
-    endingPoint.endingPoint.removeConnection(tmpEnd);
-    if(!path.points.length){
-      return path.points;
+    //clean up tmp point refs
+    for(let i = 0; i < this.points.length; i++){
+      const p = this.points[i];
+      p.removeConnection(originPoint);
+      p.removeConnection(destPoint);
     }
-    return [dest];
+
+    if(path.points.length){
+      return path;
+    }
+    return fallbackPath;
 
   }
 
@@ -263,31 +346,29 @@ export class ModulePath {
 
 }
 
-class ComputedPath {
-  cost = 0;
+export class ComputedPath {
   points: PathPoint[] = [];
-  closed_list: any[] = [];
-  starting_point: PathPoint = undefined;
-  ending_point: PathPoint = undefined;
-  complete = false;
+  origin: PathPoint = undefined;
+  destination: PathPoint = undefined;
+  realtime: boolean = false;
+  timer: number = 0;
+  line: THREE.LineSegments;
 
-  constructor(starting_point: PathPoint = undefined, ending_point: PathPoint = undefined){
-    this.starting_point = starting_point;
-    this.ending_point = ending_point;
+  constructor(origin: PathPoint = undefined, destination: PathPoint = undefined){
+    this.origin = origin;
+    this.destination = destination;
     this.points = [];
   }
 
   getCost( point: PathPoint ){
-    return point.vector.manhattanDistanceTo( this.ending_point.vector );
+    return point.vector.manhattanDistanceTo( this.destination.vector );
   }
 
   clone(){
     const clone = new ComputedPath();
-    clone.cost = this.cost;
     clone.points = this.points.slice(0);
-    clone.closed_list = this.closed_list.slice(0);
-    clone.starting_point = this.starting_point;
-    clone.ending_point = this.ending_point;
+    clone.origin = this.origin;
+    clone.destination = this.destination;
     return clone;
   }
 
@@ -298,12 +379,13 @@ class ComputedPath {
       function(node: PathPoint) { 
       return node.f; 
     });
-    openHeap.push(this.starting_point);
+    openHeap.push(this.origin);
     while(openHeap.size() > 0){
       const currentNode = openHeap.pop();
 
-      if(currentNode == this.ending_point){
-        var curr = currentNode;
+      if(currentNode == this.destination){
+        let curr = currentNode;
+        curr.end = true;
         this.points = [];
         while(curr.parent) {
           this.points.push(curr);
@@ -311,6 +393,7 @@ class ComputedPath {
         }
         
         this.points.reverse();
+        this.prunePathPoints();
         return this;
       }
 
@@ -319,7 +402,7 @@ class ComputedPath {
       const neighbors = currentNode.connections;
       for(let i = 0, il = neighbors.length; i < il; i++) {
         let neighbor = neighbors[i];
-        if(neighbor.closed || neighbor.isWall()) {
+        if(neighbor.closed || !neighbor.hasLOS(currentNode)) {
           continue;
         }
         let gScore = currentNode.g + neighbor.cost;
@@ -343,14 +426,89 @@ class ComputedPath {
     return this;
   }
 
+  prunePathPoints(){
+    if(this.points.length){
+      const pruneList: number[] = [];
+      for(let i = 0; i < this.points.length; i++){
+        const cPoint = this.points[i];
+        const nPoint = this.points[i+1];
+        if(nPoint && (cPoint != this.origin)){
+          //Check to see if we have LOS to the next point, which would make the current point useless
+          if(this.origin.hasLOS(nPoint)){
+            //Contine: prune and continue
+            pruneList.push(i);
+          }else{
+            //Exit: prune mode
+            break;
+          }
+        }
+      }
+
+      if(pruneList.length){
+        console.log('ComputedPath:pruneList', pruneList.length, this);
+        while(pruneList.length){
+          const index = pruneList.pop();
+          this.points.splice(index, 1);
+        }
+      }
+
+      this.reIndex();
+    }
+  }
+
+  reIndex(): void {
+    let parent: PathPoint;
+    for(let i = 0; i < this.points.length; i++){
+      const p = this.points[i];
+      p.parent = p;
+      parent = p;
+    }
+  }
+
+  buildHelperLine(){
+    const material = new THREE.LineBasicMaterial({
+      color: 0x0000ff
+    });
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( 
+      this.points.map( (p) => {
+        return [
+          p.vector.x, p.vector.y, -100, 
+          p.vector.x, p.vector.y, 100
+        ]
+      }).flat(), 3 ) 
+    );
+          
+    this.line = new THREE.LineSegments( geometry, material );
+    GameState.scene.add( this.line );
+  }
+
+  dispose(){
+    if(this.line){
+      this.line.removeFromParent();
+      const material = this.line.material as THREE.Material;
+      if(material) material.dispose()
+      this.line.geometry.dispose();
+    }
+  }
+
+  static FromPointsList(points: PathPoint[] = []): ComputedPath {
+    const path = new ComputedPath();
+    path.points = points;
+    return path;
+  }
+
 }
+
+type ScoreFunctionType<T> = (node: T) => void;
 
 //https://github.com/bgrins/javascript-astar
 class BinaryHeap<T> {
   content: T[];
-  scoreFunction?: Function;
+  scoreFunction?: ScoreFunctionType<T>;
 
-  constructor(scoreFunction?: Function){
+  constructor(scoreFunction?: ScoreFunctionType<T>){
     this.content = [];
     this.scoreFunction = scoreFunction;
   }
@@ -365,9 +523,9 @@ class BinaryHeap<T> {
 
   pop() {
     // Store the first element so we can return it later.
-    var result = this.content[0];
+    let result = this.content[0];
     // Get the element at the end of the array.
-    var end = this.content.pop();
+    let end = this.content.pop();
     // If there are any elements left, put the end element at the
     // start, and let it bubble up.
     if (this.content.length > 0) {
@@ -378,11 +536,11 @@ class BinaryHeap<T> {
   }
 
   remove(node: T) {
-    var i = this.content.indexOf(node);
+    let i = this.content.indexOf(node);
 
     // When it is found, the process seen in 'pop' is repeated
     // to fill up the hole.
-    var end = this.content.pop();
+    let end = this.content.pop();
 
     if (i !== this.content.length - 1) {
       this.content[i] = end;
@@ -405,14 +563,14 @@ class BinaryHeap<T> {
 
   sinkDown(n: number) {
     // Fetch the element that has to be sunk.
-    var element = this.content[n];
+    let element = this.content[n];
 
     // When at 0, an element can not sink any further.
     while (n > 0) {
 
       // Compute the parent element's index, and fetch it.
-      var parentN = ((n + 1) >> 1) - 1;
-      var parent = this.content[parentN];
+      let parentN = ((n + 1) >> 1) - 1;
+      let parent = this.content[parentN];
       // Swap the elements if the parent is greater.
       if (this.scoreFunction(element) < this.scoreFunction(parent)) {
         this.content[parentN] = element;
@@ -429,21 +587,21 @@ class BinaryHeap<T> {
 
   bubbleUp(n: number) {
     // Look up the target element and its score.
-    var length = this.content.length;
-    var element = this.content[n];
-    var elemScore = this.scoreFunction(element);
+    let length = this.content.length;
+    let element = this.content[n];
+    let elemScore = this.scoreFunction(element);
 
     while (true) {
       // Compute the indices of the child elements.
-      var child2N = (n + 1) << 1;
-      var child1N = child2N - 1;
+      let child2N = (n + 1) << 1;
+      let child1N = child2N - 1;
       // This is used to store the new position of the element, if any.
-      var swap = null;
-      var child1Score;
+      let swap = null;
+      let child1Score;
       // If the first child exists (is inside the array)...
       if (child1N < length) {
         // Look it up and compute its score.
-        var child1 = this.content[child1N];
+        let child1 = this.content[child1N];
         child1Score = this.scoreFunction(child1);
 
         // If the score is less than our element's, we need to swap.
@@ -454,8 +612,8 @@ class BinaryHeap<T> {
 
       // Do the same checks for the other child.
       if (child2N < length) {
-        var child2 = this.content[child2N];
-        var child2Score = this.scoreFunction(child2);
+        let child2 = this.content[child2N];
+        let child2Score = this.scoreFunction(child2);
         if (child2Score < (swap === null ? elemScore : child1Score)) {
           swap = child2N;
         }

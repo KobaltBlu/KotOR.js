@@ -38,7 +38,6 @@ export class ModulePlaceable extends ModuleObject {
   animationState: number;
   bodyBag: number;
   closeLockDC: number;
-  conversation: string;
   disarmDC: number;
   fort: number;
   genericType: number;
