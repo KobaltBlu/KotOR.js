@@ -219,7 +219,7 @@ export class TextureLoader {
   }
 
   static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
-    if(typeof name == 'string'){
+    if(typeof name == 'string' && name.length){
       name = name.toLowerCase();
       let obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
       if(TextureLoader.textures.has(name)){
