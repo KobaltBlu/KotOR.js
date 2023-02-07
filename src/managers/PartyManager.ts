@@ -287,21 +287,18 @@ export class PartyManager {
 
       partyMember.partyID = 0;
       partyMember.Load( () => {
+        partyMember.position.copy(spawn);
+        partyMember.quaternion.copy(quaternion);
         partyMember.LoadScripts( () => {
           partyMember.LoadModel().then( (model: OdysseyModel3D) => {
             PartyManager.party[0] = partyMember;
             
-            model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
             partyMember.position.copy(spawn);
-            /*model.translateX(spawn.x);
-            model.translateY(spawn.y);
-            model.translateZ(spawn.z);*/
             partyMember.quaternion.copy(quaternion);
-      
             model.hasCollision = true;
-            //model.buildSkeleton();
-            GameState.group.party.add( model );
+            
+            GameState.group.party.add( partyMember.container );
             GameState.player.destroy();
             GameState.player = partyMember;
             partyMember.onSpawn();
@@ -413,11 +410,12 @@ export class PartyManager {
             }*/
             PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
+            let spawn = PartyManager.GetSpawnLocation(partyMember);
+            partyMember.position.copy(spawn.position);
+            partyMember.setFacing(spawn.getFacing(), true);
 
             partyMember.LoadScripts( () => {
               partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-                let spawn = PartyManager.GetSpawnLocation(partyMember);
-                model.box = new THREE.Box3().setFromObject(model);
                 model.moduleObject = partyMember;
 
                 partyMember.position.copy(spawn.position);
@@ -425,8 +423,7 @@ export class PartyManager {
                 //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
           
                 model.hasCollision = true;
-                //model.buildSkeleton();
-                GameState.group.party.add( model );
+                GameState.group.party.add( partyMember.container );
 
                 partyMember.onSpawn();
                 if(typeof onLoad === 'function')
@@ -463,7 +460,6 @@ export class PartyManager {
         let partyMember = new ModuleCreature(npc.template);
         partyMember.Load( () => {
           partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-            model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
             partyMember.onSpawn();
             if(typeof onLoad === 'function')

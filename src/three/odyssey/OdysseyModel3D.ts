@@ -913,7 +913,15 @@ _options
           await OdysseyModel3D.SuperModelLoader(model.modelHeader.SuperModelName.toLowerCase(), odysseyModel);
         }
 
-        odysseyModel.box.setFromObject(odysseyModel);
+        odysseyModel.box.setFromArray([
+          model.modelHeader.BoundingMinX,
+          model.modelHeader.BoundingMinY,
+          model.modelHeader.BoundingMinZ,
+          model.modelHeader.BoundingMaxX,
+          model.modelHeader.BoundingMaxY,
+          model.modelHeader.BoundingMaxZ,
+        ]);
+        
         if(typeof _options.onComplete === 'function') _options.onComplete(odysseyModel);
         resolve(odysseyModel);
       }else{

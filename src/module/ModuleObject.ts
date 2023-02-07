@@ -1667,10 +1667,26 @@ export class ModuleObject {
     return 0;
   }
 
-  computeBoundingBox(){
+  computeBoundingBox(force: boolean = false){
     if(this.model){
       if(!this.model.box){
         this.model.box = new THREE.Box3();
+      }
+
+      if(this.container){
+        this.container.updateMatrixWorld(true);
+        this.container.updateMatrix();
+        if(force){
+          this.container.traverse( n => {
+            n.updateMatrixWorld(true);
+            n.updateMatrix();
+          })
+        }
+      }
+
+      if(this.model){
+        this.model.updateMatrixWorld(true);
+        this.model.updateMatrix();
       }
 
       if(!(this instanceof ModuleDoor)){
@@ -1682,9 +1698,9 @@ export class ModuleObject {
 
   isOnScreen(frustum = GameState.viewportFrustum){
     if(!(this instanceof ModuleTrigger) && !(this instanceof ModuleDoor)){
-      if(this.model && this.model.box != this.box){
-        this.box = this.model.box;
-      }
+      // if(this.model && this.model.box != this.box){
+      //   this.box = this.model.box;
+      // }
     }
 
     if(GameState.scene.fog && !(this instanceof ModuleDoor)){

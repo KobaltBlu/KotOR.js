@@ -1237,7 +1237,7 @@ export class ModuleArea extends ModuleObject {
                   player.setTrack(track.model);
         
                   player.getCurrentRoom();
-                  player.computeBoundingBox();
+                  // player.computeBoundingBox();
         
                   resolve();
                 });
@@ -1279,15 +1279,14 @@ export class ModuleArea extends ModuleObject {
           GameState.player.LoadScripts( () => {
             GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
               GameState.player.model = model;
+              GameState.player.model.hasCollision = true;
               //let spawnLoc = this.getSpawnLocation();
               let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
               GameState.player.position.copy(spawnLoc.position);
               GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-              GameState.player.computeBoundingBox();
-              GameState.player.model.hasCollision = true;
-
               GameState.player.getCurrentRoom();
+              // GameState.player.computeBoundingBox(true);
 
               resolve();
             }).catch(() => {
@@ -1315,17 +1314,17 @@ export class ModuleArea extends ModuleObject {
 
           player.LoadScripts( () => {
             player.LoadModel().then( (model: OdysseyModel3D) => {
+              model.moduleObject = player;
+              model.hasCollision = true;
     
               let spawnLoc = this.getSpawnLocation();
     
               player.position.copy(spawnLoc.position);
               player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
               //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-              player.computeBoundingBox();
-              model.moduleObject = player;
-              model.hasCollision = true;
     
               player.getCurrentRoom();
+              player.computeBoundingBox(true);
     
               resolve();
             });

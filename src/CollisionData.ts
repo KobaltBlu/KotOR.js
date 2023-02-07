@@ -43,10 +43,10 @@ export class CollisionData {
     
     let box = new THREE.Box3()
     
-    if(this.object.model && this.object.model.box){
-      this.object.model.box.setFromObject(this.object.model);
-      this.object.model.sphere = this.object.model.box.getBoundingSphere(this.object.model.sphere);
-      box = this.object.model.box.clone();
+    if(this.object.container && this.object.box){
+      this.object.box.setFromObject(this.object.container);
+      this.object.sphere = this.object.box.getBoundingSphere(this.object.sphere);
+      box = this.object.box.clone();
       box.translate(_axisFront);
     }
 
@@ -206,7 +206,7 @@ export class CollisionData {
       for(let j = 0, jl = this.object.room.placeables.length; j < jl; j++){
         obj = this.object.room.placeables[j];
         if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
-          obj.box.setFromObject(obj.model);
+          obj.box.setFromObject(obj.container);
           if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
             for(let l = 0, ll = obj.collisionData.walkmesh.edgeKeys.length; l < ll; l++){
               edge = obj.collisionData.walkmesh.edges[obj.collisionData.walkmesh.edgeKeys[l]];

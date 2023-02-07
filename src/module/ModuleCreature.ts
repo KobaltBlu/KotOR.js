@@ -3346,6 +3346,8 @@ export class ModuleCreature extends ModuleObject {
               this.model = model;
               this.model.userData.moduleObject = this;
               this.container.add(this.model);
+              this.box.copy(this.model.box);
+              this.box.translate(this.position);
 
               try{
                 if(this.model.lhand instanceof OdysseyObject3D){
