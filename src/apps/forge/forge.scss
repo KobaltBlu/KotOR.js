@@ -394,7 +394,7 @@ select, .form-select {
   border: 2px solid #2a7ab9;
   outline-color: #2a7ab9;
   display: block;
-  margin-bottom: 5px;
+  // margin-bottom: 5px;
   box-shadow: 2px 2px 10px #1d1d1d;
   width: 100%;
   color: #FFFFFF;
@@ -1448,6 +1448,9 @@ border-top-right-radius: 10px;
     display: block;
     position: relative;
     padding: 5px;
+    .section-content-slim {
+      padding: 0;
+    }
   }
 }
 

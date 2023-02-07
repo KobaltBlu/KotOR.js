@@ -14,6 +14,7 @@ import { LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
 import { TabLIPEditorOptionsState } from "./TabLIPEditorOptionsState";
 import { SceneGraphNode } from "../../../SceneGraphNode";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSystem";
 
 // import type * as KType from "../../../../../KotOR";
 
@@ -23,7 +24,7 @@ export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
-  'onAnimate'|'onKeyFramesChange';
+  'onAnimate'|'onKeyFramesChange'|'onDurationChange';
 
 export interface TabLIPEditorStateEventListeners extends TabStateEventListeners {
   onLIPLoaded: Function[],
@@ -38,6 +39,7 @@ export interface TabLIPEditorStateEventListeners extends TabStateEventListeners 
   onKeyFrameTrackZoomOut: Function[],
   onAnimate: Function[],
   onKeyFramesChange: Function[],
+  onDurationChange: Function[],
 }
 
 export class TabLIPEditorState extends TabState {
@@ -63,12 +65,13 @@ export class TabLIPEditorState extends TabState {
     onKeyFrameTrackZoomOut: [],
     onAnimate: [],
     onKeyFramesChange: [],
+    onDurationChange: [],
   };
 
   tabName: string = `LIP Editor`;
 
   //Lip
-  lip: LIPObject;
+  lip: LIPObject = new KotOR.LIPObject(Buffer.alloc(0));
 
   //Audio
   gainNode: GainNode;
@@ -172,6 +175,8 @@ export class TabLIPEditorState extends TabState {
 
             if(typeof this.lip.file != 'string')
               this.lip.file = this.file.resref + '.' + ResourceTypes.getKeyByValue(this.file.reskey);
+
+            this.setDuration(this.lip.duration);
 
             if(this.lip.keyframes.length){
               this.selectKeyFrame(this.lip.keyframes[0]);
@@ -397,6 +402,11 @@ export class TabLIPEditorState extends TabState {
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', [keyframe]);
   }
 
+  setDuration(value: number = 0){
+    this.lip.duration = value;
+    this.processEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', [value]);
+  }
+
   selectNextKeyFrame(){
     let index = this.lip.keyframes.indexOf(this.selected_frame);
     if(index == -1){
@@ -446,6 +456,279 @@ export class TabLIPEditorState extends TabState {
           this.selectKeyFrame(node.data);
         }
       })
+    });
+  }
+
+  fitDurationToKeyFrames(){
+    const duration = this.lip.keyframes.reduce((a: number, b: LIPKeyFrame) => Math.max(a, b.time), -Infinity);
+    this.setDuration(duration);
+  }
+
+  importPHN(): void {
+    ForgeFileSystem.OpenFileBuffer({ext: ['phn']}).then( (buffer: Buffer ) => {
+      let data = buffer.toString();
+      console.log('phn', data);
+      let eoh = data.indexOf('END OF HEADER');
+      if(eoh > -1){
+        data = data.substr(eoh+14);
+        let keyframes = data.trim().split('\r\n');
+
+        console.log(keyframes);
+
+        this.lip.keyframes = [];
+
+        let PHN_INVALID = -1;
+        let PHN_EE = 0;
+        let PHN_EH = 1;
+        let PHN_SCHWA = 2;
+        let PHN_AH = 3;
+        let PHN_OH = 4;
+        let PHN_OOH = 5;
+        let PHN_Y = 6;
+        let PHN_S = 7;
+        let PHN_FV = 8;
+        let PHN_NNG = 9;
+        let PHN_TH = 0xA;
+        let PHN_MPB = 0xB;
+        let PHN_TD = 0xC;
+        let PHN_JSH = 0xD;
+        let PHN_L = 0xE;
+        let PHN_KG = 0xF;
+        let PHN_USE_NEXT = 0x10;
+
+        let last_shape = PHN_INVALID;
+
+        for(let i = 0; i < keyframes.length; i++){
+
+          let keyframe_data = keyframes[i].trim().split(' ');
+
+          if(!keyframe_data.length){
+            continue;
+          }
+
+          let keyframe:  {shape: number, time: number} = {
+            shape: PHN_INVALID,
+            time: parseFloat(keyframe_data[0]) * .001
+          };
+          
+          switch(keyframe_data[2]){
+            case "i:":
+              keyframe.shape = PHN_EE;
+              break;
+            case "I":
+              keyframe.shape = PHN_EH;
+              break;
+            case "I_x":
+              keyframe.shape = PHN_EH;
+              break;
+            case "E":
+              keyframe.shape = PHN_EH;
+              break;
+            case "@":
+              keyframe.shape = PHN_AH;
+              break;
+            case "A":
+              keyframe.shape = PHN_AH;
+              break;
+            case "^":
+              keyframe.shape = PHN_AH;
+              break;
+            case ">":
+              keyframe.shape = PHN_SCHWA;
+              break;
+            case "U":
+              keyframe.shape = PHN_OH;
+              break;
+            case "u":
+              keyframe.shape = PHN_OOH;
+              break;
+            case "u_x":
+              keyframe.shape = PHN_OOH;
+              break;
+            case "&":
+              keyframe.shape = PHN_OH;
+              break;
+            case "&_0":
+              keyframe.shape = PHN_OH;
+              break;
+            case "3r":
+              keyframe.shape = PHN_SCHWA;
+              break;
+            case "&r":
+              keyframe.shape = PHN_SCHWA;
+              break;
+            case "5":
+              keyframe.shape = PHN_OH;
+              break;
+            case "ei":
+              keyframe.shape = PHN_EH;
+              break;
+            case ">i":
+              keyframe.shape = PHN_OH;
+              break;
+            case "aI":
+              keyframe.shape = PHN_AH;
+              break;
+            case "aU":
+              keyframe.shape = PHN_AH;
+              break;
+            case "oU":
+              keyframe.shape = PHN_OH;
+              break;
+            case "iU":
+              keyframe.shape = PHN_EE;
+              break;
+            case "i&":
+              keyframe.shape = PHN_EE;
+              break;
+            case "u&":
+              keyframe.shape = PHN_OOH;
+              break;
+            case "e&":
+              keyframe.shape = PHN_EH;
+              break;
+            
+            case "ph":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "pc":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "b":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "bc":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "th":
+              keyframe.shape = PHN_TD;
+              break;
+            case "tc":
+              keyframe.shape = PHN_TD;
+              break;
+            case "d":
+              keyframe.shape = PHN_TD;
+              break;
+            case "dc":
+              keyframe.shape = PHN_TD;
+              break;
+            case "kh":
+              keyframe.shape = PHN_KG;
+              break;
+            case "kc":
+              keyframe.shape = PHN_KG;
+              break;
+            case "g":
+              keyframe.shape = PHN_KG;
+              break;
+            case "gc":
+              keyframe.shape = PHN_KG;
+              break;
+            case "f":
+              keyframe.shape = PHN_FV;
+              break;
+            case "v":
+              keyframe.shape = PHN_FV;
+              break;
+            case "T":
+              keyframe.shape = PHN_TH;
+              break;
+            case "D":
+              keyframe.shape = PHN_TH;
+              break;
+            case "s":
+              keyframe.shape = PHN_S;
+              break;
+            case "z":
+              keyframe.shape = PHN_S;
+              break;
+            case "S":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "Z":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "h":
+              keyframe.shape = PHN_USE_NEXT;
+              break;
+            case "h_v":
+              keyframe.shape = PHN_USE_NEXT;
+              break;
+            case "tS":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "tSc":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "dZ":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "dZc":
+              keyframe.shape = PHN_JSH;
+              break;
+            case "m":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "n":
+              keyframe.shape = PHN_NNG;
+              break;
+            case "N":
+              keyframe.shape = PHN_NNG;
+              break;
+            case "d_(":
+              keyframe.shape = PHN_TD;
+              break;
+            case "th_(":
+              keyframe.shape = PHN_TD;
+              break;
+            case "n_(":
+              keyframe.shape = PHN_NNG;
+              break;
+            case "l=":
+              keyframe.shape = PHN_L;
+              break;
+            case "m=":
+              keyframe.shape = PHN_MPB;
+              break;
+            case "n=":
+              keyframe.shape = PHN_NNG;
+              break;
+            case "l":
+              keyframe.shape = PHN_L;
+              break;
+            case "9r":
+              keyframe.shape = PHN_L;
+              break;
+            case "j":
+              keyframe.shape = PHN_Y;
+              break;
+            case "w":
+              keyframe.shape = PHN_OOH;
+              break;
+            case "+":
+              keyframe.shape = PHN_MPB;
+              break;
+            default:
+              keyframe.shape = PHN_INVALID;
+            break;
+          }
+
+          if(keyframe.shape == last_shape || keyframe.shape == PHN_INVALID){
+            console.log('skipping');
+            continue;
+          }
+
+          this.lip.addKeyFrame(keyframe.time, keyframe.shape);
+          this.lip.duration = parseFloat(keyframe_data[1]) * .001;
+
+          last_shape = keyframe.shape;
+        }
+
+        this.lip.reIndexKeyframes();
+        this.selectKeyFrame(this.lip.keyframes[0]);
+        this.lip.elapsed = 0;
+
+      }
     });
   }
 

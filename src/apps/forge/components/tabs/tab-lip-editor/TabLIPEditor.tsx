@@ -9,6 +9,8 @@ import { LayoutContainerProvider } from "../../../context/LayoutContainerContext
 import type { LIPObject } from "../../../../../resource/LIPObject";
 import type{ LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
 import Draggable from "react-draggable";
+import { Form } from "react-bootstrap";
+import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 
 declare const KotOR: any;
 
@@ -141,6 +143,10 @@ export const UILIPKeyFramePanel = function(props: any){
     rerender(!render);
   }
 
+  const onDurationChange = (duration: number) => {
+    setDuration(duration);
+  }
+
   useEffectOnce( () => {
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', onLoad);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', onAudioLoad);
@@ -151,6 +157,7 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onPlay', onPlay);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onPause', onPause);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onStop', onStop);
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
     window.addEventListener('mouseup', onMouseUpWindow);
     rebuildTimelineLabels();
     return () => {
@@ -163,6 +170,7 @@ export const UILIPKeyFramePanel = function(props: any){
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onPlay', onPlay);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onPause', onPause);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onStop', onStop);
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
       window.removeEventListener('mouseup', onMouseUpWindow);
       if(waveformCanvasRef?.current?.parentElement) barObserver.unobserve(waveformCanvasRef?.current?.parentElement);
     }
@@ -393,18 +401,44 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.dragging_frame = undefined;
   }
 
+  const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    let shape = parseInt(e.target.value);
+    tab.selected_frame.shape = !isNaN(shape) ? shape : 0;
+    tab.selectKeyFrame(tab.selected_frame);
+  }
+
   return (
     <>
       <div className="keyframe-controls">
-        <a href="#" title="Delete Keyframe" className="fa-solid fa-trash" style={{textDecoration: 'none'}}></a>
-        <a href="#" title="Previous Keyframe" className="fa-solid fa-chevron-left" style={{textDecoration: 'none'}} onClick={onClickPreviousKeyFrame}></a>
-        <a href="#" title={playing ? `Pause` : `Play`} className={`fa-solid fa-${playing ? `pause` : `play`}`} style={{textDecoration: 'none'}} onClick={onClickPlayPause}></a>
-        <a href="#" title="Stop" className="fa-solid fa-stop" style={{textDecoration: 'none'}} onClick={onClickStop}></a>
-        <a href="#" title="Next Keyframe" className="fa-solid fa-chevron-right" style={{textDecoration: 'none'}} onClick={onClickNextKeyFrame}></a>
-
-        <a href="#" title="Add Keyframe" className="fa-solid fa-plus" style={{textDecoration: 'none'}} onClick={onClickAddKeyFrame}></a>
-        <a href="#" title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" style={{textDecoration: 'none', float:'right'}} onClick={onClickZoomIn}></a>
-        <a href="#" title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" style={{textDecoration: 'none', float:'right'}} onClick={onClickZoomOut}></a>
+        <div className="keyframe-controls-left">
+        {
+          !!selectedFrame ? (
+            <div className="selected-keyframe-edit-options">
+              <Form.Select onChange={onKeyFrameShapeChange} defaultValue={selectedFrame.shape}>
+                {
+                  LIPShapeLabels.map( (label: string, i: number) => {
+                    return <option value={i} selected={selectedFrame.shape == i}>{label}</option>
+                  })
+                }
+              </Form.Select>
+            </div>
+          ) : (
+            <></>
+          )
+        }
+        </div>
+        <div className="keyframe-controls-center">
+          <a href="#" title="Delete Keyframe" className="fa-solid fa-trash" style={{textDecoration: 'none'}}></a>
+          <a href="#" title="Previous Keyframe" className="fa-solid fa-chevron-left" style={{textDecoration: 'none'}} onClick={onClickPreviousKeyFrame}></a>
+          <a href="#" title={playing ? `Pause` : `Play`} className={`fa-solid fa-${playing ? `pause` : `play`}`} style={{textDecoration: 'none'}} onClick={onClickPlayPause}></a>
+          <a href="#" title="Stop" className="fa-solid fa-stop" style={{textDecoration: 'none'}} onClick={onClickStop}></a>
+          <a href="#" title="Next Keyframe" className="fa-solid fa-chevron-right" style={{textDecoration: 'none'}} onClick={onClickNextKeyFrame}></a>
+          <a href="#" title="Add Keyframe" className="fa-solid fa-plus" style={{textDecoration: 'none'}} onClick={onClickAddKeyFrame}></a>
+        </div>
+        <div className="keyframe-controls-right">
+          <a href="#" title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" style={{textDecoration: 'none'}} onClick={onClickZoomIn}></a>
+          <a href="#" title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" style={{textDecoration: 'none'}} onClick={onClickZoomOut}></a>
+        </div>
       </div>
       <div className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow}>
         <canvas ref={waveformCanvasRef as any} style={{position: 'absolute', top: 25, left: 0 }} />
@@ -423,7 +457,7 @@ export const UILIPKeyFramePanel = function(props: any){
             })
           }
         </div>
-        <div className="keyframe-track">
+        <div className="keyframe-track" style={{width: (duration * zoom)}}>
           {
             (
               keyframes.length ? keyframes.map( 

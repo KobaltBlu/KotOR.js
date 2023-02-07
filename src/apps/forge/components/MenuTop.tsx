@@ -8,6 +8,7 @@ import { pathParse } from "../helpers/PathParse";
 import { AudioPlayer } from "./AudioPlayer";
 import { FileTypeManager } from "../FileTypeManager";
 import { ModalChangeGameState } from "./modal/ModalChangeGame";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 
 declare const KotOR: any;
 declare const dialog: any;
@@ -158,57 +159,42 @@ const MenuTopOptions = {
         }},
       ]},
       {name: 'Open File', onClick: async function(){
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          dialog.showOpenDialog({
-            title: 'Open File',
-            filters: supportedFileDialogTypes,
-            properties: ['createDirectory'],
-          }).then( (result: any) => {
-            if(!result.canceled){
-              if(result.filePaths.length){
-                let file_path = result.filePaths[0];
-                let parsed = pathParse(file_path);
-                let fileParts = parsed.name.split('.');
-
-                if(parsed.ext == '.mdl'){
-                  (window as any).dialog.showOpenDialog({
-                    title: `Open MDX File (${fileParts[0]}.mdx)`,
-                    filters: [
-                      {name: 'Model File', extensions: ['mdx']},
-                      {name: 'All Formats', extensions: ['*']},
-                    ],
-                    properties: ['createDirectory'],
-                  }).then( (result: any) => {
-                    let file_path2 = result.filePaths[0];
-                    FileTypeManager.onOpenFile({
-                      path: file_path, 
-                      path2: file_path2, 
-                      filename: parsed.base, 
-                      resref: parsed.name, 
-                      ext: fileParts[1]
-                    });
-                  });
-                }else{
+        ForgeFileSystem.OpenFile().then( (response: ForgeFileSystemResponse) => {
+          if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+            if(Array.isArray(response.paths)){
+              const file_path = response.paths[0];
+              let parsed = pathParse(file_path);
+              let fileParts = parsed.name.split('.');
+              if(parsed.ext == '.mdl'){
+                (window as any).dialog.showOpenDialog({
+                  title: `Open MDX File (${fileParts[0]}.mdx)`,
+                  filters: [
+                    {name: 'Model File', extensions: ['mdx']},
+                    {name: 'All Formats', extensions: ['*']},
+                  ],
+                  properties: ['createDirectory'],
+                }).then( (result: any) => {
+                  let file_path2 = result.filePaths[0];
                   FileTypeManager.onOpenFile({
                     path: file_path, 
+                    path2: file_path2, 
                     filename: parsed.base, 
                     resref: parsed.name, 
                     ext: fileParts[1]
                   });
-                }
+                });
+              }else{
+                FileTypeManager.onOpenFile({
+                  path: file_path, 
+                  filename: parsed.base, 
+                  resref: parsed.name, 
+                  ext: fileParts[1]
+                });
               }
             }
-            console.log(result.canceled);
-            console.log(result.filePaths);
-          }).catch( (e: any) => {
-            console.error(e);
-          })
-        }else{
-          window.showOpenFilePicker({
-            types: supportedFilePickerTypes,
-          }).then( (handles: FileSystemFileHandle[]) => {
-            let [handle] = handles;
-            if(handle){
+          }else{
+            if(Array.isArray(response.handles)){
+              const [handle] = response.handles;
               let parsed = pathParse(handle.name);
               let fileParts = parsed.name.split('.');
               FileTypeManager.onOpenFile({
@@ -219,10 +205,8 @@ const MenuTopOptions = {
                 ext: fileParts[1]
               });
             }
-          }).catch((e: any) => {
-            console.error(e);
-          })
-        }
+          }
+        })
       }},
       {name: 'Save File', accelerator: 'Ctrl+S', onClick: async function(){
         if(ForgeState.tabManager.currentTab instanceof TabState){
@@ -296,198 +280,3 @@ const MenuTopOptions = {
     }}*/
   ]
 };
-
-export const supportedFilePickerTypes: any[] = [
-  {
-    description: 'All Supported Formats', 
-    accept: {
-      '*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
-    }
-  },
-  {
-    description: 'TPC Image', 
-    accept: {
-      '*': ['.tpc']
-    }
-  },
-  {
-    description: 'TGA Image', 
-    accept: {
-      '*': ['.tga']
-    }
-  },
-  {
-    description: '.GFF', 
-    accept: {
-      '*': ['.gff']
-    }
-  },
-  {
-    description: 'Creature Template', 
-    accept: {
-      '*': ['.utc']
-    }
-  },
-  {
-    description: 'Door Template', 
-    accept: {
-      '*': ['.utd']
-    }
-  },
-  {
-    description: 'Placeable Template', 
-    accept: {
-      '*': ['.utp']
-    }
-  },
-  {
-    description: 'Merchant Template', 
-    accept: {
-      '*': ['.utm']
-    }
-  },
-  {
-    description: 'Sound Template', 
-    accept: {
-      '*': ['.uts']
-    }
-  },
-  {
-    description: 'Trigger Template', 
-    accept: {
-      '*': ['.utt']
-    }
-  },
-  {
-    description: 'Waypoint Template', 
-    accept: {
-      '*': ['.utw']
-    }
-  },
-  {
-    description: 'LIP Animation', 
-    accept: {
-      '*': ['.lip']
-    }
-  },
-  {
-    description: 'Audio File', 
-    accept: {
-      '*': ['.wav', '.mp3']
-    }
-  },
-  {
-    description: 'Video File', 
-    accept: {
-      '*': ['.bik']
-    }
-  },
-  {
-    description: 'MOD File', 
-    accept: {
-      '*': ['.mod']
-    }
-  },
-  {
-    description: 'ERF File', 
-    accept: {
-      '*': ['.erf']
-    }
-  },
-  {
-    description: 'RIM File', 
-    accept: {
-      '*': ['.rim']
-    }
-  },
-  {
-    description: 'Model File', 
-    accept: {
-      '*': ['.mdl', '.mdx', '.wok', '.pwk', '.dwk']
-    }
-  },
-  {
-    description: 'Module File', 
-    accept: {
-      '*': ['.git', '.ifo']
-    }
-  },
-  {
-    description: 'Area File', 
-    accept: {
-      '*': ['.are']
-    }
-  },
-  {
-    description: 'Path File', 
-    accept: {
-      '*': ['.pth']
-    }
-  },
-  {
-    description: 'Script Source File', 
-    accept: {
-      '*': ['.ncs']
-    }
-  },
-  {
-    description: 'Script Compiled File', 
-    accept: {
-      '*': ['.nss']
-    }
-  },
-  {
-    description: 'VIS File', 
-    accept: {
-      '*': ['.vis']
-    }
-  },
-  {
-    description: 'Layout File', 
-    accept: {
-      '*': ['.lyt']
-    }
-  },
-  {
-    description: '2D Array File', 
-    accept: {
-      '*': ['.2da']
-    }
-  },
-  {
-    description: 'All Formats', 
-    accept: {
-      '*': ['*']
-    }
-  },
-];
-
-export const supportedFileDialogTypes: any[] = [
-  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
-  {name: 'TPC Image', extensions: ['tpc']},
-  {name: 'TGA Image', extensions: ['tga']},
-  {name: 'GFF', extensions: ['gff']},
-  {name: 'Creature Template', extensions: ['utc']},
-  {name: 'Door Template', extensions: ['utd']},
-  {name: 'Placeable Template', extensions: ['utp']},
-  {name: 'Merchant Template', extensions: ['utm']},
-  {name: 'Sound Template', extensions: ['uts']},
-  {name: 'Trigger Template', extensions: ['utt']},
-  {name: 'Waypoint Template', extensions: ['utw']},
-  {name: 'LIP Animation', extensions: ['lip']},
-  {name: 'Audio File', extensions: ['wav', 'mp3']},
-  {name: 'Video File', extensions: ['bik']},
-  {name: 'MOD File', extensions: ['mod']},
-  {name: 'ERF File', extensions: ['erf']},
-  {name: 'RIM File', extensions: ['rim']},
-  {name: 'Model File', extensions: ['mdl', 'wok', 'pwk', 'dwk']},
-  {name: 'Module File', extensions: ['git', 'ifo']},
-  {name: 'Area File', extensions: ['are']},
-  {name: 'Path File', extensions: ['pth']},
-  {name: 'Script Source File', extensions: ['ncs']},
-  {name: 'Script Compiled File', extensions: ['nss']},
-  {name: 'VIS File', extensions: ['vis']},
-  {name: 'Layout File', extensions: ['lyt']},
-  {name: '2D Array File', extensions: ['2da']},
-  {name: 'All Formats', extensions: ['*']},
-];

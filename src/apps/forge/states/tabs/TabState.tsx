@@ -4,8 +4,8 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorTabManager } from "../../managers/EditorTabManager";
 import { ForgeState } from "../ForgeState";
 import * as fs from "fs";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../components/MenuTop";
 import { EventListenerModel } from "../../EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
 
 declare const KotOR: any;
 declare const dialog: any;

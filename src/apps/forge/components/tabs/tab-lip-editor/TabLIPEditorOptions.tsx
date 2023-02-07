@@ -1,10 +1,10 @@
-import React, { NewLifecycle, useState } from "react";
+import React, { NewLifecycle, useEffect, useState } from "react";
 import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 import { SceneGraphNode } from "../../../SceneGraphNode";
 import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs/tab-lip-editor/TabLIPEditorState";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
-import { Form } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { TabLIPEditorOptionsState } from "../../../states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 import { SectionContainer } from "../../SectionContainer";
@@ -17,6 +17,7 @@ export const TabLIPEditorOptions = function(props: any){
   const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
   const [selectedFrame, setSelectedFrame] = useState<LIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
+  const [duration, setDuration] = useState<number>(parentTab.lip.duration);
 
   const onLIPLoaded = () => {
 
@@ -30,16 +31,27 @@ export const TabLIPEditorOptions = function(props: any){
     setSelectedHead(parentTab.current_head);
   };
 
+  const onDurationChange = (value: number = 0, update: boolean = false) => {
+    if(update) parentTab.setDuration(value);
+    setDuration(value);
+  }
+
   useEffectOnce(() => {
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', onLIPLoaded);
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', onKeyFrameSelect);
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', onHeadChange);
+    parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
     return () => {
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', onLIPLoaded);
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', onKeyFrameSelect);
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', onHeadChange);
+      parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
     }
   });
+
+  useEffect( () => {
+    console.log('duration', 'change');
+  }, [duration]);
 
   const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     let shape = parseInt(e.target.value);
@@ -52,14 +64,26 @@ export const TabLIPEditorOptions = function(props: any){
     parentTab.loadHead(head);
   }
 
+  const onImportPHNClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    parentTab.importPHN();
+  }
+
+  const onFitToKeyFrames = (e: React.MouseEvent<HTMLButtonElement>) => {
+    parentTab.fitDurationToKeyFrames();
+  }
+
   const heads = Object.values(KotOR.TwoDAManager.datatables.get('heads').rows);
 
   return (
     <>
+      <SectionContainer name="LIP">
+        <Form.Control type="number" step={0.01} pattern="[0-9]+([\.,][0-9]+)?" placeholder="Animation Duration" value={duration} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onDurationChange(parseFloat(e.target.value), true)} />
+        <Button variant="info" onClick={onFitToKeyFrames}>Fit To Key Frames</Button>
+      </SectionContainer>
       <SectionContainer name="LIP Nodes">
         <SceneGraphTreeView manager={parentTab.ui3DRenderer.sceneGraphManager}></SceneGraphTreeView>
       </SectionContainer>
-      <SectionContainer name="Key Frame">
+      {/* <SectionContainer name="Key Frame">
         {
           !!selectedFrame ? (
             <div className="selected-keyframe-edit-options">
@@ -76,8 +100,8 @@ export const TabLIPEditorOptions = function(props: any){
             <></>
           )
         }
-      </SectionContainer>
-      <SectionContainer name="Preview Head">
+      </SectionContainer> */}
+      <SectionContainer name="Preview Head" slim={true}>
         {
           !!selectedFrame ? (
             <div className="selected-keyframe-head-options">
@@ -95,6 +119,9 @@ export const TabLIPEditorOptions = function(props: any){
             <></>
           )
         }
+      </SectionContainer>
+      <SectionContainer name="Utilities">
+        <Button onClick={onImportPHNClick}>Import PHN</Button>
       </SectionContainer>
     </>
   );

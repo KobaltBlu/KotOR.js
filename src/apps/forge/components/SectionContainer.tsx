@@ -6,12 +6,13 @@ export interface SectionContainerProps {
 }
 
 export const SectionContainer = function(props: any){
+  const slim = props.slim ? true : false;
   return (
     <div className="section">
       <div className="section-header">
         {props.name}
       </div>
-      <div className="section-content">
+      <div className={`section-content ${slim ? 'section-content-slim' : ''}`}>
         {props.children}
       </div>
     </div>

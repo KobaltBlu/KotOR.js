@@ -1,5 +1,5 @@
 import { EditorFile } from "../EditorFile";
-import type { AudioFile } from "../../../audio/AudioFile";
+import { AudioFile } from "../../../index";
 import * as fs from "fs";
 
 declare const KotOR: any;
