@@ -1565,7 +1565,6 @@ export class ModuleArea extends ModuleObject {
               return;
             }
             
-            console.log(plc.getTag(), plc.position.z);
             plc.position.set(plc.getX(), plc.getY(), plc.getZ());
             plc.rotation.set(0, 0, plc.getBearing());
             plc.LoadModel().then( (model: OdysseyModel3D) => {

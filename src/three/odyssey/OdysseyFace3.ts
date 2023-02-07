@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { OdysseyWalkMesh } from "../../odyssey";
+import { OdysseyWalkMesh, WalkmeshEdge } from "../../odyssey";
 import { SurfaceMaterial } from "../../engine/SurfaceMaterial";
 
 interface AdjacentWalkableFaces {
-	a: OdysseyFace3;
-	b: OdysseyFace3;
-	c: OdysseyFace3;
+	a: OdysseyFace3|WalkmeshEdge;
+	b: OdysseyFace3|WalkmeshEdge;
+	c: OdysseyFace3|WalkmeshEdge;
 }
 
 export class OdysseyFace3 {
@@ -15,8 +15,8 @@ export class OdysseyFace3 {
 	walkmesh: OdysseyWalkMesh;
 	surfacemat: SurfaceMaterial;
 
-	adjacent: any[] = [];
-	adjacentDiff: any[] = [];
+	adjacent: number[] = [];
+	adjacentDiff: number[] = [];
 
 	blocksLineOfSight: boolean = false;
 	walkCheck: boolean = false;

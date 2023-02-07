@@ -16,71 +16,58 @@ import { TileColor } from "../engine/TileColor";
  * The OdysseyWalkMesh is used for reading and handling the various walkmesh filetypes found in the game
  */
 
+interface Perimeter {
+  edge: number;
+}
+
 export class OdysseyWalkMesh {
   static SURFACEMATERIALS: SurfaceMaterial[] = [];
   static TILECOLORS: TileColor[] = [];
   name: string;
   moduleObject: ModuleObject;
   header: any = { };
-  walkableFaces: any[];
-  walkableFacesWithEdge: any[];
-  grassFaces: any[];
+  walkableFaces: OdysseyFace3[] = [];
+  walkableFacesWithEdge: OdysseyFace3[] = [];
+  grassFaces: OdysseyFace3[] = [];
   rootNode: any;
   mesh: THREE.Mesh;
   box: THREE.Box3;
   mat4: THREE.Matrix4;
   faces: OdysseyFace3[] = [];
-  vertices: any[];
-  _vertices: any[];
+  vertices: THREE.Vector3[] = [];
+  _vertices: THREE.Vector3[] = [];
   walkTypes: number[] = [];
-  normals: any[];
-  facePlaneCoefficients: any[];
-  aabbNodes: any[];
-  walkableFacesEdgesAdjacencyMatrix: any[];
-  edges:any = {};
-  edgeKeys: any[];
-  perimeters: any[];
-  edgeLines: any[];
+  normals: THREE.Vector3[] = [];
+  facePlaneCoefficients: number[] = [];
+  aabbNodes: OdysseyModelAABBNode[] = [];
+  walkableFacesEdgesAdjacencyMatrix: number[][] = [];
+  edges: { [key: string]: WalkmeshEdge } = {};
+  edgeKeys: string[] = [];
+  perimeters: Perimeter[] = [];
+  edgeLines: any[] = [];
   wokReader: BinaryReader;
-  walkableFacesEdgesAdjacencyMatrixDiff: any;
+  walkableFacesEdgesAdjacencyMatrixDiff: number[][];
   matrixWorld: THREE.Matrix4;
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   aabbGroup: THREE.Object3D;
-  aabbRoot: any;
+  aabbRoot: OdysseyModelAABBNode;
   
   constructor( wokReader?: BinaryReader, onLoad?: Function, onError?: Function ){
 
     this.header = {
       walkMeshType: OdysseyWalkMeshType.NONE
     };
-
-    this.walkableFaces = [];
-    this.walkableFacesWithEdge = [];
-    this.grassFaces = [];
+    
     this.rootNode = null;
     this.mesh = new THREE.Mesh();
     this.box = new THREE.Box3();
     this.mat4 = new THREE.Matrix4();
-    this.faces = [];
-    this.vertices = [];
-    this._vertices = [];
-    this.walkTypes = [];
-    this.normals = [];
-    this.facePlaneCoefficients = [];
-    this.aabbNodes = [];
-    this.walkableFacesEdgesAdjacencyMatrix = [];
     this.edges = {};
-    this.edgeKeys = [];
-    this.perimeters = [];
-    this.edgeLines = [];
-
 
     this.wokReader = wokReader;
     this.readBinary();
     this.wokReader = undefined;
-
-    this.walkableFaces
 
     //Build Face Colors
     for (let i = 0, len = this.faces.length; i < len; i++){
@@ -200,9 +187,9 @@ export class OdysseyWalkMesh {
       //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
       //this.aabbGroup.add( node.boxHelper );
 
-      node.face = this.faces[node.leafFaceIndex];
-      node.leftNode = this.aabbNodes[node.leftNodeArrayIndex];
-      node.rightNode = this.aabbNodes[node.rightNodeArrayIndex];
+      node.face = this.faces[node.faceIdx];
+      node.leftNode = this.aabbNodes[node.leftNodeOffset];
+      node.rightNode = this.aabbNodes[node.rightNodeOffset];
 
       if(node.face == undefined){
         node.type = 'node';
