@@ -14,6 +14,7 @@ import { TwoDAObject } from "../resource/TwoDAObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
 import { OdysseyModel3D } from "../three/odyssey";
+import { PartyTableManager } from "./PartyTableManager";
 
 /* @file
  * The PartyManager class.
@@ -287,7 +288,7 @@ export class PartyManager {
       partyMember.partyID = 0;
       partyMember.Load( () => {
         partyMember.LoadScripts( () => {
-          partyMember.LoadModel( (model: OdysseyModel3D) => {
+          partyMember.LoadModel().then( (model: OdysseyModel3D) => {
             PartyManager.party[0] = partyMember;
             
             model.box = new THREE.Box3().setFromObject(model);
@@ -319,12 +320,14 @@ export class PartyManager {
 
   //Save the current party member templates
   static Save(){
-    for(let i = 0; i < PartyManager.party.length; i++){
-      let pm = PartyManager.party[i];
-      if(pm.partyID >= 0){
-        let gff = pm.save();
-        PartyManager.NPCS[pm.partyID].template = gff;
-      }
+    const npcs = PartyManager.party.filter( (pm) => pm.partyID >= 0 );
+    for(let i = 0; i < npcs.length; i++){
+      let pm = npcs[i];
+      PartyManager.CurrentMembers[i] = {
+        isLeader: i == 0 ? true : false,
+        memberID: pm.partyID
+      };
+      PartyManager.SavePartyMember(pm.partyID);
     }
   }
 
@@ -412,7 +415,7 @@ export class PartyManager {
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
 
             partyMember.LoadScripts( () => {
-              partyMember.LoadModel( (model: OdysseyModel3D) => {
+              partyMember.LoadModel().then( (model: OdysseyModel3D) => {
                 let spawn = PartyManager.GetSpawnLocation(partyMember);
                 model.box = new THREE.Box3().setFromObject(model);
                 model.moduleObject = partyMember;
@@ -459,7 +462,7 @@ export class PartyManager {
       if(npc.template){
         let partyMember = new ModuleCreature(npc.template);
         partyMember.Load( () => {
-          partyMember.LoadModel( (model: OdysseyModel3D) => {
+          partyMember.LoadModel().then( (model: OdysseyModel3D) => {
             model.box = new THREE.Box3().setFromObject(model);
             model.moduleObject = partyMember;
             partyMember.onSpawn();

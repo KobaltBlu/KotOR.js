@@ -67,7 +67,6 @@ export class ModuleMGPlayer extends ModuleObject {
     this.bullets = [];
 
     this.no_rotate = new THREE.Group();
-    this.position = new THREE.Vector3();
 
     this.animationManagers = [];
 
@@ -119,10 +118,6 @@ export class ModuleMGPlayer extends ModuleObject {
   setTrack(model = new OdysseyObject3D()){
     console.log('track', model);
     this.track = model;
-    //this.position = model.position;
-    this.rotation = model.rotation;
-    this.quaternion = model.quaternion;
-
     this.rotation.reorder('YZX');
 
     this.rotate('x', 0);
@@ -525,7 +520,7 @@ export class ModuleMGPlayer extends ModuleObject {
           if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
             for(let i = 0, iLen = obj.collisionData.walkmesh.faces.length; i < iLen; i++){
               face = obj.collisionData.walkmesh.faces[i];
-              if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk == 0){
+              if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk){
                 //bail we should not be here
                 this.AxisFront.set(0, 0, 0);
                 this.position.copy(_oPosition);
@@ -629,7 +624,7 @@ export class ModuleMGPlayer extends ModuleObject {
         intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
-          if(this == GameState.player){
+          if((this as any) == GameState.player){
             //console.log(intersects);
           }
           if(intersects[0].object.userData.moduleObject){
@@ -677,9 +672,9 @@ export class ModuleMGPlayer extends ModuleObject {
 
   LoadCamera( onLoad?: Function ){
     if(this.cameraName){
-      GameState.ModelLoader.load({
-        file: this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl: OdysseyModel) => {
+      const resref = this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      GameState.ModelLoader.load(resref).then(
+        (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               try{
@@ -700,7 +695,7 @@ export class ModuleMGPlayer extends ModuleObject {
             receiveShadow: true
           });
         }
-      });
+      );
     }else{
       if(typeof onLoad === 'function')
         onLoad();
@@ -708,39 +703,36 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   LoadModel (onLoad?: Function){
-
     let loop = new AsyncLoop({
       array: this.modelProps,
       onLoop: (item: any, asyncLoop: AsyncLoop) => {
-        GameState.ModelLoader.load({
-          file: item.model.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              onComplete: (model: OdysseyModel3D) => {
-                try{
-                  if(item.isRotating){
-                    this.model.add(model);
-                  }else{
-                    this.no_rotate.add(model);
-                  }
-                  this.models.push(model);
-                  model.name = item.model;
-
-                  if(this.camera && model.name == this.camera.name)
-                    model.visible = false;
-
-                  asyncLoop.next();
-                }catch(e){
-                  console.error(e);
-                  asyncLoop.next();
+        const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            onComplete: (model: OdysseyModel3D) => {
+              try{
+                if(item.isRotating){
+                  this.model.add(model);
+                }else{
+                  this.no_rotate.add(model);
                 }
-              },
-              context: this.context,
-              castShadow: true,
-              receiveShadow: true
-            });
-          }
-        });
+                this.models.push(model);
+                model.name = item.model;
+
+                if(this.camera && model.name == this.camera.name)
+                  model.visible = false;
+
+                asyncLoop.next();
+              }catch(e){
+                console.error(e);
+                asyncLoop.next();
+              }
+            },
+            context: this.context,
+            castShadow: true,
+            receiveShadow: true
+          });
+        })
       }
     });
     loop.iterate(() => {

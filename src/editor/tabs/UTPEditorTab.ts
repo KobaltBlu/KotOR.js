@@ -265,7 +265,7 @@ export class UTPEditorTab extends EditorTab {
     this.placeable = new ModulePlaceable(this.gff);
     this.placeable.context = this.ui3DRenderer;
     this.placeable.InitProperties();
-    this.placeable.LoadModel( (model: OdysseyModel3D) => {
+    this.placeable.LoadModel().then( (model: OdysseyModel3D) => {
       let scene = this.ui3DRenderer.ResetScene();
       scene.add(model);
       setTimeout( () => {

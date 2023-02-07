@@ -117,59 +117,58 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_y = this.BTN_AUTO;
 
-      GameState.ModelLoader.load({
-        file: 'charrec_light',
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load('charrec_light').then((mdl: OdysseyModel) => {
           
-          //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
-          this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
-          this._3dView.setControl(this.LBL_3DCHAR);
-          this._3dView.visible = true;
+        //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
+        this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
+        this._3dView.setControl(this.LBL_3DCHAR);
+        this._3dView.visible = true;
 
-          this.getControlByName('LBL_GOOD1').hide();
-          this.getControlByName('LBL_GOOD2').hide();
-          this.getControlByName('LBL_GOOD3').hide();
-          this.getControlByName('LBL_GOOD4').hide();
-          this.getControlByName('LBL_GOOD5').hide();
-          this.getControlByName('LBL_GOOD6').hide();
-          this.getControlByName('LBL_GOOD7').hide();
-          this.getControlByName('LBL_GOOD8').hide();
-          this.getControlByName('LBL_GOOD9').hide();
-          this.getControlByName('LBL_GOOD10').hide();
-          this.getControlByName('LBL_MORE').hide();
+        this.getControlByName('LBL_GOOD1').hide();
+        this.getControlByName('LBL_GOOD2').hide();
+        this.getControlByName('LBL_GOOD3').hide();
+        this.getControlByName('LBL_GOOD4').hide();
+        this.getControlByName('LBL_GOOD5').hide();
+        this.getControlByName('LBL_GOOD6').hide();
+        this.getControlByName('LBL_GOOD7').hide();
+        this.getControlByName('LBL_GOOD8').hide();
+        this.getControlByName('LBL_GOOD9').hide();
+        this.getControlByName('LBL_GOOD10').hide();
+        this.getControlByName('LBL_MORE').hide();
 
-          this.getControlByName('BTN_AUTO').hide();
-          this.getControlByName('BTN_LEVELUP').hide();
+        this.getControlByName('BTN_AUTO').hide();
+        this.getControlByName('BTN_LEVELUP').hide();
 
-          this.getControlByName('LBL_LIGHT').extent.left = 10;
-          this.getControlByName('LBL_DARK').extent.left = 10;
+        this.getControlByName('LBL_LIGHT').extent.left = 10;
+        this.getControlByName('LBL_DARK').extent.left = 10;
+        
+        OdysseyModel3D.FromMDL(mdl, {
+          manageLighting: false,
+          context: this._3dView
+        }).then((model: OdysseyModel3D) => {
+          //console.log('Model Loaded', model);
+          this._3dViewModel = model;
+          this._3dView.addModel(this._3dViewModel);
           
-          OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (model: OdysseyModel3D) => {
-              //console.log('Model Loaded', model);
-              this._3dViewModel = model;
-              this._3dView.addModel(this._3dViewModel);
-              
-              this._3dView.camera.position.copy(
-                model.camerahook.position
-              );
-    
-              this._3dView.camera.quaternion.copy(
-                model.camerahook.quaternion
-              );
-    
-              TextureLoader.LoadQueue(() => {
-                this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
-                this._3dViewModel.playAnimation(0, true);
-                resolve();
-              });
+          this._3dView.camera.position.copy(
+            model.camerahook.position
+          );
 
-            },
-            manageLighting: false,
-            context: this._3dView
+          this._3dView.camera.quaternion.copy(
+            model.camerahook.quaternion
+          );
+
+          TextureLoader.LoadQueue(() => {
+            this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
+            this._3dViewModel.playAnimation(0, true);
+            resolve();
           });
 
-        }
+        }).catch((e: any) => {
+          resolve();
+        });
+      }).catch((e: any) => {
+        resolve();
       });
     });
   }
@@ -284,7 +283,7 @@ export class MenuCharacter extends GameMenu {
     } else if (clone.goodEvil >= 0) {
       this._3dViewModel.playAnimation('evil');
     }
-    objectCreature.LoadModel( (model: OdysseyModel3D) => {
+    objectCreature.LoadModel().then( (model: OdysseyModel3D) => {
       model.position.set(0, 0, 0);
       model.rotation.x = -Math.PI / 2;
       model.rotation.z = Math.PI;

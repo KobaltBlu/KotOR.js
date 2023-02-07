@@ -92,48 +92,40 @@ export class MainMenu extends GameMenu {
       let bgMusic = 'mus_theme_cult';            
     
 
-      GameState.ModelLoader.load({
-        file: 'mainmenu',
-        onLoad: (mdl: OdysseyModel) => {
-          this.tGuiPanel.widget.userData.fill.visible = false;
-
-          this._3dView = new LBL_3DView();
-          this._3dView.setControl(this.LBL_3DVIEW);
-          this._3dView.visible = true;
-          (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
-          (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
-          this._3dView.setControl(this.LBL_3DVIEW);
-          (this.LBL_3DVIEW.getFill().material as any).visible = true;
+      GameState.ModelLoader.load('mainmenu').then((mdl: OdysseyModel) => {
+        this.tGuiPanel.widget.userData.fill.visible = false;
+        this._3dView = new LBL_3DView();
+        this._3dView.setControl(this.LBL_3DVIEW);
+        this._3dView.visible = true;
+        (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
+        (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
+        this._3dView.setControl(this.LBL_3DVIEW);
+        (this.LBL_3DVIEW.getFill().material as any).visible = true;
+        
+        OdysseyModel3D.FromMDL(mdl, { 
+          manageLighting: false,
+          context: this._3dView
+        }).then( (model: OdysseyModel3D) => {
+          console.log('Model Loaded', model);
+          this._3dViewModel = model;
           
-          OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (model: OdysseyModel3D) => {
-              console.log('Model Loaded', model);
-              this._3dViewModel = model;
-              
-              this._3dView.camera.position.copy(model.camerahook.position);
-              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+          this._3dView.camera.position.copy(model.camerahook.position);
+          this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
-              this._3dView.addModel(this._3dViewModel);
-              TextureLoader.LoadQueue(() => {
-
-                AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
-                  
-                  this.bgMusicBuffer = data;
-                  this._3dViewModel.playAnimation(0, true);
-                  resolve();
-            
-                }, () => {
-                  console.error('Background Music not found', bgMusic);
-                  resolve();
-                });
-
-              });
-
-            },
-            manageLighting: false,
-            context: this._3dView
+          this._3dView.addModel(this._3dViewModel);
+          TextureLoader.LoadQueue(() => {
+            AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
+              this.bgMusicBuffer = data;
+              this._3dViewModel.playAnimation(0, true);
+              resolve();
+            }, () => {
+              console.error('Background Music not found', bgMusic);
+              resolve();
+            });
           });
-        }
+        }).catch((e: any) => {
+
+        })
       });
     });
   }

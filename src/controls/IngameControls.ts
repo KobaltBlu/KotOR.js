@@ -326,7 +326,7 @@ export class IngameControls {
 
                   selectedObject = true;
 
-                  let distance = GameState.getCurrentPlayer().position.distanceTo(obj.position);
+                  let distance = GameState.getCurrentPlayer().position.distanceTo(obj.moduleObject.position);
                   let distanceThreshold = 20;
 
                   if(GameState.selectedObject == obj.moduleObject && distance <= distanceThreshold){
@@ -334,7 +334,7 @@ export class IngameControls {
                       GameState.getCurrentPlayer().clearAllActions();
                       obj.moduleObject.onClick(GameState.getCurrentPlayer());
                     }else{
-                      let distance = GameState.getCurrentPlayer().position.distanceTo(obj.position);
+                      let distance = GameState.getCurrentPlayer().position.distanceTo(obj.moduleObject.position);
                       //console.log(distance);
                       if(distance > 1.5){
                         GameState.getCurrentPlayer().clearAllActions();
@@ -343,9 +343,7 @@ export class IngameControls {
                       }
                     }
                   }
-
                   GameState.setReticleSelectedObject(obj.moduleObject);
-                  
                 }
                 if(GameState.debug.selectedObject)
                   console.log('Ingame Object', obj);

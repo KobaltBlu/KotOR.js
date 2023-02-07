@@ -289,7 +289,7 @@ export class UTCEditorTab extends EditorTab {
     this.creature.context = this.ui3DRenderer;
     this.creature.InitProperties( () => {
       this.creature.LoadEquipment( () => {
-        this.creature.LoadModel( (model: OdysseyModel3D) => {
+        this.creature.LoadModel().then( (model: OdysseyModel3D) => {
           let scene = this.ui3DRenderer.ResetScene();
           scene.add(model);
           setTimeout( () => {

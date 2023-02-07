@@ -123,94 +123,86 @@ export class AppearanceLoader {
 
       //console.log('modela', bodyModel);
 
-      GameState.ModelLoader.load({
-        file: bodyModel,
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load(bodyModel).then(
+        (mdl: OdysseyModel) => {
           if(mdl instanceof OdysseyModel){
             OdysseyModel3D.FromMDL(mdl, {
               context: this.context,
-              onComplete: (model: OdysseyModel3D) => {
-                let scene;
-                let position;
-                let rotation;
-                if(this.model != null){
-                  scene = this.model.parent;
-                  position = this.model.position;
-                  rotation = this.model.rotation;
-                  scene.remove(this.model);
-                }
-
-                this.model = model;
-                this.model.moduleObject = this.moduleObject;
-
-                if(typeof scene != 'undefined'){
-                  scene.add(this.model);
-                  this.model.translateX(position.x);
-                  this.model.translateY(position.y);
-                  this.model.translateZ(position.z);
-
-                  this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-                }
-
-                if(headId != '****'){
-                  let head = TwoDAManager.datatables.get('heads')?.rows[headId];
-                  GameState.ModelLoader.load({
-                    file: head.head.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-                    onLoad: (mdl: OdysseyModel) => {
-                      if(mdl instanceof OdysseyModel){
-                        OdysseyModel3D.FromMDL(mdl, {
-                          context: this.context,
-                          onComplete: (head: OdysseyModel3D) => {
-                            try{
-                              this.model.headhook.head = head;
-                              this.model.headhook.add(head);
-
-                              //TextureLoader.LoadQueue(() => {
-                                if(typeof onLoad === 'function')
-                                  onLoad(this.model);
-                              //});
-                            }catch(e: any){
-                              console.error(e);
-                              //TextureLoader.LoadQueue(() => {
-                                if(typeof onLoad === 'function')
-                                  onLoad(this.model);
-                              //});
-                            }
-                          }
-                        });
-                      }else{
-                        //TextureLoader.LoadQueue(() => {
-                          if(typeof onLoad === 'function')
-                            onLoad(this.model);
-                        //});
-                      }
-                    },
-                    onError: (e: any) => {
-                      console.error(e);
-                      if(typeof onError === 'function')
-                        onError(e)
-                    }
-                  });
-
-                }else{
-                  //TextureLoader.LoadQueue(() => {
-                    if(typeof onLoad === 'function')
-                      onLoad(this.model);
-                  //});
-                }
+            }).then((model: OdysseyModel3D) => {
+              let scene;
+              let position;
+              let rotation;
+              if(this.model != null){
+                scene = this.model.parent;
+                position = this.model.position;
+                rotation = this.model.rotation;
+                scene.remove(this.model);
               }
-            });
+
+              this.model = model;
+              this.model.moduleObject = this.moduleObject;
+
+              if(typeof scene != 'undefined'){
+                scene.add(this.model);
+                this.model.translateX(position.x);
+                this.model.translateY(position.y);
+                this.model.translateZ(position.z);
+
+                this.model.rotation.set(rotation.x, rotation.y, rotation.z);
+              }
+
+              if(headId != '****'){
+                let head = TwoDAManager.datatables.get('heads')?.rows[headId];
+                const resref = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
+                GameState.ModelLoader.load(resref).then(
+                  (mdl: OdysseyModel) => {
+                    if(mdl instanceof OdysseyModel){
+                      OdysseyModel3D.FromMDL(mdl, {
+                        context: this.context,
+                        onComplete: (head: OdysseyModel3D) => {
+                          try{
+                            this.model.headhook.head = head;
+                            this.model.headhook.add(head);
+
+                            if(typeof onLoad === 'function')
+                              onLoad(this.model);
+                          }catch(e: any){
+                            console.error(e);
+                            if(typeof onLoad === 'function')
+                              onLoad(this.model);
+                          }
+                        }
+                      });
+                    }else{
+                      if(typeof onLoad === 'function')
+                        onLoad(this.model);
+                    }
+                  }
+                ).catch((e: any) => {
+                  console.error(e);
+                  if(typeof onError === 'function')
+                    onError(e)
+                })
+              }else{
+                if(typeof onLoad === 'function')
+                  onLoad(this.model);
+              }
+            }).catch(() =>{
+              if(typeof onLoad === 'function')
+                onLoad(this.model);
+            })
           }else{
             if(typeof onError === 'function')
               onError()
           }
-        },
-        onError: (e: any) => {
+        }
+      ).catch(
+        (e: any) => {
           console.error(e);
           if(typeof onError === 'function')
             onError(e)
         }
-      });
+      );
 
     }else{
       console.error('Invalid ID', this.id);
@@ -224,10 +216,10 @@ export class AppearanceLoader {
       
       let modelName = TwoDAManager.datatables.get('genericdoors')?.rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-      GameState.ModelLoader.load({
-        file: modelName,
-        onLoad: (door: OdysseyModel3D) => {
-
+      GameState.ModelLoader.load(modelName).then( (mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          context: this.context,
+        }).then((door: OdysseyModel3D) => {
           let scene;
           let position;
           let rotation;
@@ -250,22 +242,14 @@ export class AppearanceLoader {
             this.model.rotation.set(rotation.x, rotation.y, rotation.z);
           }
 
-          //TextureLoader.LoadQueue(() => {
-            //console.log(this.model);
-            if(onLoad != null)
-              onLoad(this.model);
-          //}, (texName) => {
-            //loader.SetMessage('Loading Textures: '+texName);
-          //});
-
-        },
-        onError: (e: any) => {
-          console.error(e);
-          if(onError != null && typeof onError === 'function')
-            onError(e)
-        }
-      });
-
+          if(onLoad != null)
+            onLoad(this.model);
+        });
+      }).catch( (e: any) => {
+        console.error(e);
+        if(typeof onError === 'function')
+          onError(e)
+      })
     }else{
       console.error('Invalid ID', this.id);
     }
@@ -275,13 +259,13 @@ export class AppearanceLoader {
   GetPlaceableModel ( onLoad?: Function, onError?: Function ){
 
     if(this.id > -1) {
-      
       let modelName = TwoDAManager.datatables.get('placeables')?.rows[this.id].modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      //console.log('modelName', modelName);
 
-      GameState.ModelLoader.load({
-        file: modelName,
-        onLoad: (plc: OdysseyModel3D) => {
+      GameState.ModelLoader.load(modelName).then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          context: this.context,
+        }).then(
+          (plc: OdysseyModel3D) => {
 
           let scene;
           let position;
@@ -305,20 +289,18 @@ export class AppearanceLoader {
             this.model.rotation.set(rotation.x, rotation.y, rotation.z);
           }
 
-          //TextureLoader.LoadQueue(() => {
-            //console.log(this.model);
-            if(onLoad != null)
-              onLoad(this.model);
-          //}, (texName) => {
-            //loader.SetMessage('Loading Textures: '+texName);
-          //});
+          if(onLoad != null)
+            onLoad(this.model);
 
-        },
-        onError: (e: any) => {
+        }).catch((e: any) => {
           console.error(e);
-          if(onError != null && typeof onError === 'function')
+          if(typeof onError === 'function')
             onError(e)
-        }
+        });
+      }).catch((e: any) => {
+        console.error(e);
+        if(typeof onError === 'function')
+          onError(e)
       });
     }else{
       console.error('Invalid ID', this.id);

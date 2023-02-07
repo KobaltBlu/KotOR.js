@@ -291,11 +291,6 @@ export class SaveGame {
 
     GameState.SaveGame = this;
 
-    if(GameState.player instanceof ModuleObject){
-      GameState.player.destroy();
-      GameState.player = undefined;
-    }
-
     PartyManager.PortraitOrder = [];
 
     if(this.PORTRAIT0)

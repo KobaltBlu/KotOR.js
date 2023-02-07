@@ -32,8 +32,6 @@ export class ModuleMGGunBullet extends ModuleObject {
     this.life = 0;
 
     this.direction = new THREE.Vector3();
-    this.position = new THREE.Vector3();
-    this.quaternion = new THREE.Quaternion();
     this.velocity = new THREE.Vector3();
   }
 
@@ -93,10 +91,10 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   LoadModel(){
+    const resref = this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<void>( (resolve, reject) => {
-      GameState.ModelLoader.load({
-        file: this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load(resref).then(
+        (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               this.model = model;
@@ -104,7 +102,7 @@ export class ModuleMGGunBullet extends ModuleObject {
             }
           });
         }
-      });
+      )
     });
   }
 

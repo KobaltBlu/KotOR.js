@@ -406,7 +406,7 @@ export class ModuleItem extends ModuleObject {
     }
   }
 
-  LoadModel(onLoad?: Function){
+  LoadModel(): Promise<OdysseyModel3D> {
     let itemclass = this.getBaseItem()['itemclass'];
     let DefaultModel = this.getBaseItem()['defaultmodel'];
     itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
@@ -418,24 +418,26 @@ export class ModuleItem extends ModuleObject {
         DefaultModel = itemclass+'_'+(('000'+this.getModelVariation()).substr(-3));
       }
     }
-
-    GameState.ModelLoader.load({
-      file: DefaultModel,
-      onLoad: (mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (model: OdysseyModel3D) => {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      GameState.ModelLoader.load(DefaultModel).then(
+        (mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            context: this.context,
+            lighting: true,
+            //castShadow: false,
+            //receiveShadow: false
+          }).then((model: OdysseyModel3D) => {
             this.model = model;
-            //TextureLoader.LoadQueue(() => {
-              if(typeof onLoad === 'function')
-                onLoad(model);
-            //});
-          },
-          context: this.context,
-          lighting: true,
-          //castShadow: false,
-          //receiveShadow: false
-        });
-      }
+            resolve(this.model);
+          }).catch( () => {
+            this.model = new OdysseyModel3D;
+            resolve(this.model);
+          });
+        }
+      ).catch( () => {
+        this.model = new OdysseyModel3D;
+        resolve(this.model);
+      });
     });
   }
 

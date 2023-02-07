@@ -76,7 +76,7 @@ export class CharGenPortCust extends GameMenu {
           }
         }
 
-        CharGenManager.selectedCreature.LoadModel( (model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
           model.rotation.z = -Math.PI/2;
@@ -109,7 +109,7 @@ export class CharGenPortCust extends GameMenu {
           }
         }
 
-        CharGenManager.selectedCreature.LoadModel( (model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
           model.rotation.z = -Math.PI/2;
@@ -124,7 +124,7 @@ export class CharGenPortCust extends GameMenu {
           //Restore previous appearance
           CharGenManager.selectedCreature.appearance = this.appearance;
           CharGenManager.selectedCreature.portraidId = this.portraidId;
-          CharGenManager.selectedCreature.LoadModel( (model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
             model.rotation.z = -Math.PI/2;
             this.exiting = false;
             this.Close();

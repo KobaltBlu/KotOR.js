@@ -23,43 +23,31 @@ export class AreaWeather {
   async load(){
     return new Promise<void>( (resolve, reject) => {
       if(this.ChanceSnow == 100){
-        GameState.ModelLoader.load({
-          file: 'fx_snow',
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, { 
-              onComplete: (model: OdysseyModel3D) => {
-                this.model = model;
-                GameState.weather_effects.push(model);
-                GameState.group.weather_effects.add(model);
-                //TextureLoader.LoadQueue();
-                resolve();
-              },
-              manageLighting: false
-            });
-          },
-          onError: () => {
+        GameState.ModelLoader.load('fx_snow')
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            manageLighting: false
+          }).then((model: OdysseyModel3D) => {
+            this.model = model;
+            GameState.weather_effects.push(model);
+            GameState.group.weather_effects.add(model);
+            //TextureLoader.LoadQueue();
             resolve();
-          }
-        });
+          }).catch(resolve);
+        }).catch(resolve);
       }else if(this.ChanceRain == 100){
-        GameState.ModelLoader.load({
-          file: 'fx_rain',
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, { 
-              onComplete: (model: OdysseyModel3D) => {
-                this.model = model;
-                GameState.weather_effects.push(model);
-                GameState.group.weather_effects.add(model);
-                //TextureLoader.LoadQueue();
-                resolve();
-              },
-              manageLighting: false
-            });
-          },
-          onError: () => {
+        GameState.ModelLoader.load('fx_rain')
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            manageLighting: false
+          }).then((model: OdysseyModel3D) => {
+            this.model = model;
+            GameState.weather_effects.push(model);
+            GameState.group.weather_effects.add(model);
+            //TextureLoader.LoadQueue();
             resolve();
-          }
-        });
+          }).catch(resolve);
+        }).catch(resolve);
       }else{
         resolve();
       }

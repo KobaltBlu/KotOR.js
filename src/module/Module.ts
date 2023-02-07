@@ -542,12 +542,12 @@ export class Module {
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
-    if(GameState.module instanceof Module){
+    if(GameState.player instanceof ModuleObject){
+      GameState.player.destroy();
+      GameState.player = undefined;
+    }
 
-      if(GameState.player instanceof ModuleObject){
-        GameState.player.destroy();
-        GameState.player = undefined;
-      }
+    if(GameState.module instanceof Module){
 
       //Clear emitters
       while (GameState.group.emitters.children.length){

@@ -78,7 +78,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           }
         }
 
-        GameState.player.LoadModel( (model: any) => {
+        GameState.player.LoadModel().then( (model: any) => {
           // this.LBL_HEAD._3dView.camera.position.z = model.camerahook.getWorldPosition().z;
           this.UpdatePortrait();
         });
@@ -113,7 +113,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           }
         }
 
-        GameState.player.LoadModel( (model: OdysseyModel3D) => {
+        GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
           let target = new THREE.Vector3;
           if(model.camerahook){
             model.camerahook.getWorldPosition(target);
@@ -131,7 +131,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           //Restore previous appearance
           GameState.player.appearance = this.appearance;
           GameState.player.portraidId = this.portraidId;
-          GameState.player.LoadModel( (model: any) => {
+          GameState.player.LoadModel().then( (model: any) => {
             this.exiting = false;
             this.Close();
           });
@@ -156,14 +156,12 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this._3dView.camera.updateProjectionMatrix();
       this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
 
-      GameState.ModelLoader.load({
-        file: 'cghead_light',
-        onLoad: (mdl: any) => {
-          this.cghead_light = mdl;
-          this.Init3D();
-          resolve();
-        }
-      }); 
+      GameState.ModelLoader.load('cghead_light')
+      .then((mdl: any) => {
+        this.cghead_light = mdl;
+        this.Init3D();
+        resolve();
+      }).catch(resolve); 
     });
   }
 

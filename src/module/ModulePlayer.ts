@@ -21,8 +21,6 @@ export class ModulePlayer extends ModuleCreature {
 
   save(){
     let gff = super.save();
-
-
     PartyManager.Player = gff;
     this.template = gff;
     return gff;

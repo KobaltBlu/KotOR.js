@@ -8,6 +8,7 @@ import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CharGenManager } from "../../../managers/CharGenManager";
 import { ModulePlayer } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
+import { ThresholdController } from "../../../odyssey/controllers";
 import { GFFField } from "../../../resource/GFFField";
 import { GFFObject } from "../../../resource/GFFObject";
 import { GFFStruct } from "../../../resource/GFFStruct";
@@ -63,7 +64,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -81,7 +82,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -99,7 +100,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -117,7 +118,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -135,7 +136,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -153,7 +154,7 @@ export class CharGenClass extends K1_CharGenClass {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;

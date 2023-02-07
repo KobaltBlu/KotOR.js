@@ -9,13 +9,16 @@ import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode"
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey";
+import { SurfaceMaterial } from "../engine/SurfaceMaterial";
+import { TileColor } from "../engine/TileColor";
 
 /* @file
  * The OdysseyWalkMesh is used for reading and handling the various walkmesh filetypes found in the game
  */
 
 export class OdysseyWalkMesh {
-  static SURFACEMATERIALS: any;
+  static SURFACEMATERIALS: SurfaceMaterial[] = [];
+  static TILECOLORS: TileColor[] = [];
   name: string;
   moduleObject: ModuleObject;
   header: any = { };
@@ -26,10 +29,10 @@ export class OdysseyWalkMesh {
   mesh: THREE.Mesh;
   box: THREE.Box3;
   mat4: THREE.Matrix4;
-  faces: any[];
+  faces: OdysseyFace3[] = [];
   vertices: any[];
   _vertices: any[];
-  walkTypes: any[];
+  walkTypes: number[] = [];
   normals: any[];
   facePlaneCoefficients: any[];
   aabbNodes: any[];
@@ -39,7 +42,6 @@ export class OdysseyWalkMesh {
   perimeters: any[];
   edgeLines: any[];
   wokReader: BinaryReader;
-  static TILECOLORS: any;
   walkableFacesEdgesAdjacencyMatrixDiff: any;
   matrixWorld: THREE.Matrix4;
   geometry: THREE.BufferGeometry;
@@ -84,7 +86,7 @@ export class OdysseyWalkMesh {
     for (let i = 0, len = this.faces.length; i < len; i++){
       let face = this.faces[i];
       face.walkIndex = this.walkTypes[i];
-      face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).clone();
+      face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
       face.surfacemat = OdysseyWalkMesh.SURFACEMATERIALS[face.walkIndex];
       face.triangle = new THREE.Triangle(
         this.vertices[face.a],
@@ -96,11 +98,11 @@ export class OdysseyWalkMesh {
         console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyWalkMesh.SURFACEMATERIALS);
       }
 
-      face.blocksLineOfSight = face.surfacemat.lineofsight == 1;
-      face.wallCheck = face.surfacemat.wallcheck == 1;
+      face.blocksLineOfSight = face.surfacemat.lineOfSight;
+      face.walkCheck = face.surfacemat.walkCheck;
 
       //Is this face walkable
-      if(face.surfacemat.walk == 1){
+      if(face.surfacemat.walk){
         let walkIdx = this.walkableFaces.push(face) - 1;
         face.adjacent = this.walkableFacesEdgesAdjacencyMatrix[walkIdx];
         face.adjacentDiff = this.walkableFacesEdgesAdjacencyMatrixDiff[walkIdx];
@@ -150,7 +152,7 @@ export class OdysseyWalkMesh {
       }
       
       //Is this face grassy
-      if(face.surfacemat.grass == 1){
+      if(face.surfacemat.grass){
         this.grassFaces.push(face);
       }
 
@@ -588,9 +590,16 @@ export class OdysseyWalkMesh {
     
   }
 
-  raycast(raycaster: THREE.Raycaster, faces: any[] = []) {
+  raycast(raycaster: THREE.Raycaster, faces: any[] = []): THREE.Intersection[] {
     let _intersects: THREE.Intersection[] = [];
     this.mesh.raycast(raycaster, _intersects);
+    _intersects = _intersects.map<THREE.Intersection>( (face) => {
+      const wokFace = this.faces[face.faceIndex];
+      (face as any).walkIndex = wokFace.walkIndex;
+      // (face as any).normal = wokFace.normal;
+      (face as any).face = wokFace;
+      return face;
+    })
     return _intersects;
   }
 
@@ -601,11 +610,7 @@ export class OdysseyWalkMesh {
       for(let i = 0; i < tilecolor2DA.RowCount; i++){
         let tileColor = tilecolor2DA.rows[i];
         OdysseyWalkMesh.TILECOLORS.push(
-          new THREE.Color(
-            parseFloat(tileColor.red), 
-            parseFloat(tileColor.green), 
-            parseFloat(tileColor.blue)
-          )
+          TileColor.From2DA(tileColor)
         );
       }
     }
@@ -614,7 +619,7 @@ export class OdysseyWalkMesh {
     if(surfacemat2DA){
       OdysseyWalkMesh.SURFACEMATERIALS = [];
       for(let i = 0, len = surfacemat2DA.RowCount; i < len; i++){
-        OdysseyWalkMesh.SURFACEMATERIALS[i] = surfacemat2DA.rows[i];
+        OdysseyWalkMesh.SURFACEMATERIALS[i] = SurfaceMaterial.From2DA(surfacemat2DA.rows[i]);
       }
     }
   }

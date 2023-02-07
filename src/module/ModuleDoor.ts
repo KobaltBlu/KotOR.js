@@ -226,7 +226,7 @@ export class ModuleDoor extends ModuleObject {
   onClick2(callee: ModuleObject){
 
     //You can't interact with yourself
-    if(this === GameState.player && GameState.getCurrentPlayer() === (this as any)){
+    if((this as any) === GameState.player && GameState.getCurrentPlayer() === (this as any)){
       return;
     }
 
@@ -425,8 +425,6 @@ export class ModuleDoor extends ModuleObject {
     super.onSpawn(runScript);
 
     if(this.model instanceof OdysseyModel3D){
-      this.model.rotation.copy(this.rotation);
-      this.model.position.copy(this.position);
       this.model.updateMatrix();
 
       this.box.setFromObject(this.model);
@@ -460,7 +458,6 @@ export class ModuleDoor extends ModuleObject {
     super.update(delta);
 
     if(this.model instanceof OdysseyModel3D){
-      this.model.rotation.copy(this.rotation);
       this.model.update(delta);
       //this.box.setFromObject(this.model);
     }
@@ -567,59 +564,11 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  LoadModel ( onLoad?: Function ){
+  LoadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-
-    GameState.ModelLoader.load({
-      file: modelName,
-      onLoad: (mdl: OdysseyModel) => {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      GameState.ModelLoader.load(modelName).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (door: OdysseyModel3D) => {
-
-            let scene;
-            if(this.model != null){
-              scene = this.model.parent;
-              scene.remove(this.model);
-              this.model.dispose();
-            }
-
-            this.model = door;
-            this.model.moduleObject = this;
-            this.model.name = modelName;
-
-            if(typeof scene != 'undefined'){
-              scene.add(this.model);
-              //this.model.translateX(position.x);
-              //this.model.translateY(position.y);
-              //this.model.translateZ(position.z);
-              //this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-              for(let i = 0; i < this.model.lights.length; i++){
-                //LightManager.addLight(this.model.lights[i]);
-              }
-            }
-
-            this.position = this.model.position.copy(this.position);
-            this.model.rotation.copy(this.rotation);
-            this.model.quaternion.copy(this.quaternion);
-
-            //For some TSL doors that have a WHITE mesh called trans that shows when the door it opened
-            //Not sure if trans has something to do with area transition or the animation called "trans"
-            //that is in every door
-            let trans = this.model.getObjectByName('trans');
-            if(trans instanceof THREE.Object3D){
-              trans.visible = false;
-            }
-            
-            this.model.disableMatrixUpdate();
-
-            //TextureLoader.LoadQueue(() => {
-              //console.log(this.model);
-              if(onLoad != null)
-                onLoad(this.model);
-            //}, (texName) => {
-              //loader.SetMessage('Loading Textures: '+texName);
-            //});
-          },
           context: this.context,
           //lighting: false,
           static: this.static,
@@ -627,8 +576,31 @@ export class ModuleDoor extends ModuleObject {
           tweakColor: this.tweakColor
           //castShadow: true,
           //receiveShadow: true
+        }).then((door: OdysseyModel3D) => {
+          if(this.model instanceof OdysseyModel3D){
+            this.model.removeFromParent();
+            try{ this.model.dispose(); }catch(e){}
+          }
+
+          this.model = door;
+          this.model.moduleObject = this;
+          this.model.name = modelName;
+          this.container.add(this.model);
+
+          let trans = this.model.getObjectByName('trans');
+          if(trans instanceof THREE.Object3D){
+            trans.visible = false;
+          }
+          
+          this.model.disableMatrixUpdate();
+
+          resolve(this.model);
+        }).catch(() => {
+          resolve(this.model);
         });
-      }
+      }).catch(() => {
+        resolve(this.model);
+      });
     });
   }
 

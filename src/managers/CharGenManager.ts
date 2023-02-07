@@ -92,37 +92,31 @@ export class CharGenManager {
 
   static LoadCGMainLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load({
-        file: 'cgmain_light',
-        onLoad: (mdl: OdysseyModel) => {
-          CharGenManager.cgmain_light = mdl;
-          resolve();
-        }
-      }); 
+      GameState.ModelLoader.load('cgmain_light')
+      .then((mdl: OdysseyModel) => {
+        CharGenManager.cgmain_light = mdl;
+        resolve();
+      }).catch(resolve);
     });
   }
 
   static LoadCGBodyLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load({
-        file: 'cgbody_light',
-        onLoad: (mdl: OdysseyModel) => {
-          CharGenManager.cgbody_light = mdl;
-          resolve();
-        }
-      }); 
+      GameState.ModelLoader.load('cgbody_light')
+      .then((mdl: OdysseyModel) => {
+        CharGenManager.cgbody_light = mdl;
+        resolve();
+      }).catch(resolve);
     });
   }
 
   static LoadCGHeadLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load({
-        file: 'cghead_light',
-        onLoad: (mdl: OdysseyModel) => {
-          CharGenManager.cghead_light = mdl;
-          resolve();
-        }
-      }); 
+      GameState.ModelLoader.load('cghead_light')
+      .then((mdl: OdysseyModel) => {
+        CharGenManager.cghead_light = mdl;
+        resolve();
+      }).catch(resolve);
     });
   }
 

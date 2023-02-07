@@ -91,41 +91,40 @@ export class MenuCharacter extends K1_MenuCharacter {
         this.Close();
       });
 
-      GameState.ModelLoader.load({
-        file: 'charmain_light', 
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            manageLighting: false,
-            onComplete: (model: OdysseyModel3D) => {
-              try{
-                this._3dView = new LBL_3DView();
-                this._3dView.visible = true;
-                this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
-                this._3dView.camera.updateProjectionMatrix();
-                (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-                (this.LBL_3DCHAR.getFill().material as any).transparent = false;
-                this._3dView.setControl(this.LBL_3DCHAR);
-                (this.LBL_3DCHAR.getFill().material as any).visible = true;
+      GameState.ModelLoader.load('charmain_light').then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          manageLighting: false,
+        }).then((model: OdysseyModel3D) => {
+          try{
+            this._3dView = new LBL_3DView();
+            this._3dView.visible = true;
+            this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
+            this._3dView.camera.updateProjectionMatrix();
+            (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+            (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+            this._3dView.setControl(this.LBL_3DCHAR);
+            (this.LBL_3DCHAR.getFill().material as any).visible = true;
 
-                this._3dViewModel = model;
-                this._3dView.addModel(this._3dViewModel);
-                
-                this._3dView.camera.position.copy(model.camerahook.position);
-                this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-              }catch(e){
-                console.error(e);
-              }
-    
-              TextureLoader.LoadQueue(() => {
-                this._3dViewModel.playAnimation(0, true);
-                resolve();
-              });
-            }
+            this._3dViewModel = model;
+            this._3dView.addModel(this._3dViewModel);
+            
+            this._3dView.camera.position.copy(model.camerahook.position);
+            this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+          }catch(e){
+            console.error(e);
+            resolve();
+            return;
+          }
+
+          TextureLoader.LoadQueue(() => {
+            this._3dViewModel.playAnimation(0, true);
+            resolve();
           });
-        },
-        onError: () => {
+        }).catch( (e: any) => {
           resolve();
-        }
+        });
+      }).catch( (e: any) => {
+        resolve();
       });
     });
   }
@@ -152,7 +151,7 @@ export class MenuCharacter extends K1_MenuCharacter {
     let objectCreature = new ModuleCreature();
     let clone = PartyManager.party[0];
     objectCreature.appearance = clone.appearance;
-    objectCreature.LoadModel((model: OdysseyModel3D) => {
+    objectCreature.LoadModel().then((model: OdysseyModel3D) => {
       model.position.set(0, 0, 0);
       model.rotation.x = -Math.PI / 2;
       model.rotation.z = Math.PI;

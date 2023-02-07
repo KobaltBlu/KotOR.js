@@ -155,7 +155,7 @@ export class ModulePlaceable extends ModuleObject {
   onClick(callee: ModuleObject){
 
     //You can't interact with yourself
-    if(this === GameState.player && GameState.getCurrentPlayer() === (this as any)){
+    if((this as any) === GameState.player && GameState.getCurrentPlayer() === (this as any)){
       return;
     }
 
@@ -172,10 +172,6 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.model instanceof OdysseyModel3D){
-
-      this.model.rotation.copy(this.rotation);
-      //this.model.quaternion = this.quaternion;
-
       if(this.room instanceof ModuleRoom){
         if(this.room.model instanceof OdysseyModel3D){
           if(this.model){
@@ -549,45 +545,12 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  LoadModel ( onLoad: Function ){
+  LoadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    //console.log('modelName', modelName);
-
-    GameState.ModelLoader.load({
-      file: modelName,
-      onLoad: (mdl: OdysseyModel) => {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      GameState.ModelLoader.load(modelName)
+      .then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (plc: OdysseyModel3D) => {
-
-            let scene;
-            if(this.model != null){
-              scene = this.model.parent;
-              scene.remove(this.model);
-              this.model.dispose();
-            }
-
-            this.model = plc;
-            this.model.moduleObject = this;
-            this.model.name = modelName;
-
-            if(typeof scene != 'undefined'){
-              scene.add(this.model);
-            }
-
-            this.position = this.model.position.copy(this.position);
-            this.model.rotation.copy(this.rotation);
-            this.model.quaternion.copy(this.quaternion);
-
-            this.model.disableMatrixUpdate();
-
-            //TextureLoader.LoadQueue(() => {
-              //console.log(this.model);
-              if(onLoad != null)
-                onLoad(this.model);
-            //}, (texName) => {
-              //loader.SetMessage('Loading Textures: '+texName);
-            //});
-          },
           context: this.context,
           castShadow: true,
           //receiveShadow: true,
@@ -595,8 +558,28 @@ export class ModulePlaceable extends ModuleObject {
           static: this.static,
           useTweakColor: this.useTweakColor,
           tweakColor: this.tweakColor
+        }).then((plc: OdysseyModel3D) => {
+
+          if(this.model instanceof OdysseyModel3D){
+            this.model.removeFromParent();
+            try{ this.model.dispose(); }catch(e){}
+          }
+
+          this.model = plc;
+          this.model.moduleObject = this;
+          this.model.name = modelName;
+
+          this.container.add(this.model);
+
+          this.model.disableMatrixUpdate();
+
+          resolve(this.model);
+        }).catch(() => {
+          resolve(this.model);
         });
-      }
+      }).catch(() => {
+        resolve(this.model);
+      });
     });
   }
 
@@ -901,7 +884,7 @@ export class ModulePlaceable extends ModuleObject {
       this.position.z = this.template.RootNode.GetFieldByLabel('Z').GetValue();
 
     if(this.template.RootNode.HasField('Bearing'))
-      this.bearing = this.rotation.z = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
+      this.bearing = this.template.RootNode.GetFieldByLabel('Bearing').GetValue();
 
     if(this.template.RootNode.HasField('SWVarTable')){
       let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();

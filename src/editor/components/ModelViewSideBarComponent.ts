@@ -332,7 +332,7 @@ export class ModelViewSideBarComponent extends Component {
       for(let i = 0, len = this.tab.layout.rooms.length; i < len; i++){
         let room = this.tab.layout.rooms[i];
         this.tab.tabLoader.SetMessage(`Loading: ${room.name}`);
-        let mdl = await GameState.ModelLoader.loadAsync(room.name);
+        let mdl = await GameState.ModelLoader.load(room.name);
         if(mdl){
           let model = await OdysseyModel3D.FromMDL(mdl, {
             manageLighting: false,

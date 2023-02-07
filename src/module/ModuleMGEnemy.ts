@@ -77,9 +77,6 @@ export class ModuleMGEnemy extends ModuleObject {
 
   setTrack(model = new THREE.Object3D()){
     this.track = model;
-    //this.position = model.position;
-    this.rotation = model.rotation;
-    this.quaternion = model.quaternion;
     if(this.model.parent)
       this.model.parent.remove(this.model);
 
@@ -258,26 +255,24 @@ export class ModuleMGEnemy extends ModuleObject {
     let loop = new AsyncLoop({
       array: this.models,
       onLoop: (item: any, asyncLoop: AsyncLoop) => {
-        GameState.ModelLoader.load({
-          file: item.model.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              onComplete: (model: OdysseyModel3D) => {
-                try{
-                  this.model.add(model);  
-                  model.name = item.model;
+        const resref =item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            onComplete: (model: OdysseyModel3D) => {
+              try{
+                this.model.add(model);  
+                model.name = item.model;
 
-                  asyncLoop.next();
-                }catch(e){
-                  console.error(e);
-                  asyncLoop.next();
-                }
-              },
-              context: this.context,
-              castShadow: true,
-              receiveShadow: true
-            });
-          }
+                asyncLoop.next();
+              }catch(e){
+                console.error(e);
+                asyncLoop.next();
+              }
+            },
+            context: this.context,
+            castShadow: true,
+            receiveShadow: true
+          });
         });
       }
     });

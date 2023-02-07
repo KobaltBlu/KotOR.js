@@ -776,7 +776,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   static async SuperModelLoader(resref: string, odysseyModel: OdysseyModel3D): Promise<OdysseyModel3D> {
-    const supermodel: OdysseyModel = await GameState.ModelLoader.loadAsync(resref);
+    const supermodel: OdysseyModel = await GameState.ModelLoader.load(resref);
     if(!!supermodel){
       //--------------------------------------//
       // Supermodel: Animations Merge - Begin

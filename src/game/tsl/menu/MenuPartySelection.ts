@@ -248,37 +248,37 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.LBL_3D_VIEW = new LBL_3DView(this.LBL_3D.extent.width, this.LBL_3D.extent.height);
       this.LBL_3D_VIEW.setControl(this.LBL_3D);
 
-      GameState.ModelLoader.load({
-        file: 'cgmain_light',
-        onLoad: (mdl: OdysseyModel) => {
-          this.cgmain_light = mdl;
+      GameState.ModelLoader.load('cgmain_light')
+      .then((mdl: OdysseyModel) => {
+        this.cgmain_light = mdl;
 
-          OdysseyModel3D.FromMDL(this.cgmain_light, { 
-            onComplete: (model: OdysseyModel3D) => {
-              //console.log('Model Loaded', model);
-              this.LBL_3D_VIEW.model = model;
-              this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
-    
-              this.LBL_3D_VIEW.camerahook = this.LBL_3D_VIEW.model.getObjectByName('camerahook');
-              
-              this.LBL_3D_VIEW.camera.position.copy(
-                this.LBL_3D_VIEW.camerahook.position
-              );
-    
-              this.LBL_3D_VIEW.camera.quaternion.copy(
-                this.LBL_3D_VIEW.camerahook.quaternion
-              ); 
-              this.LBL_3D_VIEW.camera.position.z = 1;
+        OdysseyModel3D.FromMDL(this.cgmain_light, {
+          manageLighting: false,
+          context: this.LBL_3D_VIEW
+        }).then((model: OdysseyModel3D) => {
+          //console.log('Model Loaded', model);
+          this.LBL_3D_VIEW.model = model;
+          this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
 
-              this.LBL_3D_VIEW.camera.updateProjectionMatrix();
-              this.LBL_3D_VIEW.visible = true;       
-              
-            },
-            manageLighting: false,
-            context: this.LBL_3D_VIEW
-          });
+          this.LBL_3D_VIEW.camerahook = this.LBL_3D_VIEW.model.getObjectByName('camerahook');
+          
+          this.LBL_3D_VIEW.camera.position.copy(
+            this.LBL_3D_VIEW.camerahook.position
+          );
+
+          this.LBL_3D_VIEW.camera.quaternion.copy(
+            this.LBL_3D_VIEW.camerahook.quaternion
+          ); 
+          this.LBL_3D_VIEW.camera.position.z = 1;
+
+          this.LBL_3D_VIEW.camera.updateProjectionMatrix();
+          this.LBL_3D_VIEW.visible = true;
           resolve();
-        }
+        }).catch(() => {
+          resolve();
+        });
+      }).catch(() => {
+        resolve();
       });
     });
   }

@@ -153,29 +153,26 @@ export class TalentSpell extends TalentObject {
 
       if(this.projmodel != '****'){
         console.log('projectile', this.projmodel);
-        GameState.ModelLoader.load({
-          file: this.projmodel.toLowerCase(),
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              context: oCaster.context,
-              onComplete: (model: OdysseyModel3D) => {
-                this.projectile = model;
-                console.log('projectile', model);
-                if(oCaster.model){
-                  if(oCaster.model.rhand){
-                    GameState.group.effects.add(model);
-                    this.projectileHook = oCaster.model.rhand;
-                    //TextureLoader.LoadQueue();
-                  }else{
-                    this.projectile.dispose();
-                  }
-                }else{
-                  this.projectile.dispose();
-                }
-  
+        GameState.ModelLoader.load(this.projmodel.toLowerCase())
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            context: oCaster.context
+          }).then((model: OdysseyModel3D) => {
+            this.projectile = model;
+            console.log('projectile', model);
+            if(oCaster.model){
+              if(oCaster.model.rhand){
+                GameState.group.effects.add(model);
+                this.projectileHook = oCaster.model.rhand;
+                //TextureLoader.LoadQueue();
+              }else{
+                this.projectile.dispose();
               }
-            });
-          }
+            }else{
+              this.projectile.dispose();
+            }
+
+          });
         });
       }
 
@@ -274,32 +271,29 @@ export class TalentSpell extends TalentObject {
     }
 
     if(this.casthandvisual != '****'){
-      GameState.ModelLoader.load({
-        file: this.casthandvisual,
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: oCaster.context,
-            onComplete: (model: OdysseyModel3D) => {
-              this.casthandmodel = model;
+      GameState.ModelLoader.load(this.casthandvisual)
+      .then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          context: oCaster.context
+        }).then((model: OdysseyModel3D) => {
+          this.casthandmodel = model;
 
-              if(oCaster.model){
-                if(oCaster.model.lhand){
-                  oCaster.model.lhand.add(this.casthandmodel);
-                  //TextureLoader.LoadQueue();
-                  this.casthandmodel.playAnimation('cast01', {}, () => {
-                    //Clean up the impact effect
-                    this.casthandmodel.dispose();
-                  });
-                }else{
-                  this.casthandmodel.dispose();
-                }
-              }else{
+          if(oCaster.model){
+            if(oCaster.model.lhand){
+              oCaster.model.lhand.add(this.casthandmodel);
+              //TextureLoader.LoadQueue();
+              this.casthandmodel.playAnimation('cast01', {}, () => {
+                //Clean up the impact effect
                 this.casthandmodel.dispose();
-              }
-
+              });
+            }else{
+              this.casthandmodel.dispose();
             }
-          });
-        }
+          }else{
+            this.casthandmodel.dispose();
+          }
+
+        });
       });
     }
 

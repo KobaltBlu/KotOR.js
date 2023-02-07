@@ -911,39 +911,35 @@ export class LIPEditorTab extends EditorTab {
 
   LoadHead(model_name = 'p_bastilah', onLoad?: Function){
 
-    GameState.ModelLoader.load({
-      file: model_name,
-      onLoad: (mdl: OdysseyModel) => {
-        this.current_head = model_name;
-        localStorage.setItem('lip_head', this.current_head);
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this.renderComponent,
-          castShadow: true,
-          receiveShadow: true,
-          onComplete: (model: OdysseyModel3D) => {
+    GameState.ModelLoader.load(model_name)
+    .then((mdl: OdysseyModel) => {
+      this.current_head = model_name;
+      localStorage.setItem('lip_head', this.current_head);
+      OdysseyModel3D.FromMDL(mdl, {
+        context: this.renderComponent,
+        castShadow: true,
+        receiveShadow: true,
+      }).then((model: OdysseyModel3D) => {
+        if(this.head instanceof THREE.Object3D){
+          this.head.parent.remove(this.head);
+        }
 
-            if(this.head instanceof THREE.Object3D){
-              this.head.parent.remove(this.head);
-            }
+        this.head = model;
+        this.head_hook.add(this.head);
 
-            this.head = model;
-            this.head_hook.add(this.head);
+        this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
 
-            this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
+        this.head.playAnimation('tlknorm', true);
 
-            this.head.playAnimation('tlknorm', true);
+        this.head.moduleObject = {
+          lipObject: this.lip
+        };
 
-            this.head.moduleObject = {
-              lipObject: this.lip
-            };
+        if(typeof onLoad === 'function')
+          onLoad();
 
-            if(typeof onLoad === 'function')
-              onLoad();
-
-          }
-        });
-      }
-    });
+      })
+    })
   }
 
   LoadSound(sound = 'nm35aabast06217_', onLoad?: Function){

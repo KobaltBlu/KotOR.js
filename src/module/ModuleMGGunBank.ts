@@ -105,20 +105,18 @@ export class ModuleMGGunBank extends ModuleObject {
 
   LoadModel(){
     return new Promise<void>( (resolve, reject) => {
-      GameState.ModelLoader.load({
-        file: this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase(),
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model: OdysseyModel3D) => {
-              this.model = model;
-              this.bullet_hook = this.model.getObjectByName('bullethook0');
-              resolve();
-            },
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true
-          });
-        }
+      const resref = this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          onComplete: (model: OdysseyModel3D) => {
+            this.model = model;
+            this.bullet_hook = this.model.getObjectByName('bullethook0');
+            resolve();
+          },
+          context: this.context,
+          castShadow: true,
+          receiveShadow: true
+        });
       });
     });
   }

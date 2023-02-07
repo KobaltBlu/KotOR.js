@@ -1,5 +1,33 @@
 import * as THREE from "three";
+import { OdysseyWalkMesh } from "../../odyssey";
+import { SurfaceMaterial } from "../../engine/SurfaceMaterial";
+
+interface AdjacentWalkableFaces {
+	a: OdysseyFace3;
+	b: OdysseyFace3;
+	c: OdysseyFace3;
+}
+
 export class OdysseyFace3 {
+
+	walkIndex:number = 0;
+	coeff: number = 0;
+	walkmesh: OdysseyWalkMesh;
+	surfacemat: SurfaceMaterial;
+
+	adjacent: any[] = [];
+	adjacentDiff: any[] = [];
+
+	blocksLineOfSight: boolean = false;
+	walkCheck: boolean = false;
+
+	triangle: THREE.Triangle;
+
+	adjacentWalkableFaces: AdjacentWalkableFaces = {
+		a: undefined,
+		b: undefined,
+		c: undefined,
+	};
 
 	/**
 	 * @param a Vertex A index.

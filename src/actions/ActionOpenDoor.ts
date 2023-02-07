@@ -57,7 +57,7 @@ export class ActionOpenDoor extends Action {
 
         this.owner.setFacingObject( this.target );
 
-        if(this.target == GameState.player){
+        if((this.target as any) == GameState.player){
           return ActionStatus.COMPLETE;
         }else{
           this.target.use(GameState.player);

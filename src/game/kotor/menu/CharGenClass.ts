@@ -69,7 +69,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -87,7 +87,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -105,7 +105,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -123,7 +123,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -141,7 +141,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -159,7 +159,7 @@ export class CharGenClass extends GameMenu {
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
         CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel((model: OdysseyModel3D) => {
+          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
             TextureLoader.LoadQueue(() => {
               this.selecting = false;
               MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -220,7 +220,7 @@ export class CharGenClass extends GameMenu {
         _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
         _3dView.camera.position.z = 0.9;
         creature.Load(() => {
-          creature.LoadModel((model: OdysseyModel3D) => {
+          creature.LoadModel().then((model: OdysseyModel3D) => {
             model.position.set(0, 0, 0);
             model.rotation.z = -Math.PI / 2;
             model.box = new THREE.Box3().setFromObject(model);

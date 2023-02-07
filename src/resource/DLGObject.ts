@@ -221,18 +221,15 @@ export class DLGObject {
   async loadStuntCamera(){
     return new Promise<void>( (resolve, reject) => {
       if(this.cameraModel != ''){
-        GameState.ModelLoader.load({
-          file: this.cameraModel,
-          onLoad: (model: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(model, { 
-              onComplete: (model: OdysseyModel3D) => {
-                this.animatedCamera = model;
-                this.animatedCamera.bonesInitialized = true;
-                resolve();
-              }
-            });
-          }
-        });
+        GameState.ModelLoader.load(this.cameraModel)
+        .then((model: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(model)
+          .then((model: OdysseyModel3D) => {
+            this.animatedCamera = model;
+            this.animatedCamera.bonesInitialized = true;
+            resolve();
+          }).catch(resolve);
+        }).catch(resolve);
       }else{
         resolve();
       }
@@ -245,36 +242,33 @@ export class DLGObject {
       if(actor.participant == 'PLAYER'){
         model = GameState.player.model;
         //Load the actor's supermodel
-        GameState.ModelLoader.load({
-          file: actor.model,
-          onLoad: (actorModel: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(actorModel, { 
-              onComplete: (actorSuperModel: OdysseyModel3D) => {
-                GameState.player.model.odysseyAnimations = GameState.player.model.odysseyAnimations.concat(actorSuperModel.animations);
-                //console.log('actor', actorSuperModel.animations)
-                //GameState.player.anim = true;
+        GameState.ModelLoader.load(actor.model)
+        .then((actorModel: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(actorModel)
+          .then((actorSuperModel: OdysseyModel3D) => {
+            GameState.player.model.odysseyAnimations = GameState.player.model.odysseyAnimations.concat(actorSuperModel.odysseyAnimations);
+            //console.log('actor', actorSuperModel.animations)
+            //GameState.player.anim = true;
 
-                if(this.isAnimatedCutscene)
-                  GameState.player.setFacing(0, true);
+            if(this.isAnimatedCutscene)
+              GameState.player.setFacing(0, true);
 
-                if(this.unequipItems)
-                  GameState.player.UnequipItems();
+            if(this.unequipItems)
+              GameState.player.UnequipItems();
 
-                if(this.unequipHeadItem)
-                  GameState.player.UnequipHeadItem();
+            if(this.unequipHeadItem)
+              GameState.player.UnequipHeadItem();
 
-                if(GameState.player.model.skins){
-                  for(let i = 0; i < GameState.player.model.skins.length; i++){
-                    GameState.player.model.skins[i].frustumCulled = false;
-                  }
-                }
-    
-                this.stunt[actor.participant.toLowerCase()] = GameState.player;
-                resolve();
+            if(GameState.player.model.skins){
+              for(let i = 0; i < GameState.player.model.skins.length; i++){
+                GameState.player.model.skins[i].frustumCulled = false;
               }
-            });
-          }
-        });
+            }
+
+            this.stunt[actor.participant.toLowerCase()] = GameState.player;
+            resolve();
+          }).catch(resolve);
+        }).catch(resolve);
       }else if(actor.participant == 'OWNER'){
 
         (this.stunt as any)['owner'] = this.owner;
@@ -288,39 +282,36 @@ export class DLGObject {
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
-          GameState.ModelLoader.load({
-            file: actor.model,
-            onLoad: (actorModel: OdysseyModel) => {
-              OdysseyModel3D.FromMDL(actorModel, { 
-                onComplete: (actorSuperModel: OdysseyModel3D) => {
-                  model.odysseyAnimations = actorSuperModel.animations;
+          GameState.ModelLoader.load(actor.model)
+          .then((actorModel: OdysseyModel) => {
+            OdysseyModel3D.FromMDL(actorModel)
+            .then((actorSuperModel: OdysseyModel3D) => {
+              model.odysseyAnimations = actorSuperModel.animations;
 
-                  //console.log('actor', actorSuperModel.animations)
+              //console.log('actor', actorSuperModel.animations)
 
-                  if(this.isAnimatedCutscene)
-                    creature.setFacing(0, true);
+              if(this.isAnimatedCutscene)
+                creature.setFacing(0, true);
 
-                  model.box = new THREE.Box3().setFromObject(model);
+              model.box = new THREE.Box3().setFromObject(model);
 
-                  if(this.unequipItems && creature instanceof ModuleCreature)
-                    creature.UnequipItems();
+              if(this.unequipItems && creature instanceof ModuleCreature)
+                creature.UnequipItems();
 
-                  if(this.unequipHeadItem && creature instanceof ModuleCreature)
-                    creature.UnequipHeadItem();
+              if(this.unequipHeadItem && creature instanceof ModuleCreature)
+                creature.UnequipHeadItem();
 
-                  if(model.skins){
-                    for(let i = 0; i < model.skins.length; i++){
-                      model.skins[i].frustumCulled = false;
-                    }
-                  }
-      
-                  this.stunt[actor.participant.toLowerCase()] = creature;
-                  //console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
-                  resolve();
+              if(model.skins){
+                for(let i = 0; i < model.skins.length; i++){
+                  model.skins[i].frustumCulled = false;
                 }
-              });
-            }
-          });
+              }
+  
+              this.stunt[actor.participant.toLowerCase()] = creature;
+              //console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
+              resolve();
+            }).catch(resolve);
+          }).catch(resolve);
         }else{
           resolve();
         }

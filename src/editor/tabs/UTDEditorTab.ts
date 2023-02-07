@@ -242,7 +242,7 @@ export class UTDEditorTab extends EditorTab {
     this.door = new ModuleDoor(this.gff);
     this.door.context = this.ui3DRenderer;
     this.door.InitProperties();
-    this.door.LoadModel( (model: OdysseyModel3D) => {
+    this.door.LoadModel().then( (model: OdysseyModel3D) => {
       let scene = this.ui3DRenderer.ResetScene();
       scene.add(model);
       setTimeout( () => {

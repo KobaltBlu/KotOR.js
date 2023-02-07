@@ -22,7 +22,7 @@ export class ModuleMGTrack extends ModuleObject {
 
     this.index = 0;
     this.track = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.position = layout.position.clone();
+    this.position.copy(layout.position.clone());
     this.layout = layout;
 
   }
@@ -41,29 +41,25 @@ export class ModuleMGTrack extends ModuleObject {
   }
 
   LoadModel (onLoad?: Function){
-    GameState.ModelLoader.load({
-      file: this.track,
-      onLoad: (mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          onComplete: (model: OdysseyModel3D) => {
-            try{
-              console.log('track', model);
-              this.model = model;
-              this.position = this.model.position.copy(this.position);
-              model.name = this.track;
-              if(typeof onLoad == 'function')
-                onLoad(this.model);
-            }catch(e){
-              console.error(e);
-              if(typeof onLoad == 'function')
-                onLoad(this.model);
-            }
-          },
-          context: this.context,
-          castShadow: false,
-          receiveShadow: false
-        });
-      }
+    GameState.ModelLoader.load(this.track).then((mdl: OdysseyModel) => {
+      OdysseyModel3D.FromMDL(mdl, {
+        onComplete: (model: OdysseyModel3D) => {
+          try{
+            console.log('track', model);
+            this.model = model;
+            model.name = this.track;
+            if(typeof onLoad == 'function')
+              onLoad(this.model);
+          }catch(e){
+            console.error(e);
+            if(typeof onLoad == 'function')
+              onLoad(this.model);
+          }
+        },
+        context: this.context,
+        castShadow: false,
+        receiveShadow: false
+      });
     });
   }
 

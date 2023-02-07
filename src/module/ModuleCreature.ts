@@ -419,9 +419,7 @@ export class ModuleCreature extends ModuleObject {
         //this.getModel().visible = true;
         return;
       }else{
-        //this.getModel().visible = true;
-        this.getModel().rotation.copy(this.rotation);
-        //this.getModel().quaternion = this.quaternion;
+
       }
 
       //Get the first action in the queue
@@ -3126,10 +3124,8 @@ export class ModuleCreature extends ModuleObject {
           this.template.Merge(gff);
           this.InitProperties( () => {
             FactionManager.AddCreatureToFaction(this);
-            //this.LoadEquipment( () => {
-              if(onLoad != null)
-                onLoad(this.template);
-            //});
+            if(onLoad != null)
+              onLoad(this.template);
           });
         },
         onFail: () => {
@@ -3141,11 +3137,9 @@ export class ModuleCreature extends ModuleObject {
     }else{
       this.InitProperties( () => {
         FactionManager.AddCreatureToFaction(this);
-        //this.LoadEquipment( () => {
-          //We already have the template (From SAVEGAME)
-          if(onLoad != null)
-            onLoad(this.template);
-        //});
+        //We already have the template (From SAVEGAME)
+        if(onLoad != null)
+          onLoad(this.template);
       });
     }
   }
@@ -3189,185 +3183,169 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  LoadModel ( onLoad?: Function ){
-
+  LoadModel (): Promise<OdysseyModel3D> {
     this.isReady = false;
-
-    //this.LoadEquipment( () => {
-      this.LoadBody( () => {
-        this.LoadHead( () => {
-          //TextureLoader.LoadQueue(() => {
-            this.isReady = true;
-            this.updateCollision(0.0000000000000000000001);
-            this.update(0.0000000000000000000001);
-            if(onLoad != null)
-              onLoad(this.model);
-          //});
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      this.LoadBody().then( () => {
+        this.LoadHead().then(() => {
+          this.isReady = true;
+          this.updateCollision(0.0000000000000000000001);
+          this.update(0.0000000000000000000001);
+          resolve(this.model);
         });
       });
-    //});
+    });
 
   }
 
-  LoadBody( onLoad: Function ){
-    let appearance = this.getAppearance();
-    this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.textureVar = 1;
-    if(this.equipment.ARMOR instanceof ModuleItem){
-      this.textureVar = this.equipment.ARMOR.getTextureVariation() || 1;
-      //console.log('ModuleCreature', this, this.textureVar);
-      if(appearance.modeltype != 'B'){
+  LoadBody(): Promise<OdysseyModel3D> {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      let appearance = this.getAppearance();
+      this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      this.textureVar = 1;
+      if(this.equipment.ARMOR instanceof ModuleItem){
+        this.textureVar = this.equipment.ARMOR.getTextureVariation() || 1;
+        //console.log('ModuleCreature', this, this.textureVar);
+        if(appearance.modeltype != 'B'){
 
-        let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'');
-        this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        let match = raceTex.match(/\d+/);
+          let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'');
+          this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
+          let match = raceTex.match(/\d+/);
 
-        this.bodyTexture = raceTex;
-        
-        /*if(match && this.textureVar){
+          this.bodyTexture = raceTex;
+          
+          /*if(match && this.textureVar){
 
-          match = match[0];
-          this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? pad( this.textureVar, match.length ) : '' );
-          //console.log('ModuleCreature', this, this.bodyTexture, this.textureVar);
+            match = match[0];
+            this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? pad( this.textureVar, match.length ) : '' );
+            //console.log('ModuleCreature', this, this.bodyTexture, this.textureVar);
+          }else{
+
+            this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
+            //console.log('ModuleCreature', this, raceTex);
+          }*/
+
+          //console.log('ModuleCreature', 'body 1', this, this.bodyTexture, raceTex, this.textureVar, appearance);
+          
         }else{
+          switch(this.equipment.ARMOR.getBodyVariation().toLowerCase()){
+            case 'a':
+              this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'b':
+              this.bodyModel = appearance.modelb.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texb.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'c':
+              this.bodyModel = appearance.modelc.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texc.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'd':
+              this.bodyModel = appearance.modeld.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texd.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'e':
+              this.bodyModel = appearance.modele.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texe.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'f':
+              this.bodyModel = appearance.modelf.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texf.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'g':
+              this.bodyModel = appearance.modelg.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texg.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'h':
+              this.bodyModel = appearance.modelh.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texh.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            case 'i':
+              this.bodyModel = appearance.modeli.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texi.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+            default:
+              this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
+              this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
+            break;
+          }
 
-          this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
-          //console.log('ModuleCreature', this, raceTex);
-        }*/
+          if(this.bodyTexture != '****'){
+            this.bodyTexture += Utility.PadInt( this.textureVar, 2);
+          }
 
-        //console.log('ModuleCreature', 'body 1', this, this.bodyTexture, raceTex, this.textureVar, appearance);
+          //console.log('ModuleCreature', 'body 1B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
+        }
         
       }else{
-        switch(this.equipment.ARMOR.getBodyVariation().toLowerCase()){
-          case 'a':
-            this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'b':
-            this.bodyModel = appearance.modelb.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texb.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'c':
-            this.bodyModel = appearance.modelc.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texc.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'd':
-            this.bodyModel = appearance.modeld.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texd.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'e':
-            this.bodyModel = appearance.modele.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texe.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'f':
-            this.bodyModel = appearance.modelf.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texf.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'g':
-            this.bodyModel = appearance.modelg.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texg.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'h':
-            this.bodyModel = appearance.modelh.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texh.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          case 'i':
-            this.bodyModel = appearance.modeli.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texi.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-          default:
-            this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-            this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-          break;
-        }
+        if(appearance.modeltype != 'B'){
+          let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
+          this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-        if(this.bodyTexture != '****'){
-          this.bodyTexture += Utility.PadInt( this.textureVar, 2);
-        }
+          let match = raceTex.match(/\d+/);
+          if(match && this.textureVar > 1){
+            match = match[0];
+            this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? Utility.PadInt( this.textureVar, match.length ) : '' );
+          }else{
+            this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
+          }
 
-        //console.log('ModuleCreature', 'body 1B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
-      }
-      
-    }else{
-      if(appearance.modeltype != 'B'){
-        let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-
-        let match = raceTex.match(/\d+/);
-        if(match && this.textureVar > 1){
-          match = match[0];
-          this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? Utility.PadInt( this.textureVar, match.length ) : '' );
+          //console.log('ModuleCreature', 'body 2', this, this.bodyTexture, raceTex, this.textureVar, appearance);
         }else{
-          this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
+          this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
+          this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( this.textureVar, 2);
+
+          //console.log('ModuleCreature', 'body 2B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
         }
-
-        //console.log('ModuleCreature', 'body 2', this, this.bodyTexture, raceTex, this.textureVar, appearance);
-      }else{
-        this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( this.textureVar, 2);
-
-        //console.log('ModuleCreature', 'body 2B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
       }
-    }
 
-    if(this.bodyModel == '****'){
-      this.model = new OdysseyModel3D();
-      if(typeof onLoad === 'function')
-        onLoad();
-    }else{
-      GameState.ModelLoader.load({
-        file: this.bodyModel,
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            castShadow: true,
-            receiveShadow: true,
-            textureVar: this.bodyTexture,
-            isHologram: this.isHologram,
-            context: this.context,
-            onComplete: (model: OdysseyModel3D) => {
-              let scene = null, position = null, rotation = null;
-
-              if(this.model instanceof OdysseyModel3D && this.model.parent){
-                scene = this.model.parent;
-                //position = this.model.position;
-                //rotation = this.model.rotation;
-
-                if(this.head && this.head.parent){
-                  this.head.parent.remove(this.head);
-                  this.head.dispose();
-                }
-
-                //Remove weapons from model before dispose
-                try{
-                  if(this.model.lhand instanceof OdysseyObject3D){
-                    if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-                      this.model.lhand.remove(this.equipment.LEFTHAND.model);
-                    }
-                  }
-                }catch(e){}
+      if(this.bodyModel == '****'){
+        this.model = new OdysseyModel3D();
+        resolve(this.model);
+      }else{
+        GameState.ModelLoader.load(this.bodyModel).then( 
+          (mdl: OdysseyModel) => {
+            OdysseyModel3D.FromMDL(mdl, {
+              castShadow: true,
+              receiveShadow: true,
+              textureVar: this.bodyTexture,
+              isHologram: this.isHologram,
+              context: this.context,
+            }).then((model: OdysseyModel3D) => {
+              console.log('LoadModel', this.getTag());
+              if(this.model) this.model.removeFromParent();
+              // if(this.model instanceof OdysseyModel3D){
+              //   this.model.removeFromParent();
+              //   //Remove weapons from model before dispose
+              //   try{
+              //     if(this.model.lhand instanceof OdysseyObject3D){
+              //       if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
+              //         this.model.lhand.remove(this.equipment.LEFTHAND.model);
+              //       }
+              //     }
+              //   }catch(e){}
                 
-                //Remove weapons from model before dispose
-                try{
-                  if(this.model.rhand instanceof OdysseyObject3D){
-                    if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-                      this.model.rhand.remove(this.equipment.RIGHTHAND.model);
-                    }
-                  }
-                }catch(e){}
-
-                try{
-                  this.model.dispose();
-                }catch(e){}
-
-                try{
-                  if(scene)
-                    scene.remove(this.model);
-                }catch(e){}
-              }
+              //   //Remove weapons from model before dispose
+              //   try{
+              //     if(this.model.rhand instanceof OdysseyObject3D){
+              //       if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
+              //         this.model.rhand.remove(this.equipment.RIGHTHAND.model);
+              //       }
+              //     }
+              //   }catch(e){}
+              //   try{ this.model.dispose(); }catch(e){}
+              // }
+              
+              // if(this.head instanceof OdysseyModel3D){
+              //   this.head.removeFromParent();
+              //   try{ this.head.dispose(); }catch(e){}
+              // }
 
               this.model = model;
               this.model.userData.moduleObject = this;
+              this.container.add(this.model);
 
               try{
                 if(this.model.lhand instanceof OdysseyObject3D){
@@ -3389,48 +3367,40 @@ export class ModuleCreature extends ModuleObject {
                 console.error('ModuleCreature', e);
               }
 
-              if(scene){
-                scene.add( this.model );
-                //this.model.position.copy(position);
-                //this.model.rotation.set(rotation.x, rotation.y, rotation.z);
-              }
-
-              this.position = this.model.position.copy(this.position);
-              this.model.rotation.copy(this.rotation);
-              this.model.quaternion.copy(this.quaternion);
-
-              if(typeof onLoad === 'function')
-                onLoad();
+              resolve(this.model)
 
               this.model.disableMatrixUpdate();
 
-            }
-          });
-        }
-      });
-    }
+            }).catch(() => {
+              resolve(this.model);
+            });
+          }
+        ).catch(() => {
+          resolve(this.model);
+        });
+      }
+    });
   }
 
-  LoadHead( onLoad: Function ){
-    let appearance = this.getAppearance();
-    let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    this.headModel = undefined;
-    if(headId != '****' && appearance.modeltype == 'B'){
-      const heads2DA = TwoDAManager.datatables.get('heads');
-      if(heads2DA){
-        let head = heads2DA.rows[headId];
-        this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        GameState.ModelLoader.load({
-          file: this.headModel,
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              context: this.context,
-              castShadow: true,
-              receiveShadow: true,
-              isHologram: this.isHologram,
-              onComplete: (head: OdysseyModel3D) => {
+  LoadHead(): Promise<OdysseyModel3D> {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      let appearance = this.getAppearance();
+      let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      this.headModel = undefined;
+      if(headId != '****' && appearance.modeltype == 'B'){
+        const heads2DA = TwoDAManager.datatables.get('heads');
+        if(heads2DA){
+          let head = heads2DA.rows[headId];
+          this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
+          GameState.ModelLoader.load(this.headModel).then(
+            (mdl: OdysseyModel) => {
+              OdysseyModel3D.FromMDL(mdl, {
+                context: this.context,
+                castShadow: true,
+                receiveShadow: true,
+                isHologram: this.isHologram,
+              }).then((head: OdysseyModel3D) => {
                 try{
-
                   if(this.head instanceof OdysseyModel3D && this.head.parent){
                     this.head.parent.remove(this.head);
                     this.head.dispose();
@@ -3451,29 +3421,26 @@ export class ModuleCreature extends ModuleObject {
                     console.error('ModuleCreature', e);
                   }
                   
-                  //this.model.nodes = new Map(this.model.nodes, head.nodes);
-
-                  if(typeof onLoad === 'function')
-                    onLoad();
-
+                  resolve(this.head);
                   this.head.disableMatrixUpdate();
                 }catch(e){
                   console.error(e);
-                  if(typeof onLoad === 'function')
-                    onLoad();
+                  resolve(this.head);
                 }
-              }
-            });
-          }
-        });
+              }).catch(() => {
+                resolve(this.head);
+              });
+            }
+          ).catch( () => {
+            resolve(this.head);
+          });
+        }else{
+          resolve(this.head);
+        }
       }else{
-        if(typeof onLoad === 'function')
-          onLoad();
+        resolve(this.head);
       }
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad();
-    }
+    });
   }
 
   /*getEquip_ItemList(){
@@ -3489,19 +3456,18 @@ export class ModuleCreature extends ModuleObject {
 
     if(item instanceof ModuleItem){
       item.onEquip(this);
-      item.LoadModel( () => {
+      item.LoadModel().then( () => {
         switch(slot){
           case ModuleCreatureArmorSlot.ARMOR:
             this.equipment.ARMOR = item;
-            this.LoadModel( () => {
+            this.LoadModel().then(() => {
               if(typeof onLoad == 'function')
                 onLoad();
             });
           break;
           case ModuleCreatureArmorSlot.RIGHTHAND:
             this.equipment.RIGHTHAND = item;
-            item.LoadModel( () => {
-
+            item.LoadModel().then(() => {
               if(item.model instanceof OdysseyModel3D)
                 this.model.rhand.add(item.model);
 
@@ -3511,7 +3477,7 @@ export class ModuleCreature extends ModuleObject {
           break;
           case ModuleCreatureArmorSlot.LEFTHAND:
             this.equipment.LEFTHAND = item;
-            item.LoadModel( () => {
+            item.LoadModel().then(() => {
               if(item.model instanceof OdysseyModel3D)
                 this.model.lhand.add(item.model);
 
@@ -3775,7 +3741,7 @@ export class ModuleCreature extends ModuleObject {
       onError: null
     }, args);
     //console.log('LoadEquipmentItem', args);
-    let uti = args.item;
+    let uti: ModuleItem = args.item;
 
     if(uti instanceof GFFObject)
       uti = new ModuleItem(uti);
@@ -3823,7 +3789,7 @@ export class ModuleCreature extends ModuleObject {
     }
     
     uti.Load( () => {
-      uti.LoadModel( () => {
+      uti.LoadModel().then( () => {
         if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
           uti.model.playAnimation('off', true);
         }
@@ -3835,422 +3801,441 @@ export class ModuleCreature extends ModuleObject {
   }
 
   InitProperties( onLoad?: Function ){
-
-    this.classes = [];
-    this.feats = [];
-    this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
-    
-    if(!this.initialized){
-      if(this.template.RootNode.HasField('ObjectId')){
-        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-      }else if(this.template.RootNode.HasField('ID')){
-        this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
-        while(ModuleObject.List.has(this.id)){
-          this.id = ModuleObject.COUNT++;
-        }
-      }
+    try{
+      this.classes = [];
+      this.feats = [];
+      this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
       
-      ModuleObject.List.set(this.id, this);
-    }
-
-    if(this.template.RootNode.HasField('Appearance_Type'))
-      this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
-
-    if(this.template.RootNode.HasField('Animation'))
-      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
-
-    if(this.template.RootNode.HasField('BodyBag'))
-      this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
-
-    if(this.template.RootNode.HasField('BodyVariation'))
-      this.bodyBag = this.template.GetFieldByLabel('BodyVariation').GetValue();
-
-    if(this.template.RootNode.HasField('ChallengeRating'))
-      this.challengeRating = this.template.GetFieldByLabel('ChallengeRating').GetValue();
-
-    if(this.template.RootNode.HasField('ClassList')){
-      let classes = this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
-      for(let i = 0; i < classes.length; i++){
-        this.classes.push(
-          CreatureClass.FromCreatureClassStruct(classes[i])
-        );
-      }
-    }
-
-    if(this.template.RootNode.HasField('Conversation'))
-      this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
-
-    if(this.template.RootNode.HasField('CurrentForce'))
-      this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
-
-    if(this.template.RootNode.HasField('CurrentHitPoints'))
-      this.currentHitPoints = this.template.GetFieldByLabel('CurrentHitPoints').GetValue();
-
-    if(this.template.RootNode.HasField('HitPoints'))
-      this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
-
-    if(this.template.RootNode.HasField('Disarmable'))
-      this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
-  
-    if(this.template.RootNode.HasField('Experience'))
-      this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
-
-    if(this.template.RootNode.HasField('Listening')){
-      this.setListening(this.template.RootNode.GetFieldByLabel('Listening').GetValue());
-    }
-    if(this.template.RootNode.HasField('Commandable')){
-      this.setCommadable(this.template.RootNode.GetFieldByLabel('Commandable').GetValue());
-    }
-
-    if(this.template.RootNode.HasField('ExpressionList')){
-      let expressions = this.template.RootNode.GetFieldByLabel('ExpressionList').GetChildStructs();
-      for(let i = 0; i < expressions.length; i++){
-        this.setListeningPattern(
-          expressions[i].GetFieldByLabel('ExpressionString').GetValue(),
-          expressions[i].GetFieldByLabel('ExpressionId').GetValue()
-        );
-      }
-    }
-        
-    if(this.template.RootNode.HasField('FactionID')){
-      this.faction = this.template.GetFieldByLabel('FactionID').GetValue();
-      if((this.faction & 0xFFFFFFFF) == -1){
-        this.faction = 0;
-      }
-    }
-
-    if(this.template.RootNode.HasField('FeatList')){
-      let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
-      for(let i = 0; i < feats.length; i++){
-        this.feats.push(
-          new TalentFeat( feats[i].GetFieldByLabel('Feat').GetValue() )
-        );
-      }
-    }
-
-    if(this.template.RootNode.HasField('FirstName'))
-      this.firstName = this.template.RootNode.GetFieldByLabel('FirstName').GetValue();
-    
-    if(this.template.RootNode.HasField('ForcePoints'))
-      this.forcePoints = this.template.RootNode.GetFieldByLabel('ForcePoints').GetValue();
-        
-    if(this.template.RootNode.HasField('Gender'))
-      this.gender = this.template.RootNode.GetFieldByLabel('Gender').GetValue();
-  
-    if(this.template.RootNode.HasField('GoodEvil'))
-      this.goodEvil = this.template.RootNode.GetFieldByLabel('GoodEvil').GetValue();
-      
-    if(this.template.RootNode.HasField('Hologram'))
-      this.isHologram = this.template.GetFieldByLabel('Hologram').GetValue();
-
-    if(this.template.RootNode.HasField('Interruptable'))
-      this.interruptable = this.template.GetFieldByLabel('Interruptable').GetValue();
-
-    if(this.template.RootNode.HasField('IsPC'))
-      this.isPC = this.template.GetFieldByLabel('IsPC').GetValue();
-
-    if(this.template.RootNode.HasField('LastName'))
-      this.lastName = this.template.GetFieldByLabel('LastName').GetValue();
-
-    if(this.template.RootNode.HasField('MaxHitPoints')){
-      this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
-    }
-
-    if(this.template.RootNode.HasField('MaxForcePoints')){
-      this.maxForcePoints = this.template.GetFieldByLabel('MaxForcePoints').GetValue();
-    }
-
-    if(this.template.RootNode.HasField('Min1HP'))
-      this.min1HP = this.template.GetFieldByLabel('Min1HP').GetValue();
-
-    if(this.template.RootNode.HasField('NaturalAC'))
-      this.naturalAC = this.template.GetFieldByLabel('NaturalAC').GetValue();
-
-    if(this.template.RootNode.HasField('NoPermDeath'))
-      this.noPermDeath = this.template.GetFieldByLabel('NoPermDeath').GetValue();
-
-    if(this.template.RootNode.HasField('NotReorienting'))
-      this.notReorienting = this.template.GetFieldByLabel('NotReorienting').GetValue();
-
-    if(this.template.RootNode.HasField('PartyInteract'))
-      this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
-
-    if(this.template.RootNode.HasField('PerceptionRange')){
-      this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
-    }else{
-      //https://forum.neverwintervault.org/t/perception-range/3191/9
-      //It appears that PerceptionRange isn't saved inside the GIT file.
-      //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
-      this.perceptionRange = 11;
-    }
-
-    if(this.template.RootNode.HasField('Phenotype'))
-      this.phenotype = this.template.GetFieldByLabel('Phenotype').GetValue();
-
-    if(this.template.RootNode.HasField('Plot'))
-      this.plot = this.template.GetFieldByLabel('Plot').GetValue();
-
-    if(this.template.RootNode.HasField('PortraitId'))
-      this.portraidId = this.template.GetFieldByLabel('PortraitId').GetValue();
-  
-    if(this.template.RootNode.HasField('Race'))
-      this.race = this.template.RootNode.GetFieldByLabel('Race').GetValue();
-
-    if(this.template.RootNode.HasField('SkillList')){
-      let skills = this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
-      for(let i = 0; i < skills.length; i++){
-        this.skills[i] = new TalentSkill(i, skills[i].GetFieldByLabel('Rank').GetValue());
-      }
-    }
-
-    if(this.template.RootNode.HasField('SoundSetFile'))
-      this.soundSetFile = this.template.RootNode.GetFieldByLabel('SoundSetFile').GetValue();
-  
-    if(this.template.RootNode.HasField('SubRace'))
-      this.subrace = this.template.RootNode.GetFieldByLabel('SubRace').GetValue();
-
-    if(this.template.RootNode.HasField('Tag'))
-      this.tag = this.template.GetFieldByLabel('Tag').GetValue();
-
-    if(this.template.RootNode.HasField('TemplateResRef'))
-      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
-
-    if(this.template.RootNode.HasField('TextureVar'))
-      this.textureVar = this.template.GetFieldByLabel('TextureVar').GetValue();
-
-    if(this.template.RootNode.HasField('WalkRate'))
-      this.walkRate = this.template.GetFieldByLabel('WalkRate').GetValue();
-
-    if(this.template.RootNode.HasField('Str'))
-      this.str = this.template.GetFieldByLabel('Str').GetValue();
-  
-    if(this.template.RootNode.HasField('Dex'))
-      this.dex = this.template.GetFieldByLabel('Dex').GetValue();
-  
-    if(this.template.RootNode.HasField('Con'))
-      this.con = this.template.GetFieldByLabel('Con').GetValue();
-  
-    if(this.template.RootNode.HasField('Cha'))
-      this.cha = this.template.GetFieldByLabel('Cha').GetValue();
-  
-    if(this.template.RootNode.HasField('Wis'))
-      this.wis = this.template.GetFieldByLabel('Wis').GetValue();
-  
-    if(this.template.RootNode.HasField('Int'))
-      this.int = this.template.GetFieldByLabel('Int').GetValue();
-
-    if(this.template.RootNode.HasField('XPosition'))
-      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
-
-    if(this.template.RootNode.HasField('YPosition'))
-      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
-
-    if(this.template.RootNode.HasField('ZPosition'))
-      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
-
-    if(this.template.RootNode.HasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
-
-    if(this.template.RootNode.HasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
-
-    if(this.template.RootNode.HasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
-      
-    if(this.template.RootNode.HasField('FortSaveThrow'))
-      this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
-
-    if(this.template.RootNode.HasField('RefSaveThrow'))
-      this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
-
-    if(this.template.RootNode.HasField('WillSaveThrow'))
-      this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
-
-      if(this.template.RootNode.HasField('SubraceIndex'))
-        this.subraceIndex = this.template.RootNode.GetFieldByLabel('SubraceIndex').GetValue();
-
-
-    if(this.template.RootNode.HasField('SWVarTable')){
-      let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].GetFieldByLabel('Variable').GetValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-        }
-      }
-      let localNumbers = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('ByteArray').GetChildStructs();
-      //console.log(localNumbers);
-      for(let i = 0; i < localNumbers.length; i++){
-        let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
-        this.setLocalNumber(i, data);
-      }
-    }
-
-    if(this.template.RootNode.HasField('PM_Appearance'))
-      this.pm_Appearance = this.template.RootNode.GetFieldByLabel('PM_Appearance').GetValue();
-
-    if(this.template.RootNode.HasField('PM_IsDisguised'))
-      this.pm_IsDisguised = this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
-
-    if(this.template.RootNode.HasField('EffectList')){
-      let effects = this.template.RootNode.GetFieldByLabel('EffectList').GetChildStructs() || [];
-      for(let i = 0; i < effects.length; i++){
-        let effect = GameEffect.EffectFromStruct(effects[i]);
-        if(effect instanceof GameEffect){
-          effect.setAttachedObject(this);
-          //console.log('attached');
-          this.effects.push(effect);
-          //this.addEffect(effect);
-        }
-      }
-    }
-
-    if(this.template.RootNode.HasField('Equip_ItemList')){
-      let equipment = this.template.RootNode.GetFieldByLabel('Equip_ItemList').GetChildStructs() || [];
-      for(let i = 0; i < equipment.length; i++){
-        let strt = equipment[i];
-        let equipped_item = undefined;
-        let slot_type = strt.Type;
-        if(strt.HasField('EquippedRes')){
-          equipped_item = new ModuleItem(strt.GetFieldByLabel('EquippedRes').GetValue());
+      if(!this.initialized){
+        if(this.template.RootNode.HasField('ObjectId')){
+          this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+        }else if(this.template.RootNode.HasField('ID')){
+          this.id = this.template.GetFieldByLabel('ID').GetValue();
         }else{
-          equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
+          this.id = ModuleObject.COUNT++;
+          while(ModuleObject.List.has(this.id)){
+            this.id = ModuleObject.COUNT++;
+          }
         }
         
-        switch(slot_type){
-          case ModuleCreatureArmorSlot.HEAD:
-            this.equipment.HEAD = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.ARMS:
-            this.equipment.ARMS = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.ARMOR:
-            this.equipment.ARMOR = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.LEFTHAND:
-            this.equipment.LEFTHAND = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.RIGHTHAND:
-            this.equipment.RIGHTHAND = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.LEFTARMBAND:
-            this.equipment.LEFTARMBAND = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.RIGHTARMBAND:
-            this.equipment.RIGHTARMBAND = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.IMPLANT:
-          this.equipment.IMPLANT = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.BELT:
-            this.equipment.BELT = equipped_item;
-          break;
+        ModuleObject.List.set(this.id, this);
+      }
 
-          //Simple Creature Slots
-          case ModuleCreatureArmorSlot.HIDE:
-            this.equipment.HIDE = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.CLAW1:
-            this.equipment.CLAW1 = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.CLAW2:
-            this.equipment.CLAW2 = equipped_item;
-          break;
-          case ModuleCreatureArmorSlot.CLAW3:
-            this.equipment.CLAW3 = equipped_item;
-          break;
+      if(this.template.RootNode.HasField('Appearance_Type'))
+        this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
+
+      if(this.template.RootNode.HasField('Animation'))
+        this.animState = this.template.GetFieldByLabel('Animation').GetValue();
+
+      if(this.template.RootNode.HasField('BodyBag'))
+        this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
+
+      if(this.template.RootNode.HasField('BodyVariation'))
+        this.bodyBag = this.template.GetFieldByLabel('BodyVariation').GetValue();
+
+      if(this.template.RootNode.HasField('ChallengeRating'))
+        this.challengeRating = this.template.GetFieldByLabel('ChallengeRating').GetValue();
+
+      if(this.template.RootNode.HasField('ClassList')){
+        let classes = this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
+        for(let i = 0; i < classes.length; i++){
+          this.classes.push(
+            CreatureClass.FromCreatureClassStruct(classes[i])
+          );
         }
       }
-    }
 
-    this.ParseEquipmentSlots( () => {
+      if(this.template.RootNode.HasField('Conversation'))
+        this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
 
-      if(this.template.RootNode.HasField('ItemList')){
+      if(this.template.RootNode.HasField('CurrentForce'))
+        this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
 
-        let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
-        let loop = new AsyncLoop({
-          array: inventory,
-          onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
-            this.LoadItem(GFFObject.FromStruct(item), () => {
-              asyncLoop.next();
-            });
-          }
-        });
-        loop.iterate(() => {
-          this.LoadSoundSet(onLoad);
-        });
-  
+      if(this.template.RootNode.HasField('CurrentHitPoints'))
+        this.currentHitPoints = this.template.GetFieldByLabel('CurrentHitPoints').GetValue();
+
+      if(this.template.RootNode.HasField('HitPoints'))
+        this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
+
+      if(this.template.RootNode.HasField('Disarmable'))
+        this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
+    
+      if(this.template.RootNode.HasField('Experience'))
+        this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
+
+      if(this.template.RootNode.HasField('Listening')){
+        this.setListening(this.template.RootNode.GetFieldByLabel('Listening').GetValue());
+      }
+      if(this.template.RootNode.HasField('Commandable')){
+        this.setCommadable(this.template.RootNode.GetFieldByLabel('Commandable').GetValue());
+      }
+
+      if(this.template.RootNode.HasField('ExpressionList')){
+        let expressions = this.template.RootNode.GetFieldByLabel('ExpressionList').GetChildStructs();
+        for(let i = 0; i < expressions.length; i++){
+          this.setListeningPattern(
+            expressions[i].GetFieldByLabel('ExpressionString').GetValue(),
+            expressions[i].GetFieldByLabel('ExpressionId').GetValue()
+          );
+        }
+      }
+          
+      if(this.template.RootNode.HasField('FactionID')){
+        this.faction = this.template.GetFieldByLabel('FactionID').GetValue();
+        if((this.faction & 0xFFFFFFFF) == -1){
+          this.faction = 0;
+        }
+      }
+
+      if(this.template.RootNode.HasField('FeatList')){
+        let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
+        for(let i = 0; i < feats.length; i++){
+          this.feats.push(
+            new TalentFeat( feats[i].GetFieldByLabel('Feat').GetValue() )
+          );
+        }
+      }
+
+      if(this.template.RootNode.HasField('FirstName'))
+        this.firstName = this.template.RootNode.GetFieldByLabel('FirstName').GetValue();
+      
+      if(this.template.RootNode.HasField('ForcePoints'))
+        this.forcePoints = this.template.RootNode.GetFieldByLabel('ForcePoints').GetValue();
+          
+      if(this.template.RootNode.HasField('Gender'))
+        this.gender = this.template.RootNode.GetFieldByLabel('Gender').GetValue();
+    
+      if(this.template.RootNode.HasField('GoodEvil'))
+        this.goodEvil = this.template.RootNode.GetFieldByLabel('GoodEvil').GetValue();
+        
+      if(this.template.RootNode.HasField('Hologram'))
+        this.isHologram = this.template.GetFieldByLabel('Hologram').GetValue();
+
+      if(this.template.RootNode.HasField('Interruptable'))
+        this.interruptable = this.template.GetFieldByLabel('Interruptable').GetValue();
+
+      if(this.template.RootNode.HasField('IsPC'))
+        this.isPC = this.template.GetFieldByLabel('IsPC').GetValue();
+
+      if(this.template.RootNode.HasField('LastName'))
+        this.lastName = this.template.GetFieldByLabel('LastName').GetValue();
+
+      if(this.template.RootNode.HasField('MaxHitPoints')){
+        this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
+      }
+
+      if(this.template.RootNode.HasField('MaxForcePoints')){
+        this.maxForcePoints = this.template.GetFieldByLabel('MaxForcePoints').GetValue();
+      }
+
+      if(this.template.RootNode.HasField('Min1HP'))
+        this.min1HP = this.template.GetFieldByLabel('Min1HP').GetValue();
+
+      if(this.template.RootNode.HasField('NaturalAC'))
+        this.naturalAC = this.template.GetFieldByLabel('NaturalAC').GetValue();
+
+      if(this.template.RootNode.HasField('NoPermDeath'))
+        this.noPermDeath = this.template.GetFieldByLabel('NoPermDeath').GetValue();
+
+      if(this.template.RootNode.HasField('NotReorienting'))
+        this.notReorienting = this.template.GetFieldByLabel('NotReorienting').GetValue();
+
+      if(this.template.RootNode.HasField('PartyInteract'))
+        this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
+
+      if(this.template.RootNode.HasField('PerceptionRange')){
+        this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
       }else{
-        this.LoadSoundSet(onLoad);
+        //https://forum.neverwintervault.org/t/perception-range/3191/9
+        //It appears that PerceptionRange isn't saved inside the GIT file.
+        //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
+        this.perceptionRange = 11;
       }
 
-    });
+      if(this.template.RootNode.HasField('Phenotype'))
+        this.phenotype = this.template.GetFieldByLabel('Phenotype').GetValue();
 
-    //ActionList
-    if(this.template.RootNode.HasField('ActionList')){
-      let actionStructs = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
-      for(let i = 0, len = actionStructs.length; i < len; i++){
-        let action = Action.FromStruct(actionStructs[i]);
-        if(action instanceof Action){
-          this.actionQueue.add(action);
+      if(this.template.RootNode.HasField('Plot'))
+        this.plot = this.template.GetFieldByLabel('Plot').GetValue();
+
+      if(this.template.RootNode.HasField('PortraitId'))
+        this.portraidId = this.template.GetFieldByLabel('PortraitId').GetValue();
+    
+      if(this.template.RootNode.HasField('Race'))
+        this.race = this.template.RootNode.GetFieldByLabel('Race').GetValue();
+
+      if(this.template.RootNode.HasField('SkillList')){
+        let skills = this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
+        for(let i = 0; i < skills.length; i++){
+          this.skills[i] = new TalentSkill(i, skills[i].GetFieldByLabel('Rank').GetValue());
         }
       }
-    }
 
-    //PerceptionList
-    if(this.template.RootNode.HasField('PerceptionList')){
-      let perceptionList = this.template.RootNode.GetFieldByLabel('PerceptionList').GetChildStructs();
-      for(let i = 0, len = perceptionList.length; i < len; i++){
-        let perception = perceptionList[i];
+      if(this.template.RootNode.HasField('SoundSetFile'))
+        this.soundSetFile = this.template.RootNode.GetFieldByLabel('SoundSetFile').GetValue();
+    
+      if(this.template.RootNode.HasField('SubRace'))
+        this.subrace = this.template.RootNode.GetFieldByLabel('SubRace').GetValue();
 
-        let objectId = perception.GetFieldByLabel('ObjectId').GetValue();
-        let data = perception.GetFieldByLabel('PerceptionData').GetValue();
+      if(this.template.RootNode.HasField('Tag'))
+        this.tag = this.template.GetFieldByLabel('Tag').GetValue();
 
-        let seen = false;
-        let heard = false;
-        let hasSeen = false;
-        let hasHeard = false;
-        //https://nwnlexicon.com/index.php?title=Perception
-        switch(data){
-          case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
-            seen = true; heard = true;
-          break;
-          case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
-            seen = false; heard = false;
-          break;
-          case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
-            seen = false; heard = true;
-          break;
-          case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
-            seen = true; heard = false;
-          break;
-          case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
-            seen = false; heard = false;
-          break;
-          case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
-            seen = false; heard = true;
-          break;
-          case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silenced.
-            seen = false; heard = false;
-          break;
-          case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silenced.
-            seen = true; heard = false;
-          break;
+      if(this.template.RootNode.HasField('TemplateResRef'))
+        this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+
+      if(this.template.RootNode.HasField('TextureVar'))
+        this.textureVar = this.template.GetFieldByLabel('TextureVar').GetValue();
+
+      if(this.template.RootNode.HasField('WalkRate'))
+        this.walkRate = this.template.GetFieldByLabel('WalkRate').GetValue();
+
+      if(this.template.RootNode.HasField('Str'))
+        this.str = this.template.GetFieldByLabel('Str').GetValue();
+    
+      if(this.template.RootNode.HasField('Dex'))
+        this.dex = this.template.GetFieldByLabel('Dex').GetValue();
+    
+      if(this.template.RootNode.HasField('Con'))
+        this.con = this.template.GetFieldByLabel('Con').GetValue();
+    
+      if(this.template.RootNode.HasField('Cha'))
+        this.cha = this.template.GetFieldByLabel('Cha').GetValue();
+    
+      if(this.template.RootNode.HasField('Wis'))
+        this.wis = this.template.GetFieldByLabel('Wis').GetValue();
+    
+      if(this.template.RootNode.HasField('Int'))
+        this.int = this.template.GetFieldByLabel('Int').GetValue();
+
+      if(this.template.RootNode.HasField('XPosition'))
+        this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+
+      if(this.template.RootNode.HasField('YPosition'))
+        this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+
+      if(this.template.RootNode.HasField('ZPosition'))
+        this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+
+      if(this.template.RootNode.HasField('XOrientation'))
+        this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+
+      if(this.template.RootNode.HasField('YOrientation'))
+        this.yOrientation = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
+
+      if(this.template.RootNode.HasField('ZOrientation'))
+        this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+        
+      if(this.template.RootNode.HasField('FortSaveThrow'))
+        this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
+
+      if(this.template.RootNode.HasField('RefSaveThrow'))
+        this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
+
+      if(this.template.RootNode.HasField('WillSaveThrow'))
+        this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
+
+        if(this.template.RootNode.HasField('SubraceIndex'))
+          this.subraceIndex = this.template.RootNode.GetFieldByLabel('SubraceIndex').GetValue();
+
+
+      if(this.template.RootNode.HasField('SWVarTable')){
+        let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
+        //console.log(localBools);
+        for(let i = 0; i < localBools.length; i++){
+          let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+          for(let bit = 0; bit < 32; bit++){
+            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          }
+        }
+        let localNumbers = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('ByteArray').GetChildStructs();
+        //console.log(localNumbers);
+        for(let i = 0; i < localNumbers.length; i++){
+          let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+          this.setLocalNumber(i, data);
+        }
+      }
+
+      if(this.template.RootNode.HasField('PM_Appearance'))
+        this.pm_Appearance = this.template.RootNode.GetFieldByLabel('PM_Appearance').GetValue();
+
+      if(this.template.RootNode.HasField('PM_IsDisguised'))
+        this.pm_IsDisguised = this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
+
+      try{
+        if(this.template.RootNode.HasField('EffectList')){
+          let effects = this.template.RootNode.GetFieldByLabel('EffectList').GetChildStructs() || [];
+          for(let i = 0; i < effects.length; i++){
+            let effect = GameEffect.EffectFromStruct(effects[i]);
+            if(effect instanceof GameEffect){
+              effect.setAttachedObject(this);
+              //console.log('attached');
+              this.effects.push(effect);
+              //this.addEffect(effect);
+            }
+          }
+        }
+      }catch(e: any){
+        console.error(e);
+      }
+
+      try{
+        if(this.template.RootNode.HasField('Equip_ItemList')){
+          let equipment = this.template.RootNode.GetFieldByLabel('Equip_ItemList').GetChildStructs() || [];
+          for(let i = 0; i < equipment.length; i++){
+            let strt = equipment[i];
+            let equipped_item = undefined;
+            let slot_type = strt.Type;
+            if(strt.HasField('EquippedRes')){
+              equipped_item = new ModuleItem(strt.GetFieldByLabel('EquippedRes').GetValue());
+            }else{
+              equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
+            }
+            
+            switch(slot_type){
+              case ModuleCreatureArmorSlot.HEAD:
+                this.equipment.HEAD = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.ARMS:
+                this.equipment.ARMS = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.ARMOR:
+                this.equipment.ARMOR = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.LEFTHAND:
+                this.equipment.LEFTHAND = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.RIGHTHAND:
+                this.equipment.RIGHTHAND = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.LEFTARMBAND:
+                this.equipment.LEFTARMBAND = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.RIGHTARMBAND:
+                this.equipment.RIGHTARMBAND = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.IMPLANT:
+              this.equipment.IMPLANT = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.BELT:
+                this.equipment.BELT = equipped_item;
+              break;
+
+              //Simple Creature Slots
+              case ModuleCreatureArmorSlot.HIDE:
+                this.equipment.HIDE = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.CLAW1:
+                this.equipment.CLAW1 = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.CLAW2:
+                this.equipment.CLAW2 = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.CLAW3:
+                this.equipment.CLAW3 = equipped_item;
+              break;
+            }
+          }
+        }
+      }catch(e: any){
+        console.error(e);
+      }
+
+      this.ParseEquipmentSlots( () => {
+
+        if(this.template.RootNode.HasField('ItemList')){
+
+          let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+          let loop = new AsyncLoop({
+            array: inventory,
+            onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
+              this.LoadItem(GFFObject.FromStruct(item), () => {
+                asyncLoop.next();
+              });
+            }
+          });
+          loop.iterate(() => {
+            this.LoadSoundSet(onLoad);
+          });
+    
+        }else{
+          this.LoadSoundSet(onLoad);
         }
 
-        this.perceptionList.push({
-          objectId: objectId,
-          data: data,
-          seen: seen,
-          heard: heard,
-          hasSeen: seen,
-          hasHeard: heard
-        });
+      });
 
+      //ActionList
+      try{
+        if(this.template.RootNode.HasField('ActionList')){
+          let actionStructs = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
+          for(let i = 0, len = actionStructs.length; i < len; i++){
+            let action = Action.FromStruct(actionStructs[i]);
+            if(action instanceof Action){
+              this.actionQueue.add(action);
+            }
+          }
+        }
+      }catch(e: any){
+        console.error(e);
       }
+
+      //PerceptionList
+      try{
+        if(this.template.RootNode.HasField('PerceptionList')){
+          let perceptionList = this.template.RootNode.GetFieldByLabel('PerceptionList').GetChildStructs();
+          for(let i = 0, len = perceptionList.length; i < len; i++){
+            let perception = perceptionList[i];
+
+            let objectId = perception.GetFieldByLabel('ObjectId').GetValue();
+            let data = perception.GetFieldByLabel('PerceptionData').GetValue();
+
+            let seen = false;
+            let heard = false;
+            let hasSeen = false;
+            let hasHeard = false;
+            //https://nwnlexicon.com/index.php?title=Perception
+            switch(data){
+              case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
+                seen = true; heard = true;
+              break;
+              case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
+                seen = false; heard = false;
+              break;
+              case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
+                seen = false; heard = true;
+              break;
+              case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
+                seen = true; heard = false;
+              break;
+              case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
+                seen = false; heard = false;
+              break;
+              case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
+                seen = false; heard = true;
+              break;
+              case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silenced.
+                seen = false; heard = false;
+              break;
+              case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silenced.
+                seen = true; heard = false;
+              break;
+            }
+
+            this.perceptionList.push({
+              objectId: objectId,
+              data: data,
+              seen: seen,
+              heard: heard,
+              hasSeen: seen,
+              hasHeard: heard
+            });
+
+          }
+        }
+      }catch(e: any){
+        console.error(e);
+      }
+    }catch(e: any){
+      console.error(e);
     }
 
     this.initialized = true;
@@ -4262,11 +4247,11 @@ export class ModuleCreature extends ModuleObject {
     let loop = new AsyncLoop({
       array: Object.keys(this.equipment),
       onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
-        let slot = (this.equipment as any)[slot_key];
+        let slot: ModuleItem = (this.equipment as any)[slot_key];
         if(slot instanceof ModuleItem){
           slot.setPossessor(this);
           slot.Load( () => {
-            slot.LoadModel( () => {
+            slot.LoadModel().then( () => {
               if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
                 slot.model.playAnimation('off', true);
               }

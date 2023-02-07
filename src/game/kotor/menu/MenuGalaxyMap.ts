@@ -80,37 +80,34 @@ export class MenuGalaxyMap extends GameMenu {
       this.script = await NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
-      GameState.ModelLoader.load({
-        file: 'galaxy',
-        onLoad: (mdl: OdysseyModel) => {
-          this.tGuiPanel.widget.userData.fill.visible = false;
+      GameState.ModelLoader.load('galaxy')
+      .then((mdl: OdysseyModel) => {
+        this.tGuiPanel.widget.userData.fill.visible = false;
 
-          this._3dView = new LBL_3DView();
-          this._3dView.visible = true;
-          (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
-          (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).transparent = false;
+        this._3dView = new LBL_3DView();
+        this._3dView.visible = true;
+        (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
+        (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).transparent = false;
+
+        
+        OdysseyModel3D.FromMDL(mdl, {
+          context: this._3dView
+        }).then((model: OdysseyModel3D) => {
+          //console.log('Model Loaded', model);
+          this._3dViewModel = model;
           
-          
-          OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (model: OdysseyModel3D) => {
-              //console.log('Model Loaded', model);
-              this._3dViewModel = model;
-              
-              this._3dView.camera.position.copy(model.camerahook.position);
-              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-    
-              this._3dView.addModel(this._3dViewModel);
-              TextureLoader.LoadQueue(() => {
+          this._3dView.camera.position.copy(model.camerahook.position);
+          this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
-                resolve();
+          this._3dView.addModel(this._3dViewModel);
+          TextureLoader.LoadQueue(() => {
 
-              });
+            resolve();
 
-            },
-            context: this._3dView
           });
-        }
-      });
+
+        }).catch(resolve);
+      }).catch(resolve);
     });
   }
 

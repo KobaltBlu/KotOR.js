@@ -87,21 +87,17 @@ export class EffectBeam extends GameEffect {
         break;
       }
 
-      GameState.ModelLoader.load({
-        file: this.modelName,
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model: OdysseyModel3D) => {
-              this.model = model;
-              resolve(this);
-            }
-          });
-        },
-        onError: () => {
-          resolve(this);
-        }
+      GameState.ModelLoader.load(this.modelName)
+      .then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          onComplete: (model: OdysseyModel3D) => {
+            this.model = model;
+            resolve(this);
+          }
+        });
+      }).catch(() => {
+        resolve(this);
       });
-
     });
   }
 

@@ -208,16 +208,10 @@ export class ModuleArea extends ModuleObject {
       this.triggers[0].destroy();
     }
 
-    //Clear party geometries
-    /*while (GameState.group.party.children.length > 1){
-      GameState.group.party.children[1].dispose();
-      GameState.group.party.remove(GameState.group.party.children[1]);
-    }*/
-
-    /*while (PartyManager.party.length){
-      GameState.group.party.children[0].dispose();
-      GameState.group.party.remove(GameState.group.party.children[0]);
-    }*/
+    while (PartyManager.party.length){
+      const pm = PartyManager.party.shift();
+      pm.destroy();
+    }
 
     //Clear sound geometries
     while (GameState.group.sounds.children.length){
@@ -232,12 +226,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.weather.destroy();
-
-    //Clear party geometries
-    /*while (PartyManager.party.length){
-      PartyManager.party[0].destroy();
-      PartyManager.party.shift();
-    }*/
+    
   }
 
   update(delta: number = 0){
@@ -544,7 +533,7 @@ export class ModuleArea extends ModuleObject {
     new AsyncLoop({
       array: this.creatures,
       onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-        creature.LoadModel(() => {
+        creature.LoadModel().then(() => {
           asyncLoop.next();
         });
       }
@@ -552,7 +541,7 @@ export class ModuleArea extends ModuleObject {
       new AsyncLoop({
         array: PartyManager.party,
         onLoop: (partyMember: ModuleCreature, asyncLoop: AsyncLoop) => {
-          partyMember.LoadModel(() => {
+          partyMember.LoadModel().then(() => {
             asyncLoop.next();
           });
         }
@@ -560,7 +549,7 @@ export class ModuleArea extends ModuleObject {
         new AsyncLoop({
           array: this.placeables,
           onLoop: (placeable: ModulePlaceable, asyncLoop: AsyncLoop) => {
-            placeable.LoadModel(() => {
+            placeable.LoadModel().then(() => {
               asyncLoop.next();
             });
           }
@@ -568,7 +557,7 @@ export class ModuleArea extends ModuleObject {
           new AsyncLoop({
             array: this.doors,
             onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-              door.LoadModel(() => {
+              door.LoadModel().then(() => {
                 asyncLoop.next();
               });
             }
@@ -576,7 +565,7 @@ export class ModuleArea extends ModuleObject {
             new AsyncLoop({
               array: this.rooms,
               onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
-                room.load(() => {
+                room.loadModel().then(() => {
                   asyncLoop.next();
                 });
               }
@@ -1123,15 +1112,14 @@ export class ModuleArea extends ModuleObject {
 
   }
 
-  getPlayerTemplate(){
-    let spawnLoc = this.getSpawnLocation();
+  getPlayerTemplate(): GFFObject {
     if(PartyManager.Player){
       return PartyManager.Player;
     }else{
       let pTPL = new GFFObject();
 
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(GameState.GameKey == 'TSL' ? 134 : 177);
-      pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Galen Urso');
+      pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Luke Skywalker');
       pTPL.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).SetValue(10);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(0);
@@ -1213,7 +1201,8 @@ export class ModuleArea extends ModuleObject {
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).SetValue(85);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Race') ).SetValue(6);
   
-      /*pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XPosition') ).SetValue(spawnLoc.XPosition);
+      /*let spawnLoc = this.getSpawnLocation();
+      pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XPosition') ).SetValue(spawnLoc.XPosition);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'YPosition') ).SetValue(spawnLoc.YPosition);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'ZPosition') ).SetValue(spawnLoc.ZPosition);
       pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XOrientation') ).SetValue(spawnLoc.XOrientation);
@@ -1224,12 +1213,9 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  async loadMGPlayer(){
-
+  async loadMGPlayer(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
-
       if(this.MiniGame){
-
         console.log('Loading MG Player')
         let player = this.MiniGame.Player;
         player.partyID = -1;
@@ -1259,19 +1245,14 @@ export class ModuleArea extends ModuleObject {
             });
           });
         });
-
       }else{
         resolve();
       }
-
     });
-
   }
 
-  async loadPlayer(){
-
+  async loadPlayer(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
-
       console.log('Loading Player', GameState.player)
 
       if(GameState.player instanceof ModuleCreature){
@@ -1279,6 +1260,7 @@ export class ModuleArea extends ModuleObject {
 
         if(!this.MiniGame){
           PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
+          GameState.group.party.add( GameState.player.container );
         }
 
         //Reset the players actions between modules
@@ -1295,23 +1277,20 @@ export class ModuleArea extends ModuleObject {
           }
           
           GameState.player.LoadScripts( () => {
-            GameState.player.LoadModel( (model: OdysseyModel3D) => {
+            GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
               GameState.player.model = model;
               //let spawnLoc = this.getSpawnLocation();
               let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
-              GameState.player.position.x = spawnLoc.position.x;
-              GameState.player.position.y = spawnLoc.position.y;
-              GameState.player.position.z = spawnLoc.position.z;
+              GameState.player.position.copy(spawnLoc.position);
               GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
               GameState.player.computeBoundingBox();
               GameState.player.model.hasCollision = true;
 
-              if(!this.MiniGame)
-                GameState.group.party.add( model );
-
               GameState.player.getCurrentRoom();
 
+              resolve();
+            }).catch(() => {
               resolve();
             });
           });
@@ -1322,6 +1301,7 @@ export class ModuleArea extends ModuleObject {
         player.id = ModuleObject.GetNextPlayerId();
         
         player.Load( ( object: ModuleCreature ) => {
+          GameState.player = player;
           
           if(typeof object == 'undefined'){
             resolve();
@@ -1330,26 +1310,20 @@ export class ModuleArea extends ModuleObject {
         
           if(!this.MiniGame){
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+            GameState.group.party.add( player.container );
           }
 
           player.LoadScripts( () => {
-            player.LoadModel( (model: OdysseyModel3D) => {
+            player.LoadModel().then( (model: OdysseyModel3D) => {
     
               let spawnLoc = this.getSpawnLocation();
     
-              player.position.x = spawnLoc.position.x;
-              player.position.y = spawnLoc.position.y;
-              player.position.z = spawnLoc.position.z;
+              player.position.copy(spawnLoc.position);
               player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
               //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
               player.computeBoundingBox();
               model.moduleObject = player;
               model.hasCollision = true;
-
-              if(!this.MiniGame)
-                GameState.group.party.add( model );
-
-              GameState.player = player;
     
               player.getCurrentRoom();
     
@@ -1358,15 +1332,11 @@ export class ModuleArea extends ModuleObject {
           });
         });
       }
-
     });
-
   }
 
-  async loadMGTracks(){
-
+  async loadMGTracks(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
-
       if(this.MiniGame){
         let trackIndex = 0;
         let loop = new AsyncLoop({
@@ -1379,7 +1349,7 @@ export class ModuleArea extends ModuleObject {
                 model.userData.index = trackIndex;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
                 model.hasCollision = true;
-                GameState.group.creatures.add( model );
+                GameState.group.creatures.add( track.container );
       
                 track.computeBoundingBox();
                 track.getCurrentRoom();
@@ -1395,13 +1365,10 @@ export class ModuleArea extends ModuleObject {
       }else{
         resolve();
       }
-
     });
-
   }
 
-  async loadMGEnemies(){
-
+  async loadMGEnemies(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
     
       if(this.MiniGame){
@@ -1437,13 +1404,10 @@ export class ModuleArea extends ModuleObject {
         });
       }else
         resolve();
-
     });
-
   }
 
-  async loadParty(){
-
+  async loadParty(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Party Member')
       let loop = new AsyncLoop({
@@ -1457,18 +1421,16 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
-  async loadRooms( ){
 
+  async loadRooms(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Rooms');
       let loop = new AsyncLoop({
         array: this.rooms,
         onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
-          room.load( (room: ModuleRoom) => {
+          room.loadModel().then( (model: OdysseyModel3D) => {
             if(room.model instanceof OdysseyModel3D){
 
               if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
@@ -1481,7 +1443,7 @@ export class ModuleArea extends ModuleObject {
               }
               
               room.model.name = room.roomName;
-              GameState.group.rooms.add(room.model);
+              GameState.group.rooms.add(room.container);
     
               room.computeBoundingBox();
               room.model.updateMatrix();
@@ -1526,11 +1488,9 @@ export class ModuleArea extends ModuleObject {
       });
 
     });
-
   }
 
-  async loadDoors() {
-
+  async loadDoors(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Doors');
       let loop = new AsyncLoop({
@@ -1543,11 +1503,11 @@ export class ModuleArea extends ModuleObject {
               return;
             }
   
-            door.position.x = door.getX();
-            door.position.y = door.getY();
-            door.position.z = door.getZ();
+            // door.position.x = door.getX();
+            // door.position.y = door.getY();
+            // door.position.z = door.getZ();
             door.rotation.set(0, 0, door.getBearing());
-            door.LoadModel( (model: OdysseyModel3D) => {
+            door.LoadModel().then( (model: OdysseyModel3D) => {
               door.LoadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
                 door.computeBoundingBox();
                 try{
@@ -1567,7 +1527,6 @@ export class ModuleArea extends ModuleObject {
                   }
 
                   if(door.model instanceof OdysseyModel3D){
-                    door.model.rotation.copy(door.rotation);
                     door.box.setFromObject(door.model);
                   }
     
@@ -1579,7 +1538,7 @@ export class ModuleArea extends ModuleObject {
                 }
     
                 door.getCurrentRoom();
-                GameState.group.doors.add( model );
+                GameState.group.doors.add( door.container );
 
                 asyncLoop.next();
               });
@@ -1592,30 +1551,27 @@ export class ModuleArea extends ModuleObject {
       });
 
     });
-
   }
 
-  async loadPlaceables(){
-
+  async loadPlaceables(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Placeables');
       let loop = new AsyncLoop({
         array: this.placeables,
         onLoop: (plc: ModulePlaceable, asyncLoop: AsyncLoop) => {
           plc.Load( ( object: ModulePlaceable ) => {
-          
             if(typeof object == 'undefined'){
               asyncLoop.next();
               return;
             }
-  
+            
+            console.log(plc.getTag(), plc.position.z);
             plc.position.set(plc.getX(), plc.getY(), plc.getZ());
             plc.rotation.set(0, 0, plc.getBearing());
-            plc.LoadModel( (model: OdysseyModel3D) => {
+            plc.LoadModel().then( (model: OdysseyModel3D) => {
+              GameState.group.placeables.add( plc.container );
               plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
-              
                 GameState.walkmeshList.push( pwk.mesh );
-                GameState.group.placeables.add( model );
                 plc.computeBoundingBox();
 
                 if(pwk.mesh instanceof THREE.Object3D){
@@ -1628,6 +1584,7 @@ export class ModuleArea extends ModuleObject {
                 }
     
                 plc.getCurrentRoom();
+                plc.position.set(plc.getX(), plc.getY(), plc.getZ());
                 plc.computeBoundingBox();
     
                 asyncLoop.next()
@@ -1639,13 +1596,10 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
 
-  async loadWaypoints(){
-
+  async loadWaypoints(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Waypoints');
       let loop = new AsyncLoop({
@@ -1690,13 +1644,10 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
 
-  async loadEncounters(){
-
+  async loadEncounters(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Encounters');
       let loop = new AsyncLoop({
@@ -1739,13 +1690,10 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
 
-  async loadTriggers(){
-
+  async loadTriggers(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Triggers');
       let loop = new AsyncLoop({
@@ -1788,40 +1736,37 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
 
-  async loadCreatures(){
-
+  async loadCreatures(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Creatures');
       let loop = new AsyncLoop({
         array: this.creatures,
-        onLoop: (crt: ModuleCreature, asyncLoop: AsyncLoop) => {
-          crt.Load( ( object: ModuleCreature ) => {
+        onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
+          creature.Load( ( object: ModuleCreature ) => {
           
             if(typeof object == 'undefined'){
               asyncLoop.next();
               return;
             }
   
-            crt.LoadScripts( () => {
-              crt.LoadModel( (model: OdysseyModel3D) => {
-                crt.model.moduleObject = crt;
+            creature.LoadScripts( () => {
+              creature.LoadModel().then( (model: OdysseyModel3D) => {
+                creature.model.moduleObject = creature;
                 
-                //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
-                crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);
+                //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
+                creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
     
                 model.hasCollision = true;
-                model.name = crt.getTag();
-                GameState.group.creatures.add( model );
+                model.name = creature.getTag();
+                GameState.group.creatures.add( creature.container );
     
-                crt.getCurrentRoom();
-                crt.updateCollision(0.0000000000000000000001);
-                crt.update(0.0000000000000000000001);
-                crt.computeBoundingBox();
+                creature.getCurrentRoom();
+                creature.updateCollision(0.0000000000000000000001);
+                creature.update(0.0000000000000000000001);
+                creature.computeBoundingBox();
     
                 asyncLoop.next();
               });
@@ -1835,10 +1780,9 @@ export class ModuleArea extends ModuleObject {
       });
 
     });
-
   }
 
-  async loadStores(){
+  async loadStores(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Stores');
       let loop = new AsyncLoop({
@@ -1862,8 +1806,7 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  async loadSoundTemplates (){
-
+  async loadSoundTemplates(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Sound Emitter');
       let loop = new AsyncLoop({
@@ -1879,12 +1822,10 @@ export class ModuleArea extends ModuleObject {
       loop.iterate(() => {
         resolve();
       });
-
     });
-
   }
 
-  loadAudio( ){
+  loadAudio(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       const ambientsound2DA = TwoDAManager.datatables.get('ambientsound');
       if(ambientsound2DA){
@@ -1904,7 +1845,7 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  loadBackgroundMusic(){
+  loadBackgroundMusic(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       const ambientmusic2DA = TwoDAManager.datatables.get('ambientmusic');
       if(ambientmusic2DA){
@@ -1924,7 +1865,7 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  async loadTextures(){
+  async loadTextures(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       resolve();
     });

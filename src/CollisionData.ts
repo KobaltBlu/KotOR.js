@@ -6,6 +6,10 @@ import * as THREE from "three";
 import { Utility } from "./utility/Utility";
 import { ConfigClient } from "./utility/ConfigClient";
 
+interface AABBFaceData {
+
+}
+
 export class CollisionData {
   object: ModuleObject;
   blockingTimer: number = 0;
@@ -317,7 +321,7 @@ export class CollisionData {
           if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
             for(let i = 0, iLen = obj.collisionData.walkmesh.faces.length; i < iLen; i++){
               face = obj.collisionData.walkmesh.faces[i];
-              if(face.triangle.containsPoint(this.object.tmpPos) && face.surfacemat.walk == 0){
+              if(face.triangle.containsPoint(this.object.tmpPos) && face.surfacemat.walk){
                 //bail we should not be here
                 this.object.AxisFront.set(0, 0, 0);
                 this.object.position.copy(_oPosition);

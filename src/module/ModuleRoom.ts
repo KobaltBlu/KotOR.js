@@ -75,15 +75,28 @@ export class ModuleRoom extends ModuleObject {
     for(let i = 0, len = GameState.module.area.doors.length; i < len; i++){
       let object = GameState.module.area.doors[i];
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
-        this.doors.push(object);
+        this.attachChildObject(object);
       }
     }
 
     for(let i = 0, len = GameState.module.area.placeables.length; i < len; i++){
       let object = GameState.module.area.placeables[i];
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
-        this.placeables.push(object);
+        this.attachChildObject(object);
       }
+    }
+  }
+
+  attachChildObject(object: ModuleObject){
+    if(object instanceof ModuleCreature){
+      if(this.creatures.indexOf(object) >= 0) return;
+      this.creatures.push(object);
+    }else if (object instanceof ModulePlaceable){
+      if(this.placeables.indexOf(object) >= 0) return;
+      this.placeables.push(object);
+    }else if(object instanceof ModuleDoor){
+      if(this.doors.indexOf(object) >= 0) return;
+      this.doors.push(object);
     }
   }
 
@@ -168,99 +181,64 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  load( onComplete?: Function ){
-    
-    if(!Utility.is2daNULL(this.roomName)){
-
-      GameState.ModelLoader.load({
-
-        file: this.roomName,
-        onLoad: (roomFile: OdysseyModel) => {
-
+  loadModel(): Promise<OdysseyModel3D> {
+    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+      if(!Utility.is2daNULL(this.roomName)){
+        GameState.ModelLoader.load(this.roomName).then( (roomFile) => {
           OdysseyModel3D.FromMDL(roomFile, {
-
-            onComplete: (room: OdysseyModel3D) => {
-
-              let scene;
-              if(this.model instanceof OdysseyModel3D && this.model.parent){
-                scene = this.model.parent;
-
-                try{
-                  this.model.dispose();
-                }catch(e){}
-
-                try{
-                  if(scene)
-                    scene.remove(this.model);
-                }catch(e){}
-              }
-
-              this.model = room;
-              this.model.moduleObject = this;
-              this.model.position.copy(this.position);
-
-              if(this.model.odysseyAnimations.length){
-                for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
-                  if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
-                    this.model.animLoops.push(
-                      this.model.odysseyAnimations[animI]
-                    );
-                  }
-                }
-              }
-
-              if(scene)
-                scene.add(this.model);
-
-              if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
-
-                this.loadWalkmesh(this.roomName, (wok: OdysseyWalkMesh) => {
-                  if(wok){
-                    this.collisionData.walkmesh = wok;
-                    this.collisionData.walkmesh.mesh.position.z += 0.001;
-                    this.buildGrass();
-                    
-                    //TextureLoader.LoadQueue( () => {
-                      if(typeof onComplete == 'function')
-                        onComplete(this);
-                    //});
-                  }else{
-                    //TextureLoader.LoadQueue( () => {
-                      if(typeof onComplete == 'function')
-                        onComplete(this);
-                    //});
-                  }
-                });
-
-              }else{
-                //TextureLoader.LoadQueue( () => {
-                  if(typeof onComplete == 'function')
-                    onComplete(this);
-                //});
-              }
-
-              //Disable matrix update for static objects
-              //room.disableMatrixUpdate();
-              this.buildGrass();
-
-            },
             context: this.context,
             castShadow: false,
             receiveShadow: true,
             //Merge Static Geometry *Experimental*
             mergeStatic: !GameState.module.area.MiniGame ? true : false
-          });
+          }).then( (room: OdysseyModel3D) => {
+            if(this.model instanceof OdysseyModel3D){
+              this.model.removeFromParent();
+              try{ this.model.dispose(); }catch(e){}
+            }
 
-        }
+            this.model = room;
+            this.model.moduleObject = this;
+            this.container.add(this.model);
 
-      });
+            if(this.model.odysseyAnimations.length){
+              for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
+                if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
+                  this.model.animLoops.push(
+                    this.model.odysseyAnimations[animI]
+                  );
+                }
+              }
+            }
 
-    }else{
+            if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
+              this.loadWalkmesh(this.roomName, (wok: OdysseyWalkMesh) => {
+                if(wok){
+                  this.collisionData.walkmesh = wok;
+                  this.collisionData.walkmesh.mesh.position.z += 0.001;
+                  this.buildGrass();
+                  resolve(this.model);
+                }else{
+                  resolve(this.model);
+                }
+              });
+            }else{
+              resolve(this.model);
+            }
 
-      if(typeof onComplete == 'function')
-        onComplete(this);
-
-    }
+            //Disable matrix update for static objects
+            //room.disableMatrixUpdate();
+            this.buildGrass();
+          }).catch( () => {
+            resolve(this.model);
+          })
+        }).catch( () => {
+          resolve(this.model);
+        })
+      }else{
+        resolve(this.model);
+      }
+    });
 
   }
 

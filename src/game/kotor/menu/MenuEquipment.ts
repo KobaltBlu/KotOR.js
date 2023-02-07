@@ -19,6 +19,8 @@ import { InventoryManager } from "../../../managers/InventoryManager";
 * The MenuEquipment menu class.
 */
 
+const STR_EQUIPPED = 32346;
+
 export class MenuEquipment extends GameMenu {
 
   LBL_CANTEQUIP: GUILabel;
@@ -82,7 +84,6 @@ export class MenuEquipment extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
       
       this.LB_DESC.hide();
@@ -203,7 +204,7 @@ export class MenuEquipment extends GameMenu {
       });
       
 
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.UpdateSelected(item);
       }
       resolve();
@@ -215,7 +216,11 @@ export class MenuEquipment extends GameMenu {
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.clearItems();
       let inv = InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
+      let currentPC = PartyManager.party[0];
       this.LB_ITEMS.addItem(new GUIItemNone());
+      if(currentPC.GetItemInSlot(slot)){
+        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)))
+      }
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -288,6 +293,9 @@ export class MenuEquipment extends GameMenu {
     if (this.slot) {
       let inv = InventoryManager.getInventory(this.slot, currentPC);
       this.LB_ITEMS.addItem(new GUIItemNone());
+      if(currentPC.GetItemInSlot(this.slot)){
+        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
+      }
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -295,12 +303,14 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  UpdateSelected(item: ModuleItem) {
-    this.selectedItem = item;
+  UpdateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
     this.LB_DESC.clearItems();
-    if (this.selectedItem instanceof ModuleItem) {
+    this.selectedItem = undefined;
+    if (item instanceof ModuleItem) {
+      this.selectedItem = item;
       this.LB_DESC.addItem(this.selectedItem.getDescription());
-    } else {
+    } else if(item instanceof GUIItemEquipped) {
+      this.LB_DESC.addItem(item.node.getDescription());
     }
   }
 
@@ -417,17 +427,11 @@ export class MenuEquipment extends GameMenu {
       if (!i) {
         if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
           this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-          //   this.LBL_PORTRAIT.setFillTexture(texture);
-          // });
         }
       } else {
         btn_change.show();
         if (btn_change.getFillTextureName() != portrait.baseresref) {
           btn_change.setFillTextureName(portrait.baseresref);
-          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-          //   btn_change.setFillTexture(texture);
-          // });
         }
       }
     }
@@ -615,6 +619,27 @@ class GUIItemNone {
   getName(){
     //None String
     return TLKManager.GetStringById(363).Value;
+  }
+
+}
+
+class GUIItemEquipped {
+  node: ModuleItem;
+  equipped: boolean = true;
+  constructor(node: ModuleItem){
+    this.node = node;
+  }
+
+  getIcon(){
+    return this.node.getIcon();
+  }
+
+  getStackSize(){
+    return 1;
+  }
+
+  getName(){
+    return `${this.node.getName()} (${TLKManager.GetStringById(STR_EQUIPPED).Value})`;
   }
 
 }

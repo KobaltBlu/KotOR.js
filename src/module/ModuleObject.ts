@@ -55,6 +55,7 @@ export class ModuleObject {
 
   effectIconList: EffectIconListItem[] = [];
 
+  container: OdysseyObject3D;
   AxisFront: THREE.Vector3;
   position: THREE.Vector3;
   rotation: THREE.Euler;
@@ -242,14 +243,16 @@ export class ModuleObject {
 
     //this.moduleObject = null;
     this.AxisFront = new THREE.Vector3();
-    this.position = new THREE.Vector3();
-    this.rotation = new THREE.Euler();
-    this.quaternion = new THREE.Quaternion();
+    this.container = new OdysseyObject3D();
+    this.container.moduleObject = this;
+    this.position = this.container.position;
+    this.rotation = this.container.rotation;
+    this.quaternion = this.container.quaternion;
     this._triangle = new THREE.Triangle();
     // this.wm_c_point = new THREE.Vector3();
 
-    this.rotation._onChange( () => { this.onRotationChange } );
-	  this.quaternion._onChange( () => { this.onQuaternionChange } );
+    // this.rotation._onChange( () => { this.onRotationChange } );
+	  // this.quaternion._onChange( () => { this.onQuaternionChange } );
 
     this.box = new THREE.Box3();
     this.sphere = new THREE.Sphere();
@@ -347,37 +350,31 @@ export class ModuleObject {
 
   }
 
-  onRotationChange() {
-    if(this.quaternion){
-      this.quaternion.setFromEuler( this.rotation, false );
-      if(this.model instanceof THREE.Object3D)
-        this.model.quaternion.setFromEuler( this.rotation, false );
-    }else{
-      console.error('Missing quaternion', this);
-    }
-	}
+  // onRotationChange() {
+  //   if(this.quaternion){
+  //     this.quaternion.setFromEuler( this.rotation, false );
+  //     if(this.model instanceof THREE.Object3D)
+  //       this.model.quaternion.setFromEuler( this.rotation, false );
+  //   }else{
+  //     console.error('Missing quaternion', this);
+  //   }
+	// }
 
-	onQuaternionChange() {
-    if(this.rotation){
-      this.rotation.setFromQuaternion( this.quaternion, undefined, false );
-      if(this.model instanceof THREE.Object3D)
-        this.model.rotation.setFromQuaternion( this.quaternion, undefined, false );
-    }else{
-      console.error('Missing rotation', this);
-    }
-	}
+	// onQuaternionChange() {
+  //   if(this.rotation){
+  //     this.rotation.setFromQuaternion( this.quaternion, undefined, false );
+  //     if(this.model instanceof THREE.Object3D)
+  //       this.model.rotation.setFromQuaternion( this.quaternion, undefined, false );
+  //   }else{
+  //     console.error('Missing rotation', this);
+  //   }
+	// }
 
   attachToRoom(room: ModuleRoom){
     if(room instanceof ModuleRoom){
       this.detachFromRoom(this.room);
       this.room = room;
-      if(this instanceof ModuleCreature){
-        this.room.creatures.push(this);
-      }else if (this instanceof ModulePlaceable){
-        this.room.placeables.push(this);
-      }else if(this instanceof ModuleDoor){
-        this.room.doors.push(this);
-      }
+      this.room.attachChildObject(this);
     }
   }
 
@@ -1055,7 +1052,7 @@ export class ModuleObject {
         intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
-          if(this == GameState.player){
+          if((this as any) == GameState.player){
             //console.log(intersects);
           }
           if(intersects[0].object.userData.moduleObject){
@@ -1105,53 +1102,48 @@ export class ModuleObject {
 
   applyVisualEffect(resref = 'v_light'){
     if(this.model instanceof OdysseyModel3D){
-      GameState.ModelLoader.load({
-        file: resref,
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (effectMDL: OdysseyModel3D) => {
-              if(this.model instanceof OdysseyModel3D){
-                this.model.effects.push(effectMDL);
-                this.model.add(effectMDL);
-                //TextureLoader.LoadQueue();
-                effectMDL.playAnimation(0, false, () => {
-                  effectMDL.stopAnimation();
-                  this.model.remove(effectMDL);
-                  effectMDL.disableEmitters();
-                  setTimeout( () => {
-                    if(this.model instanceof OdysseyModel3D){
-                      let index = this.model.effects.indexOf(effectMDL);
-                      effectMDL.dispose();
-                      this.model.effects.splice(index, 1);
-                    }
-                  }, 5000);
-                })
-              }
-            },
-            manageLighting: false
-          });
-        }
+      GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, { 
+          manageLighting: false
+        }).then( (effectMDL: OdysseyModel3D) => {
+          if(this.model instanceof OdysseyModel3D){
+            this.model.effects.push(effectMDL);
+            this.model.add(effectMDL);
+            effectMDL.playAnimation(0, false, () => {
+              effectMDL.stopAnimation();
+              this.model.remove(effectMDL);
+              effectMDL.disableEmitters();
+              setTimeout( () => {
+                if(this.model instanceof OdysseyModel3D){
+                  let index = this.model.effects.indexOf(effectMDL);
+                  effectMDL.dispose();
+                  this.model.effects.splice(index, 1);
+                }
+              }, 5000);
+            })
+          }
+        }).catch(() => {
+
+        });
+      }).catch(() => {
+
       });
     }
   }
 
   destroy(){
+    try{ console.log('destroy', this.getTag());}catch(e: any){}
     try{
-      //console.log('ModuleObject.destory', this)
+      this.container.removeFromParent();
 
       if(this.model instanceof OdysseyModel3D){
-        if(this.model.parent instanceof THREE.Object3D){
-          this.model.parent.remove(this.model);
-        }
+        this.model.removeFromParent();
         this.model.dispose();
         this.model = undefined;
       }
 
       if(this.mesh instanceof THREE.Mesh){
-
-        if(this.mesh.parent instanceof THREE.Object3D){
-          this.mesh.parent.remove(this.mesh);
-        }
+        this.mesh.removeFromParent();
 
         (this.mesh.material as THREE.Material).dispose();
         this.mesh.geometry.dispose();
@@ -1163,6 +1155,13 @@ export class ModuleObject {
 
       if(GameState.module){
         if(this instanceof ModuleCreature){
+          if(this.head instanceof OdysseyModel3D){
+            if(this.head.parent instanceof THREE.Object3D){
+              this.head.parent.remove(this.model);
+            }
+            this.head.dispose();
+            this.head = undefined;
+          }
           let cIdx = GameState.module.area.creatures.indexOf(this);
           //console.log('ModuleObject.destory', 'creature', cIdx)
           if(cIdx > -1){
@@ -1961,6 +1960,10 @@ export class ModuleObject {
     }else{
       return false;
     }
+  }
+
+  dialogPlayAnimation(anim = '', loop = false, speed = 1){
+    
   }
 
   use(object: ModuleObject){

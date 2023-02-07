@@ -195,12 +195,13 @@ export class EffectVisualEffect extends GameEffect {
 
   impact(){
     if(this.visualEffect.imp_impact_node != '****'){
-      GameState.ModelLoader.load({
-        file: this.visualEffect.imp_impact_node,
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load(this.visualEffect.imp_impact_node)
+      .then(
+        (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            context: this.object.context,
-            onComplete: (model: OdysseyModel3D) => {
+            context: this.object.context
+          }).then(
+            (model: OdysseyModel3D) => {
               this.impact_model = model;
               if(this.object.model){
                 if(this.object.model.impact){
@@ -214,9 +215,9 @@ export class EffectVisualEffect extends GameEffect {
                 this.impact_model.dispose();
               }
             }
-          });
+          )
         }
-      });
+      );
     }
 
     this.impactRoot();
@@ -231,48 +232,43 @@ export class EffectVisualEffect extends GameEffect {
 
   impactRoot(){
     if(this.getImpactRootModel() != '****'){
-      GameState.ModelLoader.load({
-        file: this.getImpactRootModel(),
-        onLoad: (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: this.object.context,
-            onComplete: (model: OdysseyModel3D) => {
-              this.impact_root_model = model;
-              if(this.object.model){
-                this.object.model.add(this.impact_root_model);
-                TextureLoader.LoadQueue();
-              }else{
-                this.impact_root_model.dispose();
-              }
-            }
-          });
-        }
+      GameState.ModelLoader.load(this.getImpactRootModel())
+      .then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          context: this.object.context,
+        }).then((model: OdysseyModel3D) => {
+          this.impact_root_model = model;
+          if(this.object.model){
+            this.object.model.add(this.impact_root_model);
+            TextureLoader.LoadQueue();
+          }else{
+            this.impact_root_model.dispose();
+          }
+        });
       });
     }
   }
 
   impactHead(){
     if(this.visualEffect.imp_headcon_node != '****'){
-      GameState.ModelLoader.load({
-        file: this.visualEffect.imp_headcon_node,
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load(this.visualEffect.imp_headcon_node).then(
+        (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.object.context,
-            onComplete: (model: OdysseyModel3D) => {
-              this.impact_head_model = model;
-              if(this.object.model.headconjure){
-                this.object.model.headconjure.add(this.impact_head_model);
-                TextureLoader.LoadQueue();
-              }else if(this.object.model.headhook){
-                this.object.model.headhook.add(this.impact_head_model);
-                TextureLoader.LoadQueue();
-              }else{
-                this.impact_root_model.dispose();
-              }
+          }).then((model: OdysseyModel3D) => {
+            this.impact_head_model = model;
+            if(this.object.model.headconjure){
+              this.object.model.headconjure.add(this.impact_head_model);
+              TextureLoader.LoadQueue();
+            }else if(this.object.model.headhook){
+              this.object.model.headhook.add(this.impact_head_model);
+              TextureLoader.LoadQueue();
+            }else{
+              this.impact_root_model.dispose();
             }
-          });
+          })
         }
-      });
+      );
     }
   }
 
@@ -300,45 +296,41 @@ export class EffectVisualEffect extends GameEffect {
       let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
       
       if(this.object instanceof ModuleCreature){
-        GameState.ModelLoader.load({
-          file: this.object.bodyModel,
-          onLoad: (mdl: OdysseyModel) => {
+        GameState.ModelLoader.load(this.object.bodyModel)
+        .then(
+          (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
               textureVar: fx_tex,
               isForceShield: true,
-              context: this.object.context,
-              onComplete: (model: OdysseyModel3D) => {
-                this.model = model;
-                GameState.scene.add(model);
-                model.position.copy(this.object.position);
-                model.rotation.copy(this.object.rotation);
-                model.quaternion.copy(this.object.quaternion);
-                //model.disableMatrixUpdate();
-                
-                if(this.object.headModel){
-                  GameState.ModelLoader.load({
-                    file: this.object.headModel,
-                    onLoad: (mdl: OdysseyModel) => {
-                      OdysseyModel3D.FromMDL(mdl, {
-                        textureVar: fx_tex,
-                        context: this.object.context,
-                        isForceShield: true,
-                        onComplete: (head: OdysseyModel3D) => {
-                          this.model.headhook.head = head;
-                          this.model.headhook.add(head);
-                          //head.disableMatrixUpdate();
-                          TextureLoader.LoadQueue();
-                        }
-                      });
-                    }
-                  });
-                }else{
-                  TextureLoader.LoadQueue();
-                }
+              context: this.object.context
+            }).then((model: OdysseyModel3D) => {
+              this.model = model;
+              GameState.scene.add(model);
+              model.position.copy(this.object.position);
+              model.rotation.copy(this.object.rotation);
+              model.quaternion.copy(this.object.quaternion);
+              //model.disableMatrixUpdate();
+              
+              if(this.object.headModel){
+                GameState.ModelLoader.load(this.object.headModel).then(
+                  (mdl: OdysseyModel) => {
+                  OdysseyModel3D.FromMDL(mdl, {
+                    textureVar: fx_tex,
+                    context: this.object.context,
+                    isForceShield: true,
+                  }).then((head: OdysseyModel3D) => {
+                    this.model.headhook.head = head;
+                    this.model.headhook.add(head);
+                    //head.disableMatrixUpdate();
+                    TextureLoader.LoadQueue();
+                  })
+                })
+              }else{
+                TextureLoader.LoadQueue();
               }
-            });
+            })
           }
-        });
+        );
       }
 
     }
@@ -354,44 +346,42 @@ export class EffectVisualEffect extends GameEffect {
       let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
       
       if(this.object instanceof ModuleCreature){
-        GameState.ModelLoader.load({
-          file: this.object.bodyModel,
-          onLoad: (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              textureVar: fx_tex,
-              isForceShield: true,
-              context: this.object.context,
-              onComplete: (model: OdysseyModel3D) => {
-                this.model = model;
-                GameState.scene.add(model);
-                model.position.copy(this.object.position);
-                model.rotation.copy(this.object.rotation);
-                model.quaternion.copy(this.object.quaternion);
-                //model.disableMatrixUpdate();
-                
-                if(this.object.headModel){
-                  GameState.ModelLoader.load({
-                    file: this.object.headModel,
-                    onLoad: (mdl: OdysseyModel) => {
-                      OdysseyModel3D.FromMDL(mdl, {
-                        textureVar: fx_tex,
-                        context: this.object.context,
-                        isForceShield: true,
-                        onComplete: (head: OdysseyModel3D) => {
-                          this.model.headhook.head = head;
-                          this.model.headhook.add(head);
-                          //head.disableMatrixUpdate();
-                          TextureLoader.LoadQueue();
-                        }
-                      });
-                    }
+        GameState.ModelLoader.load(this.object.bodyModel).then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            textureVar: fx_tex,
+            isForceShield: true,
+            context: this.object.context,
+            onComplete: (model: OdysseyModel3D) => {
+              this.model = model;
+              GameState.scene.add(model);
+              model.position.copy(this.object.position);
+              model.rotation.copy(this.object.rotation);
+              model.quaternion.copy(this.object.quaternion);
+              //model.disableMatrixUpdate();
+              
+              if(this.object.headModel){
+                GameState.ModelLoader.load(this.object.headModel)
+                .then((mdl: OdysseyModel) => {
+                  OdysseyModel3D.FromMDL(mdl, {
+                    textureVar: fx_tex,
+                    context: this.object.context,
+                    isForceShield: true,
+                  }).then((head: OdysseyModel3D) => {
+                    this.model.headhook.head = head;
+                    this.model.headhook.add(head);
+                    //head.disableMatrixUpdate();
+                    TextureLoader.LoadQueue();
+                  }).catch(() => {
+
                   });
-                }else{
-                  TextureLoader.LoadQueue();
-                }
+                }).catch(() => {
+                    
+                  });
+              }else{
+                TextureLoader.LoadQueue();
               }
-            });
-          }
+            }
+          });
         });
       }
 

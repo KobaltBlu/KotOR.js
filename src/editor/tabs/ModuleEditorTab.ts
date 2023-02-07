@@ -861,7 +861,7 @@ export class ModuleEditorTab extends EditorTab {
     Forge.loader.Show();
     Forge.loader.SetMessage('Loading Door');
     door.Load( (template: GFFObject) => {
-      door.LoadModel( (model: OdysseyModel3D) => {
+      door.LoadModel().then( (model: OdysseyModel3D) => {
 
         //console.log('loaded', modelName);
         //model.translateX(door.props['X']);
@@ -908,7 +908,7 @@ export class ModuleEditorTab extends EditorTab {
     Forge.loader.Show();
     Forge.loader.SetMessage('Loading Placeable');
     plc.Load( (template: GFFObject) => {
-      plc.LoadModel( (model: OdysseyModel3D) => {
+      plc.LoadModel().then( (model: OdysseyModel3D) => {
 
         //model.translateX(plc.props['X']);
         //model.translateY(plc.props['Y']);
@@ -1043,7 +1043,7 @@ export class ModuleEditorTab extends EditorTab {
           player.portrait = 10;
         }
         player.LoadScripts( () => {
-          player.LoadModel( (model: OdysseyModel3D) => {
+          player.LoadModel().then( (model: OdysseyModel3D) => {
   
             let spawnLoc = this.module.area.getSpawnLocation();
   
@@ -1095,7 +1095,7 @@ export class ModuleEditorTab extends EditorTab {
           //loader.SetMessage('Loading Door: '+(i+1)+'/'+this.triggers.length);
           door.context = this;
           door.Load( () => {
-            door.LoadModel( (model: OdysseyModel3D) => {
+            door.LoadModel().then( (model: OdysseyModel3D) => {
               //model.translateX(door.getX());
               //model.translateY(door.getY());
               //model.translateZ(door.getZ());
@@ -1128,7 +1128,7 @@ export class ModuleEditorTab extends EditorTab {
           plc.Load( () => {
             plc.position.set(plc.getX(), plc.getY(), plc.getZ());
             plc.rotation.set(0, 0, plc.getBearing());
-            plc.LoadModel( (model: OdysseyModel3D) => {
+            plc.LoadModel().then( (model: OdysseyModel3D) => {
               //plc.LoadWalkmesh(model.name, (pwk) => {
                 //console.log('loaded', modelName);
     
@@ -1254,7 +1254,7 @@ export class ModuleEditorTab extends EditorTab {
         onLoop: (crt: ModuleCreature, asyncLoop: AsyncLoop) => {
           crt.context = this;
           crt.Load( () => {
-            crt.LoadModel( (model: OdysseyModel3D) => {
+            crt.LoadModel().then( (model: OdysseyModel3D) => {
               crt.model.moduleObject = crt;
               
               //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
@@ -1284,7 +1284,7 @@ export class ModuleEditorTab extends EditorTab {
         array: this.module.area.rooms,
         onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
           room.context = this;
-          room.load( (room: ModuleRoom) => {
+          room.loadModel().then( (model: OdysseyModel3D) => {
             room.model.moduleObject = room;
             this.group.rooms.add(room.model);
             asyncLoop.next();

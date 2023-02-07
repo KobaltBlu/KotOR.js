@@ -84,45 +84,35 @@ export class MainMenu extends K1_MainMenu {
       this._3dView.setControl(this.LBL_3DVIEW);
       (this.LBL_3DVIEW.getFill().material as any).visible = true;
       
-      GameState.ModelLoader.load({
-        file: 'mainmenu01', 
-        onLoad: (mdl: OdysseyModel) => {
+      GameState.ModelLoader.load('mainmenu01')
+      .then((mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, {
+          manageLighting: false,
+          context: this._3dView
+        }).then((model: OdysseyModel3D) => {
+          console.log('Model Loaded', model);
+          this._3dViewModel = model;
           
-          OdysseyModel3D.FromMDL(mdl, { 
-            onComplete: (model: OdysseyModel3D) => {
-              console.log('Model Loaded', model);
-              this._3dViewModel = model;
+          this._3dView.camera.position.copy(model.camerahook.position);
+          this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+
+          this._3dView.addModel(this._3dViewModel);
+          TextureLoader.LoadQueue(() => {
+            AudioLoader.LoadMusic(bgMusic, (data: any) => {
+              console.log('Loaded Background Music', bgMusic);
               
-              this._3dView.camera.position.copy(model.camerahook.position);
-              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+              GameState.audioEngine.SetBackgroundMusic(data);
+              resolve();
 
-              this._3dView.addModel(this._3dViewModel);
-              TextureLoader.LoadQueue(() => {
-
-                AudioLoader.LoadMusic(bgMusic, (data: any) => {
-                  console.log('Loaded Background Music', bgMusic);
-                  
-                  GameState.audioEngine.SetBackgroundMusic(data);
-                  resolve();
-
-                  this._3dViewModel.playAnimation(0, true);
-            
-                }, () => {
-                  console.error('Background Music not found', bgMusic);
-                  resolve();
-                });
-
-              });
-
-            },
-            manageLighting: false,
-            context: this._3dView
+              this._3dViewModel.playAnimation(0, true);
+        
+            }, () => {
+              console.error('Background Music not found', bgMusic);
+              resolve();
+            });
           });
-        },
-        onError: () => {
-          resolve();
-        }
-      });
+        }).catch(resolve);
+      }).catch(resolve);
     });
   }
 

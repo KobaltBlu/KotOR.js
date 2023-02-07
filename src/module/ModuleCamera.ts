@@ -58,8 +58,10 @@ export class ModuleCamera extends ModuleObject {
     if(this.template.RootNode.HasField('Pitch'))
       this.pitch = this.template.GetFieldByLabel('Pitch').GetValue();
 
-    if(this.template.RootNode.HasField('Position'))
+    if(this.template.RootNode.HasField('Position')){
       this.position.copy(this.template.GetFieldByLabel('Position').GetVector());
+      this.container.position.copy(this.position);
+    }
 
     this.initialized = true;
 

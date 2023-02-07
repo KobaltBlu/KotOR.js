@@ -214,7 +214,7 @@ export class GameState implements EngineContext {
 
   //GameState properties
   static globalLight: THREE.AmbientLight;
-  static player: any;
+  static player: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
   static walkmeshList: any[];
@@ -1248,18 +1248,6 @@ export class GameState implements EngineContext {
       GameState.currentCameraPosition.set(0, 0, 0);
       GameState.currentCameraPosition.applyMatrix4(GameState.followerCamera.matrix);
       GameState.updateTime(delta);
-
-      //PartyMember cleanup
-      for(let i = 0; i < GameState.group.party.children.length; i++){
-        let pm = (GameState.group.party.children[i] as any).moduleObject;
-        if(pm && GameState.player != pm){
-          if(PartyManager.party.indexOf(pm) == -1){
-            pm.destroy();
-          }
-        }else if(!pm){
-          GameState.group.party.remove(GameState.group.party.children[i]);
-        }
-      }
 
       if(GameState.Mode == EngineMode.MINIGAME || MenuManager.GetCurrentMenu() == MenuManager.InGameOverlay || MenuManager.GetCurrentMenu() == MenuManager.InGameDialog || MenuManager.GetCurrentMenu() == MenuManager.InGameComputer){
         if(GameState.State != EngineState.PAUSED){

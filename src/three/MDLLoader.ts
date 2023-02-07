@@ -10,91 +10,65 @@ import { ResourceTypes } from "../resource/ResourceTypes";
  * The MDLLoader is used for loading MDL/MDX files from the game archives
  */
 
-const ModelCache: any = {
-  models: {}
+export interface ModelCacheReference {
+  // model: OdysseyModel;
+  mdl: Buffer;
+  mdx: Buffer;
+}
+
+export interface ModelCacheInterface {
+  models: Map<string, ModelCacheReference>
+}
+
+const ModelCache: ModelCacheInterface = {
+  models: new Map<string, ModelCacheReference>()
 };
 
 export class MDLLoader {
+	load (resref: string = ''): Promise<OdysseyModel> {
+    resref = resref.toLocaleLowerCase();
+    return new Promise<OdysseyModel>( (resolve, reject) => {
+      try{
+        if(ModelCache.models.has(resref)){
+          const ref = ModelCache.models.get(resref);
+          const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
+          resolve(mdl);
+        }else{
+          ResourceLoader.loadResource(ResourceTypes['mdl'], resref, (mdl_buffer: Buffer) => {
+            ResourceLoader.loadResource(ResourceTypes['mdx'], resref, (mdx_buffer: Buffer) => {
+              const mdl = MDLLoader.MDLFromBuffer(mdl_buffer, mdx_buffer);
 
-	load ( args: any ): any {
+              ModelCache.models.set(resref, {
+                // model: mdl,
+                mdl: mdl_buffer,
+                mdx: mdx_buffer
+              });
 
-    args = Object.assign({
-      file: null,
-      options: null,
-      onLoad: null,
-      onError: null
-    }, args);
-
-    let isLocal = false;
-
-    try{
-      isLocal = false;//fs.lstatSync(args.file).isFile();
-    }catch(e){}
-
-    //Arg3 used to be isLocal this is included for backwards compatibility for charCode
-    //that was using isLocal instead of args.onError
-    if(args.onError === true)
-      isLocal = false;
-
-    if(ModelCache.models.hasOwnProperty(args.file)){
-      if(typeof args.onLoad == 'function')
-        args.onLoad(ModelCache.models[args.file]);
-
-    }else{
-
-      if(!isLocal){
-
-        try{
-
-          ResourceLoader.loadResource(ResourceTypes['mdl'], args.file, (mdlData: Buffer) => {
-            ResourceLoader.loadResource(ResourceTypes['mdx'], args.file, (mdxData: Buffer) => {
-
-              let mdlReader = new BinaryReader(mdlData);
-              let mdxReader = new BinaryReader(mdxData);
-
-              let odysseyModel = new OdysseyModel(mdlReader, mdxReader);
-              ModelCache.models[args.file] = odysseyModel;
-              if(typeof args.onLoad == 'function')
-                args.onLoad(odysseyModel);
+              resolve(mdl);
             }, (e: any) => {
-              console.error('MDX 404', args.file);
-              if(args.onError != null && typeof args.onError === 'function')
-                args.onError(e)
+              console.error('MDX 404', resref);
+              reject(e);
             })
           }, (e: any) => {
-            console.error('MDL 404', args.file);
-            if(args.onError != null && typeof args.onError === 'function')
-              args.onError(e)
+            console.error('MDL 404', resref);
+            reject(e);
           });
-
-        }catch(e){
-          console.error('MDLLoader.load', args.file, e);
-          if(args.onError != null && typeof args.onError === 'function')
-            args.onError(e)
         }
-
-      }else{
-        // this.loadLocal(args.file, args.onLoad, null, args.onError);
+      }catch(e: any){
+        console.error('MDLLoader.load', resref, e);
+        reject(e);
       }
-
-    }
-
-    return null;
-
+    });
 	}
 
-  loadAsync( resref: string ){
-    return new Promise<OdysseyModel>( (resolve, reject) => {
-      this.load({
-        file: resref,
-        onLoad: (model: OdysseyModel) => {
-          resolve(model);
-        },
-        onError: () => {
-          resolve(undefined);
-        }
-      })
-    })
+  reset(){
+    ModelCache.models.clear();
+  }
+
+  static MDLFromBuffer(mdl_buffer: Buffer, mdx_buffer: Buffer): OdysseyModel {
+    let mdlReader = new BinaryReader(mdl_buffer);
+    let mdxReader = new BinaryReader(mdx_buffer);
+    return new OdysseyModel(mdlReader, mdxReader);
   }
 
 }

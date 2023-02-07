@@ -2928,11 +2928,11 @@ NWScriptDefK1.Actions = {
                   resolve(creature);
     
                   creature.LoadScripts( () => {
-                    creature.LoadModel( (model: OdysseyModel3D) => {
+                    creature.LoadModel().then( (model: OdysseyModel3D) => {
                       model.moduleObject = creature;
                       model.hasCollision = true;
                       model.name = creature.getTag();
-                      GameState.group.creatures.add( model );
+                      GameState.group.creatures.add( creature.container );
                       creature.getCurrentRoom();
                       creature.onSpawn();
                     });
@@ -2959,7 +2959,7 @@ NWScriptDefK1.Actions = {
       
                   resolve(plc);
       
-                  plc.LoadModel( (model: OdysseyModel3D) => {
+                  plc.LoadModel().then( (model: OdysseyModel3D) => {
                     plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
                       plc.model.moduleObject = plc;
                       
@@ -3119,14 +3119,14 @@ NWScriptDefK1.Actions = {
   
       if((args[1]) instanceof ModuleObject){
         if(args[0] != ''){
-          MenuManager.InGameDialog.StartConversation(args[0], this.caller, args[1]);
+          MenuManager.InGameDialog.StartConversation(args[0], this.caller, args[1] as any);
           return 1;
         }else if(this.caller._conversation){
-          MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1]);
+          MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1] as any);
           (args[1])._conversation = '';
           return 1;
         }else if(this.caller.conversation){
-          MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1]);
+          MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
           return 1;
         }else if(this.listenPatternSpeaker.conversation){
           MenuManager.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker);
@@ -7207,13 +7207,13 @@ NWScriptDefK1.Actions = {
         GameState.module.area.creatures.push(partyMember);
         partyMember.Load( () => {
           partyMember.LoadEquipment( () => {
-            partyMember.LoadModel( (model: OdysseyModel3D) => {
+            partyMember.LoadModel().then( (model: OdysseyModel3D) => {
               partyMember.position.copy(args[1].position);
               model.box = new THREE.Box3().setFromObject(model);
               partyMember.setFacing(args[1].getFacing(), true);
               partyMember.model.moduleObject = partyMember;
               model.hasCollision = true;
-              GameState.group.creatures.add( model );
+              GameState.group.creatures.add( partyMember.container );
     
               resolve(partyMember);
     
@@ -7895,8 +7895,7 @@ NWScriptDefK1.Actions = {
   
               resolve(1);
   
-              item.LoadModel( (model: OdysseyModel3D) => {
-
+              item.LoadModel().then( (model: OdysseyModel3D) => {
                 item.model.moduleObject = item;
                 
                 model.name = item.getTag();
@@ -7904,7 +7903,6 @@ NWScriptDefK1.Actions = {
                 GameState.module.area.items.push(item);
 
                 item.getCurrentRoom();
-                
               });
             });
   
