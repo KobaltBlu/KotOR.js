@@ -318,38 +318,38 @@ export class IngameControls {
   
         if(!clickCaptured && !GameState.inDialog){
           if(GameState.Mode == EngineMode.INGAME && MenuManager.GetCurrentMenu() == MenuManager.InGameOverlay){
-            GameState.onMouseHitInteractive( (obj: any, obj2: any) => {
+            GameState.onMouseHitInteractive( (moduleObject: ModuleObject, intersection: any) => {
               if(GameState.debug.selectedObject)
-                console.log('Mesh', obj2)
-              if(obj.userData.moduleObject instanceof ModuleObject){
-                if(obj.userData.moduleObject.isUseable() && obj.userData.moduleObject != GameState.getCurrentPlayer()){
+                console.log('Mesh', intersection)
+              if(moduleObject instanceof ModuleObject){
+                if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
 
                   selectedObject = true;
 
-                  let distance = GameState.getCurrentPlayer().position.distanceTo(obj.userData.moduleObject.position);
+                  let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                   let distanceThreshold = 20;
 
-                  if(GameState.selectedObject == obj.userData.moduleObject && distance <= distanceThreshold){
-                    if(typeof obj.userData.moduleObject.onClick === 'function'){
+                  if(GameState.selectedObject == moduleObject && distance <= distanceThreshold){
+                    if(typeof moduleObject.onClick === 'function'){
                       GameState.getCurrentPlayer().clearAllActions();
-                      obj.userData.moduleObject.onClick(GameState.getCurrentPlayer());
+                      moduleObject.onClick(GameState.getCurrentPlayer());
                     }else{
-                      let distance = GameState.getCurrentPlayer().position.distanceTo(obj.userData.moduleObject.position);
+                      let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                       //console.log(distance);
                       if(distance > 1.5){
                         GameState.getCurrentPlayer().clearAllActions();
-                        obj.userData.moduleObject.clearAllActions();
-                        GameState.getCurrentPlayer().actionDialogObject(obj.userData.moduleObject);
+                        moduleObject.clearAllActions();
+                        GameState.getCurrentPlayer().actionDialogObject(moduleObject);
                       }
                     }
                   }
-                  GameState.setReticleSelectedObject(obj.userData.moduleObject);
+                  GameState.setReticleSelectedObject(moduleObject);
                 }
                 if(GameState.debug.selectedObject)
-                  console.log('Ingame Object', obj);
+                  console.log('Ingame Object', moduleObject);
               }else{
                 if(GameState.debug.selectedObject)
-                  console.log('Object', obj);
+                  console.log('Object', moduleObject);
               }
             });
             if(!selectedObject){

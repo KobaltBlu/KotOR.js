@@ -766,34 +766,41 @@ export class GameState implements EngineContext {
     GameState.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
     let intersects = GameState.raycaster.intersectObjects( GameState.interactableObjects, true );
 
-    if(intersects.length){
-      let intersection = intersects[0],
-          obj = intersection.object;
-
-      obj.traverseAncestors( (obj) => {
-        if(obj instanceof OdysseyModel3D){
-          if(obj != GameState.getCurrentPlayer().getModel()){
-            if(typeof onSuccess === 'function')
-              onSuccess(obj, intersection.object);
-
-            return;
-          }else{
-            if(intersects.length >=2){
-              intersection = intersects[1],
-              obj = intersection.object;
-              obj.traverseAncestors( (obj) => {
-                if(obj instanceof OdysseyModel3D){
-                  if(typeof onSuccess === 'function')
-                    onSuccess(obj, intersection.object);
-
-                  return;
-                }
-              });
-            }
-          }
-          
+    const getNodeModuleObject = function (node: THREE.Object3D, isCurrentPlayerSelectable: boolean = false): ModuleObject|undefined {
+      const moduleObject: ModuleObject = node?.userData?.moduleObject;
+      if(moduleObject){
+        if(moduleObject != GameState.getCurrentPlayer() || isCurrentPlayerSelectable){
+          return moduleObject;
         }
-      });
+      }
+      return;
+    }
+
+    if(intersects.length){
+      const intersection = intersects[0],
+          obj = intersection.object;
+      
+      let searching = true;
+
+      //Does this node contain a ModuleObject reference
+      const moduleObject = getNodeModuleObject(obj);
+      if(moduleObject){
+        if(typeof onSuccess === 'function')
+          onSuccess(moduleObject, intersection);
+        return;
+      }else{
+        //Bubble up to try and find a ModuleObject reference
+        obj.traverseAncestors( (parentNode: THREE.Object3D) => {
+          if(!searching) return;
+          const moduleObject = getNodeModuleObject(parentNode);
+          if(moduleObject){
+            searching = false;
+            if(typeof onSuccess === 'function')
+              onSuccess(moduleObject, intersection);
+            return;
+          }
+        });
+      }
     }
   }
 
@@ -934,10 +941,10 @@ export class GameState implements EngineContext {
         if(GameState.scene_cursor_holder.visible){
           //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
-          GameState.onMouseHitInteractive( (obj: any) => {
-            if(obj.userData.moduleObject instanceof ModuleObject && obj.userData.moduleObject.isUseable()){
-              if(obj.userData.moduleObject != GameState.getCurrentPlayer()){
-                GameState.setReticleHoveredObject(obj.userData.moduleObject);
+          GameState.onMouseHitInteractive( (moduleObject: ModuleObject) => {
+            if(moduleObject instanceof ModuleObject && moduleObject.isUseable()){
+              if(moduleObject != GameState.getCurrentPlayer()){
+                GameState.setReticleHoveredObject(moduleObject);
               }
             }else{
               GameState.hovered = GameState.hoveredObject = undefined;

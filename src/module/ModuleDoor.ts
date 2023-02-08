@@ -223,7 +223,7 @@ export class ModuleDoor extends ModuleObject {
     return this.openState;
   }
 
-  onClick2(callee: ModuleObject){
+  onClick(callee: ModuleObject){
 
     //You can't interact with yourself
     if((this as any) === GameState.player && GameState.getCurrentPlayer() === (this as any)){
