@@ -19,6 +19,7 @@ import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { ConfigClient } from "./KotOR";
 import { JournalManager } from "./managers/JournalManager";
+import { GamePad } from "./controls";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -52,6 +53,7 @@ export class GameInitializer {
               //Load TLK File
               LoadingScreen.main.SetMessage("Loading TLK File");
               TLKManager.LoadTalkTable().then( () => {
+                GamePad.Init();
                 if(typeof props.onLoad === 'function'){
                   props.onLoad();
                 }

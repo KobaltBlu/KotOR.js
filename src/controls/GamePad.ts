@@ -4,8 +4,6 @@ import { KeyInput } from "./KeyInput";
 
 export class GamePad {
 
-  static CurrentGamePad: GamePad;
-
   button_a = new KeyInput('A');
   button_b = new KeyInput('B');
   button_x = new KeyInput('X');
@@ -125,5 +123,37 @@ export class GamePad {
   onConnected(){
 
   }
+
+  static Init(){
+    GamePad.GamePads = {};
+
+    function gamepadHandler(e: any, connecting: boolean = false) {
+      let gamepad = e.gamepad;
+      // Note:
+      // gamepad === navigator.getGamepads()[gamepad.index]
+      console.log('gamepadHandler', e, connecting);
+      if (connecting) {
+        GamePad.GamePads[gamepad.index] = gamepad;
+        if(GamePad.CurrentGamePadIndex == -1){
+          GamePad.CurrentGamePad = gamepad;
+        }
+      } else {
+        if(GamePad.CurrentGamePadIndex == gamepad.index){
+          GamePad.CurrentGamePadIndex = -1;
+          GamePad.CurrentGamePad = undefined;
+        }
+        
+        delete GamePad.GamePads[gamepad.index];
+      }
+    }
+
+    global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+    global.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+  }
+
+
+  static CurrentGamePad: GamePad;
+  static CurrentGamePadIndex: number = -1;
+  static GamePads: any = {};
 
 }
