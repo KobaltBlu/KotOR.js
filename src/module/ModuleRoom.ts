@@ -200,6 +200,7 @@ export class ModuleRoom extends ModuleObject {
             this.model = room;
             this.model.moduleObject = this;
             this.container.add(this.model);
+            this.box.setFromObject(this.container);
 
             if(this.model.odysseyAnimations.length){
               for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){

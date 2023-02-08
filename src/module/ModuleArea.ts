@@ -364,25 +364,20 @@ export class ModuleArea extends ModuleObject {
   }
 
   updateRoomVisibility(delta: number = 0){
-    let rooms = [];
-    let room = undefined;
-    let model = undefined;
+    let roomList: ModuleRoom[] = [];
     let pos = undefined;
     
     if(GameState.inDialog){
       pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
       for(let i = 0, il = this.rooms.length; i < il; i++){
-        if((room = this.rooms[i])){
-          if((model = room.model) && model.type === 'OdysseyModel'){
-            if(!room.hasVISObject || model.box.containsPoint(pos)){
-              rooms.push(room);
-            }
-          }
+        const room = this.rooms[i];
+        if(!room.hasVISObject || room.box.containsPoint(pos)){
+          roomList.push(room);
         }
       }
 
-      for(let i = 0; i < rooms.length; i++){
-        rooms[i].show(true);
+      for(let i = 0; i < roomList.length; i++){
+        roomList[i].show(true);
       }
     }else if(PartyManager.party[0]){
       let player = GameState.getCurrentPlayer();
@@ -394,11 +389,9 @@ export class ModuleArea extends ModuleObject {
       if(player){
         for(let i = 0, len = this.rooms.length; i < len; i++){
           let room = this.rooms[i];
-          if(room.model instanceof OdysseyModel3D){
-            if(!room.hasVISObject || room.model.box.containsPoint(player.position)){
-              //Show the room, but don't recursively show it's children
-              room.show(false);
-            }
+          if(!room.hasVISObject || room.box.containsPoint(player.position)){
+            //Show the room, but don't recursively show it's children
+            room.show(false);
           }
         }
       }
