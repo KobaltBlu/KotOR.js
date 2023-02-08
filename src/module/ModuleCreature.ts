@@ -3311,34 +3311,10 @@ export class ModuleCreature extends ModuleObject {
               isHologram: this.isHologram,
               context: this.context,
             }).then((model: OdysseyModel3D) => {
-              console.log('LoadModel', this.getTag());
-              if(this.model) this.model.removeFromParent();
-              // if(this.model instanceof OdysseyModel3D){
-              //   this.model.removeFromParent();
-              //   //Remove weapons from model before dispose
-              //   try{
-              //     if(this.model.lhand instanceof OdysseyObject3D){
-              //       if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-              //         this.model.lhand.remove(this.equipment.LEFTHAND.model);
-              //       }
-              //     }
-              //   }catch(e){}
-                
-              //   //Remove weapons from model before dispose
-              //   try{
-              //     if(this.model.rhand instanceof OdysseyObject3D){
-              //       if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-              //         this.model.rhand.remove(this.equipment.RIGHTHAND.model);
-              //       }
-              //     }
-              //   }catch(e){}
-              //   try{ this.model.dispose(); }catch(e){}
-              // }
-              
-              // if(this.head instanceof OdysseyModel3D){
-              //   this.head.removeFromParent();
-              //   try{ this.head.dispose(); }catch(e){}
-              // }
+              if(this.model){
+                this.model.removeFromParent();
+                try{ this.model.dispose(); }catch(e){}
+              }
 
               this.model = model;
               this.model.userData.moduleObject = this;
@@ -3352,7 +3328,7 @@ export class ModuleCreature extends ModuleObject {
                   }
                 }
               }catch(e){
-                console.error('ModuleCreature', e);
+                console.error('ModuleCreature.LoadBody', e);
               }
 
               try{
@@ -3362,7 +3338,7 @@ export class ModuleCreature extends ModuleObject {
                   }
                 }
               }catch(e){
-                console.error('ModuleCreature', e);
+                console.error('ModuleCreature.LoadBody', e);
               }
 
               resolve(this.model)

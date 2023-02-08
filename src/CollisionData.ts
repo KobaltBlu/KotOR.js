@@ -351,6 +351,10 @@ export class CollisionData {
             }
           }
         }
+        
+        if(this.object.lastDoorEntered){
+          this.object.lastDoorEntered.testTransitionLineCrosses(this.object);
+        }
 
         //update creature position
         this.object.position.add(this.object.AxisFront);

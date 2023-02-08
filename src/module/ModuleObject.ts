@@ -199,8 +199,8 @@ export class ModuleObject {
   lastAreaExited: ModuleObject;
   lastModuleEntered: ModuleObject;
   lastModuleExited: ModuleObject;
-  lastDoorEntered: ModuleObject;
-  lastDoorExited: ModuleObject;
+  lastDoorEntered: ModuleDoor;
+  lastDoorExited: ModuleDoor;
   lastPlaceableEntered: ModuleObject;
   lastPlaceableExited: ModuleObject;
   lastAoeEntered: ModuleObject;

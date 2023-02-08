@@ -26,6 +26,7 @@ import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { InventoryManager } from "../managers/InventoryManager";
 import { KEYManager } from "../managers/KEYManager";
+import { MenuManager } from "../gui";
 
 /* @file
  * The ModuleDoor class.
@@ -64,6 +65,13 @@ export class ModuleDoor extends ModuleObject {
   props: any;
   useable: any;
   bodyBag: any;
+
+  
+  transitionLineMin: THREE.Vector3 = new THREE.Vector3(-2.5, 0, 0);
+  transitionLineMax: THREE.Vector3 = new THREE.Vector3(2.5, 0, 0);
+  transitionLine: THREE.Line3;
+  transitionClosestPoint: THREE.Vector3 = new THREE.Vector3();
+  transitionDistance: number = Infinity;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -456,7 +464,6 @@ export class ModuleDoor extends ModuleObject {
   update(delta = 0){
     
     super.update(delta);
-
     if(this.model instanceof OdysseyModel3D){
       this.model.update(delta);
       //this.box.setFromObject(this.model);
@@ -487,45 +494,97 @@ export class ModuleDoor extends ModuleObject {
       }
     }*/
 
-
-    //Check Party Members
-    if(this.getLinkedToModule()){
-      if(this.getLinkedToModule()){
-        let partymember = PartyManager.party[0];
-        let pos = partymember.getModel().position.clone();
-        //if(this.box.containsPoint(pos)){
-          let distance = pos.distanceTo(this.getModel().position.clone());
-          if(distance < .5){
-            if(partymember.lastDoorEntered !== this){
-              partymember.lastDoorEntered = this;
-              this.onEnter(partymember);
-            }
+    const partymember = PartyManager.party[0];
+    if(partymember){
+      const outer_distance = partymember.position.distanceTo(this.position);
+      if(outer_distance < 10){
+        this.testTransitionLine(partymember);
+        if(this.transitionDistance < 2){
+          if(this.getLinkedToModule() && this.isOpen()){
+            MenuManager.InGameAreaTransition.setTransitionObject(this);
           }
-        /*}*/else{
+        }else{
+          if(MenuManager.InGameAreaTransition.transitionObject == this){
+            MenuManager.InGameAreaTransition.setTransitionObject(undefined);
+          }
+        }
+        if(this.transitionDistance < 0.5){
+          if(partymember.lastDoorEntered !== this){
+            partymember.lastDoorEntered = this;
+            this.onEnter(partymember);
+          }
+        } else {
           if(partymember.lastDoorEntered === this){
             partymember.lastDoorExited = this;
             this.onExit(partymember);
           }
+        }
+      }else{
+        if(partymember.lastDoorEntered === this){
+          partymember.lastDoorExited = this;
+          this.onExit(partymember);
         }
       }
     }
 
   }
 
-  onEnter(object: ModuleObject){
+  generateTransitionLine(){
+    this.transitionLineMin.set(-5, 0, 0);
+    this.transitionLineMax.set(5, 0, 0)
+    this.transitionLine = new THREE.Line3(this.transitionLineMin, this.transitionLineMax);
+    this.container.updateMatrix();
+    this.transitionLine.applyMatrix4(this.container.matrix.clone());
+  }
+
+  testTransitionLine(object: ModuleObject){
+    this.transitionClosestPoint.set(0, 0, 0);
+    this.transitionLineMin.z = object.position.z;
+    this.transitionLineMax.z = object.position.z;
+    this.transitionLine.closestPointToPoint(object.position, true, this.transitionClosestPoint);
+    this.transitionDistance = object.position.distanceTo(this.transitionClosestPoint);
+  }
+
+  testTransitionLineCrosses(object: ModuleObject){
+    if(object == GameState.getCurrentPlayer()){
+      const trans = this?.model?.trans;
+      if(trans){
+        GameState.raycaster.ray.origin.copy(object.position);
+        GameState.raycaster.ray.origin.z += 1;
+        GameState.raycaster.ray.direction.copy(object.AxisFront);
+        const intersections: THREE.Intersection[] =[];
+        trans.children[0].raycast(GameState.raycaster, intersections);
+        if(intersections.length){
+          this.transitNPC(object);
+        }
+      }
+    }
+  }
+
+  transitNPC(object: ModuleObject){
+    if(!(object instanceof ModuleObject)) return;
+    if(object != GameState.getCurrentPlayer()) return;
     if(this.getLinkedToModule() && !GameState.inDialog && this.isOpen()){
-      if(object == GameState.getCurrentPlayer() && object.controlled){
+      if(object.controlled){
         GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
       }else{
-        object.lastDoorEntered = undefined;
+        object.lastDoorEntered = this;
       }
-    }else{
-      object.lastDoorEntered = undefined;
+    }
+  }
+
+  onEnter(object: ModuleObject){
+    object.lastDoorEntered = this;
+    if(this.getLinkedToModule() && this.isOpen()){
+      MenuManager.InGameAreaTransition.setTransitionObject(this);
     }
   }
 
   onExit(object: ModuleObject){
-    
+    object.lastDoorEntered = undefined;
+    if(this.getLinkedToModule()){
+      MenuManager.InGameAreaTransition.setTransitionObject(undefined);
+    }
   }
 
   Load( onLoad?: Function ){
@@ -591,6 +650,8 @@ export class ModuleDoor extends ModuleObject {
           if(trans instanceof THREE.Object3D){
             trans.visible = false;
           }
+
+          this.generateTransitionLine();
           
           this.model.disableMatrixUpdate();
 
