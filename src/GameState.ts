@@ -1031,93 +1031,96 @@ export class GameState implements EngineContext {
 
                       console.log('Module.loadScene');
                       module.loadScene( (d: any) => {
-                        FadeOverlayManager.FadeOut(0, 0, 0, 0);
-                        module.initEventQueue();
-                        console.log('Module.initScripts');
-                        module.initScripts( () => {
-                          MenuManager.LoadScreen.Close();
-                          window.setTimeout( ()=> {
-                            //GameState.scene_gui.background = null;
-                            GameState.scene.visible = true;
-                            
-                            AudioEngine.Unmute();
-                            if(GameState.module.area.MiniGame){
-                              GameState.Mode = EngineMode.MINIGAME
-                            }else{
-                              GameState.Mode = EngineMode.INGAME;
-                            }
-
-                            let runSpawnScripts = !GameState.isLoadingSave;
-                            GameState.isLoadingSave = false;
-                            
-                            MenuManager.InGameComputer.audioEmitter = MenuManager.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
-                              engine: GameState.audioEngine,
-                              channel: AudioEngineChannel.VO,
-                              props: {
-                                XPosition: 0,
-                                YPosition: 0,
-                                ZPosition: 0
-                              },
-                              template: {
-                                sounds: [],
-                                isActive: true,
-                                isLooping: false,
-                                isRandom: false,
-                                isRandomPosition: false,
-                                interval: 0,
-                                intervalVariation: 0,
-                                maxDistance: 50,
-                                volume: 127,
-                                positional: 0
-                              },
-                              onLoad: () => {
-                              },
-                              onError: () => {
+                        TextureLoader.LoadQueue( () => {
+                          FadeOverlayManager.FadeOut(0, 0, 0, 0);
+                          module.initEventQueue();
+                          console.log('Module.initScripts');
+                          module.initScripts( () => {
+                            MenuManager.LoadScreen.Close();
+                            window.setTimeout( ()=> {
+                              //GameState.scene_gui.background = null;
+                              GameState.scene.visible = true;
+                              
+                              AudioEngine.Unmute();
+                              if(GameState.module.area.MiniGame){
+                                GameState.Mode = EngineMode.MINIGAME
+                              }else{
+                                GameState.Mode = EngineMode.INGAME;
                               }
-                            });
-                            GameState.audioEngine.AddEmitter(this.audioEmitter);
-                            MenuManager.InGameOverlay.RecalculatePosition();
-                            MenuManager.InGameOverlay.Open();
-                            GameState.renderer.compile(GameState.scene, GameState.currentCamera);
 
-                            if(GameState.module.area.MiniGame){
-                              GameState.Mode = EngineMode.MINIGAME
-                            }else{
-                              GameState.Mode = EngineMode.INGAME;
-                            }
-                            
-                            //console.log('inDialog', GameState.inDialog);
-                            //console.log('HOLDFADE', GameState.holdWorldFadeInForDialog, GameState.inDialog);
-                            
-                            //console.log('runSpawnScripts', runSpawnScripts);
-                            console.log('ModuleArea.initAreaObjects');
-                            GameState.module.area.initAreaObjects(runSpawnScripts).then( () => {
-                              console.log('ModuleArea: ready to play');
-                              GameState.module.readyToProcessEvents = true;
+                              let runSpawnScripts = !GameState.isLoadingSave;
+                              GameState.isLoadingSave = false;
+                              
+                              MenuManager.InGameComputer.audioEmitter = MenuManager.InGameDialog.audioEmitter = this.audioEmitter = new AudioEmitter({
+                                engine: GameState.audioEngine,
+                                channel: AudioEngineChannel.VO,
+                                props: {
+                                  XPosition: 0,
+                                  YPosition: 0,
+                                  ZPosition: 0
+                                },
+                                template: {
+                                  sounds: [],
+                                  isActive: true,
+                                  isLooping: false,
+                                  isRandom: false,
+                                  isRandomPosition: false,
+                                  interval: 0,
+                                  intervalVariation: 0,
+                                  maxDistance: 50,
+                                  volume: 127,
+                                  positional: 0
+                                },
+                                onLoad: () => {
+                                },
+                                onError: () => {
+                                }
+                              });
+                              GameState.audioEngine.AddEmitter(this.audioEmitter);
+                              MenuManager.InGameOverlay.RecalculatePosition();
+                              MenuManager.InGameOverlay.Open();
+                              GameState.renderer.compile(GameState.scene, GameState.currentCamera);
 
-                              if(!GameState.holdWorldFadeInForDialog)
-                                FadeOverlayManager.FadeIn(1, 0, 0, 0);
+                              if(GameState.module.area.MiniGame){
+                                GameState.Mode = EngineMode.MINIGAME
+                              }else{
+                                GameState.Mode = EngineMode.INGAME;
+                              }
+                              
+                              //console.log('inDialog', GameState.inDialog);
+                              //console.log('HOLDFADE', GameState.holdWorldFadeInForDialog, GameState.inDialog);
+                              
+                              //console.log('runSpawnScripts', runSpawnScripts);
+                              console.log('ModuleArea.initAreaObjects');
+                              GameState.module.area.initAreaObjects(runSpawnScripts).then( () => {
+                                console.log('ModuleArea: ready to play');
+                                GameState.module.readyToProcessEvents = true;
 
-                              if(GameState.Mode == EngineMode.INGAME){
-              
-                                let anyCanLevel = false;
-                                for(let i = 0; i < PartyManager.party.length; i++){
-                                  if(PartyManager.party[i].canLevelUp()){
-                                    anyCanLevel = true;
+                                if(!GameState.holdWorldFadeInForDialog)
+                                  FadeOverlayManager.FadeIn(1, 0, 0, 0);
+
+                                if(GameState.Mode == EngineMode.INGAME){
+                
+                                  let anyCanLevel = false;
+                                  for(let i = 0; i < PartyManager.party.length; i++){
+                                    if(PartyManager.party[i].canLevelUp()){
+                                      anyCanLevel = true;
+                                    }
                                   }
+                
+                                  if(anyCanLevel){
+                                    GameState.audioEmitter.PlaySound('gui_level');
+                                  }
+                
                                 }
-              
-                                if(anyCanLevel){
-                                  GameState.audioEmitter.PlaySound('gui_level');
-                                }
-              
-                              }
 
-                            });       
-                            
-                            GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.SunFogColor) );
+                              });       
+                              
+                              GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.SunFogColor) );
+                            });
+
                           });
-
+                          
                         });
 
                       })
