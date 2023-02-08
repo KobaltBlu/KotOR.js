@@ -321,29 +321,29 @@ export class IngameControls {
             GameState.onMouseHitInteractive( (obj: any, obj2: any) => {
               if(GameState.debug.selectedObject)
                 console.log('Mesh', obj2)
-              if(obj.moduleObject instanceof ModuleObject){
-                if(obj.moduleObject.isUseable() && obj.moduleObject != GameState.getCurrentPlayer()){
+              if(obj.userData.moduleObject instanceof ModuleObject){
+                if(obj.userData.moduleObject.isUseable() && obj.userData.moduleObject != GameState.getCurrentPlayer()){
 
                   selectedObject = true;
 
-                  let distance = GameState.getCurrentPlayer().position.distanceTo(obj.moduleObject.position);
+                  let distance = GameState.getCurrentPlayer().position.distanceTo(obj.userData.moduleObject.position);
                   let distanceThreshold = 20;
 
-                  if(GameState.selectedObject == obj.moduleObject && distance <= distanceThreshold){
-                    if(typeof obj.moduleObject.onClick === 'function'){
+                  if(GameState.selectedObject == obj.userData.moduleObject && distance <= distanceThreshold){
+                    if(typeof obj.userData.moduleObject.onClick === 'function'){
                       GameState.getCurrentPlayer().clearAllActions();
-                      obj.moduleObject.onClick(GameState.getCurrentPlayer());
+                      obj.userData.moduleObject.onClick(GameState.getCurrentPlayer());
                     }else{
-                      let distance = GameState.getCurrentPlayer().position.distanceTo(obj.moduleObject.position);
+                      let distance = GameState.getCurrentPlayer().position.distanceTo(obj.userData.moduleObject.position);
                       //console.log(distance);
                       if(distance > 1.5){
                         GameState.getCurrentPlayer().clearAllActions();
-                        obj.moduleObject.clearAllActions();
-                        GameState.getCurrentPlayer().actionDialogObject(obj.moduleObject);
+                        obj.userData.moduleObject.clearAllActions();
+                        GameState.getCurrentPlayer().actionDialogObject(obj.userData.moduleObject);
                       }
                     }
                   }
-                  GameState.setReticleSelectedObject(obj.moduleObject);
+                  GameState.setReticleSelectedObject(obj.userData.moduleObject);
                 }
                 if(GameState.debug.selectedObject)
                   console.log('Ingame Object', obj);

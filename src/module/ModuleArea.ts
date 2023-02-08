@@ -1225,7 +1225,7 @@ export class ModuleArea extends ModuleObject {
               player.LoadModel( (model: OdysseyModel3D) => {
                 player.LoadGunBanks( () => {
                   let track = this.tracks.find(o => o.track === player.trackName);
-                  model.moduleObject = player;
+                  model.userData.moduleObject = player;
                   model.hasCollision = true;
                   player.setTrack(track.model);
         
@@ -1307,7 +1307,7 @@ export class ModuleArea extends ModuleObject {
 
           player.LoadScripts( () => {
             player.LoadModel().then( (model: OdysseyModel3D) => {
-              model.moduleObject = player;
+              model.userData.moduleObject = player;
               model.hasCollision = true;
     
               let spawnLoc = this.getSpawnLocation();
@@ -1337,7 +1337,7 @@ export class ModuleArea extends ModuleObject {
             track.Load( () => {
               track.LoadModel( (model: OdysseyModel3D) => {
                 track.model = model;
-                model.moduleObject = track;
+                model.userData.moduleObject = track;
                 model.userData.index = trackIndex;
                 //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
                 model.hasCollision = true;
@@ -1378,7 +1378,7 @@ export class ModuleArea extends ModuleObject {
                 enemy.LoadModel( (model: OdysseyModel3D) => {
                   enemy.LoadGunBanks( () => {
                     let track = this.tracks.find(o => o.track === enemy.trackName);
-                    model.moduleObject = enemy;
+                    model.userData.moduleObject = enemy;
                     model.hasCollision = true;
                     enemy.setTrack(track.model);
                     enemy.computeBoundingBox();
@@ -1745,7 +1745,7 @@ export class ModuleArea extends ModuleObject {
   
             creature.LoadScripts( () => {
               creature.LoadModel().then( (model: OdysseyModel3D) => {
-                creature.model.moduleObject = creature;
+                creature.model.userData.moduleObject = creature;
                 
                 //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
                 creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);

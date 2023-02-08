@@ -566,7 +566,7 @@ export class ModulePlaceable extends ModuleObject {
           }
 
           this.model = plc;
-          this.model.moduleObject = this;
+          this.model.userData.moduleObject = this;
           this.model.name = modelName;
 
           this.container.add(this.model);

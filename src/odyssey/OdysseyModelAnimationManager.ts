@@ -191,16 +191,16 @@ export class OdysseyModelAnimationManager {
   updateAnimationNode(anim: any, node: any){
     this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
 
-    if(this.model.moduleObject && this.model.moduleObject.head && this.model.moduleObject.head != this.model){
+    if(this.model.userData.moduleObject && this.model.userData.moduleObject.head && this.model.userData.moduleObject.head != this.model){
       //This if statement is a hack to get around using getObjectByName because it was too expensive
       //Not sure of the best approach here. This seems to work for now
       if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
-        this.model.moduleObject.head.animationManager.updateAnimationNode(anim, node);
+        this.model.userData.moduleObject.head.animationManager.updateAnimationNode(anim, node);
     }
 
     if(typeof this.modelNode != 'undefined'){
 
-      if(this.modelNode.lipping && this.model.moduleObject && this.model.moduleObject.lipObject)
+      if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
         return;
 
       anim._position.x = anim._position.y = anim._position.z = 0;
@@ -286,16 +286,16 @@ export class OdysseyModelAnimationManager {
   updateTransitionNode(anim: any, node: any, tansWeight = 0){
     this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
 
-    if(this.model.moduleObject && this.model.moduleObject.head && this.model.moduleObject.head != this.model){
+    if(this.model.userData.moduleObject && this.model.userData.moduleObject.head && this.model.userData.moduleObject.head != this.model){
       //This if statement is a hack to get around using getObjectByName because it was too expensive
       //Not sure of the best approach here. This seems to work for now
       if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
-        this.model.moduleObject.head.animationManager.updateAnimationNode(anim, node);
+        this.model.userData.moduleObject.head.animationManager.updateAnimationNode(anim, node);
     }
 
     if(typeof this.modelNode != 'undefined'){
 
-      if(this.modelNode.lipping && this.model.moduleObject && this.model.moduleObject.lipObject)
+      if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
         return;
 
       anim._position.x = anim._position.y = anim._position.z = 0;

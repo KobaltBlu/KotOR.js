@@ -621,9 +621,6 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      //if(this.model instanceof OdysseyModel3D)
-      //  this.model.box.setFromObject(this.model);
-
       if(this.collisionData.blockingObject != this.collisionData.lastBlockingObject){
         this.collisionData.lastBlockingObject = this.collisionData.blockingObject;
         //console.log('blocking script', this.blocking);
@@ -3346,8 +3343,7 @@ export class ModuleCreature extends ModuleObject {
               this.model = model;
               this.model.userData.moduleObject = this;
               this.container.add(this.model);
-              this.box.copy(this.model.box);
-              this.box.translate(this.position);
+              this.box.setFromObject(this.container);
 
               try{
                 if(this.model.lhand instanceof OdysseyObject3D){
@@ -3409,7 +3405,7 @@ export class ModuleCreature extends ModuleObject {
                   }
 
                   this.head = head;
-                  this.head.moduleObject = this;
+                  this.head.userData.moduleObject = this;
                   this.model.headhook.head = head;
                   this.model.headhook.add(head);
 

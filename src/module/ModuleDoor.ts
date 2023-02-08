@@ -583,7 +583,7 @@ export class ModuleDoor extends ModuleObject {
           }
 
           this.model = door;
-          this.model.moduleObject = this;
+          this.model.userData.moduleObject = this;
           this.model.name = modelName;
           this.container.add(this.model);
 

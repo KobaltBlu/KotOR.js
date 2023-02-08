@@ -167,8 +167,8 @@ export class CollisionData {
               if(intersects[j].distance < hitdist_half){
                 if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
 
-                  if(intersects[j].object.moduleObject instanceof ModuleDoor){
-                    this.blockingObject = intersects[j].object.moduleObject;
+                  if(intersects[j].object.userData.moduleObject instanceof ModuleDoor){
+                    this.blockingObject = intersects[j].object.userData.moduleObject;
                   }
 
                   if(!collider || collider.distance < intersects[j].distance)

@@ -2929,7 +2929,7 @@ NWScriptDefK1.Actions = {
     
                   creature.LoadScripts( () => {
                     creature.LoadModel().then( (model: OdysseyModel3D) => {
-                      model.moduleObject = creature;
+                      model.userData.moduleObject = creature;
                       model.hasCollision = true;
                       model.name = creature.getTag();
                       GameState.group.creatures.add( creature.container );
@@ -2961,7 +2961,7 @@ NWScriptDefK1.Actions = {
       
                   plc.LoadModel().then( (model: OdysseyModel3D) => {
                     plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
-                      plc.model.moduleObject = plc;
+                      plc.model.userData.moduleObject = plc;
                       
                       model.hasCollision = true;
                       model.name = plc.getTag();
@@ -7208,10 +7208,10 @@ NWScriptDefK1.Actions = {
         partyMember.Load( () => {
           partyMember.LoadEquipment( () => {
             partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+              partyMember.model.userData.moduleObject = partyMember;
               partyMember.position.copy(args[1].position);
-              model.box = new THREE.Box3().setFromObject(model);
               partyMember.setFacing(args[1].getFacing(), true);
-              partyMember.model.moduleObject = partyMember;
+              partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
               model.hasCollision = true;
               GameState.group.creatures.add( partyMember.container );
     
@@ -7896,7 +7896,7 @@ NWScriptDefK1.Actions = {
               resolve(1);
   
               item.LoadModel().then( (model: OdysseyModel3D) => {
-                item.model.moduleObject = item;
+                item.model.userData.moduleObject = item;
                 
                 model.name = item.getTag();
                 GameState.group.placeables.add( model );

@@ -931,7 +931,7 @@ export class LIPEditorTab extends EditorTab {
 
         this.head.playAnimation('tlknorm', true);
 
-        this.head.moduleObject = {
+        this.head.userData.moduleObject = {
           lipObject: this.lip
         };
 
@@ -1105,7 +1105,7 @@ export class LIPEditorTab extends EditorTab {
 
     if(this.lip instanceof LIPObject && this.head instanceof OdysseyModel3D){
 
-      this.head.moduleObject.lipObject = this.lip;
+      this.head.userData.moduleObject.lipObject = this.lip;
 
       let last_time = this.lip.elapsed;
 

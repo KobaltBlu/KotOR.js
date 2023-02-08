@@ -140,7 +140,7 @@ export class AppearanceLoader {
               }
 
               this.model = model;
-              this.model.moduleObject = this.moduleObject;
+              this.model.userData.moduleObject = this.moduleObject;
 
               if(typeof scene != 'undefined'){
                 scene.add(this.model);
@@ -231,7 +231,7 @@ export class AppearanceLoader {
           }
 
           this.model = door;
-          this.model.moduleObject = this.moduleObject;
+          this.model.userData.moduleObject = this.moduleObject;
 
           if(typeof scene != 'undefined'){
             scene.add(this.model);
@@ -278,7 +278,7 @@ export class AppearanceLoader {
           }
 
           this.model = plc;
-          this.model.moduleObject = this.moduleObject;
+          this.model.userData.moduleObject = this.moduleObject;
 
           if(typeof scene != 'undefined'){
             scene.add(this.model);

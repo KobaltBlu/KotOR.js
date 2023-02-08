@@ -935,9 +935,9 @@ export class GameState implements EngineContext {
           //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
           GameState.onMouseHitInteractive( (obj: any) => {
-            if(obj.moduleObject instanceof ModuleObject && obj.moduleObject.isUseable()){
-              if(obj.moduleObject != GameState.getCurrentPlayer()){
-                GameState.setReticleHoveredObject(obj.moduleObject);
+            if(obj.userData.moduleObject instanceof ModuleObject && obj.userData.moduleObject.isUseable()){
+              if(obj.userData.moduleObject != GameState.getCurrentPlayer()){
+                GameState.setReticleHoveredObject(obj.userData.moduleObject);
               }
             }else{
               GameState.hovered = GameState.hoveredObject = undefined;

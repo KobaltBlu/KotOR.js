@@ -244,7 +244,7 @@ export class ModuleObject {
     //this.moduleObject = null;
     this.AxisFront = new THREE.Vector3();
     this.container = new OdysseyObject3D();
-    this.container.moduleObject = this;
+    this.container.userData.moduleObject = this;
     this.position = this.container.position;
     this.rotation = this.container.rotation;
     this.quaternion = this.container.quaternion;
@@ -1016,17 +1016,13 @@ export class ModuleObject {
       this.room = undefined;
       let aabbFaces = [];
       let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-      let box = this.model.box.clone();
+      let box = this.box.clone();
 
       this.rooms = [];
       for(let i = 0; i < GameState.module.area.rooms.length; i++){
         let room = GameState.module.area.rooms[i];
-        let model = room.model;
-        if(model instanceof OdysseyModel3D){
-          let pos = this.position.clone();
-          if(model.box.containsPoint(pos)){
-            this.roomIds.push(i);
-          }
+        if(room.box.containsPoint(this.position)){
+          this.roomIds.push(i);
         }
       }
 
@@ -1668,31 +1664,24 @@ export class ModuleObject {
   }
 
   computeBoundingBox(force: boolean = false){
+    if(this.container){
+      this.container.updateMatrixWorld(true);
+      this.container.updateMatrix();
+      if(force){
+        this.container.traverse( n => {
+          n.updateMatrixWorld(true);
+          n.updateMatrix();
+        })
+      }
+    }
+
     if(this.model){
-      if(!this.model.box){
-        this.model.box = new THREE.Box3();
-      }
+      this.model.updateMatrixWorld(true);
+      this.model.updateMatrix();
+    }
 
-      if(this.container){
-        this.container.updateMatrixWorld(true);
-        this.container.updateMatrix();
-        if(force){
-          this.container.traverse( n => {
-            n.updateMatrixWorld(true);
-            n.updateMatrix();
-          })
-        }
-      }
-
-      if(this.model){
-        this.model.updateMatrixWorld(true);
-        this.model.updateMatrix();
-      }
-
-      if(!(this instanceof ModuleDoor)){
-        this.box = this.box.setFromObject(this.model);
-        //this.sphere = this.box.getBoundingSphere(this.sphere);
-      }
+    if(!(this instanceof ModuleDoor)){
+      this.box.setFromObject(this.model);
     }
   }
 

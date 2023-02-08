@@ -690,7 +690,7 @@ export class ModuleEditorTab extends EditorTab {
                 $inputTemplateResRef.val(selected);
                 moduleObject.Load( () => {
                   moduleObject.LoadModel( (model: OdysseyModel3D) => {
-                    model.moduleObject = moduleObject; 
+                    model.userData.moduleObject = moduleObject; 
                     this.select(model);
                     Forge.loader.Dismiss();
                   });
@@ -720,9 +720,9 @@ export class ModuleEditorTab extends EditorTab {
 
       /*
       if(this.editor.selected != null){
-        if(this.editor.selected.parent.moduleObject != null){
+        if(this.editor.selected.parent.userData.moduleObject != null){
           console.log('Set Object')
-          //objProps.SetObject(this.editor.selected.parent.moduleObject);
+          //objProps.SetObject(this.editor.selected.parent.userData.moduleObject);
         }else{
           console.log('Can\'t Set Object')
         }
@@ -869,7 +869,7 @@ export class ModuleEditorTab extends EditorTab {
         //model.translateZ(door.props['Z']);
 
         model.rotation.set(0, 0, door.props['Bearing']);
-        door.model.moduleObject = door;
+        door.model.userData.moduleObject = door;
 
         this.group.doors.add( model );
 
@@ -913,7 +913,7 @@ export class ModuleEditorTab extends EditorTab {
         //model.translateX(plc.props['X']);
         //model.translateY(plc.props['Y']);
         //model.translateZ(plc.props['Z']);
-        plc.model.moduleObject = plc;
+        plc.model.userData.moduleObject = plc;
         model.rotation.set(0, 0, plc.props['Bearing']);
 
         this.cursorGroup.add( model );
@@ -1051,7 +1051,7 @@ export class ModuleEditorTab extends EditorTab {
             player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
             //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
             player.computeBoundingBox();
-            model.moduleObject = player;
+            model.userData.moduleObject = player;
             model.hasCollision = true;
 
             this.group.player.add(model);
@@ -1166,7 +1166,7 @@ export class ModuleEditorTab extends EditorTab {
           waypoint.Load( () => {
             //waypnt.LoadModel( (mesh) => {
               // wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-              // wpObj.mesh.moduleObject = waypnt;
+              // wpObj.mesh.userData.moduleObject = waypnt;
               // this.group.waypoints.add(wpObj.mesh);
               asyncLoop.next();
             //});
@@ -1232,7 +1232,7 @@ export class ModuleEditorTab extends EditorTab {
             template.mesh = new THREE.Mesh( trigGeom, material );
             template.mesh.position.set(trig.props.XPosition, trig.props.YPosition, trig.props.ZPosition);
             template.mesh.rotation.set(trig.props.XOrientation, trig.props.YOrientation, trig.props.ZOrientation);
-            template.mesh.moduleObject = trig;
+            template.mesh.userData.moduleObject = trig;
             
           });*/
 
@@ -1255,7 +1255,7 @@ export class ModuleEditorTab extends EditorTab {
           crt.context = this;
           crt.Load( () => {
             crt.LoadModel().then( (model: OdysseyModel3D) => {
-              crt.model.moduleObject = crt;
+              crt.model.userData.moduleObject = crt;
               
               //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
               crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);
@@ -1285,7 +1285,7 @@ export class ModuleEditorTab extends EditorTab {
         onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
           room.context = this;
           room.loadModel().then( (model: OdysseyModel3D) => {
-            room.model.moduleObject = room;
+            room.model.userData.moduleObject = room;
             this.group.rooms.add(room.model);
             asyncLoop.next();
           });

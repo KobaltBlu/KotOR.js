@@ -293,7 +293,7 @@ export class PartyManager {
           partyMember.LoadModel().then( (model: OdysseyModel3D) => {
             PartyManager.party[0] = partyMember;
             
-            model.moduleObject = partyMember;
+            model.userData.moduleObject = partyMember;
             partyMember.position.copy(spawn);
             partyMember.quaternion.copy(quaternion);
             model.hasCollision = true;
@@ -416,7 +416,7 @@ export class PartyManager {
 
             partyMember.LoadScripts( () => {
               partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-                model.moduleObject = partyMember;
+                model.userData.moduleObject = partyMember;
 
                 partyMember.position.copy(spawn.position);
                 partyMember.setFacing(spawn.getFacing(), true);
@@ -460,7 +460,7 @@ export class PartyManager {
         let partyMember = new ModuleCreature(npc.template);
         partyMember.Load( () => {
           partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-            model.moduleObject = partyMember;
+            model.userData.moduleObject = partyMember;
             partyMember.onSpawn();
             if(typeof onLoad === 'function')
               onLoad(partyMember);

@@ -198,7 +198,7 @@ export class ModuleRoom extends ModuleObject {
             }
 
             this.model = room;
-            this.model.moduleObject = this;
+            this.model.userData.moduleObject = this;
             this.container.add(this.model);
             this.box.setFromObject(this.container);
 

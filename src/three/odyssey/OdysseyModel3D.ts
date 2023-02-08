@@ -252,19 +252,19 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     //BEGIN: Animation Optimization
     this.animateFrame = true;
-    if(this.moduleObject instanceof ModuleCreature){
+    if(this.userData.moduleObject instanceof ModuleCreature){
       //If the object is further than 50 meters, animate every other frame
-      if(this.moduleObject.distanceToCamera > 50){
+      if(this.userData.moduleObject.distanceToCamera > 50){
         this.animateFrame = this.oddFrame;
       }
       
       if(this.animateFrame){
         //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-        if(PartyManager.party.indexOf(this.moduleObject) == -1 && this.context.scene.fog){
-          if(this.moduleObject.distanceToCamera >= this.context.scene.fog.far){
+        if(PartyManager.party.indexOf(this.userData.moduleObject) == -1 && this.context.scene.fog){
+          if(this.userData.moduleObject.distanceToCamera >= this.context.scene.fog.far){
             this.animateFrame = false;
             //If the object is past the near point, and the near point is greater than zero, animate every other frame
-          }else if(this.context.scene.fog.near && this.moduleObject.distanceToCamera >= this.context.scene.fog.near){
+          }else if(this.context.scene.fog.near && this.userData.moduleObject.distanceToCamera >= this.context.scene.fog.near){
             this.animateFrame = this.oddFrame;
           }
         }
@@ -272,7 +272,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     }
 
-    if(!(this.moduleObject instanceof ModuleRoom)){
+    if(!(this.userData.moduleObject instanceof ModuleRoom)){
       if(!this.visible){
         this.animateFrame = false;
       }
@@ -552,8 +552,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
     }else{
 
-      if(typeof this.moduleObject == 'object' && typeof this.moduleObject.playEvent == 'function'){
-        this.moduleObject.playEvent(event);
+      if(typeof this.userData.moduleObject == 'object' && typeof this.userData.moduleObject.playEvent == 'function'){
+        this.userData.moduleObject.playEvent(event);
       }
     }
 
@@ -921,7 +921,7 @@ _options
           model.modelHeader.BoundingMaxY,
           model.modelHeader.BoundingMaxZ,
         ]);
-        
+
         if(typeof _options.onComplete === 'function') _options.onComplete(odysseyModel);
         resolve(odysseyModel);
       }else{

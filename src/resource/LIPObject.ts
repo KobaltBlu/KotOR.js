@@ -223,8 +223,8 @@ export class LIPObject {
 
       if(this.elapsed >= this.duration){
         
-        if(model.moduleObject)
-          model.moduleObject.lipObject = undefined;
+        if(model.userData.moduleObject)
+          model.userData.moduleObject.lipObject = undefined;
 
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
