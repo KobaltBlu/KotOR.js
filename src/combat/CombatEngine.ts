@@ -24,7 +24,7 @@ export class CombatEngine {
   static roundLength = 3;
   static roundType = 0;
   static combatants: ModuleObject[] = [];
-  static combatGroups: any[][] = [];
+  static combatGroups: ModuleObject[][] = [];
 
   constructor(args = {}){
 
@@ -35,7 +35,7 @@ export class CombatEngine {
     if(CombatEngine.combatants.length){
 
       //combatGroups is an array of combatGroups (Arrays) that group objects in combat with each other
-      let combatGroups: any[][] = [];
+      let combatGroups: ModuleObject[][] = [];
 
       //Loop through the active combatants and group them
       for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
@@ -123,22 +123,22 @@ export class CombatEngine {
           let combatant = combatGroups[i][j];
           if(!combatant.isDead()){
 
-            if(combatant.combatAction){
+            if(combatant.combatData.combatAction){
               //BEGIN: DUELING SYNC
-              if(!combatant.combatAction.ready){
+              if(!combatant.combatData.combatAction.ready){
                 //Check to see if the combatant is dueling it's target. If so make sure the target's combatRoundTimer is synced properly
-                if(combatant.isDueling() && combatant.combatAction){
-                  combatant.combatAction.target.combatRoundTimer = 1.5 - delta;
+                if(combatant.isDueling() && combatant.combatData.combatAction){
+                  combatant.combatData.combatAction.target.combatRoundTimer = 1.5 - delta;
                 }
               }
               //END: DUELING SYNC
 
               //Combat action is ready
-              if(!combatant.combatAction.ready){
-                if(combatant.combatAction){
-                  if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatAction)){
-                    combatant.combatAction.ready = true;
-                    CombatEngine.CalculateAttackDamage(combatant.combatAction, combatant);
+              if(!combatant.combatData.combatAction.ready){
+                if(combatant.combatData.combatAction){
+                  if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatData.combatAction)){
+                    combatant.combatData.combatAction.ready = true;
+                    CombatEngine.CalculateAttackDamage(combatant.combatData.combatAction, combatant);
                   }else{
                     //Continue to the next combatant in the group since this one can't act yet
                     //continue;
@@ -147,8 +147,8 @@ export class CombatEngine {
               }
 
               //Progress the combatant's combatRoundTimer
-              if(combatant.combatAction && combatant.combatAction.ready){
-                if(combatant.combatRoundTimer >= 3.0){
+              if(combatant.combatData.combatAction && combatant.combatData.combatAction.ready){
+                if(combatant.combatData.combatActionTimer >= 3.0){
                   //Get the index of the current combatant from the combatants list
                   let index = CombatEngine.combatants.indexOf(combatant);
                   //Remove the combatant from the combatants list
@@ -156,12 +156,12 @@ export class CombatEngine {
                   //And push it to the end of the combatants list
                   CombatEngine.combatants.push( combatant );
                   //Reset the combatant's roundTimer
-                  combatant.combatRoundTimer = 0;
+                  combatant.combatData.combatActionTimer = 0;
                   //Call the combatant's onCombatRoundEnd script
                   combatant.onCombatRoundEnd();
                 }else{
                   //Increment the combatant's roundTimer since it hasn't ended yet
-                  combatant.combatRoundTimer += delta;
+                  combatant.combatData.combatActionTimer += delta;
                 }
               }
 
@@ -423,7 +423,7 @@ export class CombatEngine {
     //console.log('AddCombatant', combatant);
     if(!CombatEngine.IsActiveCombatant(combatant)){
       combatant.combatData.initiative = CombatEngine.DiceRoll(1, 'd20');
-      combatant.combatRoundTimer = 0;
+      combatant.combatData.combatActionTimer = 0;
       let index = 0;
       for(let i = 0, len = CombatEngine.combatants.length; i < len; i++){
         if(CombatEngine.combatants[i].combatData.initiative < combatant.combatData.initiative){

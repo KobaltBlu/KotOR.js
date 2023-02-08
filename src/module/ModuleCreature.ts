@@ -1173,7 +1173,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  isDueling(){
+  isDueling(): boolean {
     return (this.combatData.lastAttackTarget?.combatData.lastAttackTarget == this && this.combatData.lastAttackTarget?.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
   }
 

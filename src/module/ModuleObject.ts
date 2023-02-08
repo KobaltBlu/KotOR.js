@@ -2828,4 +2828,12 @@ export class ModuleObject {
     return 0
   }
 
+  isDueling(): boolean {
+    return false;
+  }
+
+  actionInRange(action: Action){
+    return true;
+  }
+
 }

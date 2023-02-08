@@ -1,4 +1,15 @@
-export const CharGenClasses: any = {
+
+export interface CharGenClassInterface {
+  id: number;
+  strings: {
+    name: number,
+    gender: number,
+    description: number,
+  },
+  appearances: number[]
+}
+
+export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   0: {
     id: 2,
     strings: {
