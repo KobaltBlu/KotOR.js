@@ -103,11 +103,10 @@ export class ModuleTrigger extends ModuleObject {
 
     try{
       let holes: THREE.Vec2[][] = [];
-      let faces: OdysseyFace3[] = [];
+      // let faces: OdysseyFace3[] = [];
       let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
-      for( let i = 0; i < triangles.length; i++ ){
-        faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
-      }
+      trigGeom.setIndex(triangles.flat()); //Works with indices
+      trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) ); //Works with indices
     }catch(e){
       console.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
@@ -206,7 +205,8 @@ export class ModuleTrigger extends ModuleObject {
 
     this.mesh.userData.moduleObject = this;
     this.mesh.visible = false;
-    GameState.group.triggers.add(this.mesh);
+    this.container.add(this.mesh);
+    GameState.group.triggers.add(this.container);
   }
 
   //Some modules have exit triggers that are placed in the same location that the player spawns into
