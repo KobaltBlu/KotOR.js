@@ -149,7 +149,9 @@ export class MenuOptions extends GameMenu {
     this.BTN_GAMEPLAY.onHoverOut();
     this.BTN_SOUND.onHoverOut();
     this.BTN_AUTOPAUSE.onHoverOut();
-    if (this.selectedControl == this.BTN_SOUND) {
+    if (this.selectedControl == this.BTN_QUIT) {
+      this.selectedControl = this.BTN_SOUND;
+    } else if (this.selectedControl == this.BTN_SOUND) {
       this.selectedControl = this.BTN_GRAPHICS;
     } else if (this.selectedControl == this.BTN_GRAPHICS) {
       this.selectedControl = this.BTN_AUTOPAUSE;
@@ -162,7 +164,7 @@ export class MenuOptions extends GameMenu {
     } else if (this.selectedControl == this.BTN_SAVEGAME) {
       this.selectedControl = this.BTN_LOADGAME;
     } else if (this.selectedControl == this.BTN_LOADGAME) {
-      this.selectedControl = this.BTN_SOUND;
+      this.selectedControl = this.BTN_QUIT;
     }
     this.selectedControl.onHoverIn();
   }
@@ -191,6 +193,8 @@ export class MenuOptions extends GameMenu {
     } else if (this.selectedControl == this.BTN_GRAPHICS) {
       this.selectedControl = this.BTN_SOUND;
     } else if (this.selectedControl == this.BTN_SOUND) {
+      this.selectedControl = this.BTN_QUIT;
+    } else if (this.selectedControl == this.BTN_QUIT) {
       this.selectedControl = this.BTN_LOADGAME;
     }
     this.selectedControl.onHoverIn();
