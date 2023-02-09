@@ -1260,12 +1260,8 @@ export class ModuleObject {
     }
 
     try{
-      if(this.model instanceof OdysseyModel3D){
-        this.model.position.set(x, y, z);
-        this.computeBoundingBox();
-      }
-
       this.position.set(x, y, z);
+      this.computeBoundingBox();
 
       if(this instanceof ModuleCreature)
         this.updateCollision();
@@ -1530,10 +1526,8 @@ export class ModuleObject {
   JumpToLocation(lLocation: EngineLocation){
     console.log('JumpToLocation', lLocation, this);
     if(typeof lLocation === 'object'){
-      if(this.model instanceof OdysseyModel3D){
-        this.model.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-        this.computeBoundingBox();
-      }
+      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+      this.computeBoundingBox();
 
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
       this.collisionData.groundFace = undefined;
