@@ -1,4 +1,4 @@
-import THREE from "three";
+import * as THREE from "three";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
