@@ -6,7 +6,7 @@ import { Action } from "./Action";
 
 export class ActionResumeDialog extends Action {
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionResumeDialog;
   }

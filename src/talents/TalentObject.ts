@@ -3,6 +3,7 @@ import { ModuleObject } from "../module";
 export class TalentObject {
   id: number;
   type: number;
+  category: number;
   item: ModuleObject;
   itemPropertyIndex: number;
   casterLevel: number;

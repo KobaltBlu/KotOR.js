@@ -3,7 +3,7 @@ import { ActionType } from "../enums/actions/ActionType";
 
 export class ActionDropItem extends Action {
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionDropItem;
   }

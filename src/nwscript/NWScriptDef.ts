@@ -1,3 +1,5 @@
+import {NWScriptDefAction} from "../interface/nwscript/NWScriptDefAction";
+
 export class NWScriptDef {
-  static Actions: any = {};
+  static Actions: {[key: number]: NWScriptDefAction} = {};
 }

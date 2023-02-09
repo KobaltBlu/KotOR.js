@@ -17,7 +17,7 @@ export class EffectDamageForcePoints extends GameEffect {
       
     super.onApply();
 
-    this.object.subFP(this.getAmount());
+    this.object.subtractFP(this.getAmount());
   }
 
   getAmount(){

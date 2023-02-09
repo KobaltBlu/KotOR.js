@@ -12,7 +12,7 @@ import { Action } from "./Action";
 export class ActionFollowLeader extends Action {
   path_realtime: boolean;
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionFollowLeader;
 

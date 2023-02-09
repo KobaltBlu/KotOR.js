@@ -7,7 +7,66 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
 
 export class TalentFeat extends TalentObject {
-  category: number;
+  label: string;
+  name: string; //TLK
+  description: string; //TLK
+  icon: string;
+  mincharlevel: number;
+  minattackbonus: number;
+  minstr: number;
+  mindex: number;
+  minint: number;
+  minwis: number;
+  minspelllvl: number;
+  prereqfeat1: number;
+  prereqfeat2: number;
+  
+  gainmultiple: number;
+  effectstack: number;
+  allclassescanuse: number;
+  maxcr: number;
+  spellid: number;
+  successor: number;
+  crvalue: number;
+  usesperday: number;
+  masterfeat: number;
+  targetself: number;
+  onreqfeat0: number;
+  onreqfeat1: number;
+  onreqfeat2: number;
+  onreqfeat3: number;
+  onreqfeat4: number;
+  reqskill: number;
+  constant: string;
+  toolcategories: number;
+  hostilefeat: number;
+  scd_list: number;
+  scd_granted: number;
+  scd_recom: number;
+  sol_list: number;
+  sol_granted: number;
+  sol_recom: number;
+  sct_list: number;
+  sct_granted: number;
+  sct_recom: number;
+  jcn_list: number;
+  jcn_granted: number;
+  jcn_recom: number;
+  jgd_list: number;
+  jgd_granted: number;
+  jgd_recom: number;
+  jsn_list: number;
+  jsn_granted: number;
+  jsn_recom: number;
+  drx_list: number;
+  drx_granted: number;
+  drx_recom: number;
+  drc_list: number;
+  drc_granted: number;
+  drc_recom: number;
+  exclusion: number;
+  usetype: number;
+  pips: number;
 
   constructor( id = 0){
     super(id);

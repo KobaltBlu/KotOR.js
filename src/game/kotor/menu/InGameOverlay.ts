@@ -304,22 +304,22 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_QUEUE0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatData.combatAction = undefined;
+        GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatData.combatQueue.splice(0, 1);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatData.combatQueue.splice(1, 1);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().combatData.combatQueue.splice(2, 1);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
@@ -366,7 +366,7 @@ export class InGameOverlay extends GameMenu {
           e.stopPropagation();
           const action = ActionMenuManager.ActionPanels.selfPanels[i].getSelectedAction();
           if(action){
-            GameState.getCurrentPlayer().useTalentOnObject(action.talent, action.target);
+            GameState.getCurrentPlayer().useTalent(action.talent, action.target);
           }
         });
 

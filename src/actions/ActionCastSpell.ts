@@ -11,7 +11,7 @@ export class ActionCastSpell extends Action {
   
   spell: any = {}
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionCastSpell;
 
@@ -40,7 +40,7 @@ export class ActionCastSpell extends Action {
       if(!this.spell.inRange(this.target, this.owner)){
 
         (this.owner as ModuleCreature).openSpot = undefined;
-        let actionMoveToTarget = new ActionMoveToPoint();
+        let actionMoveToTarget = new ActionMoveToPoint(undefined, this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

@@ -1,8 +1,9 @@
-import { ActionCastSpell, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionDropItem, ActionEquipItem, ActionFollowLeader, ActionGiveItem, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionLockObject, ActionMoveToPoint, ActionOpenDoor, ActionPauseDialog, ActionPhysicalAttacks, ActionPlayAnimation, ActionResumeDialog, ActionSetCommandable, ActionTakeItem, ActionUnlockObject, ActionUseObject, ActionWait } from ".";
+import { ActionCastSpell, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionDropItem, ActionEquipItem, ActionFollowLeader, ActionGiveItem, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionLockObject, ActionMoveToPoint, ActionOpenDoor, ActionPauseDialog, ActionPhysicalAttacks, ActionPlayAnimation, ActionQueue, ActionResumeDialog, ActionSetCommandable, ActionTakeItem, ActionUnlockObject, ActionUseObject, ActionWait } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameState } from "../GameState";
+import { CombatAction } from "../interface/combat/CombatAction";
 import { PartyManager } from "../managers/PartyManager";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -10,20 +11,23 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ActionParameter } from "./ActionParameter";
 
 export class Action {
-  static NEXT_GROUP_ID = 0;
   type: number;
-  groupId: number;
+  actionId: number = -1;
+  groupId: number = -1;
   owner: ModuleObject;
   target: any;
   parameters: any[];
   path: any;
   openSpot: any;
   clearable: boolean = true;
-  combatAction: Action;
+  combatAction: CombatAction;
   isCutsceneAttack: Action;
-  constructor( groupId = 0 ){
+  queue: ActionQueue;
+
+  constructor( actionId: number = -1, groupId: number = -1 ){
     this.type = 0;
     this.groupId = groupId;
+    this.actionId = actionId;
 
     this.owner = undefined; //The owner of the action
     this.target = undefined; //The target of the action
@@ -203,73 +207,73 @@ export class Action {
 
     switch(actionId){
       case ActionType.ActionCastSpell:
-        action = new ActionCastSpell(groupId);
+        action = new ActionCastSpell(actionId, groupId);
       break;
       case ActionType.ActionCloseDoor:
-        action = new ActionCloseDoor(groupId);
+        action = new ActionCloseDoor(actionId, groupId);
       break;
       case ActionType.ActionDialogObject:
-        action = new ActionDialogObject(groupId);
+        action = new ActionDialogObject(actionId, groupId);
       break;
       case ActionType.ActionDoCommand:
-        action = new ActionDoCommand(groupId);
+        action = new ActionDoCommand(actionId, groupId);
       break;
       case ActionType.ActionDropItem:
-        action = new ActionDropItem(groupId);
+        action = new ActionDropItem(actionId, groupId);
       break;
       case ActionType.ActionEquipItem:
-        action = new ActionEquipItem(groupId);
+        action = new ActionEquipItem(actionId, groupId);
       break;
       case ActionType.ActionFollowLeader:
-        action = new ActionFollowLeader(groupId);
+        action = new ActionFollowLeader(actionId, groupId);
       break;
       case ActionType.ActionGiveItem:
-        action = new ActionGiveItem(groupId);
+        action = new ActionGiveItem(actionId, groupId);
       break;
       case ActionType.ActionItemCastSpell:
-        action = new ActionItemCastSpell(groupId);
+        action = new ActionItemCastSpell(actionId, groupId);
       break;
       case ActionType.ActionJumpToObject:
-        action = new ActionJumpToObject(groupId);
+        action = new ActionJumpToObject(actionId, groupId);
       break;
       case ActionType.ActionJumpToPoint:
-        action = new ActionJumpToPoint(groupId);
+        action = new ActionJumpToPoint(actionId, groupId);
       break;
       case ActionType.ActionLockObject:
-        action = new ActionLockObject(groupId);
+        action = new ActionLockObject(actionId, groupId);
       break;
       case ActionType.ActionMoveToPoint:
-        action = new ActionMoveToPoint(groupId);
+        action = new ActionMoveToPoint(actionId, groupId);
       break;
       case ActionType.ActionOpenDoor:
-        action = new ActionOpenDoor(groupId);
+        action = new ActionOpenDoor(actionId, groupId);
       break;
       case ActionType.ActionPauseDialog:
-        action = new ActionPauseDialog(groupId);
+        action = new ActionPauseDialog(actionId, groupId);
       break;
       case ActionType.ActionPlayAnimation:
-        action = new ActionPlayAnimation(groupId);
+        action = new ActionPlayAnimation(actionId, groupId);
       break;
       case ActionType.ActionPhysicalAttacks:
-        action = new ActionPhysicalAttacks(groupId);
+        action = new ActionPhysicalAttacks(actionId, groupId);
       break;
       case ActionType.ActionResumeDialog:
-        action = new ActionResumeDialog(groupId);
+        action = new ActionResumeDialog(actionId, groupId);
       break;
       case ActionType.ActionSetCommandable:
-        action = new ActionSetCommandable(groupId);
+        action = new ActionSetCommandable(actionId, groupId);
       break;
       case ActionType.ActionTakeItem:
-        action = new ActionTakeItem(groupId);
+        action = new ActionTakeItem(actionId, groupId);
       break;
       case ActionType.ActionUnlockObject:
-        action = new ActionUnlockObject(groupId);
+        action = new ActionUnlockObject(actionId, groupId);
       break;
       case ActionType.ActionUseObject:
-        action = new ActionUseObject(groupId);
+        action = new ActionUseObject(actionId, groupId);
       break;
       case ActionType.ActionWait:
-        action = new ActionWait(groupId);
+        action = new ActionWait(actionId, groupId);
       break;
       default:
         console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);

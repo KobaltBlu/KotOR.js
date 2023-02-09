@@ -359,7 +359,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   onExit(object?: ModuleObject){
-    if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.onExit != true){
+    if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.running != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
       /*this.scripts.onExit.run(this, 0, () => {
@@ -406,7 +406,7 @@ export class ModuleTrigger extends ModuleObject {
       array: keys,
       onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
-        if(_script != '' && !(_script instanceof NWScriptInstance)){
+        if(typeof _script === 'string' && _script != ''){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;

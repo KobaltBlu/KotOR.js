@@ -36,6 +36,8 @@ import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
+import { CombatAction } from "../interface/combat/CombatAction";
+import { ActionType } from "../enums/actions/ActionType";
 
 /* @file
  * The ModuleObject class.
@@ -100,7 +102,7 @@ export class ModuleObject {
   dialogAnimation: any;
   template: any;
   plot: boolean;
-  scripts: any = { };
+  scripts: {[key: string]: NWScriptInstance} = { };
   tag: string;
   templateResRef: string;
   bearing: number;
@@ -164,6 +166,9 @@ export class ModuleObject {
   highlightHeight: any;
   appearance: any;
   cursor: any;
+  isDeadSelectable: boolean = true;
+  isDestroyable: boolean = true;
+  isRaisable: boolean = true;
 
   //complex animation varaibles
   fp_push_played: any;
@@ -324,10 +329,7 @@ export class ModuleObject {
     this._heartbeatTimeout = 0 + this._heartbeatTimerOffset;
 
     //Combat Info
-    this.combatData._lastAttackObject = undefined;
-    this.combatData._lastAttackAction = -1;
-    this.combatData._lastForcePowerUsed = -1;
-    this.combatData._lastForcePowerSuccess = 0;
+    this.combatData.initialize();
 
     this._healTarget = undefined;
 
@@ -525,8 +527,16 @@ export class ModuleObject {
       this.actionQueue.clear();
     }
 
-    this.combatData.combatAction = undefined;
+    this.combatData.reset();
     //this.clearTarget();
+  }
+
+  clearCombatAction(combatAction: CombatAction = undefined){
+    return this.combatData.clearCombatAction(combatAction);
+  }
+
+  clearCombatActionAtIndex(index: number = 0): boolean {
+    return this.combatData.clearCombatActionAtIndex(index);
   }
 
   //Queue an animation to the actionQueue array
@@ -793,7 +803,7 @@ export class ModuleObject {
         let instance = this.scripts.onSpellAt.nwscript.newInstance();
         instance.lastSpellCaster = event.getObject(0);
         instance.lastSpell = event.getInt(0);
-        instance.lastSpellHarmful = event.getInt(1) ? 1 : 0;
+        instance.lastSpellHarmful = event.getInt(1) ? true : false;
         instance.run(this);
       }
     }
@@ -1424,6 +1434,16 @@ export class ModuleObject {
     return 0;
   }
 
+  resistForce(oCaster: ModuleObject){
+    if(this instanceof ModuleCreature && oCaster instanceof ModuleCreature){
+      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //1d20 + their level vs. a DC of your level plus 10
+      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
+      return (roll > 10 + oCaster.getTotalClassLevel());
+    }
+    return 0;
+  }
+
   addEffect(effect: GameEffect, type = 0, duration = 0){
     if(effect instanceof GameEffect){
       if(effect instanceof EffectLink){
@@ -1621,7 +1641,7 @@ export class ModuleObject {
     this.currentHP = value;
   }
 
-  addHP(value = 0){
+  addHP(value = 0, ignoreMaxHitPoints = false){
     this.currentHP = (this.getHP() + value);
   }
 
@@ -1644,6 +1664,10 @@ export class ModuleObject {
   setMinOneHP(value: boolean = false){
     this.min1HP = value;
   }
+
+  addFP(nAmount = 0, ignoreMaxForcePoints = false){}
+
+  subtractFP(nAmount = 0){}
 
   isPartyMember(){
     return PartyManager.party.indexOf(this as any) >= 0;

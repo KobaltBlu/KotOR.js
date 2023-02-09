@@ -10,7 +10,7 @@ import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
 export class ActionLockObject extends Action {
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionLockObject;
 

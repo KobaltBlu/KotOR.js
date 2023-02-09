@@ -1,3 +1,4 @@
+import EngineLocation from "../engine/EngineLocation";
 import { CreatureType } from "../enums/nwscript/CreatureType";
 import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { ReputationType } from "../enums/nwscript/ReputationType";
@@ -498,7 +499,7 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetObjectsInShape(shape = -1, size = 1, target = new THREE.Vector3, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
+  public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];
     let results: ModuleObject[] = [];
@@ -561,7 +562,7 @@ export class ModuleObjectManager {
 
     for(let i = 0, len = object_pool.length; i < len; i++){
       if(object_pool[i] instanceof ModuleObject){
-        if(object_pool[i].position.distanceTo(target) < size){
+        if(object_pool[i].position.distanceTo(target.position) < size){
           results.push(object_pool[i]);
         }
       }

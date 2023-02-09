@@ -8,7 +8,7 @@ export class ActionPlayAnimation extends Action {
   speed: any;
   time: any;
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionPlayAnimation;
 

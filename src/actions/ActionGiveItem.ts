@@ -8,7 +8,7 @@ import { Action } from "./Action";
 export class ActionGiveItem extends Action {
   item: ModuleItem;
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionGiveItem;
   }

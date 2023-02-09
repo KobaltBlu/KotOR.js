@@ -2,10 +2,11 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
 import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { TalentObject } from "../talents";
+import { TalentObject, TalentSpell } from "../talents";
 import { NWScript } from "./NWScript";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptDefK2 } from "./NWScriptDefK2";
@@ -15,19 +16,18 @@ export class NWScriptInstance {
   name: any;
   instructions: any;
   talent: any;
-  actionsMap: any;
+  actionsMap: { [key: number]: NWScriptDefAction; };
   globalCache: any;
   _disposed: boolean;
   isStoreState: any;
-  nwscript: any;
-  caller: any;
+  nwscript: NWScript;
+  caller: ModuleObject;
   scriptVar: number;
   onComplete: any;
   subRoutines: any[];
   subRoutine: any;
   enteringObject: any;
   exitingObject: any;
-  listenPatternNumber: number;
   debugging: boolean;
   debug: any = {};
   state: any[];
@@ -42,12 +42,34 @@ export class NWScriptInstance {
   stack: NWScriptStack;
   delayCommands: any[];
   lastSpeaker: any;
-  persistentObjectIdx: number;
   firstLoop: boolean;
   address: any;
   lastPerceived: any;
   offset: any;
   object: ModuleObject;
+
+  running: boolean = false;
+
+  //ListenPattern
+  listenPatternNumber: number = -1;
+  listenPatternSpeaker: ModuleObject = undefined;
+
+  //Spell
+  lastSpellCaster: ModuleObject;
+  lastSpellAttacker: ModuleObject;
+  lastSpell: TalentSpell;
+  lastSpellHarmful: boolean;
+
+  //MiniGame
+  mgFollower: ModuleObject;
+  mgObstacle: ModuleObject;
+  mgBullet: ModuleObject;
+
+  //ITERATE POINTERS
+  objectsInShapeIdx: number = 0;
+  _effectPointer: number = 0;
+  persistentObjectIdx: number = 0;
+  creatureFactionIdx: number = 0;
 
   constructor( args: any = {} ){
 
@@ -59,7 +81,6 @@ export class NWScriptInstance {
     this.name = args.name;
     this.instructions = args.instructions;
     this.talent = undefined;
-    this.actionsMap = undefined;
 
     this.init();
     this.globalCache = null;

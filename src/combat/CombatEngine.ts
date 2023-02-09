@@ -44,7 +44,10 @@ export class CombatEngine {
         if(!combatant.combatData.combatQueue.length && combatant.combatData.combatAction == undefined){
           //continue;
           if(combatant.action && combatant.action.combatAction && combatant.action.combatAction.isCutsceneAttack){
-            combatant.combatData.combatAction = combatant.action.combatAction;
+            if(combatant.combatData.combatAction != combatant.action.combatAction){
+              combatant.clearCombatAction(combatant.combatData.combatAction);
+              combatant.combatData.setCombatAction(combatant.action.combatAction);
+            }
           }
         }
 
@@ -53,7 +56,15 @@ export class CombatEngine {
 
         //Update the combatant's combatAction if needed
         if(combatant.combatData.combatQueue.length && combatant.combatData.combatAction == undefined){
-          combatant.combatData.combatAction = combatant.combatData.combatQueue.shift();
+          combatant.clearCombatAction(combatant.combatData.combatAction);
+          combatant.combatData.setCombatAction(combatant.combatData.combatQueue.shift());
+
+          //Make sure the action is in the actionQueue
+          if(combatant.combatData.combatAction?.action){
+            if(combatant.actionQueue.indexOf(combatant.combatData.combatAction.action)){
+              combatant.actionQueue.add(combatant.combatData.combatAction.action);
+            }
+          }
 
           if(typeof combatant.combatData.combatAction != 'undefined'){
             if(combatant.combatData.combatAction.type == ActionType.ActionPhysicalAttacks){
@@ -136,7 +147,7 @@ export class CombatEngine {
               //Combat action is ready
               if(!combatant.combatData.combatAction.ready){
                 if(combatant.combatData.combatAction){
-                  if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatData.combatAction)){
+                  if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatData.combatAction.action)){
                     combatant.combatData.combatAction.ready = true;
                     CombatEngine.CalculateAttackDamage(combatant.combatData.combatAction, combatant);
                   }else{
@@ -159,6 +170,7 @@ export class CombatEngine {
                   combatant.combatData.combatActionTimer = 0;
                   //Call the combatant's onCombatRoundEnd script
                   combatant.onCombatRoundEnd();
+                  combatant.clearCombatAction(combatant.combatData.combatAction);
                 }else{
                   //Increment the combatant's roundTimer since it hasn't ended yet
                   combatant.combatData.combatActionTimer += delta;

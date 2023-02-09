@@ -13,7 +13,7 @@ export class ActionUnlockObject extends Action {
   timer: number;
   shouted: any;
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionUnlockObject;
     this.timer = 1.5;

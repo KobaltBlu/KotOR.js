@@ -11,5 +11,6 @@ export enum NWScriptDataType {
   LOCATION = 0x12,
   TALENT = 0x13,
   VECTOR = 0x14,
-  STRUCTURE = 0x24
+  STRUCTURE = 0x24,
+  ACTION = 0xFF,
 }

@@ -12,7 +12,7 @@ export class ActionMoveToPoint extends Action {
   target_position: THREE.Vector3 = new THREE.Vector3();
   real_target_position: THREE.Vector3 = new THREE.Vector3();
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionMoveToPoint;
 
@@ -25,7 +25,7 @@ export class ActionMoveToPoint extends Action {
     // 5 - int: 0 == walk | 1 == run
     // 6 - float: min range/distance
     // 7 - int: unknown
-    // 8 - float: timeout value
+    // 8 - float: timeout value The amount of time to search for path before jumping to the object (as in ActionJumpToObject()) default 30
 
   }
 

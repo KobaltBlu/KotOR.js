@@ -122,12 +122,14 @@ export class EffectVisualEffect extends GameEffect {
         }
       }
       
-      if(this.object.head && this.model.headhook.head){
-        for(let node of this.object.head.nodes){
-          let c_node = this.model.headhook.head.nodes.get(node[0]);
-          c_node.position.copy(node[1].position);
-          c_node.quaternion.copy(node[1].quaternion);
-          c_node.scale.copy(node[1].scale);
+      if(this.object instanceof ModuleCreature){
+        if(this.object.head && this.model.headhook.head){
+          for(let node of this.object.head.nodes){
+            let c_node = this.model.headhook.head.nodes.get(node[0]);
+            c_node.position.copy(node[1].position);
+            c_node.quaternion.copy(node[1].quaternion);
+            c_node.scale.copy(node[1].scale);
+          }
         }
       }
 
@@ -311,20 +313,24 @@ export class EffectVisualEffect extends GameEffect {
               model.quaternion.copy(this.object.quaternion);
               //model.disableMatrixUpdate();
               
-              if(this.object.headModel){
-                GameState.ModelLoader.load(this.object.headModel).then(
-                  (mdl: OdysseyModel) => {
-                  OdysseyModel3D.FromMDL(mdl, {
-                    textureVar: fx_tex,
-                    context: this.object.context,
-                    isForceShield: true,
-                  }).then((head: OdysseyModel3D) => {
-                    this.model.headhook.head = head;
-                    this.model.headhook.add(head);
-                    //head.disableMatrixUpdate();
-                    TextureLoader.LoadQueue();
+              if(this.object instanceof ModuleCreature){
+                if(this.object.headModel){
+                  GameState.ModelLoader.load(this.object.headModel).then(
+                    (mdl: OdysseyModel) => {
+                    OdysseyModel3D.FromMDL(mdl, {
+                      textureVar: fx_tex,
+                      context: this.object.context,
+                      isForceShield: true,
+                    }).then((head: OdysseyModel3D) => {
+                      this.model.headhook.head = head;
+                      this.model.headhook.add(head);
+                      //head.disableMatrixUpdate();
+                      TextureLoader.LoadQueue();
+                    })
                   })
-                })
+                }else{
+                  TextureLoader.LoadQueue();
+                }
               }else{
                 TextureLoader.LoadQueue();
               }
@@ -358,25 +364,28 @@ export class EffectVisualEffect extends GameEffect {
               model.rotation.copy(this.object.rotation);
               model.quaternion.copy(this.object.quaternion);
               //model.disableMatrixUpdate();
-              
-              if(this.object.headModel){
-                GameState.ModelLoader.load(this.object.headModel)
-                .then((mdl: OdysseyModel) => {
-                  OdysseyModel3D.FromMDL(mdl, {
-                    textureVar: fx_tex,
-                    context: this.object.context,
-                    isForceShield: true,
-                  }).then((head: OdysseyModel3D) => {
-                    this.model.headhook.head = head;
-                    this.model.headhook.add(head);
-                    //head.disableMatrixUpdate();
-                    TextureLoader.LoadQueue();
+              if(this.object instanceof ModuleCreature){
+                if(this.object.headModel){
+                  GameState.ModelLoader.load(this.object.headModel)
+                  .then((mdl: OdysseyModel) => {
+                    OdysseyModel3D.FromMDL(mdl, {
+                      textureVar: fx_tex,
+                      context: this.object.context,
+                      isForceShield: true,
+                    }).then((head: OdysseyModel3D) => {
+                      this.model.headhook.head = head;
+                      this.model.headhook.add(head);
+                      //head.disableMatrixUpdate();
+                      TextureLoader.LoadQueue();
+                    }).catch(() => {
+                      TextureLoader.LoadQueue();
+                    });
                   }).catch(() => {
-
+                    TextureLoader.LoadQueue();
                   });
-                }).catch(() => {
-                    
-                  });
+                }else{
+                  TextureLoader.LoadQueue();
+                }
               }else{
                 TextureLoader.LoadQueue();
               }

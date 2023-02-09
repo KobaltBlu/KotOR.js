@@ -3,6 +3,8 @@ import { ModuleObject } from "../module";
 import { Action } from "./Action";
 
 export class ActionQueue extends Array {
+  NEXT_GROUP_ID: number = 0;
+  NEXT_ACTION_ID: number = 0;
   groupId: number;
   lastGroupId: number;
   owner: any;
@@ -35,12 +37,20 @@ export class ActionQueue extends Array {
   //@ts-expect-error
   push( actionNode: Action ){
     actionNode.owner = this.owner;
+    actionNode.queue = this;
+    if(actionNode.actionId == -1){
+      actionNode.actionId = this.NEXT_ACTION_ID++;
+    }
+    if(actionNode.groupId == -1){
+      actionNode.groupId = this.NEXT_GROUP_ID++;
+    }
     this.add( actionNode );
   }
 
   //@ts-expect-error
   unshift( actionNode: Action ){
     actionNode.owner = this.owner;
+    actionNode.queue = undefined;
     this.addFront( actionNode );
   }
 
@@ -57,6 +67,27 @@ export class ActionQueue extends Array {
 
   clear(){
     this.splice(0, this.length);
+  }
+
+  clearAction(action: Action){
+    if(action){
+      const index = this.indexOf(action);
+      if(index >= 0){
+        this.splice(index, 1);
+        this.clearActionsByGroupId(action.groupId);
+      }
+    }
+  }
+
+  clearActionsByGroupId(groupId: number = -1){
+    if(groupId > 0) return;
+    let index = this.length;
+    while(index--){
+      const action = this[index];
+      if(action && action.groupId == groupId){
+        this.splice(index, 1);
+      }
+    }
   }
 
 }

@@ -112,7 +112,7 @@ export class ModuleMGObstacle extends ModuleObject {
       array: keys,
       onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
-        if(_script != '' && !(_script instanceof NWScriptInstance)){
+        if(typeof _script === 'string' && _script != ''){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;

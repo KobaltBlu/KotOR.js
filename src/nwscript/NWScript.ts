@@ -16,6 +16,8 @@ import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
+import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
+import * as THREE from "three";
 
 /* @file
  * The NWScript class.
@@ -424,49 +426,50 @@ export class NWScript {
       name: 'ACTION', 
       run: async function( scope: any = {} ){
   
-        const action = this.actionsMap[scope.instr.action];
-        const args = [];
-        for(let i = 0, len = action.args.length; i < len; i++){
-          switch(action.args[i]){
-            case 'object':
+        const action_definition: NWScriptDefAction = this.actionsMap[scope.instr.action];
+        const args: any[] = [];
+
+        for(let i = 0, len = action_definition.args.length; i < len; i++){
+          switch(action_definition.args[i]){
+            case NWScriptDataType.OBJECT:
               args.push( this.stack.pop().value );
               //Test for and fix instances where an object id is pushed instead of an object reference
               if(typeof args[i] == 'number') args[i] = ModuleObject.GetObjectById(args[i]);
             break;
-            case 'string':
-            case 'int':
-            case 'float':
-            case 'effect':
-            case 'event':
-            case 'location':
-            case 'talent':
+            case NWScriptDataType.STRING:
+            case NWScriptDataType.INTEGER:
+            case NWScriptDataType.FLOAT:
+            case NWScriptDataType.EFFECT:
+            case NWScriptDataType.EVENT:
+            case NWScriptDataType.LOCATION:
+            case NWScriptDataType.TALENT:
               args.push( this.stack.pop().value );
             break;
-            case 'action':
+            case NWScriptDataType.ACTION:
               args.push( this.state.pop() );
             break;
-            case 'vector':
-              args.push({
-                x: this.stack.pop().value,
-                y: this.stack.pop().value,
-                z: this.stack.pop().value
-              })
+            case NWScriptDataType.VECTOR:
+              args.push(new THREE.Vector3(
+                this.stack.pop().value,
+                this.stack.pop().value,
+                this.stack.pop().value
+              ))
             break;
             default:
               //Pop the function variables off the stack after we are done with them
               args.push(this.stack.pop().value);
-              console.warn('UNKNOWN ARG', action, args);
+              console.warn('UNKNOWN ARG', action_definition, args);
             break;
           }
         }
   
-        if(typeof action.action === 'function'){
-          const actionValue = await action.action.call(this, args);
-          if(action.type != NWScriptDataType.VOID){
-            this.stack.push( actionValue, action.type );
+        if(typeof action_definition.action === 'function'){
+          const actionValue = await action_definition.action.call(this, args);
+          if(action_definition.type != NWScriptDataType.VOID){
+            this.stack.push( actionValue, action_definition.type );
           }
         }else{
-          console.warn('NWScript Action '+action.name+' not found', action);
+          console.warn(`NWScript Action ${action_definition.name} not found`, action_definition);
         }
   
       }, 

@@ -41,6 +41,8 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
 import { MenuManager } from "../gui";
+import { AttackResult } from "../enums/combat/AttackResult";
+import { CombatAction } from "../interface/combat/CombatAction";
 
 /* @file
  * The ModuleCreature class.
@@ -308,7 +310,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.animState = ModuleCreatureAnimState.IDLE;
     this.combatData.combatActionTimer = 3; 
-    this.combatData.combatAction = undefined;
+    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.combatState = false;
     this.combatData.combatQueue = [];
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
@@ -883,10 +885,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateCombat(delta = 0){
+    this.combatData.update(delta);
 
     if(this.combatData.lastAttackTarget instanceof ModuleObject && this.combatData.lastAttackTarget.isDead()){
-      this.combatData.lastAttackTarget = undefined;
-      this.clearTarget();
+      this.combatData.clearTarget(this.combatData.lastAttackTarget);
     }
 
     if(this.combatData.lastAttacker instanceof ModuleObject && this.combatData.lastAttacker.isDead())
@@ -913,8 +915,16 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.combatData.combatState){
       //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
-      if(((GameState.getCurrentPlayer() as any) == this) && this.combatData.lastAttackTarget && !this.combatData.lastAttackTarget.isDead() && !this.combatData.combatAction && !this.combatData.combatQueue.length){
-        this.attackCreature(this.combatData.lastAttackTarget, undefined);
+      if(GameState.getCurrentPlayer() == this){
+        if(!this.combatData.combatQueue.length && !this.combatData.combatAction){
+          if( this.combatData.lastAttackTarget ){
+            this.attackCreature(this.combatData.lastAttackTarget, undefined);
+          }else if( this.combatData.lastAttacker ){
+            this.attackCreature(this.combatData.lastAttacker, undefined);
+          }else{
+            //TODO: Attack nearest perceived hostile creature?
+          }
+        }
       }
       CombatEngine.AddCombatant(this);
     }
@@ -939,24 +949,51 @@ export class ModuleCreature extends ModuleObject {
   clearTarget(){
     //console.log('clearTarget');
     this.combatData.combatQueue = [];
-    this.combatData.combatAction = undefined;
+    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.lastAttackTarget = undefined;
     this.combatData.lastDamager = undefined;
     //this.combatActionTimer = 0;
     //CombatEngine.RemoveCombatant(this);
   }
 
-  actionInRange(action: Action){
+  actionInRange(action: Action): boolean {
     if(action){
       if(action.type == ActionType.ActionCastSpell){
-        return (action as ActionCastSpell|ActionItemCastSpell).spell.inRange(action.target, this);
+        const spell = new TalentSpell( action.getParameter(0) );
+        const target: ModuleObject = action.getParameter(5);
+        if(target instanceof ModuleObject){
+          return spell.inRange(target, this);
+        }else{
+          return true;
+        }
+      }else if(action.type == ActionType.ActionItemCastSpell){
+        const spell = new TalentSpell( action.getParameter(0) );
+        const target: ModuleObject = action.getParameter(5);
+        if(target instanceof ModuleObject){
+          return spell.inRange(target, this);
+        }else{
+          return true;
+        }
+      }else if(action.type == ActionType.ActionPhysicalAttacks){
+        const target: ModuleObject = action.getParameter(1);
+        if(target instanceof ModuleObject){
+          let distance = Infinity;
+            if(this.openSpot){
+              distance = this.position.distanceTo(this.openSpot.targetVector);
+            }else{
+              distance = this.position.distanceTo(target.position);
+            }
+          return distance < ( (this.combatData.getEquippedWeaponType() == 1 || this.combatData.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
+        }else{
+          return true;
+        }
       }else{
-        let distance = this.position.distanceTo(action.target.position);
-        //console.log('actionInRange', distance, action.target.position);
-        return distance < ( (this.combatData.getEquippedWeaponType() == 1 || this.combatData.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
+        console.warn(`actionInRange: Invalid action type ${action.type}`, action)
       }
+    }else{
+      console.warn(`actionInRange: Invalid action`, action)
     }
-    return false;
+    return true;
   }
 
   //Return the best point surrounding this object for the attacker to move towards
@@ -1066,7 +1103,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  moveToLocation(target: ModuleObject, bRun = true){
+  moveToLocation(target: ModuleObject|EngineLocation, bRun = true){
 
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
@@ -1129,7 +1166,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  jumpToLocation(target: ModuleObject){
+  jumpToLocation(target: EngineLocation){
     console.log('jumpToLocation', target, this);
     if(target instanceof EngineLocation){
       let action = new ActionJumpToPoint();
@@ -1181,9 +1218,10 @@ export class ModuleCreature extends ModuleObject {
     return (oObject instanceof ModuleObject && this.combatData.lastAttackTarget == oObject && oObject.combatData.lastAttackTarget == this && oObject.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
   }
 
-  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack = false, attackDamage = 0, attackAnimation?: any, attackResult?: any){
-
-    //console.log('attackCreature', this, target, feat);
+  attackCreature(
+    target: ModuleObject, feat?: TalentFeat, isCutsceneAttack = false, 
+    attackDamage = 0, attackAnimation?: string, attackResult?: AttackResult
+  ){
 
     if(target == undefined)
       return;
@@ -1274,12 +1312,13 @@ export class ModuleCreature extends ModuleObject {
 
     //console.log('Combat Animation', animation);
 
-    let combatAction = {
+    let combatAction: CombatAction = {
       target: target,
       type: ActionType.ActionPhysicalAttacks,
       icon: icon,
       animation: animation,
       feat: feat,
+      spell: undefined,
       isMelee: isMelee,
       isRanged: isRanged,
       ready: false,
@@ -1288,81 +1327,54 @@ export class ModuleCreature extends ModuleObject {
       damage: attackDamage
     };
 
-    if(this.combatData.combatAction == undefined){
-      this.combatData.combatAction = combatAction;
-    }else{
-      this.combatData.combatQueue.push(combatAction);
-    }
-
-    if(!isCutsceneAttack){
-      this.actionQueue.clear();
-      let action = new ActionPhysicalAttacks();
-      action.setParameter(0, ActionParameterType.INT, 0);
-      action.setParameter(1, ActionParameterType.DWORD, target.id);
-      action.setParameter(2, ActionParameterType.INT, 1);
-      action.setParameter(3, ActionParameterType.INT, 25);
-      action.setParameter(4, ActionParameterType.INT, -36);
-      action.setParameter(5, ActionParameterType.INT, 1);
-      action.setParameter(6, ActionParameterType.INT, feat instanceof TalentFeat ? feat.id : 0);
-      action.setParameter(7, ActionParameterType.INT, 0);
-      action.setParameter(8, ActionParameterType.INT, 4);
-      action.setParameter(9, ActionParameterType.INT, 0);
-      this.actionQueue.add(action);
-    }
+    this.combatData.combatQueue.push(combatAction);
 
   }
 
-  useTalentOnObject(talent: any, oTarget: ModuleObject){
+  useTalent(talent: any, oTarget: ModuleObject): Action {
+    let action: Action;
     if(talent instanceof TalentObject){
-
-      /*this.actionQueue.addFront({
-        object: oTarget,
-        spell: talent,
-        type: ActionType.ActionCastSpell
-      });*/
-    let action;
-    switch(talent.type){
-      case 1: //FEAT
-        action = new ActionPhysicalAttacks();
-        action.setParameter(0, ActionParameterType.INT, 0);
-        action.setParameter(1, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
-        action.setParameter(2, ActionParameterType.INT, 1);
-        action.setParameter(3, ActionParameterType.INT, 25);
-        action.setParameter(4, ActionParameterType.INT, -36);
-        action.setParameter(5, ActionParameterType.INT, 1);
-        action.setParameter(6, ActionParameterType.INT, talent.id);
-        action.setParameter(7, ActionParameterType.INT, 0);
-        action.setParameter(8, ActionParameterType.INT, 4);
-        action.setParameter(9, ActionParameterType.INT, 0);
-        this.actionQueue.add(action);
-      break;
-      case 2: //SKILL
-        if(talent.id == 6){ //Security
-          action = new ActionUnlockObject();
-          action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
+      switch(talent.type){
+        case 1: //FEAT
+          action = new ActionPhysicalAttacks();
+          action.setParameter(0, ActionParameterType.INT, 0);
+          action.setParameter(1, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
+          action.setParameter(2, ActionParameterType.INT, 1);
+          action.setParameter(3, ActionParameterType.INT, 25);
+          action.setParameter(4, ActionParameterType.INT, -36);
+          action.setParameter(5, ActionParameterType.INT, 1);
+          action.setParameter(6, ActionParameterType.INT, talent.id);
+          action.setParameter(7, ActionParameterType.INT, 0);
+          action.setParameter(8, ActionParameterType.INT, 4);
+          action.setParameter(9, ActionParameterType.INT, 0);
           this.actionQueue.add(action);
-        }
-      break;
-      case 0: //SPELL
-        action = new ActionCastSpell();
-        action.setParameter(0, ActionParameterType.INT, talent.id); //Spell Id
-        action.setParameter(1, ActionParameterType.INT, -1); //
-        action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
-        action.setParameter(3, ActionParameterType.INT, 0);
-        action.setParameter(4, ActionParameterType.INT, 0);
-        action.setParameter(5, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID); //Target Object
-        action.setParameter(6, ActionParameterType.FLOAT, oTarget.position.x); //Target X
-        action.setParameter(7, ActionParameterType.FLOAT, oTarget.position.y); //Target Y
-        action.setParameter(8, ActionParameterType.FLOAT, oTarget.position.z); //Target Z
-        action.setParameter(9, ActionParameterType.INT, 0); //ProjectilePath
-        action.setParameter(10, ActionParameterType.INT, -1);
-        action.setParameter(11, ActionParameterType.INT, -1);
-        this.actionQueue.add(action);
-      break;
+        break;
+        case 2: //SKILL
+          if(talent.id == 6){ //Security
+            action = new ActionUnlockObject();
+            action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
+            this.actionQueue.add(action);
+          }
+        break;
+        case 0: //SPELL
+          action = new ActionCastSpell();
+          action.setParameter(0, ActionParameterType.INT, talent.id); //Spell Id
+          action.setParameter(1, ActionParameterType.INT, -1); //
+          action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
+          action.setParameter(3, ActionParameterType.INT, 0);
+          action.setParameter(4, ActionParameterType.INT, 0);
+          action.setParameter(5, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID); //Target Object
+          action.setParameter(6, ActionParameterType.FLOAT, oTarget.position.x); //Target X
+          action.setParameter(7, ActionParameterType.FLOAT, oTarget.position.y); //Target Y
+          action.setParameter(8, ActionParameterType.FLOAT, oTarget.position.z); //Target Z
+          action.setParameter(9, ActionParameterType.INT, 0); //ProjectilePath
+          action.setParameter(10, ActionParameterType.INT, -1);
+          action.setParameter(11, ActionParameterType.INT, -1);
+          this.actionQueue.add(action);
+        break;
+      }
     }
-
-      //talent.useTalentOnObject(oTarget, this);
-    }
+    return action;
   }
 
   playOverlayAnimation(NWScriptAnimId = -1){
@@ -2169,7 +2181,7 @@ export class ModuleCreature extends ModuleObject {
       //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
     }
     
-    this.combatData.combatAction = undefined;
+    this.combatData.clearCombatAction(this.combatData.combatAction);
 
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
@@ -2312,16 +2324,6 @@ export class ModuleCreature extends ModuleObject {
 
   isDebilitated(){
     return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isForcePushed() || this.isHorrified();
-  }
-
-  resistForce(oCaster: ModuleObject){
-    if(oCaster instanceof ModuleCreature){
-      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
-      //1d20 + their level vs. a DC of your level plus 10
-      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
-      return (roll > 10 + oCaster.getTotalClassLevel());
-    }
-    return 0;
   }
 
   setCommadable(bCommandable = 0){
@@ -3163,7 +3165,7 @@ export class ModuleCreature extends ModuleObject {
       array: keys,
       onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
-        if(_script != '' && !(_script instanceof NWScriptInstance)){
+        if( (typeof _script === 'string' && _script != '') ){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;

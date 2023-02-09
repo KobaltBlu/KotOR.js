@@ -10,7 +10,7 @@ import { Action } from "./Action";
 
 export class ActionPhysicalAttacks extends Action {
 
-  constructor( groupId = 0 ){
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionPhysicalAttacks;
   }
@@ -49,7 +49,9 @@ export class ActionPhysicalAttacks extends Action {
             }
           }
 
-          let actionMoveToTarget = new ActionMoveToPoint();
+
+
+          let actionMoveToTarget = new ActionMoveToPoint(undefined, this.groupId);
           actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
           actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
           actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);

@@ -22,11 +22,11 @@ export class GameEffect {
   initialized: boolean;
   durationEnded: boolean;
   numIntegers: number;
-  intList: any[];
-  floatList: any[];
-  stringList: any[];
-  objectList: any[];
-  object: any;
+  intList: number[] = [];
+  floatList: number[] = [];
+  stringList: string[] = [];
+  objectList: ModuleObject[] = [];
+  object: ModuleObject;
   type: any;
   constructor(){
     this.creator = undefined;
@@ -140,18 +140,18 @@ export class GameEffect {
     this.stringList[nOffset] = nValue;
   }
 
-  setObjectList(objectList: any[] = []){
+  setObjectList(objectList: ModuleObject[] = []){
     if(Array.isArray(objectList)){
       this.objectList = objectList;
     }
   }
 
-  setObject(nOffset = 0, nValue = ''){
+  setObject(nOffset = 0, nValue: ModuleObject){
     this.objectList[nOffset] = nValue;
   }
 
   setAttachedObject( oObject: ModuleObject|Module ){
-    this.object = oObject;
+    this.object = oObject as any;
   }
 
   getCreator(){

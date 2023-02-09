@@ -11,6 +11,8 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { ActionType } from "../enums/actions/ActionType";
+import { ActionCastSpell } from "../actions";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 
 export class TalentSpell extends TalentObject {
   conjtime: string;
@@ -122,18 +124,18 @@ export class TalentSpell extends TalentObject {
       }
       CombatEngine.AddCombatant(oCaster);
 
-      oCaster.combatData.combatQueue.push({
-        target: oTarget,
-        type: ActionType.ActionCastSpell,
-        icon: this.iconresref,
-        spell: this,
-        ready: false,
-        animation: this.getConjureAnimation(),
-        conjureTime: this.getConjureTime(),
-        castTime: this.getCastTime(),
-        catchTime: this.getCatchTime(),
-        completed: false
-      });
+      // oCaster.combatData.combatQueue.push({
+      //   target: oTarget,
+      //   type: ActionType.ActionCastSpell,
+      //   icon: this.iconresref,
+      //   spell: this,
+      //   ready: false,
+      //   animation: this.getConjureAnimation(),
+      //   conjureTime: this.getConjureTime(),
+      //   castTime: this.getCastTime(),
+      //   catchTime: this.getCatchTime(),
+      //   completed: false
+      // });
 
       this.projectileHook = undefined;
       this.projectileOrigin = new THREE.Vector3();

@@ -34,11 +34,13 @@ import { MenuManager } from "../gui";
 
 export class ModuleDoor extends ModuleObject {
   openState: boolean;
-  lastObjectEntered: any;
-  lastObjectExited: any;
-  lastObjectOpened: any;
-  lastObjectClosed: any;
-  lastUsedBy: any;
+
+  lastObjectEntered: ModuleObject;
+  lastObjectExited: ModuleObject;
+  lastObjectOpened: ModuleObject;
+  lastObjectClosed: ModuleObject;
+  lastUsedBy: ModuleObject;
+
   animationState: number;
   closeLockDC: number;
   disarmDC: number;
@@ -741,7 +743,7 @@ export class ModuleDoor extends ModuleObject {
       array: keys,
       onLoop: async (key: string, asyncLoop: AsyncLoop) => {
         let _script = this.scripts[key];
-        if(_script != '' && !(_script instanceof NWScriptInstance)){
+        if(typeof _script === 'string' && _script != ''){
           //let script = await NWScript.Load(_script);
           this.scripts[key] = await NWScript.Load(_script);
           //this.scripts[key].name = _script;
