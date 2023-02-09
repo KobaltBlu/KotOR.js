@@ -7023,13 +7023,11 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(this.isDebugging()){
-        //console.log('GetLocalBoolean', args[1])
-      }
-      if(args[0] instanceof ModuleObject)
+      if(args[0] instanceof ModuleObject){
         return args[0].getLocalBoolean( args[1] ) ? 1 : 0;
-      else
+      }else{
         return 0;
+      }
     }
   },
   680:{
@@ -7038,8 +7036,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      //console.log('SetLocalBoolean', args);
-    args[0].setLocalBoolean( args[1], !!args[2] )
+      console.log('SetLocalBoolean', args);
+      args[0].setLocalBoolean( args[1], !!args[2] )
     }
   },
   681:{

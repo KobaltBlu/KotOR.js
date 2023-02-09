@@ -308,11 +308,12 @@ export class NWScript {
   static ByteCodes: any = {
     1 : { 
       name: 'CPDOWNSP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         //Replace the target stack element with the appropriate element relative to the top of the stack
         this.stack.stack.copyWithin(
-          (this.stack.pointer + scope.instr.offset)/4,
+          Math.max((this.stack.pointer + scope.instr.offset) / 4, 0),
           (this.stack.pointer - scope.instr.size)/4,
+          (this.stack.pointer)/4,
         );
       }, 
       parse: function( instr: any, reader: any ){
@@ -322,7 +323,7 @@ export class NWScript {
     },
     2 : { 
       name: 'RSADD', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
   
         switch(scope.instr.type){
           case 3:
@@ -361,7 +362,7 @@ export class NWScript {
     }, //Reserve Space On Stack
     3 : { 
       name: 'CPTOPSP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         const elements = this.stack.copyAtPointer( scope.instr.pointer, scope.instr.size );
         if(elements.length == (scope.instr.size / 4)){
           this.stack.stack.push( ...elements );
@@ -378,7 +379,7 @@ export class NWScript {
     },
     4 : { 
       name: 'CONST', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         switch(scope.instr.type){
           case 3:
             this.stack.push(scope.instr.integer, NWScriptDataType.INTEGER);
@@ -481,7 +482,7 @@ export class NWScript {
     },
     6 : { 
       name: 'LOGANDII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -496,7 +497,7 @@ export class NWScript {
     },
     7 : { 
       name: 'LOGORII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -511,7 +512,7 @@ export class NWScript {
     },
     8 : { 
       name: 'INCORII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -523,7 +524,7 @@ export class NWScript {
     },
     9 : { 
       name: 'EXCORII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
         this.stack.push( this.var1 ^ this.var2, NWScriptDataType.INTEGER );
@@ -534,7 +535,7 @@ export class NWScript {
     },
     10 : { 
       name: 'BOOLANDII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -546,7 +547,7 @@ export class NWScript {
     },
     11 : { 
       name: 'EQUAL', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         if(scope.instr.type == NWScriptDataType.STRUCTURE){
           this.struct2 = [];
           this.struct1 = [];
@@ -626,7 +627,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04, x05, x06
     12 : { 
       name: 'NEQUAL', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         if(scope.instr.type == NWScriptDataType.STRUCTURE){
           this.struct2 = [];
           this.struct1 = [];
@@ -707,7 +708,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04, x05, x06
     13 : { 
       name: 'GEQ', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -735,7 +736,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04
     14 : { 
       name: 'GT', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -763,7 +764,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04
     15 : { 
       name: 'LT', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -791,7 +792,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04
     16 : { 
       name: 'LEQ', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -819,7 +820,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04
     17 : { 
       name: 'SHLEFTII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
         this.stack.push( this.var1 << this.var2, NWScriptDataType.INTEGER );
@@ -830,7 +831,7 @@ export class NWScript {
     },
     18 : { 
       name: 'SHRIGHTII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
         this.stack.push( this.var1 >> this.var2, NWScriptDataType.INTEGER );
@@ -841,7 +842,7 @@ export class NWScript {
     },
     19 : { 
       name: 'USHRIGHTII', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
         this.stack.push( this.var1 >>> this.var2, NWScriptDataType.INTEGER );
@@ -852,7 +853,7 @@ export class NWScript {
     },
     20 : { 
       name: 'ADD', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = (this.stack.pop().value);
         this.var1 = (this.stack.pop().value);
   
@@ -889,7 +890,7 @@ export class NWScript {
     },
     21 : { 
       name: 'SUB', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -923,7 +924,7 @@ export class NWScript {
     },
     22 : { 
       name: 'MUL', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -961,7 +962,7 @@ export class NWScript {
     },
     23 : { 
       name: 'DIV', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
   
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
@@ -992,7 +993,7 @@ export class NWScript {
     },
     24 : { 
       name: 'MOD', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var2 = this.stack.pop().value;
         this.var1 = this.stack.pop().value;
   
@@ -1022,7 +1023,7 @@ export class NWScript {
     },
     25 : { 
       name: 'NEG', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         switch(scope.instr.type){
           case NWScriptTypes.I:
             this.stack.push( -this.stack.pop().value, NWScriptDataType.INTEGER );
@@ -1038,7 +1039,7 @@ export class NWScript {
     },
     26 : { 
       name: 'COMPI', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.stack.push( ~this.stack.pop().value, NWScriptDataType.INTEGER );
       }, 
       parse: function( instr: any, reader: any ){
@@ -1047,7 +1048,7 @@ export class NWScript {
     },
     27 : { 
       name: 'MOVSP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.stack.stack.splice(
           (this.stack.pointer += scope.instr.offset) / 4, 
           (Math.abs(scope.instr.offset)/4)
@@ -1059,7 +1060,7 @@ export class NWScript {
     },
     28 : { 
       name: 'STORE_STATEALL', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         //OBSOLETE NOT SURE IF USED IN KOTOR
       }, 
       parse: function( instr: any, reader: any ){
@@ -1068,7 +1069,7 @@ export class NWScript {
     },
     29 : { 
       name: 'JMP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         scope.seek = scope.instr.address + scope.instr.offset;
       }, 
       parse: function( instr: any, reader: any ){
@@ -1077,7 +1078,7 @@ export class NWScript {
     },
     30 : { 
       name: 'JSR', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         let pos = scope.instr.address;
         scope.seek = pos + scope.instr.offset;
         this.subRoutine = new NWScriptSubroutine(scope.instr.nextInstr.address);
@@ -1092,7 +1093,7 @@ export class NWScript {
     },
     31 : { 
       name: 'JZ', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         let popped = this.stack.pop().value;
         if(popped == 0){
           scope.seek = scope.instr.address + scope.instr.offset;
@@ -1104,7 +1105,7 @@ export class NWScript {
     },
     32 : { 
       name: 'RETN', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         
         if(this.subRoutines.length){
           const subRoutine = this.subRoutines.pop();
@@ -1138,7 +1139,7 @@ export class NWScript {
     },
     33 : { 
       name: 'DESTRUCT', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         //retrieve the elements to save from the stack by popping them off of the stack
         const elements = this.stack.stack.splice(
           //offset of the first element to retrieve
@@ -1172,7 +1173,7 @@ export class NWScript {
     },
     34 : { 
       name: 'NOTI', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         if(!this.stack.pop().value)
           this.stack.push(NWScript.TRUE, NWScriptDataType.INTEGER);//TRUE
         else
@@ -1184,7 +1185,7 @@ export class NWScript {
     },
     35 : { 
       name: 'DECISP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var1 = (this.stack.getAtPointer( scope.instr.offset));
         this.var1.value -= 1;
       }, 
@@ -1194,7 +1195,7 @@ export class NWScript {
     },
     36 : { 
       name: 'INCISP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var1 = (this.stack.getAtPointer( scope.instr.offset));
         this.var1.value += 1;
       }, 
@@ -1204,7 +1205,7 @@ export class NWScript {
     },
     37 : { 
       name: 'JNZ', //I believe this is used in SWITCH statements
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         let jnzTOS = this.stack.pop().value
         if(jnzTOS != 0){
           scope.seek = scope.instr.address + scope.instr.offset;
@@ -1216,7 +1217,7 @@ export class NWScript {
     },
     38 : { 
       name: 'CPDOWNBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.stack.stack.copyWithin(
           (this.stack.basePointer + scope.instr.offset)/4,
           (this.stack.pointer     - scope.instr.size)/4,
@@ -1229,7 +1230,7 @@ export class NWScript {
     },
     39 : { 
       name: 'CPTOPBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         const elements = this.stack.copyAtBasePointer( scope.instr.pointer, scope.instr.size );
         if(elements.length == (scope.instr.size / 4)){
           this.stack.stack.push( ...elements );
@@ -1246,7 +1247,7 @@ export class NWScript {
     },
     40 : { 
       name: 'DECIBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
         this.var1.value -= 1;
       }, 
@@ -1256,7 +1257,7 @@ export class NWScript {
     },
     41 : { 
       name: 'INCIBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
         this.var1.value += 1;
       }, 
@@ -1266,9 +1267,8 @@ export class NWScript {
     },
     42 : { 
       name: 'SAVEBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.stack.saveBP();
-        this.currentBlock = 'global';
       }, 
       parse: function( instr: any, reader: any ){
   
@@ -1276,7 +1276,7 @@ export class NWScript {
     },
     43 : { 
       name: 'RESTOREBP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
         this.stack.restoreBP();
       }, 
       parse: function( instr: any, reader: any ){
@@ -1285,7 +1285,7 @@ export class NWScript {
     },
     44 : { 
       name: 'STORE_STATE', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
   
         let state: any = {
           offset: scope.instr.nextInstr.nextInstr.address,
@@ -1329,7 +1329,7 @@ export class NWScript {
     },
     45 : { 
       name: 'NOP', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
   
       }, 
       parse: function( instr: any, reader: any ){
@@ -1338,7 +1338,7 @@ export class NWScript {
     },
     46 : { 
       name: 'T', 
-      run: function( scope: any = {} ){
+      run: function(this: NWScriptInstance, scope: any = {} ){
   
       }, 
       parse: function( instr: any, reader: any ){

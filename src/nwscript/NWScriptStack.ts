@@ -12,7 +12,7 @@ import { NWScriptEvent } from "./events";
 import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
 export class NWScriptStack {
-  stack: any[];
+  stack: NWScriptStackVariable[];
   pointer: number;
   basePointer: number;
   _storeState: {
