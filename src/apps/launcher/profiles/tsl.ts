@@ -4,6 +4,7 @@ export const LauncherConfig: any = {
   "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/208580/c491c003d93f0947b8e514ff1933daa7c4d8c171.ico",
   "logo": "https://steamcdn-a.akamaihd.net/steam/apps/208580/logo.png",
   "background": "https://img.wallpapersafari.com/desktop/1920/1080/64/6/vqMNET.jpg",
+  "background_fallback": "./images/vqMNET.jpg",
   "category": "game",
   "directory": null,
   "locate_required": true,

@@ -4,6 +4,7 @@ export const LauncherConfig: any = {
   "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/32370/0bb8aed2de4ae751637ddb5ac7edb0b786698f14.ico",
   "logo": "https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png",
   "background": "https://img.wallpapersafari.com/desktop/1920/1080/72/33/uBjXWl.jpg",
+  "background_fallback": "./images/uBjXWl.jpg",
   "category": "game",
   "directory": null,
   "locate_required": true,
