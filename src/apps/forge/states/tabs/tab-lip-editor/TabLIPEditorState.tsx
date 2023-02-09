@@ -197,38 +197,35 @@ export class TabLIPEditorState extends TabState {
 
   loadHead(model_name = 'p_bastilah'){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.GameState.ModelLoader.load({
-        file: model_name,
-        onLoad: (mdl: OdysseyModel) => {
-          this.current_head = model_name;
-          localStorage.setItem('lip_head', this.current_head);
-          KotOR.OdysseyModel3D.FromMDL(mdl, {
-            context: this.ui3DRenderer,
-            castShadow: true,
-            receiveShadow: true,
-            onComplete: (model: OdysseyModel3D) => {
+      KotOR.GameState.ModelLoader.load(model_name)
+      .then((mdl: OdysseyModel) => {
+        this.current_head = model_name;
+        localStorage.setItem('lip_head', this.current_head);
+        KotOR.OdysseyModel3D.FromMDL(mdl, {
+          context: this.ui3DRenderer,
+          castShadow: true,
+          receiveShadow: true,
+        }).then((model: OdysseyModel3D) => {
 
-              if(this.head instanceof KotOR.THREE.Object3D){
-                this.head.parent?.remove(this.head);
-              }
+          if(this.head instanceof KotOR.THREE.Object3D){
+            this.head.parent?.remove(this.head);
+          }
 
-              this.head = model;
-              this.head_hook.add(this.head);
-              this.box3.setFromObject(this.head);
+          this.head = model;
+          this.head_hook.add(this.head);
+          this.box3.setFromObject(this.head);
 
-              this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
-              this.head.playAnimation('tlknorm', true);
+          this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
+          this.head.playAnimation('tlknorm', true);
 
-              this.head.userData.moduleObject = {
-                lipObject: this.lip
-              };
+          this.head.userData.moduleObject = {
+            lipObject: this.lip
+          };
 
-              this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadLoad', [model]);
-              resolve();
-            }
-          });
-        }
-      });
+          this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadLoad', [model]);
+          resolve();
+        }).catch(resolve)
+      }).catch(resolve)
     });
   }
 
