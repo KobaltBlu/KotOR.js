@@ -7036,7 +7036,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      console.log('SetLocalBoolean', args);
       args[0].setLocalBoolean( args[1], !!args[2] )
     }
   },
