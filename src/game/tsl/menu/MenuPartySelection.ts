@@ -332,7 +332,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           }
           this.char = creature;
           creature.selectedNPC = this.selectedNPC;
-          creature.model.position.set(0, 0, 0);
+          creature.position.set(0, 0, 0);
           creature.model.rotation.z = -Math.PI / 2;
           this.LBL_3D_VIEW.group.creatures.add(creature.model);
           this.char.LoadModel();

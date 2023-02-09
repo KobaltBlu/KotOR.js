@@ -186,7 +186,7 @@ export class ModulePlaceable extends ModuleObject {
       if(this.model.visible)
         this.model.update(delta);
 
-      this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
+      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
 
       /*if(this.model.odysseyAnimations.length){
 

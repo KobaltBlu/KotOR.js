@@ -400,9 +400,9 @@ export class ModuleRoom extends ModuleObject {
                 let lm_uv = THREE.Triangle.getUV( vector, FA, FB, FC, uvA, uvB, uvC, new THREE.Vector2() );
 
                 instance.position = {
-                  x: this.model.position.x + aabb.position.x + vector.x, 
-                  y: this.model.position.y + aabb.position.y + vector.y, 
-                  z: this.model.position.z + aabb.position.z + vector.z + quadOffsetZ
+                  x: this.position.x + aabb.position.x + vector.x, 
+                  y: this.position.y + aabb.position.y + vector.y, 
+                  z: this.position.z + aabb.position.z + vector.z + quadOffsetZ
                 };
 
                 // orientations

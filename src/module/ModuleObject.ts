@@ -1773,7 +1773,7 @@ export class ModuleObject {
 
 
   getLocalBoolean(index: number){
-    return this._locals.Booleans[index] ? true : false;
+    return !!this._locals.Booleans[index];
   }
 
   getLocalNumber(index: number){
@@ -1781,7 +1781,7 @@ export class ModuleObject {
   }
 
   setLocalBoolean(index: number, bool: boolean){
-    this._locals.Booleans[index] = bool ? true : false;
+    this._locals.Booleans[index] = !!bool;
   }
 
   setLocalNumber(index: number, value: number){

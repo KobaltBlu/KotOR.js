@@ -439,7 +439,7 @@ export class ModuleDoor extends ModuleObject {
 
       this.box.setFromObject(this.model);
 
-      this.audioEmitter.SetPosition(this.model.position.x, this.model.position.y, this.model.position.z);
+      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
       this.boxHelper = new THREE.Box3Helper( this.box, (new THREE.Color()).setHex(0xff0000) );
       GameState.group.light_helpers.add( this.boxHelper );
     }
