@@ -8,6 +8,8 @@ export * from "./GameState";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 
+export * from "./combat";
+
 export * from "./managers/BIFManager";
 export * from "./managers/ERFManager";
 export * from "./managers/KEYManager";
@@ -45,5 +47,8 @@ export * from "./resource/VISObject";
 
 export * from "./three/odyssey";
 export * from "./three/MDLLoader";
+
+export * from "./nwscript/NWScript";
+export * from "./nwscript/NWScriptInstance";
 
 export * as THREE from "three";
