@@ -204,7 +204,7 @@ export class GameState implements EngineContext {
   static camera_animated: THREE.PerspectiveCamera;
   static camera_gui: THREE.OrthographicCamera;
   static currentCameraPosition: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
-  static staticCameras: any[];
+  static staticCameras: THREE.PerspectiveCamera[];
   static animatedCameras: any[];
   static staticCameraIndex: number;
   static animatedCameraIndex: number;
@@ -1212,7 +1212,7 @@ export class GameState implements EngineContext {
 
   static getCameraById(id = 0){
     for(let i = 0; i < GameState.staticCameras.length; i++){
-      if(GameState.staticCameras[i].ingameID == id)
+      if(GameState.staticCameras[i].userData.ingameID == id)
         return GameState.staticCameras[i];
     }
 

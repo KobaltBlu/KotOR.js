@@ -24,7 +24,7 @@ export class EffectPoison extends GameEffect {
 
   }
 
-  async initialize(){
+  initialize(){
     super.initialize();
     const poison2DA = TwoDAManager.datatables.get('poison');
     if(poison2DA){

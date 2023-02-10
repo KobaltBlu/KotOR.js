@@ -3994,6 +3994,7 @@ export class ModuleCreature extends ModuleObject {
             let effect = GameEffect.EffectFromStruct(effects[i]);
             if(effect instanceof GameEffect){
               effect.setAttachedObject(this);
+              effect.loadModel();
               //console.log('attached');
               this.effects.push(effect);
               //this.addEffect(effect);

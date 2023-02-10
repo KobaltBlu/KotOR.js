@@ -18,7 +18,7 @@ export class EffectDisguise extends GameEffect {
     
   }
 
-  async initialize(){
+  initialize(){
     super.initialize();
 
     const appearance2DA = TwoDAManager.datatables.get('appearance');

@@ -19,6 +19,7 @@ export class ModuleCamera extends ModuleObject {
   micRange: any;
   orientation: THREE.Quaternion = new THREE.Quaternion;
   pitch: any;
+  perspectiveCamera: THREE.PerspectiveCamera;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -28,6 +29,28 @@ export class ModuleCamera extends ModuleObject {
 
   Load(){
     this.InitProperties();
+    this.buildCamera();
+  }
+
+  buildCamera(){
+    if(this.perspectiveCamera){
+      this.perspectiveCamera.removeFromParent();
+      this.perspectiveCamera = undefined;
+    }
+    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
+    this.perspectiveCamera.up = new THREE.Vector3( 0, 1, 0 );
+    this.perspectiveCamera.position.copy(this.position);
+    this.perspectiveCamera.position.set(0, 0, this.height);
+    this.perspectiveCamera.rotation.reorder('YZX');
+    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
+    this.perspectiveCamera.rotation.z = -Math.atan2(this.orientation.w, -this.orientation.x)*2;
+
+    //Clipping hack
+    this.perspectiveCamera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(this.perspectiveCamera.rotation));
+
+    this.perspectiveCamera.userData.moduleObject = this;
+    this.perspectiveCamera.userData.ingameID = this.cameraID;
+    this.container.add(this.perspectiveCamera);
   }
 
   InitProperties(){

@@ -1460,6 +1460,7 @@ export class ModuleObject {
         //effect.setDuration(duration);
         //effect.setCreator(this); //Setting creator here causes Item effects to reference the wrong object
         effect.setAttachedObject(this);
+        effect.loadModel();
         effect.onApply(this);
         this.effects.push(effect);
       }

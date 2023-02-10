@@ -49,7 +49,7 @@ export class GameEffect {
 
   }
 
-  async initialize(): Promise<GameEffect> {
+  initialize() {
     if(this.initialized)
       return this;
 
@@ -59,6 +59,10 @@ export class GameEffect {
 
     this.initialized = true;
     return this;
+  }
+
+  loadModel(){
+    return;
   }
 
   setCreator(oCreator: ModuleObject){

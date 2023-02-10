@@ -274,6 +274,7 @@ export class Module {
 
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
     if(effect instanceof GameEffect){
+      effect.loadModel();
       let object: any = {
         model: new THREE.Object3D(),
         position: lLocation.position,
@@ -403,26 +404,6 @@ export class Module {
         GameState.camera.userData.pitch = 89.0;
       if (GameState.camera.userData.pitch < -89.0)
         GameState.camera.userData.pitch = -89.0;
-
-      for(let i = 0, len = this.area.cameras.length; i < len; i++){
-        let cam = this.area.cameras[i];
-        cam.InitProperties();
-        let camera = new THREE.PerspectiveCamera(cam.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
-        camera.up = new THREE.Vector3( 0, 1, 0 );
-        camera.position.set(cam.position.x, cam.position.y, cam.position.z + cam.height);
-        camera.rotation.reorder('YZX');
-        let quat = new THREE.Quaternion().copy(cam.orientation);
-        camera.rotation.x = THREE.MathUtils.degToRad(cam.pitch);
-        camera.rotation.z = -Math.atan2(cam.orientation.w, -cam.orientation.x)*2;
-
-        //Clipping hack
-        camera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(camera.rotation));
-
-        camera.userData.ingameID = cam.cameraID;
-        GameState.staticCameras.push(camera);
-
-        camera.userData._cam = cam;
-      }
 
       MenuManager.LoadScreen.setProgress(0);
 

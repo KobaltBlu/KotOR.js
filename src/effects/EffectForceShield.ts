@@ -13,7 +13,7 @@ export class EffectForceShield extends GameEffect {
     
   }
 
-  async initialize(){
+  initialize(){
     super.initialize();
 
     const forceShield2DA = TwoDAManager.datatables.get('forceshields');

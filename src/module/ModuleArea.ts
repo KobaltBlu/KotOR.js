@@ -1008,6 +1008,8 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(10);
 
+      await this.loadCameras();
+
       await this.loadPlaceables();
 
       MenuManager.LoadScreen.setProgress(20);
@@ -1067,6 +1069,14 @@ export class ModuleArea extends ModuleObject {
       console.error(e);
     }
 
+  }
+
+  loadCameras(){
+    for(let i = 0; i < this.cameras.length; i++){
+      const camera = this.cameras[i];
+      camera.Load();
+      GameState.staticCameras.push(camera.perspectiveCamera);
+    }
   }
 
   getSpawnLocation(){

@@ -27,7 +27,7 @@ export class EffectBeam extends GameEffect {
 
   }
 
-  async initialize(): Promise<GameEffect> {
+  initialize() {
     if(this.initialized)
       return this;
       
@@ -38,65 +38,67 @@ export class EffectBeam extends GameEffect {
 
     super.initialize();
 
-    return new Promise<GameEffect>( ( resolve, reject) => {
-      switch(this.visualEffect.progfx_duration){
-        case 616:
-          this.modelName = 'v_coldray_dur';
-        break;
-        case 612: 
-          this.modelName = 'v_deathfld_dur';
-        break;
-        case 613: 
-          this.modelName = 'v_drain_dur';
-        break;
-        case 611:
-          this.modelName = 'v_drdkill_dur';
-        break;
-        case 610:
-          this.modelName = 'v_drddisab_dur';
-        break;
-        case 620: 
-          this.modelName = 'v_drdstun_dur';
-        break;
-        case 614:
-          this.modelName = 'v_flame_dur';
-        break;
-        case 619:
-          this.modelName = 'v_fstorm_dur';
-        break;
-        case 617:
-          this.modelName = 'v_ionray01_dur';
-        break;
-        case 618:
-          this.modelName = 'v_ionray02_dur';
-        break;
-        case 609:
-          this.modelName = 'v_lightnx_dur';
-        break;
-        case 608:
-          this.modelName = 'v_lightns_dur';
-        break;
-        case 621:
-          this.modelName = 'v_fshock_dur';
-        break;
-        case 615:
-          this.modelName = 'v_stunray_dur';
-        break;
-        default:
-          this.modelName = 'v_coldray_dur';
-        break;
-      }
+    switch(this.visualEffect.progfx_duration){
+      case 616:
+        this.modelName = 'v_coldray_dur';
+      break;
+      case 612: 
+        this.modelName = 'v_deathfld_dur';
+      break;
+      case 613: 
+        this.modelName = 'v_drain_dur';
+      break;
+      case 611:
+        this.modelName = 'v_drdkill_dur';
+      break;
+      case 610:
+        this.modelName = 'v_drddisab_dur';
+      break;
+      case 620: 
+        this.modelName = 'v_drdstun_dur';
+      break;
+      case 614:
+        this.modelName = 'v_flame_dur';
+      break;
+      case 619:
+        this.modelName = 'v_fstorm_dur';
+      break;
+      case 617:
+        this.modelName = 'v_ionray01_dur';
+      break;
+      case 618:
+        this.modelName = 'v_ionray02_dur';
+      break;
+      case 609:
+        this.modelName = 'v_lightnx_dur';
+      break;
+      case 608:
+        this.modelName = 'v_lightns_dur';
+      break;
+      case 621:
+        this.modelName = 'v_fshock_dur';
+      break;
+      case 615:
+        this.modelName = 'v_stunray_dur';
+      break;
+      default:
+        this.modelName = 'v_coldray_dur';
+      break;
+    }
+  }
 
+  loadModel(): Promise<void> {
+    return new Promise<void>( ( resolve, reject) => {
       GameState.ModelLoader.load(this.modelName)
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           onComplete: (model: OdysseyModel3D) => {
             this.model = model;
-            resolve(this);
+            resolve();
           }
         });
       }).catch(() => {
-        resolve(this);
+        resolve();
       });
     });
   }

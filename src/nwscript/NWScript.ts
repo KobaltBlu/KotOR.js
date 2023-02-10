@@ -421,7 +421,7 @@ export class NWScript {
     }, //Constant Type is declared by the next byte x03, x04, x05, x06
     5 : { 
       name: 'ACTION', 
-      run: async function( scope: any = {} ){
+      run: function( scope: any = {} ){
   
         const action_definition: NWScriptDefAction = this.actionsMap[scope.instr.action];
         const args: any[] = [];

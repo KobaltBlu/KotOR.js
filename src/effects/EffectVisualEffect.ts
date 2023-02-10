@@ -28,7 +28,7 @@ export class EffectVisualEffect extends GameEffect {
 
   }
 
-  async initialize(){
+  initialize(){
     super.initialize();
 
     const visualeffects2DA = TwoDAManager.datatables.get('visualeffects');
