@@ -22,8 +22,7 @@ export class PositionController extends OdysseyController {
       }
 
       if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
-        if(manager?.model?.userData?.moduleObject)
-          anim._position.sub(manager.model.userData.moduleObject.position);
+        anim._position.sub(manager.model.parent.position);
       }
 
     }
@@ -54,8 +53,7 @@ export class PositionController extends OdysseyController {
     if(manager.modelNode.controllers.hasPosition){
       anim._position.copy(manager.modelNode.controllers.position.data[0]);
       if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
-        if(manager?.model?.userData?.moduleObject)
-          anim._position.sub(manager.model.userData.moduleObject.position);
+        anim._position.sub(manager.model.parent.position);
       }
     }
 
