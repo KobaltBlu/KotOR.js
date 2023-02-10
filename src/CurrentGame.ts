@@ -65,8 +65,12 @@ export class CurrentGame {
   }
 
   static async InitGameInProgressFolder(){
-    await CurrentGame.ClearGameInProgressFolder();
-    // fs.mkdirSync(CurrentGame.gameinprogress_dir);
+    try{ 
+      await CurrentGame.ClearGameInProgressFolder(); 
+    }catch(e){
+      console.error(e);
+    }
+    
     try{ 
       await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
     }catch(e){

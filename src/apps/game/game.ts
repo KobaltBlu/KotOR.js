@@ -102,6 +102,7 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
 ( async () => {
 
   app_profile = await getProfile();
+  KotOR.ApplicationProfile.InitEnvironment(app_profile);
   
   switch(app_profile.launch.args.gameChoice){
     case 2:
@@ -119,7 +120,21 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
   KotOR.LoadingScreen.main.Show();
 
   if(env == ApplicationEnvironment.ELECTRON){
-    initializeApp();
+    if(await KotOR.GameFileSystem.exists('chitin.key')){
+      initializeApp();
+    }else{
+      (window as any).electron.locate_game_directory(app_profile).then( (directory: string) => {
+        console.log('directory', directory);
+        if(directory){
+          KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory`, directory);
+          app_profile.directory = directory;
+        }
+      }).catch( (e: any) => {
+        KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory`, '');
+        console.error(e);
+        window.location.reload();
+      });
+    }
   }else{
     if(KotOR.GameFileSystem.rootDirectoryHandle){
       let validated = await validateDirectoryHandle(KotOR.GameFileSystem.rootDirectoryHandle);

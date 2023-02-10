@@ -308,7 +308,8 @@ export class GameFileSystem {
       return new Promise<boolean>( (resolve, reject) => {
         fs.mkdir(path.join(GameFileSystem.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, (err) => {
           if(err){
-            reject(err);
+            console.error(err);
+            resolve(false)
             return;
           }
           resolve(true)
@@ -323,7 +324,8 @@ export class GameFileSystem {
           currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: true })
         }
       }catch(e){
-        throw e;
+        console.error(e);
+        // throw e;
       }
     }
   }
@@ -360,47 +362,54 @@ export class GameFileSystem {
   }
 
   static async exists(dirOrFilePath: string): Promise<boolean>{
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<boolean>( (resolve, reject) => {
-        fs.stat(dirOrFilePath, (err, stats) => {
+    return new Promise<boolean>( async (resolve, reject) => {
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+        fs.stat(path.join(GameFileSystem.rootDirectoryPath, dirOrFilePath), (err, stats) => {
           if(err){
+            console.log(dirOrFilePath);
+            console.error(err);
             resolve(false);
             return
           }
 
           resolve(true);
         });
-      });
-    }else{
-      const details = path.parse(dirOrFilePath);
-      try{
-        if(details.ext){
-          let handle = await GameFileSystem.resolveFilePathDirectoryHandle(dirOrFilePath);
-          if(handle){
-            let fileHandle = await handle.getFileHandle(details.base);
-            if(fileHandle){
-              console.log('handle-file', handle);
-              return true;
+      }else{
+        const details = path.parse(dirOrFilePath);
+        try{
+          if(details.ext){
+            let handle = await GameFileSystem.resolveFilePathDirectoryHandle(dirOrFilePath);
+            if(handle){
+              let fileHandle = await handle.getFileHandle(details.base);
+              if(fileHandle){
+                resolve(true);
+                return;
+              }else{
+                resolve(false);
+                return;
+              }
             }else{
-              return false;
+              resolve(false);
+              return;
             }
           }else{
-            return false;
+            let handle = await GameFileSystem.resolvePathDirectoryHandle(dirOrFilePath);
+            if(handle){
+              resolve(true);
+              return;
+            }else{
+              resolve(false);
+              return;
+            }
           }
-        }else{
-          let handle = await GameFileSystem.resolvePathDirectoryHandle(dirOrFilePath);
-          if(handle){
-            console.log('handle-dir', handle);
-            return true;
-          }else{
-            return false;
-          }
+        }catch(e){
+          console.log(dirOrFilePath);
+          console.error(e);
+          resolve(false);
+          return;
         }
-      }catch(e){
-        console.error(e);
-        return false;
       }
-    }
+    });
   }
 
   static async unlink(handleOrPath: string|FileSystemFileHandle){
