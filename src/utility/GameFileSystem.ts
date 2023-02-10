@@ -353,6 +353,7 @@ export class GameFileSystem {
           }
         }
       }catch(e){
+        console.error(e);
         return;
       }
     }
@@ -473,7 +474,7 @@ export class GameFileSystem {
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
     if(GameFileSystem.rootDirectoryHandle){
-      const dirs = filepath.split('/');
+      const dirs = filepath.length ? filepath.split('/') : [];
       let lastDirectoryHandle = GameFileSystem.rootDirectoryHandle;
       let currentDirHandle = GameFileSystem.rootDirectoryHandle;
       for(let i = 0, len = dirs.length; i < len; i++){

@@ -717,7 +717,7 @@ export class SaveGame {
         //Loop through and detect the possible savegame paths
         for(let i = 0; i < folders.length; i++){
           // if(SaveGame.FolderRegexValidator.test(folders[i])){
-            if(GameFileSystem.exists(path.join(folders[i], 'SAVEGAME.sav'))){
+            if(await GameFileSystem.exists(path.join(folders[i], 'SAVEGAME.sav'))){
               SaveGame.AddSaveGame( new SaveGame(folders[i]) );
             }else{
               //console.log('SaveGame', 'Folder Missing SAVEGAME.sav', folders[i]);
@@ -753,11 +753,4 @@ export class SaveGame {
     }
   }
 
-}
-
-//Clean up the gameinprogress folder on startup
-try{
-  GameFileSystem.rmdir( CurrentGame.gameinprogress_dir, {recursive: true});
-}catch(e){
-  console.error('SaveGame', 'delete gameinprogress directory error', e);
 }

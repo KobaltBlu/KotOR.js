@@ -80,6 +80,12 @@ contextBridge.exposeInMainWorld(
     mkdirSync: (...args) => {
       return fs.mkdirSync(...args);
     },
+    rmdir: (...args) => {
+      return fs.mkdir(...args);
+    },
+    rmdirSync: (...args) => {
+      return fs.mkdirSync(...args);
+    },
     stat: (...args) => {
       return fs.stat(...args);
     },

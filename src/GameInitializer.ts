@@ -20,6 +20,7 @@ import { GameFileSystem } from "./utility/GameFileSystem";
 import { ConfigClient } from "./KotOR";
 import { JournalManager } from "./managers/JournalManager";
 import { GamePad } from "./controls";
+import { CurrentGame } from "./CurrentGame";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -40,37 +41,39 @@ export class GameInitializer {
 
     ResourceLoader.InitCache();
 
-    if(GameInitializer.currentGame != props.game){
-      GameInitializer.currentGame = props.game;
+    CurrentGame.ClearGameInProgressFolder().then( () => {
+      if(GameInitializer.currentGame != props.game){
+        GameInitializer.currentGame = props.game;
 
-      ConfigClient.Init().then( () => {
-      
-        LoadingScreen.main.SetMessage("Loading Keys");
-        KEYManager.Load('chitin.key', async () => {
-          await ResourceLoader.InitGlobalCache();
-          LoadingScreen.main.SetMessage("Loading Game Resources");
-          GameInitializer.LoadGameResources( () => {
-            //Load JRL File
-            LoadingScreen.main.SetMessage("Loading JRL File");
-            JournalManager.LoadJournal().then( () => {
-              //Load TLK File
-              LoadingScreen.main.SetMessage("Loading TLK File");
-              TLKManager.LoadTalkTable().then( () => {
-                GamePad.Init();
-                if(typeof props.onLoad === 'function'){
-                  props.onLoad();
-                }
-              })
+        ConfigClient.Init().then( () => {
+        
+          LoadingScreen.main.SetMessage("Loading Keys");
+          KEYManager.Load('chitin.key', async () => {
+            await ResourceLoader.InitGlobalCache();
+            LoadingScreen.main.SetMessage("Loading Game Resources");
+            GameInitializer.LoadGameResources( () => {
+              //Load JRL File
+              LoadingScreen.main.SetMessage("Loading JRL File");
+              JournalManager.LoadJournal().then( () => {
+                //Load TLK File
+                LoadingScreen.main.SetMessage("Loading TLK File");
+                TLKManager.LoadTalkTable().then( () => {
+                  GamePad.Init();
+                  if(typeof props.onLoad === 'function'){
+                    props.onLoad();
+                  }
+                })
+              });
             });
           });
+
         });
 
-      });
-
-    }else{
-      if(props.onLoad != null)
-        props.onLoad();
-    }
+      }else{
+        if(props.onLoad != null)
+          props.onLoad();
+      }
+    });
 
   }
 

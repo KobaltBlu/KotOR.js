@@ -50,8 +50,8 @@ export class CurrentGame {
   }
 
   static async ClearGameInProgressFolder(){
-    return new Promise<void>( (resolve, reject) => {
-      if(GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
+    return new Promise<void>( async (resolve, reject) => {
+      if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
         GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true }).then( () => {
           resolve();
         }).catch( (e) => {
@@ -129,5 +129,3 @@ export class CurrentGame {
   }
 
 }
-
-CurrentGame.ClearGameInProgressFolder();
