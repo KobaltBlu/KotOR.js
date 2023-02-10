@@ -344,4 +344,16 @@ export class RIMObject {
     }
   }
 
+  getResourceByKeyAsync(key: RIMResource): Promise<Buffer> {
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.getRawResource(key.ResRef, key.ResType, resolve);
+    });
+  }
+
+  getResourceDataAsync(resref: string, restype: number): Promise<Buffer> {
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.getRawResource(resref, restype, resolve);
+    });
+  }
+
 }

@@ -158,6 +158,12 @@ export class KEYObject {
     return false;
   }
 
+  GetFileDataAsync(key: KEY): Promise<Buffer> {
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.GetFileData(key, resolve, reject);
+    });
+  }
+
   static GetBIFIndex( ResID: number = 0 ): number{
     return (ResID >> 20);
   }

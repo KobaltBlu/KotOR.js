@@ -38,13 +38,16 @@ export class GameInitializer {
       onError: null
     }, props);
 
+    ResourceLoader.InitCache();
+
     if(GameInitializer.currentGame != props.game){
       GameInitializer.currentGame = props.game;
 
       ConfigClient.Init().then( () => {
       
         LoadingScreen.main.SetMessage("Loading Keys");
-        KEYManager.Load('chitin.key', () => {
+        KEYManager.Load('chitin.key', async () => {
+          await ResourceLoader.InitGlobalCache();
           LoadingScreen.main.SetMessage("Loading Game Resources");
           GameInitializer.LoadGameResources( () => {
             //Load JRL File

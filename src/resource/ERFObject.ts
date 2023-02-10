@@ -512,6 +512,18 @@ export class ERFObject {
     return output.buffer;
   }
 
+  getResourceByKeyAsync(key: ERFKeyEntry): Promise<Buffer> {
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.getRawResource(key.ResRef, key.ResType, resolve);
+    });
+  }
+
+  getResourceDataAsync(resref: string, restype: number): Promise<Buffer> {
+    return new Promise<Buffer>( (resolve, reject) => {
+      this.getRawResource(resref, restype, resolve);
+    });
+  }
+
   static _erfCache: any = {};
   
   static DayOfTheYear(date?: Date) {

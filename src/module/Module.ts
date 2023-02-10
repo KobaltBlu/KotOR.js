@@ -43,7 +43,7 @@ export class Module {
   area: ModuleArea;
   timeManager: ModuleTimeManager;
   scripts: any = {};
-  archives: any[] = [];
+  archives: (RIMObject|ERFObject)[] = [];
   effects: any[] = [];
   eventQueue: any[] = [];
   customTokens: Map<any, any>;
@@ -765,8 +765,8 @@ export class Module {
     });
   }
 
-  static async GetModuleArchives(modName = ''){
-    return new Promise<any[]>( async (resolve, reject) => {
+  static async GetModuleArchives(modName = ''): Promise<(RIMObject|ERFObject)[]> {
+    return new Promise<(RIMObject|ERFObject)[]>( async (resolve, reject) => {
       let archives: any[] = [];
       let archive = undefined;
 
@@ -836,8 +836,8 @@ export class Module {
     });
   }
 
-  static async GetModuleProjectArchives(modName = ''){
-    return new Promise<any[]>( async (resolve, reject) => {
+  static async GetModuleProjectArchives(modName = ''): Promise<(RIMObject|ERFObject)[]> {
+    return new Promise<(RIMObject|ERFObject)[]> ( async (resolve, reject) => {
       let archives: any[] = [];
       let archive = undefined;
 
@@ -880,7 +880,7 @@ export class Module {
         Module.GetModuleArchives(modName).then( (archives) => {
           // console.log('archives', archives);
           GameState.module.archives = archives;
-
+          ResourceLoader.InitModuleCache(GameState.module.archives);
           ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
             
             new GFFObject(ifo_data, (ifo) => {
