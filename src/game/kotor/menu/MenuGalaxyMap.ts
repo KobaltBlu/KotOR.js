@@ -77,7 +77,7 @@ export class MenuGalaxyMap extends GameMenu {
 
       });
 
-      this.script = await NWScript.Load('k_sup_galaxymap');
+      this.script = NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
       GameState.ModelLoader.load('galaxy')

@@ -8,6 +8,13 @@ import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import { NWScriptInstance } from "../KotOR";
+import { DLGStuntActor } from "../interface/dialog/DLGStuntActor";
+
+export interface DLGObjectScripts {
+  onEndConversationAbort: NWScriptInstance,
+  onEndConversation: NWScriptInstance,
+}
 
 export class DLGObject {
   resref: string;
@@ -15,20 +22,26 @@ export class DLGObject {
   conversationType: number;
   entryList: DLGNode[] = [];
   replyList: DLGNode[] = [];
-  startingList: any[] = [];
-  stuntActors: any[] = [];
-  stunt: any[] = [];
+  startingList: DLGNode[] = [];
+  stuntActors: Map<string, DLGStuntActor> = new Map();
   owner: any;
   listener: any;
   vo_id: any;
-  cameraModel: any;
+
   onEndConversationAbort: any;
   onEndConversation: any;
-  isAnimatedCutscene: boolean;
-  ambientTrack: any;
+
+  scripts: DLGObjectScripts = {
+    onEndConversationAbort: undefined,
+    onEndConversation: undefined,
+  }
+
+  ambientTrack: string;
   unequipHeadItem: boolean;
   unequipItems: boolean;
-  animatedCamera: any;
+  isAnimatedCutscene: boolean;
+  animatedCameraResRef: string;
+  animatedCamera: OdysseyModel3D;
 
   constructor(resref = ''){
     this.resref = resref;
@@ -37,8 +50,6 @@ export class DLGObject {
     this.entryList = [];
     this.replyList = [];
     this.startingList = [];
-    this.stuntActors = [];
-    this.stunt = [];
 
     this.owner = undefined;
     this.listener = undefined;
@@ -56,7 +67,7 @@ export class DLGObject {
       this.vo_id = this.gff.json.fields.VO_ID.value;
     
     if(this.gff.json.fields.CameraModel)
-      this.cameraModel = this.gff.json.fields.CameraModel.value;
+      this.animatedCameraResRef = this.gff.json.fields.CameraModel.value;
     
     if(this.gff.json.fields.EndConverAbort)
       this.onEndConversationAbort = this.gff.json.fields.EndConverAbort.value;
@@ -94,9 +105,10 @@ export class DLGObject {
 
     for(let i = 0; i < this.gff.json.fields.StuntList.structs.length; i++){
       let stnt = this.gff.json.fields.StuntList.structs[i].fields;
-      this.stuntActors.push({
-        participant: stnt.Participant.value != '' ? stnt.Participant.value : 'OWNER',
-        model: stnt.StuntModel.value
+      let participant: string = stnt.Participant.value != '' ? stnt.Participant.value : 'OWNER';
+      this.stuntActors.set(participant.toLocaleLowerCase(), {
+        participant: participant,
+        resref: stnt.StuntModel.value
       });
     }
 
@@ -220,8 +232,8 @@ export class DLGObject {
 
   async loadStuntCamera(){
     return new Promise<void>( (resolve, reject) => {
-      if(this.cameraModel != ''){
-        GameState.ModelLoader.load(this.cameraModel)
+      if(!!this.animatedCameraResRef){
+        GameState.ModelLoader.load(this.animatedCameraResRef)
         .then((model: OdysseyModel) => {
           OdysseyModel3D.FromMDL(model)
           .then((model: OdysseyModel3D) => {
@@ -236,13 +248,13 @@ export class DLGObject {
     });
   }
 
-  async loadStuntActor( actor: any ){
+  async loadStuntActor( actor: DLGStuntActor ){
     return new Promise<void>( (resolve, reject) => {
       let model: any;
       if(actor.participant == 'PLAYER'){
         model = GameState.player.model;
         //Load the actor's supermodel
-        GameState.ModelLoader.load(actor.model)
+        GameState.ModelLoader.load(actor.resref)
         .then((actorModel: OdysseyModel) => {
           OdysseyModel3D.FromMDL(actorModel)
           .then((actorSuperModel: OdysseyModel3D) => {
@@ -264,14 +276,13 @@ export class DLGObject {
                 GameState.player.model.skins[i].frustumCulled = false;
               }
             }
-
-            this.stunt[actor.participant.toLowerCase()] = GameState.player;
+            actor.moduleObject = GameState.player;
             resolve();
           }).catch(resolve);
         }).catch(resolve);
       }else if(actor.participant == 'OWNER'){
 
-        (this.stunt as any)['owner'] = this.owner;
+        actor.moduleObject = this.owner;
         if(this.isAnimatedCutscene)
           this.owner.setFacing(0, true);
         
@@ -282,7 +293,7 @@ export class DLGObject {
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
-          GameState.ModelLoader.load(actor.model)
+          GameState.ModelLoader.load(actor.resref)
           .then((actorModel: OdysseyModel) => {
             OdysseyModel3D.FromMDL(actorModel)
             .then((actorSuperModel: OdysseyModel3D) => {
@@ -307,8 +318,7 @@ export class DLGObject {
                 }
               }
   
-              this.stunt[actor.participant.toLowerCase()] = creature;
-              //console.log('STUNT', this.stunt[actor.participant.toLowerCase()]);
+              actor.moduleObject = creature;
               resolve();
             }).catch(resolve);
           }).catch(resolve);
@@ -320,12 +330,30 @@ export class DLGObject {
   }
 
   async loadStuntActors(){
-
-    for(let i = 0; i < this.stuntActors.length; i++){
-      let actor = this.stuntActors[i];
+    this.stuntActors.forEach( async (actor) => {
       await this.loadStuntActor(actor);
-    }
+    });
+  }
 
+  releaseStuntActors(){
+    while (GameState.group.stunt.children.length) {
+      GameState.group.stunt.remove(GameState.group.stunt.children[0]);
+    }
+    this.stuntActors.forEach( async (actor) => {
+      const moduleObject = actor.moduleObject;
+      if(moduleObject){
+        const model = moduleObject.model;
+        if(model){
+          if (model.skins) {
+            for (let i = 0; i < model.skins.length; i++) {
+              model.skins[i].frustumCulled = true;
+            }
+          }
+        }
+        moduleObject.clearAllActions();
+      }
+    });
+    this.stuntActors.clear()
   }
 
   async load(){

@@ -9,6 +9,7 @@ import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { ResourceLoader } from "../KotOR";
 import { TemplateLoader } from "../loaders/TemplateLoader";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
@@ -350,59 +351,35 @@ export class ModuleItem extends ModuleObject {
     }
   }
 
-  Load( onLoad?: Function ){
+  Load(){
 
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
-      //console.log('ModuleItem', 'Loading Template', this.getEquippedRes())
-      TemplateLoader.Load({
-        ResRef: this.getEquippedRes(),
-        ResType: ResourceTypes.uti,
-        onLoad: (gff: GFFObject) => {
-          //console.log('ModuleItem', 'Template Loaded')
-          this.template.Merge(gff);
-          this.InitProperties();
-          if(onLoad != null)
-            onLoad(this);
-          
-        },
-        onFail: () => {
-          console.error('Failed to load item template');
-          if(onLoad != null)
-            onLoad(this);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        //
+      }else{
+        console.error('Failed to load ModuleItem template');
+      }
     }else if(!this.loaded && this.getInventoryRes()){
       //Load template and merge fields
-      //console.log('ModuleItem', 'Loading Template', this.getInventoryRes())
-      TemplateLoader.Load({
-        ResRef: this.getInventoryRes(),
-        ResType: ResourceTypes.uti,
-        onLoad: (gff: GFFObject) => {
-          //console.log('ModuleItem', 'Template Loaded')
-          this.template.Merge(gff);
-          this.InitProperties();
-          this.loaded = true;
-          if(onLoad != null)
-            onLoad(this);
-        },
-        onFail: () => {
-          console.error('Failed to load item template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getInventoryRes());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        // this.LoadScripts();
+        //
+      }else{
+        console.error('Failed to load ModuleItem template');
+      }
     }else{
-      //console.log('ModuleItem', '(From SAVEGAME)')
       //We already have the template (From SAVEGAME)
       this.InitProperties();
-      //this.LoadModel( () => {
-        //console.log('ModuleItem', 'Model Loaded')
-        if(onLoad != null)
-          onLoad(this);
-      //});
+      // this.LoadScripts();
     }
   }
 
@@ -447,24 +424,14 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
-  static FromResRef(sResRef: string, onLoad?: Function){
-    
-    TemplateLoader.Load({
-      ResRef: sResRef.toLowerCase(),
-      ResType: ResourceTypes.uti,
-      onLoad: (gff: GFFObject) => {
-        let item = new ModuleItem(gff);
-        item.InitProperties();
-        if(typeof onLoad === 'function')
-          onLoad(item);
-      },
-      onFail: () => {
-        console.error('ModuleItem.FromResRef', 'Failed to load item template', sResRef);
-        if(typeof onLoad === 'function')
-          onLoad(undefined);
-      }
-    });
-
+  static FromResRef(resRef: string): ModuleItem {
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], resRef);
+    if(buffer){
+      const item = new ModuleItem(new GFFObject(buffer));
+      item.InitProperties();
+      return item;
+    }
+    return undefined;
   }
 
   /*getIcon(onLoad = null){
@@ -590,8 +557,7 @@ export class ModuleItem extends ModuleObject {
       for(let i = 0, len = propertiesList.length; i < len; i++){
         this.properties.push( 
           new ItemProperty( 
-            GFFObject.FromStruct( propertiesList[i] ), 
-            this 
+            GFFObject.FromStruct( propertiesList[i] ), this 
           ) 
         );
       }

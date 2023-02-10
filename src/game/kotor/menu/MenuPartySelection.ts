@@ -158,7 +158,7 @@ export class MenuPartySelection extends GameMenu {
 
         if(this.onCloseScript instanceof NWScriptInstance){
           this.Close();
-          this.onCloseScript.run(undefined, 0, () => {
+          this.onCloseScript.runAsync(undefined, 0).then( () => {
             this.onCloseScript = undefined;
           });
         }else{
@@ -330,7 +330,7 @@ export class MenuPartySelection extends GameMenu {
     TextureLoader.LoadQueue();
     this.onCloseScript = undefined;
     if (this.scriptName != '' || this.scriptName != null) {
-      this.onCloseScript = await NWScript.Load(this.scriptName);
+      this.onCloseScript = NWScript.Load(this.scriptName);
     }
   }
 

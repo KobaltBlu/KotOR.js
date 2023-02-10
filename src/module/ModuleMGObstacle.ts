@@ -78,7 +78,7 @@ export class ModuleMGObstacle extends ModuleObject {
     }
   }
 
-  LoadScripts (onLoad?: Function){
+  LoadScripts (){
     this.scripts = {
       onAnimEvent: undefined,
       onCreate: undefined,
@@ -108,24 +108,13 @@ export class ModuleMGObstacle extends ModuleObject {
     }
 
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if(typeof _script === 'string' && _script != ''){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
 
   }
 

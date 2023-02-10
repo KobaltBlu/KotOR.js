@@ -438,11 +438,11 @@ export class SaveGame {
     GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res')).then( (buffer: Buffer) => {
       this.inventory = new GFFObject(buffer);
       let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
-
-      this.LoadInventoryItems(invArr, 0, () => {
-        if(typeof onLoad === 'function')
-          onLoad();
-      });
+      for(let i = 0; i < invArr.length; i++){
+        InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
+      }
+      if(typeof onLoad === 'function')
+        onLoad();
     }).catch((err) => {
       console.error('InventoryLoader', err)
       if(typeof onLoad === 'function')
@@ -451,24 +451,12 @@ export class SaveGame {
 
   }
 
-  LoadInventoryItems(invArr: any[], i = 0, onLoad?: Function){
-    if(i < invArr.length){
-      InventoryManager.addItem(GFFObject.FromStruct(invArr[i]), () => {
-        this.LoadInventoryItems(invArr, ++i, onLoad);
-      });
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad();
-    }
-  }
-
   ModuleLoader(onLoad?: Function){
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
     GameState.LoadModule(this.getLastModule(), null);
   }
 
-  Save( onSave?: Function ){
-
+  Save(){
     //TODO
     if(GameState.module instanceof Module){
       //Go ahead and run mkdir. It will silently fail if it already exists

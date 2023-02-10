@@ -168,7 +168,7 @@ export class InGameComputer extends K1_InGameComputer {
             this.showEntry(this.entryList[entry.index]);
           }
         } else if (entry.isActive != '') {
-          let script = await NWScript.Load(entry.isActive);
+          let script = NWScript.Load(entry.isActive);
           if (script instanceof NWScriptInstance) {
             script.setScriptParam(1, entry.isActiveParams.Param1);
             script.setScriptParam(2, entry.isActiveParams.Param2);
@@ -177,7 +177,7 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, entry.isActiveParams.Param5);
             script.setScriptStringParam(entry.isActiveParams.String);
             script.name = entry.isActive;
-            script.run(this.owner, 0, async (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               console.log('dialog cond1', {
                 entry: entry,
                 script: entry.isActive,
@@ -194,7 +194,7 @@ export class InGameComputer extends K1_InGameComputer {
                     this.showEntry(this.entryList[entry.index]);
                   }
                 } else {
-                  let script = await NWScript.Load(entry.isActive2);
+                  let script = NWScript.Load(entry.isActive2);
                   if (script instanceof NWScriptInstance) {
                     script.setScriptParam(1, entry.isActive2Params.Param1);
                     script.setScriptParam(2, entry.isActive2Params.Param2);
@@ -203,7 +203,7 @@ export class InGameComputer extends K1_InGameComputer {
                     script.setScriptParam(5, entry.isActive2Params.Param5);
                     script.setScriptStringParam(entry.isActive2Params.String);
                     script.name = entry.isActive2;
-                    script.run(this.owner, 0, (bSuccess: boolean) => {
+                    script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
                       console.log('dialog cond2', {
                         entry: entry,
                         script: entry.isActive2,
@@ -236,7 +236,7 @@ export class InGameComputer extends K1_InGameComputer {
             });
           }
         } else if (entry.isActive2 != '') {
-          let script = await NWScript.Load(entry.isActive2);
+          let script = NWScript.Load(entry.isActive2);
           if (script instanceof NWScriptInstance) {
             script.setScriptParam(1, entry.isActive2Params.Param1);
             script.setScriptParam(2, entry.isActive2Params.Param2);
@@ -245,7 +245,7 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, entry.isActive2Params.Param5);
             script.setScriptStringParam(entry.isActive2Params.String);
             script.name = entry.isActive;
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               console.log('dialog cond2', {
                 entry: entry,
                 script: entry.isActive2,
@@ -358,7 +358,7 @@ export class InGameComputer extends K1_InGameComputer {
     }
     if (entry.script != '') {
       checkList.scriptComplete = false;
-      let script = await NWScript.Load(entry.script);
+      let script = NWScript.Load(entry.script);
       if (script instanceof NWScriptInstance) {
         script.setScriptParam(1, entry.scriptParams.Param1);
         script.setScriptParam(2, entry.scriptParams.Param2);
@@ -367,9 +367,9 @@ export class InGameComputer extends K1_InGameComputer {
         script.setScriptParam(5, entry.scriptParams.Param5);
         script.setScriptStringParam(entry.scriptParams.String);
         script.name = entry.script;
-        script.run(this.owner, 0, async () => {
+        script.runAsync(this.owner, 0).then( () => {
           if (entry.script2 != '') {
-            let script = await NWScript.Load(entry.script2);
+            let script = NWScript.Load(entry.script2);
             if (script instanceof NWScriptInstance) {
               script.setScriptParam(1, entry.script2Params.Param1);
               script.setScriptParam(2, entry.script2Params.Param2);
@@ -378,7 +378,7 @@ export class InGameComputer extends K1_InGameComputer {
               script.setScriptParam(5, entry.script2Params.Param5);
               script.setScriptStringParam(entry.script2Params.String);
               script.name = entry.script2;
-              script.run(this.owner, 0, () => {
+              script.runAsync(this.owner, 0).then( () => {
                 checkList.scriptComplete = true;
               });
             }
@@ -389,7 +389,7 @@ export class InGameComputer extends K1_InGameComputer {
       }
     } else if (entry.script2 != '') {
       checkList.scriptComplete = false;
-      let script = await NWScript.Load(entry.script2);
+      let script = NWScript.Load(entry.script2);
       if (script instanceof NWScriptInstance) {
         script.setScriptParam(1, entry.script2Params.Param1);
         script.setScriptParam(2, entry.script2Params.Param2);
@@ -398,7 +398,7 @@ export class InGameComputer extends K1_InGameComputer {
         script.setScriptParam(5, entry.script2Params.Param5);
         script.setScriptStringParam(entry.script2Params.String);
         script.name = entry.script2;
-        script.run(this.owner, 0, () => {
+        script.runAsync(this.owner, 0).then( () => {
           checkList.scriptComplete = true;
         });
       }
@@ -451,7 +451,7 @@ export class InGameComputer extends K1_InGameComputer {
       if (entry.replies.length == 1 && this.isContinueDialog(entry.replies[0])) {
         let reply = this.replyList[entry.replies[0].index];
         if (reply.script != '') {
-          let script = await NWScript.Load(reply.script);
+          let script = NWScript.Load(reply.script);
           if (script instanceof NWScriptInstance) {
             script.setScriptParam(1, reply.scriptParams.Param1);
             script.setScriptParam(2, reply.scriptParams.Param2);
@@ -460,9 +460,9 @@ export class InGameComputer extends K1_InGameComputer {
             script.setScriptParam(5, reply.scriptParams.Param5);
             script.setScriptStringParam(reply.scriptParams.String);
             script.name = reply.script;
-            script.run(this.owner, 0, async (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               if (reply.script2 != '') {
-                let script = await NWScript.Load(reply.script2);
+                let script = NWScript.Load(reply.script2);
                 if (script instanceof NWScriptInstance) {
                   script.setScriptParam(1, reply.script2Params.Param1);
                   script.setScriptParam(2, reply.script2Params.Param2);
@@ -471,7 +471,7 @@ export class InGameComputer extends K1_InGameComputer {
                   script.setScriptParam(5, reply.script2Params.Param5);
                   script.setScriptStringParam(reply.script2Params.String);
                   script.name = reply.script2;
-                  script.run(this.owner, 0, (bSuccess: boolean) => {
+                  script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
                   });
                   this.getNextEntry(reply.entries);
                 } else {
@@ -528,7 +528,7 @@ export class InGameComputer extends K1_InGameComputer {
     let loop = new AsyncLoop({
       array: scripts,
       onLoop: async (scriptObj: any, asyncLoop: AsyncLoop) => {
-        let script = await NWScript.Load(scriptObj.resref);
+        let script = NWScript.Load(scriptObj.resref);
         if (script instanceof NWScriptInstance) {
           script.name = scriptObj.resref;
           script.setScriptParam(1, scriptObj.params.Param1);
@@ -537,7 +537,7 @@ export class InGameComputer extends K1_InGameComputer {
           script.setScriptParam(4, scriptObj.params.Param4);
           script.setScriptParam(5, scriptObj.params.Param5);
           script.setScriptStringParam(scriptObj.params.String);
-          script.run(this.owner, 0, (bSuccess: boolean) => {
+          script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             if (scriptObj.params.Not == 1 && !bSuccess || scriptObj.params.Not == 0 && bSuccess) {
               shouldPass = true;
               asyncLoop.next();
@@ -571,10 +571,10 @@ export class InGameComputer extends K1_InGameComputer {
           });
           replyLoop(++idx);
         } else {
-          let script = await NWScript.Load(reply.isActive);
+          let script = NWScript.Load(reply.isActive);
           if (script instanceof NWScriptInstance) {
             script.name = reply.isActive;
-            script.run(this.listener, 0, (bSuccess: boolean) => {
+            script.runAsync(this.listener, 0).then( (bSuccess: boolean) => {
               if (bSuccess) {
                 let _reply = this.replyList[reply.index];
                 this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + _reply.text.split('##')[0], () => {
@@ -595,7 +595,7 @@ export class InGameComputer extends K1_InGameComputer {
 
   async onReplySelect(reply: any) {
     if (reply.script != '') {
-      let script = await NWScript.Load(reply.script);
+      let script = NWScript.Load(reply.script);
       if (script instanceof NWScriptInstance) {
         script.setScriptParam(1, reply.scriptParams.Param1);
         script.setScriptParam(2, reply.scriptParams.Param2);
@@ -604,9 +604,9 @@ export class InGameComputer extends K1_InGameComputer {
         script.setScriptParam(5, reply.scriptParams.Param5);
         script.setScriptStringParam(reply.scriptParams.String);
         script.name = reply.script;
-        script.run(this.owner, 0, async (bSuccess: boolean) => {
+        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
           if (reply.script2 != '') {
-            let script = await NWScript.Load(reply.script2);
+            let script = NWScript.Load(reply.script2);
             if (script instanceof NWScriptInstance) {
               script.setScriptParam(1, reply.script2Params.Param1);
               script.setScriptParam(2, reply.script2Params.Param2);
@@ -615,7 +615,7 @@ export class InGameComputer extends K1_InGameComputer {
               script.setScriptParam(5, reply.script2Params.Param5);
               script.setScriptStringParam(reply.script2Params.String);
               script.name = reply.script2;
-              script.run(this.owner, 0, (bSuccess: boolean) => {
+              script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               });
               this.getNextEntry(reply.entries);
             } else {
@@ -635,10 +635,10 @@ export class InGameComputer extends K1_InGameComputer {
 
   async OnBeforeConversationEnd(onEnd?: Function) {
     if (this.onEndConversation != '') {
-      let script = await NWScript.Load(this.onEndConversation);
+      let script = NWScript.Load(this.onEndConversation);
       if (script instanceof NWScriptInstance) {
         script.name = this.currentEntry.isActive;
-        script.run(this.owner, 0, (bSuccess: boolean) => {
+        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
           if (typeof onEnd === 'function')
             onEnd();
         });
@@ -661,19 +661,19 @@ export class InGameComputer extends K1_InGameComputer {
     window.setTimeout(async () => {
       if (!aborted) {
         if (this.onEndConversation != '') {
-          let script = await NWScript.Load(this.onEndConversation);
+          let script = NWScript.Load(this.onEndConversation);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversation;
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             });
           }
         }
       } else {
         if (this.onEndConversationAbort != '') {
-          let script = await NWScript.Load(this.onEndConversationAbort);
+          let script = NWScript.Load(this.onEndConversationAbort);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversationAbort;
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             });
           }
         }

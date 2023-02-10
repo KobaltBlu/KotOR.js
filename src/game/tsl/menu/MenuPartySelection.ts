@@ -215,7 +215,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
         if(this.onCloseScript instanceof NWScriptInstance){
           this.Close();
-          this.onCloseScript.run(undefined, 0, () => {
+          this.onCloseScript.runAsync(undefined, 0).then( () => {
             this.onCloseScript = undefined;
           });
         }else{
@@ -397,7 +397,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     }
     TextureLoader.LoadQueue(() => { });
     if (scriptName != '' || scriptName != null) {
-      this.onCloseScript = await NWScript.Load(scriptName);
+      this.onCloseScript = NWScript.Load(scriptName);
     }
   }
 

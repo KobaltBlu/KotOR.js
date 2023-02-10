@@ -28,7 +28,7 @@ export class InGameDialog extends GameMenu {
 
   LBL_MESSAGE: GUILabel;
   LB_REPLIES: GUIListBox;
-  dialog: any;
+  dialog: DLGObject;
   currentEntry: DLGNode;
   listener: any;
   owner: any;
@@ -300,7 +300,7 @@ async showEntry(entry: DLGNode) {
     GameState.currentCamera = GameState.getCameraById(entry.cameraID);
   }
   this.GetAvailableReplies(entry);
-  if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.cameraModel)) {
+  if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.animatedCameraResRef)) {
     if (entry.cameraAnimation > -1) {
       entry.checkList.cameraAnimationComplete = false;
       this.SetAnimatedCamera(entry.cameraAnimation, () => {
@@ -341,6 +341,8 @@ async GetAvailableReplies(entry: any) {
 
 async onReplySelect(reply: DLGNode) {
   if (reply) {
+    this.LB_REPLIES.hide();
+    this.LB_REPLIES.clearItems();
     reply.updateJournal();
     reply.runScripts();
     this.getNextEntry(reply.entries);
@@ -422,10 +424,10 @@ LoadDialog(resref = '', onLoad?: Function) {
 
 async OnBeforeConversationEnd(onEnd?: Function) {
   if (this.dialog.onEndConversation != '') {
-    let script = await NWScript.Load(this.dialog.onEndConversation);
+    let script = NWScript.Load(this.dialog.onEndConversation);
     if (script instanceof NWScriptInstance) {
       script.name = this.dialog.onEndConversation;
-      script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
+      script.runAsync(this.getCurrentOwner(), 0).then( (bSuccess: boolean) => {
         if (typeof onEnd === 'function')
           onEnd();
       });
@@ -447,42 +449,26 @@ EndConversation(aborted = false) {
   this.state = -1;
   if (this.dialog.animatedCamera instanceof OdysseyModel3D)
     this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-  window.setTimeout(async () => {
+  (async () => {
     if (!aborted) {
       if (this.dialog.onEndConversation != '') {
-        let script = await NWScript.Load(this.dialog.onEndConversation);
+        let script = NWScript.Load(this.dialog.onEndConversation);
         if (script instanceof NWScriptInstance) {
           script.name = this.dialog.onEndConversation;
-          script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
-          });
+          script.runAsync(this.getCurrentOwner());
         }
       }
     } else {
       if (this.dialog.onEndConversationAbort != '') {
-        let script = await NWScript.Load(this.dialog.onEndConversationAbort);
+        let script = NWScript.Load(this.dialog.onEndConversationAbort);
         if (script instanceof NWScriptInstance) {
           script.name = this.dialog.onEndConversationAbort;
-          script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
-          });
+          script.runAsync(this.getCurrentOwner());
         }
       }
     }
-  });
-  while (GameState.group.stunt.children.length) {
-    GameState.group.stunt.remove(GameState.group.stunt.children[0]);
-  }
-  for (let actor in this.dialog.stunt) {
-    try {
-      if (this.dialog.stunt[actor].model.skins) {
-        for (let i = 0; i < this.dialog.stunt[actor].model.skins.length; i++) {
-          this.dialog.stunt[actor].model.skins[i].frustumCulled = true;
-        }
-      }
-      this.dialog.stunt[actor].clearAllActions();
-    } catch (e: any) {
-    }
-  }
-  this.dialog.stunt = {};
+  })();
+  this.dialog.releaseStuntActors();
 }
 
 PauseConversation() {
@@ -505,10 +491,11 @@ UpdateEntryAnimations(entry: any) {
   if (this.dialog.isAnimatedCutscene) {
     for (let i = 0; i < entry.animations.length; i++) {
       let participant = entry.animations[i];
-      if (this.dialog.stunt[participant.participant]) {
+      if (this.dialog.stuntActors.has(participant.participant)) {
         try {
-          this.dialog.stunt[participant.participant].dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
+          this.dialog.stuntActors.get(participant.participant).moduleObject.dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
         } catch (e: any) {
+          console.error(e);
         }
       } else {
         let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
@@ -576,10 +563,13 @@ UpdateCamera() {
   }
   if (this.isListening) {
     if (this.currentEntry) {
-      if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
+      if (this.currentEntry.cameraAngle == 6) {
+        this.SetPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);//, this.startingEntry.cameraAngle);
+      }else if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
         this.SetAnimatedCamera(this.currentEntry.cameraAnimation);
         GameState.currentCamera = GameState.camera_animated;
       } else {
+        GameState.currentCamera = GameState.camera_dialog;
         if (this.currentEntry.cameraAngle == 1 && this.currentEntry.listener instanceof ModuleObject) {
           let position = this.currentEntry.speaker.position.clone();
           let lposition = this.currentEntry.listener.position.clone();
@@ -664,6 +654,7 @@ UpdateCamera() {
         }
       }
     } else {
+      GameState.currentCamera = GameState.camera_dialog;
       let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(-1.5 * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4), -1.5 * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4), -1.75));
       GameState.camera_dialog.position.set(position.x, position.y, position.z);
       GameState.camera_dialog.lookAt(
@@ -706,8 +697,6 @@ Update(delta: number = 0) {
       GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
       GameState.camera_animated.updateProjectionMatrix();
       GameState.currentCamera = GameState.camera_animated;
-    }
-    for (let actor in this.dialog.stunt) {
     }
     if (this.canLetterbox) {
       this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;

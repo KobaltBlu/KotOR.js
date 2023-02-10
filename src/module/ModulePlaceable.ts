@@ -23,6 +23,7 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
@@ -511,40 +512,24 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.utp,
-        onLoad: (gff: GFFObject) => {
-          this.template.Merge(gff);
-          this.InitProperties();
-          this.LoadInventory( () => {
-            this.LoadScripts( () => {
-
-              if(onLoad != null)
-                onLoad(this.template);
-            });
-          });          
-        },
-        onFail: () => {
-          console.error('Failed to load placeable template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        this.LoadInventory();
+        this.LoadScripts();
+      }else{
+        console.error('Failed to load ModulePlaceable template');
+      }
     }else{
       //We already have the template (From SAVEGAME)
       this.InitProperties();
-      this.LoadInventory( () => {
-        this.LoadScripts( () => {
-          if(onLoad != null)
-            onLoad(this.template);
-        });
-      });
+      this.LoadInventory();
+      this.LoadScripts();
     }
   }
 
@@ -586,7 +571,7 @@ export class ModulePlaceable extends ModuleObject {
     });
   }
 
-  LoadScripts (onLoad?: Function){
+  LoadScripts (){
     this.scripts = {
       onClosed: undefined,
       onDamaged: undefined,
@@ -657,61 +642,35 @@ export class ModulePlaceable extends ModuleObject {
       this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue();
 
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if(typeof _script === 'string' && _script != ''){
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
 
   }
 
-  LoadInventory( onLoad?: Function ){
-
+  LoadInventory(){
     let inventory = this.getItemList();
-
-    let itemLoop = (i = 0) => {
-      if(i < inventory.length){
-        this.LoadItem(GFFObject.FromStruct(inventory[i]), () => {
-          i++
-          itemLoop(i);
-        });
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad();
-      }
-    };
-    itemLoop(0);
+    for(let i = 0; i < inventory.length; i++){
+      this.LoadItem( GFFObject.FromStruct( inventory[i] ) );
+    }
   }
 
-  LoadItem( template: GFFObject, onLoad?: Function){
-
+  LoadItem( template: GFFObject){
     let item = new ModuleItem(template);
     item.InitProperties();
-    item.Load( () => {
-      let hasItem = this.getItem(item.getTag());
-      if(hasItem){
-        hasItem.setStackSize(hasItem.getStackSize() + 1);
-        if(typeof onLoad === 'function')
-          onLoad(hasItem);
-      }else{
-        this.inventory.push(item);
-        if(typeof onLoad === 'function')
-          onLoad(item);
-      }
-    });
-
+    item.Load();
+    let hasItem = this.getItem(item.getTag());
+    if(hasItem){
+      hasItem.setStackSize(hasItem.getStackSize() + 1);
+      return hasItem;
+    }else{
+      this.inventory.push(item);
+      return item;
+    }
   }
 
   LoadWalkmesh(ResRef = '', onLoad?: Function){

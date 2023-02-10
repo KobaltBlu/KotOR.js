@@ -16,6 +16,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { ConfigClient } from "../utility/ConfigClient";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The ModuleEncounter class.
@@ -178,53 +179,25 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.ute,
-        onLoad: (gff: GFFObject) => {
-
-          this.template.Merge(gff);
-          this.InitProperties();
-          this.LoadScripts().then( () => {
-            this.buildGeometry();
-            //this.initObjectsInside();
-            if(onLoad != null)
-              onLoad(this.template);
-          });
-          
-        },
-        onFail: () => {
-          console.error('Failed to load encounter template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        this.LoadScripts();
+        try{ this.buildGeometry(); }catch(e){console.error(e)}
+        //this.initObjectsInside();
+      }else{
+        console.error('Failed to load ModuleTrigger template');
+      }
     }else{
       //We already have the template (From SAVEGAME)
-      //console.log('Encounter savegame')
-      try{
-        this.InitProperties();
-        this.LoadScripts().then( () => {
-          try{
-            this.buildGeometry();
-            //this.initObjectsInside();
-            if(onLoad != null)
-              onLoad(this.template);
-          }catch(e){
-            if(onLoad != null)
-              onLoad(this.template);
-          }
-        });
-      }catch(e){
-        if(onLoad != null)
-          onLoad(this.template);
-      }
-
+      this.InitProperties();
+      this.LoadScripts();
+      try{ this.buildGeometry(); }catch(e){console.error(e)}
     }
   }
 
@@ -273,35 +246,23 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   LoadScripts(){
-    return new Promise<void>( (resolve, reject) => {
-      this.scripts.onEntered = this.template.GetFieldByLabel('OnEntered').GetValue();
-      this.scripts.onExhausted = this.template.GetFieldByLabel('OnExhausted').GetValue();
-      this.scripts.onExit = this.template.GetFieldByLabel('OnExit').GetValue();
-      this.scripts.onHeartbeat = this.template.GetFieldByLabel('OnHeartbeat').GetValue();
-      this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
+    this.scripts.onEntered = this.template.GetFieldByLabel('OnEntered').GetValue();
+    this.scripts.onExhausted = this.template.GetFieldByLabel('OnExhausted').GetValue();
+    this.scripts.onExit = this.template.GetFieldByLabel('OnExit').GetValue();
+    this.scripts.onHeartbeat = this.template.GetFieldByLabel('OnHeartbeat').GetValue();
+    this.scripts.onUserDefined = this.template.GetFieldByLabel('OnUserDefined').GetValue();
 
-      let keys = Object.keys(this.scripts);
-      let loop = new AsyncLoop({
-        array: keys,
-        onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-          let _script = this.scripts[key];
-          if(typeof _script === 'string' && _script != ''){
-            //let script = await NWScript.Load(_script);
-            this.scripts[key] = await NWScript.Load(_script);
-            //this.scripts[key].name = _script;
-            asyncLoop.next();
-          }else{
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
+    let keys = Object.keys(this.scripts);
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
+      }
+    }
   }
 
-  async InitProperties(){
+  InitProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

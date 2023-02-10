@@ -171,12 +171,12 @@ export class InGameComputer extends GameMenu {
             this.showEntry(this.entryList[entry.index]);
           }
         } else {
-          let script = await NWScript.Load(entry.isActive);
+          let script = NWScript.Load(entry.isActive);
           if (script instanceof NWScriptInstance) {
             console.log('dialog', script);
             script.name = entry.isActive;
             console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               console.log('dialog', script, bSuccess);
               if (bSuccess) {
                 if (typeof callback === 'function') {
@@ -281,10 +281,10 @@ export class InGameComputer extends GameMenu {
     }
     if (entry.script != '') {
       checkList.scriptComplete = false;
-      let script = await NWScript.Load(entry.script);
+      let script = NWScript.Load(entry.script);
       if (script instanceof NWScriptInstance) {
         script.name = entry.script;
-        script.run(this.owner, 0, () => {
+        script.runAsync(this.owner, 0).then( () => {
           checkList.scriptComplete = true;
         });
       } else {
@@ -342,12 +342,12 @@ export class InGameComputer extends GameMenu {
         console.log('showEntry.replies', _reply);
         this.getNextEntry(reply.entries);
       } else {
-        let script = await NWScript.Load(reply.script);
+        let script = NWScript.Load(reply.script);
         if (script instanceof NWScriptInstance) {
           console.log('dialog', script);
           script.name = entry.script;
           console.log(this.owner);
-          script.run(this.owner, 0, (bSuccess: boolean) => {
+          script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             console.log('dialog', script, bSuccess);
             if (bSuccess) {
               let _reply = this.replyList[reply.index];
@@ -368,12 +368,12 @@ export class InGameComputer extends GameMenu {
         console.log('showEntry.replies', _reply);
         this.EndConversation();
       } else {
-        let script = await NWScript.Load(reply.script);
+        let script = NWScript.Load(reply.script);
         if (script instanceof NWScriptInstance) {
           console.log('dialog', script);
           script.name = entry.script;
           console.log(this.owner);
-          script.run(this.owner, 0, (bSuccess: boolean) => {
+          script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             console.log('dialog', script, bSuccess);
             if (bSuccess) {
               let _reply = this.replyList[reply.index];
@@ -418,12 +418,12 @@ export class InGameComputer extends GameMenu {
           });
           replyLoop(++idx);
         } else {
-          let script = await NWScript.Load(reply.isActive);
+          let script = NWScript.Load(reply.isActive);
           if (script instanceof NWScriptInstance) {
             console.log('dialog', script);
             script.name = entry.isActive;
             console.log(this.owner);
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
               console.log('dialog', script, bSuccess);
               if (bSuccess) {
                 let _reply = this.replyList[reply.index];
@@ -483,12 +483,12 @@ export class InGameComputer extends GameMenu {
 
   async onReplySelect(reply: any) {
     if (reply.script != '') {
-      let script = await NWScript.Load(reply.script);
+      let script = NWScript.Load(reply.script);
       if (script instanceof NWScriptInstance) {
         console.log('dialog.reply', script);
         script.name = reply.script;
         console.log(this.owner);
-        script.run(this.owner, 0, (bSuccess: boolean) => {
+        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
         });
         this.getNextEntry(reply.entries);
       } else {
@@ -501,10 +501,10 @@ export class InGameComputer extends GameMenu {
 
   async OnBeforeConversationEnd(onEnd?: Function) {
     if (this.onEndConversation != '') {
-      let script = await NWScript.Load(this.onEndConversation);
+      let script = NWScript.Load(this.onEndConversation);
       if (script instanceof NWScriptInstance) {
         script.name = this.onEndConversation;
-        script.run(this.owner, 0, (bSuccess: boolean) => {
+        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
           if (typeof onEnd === 'function')
             onEnd();
         });
@@ -540,19 +540,19 @@ export class InGameComputer extends GameMenu {
     window.setTimeout(async () => {
       if (!aborted) {
         if (this.onEndConversation != '') {
-          let script = await NWScript.Load(this.onEndConversation);
+          let script = NWScript.Load(this.onEndConversation);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversation;
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             });
           }
         }
       } else {
         if (this.onEndConversationAbort != '') {
-          let script = await NWScript.Load(this.onEndConversationAbort);
+          let script = NWScript.Load(this.onEndConversationAbort);
           if (script instanceof NWScriptInstance) {
             script.name = this.onEndConversationAbort;
-            script.run(this.owner, 0, (bSuccess: boolean) => {
+            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
             });
           }
         }

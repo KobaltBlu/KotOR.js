@@ -11,6 +11,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { CExoLocString } from "../resource/CExoLocString";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The ModuleWaypoint class.
@@ -60,31 +61,20 @@ export class ModuleWaypoint extends ModuleObject {
     return this.templateResRef;
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.utw,
-        onLoad: (gff: GFFObject) => {
-          this.template.Merge(gff);
-          this.InitProperties();
-          if(onLoad != null)
-            onLoad(this.template);
-        },
-        onFail: () => {
-          console.error('Failed to load waypoint template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+      }else{
+        console.error('Failed to load ModuleWaypoint template');
+      }
     }else{
       //We already have the template (From SAVEGAME)
       this.InitProperties();
-      if(onLoad != null)
-        onLoad(this.template);
     }
   }
 

@@ -893,7 +893,7 @@ export class ModuleObject {
     throw new Error("Method not implemented.");
   }
 
-  addItem(template: GFFObject|ModuleItem, onLoad?: Function){
+  addItem(template: GFFObject|ModuleItem){
     let item: ModuleItem;
     if(template instanceof GFFObject){
       item = new ModuleItem(template);
@@ -902,19 +902,15 @@ export class ModuleObject {
     }
 
     if(item instanceof ModuleItem){
-      item.Load( () => {
-        //console.log('LOADED')
-        let hasItem = this.getItem(item.getTag());
-        if(hasItem){
-          hasItem.setStackSize(hasItem.getStackSize() + 1);
-          if(typeof onLoad === 'function')
-            onLoad(hasItem);
-        }else{
-          this.inventory.push(item);
-          if(typeof onLoad === 'function')
-            onLoad(item);
-        }
-      });
+      item.Load();
+      let hasItem = this.getItem(item.getTag());
+      if(hasItem){
+        hasItem.setStackSize(hasItem.getStackSize() + 1);
+        return hasItem;
+      }else{
+        this.inventory.push(item);
+        return item;
+      }
     }else{
       throw 'You can only add an item of type ModuleItem to an inventory';
     }

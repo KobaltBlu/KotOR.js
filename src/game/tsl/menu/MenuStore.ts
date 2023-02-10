@@ -74,8 +74,7 @@ export class MenuStore extends K1_MenuStore {
             if(PartyManager.Gold >= price){
               PartyManager.Gold -= price;
               this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
-              InventoryManager.addItem(item.template, undefined, true);
-
+              InventoryManager.addItem(item.template, true);
               if(!item.isInfinite()){
                 item.setStackSize(item.getStackSize() - 1);
 

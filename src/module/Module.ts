@@ -464,12 +464,12 @@ export class Module {
         let _script = this.scripts[key];
         console.log(key, _script);
         if(typeof _script === 'string' && _script != ''){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
+          //let script = NWScript.Load(_script);
+          this.scripts[key] = NWScript.Load(_script);
           if(this.scripts[key] instanceof NWScriptInstance){
             //this.scripts[key].name = _script;
             this.scripts[key].enteringObject = GameState.player;
-            this.scripts[key].run(GameState.module.area, 0, () => {
+            this.scripts[key].runAsync(GameState.module.area, 0, () => {
               asyncLoop.next();
             });
           }else{
@@ -880,38 +880,39 @@ export class Module {
         Module.GetModuleArchives(modName).then( (archives) => {
           // console.log('archives', archives);
           GameState.module.archives = archives;
-          ResourceLoader.InitModuleCache(GameState.module.archives);
-          ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
-            
-            new GFFObject(ifo_data, (ifo) => {
+          ResourceLoader.InitModuleCache(GameState.module.archives).then( () => {
+            ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
+              
+              new GFFObject(ifo_data, (ifo) => {
 
-              GameState.module.setFromIFO(ifo, GameState.isLoadingSave);
-              GameState.time = GameState.module.timeManager.pauseTime / 1000;
+                GameState.module.setFromIFO(ifo, GameState.isLoadingSave);
+                GameState.time = GameState.module.timeManager.pauseTime / 1000;
 
-              ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data: Buffer) => {
-                new GFFObject(data, (git) => {
-                  ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data: Buffer) => {
-                    new GFFObject(data, (are) => {
-                      module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
-                      module.Mod_Area_list = [module.area];
-                      module.area.module = module;
-                      module.area.SetTransitionWaypoint(module.transWP);
-                      module.area.Load( () => {
+                ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data: Buffer) => {
+                  new GFFObject(data, (git) => {
+                    ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data: Buffer) => {
+                      new GFFObject(data, (are) => {
+                        module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
+                        module.Mod_Area_list = [module.area];
+                        module.area.module = module;
+                        module.area.SetTransitionWaypoint(module.transWP);
+                        module.area.Load( () => {
 
-                        if(module.Mod_NextObjId0)
-                          ModuleObject.COUNT = module.Mod_NextObjId0;
+                          if(module.Mod_NextObjId0)
+                            ModuleObject.COUNT = module.Mod_NextObjId0;
 
-                        if(typeof onComplete == 'function')
-                          onComplete(module);
-                      });                        
+                          if(typeof onComplete == 'function')
+                            onComplete(module);
+                        });                        
+                      });
                     });
                   });
                 });
               });
+            }, (err: any) => {
+              console.error('LoadModule', err);
+              GameState.module = undefined;
             });
-          }, (err: any) => {
-            console.error('LoadModule', err);
-            GameState.module = undefined;
           });
         });
       }catch(e){

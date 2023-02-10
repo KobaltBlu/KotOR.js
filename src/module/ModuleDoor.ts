@@ -27,6 +27,7 @@ import { TwoDAManager } from "../managers/TwoDAManager";
 import { InventoryManager } from "../managers/InventoryManager";
 import { KEYManager } from "../managers/KEYManager";
 import { MenuManager } from "../gui";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The ModuleDoor class.
@@ -589,39 +590,23 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-      //console.log('Door', this.template);
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.utd,
-        onLoad: (gff: GFFObject) => {
-
-          this.template.Merge(gff);
-          //console.log(this.template, gff, this)
-          this.InitProperties();
-          this.LoadScripts( () => {
-            if(onLoad != null)
-              onLoad(this);
-          });
-
-        },
-        onFail: () => {
-          console.error('Failed to load door template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        //console.log(this.template, gff, this)
+        this.InitProperties();
+        this.LoadScripts();
+      }else{
+        console.error(`Failed to load ${ModuleDoor.name} template`);
+      }
     }else{
       //We already have the template (From SAVEGAME)
-      //console.log('Door SAVEGAME');
       this.InitProperties();
-      this.LoadScripts( () => {
-        if(onLoad != null)
-          onLoad(this);
-      });
+      this.LoadScripts();
     }
   }
 
@@ -667,7 +652,7 @@ export class ModuleDoor extends ModuleObject {
     });
   }
 
-  LoadScripts( onLoad?: Function ){
+  LoadScripts(){
 
     this.scripts = {
       onClick: undefined,
@@ -739,24 +724,13 @@ export class ModuleDoor extends ModuleObject {
       this.useTweakColor = this.template.GetFieldByLabel('UseTweakColor').GetValue() ? true : false;
 
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if(typeof _script === 'string' && _script != ''){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
 
   }
 

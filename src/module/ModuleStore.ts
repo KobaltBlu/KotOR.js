@@ -8,6 +8,7 @@ import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { AsyncLoop } from "../utility/AsyncLoop";
 
@@ -49,35 +50,26 @@ export class ModuleStore extends ModuleObject {
     return this.markUp * .01;
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getResRef()){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: this.getResRef(),
-        ResType: ResourceTypes.utm,
-        onLoad: (gff: GFFObject) => {
-          this.template.Merge(gff);
-          this.InitProperties();
-          if(onLoad != null)
-            onLoad(this);     
-        },
-        onFail: () => {
-          console.error('Failed to load merchant template', this.getResRef());
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        // this.LoadScripts();
+      }else{
+        console.error('Failed to load ModuleStore template');
+      }
     }else{
       //We already have the template (From SAVEGAME)
       this.InitProperties();
-      if(onLoad != null)
-        onLoad(this);
+      // this.LoadScripts();
     }
   }
 
-  InitProperties( onLoad?: Function ){
+  InitProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){
@@ -152,24 +144,11 @@ export class ModuleStore extends ModuleObject {
             
     if(this.template.RootNode.HasField('ItemList')){
       let items = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs() || [];
-
-      let loop = new AsyncLoop({
-        array: items,
-        onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
-          let moduleItem = new ModuleItem(GFFObject.FromStruct(item));
-          this.inventory.push(moduleItem)
-          moduleItem.Load( () => {
-            asyncLoop.next();
-          });
-        }
-      });
-      loop.iterate(() => {
-        if(typeof onLoad == 'function')
-          onLoad();
-      });
-    }else{
-      if(typeof onLoad == 'function')
-        onLoad();
+      for(let i = 0; i < items.length; i++){
+        const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
+        this.inventory.push(moduleItem)
+        moduleItem.Load();
+      }
     }
     
     this.initialized = true;

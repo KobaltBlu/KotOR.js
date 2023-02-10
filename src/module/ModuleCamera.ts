@@ -26,19 +26,11 @@ export class ModuleCamera extends ModuleObject {
     this.template = gff;
   }
 
-  Load( onLoad?: Function ){
-
-    this.InitProperties( () => {
-
-      //console.log('ModuleCamera', 'Loaded')
-      if(onLoad != null)
-        onLoad(this);
-
-    });
-    
+  Load(){
+    this.InitProperties();
   }
 
-  InitProperties( onLoad?: Function ){
+  InitProperties(){
 
     if(this.template.RootNode.HasField('CameraID'))
       this.cameraID = this.template.GetFieldByLabel('CameraID').GetValue();
@@ -64,9 +56,6 @@ export class ModuleCamera extends ModuleObject {
     }
 
     this.initialized = true;
-
-    if(typeof onLoad == 'function')
-      onLoad();
 
   }
 

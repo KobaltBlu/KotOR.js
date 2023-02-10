@@ -860,21 +860,20 @@ export class ModuleEditorTab extends EditorTab {
     );
     Forge.loader.Show();
     Forge.loader.SetMessage('Loading Door');
-    door.Load( (template: GFFObject) => {
-      door.LoadModel().then( (model: OdysseyModel3D) => {
+    door.Load();
+    door.LoadModel().then( (model: OdysseyModel3D) => {
 
-        //console.log('loaded', modelName);
-        //model.translateX(door.props['X']);
-        //model.translateY(door.props['Y']);
-        //model.translateZ(door.props['Z']);
+      //console.log('loaded', modelName);
+      //model.translateX(door.props['X']);
+      //model.translateY(door.props['Y']);
+      //model.translateZ(door.props['Z']);
 
-        model.rotation.set(0, 0, door.props['Bearing']);
-        door.model.userData.moduleObject = door;
+      model.rotation.set(0, 0, door.props['Bearing']);
+      door.model.userData.moduleObject = door;
 
-        this.group.doors.add( model );
+      this.group.doors.add( model );
 
-        Forge.loader.Dismiss();
-      });
+      Forge.loader.Dismiss();
     });
 
   }
@@ -907,19 +906,17 @@ export class ModuleEditorTab extends EditorTab {
     );
     Forge.loader.Show();
     Forge.loader.SetMessage('Loading Placeable');
-    plc.Load( (template: GFFObject) => {
-      plc.LoadModel().then( (model: OdysseyModel3D) => {
+    plc.Load();
+    plc.LoadModel().then( (model: OdysseyModel3D) => {
+      //model.translateX(plc.props['X']);
+      //model.translateY(plc.props['Y']);
+      //model.translateZ(plc.props['Z']);
+      plc.model.userData.moduleObject = plc;
+      model.rotation.set(0, 0, plc.props['Bearing']);
 
-        //model.translateX(plc.props['X']);
-        //model.translateY(plc.props['Y']);
-        //model.translateZ(plc.props['Z']);
-        plc.model.userData.moduleObject = plc;
-        model.rotation.set(0, 0, plc.props['Bearing']);
+      this.cursorGroup.add( model );
 
-        this.cursorGroup.add( model );
-
-        Forge.loader.Dismiss();
-      });
+      Forge.loader.Dismiss();
     });
   }
 
@@ -1036,29 +1033,26 @@ export class ModuleEditorTab extends EditorTab {
       player.partyID = -1;
       player.id = ModuleObject.GetNextPlayerId();
 
-      player.Load( () => {
-        if(GameState.GameKey == GameEngineType.TSL){
-          player.appearance = 134;
-          player.gender = 1;
-          player.portrait = 10;
-        }
-        player.LoadScripts( () => {
-          player.LoadModel().then( (model: OdysseyModel3D) => {
-  
-            let spawnLoc = this.module.area.getSpawnLocation();
-  
-            player.position.copy(spawnLoc.position);
-            player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-            //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-            player.computeBoundingBox();
-            model.userData.moduleObject = player;
-            model.hasCollision = true;
+      player.Load();
+      if(GameState.GameKey == GameEngineType.TSL){
+        player.appearance = 134;
+        player.gender = 1;
+        player.portrait = 10;
+      }
+      player.LoadModel().then( (model: OdysseyModel3D) => {
 
-            this.group.player.add(model);
-  
-            resolve();
-          });
-        });
+        let spawnLoc = this.module.area.getSpawnLocation();
+
+        player.position.copy(spawnLoc.position);
+        player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+        //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+        player.computeBoundingBox();
+        model.userData.moduleObject = player;
+        model.hasCollision = true;
+
+        this.group.player.add(model);
+
+        resolve();
       });
 
       this.player = player;
@@ -1094,16 +1088,15 @@ export class ModuleEditorTab extends EditorTab {
         onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
           //loader.SetMessage('Loading Door: '+(i+1)+'/'+this.triggers.length);
           door.context = this;
-          door.Load( () => {
-            door.LoadModel().then( (model: OdysseyModel3D) => {
-              //model.translateX(door.getX());
-              //model.translateY(door.getY());
-              //model.translateZ(door.getZ());
-  
-              model.rotation.set(0, 0, door.getBearing());
-              door.model.box = door.box = new THREE.Box3().setFromObject(door.getModel());
-              this.group.doors.add( model );
-            });
+          door.Load();
+          door.LoadModel().then( (model: OdysseyModel3D) => {
+            //model.translateX(door.getX());
+            //model.translateY(door.getY());
+            //model.translateZ(door.getZ());
+
+            model.rotation.set(0, 0, door.getBearing());
+            door.model.box = door.box = new THREE.Box3().setFromObject(door.getModel());
+            this.group.doors.add( model );
           });
           asyncLoop.next();
         }
@@ -1125,24 +1118,23 @@ export class ModuleEditorTab extends EditorTab {
         onLoop: (plc: ModulePlaceable, asyncLoop: AsyncLoop) => {
           //loader.SetMessage('Loading Placeable: '+(i+1)+'/'+this.triggers.length);
           plc.context = this;
-          plc.Load( () => {
-            plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-            plc.rotation.set(0, 0, plc.getBearing());
-            plc.LoadModel().then( (model: OdysseyModel3D) => {
-              //plc.LoadWalkmesh(model.name, (pwk) => {
-                //console.log('loaded', modelName);
-    
-                this.group.placeables.add( model );
-    
-                try{
-                  //model.add(pwk.model);
-                  //model.walkmesh = pwk;
-                  //GameState.walkmeshList.push(pwk.mesh);
-                }catch(e){
-                  console.error('Failed to add pwk', model.name);
-                }
-              //});
-            });
+          plc.Load();
+          plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+          plc.rotation.set(0, 0, plc.getBearing());
+          plc.LoadModel().then( (model: OdysseyModel3D) => {
+            //plc.LoadWalkmesh(model.name, (pwk) => {
+              //console.log('loaded', modelName);
+  
+              this.group.placeables.add( model );
+  
+              try{
+                //model.add(pwk.model);
+                //model.walkmesh = pwk;
+                //GameState.walkmeshList.push(pwk.mesh);
+              }catch(e){
+                console.error('Failed to add pwk', model.name);
+              }
+            //});
           });
           asyncLoop.next();
         }
@@ -1163,14 +1155,13 @@ export class ModuleEditorTab extends EditorTab {
         onLoop: (waypoint: ModuleWaypoint, asyncLoop: AsyncLoop) => {
           //loader.SetMessage('Loading Waypoint: '+(i+1)+'/'+this.triggers.length);
           waypoint.context = this;
-          waypoint.Load( () => {
-            //waypnt.LoadModel( (mesh) => {
-              // wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-              // wpObj.mesh.userData.moduleObject = waypnt;
-              // this.group.waypoints.add(wpObj.mesh);
-              asyncLoop.next();
-            //});
-          });
+          waypoint.Load();
+          //waypnt.LoadModel( (mesh) => {
+            // wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
+            // wpObj.mesh.userData.moduleObject = waypnt;
+            // this.group.waypoints.add(wpObj.mesh);
+            asyncLoop.next();
+          //});
 
         }
       });
@@ -1253,18 +1244,17 @@ export class ModuleEditorTab extends EditorTab {
         array: this.module.area.creatures,
         onLoop: (crt: ModuleCreature, asyncLoop: AsyncLoop) => {
           crt.context = this;
-          crt.Load( () => {
-            crt.LoadModel().then( (model: OdysseyModel3D) => {
-              crt.model.userData.moduleObject = crt;
-              
-              //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
-              crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);
-  
-              model.hasCollision = true;
-              model.name = crt.getTag();
-              this.group.creatures.add( model );
-              asyncLoop.next();
-            });
+          crt.Load();
+          crt.LoadModel().then( (model: OdysseyModel3D) => {
+            crt.model.userData.moduleObject = crt;
+            
+            //crt.setFacing(Math.atan2(crt.getXOrientation(), crt.getYOrientation()) + Math.PI/2, true);
+            crt.setFacing(-Math.atan2(crt.getXOrientation(), crt.getYOrientation()), true);
+
+            model.hasCollision = true;
+            model.name = crt.getTag();
+            this.group.creatures.add( model );
+            asyncLoop.next();
           });
 
         }
@@ -1305,12 +1295,11 @@ export class ModuleEditorTab extends EditorTab {
       let loop = new AsyncLoop({
         array: this.module.area.sounds,
         onLoop: (sound: ModuleSound, asyncLoop: AsyncLoop) => {
-          sound.Load( () => {
-            sound.LoadSound( () => {
-              sound.LoadModel( (model: OdysseyModel3D) => {
-                this.group.sounds.add(model);
-                asyncLoop.next();
-              });
+          sound.Load();
+          sound.LoadSound( () => {
+            sound.LoadModel( (model: OdysseyModel3D) => {
+              this.group.sounds.add(model);
+              asyncLoop.next();
             });
           });
         }

@@ -287,26 +287,23 @@ export class UTCEditorTab extends EditorTab {
     global.cancelAnimationFrame(this.requestId);
     this.creature = new ModuleCreature(this.gff);
     this.creature.context = this.ui3DRenderer;
-    this.creature.InitProperties( () => {
-      this.creature.LoadEquipment( () => {
-        this.creature.LoadModel().then( (model: OdysseyModel3D) => {
-          let scene = this.ui3DRenderer.ResetScene();
-          scene.add(model);
-          setTimeout( () => {
-            let center = model.box.getCenter(new THREE.Vector3());
-            let size = model.box.getSize(new THREE.Vector3());
-            //Center the object to 0
-            model.position.set(-center.x, -center.y, -center.z);
-            this.ui3DRenderer.camera.position.z = 0;
-            this.ui3DRenderer.camera.position.y = size.x + size.y;
-            this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
-            //Stand the object on the floor by adding half it's height back to it's position
-            //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
-            this.onResize();
-            this.Update();
-          }, 10);
-        });
-      });
+    this.creature.InitProperties();
+    this.creature.LoadModel().then( (model: OdysseyModel3D) => {
+      let scene = this.ui3DRenderer.ResetScene();
+      scene.add(model);
+      setTimeout( () => {
+        let center = model.box.getCenter(new THREE.Vector3());
+        let size = model.box.getSize(new THREE.Vector3());
+        //Center the object to 0
+        model.position.set(-center.x, -center.y, -center.z);
+        this.ui3DRenderer.camera.position.z = 0;
+        this.ui3DRenderer.camera.position.y = size.x + size.y;
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
+        //Stand the object on the floor by adding half it's height back to it's position
+        //model.position.z += model.box.getSize(new THREE.Vector3()).z/2;
+        this.onResize();
+        this.Update();
+      }, 10);
     });
   }
 
@@ -889,21 +886,20 @@ export class UTCEditorTab extends EditorTab {
         ResType: ResourceTypes.uti,
         onLoad: (gff: GFFObject) => {
           let uti = new ModuleItem(gff);
-          uti.Load( () => {
-            let iconResRef = uti.getIcon();
-            TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', iconResRef, (icon: any) => {
-              icon.getPixelData( ( pixelData: any ) => {
-                pixelData = icon.FlipY(pixelData);
-                let $canvas = $('<canvas width="60" height="60" />');
-                let canvas: HTMLCanvasElement = $canvas[0] as any;
-                let ctx = canvas.getContext('2d');
-                let imageData = ctx.getImageData(0, 0, 64, 64);
-                let data = imageData.data;
+          uti.Load();
+          let iconResRef = uti.getIcon();
+          TextureLoader.tpcLoader.loadFromArchive('swpc_tex_gui', iconResRef, (icon: any) => {
+            icon.getPixelData( ( pixelData: any ) => {
+              pixelData = icon.FlipY(pixelData);
+              let $canvas = $('<canvas width="60" height="60" />');
+              let canvas: HTMLCanvasElement = $canvas[0] as any;
+              let ctx = canvas.getContext('2d');
+              let imageData = ctx.getImageData(0, 0, 64, 64);
+              let data = imageData.data;
 
-                data.set(pixelData);
-                ctx.putImageData(imageData, 0, 0);
-                $slot.append($canvas);
-              });
+              data.set(pixelData);
+              ctx.putImageData(imageData, 0, 0);
+              $slot.append($canvas);
             });
           });
         }

@@ -264,12 +264,13 @@ export class TalentSpell extends TalentObject {
     
     if(this.impactscript != '****'){
       console.log('Casting spell', this.impactscript, this);
-      NWScript.Load(this.impactscript).then((instance) => {
+      const instance = NWScript.Load(this.impactscript);
+      if(instance) {
         //pass the talent to the script instance and run it
         instance.talent = this;
         //instance.spellTarget = oTarget;
-        instance.run(oCaster, 0, () => { });
-      });
+        instance.runAsync(oCaster, 0);
+      };
     }
 
     if(this.casthandvisual != '****'){

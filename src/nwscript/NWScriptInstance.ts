@@ -163,56 +163,47 @@ export class NWScriptInstance {
     }
   }
 
-  run(caller: any = null, scriptVar = 0, onComplete?: Function){
-    return new Promise( (resolve, reject) => {
-      this.caller = caller;
-      this.scriptVar = scriptVar;
-      this.onComplete = onComplete;
+  run(caller: any = null, scriptVar = 0){
+    this.caller = caller;
+    this.scriptVar = scriptVar;
 
-      this.subRoutines = [];
-      this.stack = new NWScriptStack();
-      this.state = [];
-      this.delayCommands = [];
+    this.subRoutines = [];
+    this.stack = new NWScriptStack();
+    this.state = [];
+    this.delayCommands = [];
 
-      this.lastSpeaker = undefined;
-      this.persistentObjectIdx = 0;
-      this.firstLoop = true;
+    this.lastSpeaker = undefined;
+    this.persistentObjectIdx = 0;
+    this.firstLoop = true;
 
-      if(this.globalCache != null){
-        //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
-        //Need to test the performance impact to see if it helps
-        //this.caller = this.globalCache.caller;
-        this.enteringObject = this.globalCache.enteringObject;
-        this.subRoutines = this.globalCache.subRoutines.slice();
+    if(this.globalCache != null){
+      //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
+      //Need to test the performance impact to see if it helps
+      //this.caller = this.globalCache.caller;
+      this.enteringObject = this.globalCache.enteringObject;
+      this.subRoutines = this.globalCache.subRoutines.slice();
 
-        this.stack.basePointer = this.globalCache.stack.basePointer;
-        this.stack.pointer = this.globalCache.stack.pointer;
-        this.stack.stack = this.globalCache.stack.stack.slice();
-        
-        this.runScript({
-          instr: this.globalCache.instr,
-          seek: null,
-          onComplete: ( value = 0 ) => {
-            if(typeof onComplete === 'function')
-              onComplete(value);
-            
-            resolve(value)
-          }
-        });
-      }else{
-        this.runScript({
-          instr: this.instructions.values().next().value,
-          seek: null,
-          onComplete: ( value = 0 ) => {
-            if(typeof onComplete === 'function')
-              onComplete(value);
-              
-            resolve(value)
-          }
-        });
-      }
+      this.stack.basePointer = this.globalCache.stack.basePointer;
+      this.stack.pointer = this.globalCache.stack.pointer;
+      this.stack.stack = this.globalCache.stack.stack.slice();
+      
+      return this.runScript({
+        instr: this.globalCache.instr,
+        seek: null,
+      });
+    }else{
+      return this.runScript({
+        instr: this.instructions.values().next().value,
+        seek: null,
+      });
+    }
+  }
+
+  runAsync(caller: any = null, scriptVar = 0){
+    return new Promise<any>( (resolve, reject) => {
+      const result = this.run(caller, scriptVar);
+      resolve(result);
     });
-
   }
 
   getReturnValue(){
@@ -244,7 +235,7 @@ export class NWScriptInstance {
     this.runScript(data);
   }
 
-  async runScript(scope: any = {}){
+  runScript(scope: any = {}){
 
     scope = Object.assign({
       running: true,
@@ -252,7 +243,6 @@ export class NWScriptInstance {
       seek: null,
       prevInstr: null,
       instr: null,
-      onComplete: null
     }, scope);
     this.delayCommands = [];
 
@@ -279,14 +269,7 @@ export class NWScriptInstance {
 
       scope.seek = null;
       //Run the instruction's run method
-      await NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
-      //await this.runInstr(scope.instr, scope);
-
-      // scope.iterations++;
-      // if(scope.iterations >= 100){
-      //   await this.delay(100);
-      //   scope.iterations = 0;
-      // }
+      NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
 
     }
 
@@ -313,20 +296,18 @@ export class NWScriptInstance {
       this.dispose();
     }
 
-    if(typeof scope.onComplete === 'function'){
-      scope.onComplete(returnValue);
-    }
+    return returnValue;
 
   }
 
-  async runInstr ( instr: any, scope: any ) {
+  runInstr ( instr: any, scope: any ) {
 
     if(this.isDebugging()){
       console.log('NWScript: '+this.name,  'runInstr', instr.index, NWScript.ByteCodes[instr.code], instr );
     }
 
     //Run the instruction's run method
-    await NWScript.ByteCodes[instr.code].run.call(this, scope);
+    NWScript.ByteCodes[instr.code].run.call(this, scope);
     
     if(this.isDebugging()){
       console.log('NWScript: '+this.name, 'STACK_LEN', this.stack.stack.length);
@@ -334,19 +315,15 @@ export class NWScriptInstance {
 
   }
 
-  executeScript(script: any, scope: any, args: any){
-    return new Promise( async (resolve, reject) => {
-      //console.log('executeScript', args);
-      script.lastPerceived = scope.lastPerceived;
-      script.debug = scope.debug;
-      script.debugging = scope.debugging;
-      script.listenPatternNumber = scope.listenPatternNumber;
-      script.listenPatternSpeaker = scope.listenPatternSpeaker;
-      script.talent = scope.talent;
-
-      let val = await script.run( args[1], args[2]);
-      resolve(val);
-    });
+  executeScript(script: NWScriptInstance, scope: any, args: any){
+    //console.log('executeScript', args);
+    script.lastPerceived = scope.lastPerceived;
+    script.debug = scope.debug;
+    script.debugging = scope.debugging;
+    script.listenPatternNumber = scope.listenPatternNumber;
+    script.listenPatternSpeaker = scope.listenPatternSpeaker;
+    script.talent = scope.talent;
+    return script.run( args[1], args[2]);
   }
 
   locationCompare(loc1: any, loc2: any){

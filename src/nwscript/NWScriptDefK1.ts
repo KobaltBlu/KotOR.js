@@ -47,6 +47,7 @@ import { GlobalVariableManager } from "../managers/GlobalVariableManager";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { JournalManager } from "../managers/JournalManager";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
+import { ResourceLoader } from "../KotOR";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -170,21 +171,16 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
-      return new Promise<void>( async ( resolve, reject) => {
-        if( args[0] ){
-          let scriptInstance = await NWScript.Load( args[0] );
-          if(scriptInstance instanceof NWScriptInstance){
-            await this.executeScript( scriptInstance, this, args );
-            resolve();
-          }else{
-            console.warn('NWScript.ExecuteScript failed to find', args[0]);
-            resolve();
-          }
+      if( args[0] ){
+        let scriptInstance = NWScript.Load( args[0] );
+        if(scriptInstance instanceof NWScriptInstance){
+          this.executeScript( scriptInstance, this, args );
         }else{
-          console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
-          resolve();
+          console.warn('NWScript.ExecuteScript failed to find', args[0]);
         }
-      });
+      }else{
+        console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
+      }
     }
   },
   9:{
@@ -212,12 +208,9 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return new Promise<number>( ( resolve, reject) => {
-        PartyManager.SwitchPlayerToPartyMember(args[0], () => {
-          //this.stack.push((1));
-          resolve(1);
-        });
-      });
+      const creature = PartyManager.SwitchPlayerToPartyMember(args[0]);
+      if(creature) return true;
+      return false;
     }
   },
   12:{
@@ -409,21 +402,19 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: async function(this: NWScriptInstance, args: [string, ModuleObject, number]){
-      return new Promise<ModuleItem>( (resolve, reject) => {
-        ModuleItem.FromResRef(args[0], (item: ModuleItem) => {
-          if(item instanceof ModuleItem){
-            item.setStackSize(args[2]);
-            if(PartyManager.party.indexOf(args[1] as any) > -1){
-              InventoryManager.addItem(item);
-            }else{
-              args[1].addItem(item);
-            }
-            resolve(item);
-          }else{
-            resolve(undefined);
-          }
-        });
-      });
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], args[0]);
+      if(buffer){
+        const item = new ModuleItem(new GFFObject(buffer));
+        item.InitProperties();
+        item.setStackSize(args[2]);
+        if(PartyManager.party.indexOf(args[1] as any) > -1){
+          InventoryManager.addItem(item);
+        }else{
+          args[1].addItem(item);
+        }
+        return item;
+      }
+      return undefined;
     }
   },
   32:{
@@ -2906,93 +2897,72 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, string, EngineLocation, number]){
-      return new Promise<ModuleObject>( ( resolve, reject) => {
+      let buffer: Buffer;
+      switch(args[0]){
+        case 1:
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], args[1]);
+          if(buffer){
+            const creature = new ModuleCreature(new GFFObject(buffer));
+            creature.Load();
+            creature.position.copy(args[2].position);
+            creature.setFacing(args[2].getFacing(), true);
+            GameState.module.area.creatures.push(creature);
+            
+            creature.LoadModel().then( (model: OdysseyModel3D) => {
+              model.userData.moduleObject = creature;
+              model.hasCollision = true;
+              model.name = creature.getTag();
+              GameState.group.creatures.add( creature.container );
+              creature.getCurrentRoom();
+              creature.onSpawn();
+            });
+            return creature;
+          }else{
+            console.error('Failed to load character template', args);
+            return undefined;
+          }
+        break;
+        case 64: //Placeable
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], args[1]);
+          if(buffer){
+            const plc = new ModulePlaceable(new GFFObject(buffer));
+            plc.Load();
+            plc.position.copy(args[2].position);
+            plc.rotation.set(0, 0, args[2].getFacing());
 
-        switch(args[0]){
-          case 1:
-            TemplateLoader.Load({
-              ResRef: args[1],
-              ResType: ResourceTypes.utc,
-              onLoad: (gff: GFFObject) => {
-      
-                let creature = new ModuleCreature(gff)
-                creature.Load( () => {
-                  creature.position.copy(args[2].position);
-                  creature.setFacing(args[2].getFacing(), true);
-                  GameState.module.area.creatures.push(creature);
-    
-                  resolve(creature);
-    
-                  creature.LoadScripts( () => {
-                    creature.LoadModel().then( (model: OdysseyModel3D) => {
-                      model.userData.moduleObject = creature;
-                      model.hasCollision = true;
-                      model.name = creature.getTag();
-                      GameState.group.creatures.add( creature.container );
-                      creature.getCurrentRoom();
-                      creature.onSpawn();
-                    });
-                  });
-                });
-    
-              },
-            onFail: () => {
-                resolve(undefined);
-                console.error('Failed to load character template', args);
-              }
+            plc.LoadModel().then( (model: OdysseyModel3D) => {
+              plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
+                plc.model.userData.moduleObject = plc;
+                
+                model.hasCollision = true;
+                model.name = plc.getTag();
+                GameState.group.placeables.add( model );
+                GameState.module.area.placeables.push(plc);
+
+                try{
+                  if(pwk.mesh instanceof THREE.Object3D)
+                    model.add(pwk.mesh);
+                    
+                  model.userData.walkmesh = pwk;
+                  GameState.walkmeshList.push(pwk.mesh);
+                }catch(e){
+                  console.error('Failed to add pwk', model.name, pwk);
+                }
+
+                plc.getCurrentRoom();
+                plc.onSpawn();
+
+              });
             });
-          break;
-          case 64: //Placeable
-            TemplateLoader.Load({
-              ResRef: args[1],
-              ResType: ResourceTypes.utp,
-              onLoad: (gff: GFFObject) => {
-      
-                let plc = new ModulePlaceable(gff)
-                plc.Load( () => {
-                  plc.position.copy(args[2].position);
-                  plc.rotation.set(0, 0, args[2].getFacing());
-      
-                  resolve(plc);
-      
-                  plc.LoadModel().then( (model: OdysseyModel3D) => {
-                    plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
-                      plc.model.userData.moduleObject = plc;
-                      
-                      model.hasCollision = true;
-                      model.name = plc.getTag();
-                      GameState.group.placeables.add( model );
-                      GameState.module.area.placeables.push(plc);
-      
-                      try{
-                        if(pwk.mesh instanceof THREE.Object3D)
-                          model.add(pwk.mesh);
-                          
-                        model.userData.walkmesh = pwk;
-                        GameState.walkmeshList.push(pwk.mesh);
-                      }catch(e){
-                        console.error('Failed to add pwk', model.name, pwk);
-                      }
-      
-                      plc.getCurrentRoom();
-                      plc.onSpawn();
-      
-                    });
-                  });
-                });
-      
-              },
-              onFail: () => {
-                resolve(undefined);
-                console.error('Failed to load character template', args);
-              }
-            });
-          break;
-          default:
-            resolve(undefined);
-          break;
-        }
-      });
+
+            return plc;
+          }else{
+            console.error('Failed to load character template', args);
+            return undefined;
+          }
+        break;
+      }
+      return undefined;
     }
   },
   244:{
@@ -7168,18 +7138,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string]){
-      //Delay because we need to ASYNC load the template object
-      //Continue execution on callback
-      //console.log('AddAvailableNPCByTemplate '+this.name, args);
-      return new Promise<number>( ( resolve, reject) => {
-        PartyManager.AddNPCByTemplate(
-        args[0],
-        args[1],
-          () => {
-            resolve(1);
-          }
-        )
-      });
+      PartyManager.AddAvailableNPCByTemplate( args[0], args[1] );
     }
   },
   698:{
@@ -7189,34 +7148,22 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION],
     action: function(this: NWScriptInstance, args: [number, EngineLocation]){
 
-      return new Promise<ModuleCreature>( ( resolve, reject) => {
-  
-        let partyMember = new ModuleCreature();
-        partyMember.setTemplateResRef(
-          PartyManager.GetNPCResRefById(args[0])
-        );
-        if(this.isDebugging()){
-          //console.log('NWScript: '+this.name, 'partyMember', partyMember);
-        }
-        
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], PartyManager.GetNPCResRefById(args[0]));
+      if(buffer){
+        let partyMember = new ModuleCreature(new GFFObject(buffer));
         GameState.module.area.creatures.push(partyMember);
-        partyMember.Load( () => {
-          partyMember.LoadEquipment( () => {
-            partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-              partyMember.model.userData.moduleObject = partyMember;
-              partyMember.position.copy(args[1].position);
-              partyMember.setFacing(args[1].getFacing(), true);
-              partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
-              model.hasCollision = true;
-              GameState.group.creatures.add( partyMember.container );
-    
-              resolve(partyMember);
-    
-            });
-          });
+        partyMember.Load();
+        partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+          partyMember.model.userData.moduleObject = partyMember;
+          partyMember.position.copy(args[1].position);
+          partyMember.setFacing(args[1].getFacing(), true);
+          partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
+          model.hasCollision = true;
+          GameState.group.creatures.add( partyMember.container );
         });
-
-      });
+        return partyMember;
+      }
+      return undefined;
   
     }
   },
@@ -7562,11 +7509,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING],
     action: async function(this: NWScriptInstance, args: [string]){
-      return new Promise<void>( async ( resolve, reject) => {
-        VideoPlayer.Load(args[0], () => {
-          resolve();
-        });
-      });
+      // return new Promise<void>( async ( resolve, reject) => {
+      //   VideoPlayer.Load(args[0], () => {
+      //     resolve();
+      //   });
+      // });
     }
   },
   734:{
@@ -7876,39 +7823,27 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, EngineLocation, number]){
-      return new Promise<number>((resolve, reject) => {
-        TemplateLoader.Load({
-          ResRef: args[0],
-          ResType: ResourceTypes.uti,
-          onLoad: (gff: GFFObject) => {
-  
-            let item = new ModuleItem(gff);
-            item.placedInWorld = true;
-            item.Load( () => {
-              item.position.copy(args[1].position);
-              item.rotation.order = 'ZYX';
-              item.rotation.set(args[1].getFacing(), Math.PI/2, 0);
-  
-              resolve(1);
-  
-              item.LoadModel().then( (model: OdysseyModel3D) => {
-                item.model.userData.moduleObject = item;
-                
-                model.name = item.getTag();
-                GameState.group.placeables.add( model );
-                GameState.module.area.items.push(item);
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes.uti, args[0]);
+      if(buffer){
+        let item = new ModuleItem(new GFFObject(buffer));
+        item.placedInWorld = true;
+        item.position.copy(args[1].position);
+        item.rotation.order = 'ZYX';
+        item.rotation.set(args[1].getFacing(), Math.PI/2, 0);
+        item.Load();
+        item.LoadModel().then( (model: OdysseyModel3D) => {
+          item.model.userData.moduleObject = item;
+          
+          model.name = item.getTag();
+          GameState.group.placeables.add( model );
+          GameState.module.area.items.push(item);
 
-                item.getCurrentRoom();
-              });
-            });
-  
-          },
-          onFail: () => {
-            console.error('CreateItemOnFloor', 'Failed to load item template', args);
-            resolve(0);
-          }
+          item.getCurrentRoom();
         });
-      });
+        return true;
+      }
+      console.error('CreateItemOnFloor', 'Failed to load item template', args);
+      return false;
     }
   },
   767:{

@@ -140,7 +140,7 @@ export class DLGNode {
   async runScript1(){
     return new Promise<void>( async (resolve, reject) => {
       if(this.script != ''){
-        let script = await NWScript.Load(this.script);
+        let script = NWScript.Load(this.script);
         if(script instanceof NWScriptInstance){
           script.setScriptParam(1, this.scriptParams.Param1);
           script.setScriptParam(2, this.scriptParams.Param2);
@@ -149,7 +149,7 @@ export class DLGNode {
           script.setScriptParam(5, this.scriptParams.Param5);
           script.setScriptStringParam(this.scriptParams.String);
           script.name = this.script;
-          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async () => {
+          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( () => {
           });
           resolve();
         }else{
@@ -162,7 +162,7 @@ export class DLGNode {
   async runScript2(){
     return new Promise<void>( async (resolve, reject) => {
       if(this.script2 != ''){
-        let script = await NWScript.Load(this.script2);
+        let script = NWScript.Load(this.script2);
         if(script instanceof NWScriptInstance){
           script.setScriptParam(1, this.script2Params.Param1);
           script.setScriptParam(2, this.script2Params.Param2);
@@ -171,7 +171,7 @@ export class DLGNode {
           script.setScriptParam(5, this.script2Params.Param5);
           script.setScriptStringParam(this.script2Params.String);
           script.name = this.script2;
-          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async () => {
+          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( () => {
             
           });
           resolve();
@@ -193,7 +193,7 @@ export class DLGNode {
   async runActiveScript1( ){
     return new Promise<boolean>( async (resolve, reject) => {
       if(this.isActive != ''){
-        let script = await NWScript.Load(this.isActive);
+        let script = NWScript.Load(this.isActive);
         if(script instanceof NWScriptInstance){
           script.setScriptParam(1, this.isActiveParams.Param1);
           script.setScriptParam(2, this.isActiveParams.Param2);
@@ -202,7 +202,7 @@ export class DLGNode {
           script.setScriptParam(5, this.isActiveParams.Param5);
           script.setScriptStringParam(this.isActiveParams.String);
           script.name = this.isActive;
-          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
+          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( (bSuccess: boolean) => {
             if(this.isActiveParams.Not){
               resolve(bSuccess ? false : true);
             }else{
@@ -210,7 +210,7 @@ export class DLGNode {
             }
           });
         }else{
-          resolve(false);
+          resolve(true);
         }
       }else{
         resolve(true);
@@ -221,7 +221,7 @@ export class DLGNode {
   async runActiveScript2(){
     return new Promise<boolean>( async (resolve, reject) => {
       if(this.isActive2 != ''){
-        let script = await NWScript.Load(this.isActive2);
+        let script = NWScript.Load(this.isActive2);
         if(script instanceof NWScriptInstance){
           script.setScriptParam(1, this.isActive2Params.Param1);
           script.setScriptParam(2, this.isActive2Params.Param2);
@@ -230,7 +230,7 @@ export class DLGNode {
           script.setScriptParam(5, this.isActive2Params.Param5);
           script.setScriptStringParam(this.isActive2Params.String);
           script.name = this.isActive2;
-          script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0, async (bSuccess: boolean) => {
+          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( (bSuccess: boolean) => {
             if(this.isActive2Params.Not){
               resolve(bSuccess ? false : true);
             }else{
@@ -238,7 +238,7 @@ export class DLGNode {
             }
           });
         }else{
-          resolve(false);
+          resolve(true);
         }
       }else{
         resolve(true);

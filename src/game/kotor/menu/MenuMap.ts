@@ -67,8 +67,8 @@ export class MenuMap extends GameMenu {
       this.openScript = 'k_sup_guiopen';
       this.transitScript = 'k_sup_gohawk';
 
-      this.onOpenScript = await NWScript.Load('k_sup_guiopen');
-      this.onTransitScript = await NWScript.Load('k_sup_gohawk');
+      this.onOpenScript = NWScript.Load('k_sup_guiopen');
+      this.onTransitScript = NWScript.Load('k_sup_gohawk');
       NWScript.SetGlobalScript('k_sup_guiopen', true);
       NWScript.SetGlobalScript('k_sup_gohawk', true);
       resolve();

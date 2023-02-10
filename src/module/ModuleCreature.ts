@@ -3113,37 +3113,28 @@ export class ModuleCreature extends ModuleObject {
     return parseFloat(this.getAppearance()['perspace']);
   }
 
-  Load( onLoad: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.utc,
-        onLoad: (gff: GFFObject) => {
-          this.template.Merge(gff);
-          this.InitProperties( () => {
-            FactionManager.AddCreatureToFaction(this);
-            if(onLoad != null)
-              onLoad(this.template);
-          });
-        },
-        onFail: () => {
-          console.error('Failed to load character template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-    }else{
-      this.InitProperties( () => {
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        this.LoadScripts();
         FactionManager.AddCreatureToFaction(this);
-        //We already have the template (From SAVEGAME)
-        if(onLoad != null)
-          onLoad(this.template);
-      });
+      }else{
+        console.error('Failed to load character template');
+      }
+    }else{
+      //We already have the template (From SAVEGAME)
+      this.InitProperties();
+      this.LoadScripts();
+      FactionManager.AddCreatureToFaction(this);
     }
   }
 
-  LoadScripts (onLoad: Function){
+  LoadScripts (){
 
     this.scripts.onAttacked = this.template.GetFieldByLabel('ScriptAttacked').GetValue();
     this.scripts.onDamaged = this.template.GetFieldByLabel('ScriptDamaged').GetValue();
@@ -3161,36 +3152,27 @@ export class ModuleCreature extends ModuleObject {
     this.scripts.onUserDefined = this.template.GetFieldByLabel('ScriptUserDefine').GetValue();
 
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if( (typeof _script === 'string' && _script != '') ){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
 
   }
 
   LoadModel (): Promise<OdysseyModel3D> {
     this.isReady = false;
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      this.LoadBody().then( () => {
-        this.LoadHead().then(() => {
-          this.isReady = true;
-          this.updateCollision(0.0000000000000000000001);
-          this.update(0.0000000000000000000001);
-          resolve(this.model);
+      this.LoadEquipmentModels().then(() => {
+        this.LoadBody().then( () => {
+          this.LoadHead().then(() => {
+            this.isReady = true;
+            this.updateCollision(0.0000000000000000000001);
+            this.update(0.0000000000000000000001);
+            resolve(this.model);
+          });
         });
       });
     });
@@ -3618,15 +3600,6 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  LoadEquipment( onLoad: Function){
-    if(typeof onLoad === 'function')
-      onLoad();
-    /*this.ParseEquipmentSlots( () => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });*/
-  }
-
   UnequipItems(){
     //this.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
     this.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
@@ -3686,28 +3659,6 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-
-  //Deprecated
-  /*GetEquippedSlot(slot = 0){
-    let equipment = this.getEquip_ItemList();
-    for(let i = 0; i < equipment.length; i++){
-      let equip = equipment[i];
-      let type = equip.GetType();
-      this.LoadEquipmentItem({
-        item: new ModuleItem(GFFObject.FromStruct(equip, equip.GetType())),
-        Slot: type,
-        onLoad: () => {
-          cEquip++;
-          this.ParseEquipmentSlots( onLoad, cEquip );
-        },
-        onError: () => {
-          cEquip++;
-          this.ParseEquipmentSlots( onLoad, cEquip );
-        }
-      });
-    }
-  }*/
-
   LoadEquipmentItem(args: any = {}){
 
     args = Object.assign({
@@ -3764,19 +3715,18 @@ export class ModuleCreature extends ModuleObject {
       break;
     }
     
-    uti.Load( () => {
-      uti.LoadModel().then( () => {
-        if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
-          uti.model.playAnimation('off', true);
-        }
-        if(typeof args.onLoad == 'function')
-          args.onLoad();
-      });
+    uti.Load();
+    uti.LoadModel().then( () => {
+      if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
+        uti.model.playAnimation('off', true);
+      }
+      if(typeof args.onLoad == 'function')
+        args.onLoad();
     });
 
   }
 
-  InitProperties( onLoad?: Function ){
+  InitProperties(){
     try{
       this.classes = [];
       this.feats = [];
@@ -4116,28 +4066,15 @@ export class ModuleCreature extends ModuleObject {
         console.error(e);
       }
 
-      this.ParseEquipmentSlots( () => {
+      this.ParseEquipmentSlots();
 
-        if(this.template.RootNode.HasField('ItemList')){
-
-          let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
-          let loop = new AsyncLoop({
-            array: inventory,
-            onLoop: (item: GFFStruct, asyncLoop: AsyncLoop) => {
-              this.LoadItem(GFFObject.FromStruct(item), () => {
-                asyncLoop.next();
-              });
-            }
-          });
-          loop.iterate(() => {
-            this.LoadSoundSet(onLoad);
-          });
-    
-        }else{
-          this.LoadSoundSet(onLoad);
+      if(this.template.RootNode.HasField('ItemList')){
+        let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+        for(let i = 0; i < inventory.length; i++){
+          this.LoadItem(GFFObject.FromStruct(inventory[i]));
         }
-
-      });
+      }
+      this.LoadSoundSet();
 
       //ActionList
       try{
@@ -4218,79 +4155,65 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  ParseEquipmentSlots( onLoad: Function ){
-
-    let loop = new AsyncLoop({
-      array: Object.keys(this.equipment),
-      onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
-        let slot: ModuleItem = (this.equipment as any)[slot_key];
-        if(slot instanceof ModuleItem){
-          slot.setPossessor(this);
-          slot.Load( () => {
+  LoadEquipmentModels(): Promise<void> {
+    return new Promise<void>( (resolve, reject) => {
+      let loop = new AsyncLoop({
+        array: Object.keys(this.equipment),
+        onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
+          let slot: ModuleItem = (this.equipment as any)[slot_key];
+          if(slot instanceof ModuleItem){
             slot.LoadModel().then( () => {
               if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
                 slot.model.playAnimation('off', true);
               }
               asyncLoop.next();
             });
-          });
-        }else{
-          asyncLoop.next();
+          }else{
+            asyncLoop.next();
+          }
         }
-      }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
-
+      });
+      loop.iterate(() => {
+        resolve();
+      });
+    })
   }
 
-  LoadSoundSet( onLoad: Function ){
+  ParseEquipmentSlots(){
+    let slots = Object.keys(this.equipment);
+    for(let i = 0; i < slots.length; i++){
+      let slot: ModuleItem = (this.equipment as any)[slots[i]];
+      if(slot instanceof ModuleItem){
+        slot.setPossessor(this);
+        slot.Load();
+      }
+    }
+  }
 
+  LoadSoundSet(){
     const soundset2DA = TwoDAManager.datatables.get('soundset');
     if(soundset2DA){
       let ss_row = soundset2DA.rows[this.soundSetFile];
       if(ss_row){
-        ResourceLoader.loadResource(ResourceTypes.ssf, ss_row.resref.toLowerCase(), (data: Buffer) => {
-          this.ssf = new SSFObject(data);
-          //SSF found
-          if(typeof onLoad === 'function')
-            onLoad();
-        }, () => {
-          //SSF not found
-          if(typeof onLoad === 'function')
-            onLoad();
-        });
-      }else{
-        //SSF entry not found
-        if(typeof onLoad === 'function')
-          onLoad();
+        const buffer = ResourceLoader.loadCachedResource(ResourceTypes.ssf, ss_row.resref.toLowerCase());
+        this.ssf = new SSFObject(buffer);
       }
-    }else{
-      //SSF entry not found
-      if(typeof onLoad === 'function')
-        onLoad();
     }
-
   }
 
-  LoadItem( template: GFFObject, onLoad: Function ){
+  LoadItem( template: GFFObject ){
 
     let item = new ModuleItem(template);
     item.InitProperties();
-    item.Load( () => {
-      let hasItem = this.getItem(item.getTag());
-      if(hasItem){
-        hasItem.setStackSize(hasItem.getStackSize() + 1);
-        if(typeof onLoad === 'function')
-          onLoad(hasItem);
-      }else{
-        this.inventory.push(item);
-        if(typeof onLoad === 'function')
-          onLoad(item);
-      }
-    });
+    item.Load();
+    let hasItem = this.getItem(item.getTag());
+    if(hasItem){
+      hasItem.setStackSize(hasItem.getStackSize() + 1);
+      return hasItem;
+    }else{
+      this.inventory.push(item);
+      return item;
+    }
 
   }
 

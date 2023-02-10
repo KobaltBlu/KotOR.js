@@ -239,39 +239,35 @@ export class NWScript {
     }
   }
 
-  static Load( scriptName = '', returnInstance = true ){
-    return new Promise<NWScriptInstance>( ( resolve, reject ) => {
-      if( NWScript.scripts.has( scriptName ) ){
-        let script = NWScript.scripts.get( scriptName );
+  static Load( scriptName = '', returnInstance = true ): NWScriptInstance {
+    if( NWScript.scripts.has( scriptName ) ){
+      let script = NWScript.scripts.get( scriptName );
+      //Create a new instance of the script and return it
+      return script.newInstance()
+    }else{
+      if(scriptName){
+        //Fetch the script from the game resource list
+        const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ncs'], scriptName);
+        if(buffer){
+          //Pass the buffer to a new script object
+          let script = new NWScript( buffer );
+          script.name = scriptName;
+          //Store a refernece to the script object inside the static "scripts" variable
+          NWScript.scripts.set( scriptName, script );
 
-        //Create a new instance of the script and return it
-        resolve( script.newInstance() );
-      }else{
-        if(scriptName){
-          //Fetch the script from the game resource list
-          ResourceLoader.loadResource(ResourceTypes['ncs'], scriptName, ( buffer: Buffer ) => {
-            //Pass the buffer to a new script object
-            let script = new NWScript( buffer );
-            script.name = scriptName;
-            //Store a refernece to the script object inside the static "scripts" variable
-            NWScript.scripts.set( scriptName, script );
-
-            //Create a new instance of the script and return it
-            if(returnInstance){
-              resolve( script.newInstance() );
-            }else{
-              resolve( undefined );
-            }
-          }, () => {
-            //console.warn('NWScript.ExecuteScript failed to find', executeScript.name);
-            resolve( undefined );
-          });
+          //Create a new instance of the script and return it
+          if(returnInstance){
+            return script.newInstance();
+          }else{
+            return undefined;
+          }
         }else{
-          //console.warn(`NWScript.ExecuteScript (${this.name}) failed because a script name wasn't supplied -> ${args[0]}`);
-          resolve( undefined );
+          return undefined;
         }
+      }else{
+        return undefined;
       }
-    });
+    }
   }
 
   disposeInstance( instance: NWScriptInstance ){
@@ -465,7 +461,7 @@ export class NWScript {
         }
   
         if(typeof action_definition.action === 'function'){
-          const actionValue = await action_definition.action.call(this, args);
+          const actionValue = action_definition.action.call(this, args);
           if(action_definition.type != NWScriptDataType.VOID){
             this.stack.push( actionValue, action_definition.type );
           }

@@ -864,11 +864,10 @@ export class ModuleArea extends ModuleObject {
     this.LoadVis( () => {
       this.LoadLayout( () => {
         this.loadPath( () => {
-          this.LoadScripts( () => {
-            GameState.scene.fog = this.fog;
-            if(typeof onLoad == 'function')
-              onLoad(this);
-          });
+          this.LoadScripts();
+          GameState.scene.fog = this.fog;
+          if(typeof onLoad == 'function')
+            onLoad(this);
         });
       });
     });
@@ -1210,9 +1209,9 @@ export class ModuleArea extends ModuleObject {
     return new Promise<void>( (resolve, reject) => {
       if(this.MiniGame){
         console.log('Loading MG Player')
-        let player = this.MiniGame.Player;
-        player.partyID = -1;
-        PartyManager.party.push(player);
+        let player: ModuleMGPlayer = this.MiniGame.Player;
+        (player as any).partyID = -1;
+        PartyManager.party.push(player as any);
         player.Load( ( object: ModuleMGPlayer ) => {
           
           if(typeof object == 'undefined'){
@@ -1220,20 +1219,18 @@ export class ModuleArea extends ModuleObject {
             return;
           }
 
-          player.LoadScripts( () => {
-            player.LoadCamera( () => {
-              player.LoadModel( (model: OdysseyModel3D) => {
-                player.LoadGunBanks( () => {
-                  let track = this.tracks.find(o => o.track === player.trackName);
-                  model.userData.moduleObject = player;
-                  model.hasCollision = true;
-                  player.setTrack(track.model);
-        
-                  player.getCurrentRoom();
-                  // player.computeBoundingBox();
-        
-                  resolve();
-                });
+          player.LoadCamera( () => {
+            player.LoadModel( (model: OdysseyModel3D) => {
+              player.LoadGunBanks( () => {
+                let track = this.tracks.find(o => o.track === player.trackName);
+                model.userData.moduleObject = player;
+                model.hasCollision = true;
+                player.setTrack(track.model);
+      
+                player.getCurrentRoom();
+                // player.computeBoundingBox();
+      
+                resolve();
               });
             });
           });
@@ -1262,66 +1259,49 @@ export class ModuleArea extends ModuleObject {
         GameState.player.animState = ModuleCreatureAnimState.IDLE;
         GameState.player.collisionData.groundFace = undefined;
         GameState.player.collisionData.lastGroundFace = undefined;
-        GameState.player.Load( ( object: ModuleCreature ) => {
+        GameState.player.Load();
+        GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
+          GameState.player.model = model;
+          GameState.player.model.hasCollision = true;
+          //let spawnLoc = this.getSpawnLocation();
+          let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
+          GameState.player.position.copy(spawnLoc.position);
+          GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-          if(typeof object == 'undefined'){
-            resolve();
-            return;
-          }
-          
-          GameState.player.LoadScripts( () => {
-            GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
-              GameState.player.model = model;
-              GameState.player.model.hasCollision = true;
-              //let spawnLoc = this.getSpawnLocation();
-              let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
-              GameState.player.position.copy(spawnLoc.position);
-              GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+          GameState.player.getCurrentRoom();
+          // GameState.player.computeBoundingBox(true);
 
-              GameState.player.getCurrentRoom();
-              // GameState.player.computeBoundingBox(true);
-
-              resolve();
-            }).catch(() => {
-              resolve();
-            });
-          });
+          resolve();
+        }).catch(() => {
+          resolve();
         });
       }else{
         let player = new ModulePlayer( this.getPlayerTemplate() );
         player.partyID = -1;
         player.id = ModuleObject.GetNextPlayerId();
         
-        player.Load( ( object: ModuleCreature ) => {
-          GameState.player = player;
-          
-          if(typeof object == 'undefined'){
-            resolve();
-            return;
-          }
-        
-          if(!this.MiniGame){
-            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
-            GameState.group.party.add( player.container );
-          }
+        player.Load();
+        GameState.player = player;
+      
+        if(!this.MiniGame){
+          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+          GameState.group.party.add( player.container );
+        }
 
-          player.LoadScripts( () => {
-            player.LoadModel().then( (model: OdysseyModel3D) => {
-              model.userData.moduleObject = player;
-              model.hasCollision = true;
-    
-              let spawnLoc = this.getSpawnLocation();
-    
-              player.position.copy(spawnLoc.position);
-              player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-              //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-    
-              player.getCurrentRoom();
-              player.computeBoundingBox(true);
-    
-              resolve();
-            });
-          });
+        player.LoadModel().then( (model: OdysseyModel3D) => {
+          model.userData.moduleObject = player;
+          model.hasCollision = true;
+
+          let spawnLoc = this.getSpawnLocation();
+
+          player.position.copy(spawnLoc.position);
+          player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+          //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+
+          player.getCurrentRoom();
+          player.computeBoundingBox(true);
+
+          resolve();
         });
       }
     });
@@ -1367,26 +1347,17 @@ export class ModuleArea extends ModuleObject {
         let loop = new AsyncLoop({
           array: this.MiniGame.Enemies,
           onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
-            enemy.Load( ( object: any ) => {
-
-              if(typeof object == 'undefined'){
+            enemy.Load();
+            enemy.LoadModel( (model: OdysseyModel3D) => {
+              enemy.LoadGunBanks( () => {
+                let track = this.tracks.find(o => o.track === enemy.trackName);
+                model.userData.moduleObject = enemy;
+                model.hasCollision = true;
+                enemy.setTrack(track.model);
+                enemy.computeBoundingBox();
+                enemy.getCurrentRoom();
                 asyncLoop.next();
-                return;
-              }
-    
-              enemy.LoadScripts( () => {
-                enemy.LoadModel( (model: OdysseyModel3D) => {
-                  enemy.LoadGunBanks( () => {
-                    let track = this.tracks.find(o => o.track === enemy.trackName);
-                    model.userData.moduleObject = enemy;
-                    model.hasCollision = true;
-                    enemy.setTrack(track.model);
-                    enemy.computeBoundingBox();
-                    enemy.getCurrentRoom();
-                    asyncLoop.next();
 
-                  });
-                });
               });
             });
           }
@@ -1488,52 +1459,46 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.doors,
         onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-          door.Load( ( object: ModuleDoor ) => {
-          
-            if(typeof object == 'undefined'){
-              asyncLoop.next();
-              return;
-            }
+          door.Load();
   
-            // door.position.x = door.getX();
-            // door.position.y = door.getY();
-            // door.position.z = door.getZ();
-            door.rotation.set(0, 0, door.getBearing());
-            door.LoadModel().then( (model: OdysseyModel3D) => {
-              door.LoadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
-                door.computeBoundingBox();
-                try{
-                  model.userData.walkmesh = dwk;
-                  door.collisionData.walkmesh = dwk;
-                  GameState.walkmeshList.push( dwk.mesh );
-    
-                  if(dwk.mesh instanceof THREE.Object3D){
-                    dwk.mat4.makeRotationFromEuler(door.rotation);
-                    dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
-                    dwk.mesh.geometry.applyMatrix4(dwk.mat4);
-                    dwk.updateMatrix();
-                    //dwk.mesh.position.copy(door.position);
-                    if(!door.openState){
-                      GameState.group.room_walkmeshes.add( dwk.mesh );
-                    }
+          // door.position.x = door.getX();
+          // door.position.y = door.getY();
+          // door.position.z = door.getZ();
+          door.rotation.set(0, 0, door.getBearing());
+          door.LoadModel().then( (model: OdysseyModel3D) => {
+            door.LoadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
+              door.computeBoundingBox();
+              try{
+                model.userData.walkmesh = dwk;
+                door.collisionData.walkmesh = dwk;
+                GameState.walkmeshList.push( dwk.mesh );
+  
+                if(dwk.mesh instanceof THREE.Object3D){
+                  dwk.mat4.makeRotationFromEuler(door.rotation);
+                  dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
+                  dwk.mesh.geometry.applyMatrix4(dwk.mat4);
+                  dwk.updateMatrix();
+                  //dwk.mesh.position.copy(door.position);
+                  if(!door.openState){
+                    GameState.group.room_walkmeshes.add( dwk.mesh );
                   }
-
-                  if(door.model instanceof OdysseyModel3D){
-                    door.box.setFromObject(door.model);
-                  }
-    
-                  if(door.openState){
-                    door.model.playAnimation('opened1', true);
-                  }
-                }catch(e){
-                  console.error('Failed to add dwk', model.name, dwk, e);
                 }
-    
-                door.getCurrentRoom();
-                GameState.group.doors.add( door.container );
 
-                asyncLoop.next();
-              });
+                if(door.model instanceof OdysseyModel3D){
+                  door.box.setFromObject(door.model);
+                }
+  
+                if(door.openState){
+                  door.model.playAnimation('opened1', true);
+                }
+              }catch(e){
+                console.error('Failed to add dwk', model.name, dwk, e);
+              }
+  
+              door.getCurrentRoom();
+              GameState.group.doors.add( door.container );
+
+              asyncLoop.next();
             });
           });
         }
@@ -1551,35 +1516,29 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.placeables,
         onLoop: (plc: ModulePlaceable, asyncLoop: AsyncLoop) => {
-          plc.Load( ( object: ModulePlaceable ) => {
-            if(typeof object == 'undefined'){
-              asyncLoop.next();
-              return;
-            }
-            
-            plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-            plc.rotation.set(0, 0, plc.getBearing());
-            plc.LoadModel().then( (model: OdysseyModel3D) => {
-              GameState.group.placeables.add( plc.container );
-              plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
-                GameState.walkmeshList.push( pwk.mesh );
-                plc.computeBoundingBox();
+          plc.Load();
+          plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+          plc.rotation.set(0, 0, plc.getBearing());
+          plc.LoadModel().then( (model: OdysseyModel3D) => {
+            GameState.group.placeables.add( plc.container );
+            plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
+              GameState.walkmeshList.push( pwk.mesh );
+              plc.computeBoundingBox();
 
-                if(pwk.mesh instanceof THREE.Object3D){
-                  pwk.mat4.makeRotationFromEuler(plc.rotation);
-                  pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
-                  pwk.mesh.geometry.applyMatrix4(pwk.mat4);
-                  pwk.updateMatrix();
-                  //pwk.mesh.position.copy(plc.position);
-                  GameState.group.room_walkmeshes.add( pwk.mesh );
-                }
-    
-                plc.getCurrentRoom();
-                plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-                plc.computeBoundingBox();
-    
-                asyncLoop.next()
-              });
+              if(pwk.mesh instanceof THREE.Object3D){
+                pwk.mat4.makeRotationFromEuler(plc.rotation);
+                pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
+                pwk.mesh.geometry.applyMatrix4(pwk.mat4);
+                pwk.updateMatrix();
+                //pwk.mesh.position.copy(plc.position);
+                GameState.group.room_walkmeshes.add( pwk.mesh );
+              }
+  
+              plc.getCurrentRoom();
+              plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+              plc.computeBoundingBox();
+  
+              asyncLoop.next()
             });
           });
         }
@@ -1596,40 +1555,32 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.waypoints,
         onLoop: (waypnt: ModuleWaypoint, asyncLoop: AsyncLoop) => {
-          waypnt.Load( ( object: ModuleWaypoint ) => {
-          
-            if(typeof object == 'undefined'){
-              asyncLoop.next();
-              return;
-            }
-  
-            let wpObj = new THREE.Object3D();
-            wpObj.name = waypnt.getTag();
-            wpObj.position.copy(waypnt.position);
-            wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-            waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
-            GameState.group.waypoints.add(wpObj);
-  
-            let _distance = 1000000000;
-            let _currentRoom = null;
-            let roomCenter = new THREE.Vector3();
-            for(let i = 0; i < GameState.group.rooms.children.length; i++){
-              let room = GameState.group.rooms.children[i];
-              if(room instanceof OdysseyModel3D){
-                if(room.box.containsPoint(wpObj.position)){
-                  room.box.getCenter(roomCenter);
-                  let distance = wpObj.position.distanceTo(roomCenter);
-                  if(distance < _distance){
-                    _distance = distance;
-                    _currentRoom = room;
-                  }
+          waypnt.Load();
+          let wpObj = new THREE.Object3D();
+          wpObj.name = waypnt.getTag();
+          wpObj.position.copy(waypnt.position);
+          wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
+          waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
+          GameState.group.waypoints.add(wpObj);
+
+          let _distance = 1000000000;
+          let _currentRoom = null;
+          let roomCenter = new THREE.Vector3();
+          for(let i = 0; i < GameState.group.rooms.children.length; i++){
+            let room = GameState.group.rooms.children[i];
+            if(room instanceof OdysseyModel3D){
+              if(room.box.containsPoint(wpObj.position)){
+                room.box.getCenter(roomCenter);
+                let distance = wpObj.position.distanceTo(roomCenter);
+                if(distance < _distance){
+                  _distance = distance;
+                  _currentRoom = room;
                 }
               }
             }
-            wpObj.userData.area = _currentRoom;
-  
-            asyncLoop.next();
-          });
+          }
+          wpObj.userData.area = _currentRoom;
+          asyncLoop.next();
         }
       });
       loop.iterate(() => {
@@ -1645,33 +1596,25 @@ export class ModuleArea extends ModuleObject {
         array: this.encounters,
         onLoop: (encounter: ModuleEncounter, asyncLoop: AsyncLoop) => {
           try{
-            encounter.InitProperties();
-            encounter.Load( ( object: ModuleEncounter ) => {
-          
-              if(typeof object == 'undefined'){
-                asyncLoop.next();
-                return;
-              }
-    
-              let _distance = 1000000000;
-              let _currentRoom = null;
-              let roomCenter = new THREE.Vector3();
-              for(let i = 0; i < GameState.group.rooms.children.length; i++){
-                let room = GameState.group.rooms.children[i];
-                if(room instanceof OdysseyModel3D){
-                  if(room.box.containsPoint(encounter.mesh.position)){
-                    room.box.getCenter(roomCenter);
-                    let distance = encounter.mesh.position.distanceTo(roomCenter);
-                    if(distance < _distance){
-                      _distance = distance;
-                      _currentRoom = room;
-                    }
+            encounter.Load();
+            let _distance = 1000000000;
+            let _currentRoom = null;
+            let roomCenter = new THREE.Vector3();
+            for(let i = 0; i < GameState.group.rooms.children.length; i++){
+              let room = GameState.group.rooms.children[i];
+              if(room instanceof OdysseyModel3D){
+                if(room.box.containsPoint(encounter.mesh.position)){
+                  room.box.getCenter(roomCenter);
+                  let distance = encounter.mesh.position.distanceTo(roomCenter);
+                  if(distance < _distance){
+                    _distance = distance;
+                    _currentRoom = room;
                   }
                 }
               }
-              encounter.mesh.userData.area = _currentRoom;
-              asyncLoop.next();
-            });
+            }
+            encounter.mesh.userData.area = _currentRoom;
+            asyncLoop.next();
           }catch(e){
             console.error(e);
             asyncLoop.next();
@@ -1691,33 +1634,25 @@ export class ModuleArea extends ModuleObject {
         array: this.triggers,
         onLoop: (trig: ModuleTrigger, asyncLoop: AsyncLoop) => {
           try{
-            trig.InitProperties();
-            trig.Load( ( object: ModuleTrigger ) => {
-          
-              if(typeof object == 'undefined'){
-                asyncLoop.next();
-                return;
-              }
-    
-              let _distance = 1000000000;
-              let _currentRoom = null;
-              let roomCenter = new THREE.Vector3();
-              for(let i = 0; i < GameState.group.rooms.children.length; i++){
-                let room = GameState.group.rooms.children[i];
-                if(room instanceof OdysseyModel3D){
-                  if(room.box.containsPoint(trig.mesh.position)){
-                    room.box.getCenter(roomCenter);
-                    let distance = trig.mesh.position.distanceTo(roomCenter);
-                    if(distance < _distance){
-                      _distance = distance;
-                      _currentRoom = room;
-                    }
+            trig.Load();
+            let _distance = 1000000000;
+            let _currentRoom = null;
+            let roomCenter = new THREE.Vector3();
+            for(let i = 0; i < GameState.group.rooms.children.length; i++){
+              let room = GameState.group.rooms.children[i];
+              if(room instanceof OdysseyModel3D){
+                if(room.box.containsPoint(trig.mesh.position)){
+                  room.box.getCenter(roomCenter);
+                  let distance = trig.mesh.position.distanceTo(roomCenter);
+                  if(distance < _distance){
+                    _distance = distance;
+                    _currentRoom = room;
                   }
                 }
               }
-              trig.mesh.userData.area = _currentRoom;
-              asyncLoop.next();
-            });
+            }
+            trig.mesh.userData.area = _currentRoom;
+            asyncLoop.next();
           }catch(e){
             console.error(e);
             asyncLoop.next();
@@ -1736,33 +1671,23 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.creatures,
         onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-          creature.Load( ( object: ModuleCreature ) => {
-          
-            if(typeof object == 'undefined'){
-              asyncLoop.next();
-              return;
-            }
-  
-            creature.LoadScripts( () => {
-              creature.LoadModel().then( (model: OdysseyModel3D) => {
-                creature.model.userData.moduleObject = creature;
-                
-                //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
-                creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
-    
-                model.hasCollision = true;
-                model.name = creature.getTag();
-                GameState.group.creatures.add( creature.container );
-    
-                creature.getCurrentRoom();
-                creature.updateCollision(0.0000000000000000000001);
-                creature.update(0.0000000000000000000001);
-                creature.computeBoundingBox();
-    
-                asyncLoop.next();
-              });
-            });
+          creature.Load();
+          creature.LoadModel().then( (model: OdysseyModel3D) => {
+            creature.model.userData.moduleObject = creature;
+            
+            //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
+            creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
 
+            model.hasCollision = true;
+            model.name = creature.getTag();
+            GameState.group.creatures.add( creature.container );
+
+            creature.getCurrentRoom();
+            creature.updateCollision(0.0000000000000000000001);
+            creature.update(0.0000000000000000000001);
+            creature.computeBoundingBox();
+
+            asyncLoop.next();
           });
         }
       });
@@ -1779,15 +1704,8 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.stores,
         onLoop: (store: ModuleStore, asyncLoop: AsyncLoop) => {
-          store.Load( ( object: ModuleStore ) => {
-          
-            if(typeof object == 'undefined'){
-              asyncLoop.next();
-              return;
-            }
-  
-            asyncLoop.next();
-          });
+          store.Load();
+          asyncLoop.next();
         }
       });
       loop.iterate(() => {
@@ -1803,10 +1721,9 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.sounds,
         onLoop: (sound: ModuleSound, asyncLoop: AsyncLoop) => {
-          sound.Load( () => {
-            sound.LoadSound( () => {
-              asyncLoop.next();
-            });
+          sound.Load();
+          sound.LoadSound( () => {
+            asyncLoop.next();
           });
         }
       });
@@ -1862,27 +1779,16 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  LoadScripts(onLoad?: Function){
+  LoadScripts(){
     console.log('ModuleArea.LoadScripts');
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: any, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if(typeof _script === 'string' && _script != ''){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
   }
 
   async initAreaObjects(runSpawnScripts = false){
@@ -1949,7 +1855,7 @@ export class ModuleArea extends ModuleObject {
         console.log('onEnter', this.scripts.onEnter, GameState.player)
         this.scripts.onEnter.enteringObject = GameState.player;
         this.scripts.onEnter.debug.action = true;
-        this.scripts.onEnter.run(this, 0, () => {
+        this.scripts.onEnter.runAsync(this, 0).then( () => {
           resolve();
         });
       }else{
@@ -1970,7 +1876,7 @@ export class ModuleArea extends ModuleObject {
         array: this.MiniGame.Enemies,
         onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
           if(enemy.scripts.onCreate instanceof NWScriptInstance){
-            enemy.scripts.onCreate.run(enemy, 0, () => {
+            enemy.scripts.onCreate.runAsync(enemy, 0).then( () => {
               asyncLoop.next();
             });
           }else{

@@ -9,6 +9,7 @@ import { TemplateLoader } from "../loaders/TemplateLoader";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 
 /* @file
@@ -71,33 +72,20 @@ export class ModuleSound extends ModuleObject {
 
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-      //console.log('ModuleSound.Load',this.getTemplateResRef())
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.uts,
-        onLoad: (gff: GFFObject) => {
-
-          this.template.Merge(gff);
-          this.InitProperties();
-
-          if(onLoad != null)
-            onLoad(this.template);
-        },
-        onFail: () => {
-          console.error('Failed to load sound template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
-
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uts'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+      }else{
+        console.error('Failed to load ModuleSound template');
+      }
     }else{
-      this.InitProperties();
       //We already have the template (From SAVEGAME)
-      if(onLoad != null)
-        onLoad(this.template);
+      this.InitProperties();
     }
   }
 

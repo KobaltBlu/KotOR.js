@@ -97,7 +97,7 @@ export class InventoryManager {
     return (parseInt(baseItem.equipableslots) & slot || parseInt(baseItem.equipableslots) === slot) ? true : false;
   }
 
-  static addItem(template: GFFObject|ModuleItem = new GFFObject(), onLoad?: Function, limitOne = false){
+  static addItem(template: GFFObject|ModuleItem = new GFFObject(), limitOne = false): ModuleItem {
 
     let item: ModuleItem;
     if(template instanceof GFFObject){
@@ -111,28 +111,25 @@ export class InventoryManager {
       if(item.getBaseItemId() == 57){ //Credits
         PartyManager.Gold += item.getStackSize();
       }else{
-        item.Load( () => {
-          let hasItem = InventoryManager.getItem(item.getTag());
-          if(hasItem){
+        item.Load();
+        let hasItem = InventoryManager.getItem(item.getTag());
+        if(hasItem){
 
-            if(!limitOne){
-              hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
-            }else{
-              hasItem.setStackSize(hasItem.getStackSize() + 1);
-            }
-
-            if(typeof onLoad === 'function')
-              onLoad(hasItem);
+          if(!limitOne){
+            hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
           }else{
-
-            if(limitOne)
-              item.setStackSize(1);
-
-            InventoryManager.inventory.push(item);
-            if(typeof onLoad === 'function')
-              onLoad(item);
+            hasItem.setStackSize(hasItem.getStackSize() + 1);
           }
-        });
+
+          return hasItem;
+        }else{
+
+          if(limitOne)
+            item.setStackSize(1);
+
+          InventoryManager.inventory.push(item);
+          return item;
+        }
       }
     }else{
       throw 'You can only add an item of type ModuleItem to an inventory';

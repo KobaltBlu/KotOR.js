@@ -57,7 +57,7 @@ export class ResourceLoader {
       ResourceTypes['ncs'], ResourceTypes['utc'], ResourceTypes['uti'], 
       ResourceTypes['utd'], ResourceTypes['utp'], ResourceTypes['uts'],
       ResourceTypes['ute'], ResourceTypes['utt'], ResourceTypes['utw'],
-      ResourceTypes['dlg'], ResourceTypes['ssf'],
+      ResourceTypes['utm'], ResourceTypes['dlg'], ResourceTypes['ssf'],
     ];
 
     console.log('Caching Types:', cacheableTemplates);
@@ -168,14 +168,18 @@ export class ResourceLoader {
 
   }
 
-  static loadResourceAsync(resId: number, resKey: string): Promise<Buffer> {
+  static loadResourceAsync(resId: number, resRef: string): Promise<Buffer> {
     return new Promise((resolve: Function, reject: Function) => {
-      ResourceLoader.loadResource(resId, resKey, (buffer: Buffer) => {
+      ResourceLoader.loadResource(resId, resRef, (buffer: Buffer) => {
         resolve(buffer);
       }, () => {
         resolve(undefined);
       });
     });
+  }
+
+  static loadCachedResource(resId: number, resRef: string): Buffer {
+    return ResourceLoader.getCache(resId, resRef);
   }
 
   static _searchLocal(resId: number, resRef = '', onLoad?: Function, onError?: Function){

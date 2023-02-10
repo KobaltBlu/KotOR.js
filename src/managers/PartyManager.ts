@@ -2,7 +2,6 @@
  */
 
 import { GameState } from "../GameState";
-import { TemplateLoader } from "../loaders/TemplateLoader";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import * as path from "path";
@@ -15,6 +14,7 @@ import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
 import { OdysseyModel3D } from "../three/odyssey";
 import { PartyTableManager } from "./PartyTableManager";
+import { ResourceLoader } from "../KotOR";
 
 /* @file
  * The PartyManager class.
@@ -217,39 +217,27 @@ export class PartyManager {
 
 
   //Add a creature template to the list of available PartyMembers
-  static AddNPCByTemplate(nID = 0, ResRef: string|GFFObject = '', onLoad?: Function){
-
-    if(typeof ResRef === 'string'){
+  static AddAvailableNPCByTemplate(nID = 0, template: string|GFFObject = ''){
+    if(typeof template === 'string'){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: ResRef,
-        ResType: ResourceTypes.utc,
-        onLoad: (gff: GFFObject) => {
-          PartyManager.NPCS[nID].available = true;
-          PartyManager.NPCS[nID].canSelect = true;
-          PartyManager.NPCS[nID].template = gff;
-
-          if(typeof onLoad === 'function')
-            onLoad();
-        },
-        onFail: () => {
-          console.error('Failed to load character template');
-        }
-      });
-
-    }else if(ResRef instanceof GFFObject){
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], template);
+      if(buffer){
+        PartyManager.NPCS[nID].available = true;
+        PartyManager.NPCS[nID].canSelect = true;
+        PartyManager.NPCS[nID].template = new GFFObject(buffer);
+      }else{
+        console.error('Failed to load character template');
+      }
+    }else if(template instanceof GFFObject){
       //We already have the template (From SAVEGAME)
       PartyManager.NPCS[nID].available = true;
       PartyManager.NPCS[nID].canSelect = true;
-      PartyManager.NPCS[nID].template = ResRef;
-      if(typeof onLoad === 'function')
-        onLoad();
+      PartyManager.NPCS[nID].template = template;
+      return;
     }else{
-      if(typeof onLoad === 'function')
-        onLoad();
+      console.error('Failed to load character template');
+      return;
     }
-
   }
 
   //Add a world creature to the list of Party Members and remove it from the creatures array
@@ -269,49 +257,37 @@ export class PartyManager {
     }
   }
 
-  static SwitchPlayerToPartyMember(nIdx = 0, onLoad?: Function){
-    let template = undefined;
-
-    if(nIdx == -1){
-      template = PartyManager.Player;
-    }else{
-      template = PartyManager.NPCS[nIdx].template;
-    }
-
-    let partyMember = new ModuleCreature(template);
+  static SwitchPlayerToPartyMember(nIdx = 0){
+    let template: GFFObject = (nIdx == -1) ?
+      PartyManager.Player : PartyManager.NPCS[nIdx].template;
+    const partyMember = new ModuleCreature(template);
 
     try{
-
       let spawn = GameState.player.position.clone();
       let quaternion = GameState.player.quaternion.clone();
 
       partyMember.partyID = 0;
-      partyMember.Load( () => {
+      partyMember.Load();
+      partyMember.position.copy(spawn);
+      partyMember.quaternion.copy(quaternion);
+      partyMember.LoadScripts();
+      partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+        PartyManager.party[0] = partyMember;
+        
+        model.userData.moduleObject = partyMember;
         partyMember.position.copy(spawn);
         partyMember.quaternion.copy(quaternion);
-        partyMember.LoadScripts( () => {
-          partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-            PartyManager.party[0] = partyMember;
-            
-            model.userData.moduleObject = partyMember;
-            partyMember.position.copy(spawn);
-            partyMember.quaternion.copy(quaternion);
-            model.hasCollision = true;
-            
-            GameState.group.party.add( partyMember.container );
-            GameState.player.destroy();
-            GameState.player = partyMember;
-            partyMember.onSpawn();
-            if(typeof onLoad === 'function')
-              onLoad();
-
-          });
-        });
+        model.hasCollision = true;
+        
+        GameState.group.party.add( partyMember.container );
+        GameState.player.destroy();
+        GameState.player = partyMember;
+        partyMember.onSpawn();
       });
+      return partyMember;
     }catch(e){
       console.error(e);
-      if(typeof onLoad === 'function')
-        onLoad();
+      return undefined;
     }
   }
 
@@ -402,7 +378,7 @@ export class PartyManager {
         if(!(currentSlot instanceof ModuleCreature)){
           partyMember.id = ModuleObject.GetNextPlayerId();
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
-          partyMember.Load( () => {
+          partyMember.Load();
             //PartyManager.party[nIdx+1] = partyMember;
 
             /*if(PartyManager.CurrentMembers[nIdx].isLeader){
@@ -413,25 +389,21 @@ export class PartyManager {
             let spawn = PartyManager.GetSpawnLocation(partyMember);
             partyMember.position.copy(spawn.position);
             partyMember.setFacing(spawn.getFacing(), true);
+            
+            partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+              model.userData.moduleObject = partyMember;
 
-            partyMember.LoadScripts( () => {
-              partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-                model.userData.moduleObject = partyMember;
+              partyMember.position.copy(spawn.position);
+              partyMember.setFacing(spawn.getFacing(), true);
+              //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+        
+              model.hasCollision = true;
+              GameState.group.party.add( partyMember.container );
 
-                partyMember.position.copy(spawn.position);
-                partyMember.setFacing(spawn.getFacing(), true);
-                //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-          
-                model.hasCollision = true;
-                GameState.group.party.add( partyMember.container );
-
-                partyMember.onSpawn();
-                if(typeof onLoad === 'function')
-                  onLoad();
-
-              });
+              partyMember.onSpawn();
+              if(typeof onLoad === 'function')
+                onLoad();
             });
-          });
         }else{
           let spawn = PartyManager.GetSpawnLocation(currentSlot);
           currentSlot.position.copy(spawn.position);
@@ -458,14 +430,13 @@ export class PartyManager {
     if(npc){
       if(npc.template){
         let partyMember = new ModuleCreature(npc.template);
-        partyMember.Load( () => {
-          partyMember.LoadModel().then( (model: OdysseyModel3D) => {
-            model.userData.moduleObject = partyMember;
-            partyMember.onSpawn();
-            if(typeof onLoad === 'function')
-              onLoad(partyMember);
+        partyMember.Load();
+        partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+          model.userData.moduleObject = partyMember;
+          partyMember.onSpawn();
+          if(typeof onLoad === 'function')
+            onLoad(partyMember);
 
-          });
         });
       }else{
         if(typeof onLoad === 'function')

@@ -17,6 +17,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { ConfigClient } from "../utility/ConfigClient";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The ModuleTrigger class.
@@ -124,50 +125,24 @@ export class ModuleTrigger extends ModuleObject {
   Load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-
-      TemplateLoader.Load({
-        ResRef: this.getTemplateResRef(),
-        ResType: ResourceTypes.utt,
-        onLoad: (gff: GFFObject) => {
-
-          this.template.Merge(gff);
-          this.InitProperties();
-          this.LoadScripts( () => {
-            this.buildGeometry();
-            this.initObjectsInside();
-            if(onLoad != null)
-              onLoad(this.template);
-          });
-          
-        },
-        onFail: () => {
-          console.error('Failed to load trigger template');
-          if(onLoad != null)
-            onLoad(undefined);
-        }
-      });
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());
+      if(buffer){
+        const gff = new GFFObject(buffer);
+        this.template.Merge(gff);
+        this.InitProperties();
+        this.LoadScripts()
+        this.buildGeometry();
+        this.initObjectsInside();
+      }else{
+        console.error('Failed to load ModuleTrigger template');
+      }
 
     }else{
       //We already have the template (From SAVEGAME)
-      //console.log('Trigger savegame')
-      try{
-        this.InitProperties();
-        this.LoadScripts( () => {
-          try{
-            this.buildGeometry();
-            this.initObjectsInside();
-            if(onLoad != null)
-              onLoad(this.template);
-          }catch(e){
-            if(onLoad != null)
-              onLoad(this.template);
-          }
-        });
-      }catch(e){
-        if(onLoad != null)
-          onLoad(this.template);
-      }
-
+      this.InitProperties();
+      this.LoadScripts()
+      this.buildGeometry();
+      this.initObjectsInside();
     }
   }
 
@@ -350,7 +325,7 @@ export class ModuleTrigger extends ModuleObject {
         //let script = this.scripts.onEnter.clone();
         this.scripts.onEnter.debug.action = true;
         this.scripts.onEnter.enteringObject = object;
-        this.scripts.onEnter.run(this, 0, () => {
+        this.scripts.onEnter.runAsync(this, 0).then( () => {
           this.scripts.onEnter.running = false;
         });
         //console.log('trigger', object, this);
@@ -362,13 +337,13 @@ export class ModuleTrigger extends ModuleObject {
     if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.running != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
-      /*this.scripts.onExit.run(this, 0, () => {
+      /*this.scripts.onExit.runAsync(this, 0, () => {
         this.scripts.onExit.running = false;
       });*/
     }
   }
 
-  LoadScripts( onLoad?: Function ){
+  LoadScripts(){
 
     this.scripts = {
       onClick: undefined,
@@ -402,24 +377,13 @@ export class ModuleTrigger extends ModuleObject {
       this.scripts.onUserDefined = this.template.GetFieldByLabel('ScriptUserDefine').GetValue();
 
     let keys = Object.keys(this.scripts);
-    let loop = new AsyncLoop({
-      array: keys,
-      onLoop: async (key: string, asyncLoop: AsyncLoop) => {
-        let _script = this.scripts[key];
-        if(typeof _script === 'string' && _script != ''){
-          //let script = await NWScript.Load(_script);
-          this.scripts[key] = await NWScript.Load(_script);
-          //this.scripts[key].name = _script;
-          asyncLoop.next();
-        }else{
-          asyncLoop.next();
-        }
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      let _script = this.scripts[key];
+      if( (typeof _script === 'string' && _script != '') ){
+        this.scripts[key] = NWScript.Load(_script);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
 
   }
 

@@ -305,7 +305,7 @@ export class InGameDialog extends K1_InGameDialog {
       GameState.currentCamera = GameState.getCameraById(entry.cameraID);
     }
     this.GetAvailableReplies(entry);
-    if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.cameraModel)) {
+    if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.animatedCameraResRef)) {
       if (entry.cameraAnimation > -1) {
         entry.checkList.cameraAnimationComplete = false;
         this.SetAnimatedCamera(entry.cameraAnimation, () => {
@@ -461,10 +461,10 @@ export class InGameDialog extends K1_InGameDialog {
 
   async OnBeforeConversationEnd(onEnd?: Function) {
     if (this.dialog.onEndConversation != '') {
-      let script = await NWScript.Load(this.dialog.onEndConversation);
+      let script = NWScript.Load(this.dialog.onEndConversation);
       if (script instanceof NWScriptInstance) {
         script.name = this.dialog.onEndConversation;
-        script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
+        script.runAsync(this.getCurrentOwner(), 0).then( (bSuccess: boolean) => {
           if (typeof onEnd === 'function')
             onEnd();
         });
@@ -489,39 +489,25 @@ export class InGameDialog extends K1_InGameDialog {
     window.setTimeout(async () => {
       if (!aborted) {
         if (this.dialog.onEndConversation != '') {
-          let script = await NWScript.Load(this.dialog.onEndConversation);
+          let script = NWScript.Load(this.dialog.onEndConversation);
           if (script instanceof NWScriptInstance) {
             script.name = this.dialog.onEndConversation;
-            script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
+            script.runAsync(this.getCurrentOwner(), 0).then( (bSuccess: boolean) => {
             });
           }
         }
       } else {
         if (this.dialog.onEndConversationAbort != '') {
-          let script = await NWScript.Load(this.dialog.onEndConversationAbort);
+          let script = NWScript.Load(this.dialog.onEndConversationAbort);
           if (script instanceof NWScriptInstance) {
             script.name = this.dialog.onEndConversationAbort;
-            script.run(this.getCurrentOwner(), 0, (bSuccess: boolean) => {
+            script.runAsync(this.getCurrentOwner(), 0).then( (bSuccess: boolean) => {
             });
           }
         }
       }
     });
-    while (GameState.group.stunt.children.length) {
-      GameState.group.stunt.remove(GameState.group.stunt.children[0]);
-    }
-    for (let actor in this.dialog.stunt) {
-      try {
-        if (this.dialog.stunt[actor].model.skins) {
-          for (let i = 0; i < this.dialog.stunt[actor].model.skins.length; i++) {
-            this.dialog.stunt[actor].model.skins[i].frustumCulled = true;
-          }
-        }
-        this.dialog.stunt[actor].clearAllActions();
-      } catch (e: any) {
-      }
-    }
-    this.dialog.stunt = {};
+    this.dialog.releaseStuntActors();
   }
 
   PauseConversation() {
@@ -544,9 +530,9 @@ export class InGameDialog extends K1_InGameDialog {
     if (this.dialog.isAnimatedCutscene) {
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
-        if (this.dialog.stunt[participant.participant]) {
+        if (this.dialog.stuntActors.has(participant.participant)) {
           try {
-            this.dialog.stunt[participant.participant].dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
+            this.dialog.stuntActors.get(participant.participant).moduleObject.dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
           } catch (e: any) {
           }
         } else {
@@ -988,8 +974,6 @@ export class InGameDialog extends K1_InGameDialog {
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
         GameState.currentCamera = GameState.camera_animated;
-      }
-      for (let actor in this.dialog.stunt) {
       }
       if (this.canLetterbox) {
         this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;

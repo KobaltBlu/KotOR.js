@@ -68,13 +68,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 0;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -86,13 +85,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 1;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -104,13 +102,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 2;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -122,13 +119,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 3;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -140,13 +136,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 4;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -158,13 +153,12 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 5;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load(() => {
-          CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
-            TextureLoader.LoadQueue(() => {
-              this.selecting = false;
-              MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-              MenuManager.CharGenMain.Open();
-            });
+        CharGenManager.selectedCreature.Load();
+        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+          TextureLoader.LoadQueue(() => {
+            this.selecting = false;
+            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
+            MenuManager.CharGenMain.Open();
           });
         });
       });
@@ -219,18 +213,17 @@ export class CharGenClass extends GameMenu {
         _3dView.camera.position.copy(_3dViewModel.camerahook.position);
         _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
         _3dView.camera.position.z = 0.9;
-        creature.Load(() => {
-          creature.LoadModel().then((model: OdysseyModel3D) => {
-            model.position.set(0, 0, 0);
-            model.rotation.z = -Math.PI / 2;
-            model.box = new THREE.Box3().setFromObject(model);
-            _3dView.addModel(model);
-            TextureLoader.LoadQueue(() => {
-              MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
-              if (typeof onLoad === 'function')
-                onLoad();
-              _3dViewModel.playAnimation(0, true);
-            });
+        creature.Load();
+        creature.LoadModel().then((model: OdysseyModel3D) => {
+          model.position.set(0, 0, 0);
+          model.rotation.z = -Math.PI / 2;
+          model.box = new THREE.Box3().setFromObject(model);
+          _3dView.addModel(model);
+          TextureLoader.LoadQueue(() => {
+            MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
+            if (typeof onLoad === 'function')
+              onLoad();
+            _3dViewModel.playAnimation(0, true);
           });
         });
       },
