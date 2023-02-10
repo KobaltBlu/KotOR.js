@@ -19,8 +19,9 @@ export class DialogMessageEntry {
   message: string = '';
   speaker: string = '';
 
-  constructor(){
-    
+  constructor(spearker: string = '', message: string = ''){
+    this.speaker = spearker;
+    this.message = message;
   }
 
   toStruct(){
