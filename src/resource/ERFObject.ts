@@ -395,11 +395,11 @@ export class ERFObject {
         }
       }else{
         if(typeof onComplete === 'function')
-          onComplete(new ArrayBuffer(0));
+          onComplete(Buffer.alloc(0));
       }
     }else{
       if(typeof onComplete === 'function')
-        onComplete(new ArrayBuffer(0));
+        onComplete(Buffer.alloc(0));
     }
   }
 
