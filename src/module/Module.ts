@@ -450,7 +450,7 @@ export class Module {
           if(this.scripts[key] instanceof NWScriptInstance){
             //this.scripts[key].name = _script;
             this.scripts[key].enteringObject = GameState.player;
-            this.scripts[key].runAsync(GameState.module.area, 0, () => {
+            this.scripts[key].runAsync(GameState.module.area, 0).then( () => {
               asyncLoop.next();
             });
           }else{

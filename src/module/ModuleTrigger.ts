@@ -337,7 +337,7 @@ export class ModuleTrigger extends ModuleObject {
     if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.running != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
-      /*this.scripts.onExit.runAsync(this, 0, () => {
+      /*this.scripts.onExit.runAsync(this, 0).then( () => {
         this.scripts.onExit.running = false;
       });*/
     }
