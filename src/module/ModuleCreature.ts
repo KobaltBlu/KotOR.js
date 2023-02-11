@@ -927,6 +927,9 @@ export class ModuleCreature extends ModuleObject {
         }
       }
       CombatEngine.AddCombatant(this);
+    }else{
+      if(this.animState == ModuleCreatureAnimState.READY)
+        this.animState = ModuleCreatureAnimState.PAUSE;
     }
   }
 
@@ -1417,6 +1420,8 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatState = false;
     this.cancelExcitedDuration();
     this.overlayAnimation = undefined;
+    if(this.animState == ModuleCreatureAnimState.READY)
+      this.animState = ModuleCreatureAnimState.PAUSE;
   }
 
   getDamageAnimation( attackAnim: any ){
