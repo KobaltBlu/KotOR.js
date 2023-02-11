@@ -355,7 +355,7 @@ export class ModuleItem extends ModuleObject {
 
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getTemplateResRef());
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
