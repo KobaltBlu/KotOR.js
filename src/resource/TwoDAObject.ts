@@ -86,7 +86,7 @@ export class TwoDAObject {
         rowIndex = rowIndex + c;
       }
 
-      RowIndexes[i] = parseInt(rowIndex);
+      RowIndexes[i] = (rowIndex);
     }
 
     //Get the Row Data Offsets
