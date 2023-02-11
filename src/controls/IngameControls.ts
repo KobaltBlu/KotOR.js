@@ -71,8 +71,10 @@ export class IngameControls {
           this.keys['num-plus'].down = this.keys['num-plus'].pressed = true;
         if ( event.which == 109 )
           this.keys['num-minus'].down = this.keys['num-minus'].pressed = true;
-        if ( event.which == 9 )
+        if ( event.which == 9 ){
           this.keys['tab'].down = this.keys['tab'].pressed = true;
+          event.preventDefault();
+        }
       }
       
 
@@ -80,6 +82,10 @@ export class IngameControls {
         if(typeof GameState.activeGUIElement.onKeyDown === 'function'){
           GameState.activeGUIElement.onKeyDown(event);
         }
+      }
+
+      if ( event.which == 9 ){
+        return false;
       }
     });
 
@@ -113,8 +119,10 @@ export class IngameControls {
           this.keys['num-plus'].down = this.keys['num-plus'].pressed = false;
         if ( event.which == 109 )
           this.keys['num-minus'].down = this.keys['num-minus'].pressed = false;
-        if ( event.which == 9 )
-        this.keys['tab'].down = this.keys['tab'].pressed = false;
+        if ( event.which == 9 ){
+          this.keys['tab'].down = this.keys['tab'].pressed = false;
+          event.preventDefault();
+        }
       }
 
       if( (GameState.Mode == EngineMode.INGAME) && !this.keys['w'].down && !this.keys['s'].down && !GameState.autoRun){
@@ -128,6 +136,10 @@ export class IngameControls {
         if(typeof GameState.activeGUIElement.onKeyUp === 'function'){
           GameState.activeGUIElement.onKeyUp(event);
         }
+      }
+
+      if ( event.which == 9 ){
+        return false;
       }
     });
 
