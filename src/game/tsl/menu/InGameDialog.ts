@@ -834,7 +834,9 @@ export class InGameDialog extends K1_InGameDialog {
     }
     if (this.isListening) {
       if (this.currentEntry) {
-        if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
+        if (this.currentEntry.cameraAngle == 6) {
+          this.SetPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);
+        } else if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
           this.SetAnimatedCamera(this.currentEntry.cameraAnimation);
           GameState.currentCamera = GameState.camera_animated;
         } else {
