@@ -439,8 +439,13 @@ export class ModuleCreature extends ModuleObject {
         }
       }*/
 
-      if(!this.isDead() && this.animState == ModuleCreatureAnimState.DEAD){
-        this.animState = ModuleCreatureAnimState.IDLE;
+      if(!this.isDead() && (
+          this.animState == ModuleCreatureAnimState.DEAD ||
+          this.animState == ModuleCreatureAnimState.DEAD1 ||
+          this.animState == ModuleCreatureAnimState.GET_UP_DEAD || 
+          this.animState == ModuleCreatureAnimState.GET_UP_DEAD1
+        )
+      ){
         this.deathAnimationPlayed = false;
         this.animState = ModuleCreatureAnimState.GET_UP_DEAD;
       }
@@ -520,15 +525,18 @@ export class ModuleCreature extends ModuleObject {
       }else{
         this.damageList = [];
         this.getUpAnimationPlayed = false;
-        if(this.animState != ModuleCreatureAnimState.DEAD || this.animState != ModuleCreatureAnimState.DIE){
+        if(this.deathStarted && this.animState != ModuleCreatureAnimState.DEAD && this.animState != ModuleCreatureAnimState.DIE){
           this.animState = ModuleCreatureAnimState.DEAD;
+          this.deathAnimationPlayed = true;
         }
         if(!this.deathStarted){
+          this.deathAnimationPlayed = false;
           this.deathStarted = true;
           this.clearAllActions();
           this.onDeath();
           this.PlaySoundSet(SSFObjectType.DEAD);
           this.overlayAnimation = undefined;
+          this.animState = ModuleCreatureAnimState.DIE;
         }
       }
 
@@ -542,7 +550,15 @@ export class ModuleCreature extends ModuleObject {
       // BEGIN: Move Speed Logic //
       //-------------------------//
 
-      if(this.isDead()){
+      if(
+        this.isDead() ||
+        (
+          this.animState == ModuleCreatureAnimState.DIE ||
+          this.animState == ModuleCreatureAnimState.DIE1 ||
+          this.animState == ModuleCreatureAnimState.GET_UP_DEAD ||
+          this.animState == ModuleCreatureAnimState.GET_UP_DEAD1 
+        )
+      ){
         this.force = 0;
         this.speed = 0;
         this.animSpeed = 1;
