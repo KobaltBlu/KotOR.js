@@ -129,36 +129,40 @@ export class GameFileSystem {
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
-  static async writeFile(filepath: string, data: Uint8Array): Promise<void> {
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<void>( (resolve, reject) => {
-        fs.writeFile(path.join(GameFileSystem.rootDirectoryPath, filepath), data, () => {
-          resolve();
+  static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
+    return new Promise<boolean>( async (resolve, reject) => {
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+        fs.writeFile(path.join(GameFileSystem.rootDirectoryPath, filepath), data, (err) => {
+          resolve(!err);
         })
-      });
-    }else{
-      filepath = GameFileSystem.normalizePath(filepath);
-      const dirs = filepath.split('/');
-      const filename = dirs.pop();
-      const dirHandle = await GameFileSystem.resolveFilePathDirectoryHandle(filepath);
-      
-      if(!dirHandle) throw new Error('Failed to locate file directory');
-      
-      const newFile = await dirHandle.getFileHandle(filename, {
-        create: true
-      });
-  
-      if(!newFile) throw new Error('Failed to create file');
-  
-      try{
-        let stream = await newFile.createWritable();
-        await stream.write(data);
-        stream.close();
-      }catch(e){
-        console.error(e);
-        throw new Error('Failed to write file');
+      }else{
+        filepath = GameFileSystem.normalizePath(filepath);
+        const dirs = filepath.split('/');
+        const filename = dirs.pop();
+        const dirHandle = await GameFileSystem.resolveFilePathDirectoryHandle(filepath);
+        
+        if(!dirHandle) throw new Error('Failed to locate file directory');
+        
+        const newFile = await dirHandle.getFileHandle(filename, {
+          create: true
+        });
+
+        if(!newFile) throw new Error('Failed to create file');
+
+        try{
+          let stream = await newFile.createWritable();
+          await stream.write(data);
+          await stream.close();
+          resolve(true);
+          return;
+        }catch(e){
+          console.error(e);
+          resolve(false);
+          return;
+          // throw new Error('Failed to write file');
+        }
       }
-    }
+    });
   }
 
   static async readdir(
@@ -304,8 +308,9 @@ export class GameFileSystem {
   }
 
   static async mkdir(dirPath: string, opts: GameFileSystemReadDirOptions = {}){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<boolean>( (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, reject) => {
+      dirPath = dirPath.trim();
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.mkdir(path.join(GameFileSystem.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, (err) => {
           if(err){
             console.error(err);
@@ -315,50 +320,68 @@ export class GameFileSystem {
           resolve(true)
           return;
         });
-      })
-    }else{
-      const dirs = dirPath.split(path.sep);
-      try{
-        let currentDirHandle = GameFileSystem.rootDirectoryHandle; 
-        for(let i = 0, len = dirs.length; i < len; i++){
-          currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: true })
+      }else{
+        if(dirPath.length){
+          const dirs = dirPath.length ? dirPath.split(path.sep) : [];
+          try{
+            let currentDirHandle = GameFileSystem.rootDirectoryHandle; 
+            for(let i = 0, len = dirs.length; i < len; i++){
+              const isTargetDirectory = (i == dirs.length-1);
+              const canCreate = (isTargetDirectory || !!opts.recursive);
+              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate })
+              if(!currentDirHandle && !isTargetDirectory){
+                resolve(false);
+                return;
+              }
+            }
+            console.log('mkdir', currentDirHandle);
+            resolve(true);
+          }catch(e){
+            console.error(e);
+            resolve(false);
+            return;
+          }
+        }else{
+          resolve(false);
+          return;
         }
-      }catch(e){
-        console.error(e);
-        // throw e;
       }
-    }
+    });
   }
 
   static async rmdir(dirPath: string, opts: GameFileSystemReadDirOptions = {}){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<void>( (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, reject) => {
+      dirPath = dirPath.trim();
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.rmdir(dirPath, {
           recursive: opts.recursive
         } as fs.RmDirOptions, () => {
-          resolve();
-        })
-      });
-    }else{
-      try{
-        const details = path.parse(dirPath);
-        // let handle = await GameFileSystem.resolvePathDirectoryHandle(dirPath);
-        let parentHandle = await GameFileSystem.resolvePathDirectoryHandle(details.dir);
-        if(parentHandle){
-          for await (const entry of parentHandle.values()) {
-            if(entry.kind == 'file') continue;
-            if(entry.name != details.name) continue;
-            parentHandle.removeEntry(entry.name, {
-              recursive: opts.recursive
-            });
-            break;
+          resolve(true);
+        });
+      }else{
+        try{
+          const details = path.parse(dirPath);
+          // let handle = await GameFileSystem.resolvePathDirectoryHandle(dirPath);
+          let parentHandle = await GameFileSystem.resolvePathDirectoryHandle(details.dir);
+          if(parentHandle){
+            for await (const entry of parentHandle.values()) {
+              if(entry.kind == 'file') continue;
+              if(entry.name != details.name) continue;
+              parentHandle.removeEntry(entry.name, {
+                recursive: opts.recursive
+              });
+              break;
+            }
           }
+          resolve(true);
+          return;
+        }catch(e){
+          console.error(e);
+          resolve(false);
+          return;
         }
-      }catch(e){
-        console.error(e);
-        return;
       }
-    }
+    });
   }
 
   static async exists(dirOrFilePath: string): Promise<boolean>{
