@@ -6,6 +6,8 @@ import { ModuleCreature, ModuleObject } from "../module";
 import { Utility } from "../utility/Utility";
 import { GameState } from "../GameState";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ActionJumpToPoint } from "./ActionJumpToPoint";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 
 export class ActionMoveToPoint extends Action {
 
@@ -109,6 +111,22 @@ export class ActionMoveToPoint extends Action {
       }else{
         this.owner.computedPath.timer -= 10*delta;
       }
+
+      let timeout = this.getParameter(8) - delta;
+      if(timeout <= 0){
+        let fallback_action = new ActionJumpToPoint(undefined, this.groupId);
+        fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
+        fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
+        fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
+        fallback_action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        fallback_action.setParameter(4, ActionParameterType.INT, 0);
+        fallback_action.setParameter(5, ActionParameterType.FLOAT, 20.0);
+        fallback_action.setParameter(6, ActionParameterType.FLOAT, 0);//target.rotation.x);
+        fallback_action.setParameter(7, ActionParameterType.FLOAT, 0)//target.rotation.y);
+        this.owner.actionQueue.addFront(fallback_action);
+        return ActionStatus.FAILED;
+      }
+      this.setParameter(8, timeout);
 
       return ActionStatus.IN_PROGRESS;
     }else{

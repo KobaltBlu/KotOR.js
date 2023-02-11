@@ -24,7 +24,7 @@ export class ActionJumpToPoint extends Action {
     // 0 - float: x
     // 1 - float: y
     // 2 - float: z
-    // 3 - dword: target object id
+    // 3 - dword: target area object id
     // 4 - int: unknown
     // 5 - float: 20.0? maybe max safe distance check radius
     // 6 - float: rotation x
