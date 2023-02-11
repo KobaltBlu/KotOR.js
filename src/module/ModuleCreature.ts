@@ -1091,7 +1091,14 @@ export class ModuleCreature extends ModuleObject {
   }
 
   canMove(){
-    return !this.isParalyzed() && !this.isStunned() && (this.animState != ModuleCreatureAnimState.DEAD || this.animState != ModuleCreatureAnimState.DIE) && !this.casting.length;
+    return !this.isParalyzed() && !this.isStunned() && (
+      this.animState != ModuleCreatureAnimState.DEAD && 
+      this.animState != ModuleCreatureAnimState.DEAD1 && 
+      this.animState != ModuleCreatureAnimState.DIE && 
+      this.animState != ModuleCreatureAnimState.DIE1 && 
+      this.animState != ModuleCreatureAnimState.GET_UP_DEAD && 
+      this.animState != ModuleCreatureAnimState.GET_UP_DEAD1
+    ) && !this.casting.length;
   }
 
   getCurrentAction(){
