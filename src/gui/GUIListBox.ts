@@ -124,6 +124,10 @@ export class GUIListBox extends GUIControl {
     if(!this.isVisible())
       return;
 
+    this.render();
+  }
+
+  render(){
     let oldClearColor = new THREE.Color()
     GameState.renderer.getClearColor(oldClearColor);
     GameState.renderer.setClearColor(this.clearColor, 1);
@@ -135,7 +139,6 @@ export class GUIListBox extends GUIControl {
     this.targetMaterial.transparent = true;
     this.targetMaterial.needsUpdate = true;
     GameState.renderer.setClearColor(oldClearColor, 1);
-
   }
 
   calculatePosition(){
@@ -158,6 +161,7 @@ export class GUIListBox extends GUIControl {
       this.itemGroup.remove(this.itemGroup.children[i]);
     }
     this.children = [];
+    this.render();
   }
 
   removeItemByIndex(index = -1){
