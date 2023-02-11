@@ -13,8 +13,14 @@ export class NWScriptStackVariable {
       this.value = ''; console.warn('NWScriptStackVariable', 'Undefined STRING');
     }
 
-    if(this.value == undefined && this.type == NWScriptDataType.INTEGER){
-      this.value = 0; console.warn('NWScriptStackVariable', 'Undefined INTEGER');
+    if(this.type == NWScriptDataType.INTEGER){
+      if(this.value == undefined){
+        this.value = 0; console.warn('NWScriptStackVariable', 'Undefined INTEGER');
+      }
+
+      if(typeof this.value === 'boolean'){
+        this.value = this.value ? 1 : 0;
+      }
     }
   }
 
