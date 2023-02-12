@@ -4330,8 +4330,10 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(!(this.caller instanceof ModulePlaceable)) return;
-      if(!(this.caller instanceof ModuleDoor)) return;
+      if(
+        !(this.caller instanceof ModulePlaceable) && 
+        !(this.caller instanceof ModuleDoor)
+      ) return;
       return this.caller.lastObjectOpened;
     }
   },
