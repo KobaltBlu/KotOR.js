@@ -39,8 +39,8 @@ export class ModuleCamera extends ModuleObject {
     }
     this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, window.innerWidth / window.innerHeight, 0.1, 1500);
     this.perspectiveCamera.up = new THREE.Vector3( 0, 1, 0 );
-    this.perspectiveCamera.position.copy(this.position);
     this.perspectiveCamera.position.set(0, 0, this.height);
+    this.perspectiveCamera.position.add(this.position);
     this.perspectiveCamera.rotation.reorder('YZX');
     this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.perspectiveCamera.rotation.z = -Math.atan2(this.orientation.w, -this.orientation.x)*2;
@@ -50,7 +50,6 @@ export class ModuleCamera extends ModuleObject {
 
     this.perspectiveCamera.userData.moduleObject = this;
     this.perspectiveCamera.userData.ingameID = this.cameraID;
-    this.container.add(this.perspectiveCamera);
   }
 
   InitProperties(){
