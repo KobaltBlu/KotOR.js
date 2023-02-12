@@ -478,14 +478,14 @@ PauseConversation() {
 
 ResumeConversation() {
   this.paused = false;
-  if (this.ended) {
-    this.EndConversation();
-  } else {
-    if (this.currentEntry && this.currentEntry.checkList.alreadyAllowed) {
-      this.showReplies(this.currentEntry);
-    } else {
-    }
-  }
+  // if (this.ended) {
+  //   this.EndConversation();
+  // } else {
+  //   if (this.currentEntry && this.currentEntry.checkList.alreadyAllowed) {
+  //     this.showReplies(this.currentEntry);
+  //   } else {
+  //   }
+  // }
 }
 
 UpdateEntryAnimations(entry: any) {
@@ -729,6 +729,8 @@ Update(delta: number = 0) {
       }
     }
   }
+
+  if(this.paused) return;
 
   if(this.currentEntry){
     if(this.currentEntry.update(delta)){

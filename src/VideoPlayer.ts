@@ -13,50 +13,50 @@ export class VideoPlayer {
   static CurrentSession: VideoPlayerSession;
   static Sessions: VideoPlayerSession[] = [];
 
-  static Load(name = '', onEnded?: Function){
-    if(typeof name == 'string' && name.length){
-      if(typeof onEnded === 'function')
-        onEnded();
+  static Load(name = ''){
+    return new Promise<void>( (resolve, reject) => {
+      if(typeof name == 'string' && name.length){
+        resolve();
+        return;
+        let mp4 = path.join('Movies', name+'.mp4');
+        let bik = path.join('Movies', name+'.bik');
 
-      return;
-      let mp4 = path.join('Movies', name+'.mp4');
-      let bik = path.join('Movies', name+'.bik');
+        let hasMP4 = false;//fs.existsSync(mp4);
+        let hasBIK = false;//fs.existsSync(bik);
+        let playerSession;
 
-      let hasMP4 = false;//fs.existsSync(mp4);
-      let hasBIK = false;//fs.existsSync(bik);
-      let playerSession;
+        // console.log(name, hasMP4, hasBIK);
 
-      // console.log(name, hasMP4, hasBIK);
+        // if(hasMP4){
+        //   ipcRenderer.send('movie', {
+        //     action: 'play',
+        //     movie: name,
+        //     file: mp4
+        //   });
+        //   playerSession = new VideoPlayerSession( bik, name, onEnded );
+        // }else if(hasBIK){
+        //   ipcRenderer.send('movie', {
+        //     action: 'play',
+        //     movie: name,
+        //     file: bik
+        //   });
+        //   playerSession = new VideoPlayerSession( bik, name, onEnded );
+        // }else{
+        //   // console.log('no video');
+        //   if(typeof onEnded === 'function')
+        //     onEnded();
+        //   return;
+        // }
 
-      // if(hasMP4){
-      //   ipcRenderer.send('movie', {
-      //     action: 'play',
-      //     movie: name,
-      //     file: mp4
-      //   });
-      //   playerSession = new VideoPlayerSession( bik, name, onEnded );
-      // }else if(hasBIK){
-      //   ipcRenderer.send('movie', {
-      //     action: 'play',
-      //     movie: name,
-      //     file: bik
-      //   });
-      //   playerSession = new VideoPlayerSession( bik, name, onEnded );
-      // }else{
-      //   // console.log('no video');
-      //   if(typeof onEnded === 'function')
-      //     onEnded();
-      //   return;
-      // }
-
-      VideoPlayer.CurrentSession = playerSession;
-      VideoPlayer.Sessions.push(playerSession);
-    }else{
-      if(typeof onEnded === 'function'){
-        onEnded();
+        VideoPlayer.CurrentSession = playerSession;
+        VideoPlayer.Sessions.push(playerSession);
+        resolve();
+        return;
+      }else{
+        resolve();
+        return;
       }
-    }
-
+    })
   }
 
 }

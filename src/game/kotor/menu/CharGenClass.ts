@@ -59,7 +59,7 @@ export class CharGenClass extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        MenuManager.MainMenu.Start();
       });
 
       this.BTN_SEL1.addEventListener('click', (e: any) => {
@@ -181,59 +181,50 @@ export class CharGenClass extends GameMenu {
     });
   }
 
-  Load3D(onLoad?: Function, i = 0) {
-    if (i < 6) {
-      this.InitCharacter3D(this.getControlByName('_3D_MODEL' + (i + 1)), i, () => {
-        i++;
-        this.Load3D(onLoad, i);
-      });
-    } else {
-      if (typeof onLoad === 'function')
-        onLoad();
-    }
+  async load3D() {
+    await this.initCharacter3D(this._3D_MODEL1, 0);
+    await this.initCharacter3D(this._3D_MODEL2, 1);
+    await this.initCharacter3D(this._3D_MODEL3, 2);
+    await this.initCharacter3D(this._3D_MODEL4, 3);
+    await this.initCharacter3D(this._3D_MODEL5, 4);
+    await this.initCharacter3D(this._3D_MODEL6, 5);
   }
 
-  InitCharacter3D(control: GUIControl, nth = 0, onLoad?: Function) {
-    let _3dView = CharGenManager.lbl_3d_views.get(nth);
-    let _3dViewModel = CharGenManager.models.get(nth);
-    let creature = CharGenManager.creatures.get(nth);
+  initCharacter3D(control: GUIControl, nth = 0) {
+    return new Promise<void>( (resolve, reject) => {
+      let _3dView = CharGenManager.lbl_3d_views.get(nth);
+      let _3dViewModel = CharGenManager.models.get(nth);
+      let creature = CharGenManager.creatures.get(nth);
+      _3dView.setControl(control);
+      control.border.fill.material.transparent = true;
+      control.border.fill.material.blending = 1;
 
-    // if (_3dViewModel instanceof OdysseyModel3D) {
-    //   _3dViewModel.dispose();
-    //   _3dViewModel = undefined;
-    // }
-    // if (creature instanceof ModuleCreature) {
-    //   creature.destroy();
-    //   creature = undefined;
-    // }
-    OdysseyModel3D.FromMDL(CharGenManager.cgmain_light, {
-      onComplete: (model: OdysseyModel3D) => {
-        CharGenManager.models.set(nth, model);
-        _3dViewModel = model;
-        _3dView.addModel(_3dViewModel);
-        _3dView.camera.position.copy(_3dViewModel.camerahook.position);
-        _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
-        _3dView.camera.position.z = 0.9;
-        creature.Load();
-        creature.LoadModel().then((model: OdysseyModel3D) => {
-          model.position.set(0, 0, 0);
-          model.rotation.z = -Math.PI / 2;
-          model.box = new THREE.Box3().setFromObject(model);
-          _3dView.addModel(model);
-          TextureLoader.LoadQueue(() => {
-            MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
-            if (typeof onLoad === 'function')
-              onLoad();
-            _3dViewModel.playAnimation(0, true);
+      if(_3dViewModel) _3dViewModel.removeFromParent();
+
+      OdysseyModel3D.FromMDL(CharGenManager.cgmain_light, {
+        onComplete: (background_model: OdysseyModel3D) => {
+          CharGenManager.models.set(nth, background_model);
+          _3dViewModel = background_model;
+          _3dView.addModel(_3dViewModel);
+          _3dView.camera.position.copy(_3dViewModel.camerahook.position);
+          _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
+          _3dView.camera.position.z = 0.9;
+          creature.Load();
+          creature.LoadModel().then((creature_model: OdysseyModel3D) => {
+            creature.position.set(0, 0, 0);
+            creature.rotation.z = -Math.PI / 2;
+            _3dView.addModel(creature.model);
+            TextureLoader.LoadQueue(() => {
+              MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
+              _3dViewModel.playAnimation(0, true);
+              resolve();
+            });
           });
-        });
-      },
-      manageLighting: false,
-      context: _3dView
+        },
+        manageLighting: false,
+        context: _3dView
+      });
     });
-    control.setFillTexture(_3dView.texture.texture);
-    control.border.fill.material.transparent = true;
-    control.border.fill.material.blending = 1;
   }
 
   Update(delta = 0) {
@@ -294,18 +285,10 @@ export class CharGenClass extends GameMenu {
   }
 
   Init(onLoad?: Function) {
-    let bgMusic = 'mus_theme_rep';
     MenuManager.LoadScreen.setProgress(0);
-    this.Load3D(() => {
-      AudioLoader.LoadMusic(bgMusic, (data: any) => {
-        GameState.audioEngine.SetBackgroundMusic(data);
-        if (typeof onLoad === 'function')
-          onLoad();
-      }, () => {
-        console.error('Background Music not found', bgMusic);
-        if (typeof onLoad === 'function')
-          onLoad();
-      });
+    this.load3D().then(() => {
+      if (typeof onLoad === 'function')
+        onLoad();
     });
   }
 

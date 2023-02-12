@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton, GUIProtoItem } from "../../../gui";
+import { GUILabel, GUIListBox, GUIButton, GUIProtoItem, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { Module } from "../../../module";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
@@ -50,7 +50,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
         if(this.selected instanceof SaveGame){
-          this.Close();
+          MenuManager.ClearMenus();
 
           if(GameState.module instanceof Module){
             GameState.module.dispose();

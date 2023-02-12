@@ -53,7 +53,7 @@ export class MenuSaveLoad extends GameMenu {
         e.stopPropagation();
         if(this.mode == MenuSaveLoadMode.LOADGAME){
           if(this.selected instanceof SaveGame){
-            this.Close();
+            MenuManager.ClearMenus();
 
             if(GameState.module instanceof Module){
               GameState.module.dispose();

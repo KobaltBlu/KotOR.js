@@ -30,40 +30,7 @@ export class CharGenName extends K1_CharGenName {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.NAME_BOX_EDIT.addEventListener('click', (e: any) => {
-        e.stopPropagation();
-
-      });
-
-      this.NAME_BOX_EDIT.onKeyDown = (e: any) => {
-        //e.stopPropagation();
-        console.log(e);
-
-        switch(e.which){
-          case 8: //Backspace
-            this.NAME_BOX_EDIT.setText(this.NAME_BOX_EDIT.text.text.slice(0, -1));
-          break;
-          case 32: //Spacebar
-          this.NAME_BOX_EDIT.setText(
-            this.NAME_BOX_EDIT.text.text + ' '
-          );
-          break;
-          default:
-            if(e.which >= 48 && e.which <= 90){
-              if(e.shiftKey){
-                this.NAME_BOX_EDIT.setText(
-                  this.NAME_BOX_EDIT.text.text + String.fromCharCode(e.which).toLocaleUpperCase()
-                );
-              }else{
-                this.NAME_BOX_EDIT.setText(
-                  this.NAME_BOX_EDIT.text.text + String.fromCharCode(e.which)
-                );
-              }
-            }
-          break;
-        }
-
-      }
+      this.NAME_BOX_EDIT.setEditable(true);
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
@@ -72,7 +39,7 @@ export class CharGenName extends K1_CharGenName {
 
       this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.player.firstName = this.NAME_BOX_EDIT.text.text;
+        GameState.player.firstName = this.NAME_BOX_EDIT.getValue();
         this.Close();
       });
       resolve();

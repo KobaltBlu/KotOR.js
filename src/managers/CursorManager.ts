@@ -123,8 +123,6 @@ export class CursorManager {
       CursorManager.reticleH2.depthTest = false;
       if(typeof onLoad === 'function')
         onLoad();
-    }, (texName: string) => {
-      
     });
 
   }

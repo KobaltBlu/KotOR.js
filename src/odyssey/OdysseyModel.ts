@@ -128,9 +128,8 @@ export class OdysseyModel {
     let nameOffsets = OdysseyModel.ReadArray(this.mdlReader, this.fileHeader.ModelDataOffset + nameOffset, nameCount);
 
     this.names = OdysseyModel.readStrings(this.mdlReader, nameOffsets, this.fileHeader.ModelDataOffset);
-    let namesLen = this.names.length;
-    for(let i = 0; i < namesLen; i++){
-      this.names[i] = this.names[i].toLowerCase();
+    for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
+      this.names[i] = this.names[i].replace(/\0[\s\S]*$/g,'').toLowerCase();
     }
 
     /*

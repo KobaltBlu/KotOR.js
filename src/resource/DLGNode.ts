@@ -292,7 +292,7 @@ export class DLGNode {
   }
 
   update(delta: number = 0): boolean {
-    this.elapsed += delta;
+    this.elapsed += delta * 1000;
     this.processFadeOverlay();
     if(!!this.checkList.voiceOverError){
       if(this.elapsed >= this.delay){

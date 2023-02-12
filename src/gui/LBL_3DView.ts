@@ -69,7 +69,9 @@ export class LBL_3DView {
 
   setControl(control: GUIControl){
     this.control = control;
-    this.control.getFill().material.uniforms.map.value = this.texture.texture;
+    
+    this.control.setFillTexture(this.texture.texture);
+    // this.control.getFill().material.uniforms.map.value = this.texture.texture;
     this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
   }
 
@@ -84,6 +86,12 @@ export class LBL_3DView {
   addModel(model: THREE.Object3D){
     if(model instanceof THREE.Object3D){
       this.scene.add(model);
+    }
+  }
+
+  removeModel(model: THREE.Object3D){
+    if(model instanceof THREE.Object3D){
+      this.scene.remove(model);
     }
   }
 

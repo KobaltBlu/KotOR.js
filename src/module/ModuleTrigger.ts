@@ -226,7 +226,7 @@ export class ModuleTrigger extends ModuleObject {
     
     super.update(delta);
     
-    this.getCurrentRoom();
+    if(!this.room) this.getCurrentRoom();
     try{
       if(!this.room.model.visible)
         return;

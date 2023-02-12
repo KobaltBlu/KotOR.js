@@ -34,6 +34,8 @@ export class MainMenu extends K1_MainMenu {
   declare BTN_WARP: GUIButton;
   declare BTN_EXIT: GUIButton;
 
+  bgMusicResRef: string = 'mus_sion';
+
   constructor(){
     super();
     this.gui_resref = 'mainmenu8x6_p';
@@ -73,8 +75,6 @@ export class MainMenu extends K1_MainMenu {
         e.stopPropagation();
         window.close();
       });
-
-      let bgMusic = 'mus_sion'; 
       
       (this.tGuiPanel.widget.userData.fill as any).visible = false;
 
@@ -99,18 +99,8 @@ export class MainMenu extends K1_MainMenu {
 
           this._3dView.addModel(this._3dViewModel);
           TextureLoader.LoadQueue(() => {
-            AudioLoader.LoadMusic(bgMusic, (data: any) => {
-              console.log('Loaded Background Music', bgMusic);
-              
-              GameState.audioEngine.SetBackgroundMusic(data);
-              resolve();
-
-              this._3dViewModel.playAnimation(0, true);
-        
-            }, () => {
-              console.error('Background Music not found', bgMusic);
-              resolve();
-            });
+            this._3dViewModel.playAnimation(0, true);
+            resolve();
           });
         }).catch(resolve);
       }).catch(resolve);

@@ -10,6 +10,7 @@ import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView, Menu
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenManager } from "../../../managers/CharGenManager";
 
 /* @file
 * The MainMenu menu class.
@@ -33,6 +34,7 @@ export class MainMenu extends GameMenu {
   _3dViewModel: OdysseyModel3D;
   _3dView: LBL_3DView;
   bgMusicBuffer: Buffer;
+  bgMusicResRef: string = 'mus_theme_cult';
 
   constructor(){
     super();
@@ -55,14 +57,7 @@ export class MainMenu extends GameMenu {
 
       this.BTN_NEWGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        //Game.LoadModule('end_m01aa', null, () => { console.log('ready to load'); })
-        MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
-          MenuManager.LoadScreen.Open();
-          MenuManager.CharGenClass.Init( () => {
-            MenuManager.LoadScreen.Close();
-            MenuManager.CharGenClass.Open();
-          });
-        });
+        CharGenManager.Start();
       });
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
@@ -90,9 +85,6 @@ export class MainMenu extends GameMenu {
         window.close();
       });
 
-      let bgMusic = 'mus_theme_cult';            
-    
-
       GameState.ModelLoader.load('mainmenu').then((mdl: OdysseyModel) => {
         this.tGuiPanel.widget.userData.fill.visible = false;
         this._3dView = new LBL_3DView();
@@ -115,18 +107,27 @@ export class MainMenu extends GameMenu {
 
           this._3dView.addModel(this._3dViewModel);
           TextureLoader.LoadQueue(() => {
-            AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
-              this.bgMusicBuffer = data;
-              this._3dViewModel.playAnimation(0, true);
-              resolve();
-            }, () => {
-              console.error('Background Music not found', bgMusic);
-              resolve();
-            });
+            this._3dViewModel.playAnimation(0, true);
+            resolve();
           });
         }).catch((e: any) => {
 
-        })
+        });
+      });
+    });
+  }
+
+  Start(){
+    return new Promise<void>( (resolve, reject) => {
+      MenuManager.ClearMenus(); 
+      AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
+        GameState.audioEngine.SetBackgroundMusic(data);
+        this.Open();
+        resolve();
+      }, () => {
+        this.Open();
+        console.error('Background Music not found', this.bgMusicResRef);
+        resolve();
       });
     });
   }

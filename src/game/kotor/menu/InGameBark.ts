@@ -16,6 +16,7 @@ import { LIPObject } from "../../../resource/LIPObject";
 
 export class InGameBark extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.INGAME;
   LBL_BARKTEXT: GUILabel;
 
   constructor(){

@@ -19,8 +19,8 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
   BonePositionDef: { offset: number; count: number; count2: number; };
   BoneConstantsDef: { offset: number; count: number; count2: number; };
   bone_parts: number[];
-  weights: number[][];
-  boneIdx: number[][];
+  weights: number[];
+  boneIdx: number[];
   bone_mapping: number[];
   bone_constants: number[];
   bone_quaternions: THREE.Quaternion[];
@@ -63,20 +63,23 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
     this.bone_inverse_matrix = [];
 
     for (let i = 0; i < this.VerticiesCount; i++) {
-      // Position
+      // Seek To Weights
       this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneWeightOffset;
-      
-      this.weights[i] = [0, 0, 0, 0];
-      for(let i2 = 0; i2 < 4; i2++){
-        this.weights[i][i2] = this.odysseyModel.mdxReader.ReadSingle();
-      }
+      this.weights.push(
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle()
+      );
 
+      // Seek To Bone Indexes
       this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneIndexOffset;
-
-      this.boneIdx[i] = [0, 0, 0, 0];
-      for(let i2 = 0; i2 < 4; i2++){
-        this.boneIdx[i][i2] = this.odysseyModel.mdxReader.ReadSingle();
-      }
+      this.boneIdx.push(
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle(),
+        this.odysseyModel.mdxReader.ReadSingle()
+      );
     }
 
     if (this.BoneMapCount > 0) {

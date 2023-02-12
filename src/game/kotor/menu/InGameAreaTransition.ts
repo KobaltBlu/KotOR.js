@@ -13,6 +13,7 @@ import { ModuleDoor, ModuleObject, ModuleTrigger } from "../../../module";
 
 export class InGameAreaTransition extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.INGAME;
   LBL_ICON: GUILabel;
   LBL_TEXTBG: GUILabel;
   LBL_DESCRIPTION: GUILabel;

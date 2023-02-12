@@ -33,7 +33,6 @@ export class CharGenPortCust extends GameMenu {
   BTN_ARRR: GUIButton;
   BTN_ACCEPT: GUIButton;
   BTN_BACK: GUIButton;
-  cghead_light: OdysseyModel;
   exiting: any;
   appearance: any;
   portraidId: any;
@@ -46,6 +45,7 @@ export class CharGenPortCust extends GameMenu {
     this.gui_resref = 'portcust';
     this.background = '1600x1200back';
     this.voidFill = false;
+    this._3dView = new LBL_3DView();
   }
 
   async MenuControlInitializer(skipInit: boolean = false) {
@@ -146,7 +146,6 @@ export class CharGenPortCust extends GameMenu {
 
       this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
-      this._3dView = new LBL_3DView();
       this._3dView.visible = true;
       this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
       this._3dView.camera.updateProjectionMatrix();
@@ -160,7 +159,7 @@ export class CharGenPortCust extends GameMenu {
 
   Init3D() {
     let control = this.LBL_HEAD;
-    OdysseyModel3D.FromMDL(this.cghead_light, {
+    OdysseyModel3D.FromMDL(CharGenManager.cghead_light, {
       onComplete: (model: OdysseyModel3D) => {
         try{
           this._3dViewModel = model;
@@ -216,8 +215,9 @@ export class CharGenPortCust extends GameMenu {
     this.appearance = CharGenManager.selectedCreature.appearance;
     this.portraidId = CharGenManager.selectedCreature.portraidId;
     try {
-      CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
+      CharGenManager.selectedCreature.model.removeFromParent();
     } catch (e: any) {
+      console.error(e);
     }
     this._3dView.scene.add(CharGenManager.selectedCreature.model);
     (this.LBL_PORTRAIT.getFill().material as THREE.ShaderMaterial).blending = 1;

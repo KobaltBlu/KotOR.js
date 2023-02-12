@@ -122,8 +122,8 @@ export class MenuOptions extends GameMenu {
         NWScript.Reload();
 
         //Resets all keys to their default state
-        GameState.controls.InitKeys();
-        MenuManager.MainMenu.Open();
+        GameState.controls.initKeys();
+        MenuManager.MainMenu.Start();
       });
 
       this.selectedControl = this.BTN_LOADGAME;

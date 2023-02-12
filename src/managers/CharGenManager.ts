@@ -1,4 +1,5 @@
 import { AudioLoader } from "../audio/AudioLoader";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CharGenClasses } from "../game/CharGenClasses";
@@ -60,11 +61,26 @@ export class CharGenManager {
   static Start(){
     MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
       MenuManager.LoadScreen.Open();
-      CharGenManager.Init().then( () => {
-        MenuManager.CharGenClass.Init( () => {
-          MenuManager.LoadScreen.Close();
-          MenuManager.CharGenClass.Open();
+      MenuManager.LoadScreen.setHintMessage('');
+      CharGenManager.StartBackgroundMusic().then( () => {
+        CharGenManager.Init().then( () => {
+          MenuManager.CharGenClass.Init( () => {
+            MenuManager.LoadScreen.Close();
+            MenuManager.CharGenClass.Open();
+          });
         });
+      });
+    });
+  }
+
+  static StartBackgroundMusic(){
+    return new Promise<void>( (resolve, reject) => {
+      let audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
+      AudioLoader.LoadMusic(audioResRef, (data: any) => {
+        GameState.audioEngine.SetBackgroundMusic(data);
+        resolve();
+      }, () => {
+        resolve();
       });
     });
   }

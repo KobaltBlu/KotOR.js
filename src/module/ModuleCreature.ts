@@ -43,6 +43,7 @@ import EngineLocation from "../engine/EngineLocation";
 import { MenuManager } from "../gui";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { CombatAction } from "../interface/combat/CombatAction";
+import { EngineState } from "../enums/engine/EngineState";
 
 /* @file
  * The ModuleCreature class.
@@ -861,6 +862,10 @@ export class ModuleCreature extends ModuleObject {
             if(PartyManager.party.indexOf(this) == -1){
               if(this.isHostile(creature)){
                 this.resetExcitedDuration();
+                if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
+                  GameState.State = EngineState.PAUSED
+                }
+                CombatEngine.AddCombatant(this);
               }
             }
             
@@ -1115,10 +1120,9 @@ export class ModuleCreature extends ModuleObject {
         
       this.openSpot = undefined;
       let action = new ActionMoveToPoint();
-      let target_position = target.position.clone();
-      action.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-      action.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-      action.setParameter(2, ActionParameterType.FLOAT, target_position.z);
+      action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
+      action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
+      action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
       action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
       action.setParameter(4, ActionParameterType.DWORD, target.id);
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
@@ -1164,10 +1168,9 @@ export class ModuleCreature extends ModuleObject {
         
       this.openSpot = undefined;
       let action = new ActionMoveToPoint();
-      let target_position = target.position.clone();
-      action.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-      action.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-      action.setParameter(2, ActionParameterType.FLOAT, target_position.z);
+      action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
+      action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
+      action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
       action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
       action.setParameter(4, ActionParameterType.DWORD, target instanceof EngineLocation ? ModuleObject.OBJECT_INVALID : target.id );
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
@@ -2079,7 +2082,7 @@ export class ModuleCreature extends ModuleObject {
     let radius = parseInt(this.getAppearance().hitdist);
     let closest = undefined;
     let distance = 0;
-    let origin = this.position.clone();
+    let origin = this.position;
 
     let alreadyClaimedSpot = false;
 
@@ -2156,7 +2159,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPosition(){
-    return this.position.clone();
+    return this.position;
   }
 
   GetFacing(){

@@ -22,6 +22,8 @@ import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
  * The TextureLoader class.
  */
 
+type onProgressCallback = (ref: TextureLoaderQueuedRef, index: number, total: number) => void;
+
 export class TextureLoader {
 
   static tpcLoader = new TPCLoader();
@@ -252,7 +254,7 @@ export class TextureLoader {
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad: onLoad });
   }
 
-  static LoadQueue(onLoad?: Function, onProgress?: Function){
+  static LoadQueue(onLoad?: Function, onProgress?: onProgressCallback){
     let queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
     let loop = new AsyncLoop({

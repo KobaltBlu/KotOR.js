@@ -42,7 +42,7 @@ export class IngameControls {
 
     this.gamePad = new GamePad();
 
-    this.InitKeys();
+    this.initKeys();
 
     this.element.requestPointerLock = this.element.requestPointerLock;
 
@@ -80,7 +80,7 @@ export class IngameControls {
       // GameState.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       // GameState.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
-      GameState.raycaster.setFromCamera( GameState.mouse.clone(), GameState.camera_gui );
+      GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
       
       let clickCaptured = false;
 
@@ -88,9 +88,6 @@ export class IngameControls {
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
-      //GameState.selected = undefined;
-
-      
 
       let uiControls = this.MenuGetActiveUIElements();
       for(let i = 0; i < uiControls.length; i++){
@@ -98,31 +95,29 @@ export class IngameControls {
           break;
         
         let control = uiControls[i];
-        //if(control === Mouse.clickItem){
-          if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-            clickCaptured = true;
-            if(GameState.debug.controls)
-              console.log('uiControls', control)
-            try{
-              if(control.processEventListener('mouseDown', [customEvent])){
-                Mouse.downItem = control;
-                customEvent.propagate = false;
-                //control.onMouseDown(customEvent);
-              }
-
-              if(control.eventListeners['click'].length){
-                Mouse.clickItem = control;
-                customEvent.propagate = false;
-              }
-              
-              //GameState.guiAudioEmitter.PlaySound('gui_click');
-              if(GameState.debug.controls)
-                console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
-            }catch(e){
-
+        if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+          clickCaptured = true;
+          if(GameState.debug.controls)
+            console.log('uiControls', control)
+          try{
+            if(control.processEventListener('mouseDown', [customEvent])){
+              Mouse.downItem = control;
+              customEvent.propagate = false;
+              //control.onMouseDown(customEvent);
             }
+
+            if(control.eventListeners['click'].length){
+              Mouse.clickItem = control;
+              customEvent.propagate = false;
+            }
+            
+            //GameState.guiAudioEmitter.PlaySound('gui_click');
+            if(GameState.debug.controls)
+              console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
+          }catch(e){
+
           }
-        //}
+        }
       }
       Mouse.leftDown = true;
     });
@@ -278,9 +273,6 @@ export class IngameControls {
             }
           }
         }
-
-        
-
       }
       Mouse.downItem = undefined;
       Mouse.clickItem = undefined;
@@ -305,15 +297,9 @@ export class IngameControls {
 
   }
 
-  InitKeys(){
+  initKeys(){
     KeyMapper.BindKeyboard(this.keyboard);
     KeyMapper.BindGamepad(this.gamePad);
-    let followee = PartyManager.party[0];
-
-    // if( (this.keys['s'].down || this.keys['w'].down) && !followee.isDead()){
-    //   followee.animState = ModuleCreatureAnimState.RUNNING;
-    //   GameState.scene_cursor_holder.visible = true;
-    // }
 
     //W
     KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
@@ -321,6 +307,7 @@ export class IngameControls {
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
       const followee = PartyManager.party[0];
+      if(!followee) return;
       if(!followee.canMove()) return;
 
       followee.clearAllActions(true);
@@ -336,6 +323,7 @@ export class IngameControls {
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
       const followee = PartyManager.party[0];
+      if(!followee) return;
       if(!followee.canMove()) return;
       
       followee.clearAllActions(true);
@@ -349,8 +337,8 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
-      if(this.gamePadMovement) return;
       const followee = PartyManager.party[0];
+      if(!followee) return;
       if(!followee.canMove()) return;
     });
 
@@ -358,8 +346,8 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
-      if(this.gamePadMovement) return;
       const followee = PartyManager.party[0];
+      if(!followee) return;
       if(!followee.canMove()) return;
     });
 
@@ -367,7 +355,6 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
-      if(this.gamePadMovement) return;
       if(
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value < 0)
@@ -387,7 +374,6 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
-      if(this.gamePadMovement) return;
       if(
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value > 0)
@@ -638,11 +624,15 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      const followee = PartyManager.party[0];
+      if(!followee) return;
       followee.position.z += 5 * delta;
     });
 
     KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      const followee = PartyManager.party[0];
+      if(!followee) return;
       followee.position.z -= 5 * delta;
     });
 
@@ -743,21 +733,22 @@ export class IngameControls {
         currentMenu != MenuManager.MenuContainer
       ){
         const followee = PartyManager.party[0];
-        if(followee.canMove()){
-          if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
-            followee.clearAllActions(true);
-            followee.force = 1;
-            followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false);
-            followee.controlled = true;
-            GameState.scene_cursor_holder.visible = false;
-            this.gamePadMovement = true;
+        if(followee){
+          if(followee.canMove()){
+            if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
+              followee.clearAllActions(true);
+              followee.force = 1;
+              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false);
+              followee.controlled = true;
+              GameState.scene_cursor_holder.visible = false;
+              this.gamePadMovement = true;
+            }
           }
         }
       }
     }
     
     KeyMapper.ProcessMappings(GameState.Mode, delta);
-    
 
     //Keyboard: onFrameEnd
     this.keyboard.onFrameEnd(delta);

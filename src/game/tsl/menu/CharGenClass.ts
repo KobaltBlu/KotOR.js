@@ -54,7 +54,7 @@ export class CharGenClass extends K1_CharGenClass {
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        MenuManager.MainMenu.Start();
       });
 
       this.BTN_SEL1.addEventListener('click', (e: any) => {

@@ -447,7 +447,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.collisionData.walkmesh && this.model){
-      this.collisionData.walkmesh.matrixWorld = this.model.matrix.clone();
+      this.collisionData.walkmesh.matrixWorld.copy(this.model.matrix);
     }
   }
 
@@ -479,24 +479,6 @@ export class ModuleDoor extends ModuleObject {
     if(this.isDead() && !this.isOpen()){
       this.openDoor(this);
     }
-
-    //Check Module Creatures
-    /*let creatureLen = GameState.module.area.creatures.length;
-    for(let i = 0; i < creatureLen; i++){
-      let creature = GameState.module.area.creatures[i];
-      let pos = creature.getModel().position.clone();
-      if(this.box.containsPoint(pos)){
-        if(creature.lastDoorEntered !== this){
-          creature.lastDoorEntered = this;
-          this.onEnter(creature);
-        }
-      }else{
-        if(creature.lastDoorEntered === this){
-          creature.lastDoorExited = this;
-          this.onExit(creature);
-        }
-      }
-    }*/
 
     const partymember = PartyManager.party[0];
     if(partymember){
@@ -538,7 +520,7 @@ export class ModuleDoor extends ModuleObject {
     this.transitionLineMax.set(5, 0, 0)
     this.transitionLine = new THREE.Line3(this.transitionLineMin, this.transitionLineMax);
     this.container.updateMatrix();
-    this.transitionLine.applyMatrix4(this.container.matrix.clone());
+    this.transitionLine.applyMatrix4(this.container.matrix);
   }
 
   testTransitionLine(object: ModuleObject){

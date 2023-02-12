@@ -85,8 +85,8 @@ export class MenuOptions extends K1_MenuOptions {
         NWScript.Reload();
 
         //Resets all keys to their default state
-        GameState.controls.InitKeys();
-        MenuManager.MainMenu.Open();
+        GameState.controls.initKeys();
+        MenuManager.MainMenu.Start();
       });
       resolve();
     });

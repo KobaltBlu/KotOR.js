@@ -172,7 +172,7 @@ export class ModulePlaceable extends ModuleObject {
     super.update(delta);
 
     if(this.collisionData.walkmesh && this.model){
-      this.collisionData.walkmesh.matrixWorld = this.model.matrix.clone();
+      this.collisionData.walkmesh.matrixWorld.copy(this.model.matrix);
     }
 
     if(this.model instanceof OdysseyModel3D){
@@ -188,58 +188,6 @@ export class ModulePlaceable extends ModuleObject {
         this.model.update(delta);
 
       this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
-
-      /*if(this.model.odysseyAnimations.length){
-
-        let animState = this.getAnimationState();
-
-        if(this.defaultAnimPlayed){
-
-          if(this._state != animState){
-
-            this._state = animState;
-            switch(animState){
-              case ModulePlaceableState.DEFAULT:
-                if(this.model.getAnimationByName('default')){
-                  this.model.playAnimation('default', true);
-                }
-              break;
-              case ModulePlaceableState.OPEN:
-                if(this.model.getAnimationByName('open')){
-                  this.model.playAnimation('open', true);
-                }
-              break;
-              case ModulePlaceableState.CLOSED:
-                if(this.model.getAnimationByName('close')){
-                  this.model.playAnimation('close', true);
-                }
-              break;
-              case ModulePlaceableState.DEAD:
-                if(this.model.getAnimationByName('dead')){
-                  this.model.playAnimation('dead', false);
-                }
-              break;
-              case ModulePlaceableState.ON:
-                if(this.model.getAnimationByName('on')){
-                  this.model.playAnimation('on', false);
-                }
-              break;
-              case ModulePlaceableState.OFF:
-                if(this.model.getAnimationByName('off')){
-                  this.model.playAnimation('off', false);
-                }
-              break;
-              default:
-                this.model.playAnimation(this.model.odysseyAnimations[0], false);
-              break;
-            }
-
-          }            
-
-        }
-
-      }*/
-      
     }
 
     this.action = this.actionQueue[0];

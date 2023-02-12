@@ -151,28 +151,27 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
       this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
-      this._3dView = new LBL_3DView();
       this._3dView.visible = true;
       this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
       this._3dView.camera.updateProjectionMatrix();
       this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
 
-      GameState.ModelLoader.load('cghead_light')
-      .then((mdl: any) => {
-        this.cghead_light = mdl;
-        this.Init3D();
-        resolve();
-      }).catch(resolve); 
+      this.Init3D();
+      resolve();
     });
   }
 
   Init3D() {
-    OdysseyModel3D.FromMDL(this.cghead_light, {
+    OdysseyModel3D.FromMDL(CharGenManager.cghead_light, {
       onComplete: (model: any) => {
         this._3dViewModel = model;
         this._3dView.addModel(this._3dViewModel);
-        this._3dView.camera.position.copy(model.camerahookm.position);
-        this._3dView.camera.quaternion.copy(model.camerahookm.quaternion);
+        try{
+          this._3dView.camera.position.copy(model.camerahookm.position);
+          this._3dView.camera.quaternion.copy(model.camerahookm.quaternion);
+        }catch(e){
+          console.error(e)
+        }
         this._3dView.camera.position.z = 1;
         this._3dViewModel.playAnimation(0, true);
       },

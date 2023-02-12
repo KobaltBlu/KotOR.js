@@ -22,6 +22,7 @@ const STR_GIVE_ITEMS = 38543;
 
 export class MenuContainer extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.INGAME;
   LBL_MESSAGE: GUILabel;
   LB_ITEMS: GUIListBox;
   BTN_OK: GUIButton;

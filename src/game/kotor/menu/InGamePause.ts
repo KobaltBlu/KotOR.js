@@ -11,6 +11,7 @@ import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
 
 export class InGamePause extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.INGAME;
   LBL_PAUSEREASON: GUILabel;
   LBL_PRESS: GUILabel;
   BTN_UNPAUSE: GUIButton;

@@ -84,6 +84,10 @@ export class LoadScreen extends GameMenu {
     this.setProgress(0);
   }
 
+  setHintMessage(message: string = ''){
+    this.LBL_HINT.setText(message);
+  }
+
   Show() {
     super.Show();
     GameState.Mode = EngineMode.LOADING;

@@ -28,6 +28,7 @@ import { Signal } from "signals";
 
 import template from "../templates/editor-module-3d.html";
 import { ConfigClient } from "../../KotOR";
+import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
 
 export class ModuleEditorTab extends EditorTab {
   template: string = template;
@@ -1346,8 +1347,8 @@ export class ModuleEditorTab extends EditorTab {
     return new Promise<void>( (resolve, reject) => {
       TextureLoader.LoadQueue(() => {
         resolve();
-      }, (texName: string) => {
-        Forge.loader.SetMessage('Loading Textures: '+texName);
+      }, (ref: TextureLoaderQueuedRef) => {
+        Forge.loader.SetMessage('Loading Textures: '+ref.name);
       });
     });
   }
