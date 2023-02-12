@@ -11,6 +11,7 @@ import { GameMenu, GUILabel, MenuManager } from "../../../gui";
 
 export class InGameComputerCam extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.DIALOG;
   LBL_RETURN: GUILabel;
 
   constructor(){

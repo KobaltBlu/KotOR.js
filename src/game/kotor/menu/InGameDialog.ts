@@ -27,6 +27,7 @@ import { DLGNode } from "../../../resource/DLGNode";
 
 export class InGameDialog extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.DIALOG;
   LBL_MESSAGE: GUILabel;
   LB_REPLIES: GUIListBox;
   dialog: DLGObject;

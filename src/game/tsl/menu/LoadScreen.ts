@@ -13,6 +13,7 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 
 export class LoadScreen extends K1_LoadScreen {
 
+  engineMode: EngineMode = EngineMode.LOADING;
   declare PB_PROGRESS: GUIProgressBar;
   declare LBL_HINT: GUILabel;
   declare LBL_LOGO: GUILabel;

@@ -20,6 +20,7 @@ import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 
 export class InGameComputer extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.DIALOG;
   LBL_STATIC1: GUILabel;
   LBL_STATIC3: GUILabel;
   LBL_STATIC4: GUILabel;

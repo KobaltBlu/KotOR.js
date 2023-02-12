@@ -23,6 +23,7 @@ import { EngineState } from "../../../enums/engine/EngineState";
 
 export class InGameOverlay extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.INGAME;
   LBL_CMBTMODEMSG: GUILabel;
   LBL_COMBATBG2: GUILabel;
   LBL_COMBATBG3: GUILabel;
@@ -787,7 +788,6 @@ export class InGameOverlay extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.Mode = EngineMode.INGAME;
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();

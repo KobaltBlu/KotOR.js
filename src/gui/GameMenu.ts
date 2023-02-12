@@ -190,6 +190,7 @@ export class GameMenu {
 
   Show(){
     // this.Hide();
+    GameState.Mode = this.engineMode;
     this.bVisible = true;
     GameState.scene_gui.add(this.tGuiPanel.getControl());
 
