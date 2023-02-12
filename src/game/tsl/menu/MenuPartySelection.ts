@@ -12,6 +12,7 @@ import { OdysseyModel } from "../../../odyssey";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuPartySelection menu class.
@@ -352,7 +353,6 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   Hide() {
     super.Hide();
     this.ignoreUnescapable = false;
-    GameState.MenuActive = false;
   }
 
   async Show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
@@ -363,7 +363,6 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.addToParty(this.forceNPC1);
     if (this.forceNPC2 > -1)
       this.addToParty(this.forceNPC2);
-    GameState.MenuActive = true;
     if (this.ignoreUnescapable) {
       // MenuManager.MenuTop.toggleNavUI(false);
     }

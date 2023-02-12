@@ -3,6 +3,7 @@
 
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { TwoDAManager } from "../../../managers/TwoDAManager";

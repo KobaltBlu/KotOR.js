@@ -31,6 +31,7 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
 import { MenuManager } from "../gui";
 import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
+import { FollowerCamera } from "../engine/FollowerCamera";
 
 /* @file
  * The ModuleArea class.
@@ -239,12 +240,6 @@ export class ModuleArea extends ModuleObject {
     let partyCount = PartyManager.party.length;
     let animTexCount = GameState.AnimatedTextures.length;
 
-    if(!GameState.module.area.MiniGame){
-      GameState.controls.UpdatePlayerControls(delta);
-    }else{
-      GameState.controls.UpdateMiniGameControls(delta);
-    }
-
     //update triggers
     for(let i = 0; i < trigCount; i++){
       this.triggers[i].update(delta);
@@ -298,7 +293,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
-    this.updateFollowerCamera(delta);
+    FollowerCamera.update(delta, this);
 
     this.weather.update(delta);
   }
@@ -311,12 +306,6 @@ export class ModuleArea extends ModuleObject {
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
     let partyCount = PartyManager.party.length;
-
-    if(!GameState.module.area.MiniGame){
-      GameState.controls.UpdatePlayerControls(delta);
-    }else{
-      //GameState.controls.UpdateMiniGameControls(delta);
-    }
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -360,14 +349,14 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
-    this.updateFollowerCamera(delta);
+    FollowerCamera.update(delta, this);
   }
 
   updateRoomVisibility(delta: number = 0){
     let roomList: ModuleRoom[] = [];
     let pos = undefined;
     
-    if(GameState.inDialog){
+    if(GameState.Mode == EngineMode.DIALOG){
       pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
       for(let i = 0, il = this.rooms.length; i < il; i++){
         const room = this.rooms[i];
@@ -396,115 +385,6 @@ export class ModuleArea extends ModuleObject {
         }
       }
     }
-  }
-
-  updateFollowerCamera(delta: number = 0){
-    let followee = GameState.getCurrentPlayer();
-    if(!followee) return;
-
-    let camStyle = GameState.module.getCameraStyle();
-    let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
-
-    let offsetHeight = 0;
-
-    if(GameState.Mode == EngineMode.MINIGAME){
-      offsetHeight = 1;
-    }else{
-      if(!isNaN(parseFloat(followee.getAppearance().cameraheightoffset))){
-        offsetHeight = parseFloat(followee.getAppearance().cameraheightoffset);
-      }
-    }
-
-    GameState.followerCamera.userData.pitch = THREE.MathUtils.degToRad(camStyle.pitch);
-    
-    let camHeight = (1.35 + cameraHeight)-offsetHeight;
-    let distance = camStyle.distance * GameState.CameraDebugZoom;
-
-    GameState.raycaster.far = 10;
-    
-    GameState.raycaster.ray.direction.set(Math.cos(GameState.followerCamera.userData.facing), Math.sin(GameState.followerCamera.userData.facing), 0).normalize();
-    GameState.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
-
-    let aabbFaces = [];
-    let intersects;
-
-    if(typeof this.cameraBoundingBox == 'undefined'){
-      this.cameraBoundingBox = new THREE.Box3(GameState.raycaster.ray.origin.clone(), GameState.raycaster.ray.origin.clone());
-    }
-
-    this.cameraBoundingBox.min.copy(GameState.raycaster.ray.origin);
-    this.cameraBoundingBox.max.copy(GameState.raycaster.ray.origin);
-    this.cameraBoundingBox.expandByScalar(distance * 1.5);
-    
-    if(followee.room && followee.room.collisionData.walkmesh && followee.room.collisionData.walkmesh.aabbNodes.length){
-      aabbFaces.push({
-        object: followee.room, 
-        faces: followee.room.collisionData.walkmesh.getAABBCollisionFaces(this.cameraBoundingBox)
-      });
-    }
-
-    for(let j = 0, jl = GameState.module.area.doors.length; j < jl; j++){
-      let door = GameState.module.area.doors[j];
-      if(door && door.collisionData.walkmesh && !door.isOpen()){
-        if(door.box.intersectsBox(this.cameraBoundingBox) || door.box.containsBox(this.cameraBoundingBox)){
-          aabbFaces.push({
-            object: door,
-            faces: door.collisionData.walkmesh.faces
-          });
-        }
-      }
-    }
-    
-    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      let castableFaces = aabbFaces[k];
-      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
-      if ( intersects.length > 0 ) {
-        for(let i = 0; i < intersects.length; i++){
-          if(intersects[i].distance < distance){
-            distance = intersects[i].distance * .75;
-          }
-        }
-      }
-    }
-
-    GameState.raycaster.far = Infinity;
-
-    if(GameState.Mode == EngineMode.MINIGAME){
-      if(followee instanceof ModuleMGPlayer){
-        followee.camera.camerahook.getWorldPosition(GameState.followerCamera.position);
-        followee.camera.camerahook.getWorldQuaternion(GameState.followerCamera.quaternion);
-
-        switch(GameState.module.area.MiniGame.Type){
-          case 1: //SWOOPRACE
-            GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-          break;
-          case 2: //TURRET
-            GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-          break;
-        }
-        GameState.followerCamera.fov = GameState.module.area.MiniGame.CameraViewAngle;
-      }
-    }else{
-      GameState.followerCamera.position.copy(followee.position);
-
-      //If the distance is greater than the last distance applied to the camera. 
-      //Increase the distance by the frame delta so it will grow overtime until it
-      //reaches the max allowed distance wether by collision or camera settings.
-      if(distance > GameState.followerCamera.userData.distance){
-        distance = GameState.followerCamera.userData.distance += 2 * delta;
-      }
-        
-      GameState.followerCamera.position.x += distance * Math.cos(GameState.followerCamera.userData.facing);
-      GameState.followerCamera.position.y += distance * Math.sin(GameState.followerCamera.userData.facing);
-      GameState.followerCamera.position.z += camHeight;
-
-      GameState.followerCamera.userData.distance = distance;
-    
-      GameState.followerCamera.rotation.order = 'YZX';
-      GameState.followerCamera.rotation.set(GameState.followerCamera.userData.pitch, 0, GameState.followerCamera.userData.facing+Math.PI/2);
-    }
-    
-    GameState.followerCamera.updateProjectionMatrix();
   }
 
   reloadTextures(){
@@ -861,6 +741,13 @@ export class ModuleArea extends ModuleObject {
 
     GameState.audioEngine.SetReverbProfile(this.audio.EnvAudio);
 
+    FollowerCamera.setCameraStyle(this.getCameraStyle());
+    if(this.MiniGame){
+      FollowerCamera.setCameraFOV(this.MiniGame.CameraViewAngle);
+    }else{
+      FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
+    }
+
     this.LoadVis( () => {
       this.LoadLayout( () => {
         this.loadPath( () => {
@@ -872,6 +759,14 @@ export class ModuleArea extends ModuleObject {
       });
     });
 
+  }
+
+  getCameraStyle(){
+    const cameraStyle2DA = TwoDAManager.datatables.get('camerastyle');
+    if(cameraStyle2DA){
+      return cameraStyle2DA.rows[this.CameraStyle];
+    }
+    return cameraStyle2DA.rows[0];
   }
 
   loadPath(onLoad?: Function){
@@ -1054,7 +949,7 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(100);
 
-      GameState.followerCamera.userData.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
+      FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
 
       await this.weather.load();
 

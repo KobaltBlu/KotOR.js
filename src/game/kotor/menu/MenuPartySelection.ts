@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -291,7 +292,6 @@ export class MenuPartySelection extends GameMenu {
 
   async Show() {
     super.Show();
-    GameState.MenuActive = true;
     if (this.forceNPC1 > -1)
       this.addToParty(this.forceNPC1);
     if (this.forceNPC2 > -1)

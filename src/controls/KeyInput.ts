@@ -15,7 +15,9 @@ export class KeyInput {
   repeatPulseTimer: number;
   reapeatSpeed: number;
 
-  constructor( label = 'N/A' ){
+  keyCode: number;
+
+  constructor( label = 'N/A', keyCode: number = 0 ){
     //Input label
     this.label = label;
     //Stores the current down value
@@ -31,6 +33,8 @@ export class KeyInput {
     this.repeating = false;
     this.repeatTimer = 0;
     this.repeatPulseTimer = 0;
+
+    this.keyCode = keyCode;
   }
 
   update(gamePad: Gamepad, delta = 0){
@@ -67,6 +71,16 @@ export class KeyInput {
         }
       }
     }
+  }
+
+  keyDown(){
+    this.down = true;
+    if(!this.pressed) this.pressed = true;
+  }
+
+  keyUp(){
+    this.down = false;
+    this.pressed = false;
   }
 
 }

@@ -9,6 +9,7 @@ import { PartyManager } from "../../../managers/PartyManager";
 import { TLKManager } from "../../../managers/TLKManager";
 import { ModuleCreature, ModuleItem, ModuleObject, ModuleStore } from "../../../module";
 import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuStore menu class.
@@ -120,7 +121,6 @@ export class MenuStore extends K1_MenuStore {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     if (this.storeObject instanceof ModuleStore) {
       this.LB_DESCRIPTION.clearItems();
       this.LB_DESCRIPTION.hide();

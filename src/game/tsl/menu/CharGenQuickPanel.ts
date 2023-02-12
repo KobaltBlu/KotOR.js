@@ -7,6 +7,7 @@ import { GUIButton, GUIControl, GUILabel, MenuManager } from "../../../gui";
 import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { PartyManager } from "../../../managers/PartyManager";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenQuickPanel menu class.

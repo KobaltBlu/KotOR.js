@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuMessages as K1_MenuMessages } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuMessages menu class.
@@ -49,7 +50,6 @@ export class MenuMessages extends K1_MenuMessages {
 
 Show() {
   super.Show();
-  GameState.MenuActive = true;
 }
   
 }

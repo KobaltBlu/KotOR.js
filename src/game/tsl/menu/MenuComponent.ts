@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton, GameMenu } from "../../../gui";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuComponent menu class.

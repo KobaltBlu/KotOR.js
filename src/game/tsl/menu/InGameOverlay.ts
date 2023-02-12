@@ -17,6 +17,7 @@ import * as THREE from "three";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { TalentObject } from "../../../talents";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The InGameOverlay menu class.
@@ -364,7 +365,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
   Show() {
     super.Show();
-    GameState.MenuActive = false;
+    GameState.Mode = EngineMode.INGAME;
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();

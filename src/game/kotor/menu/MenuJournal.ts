@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { JournalEntry, JournalManager } from "../../../managers/JournalManager";
 import { TLKManager } from "../../../managers/TLKManager";
@@ -166,8 +167,6 @@ export class MenuJournal extends GameMenu {
     }
 
     this.UpdateLabels();
-
-    GameState.MenuActive = true;
   }
 
   triggerControllerBumperLPress() {

@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
 
@@ -52,7 +53,6 @@ export class MenuJournal extends K1_MenuJournal {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
   }
   
 }

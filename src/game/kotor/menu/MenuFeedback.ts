@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
@@ -41,7 +42,6 @@ export class MenuFeedback extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_MSG.onHoverIn();
-    GameState.MenuActive = true;
   }
   
 }

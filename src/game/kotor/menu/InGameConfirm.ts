@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUIButton } from "../../../gui";
 import { TLKManager } from "../../../managers/TLKManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";

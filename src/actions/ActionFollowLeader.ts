@@ -2,6 +2,7 @@ import { ActionMoveToPoint } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { PartyManager } from "../managers/PartyManager";
@@ -23,7 +24,7 @@ export class ActionFollowLeader extends Action {
 
   update(delta: number = 0): ActionStatus {
     if(this.owner instanceof ModuleCreature){
-      if(GameState.inDialog){
+      if(GameState.Mode == EngineMode.DIALOG){
         this.owner.animState = ModuleCreatureAnimState.IDLE;
         return ActionStatus.FAILED;
       }

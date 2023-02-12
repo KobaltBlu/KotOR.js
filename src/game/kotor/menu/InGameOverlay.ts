@@ -3,6 +3,7 @@
 
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CursorManager } from "../../../managers/CursorManager";
@@ -786,7 +787,7 @@ export class InGameOverlay extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuActive = false;
+    GameState.Mode = EngineMode.INGAME;
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();

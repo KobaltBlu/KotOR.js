@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GUIListBox, GUILabel, GUIButton, GameMenu } from "../../../gui";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuSwoopUp menu class.

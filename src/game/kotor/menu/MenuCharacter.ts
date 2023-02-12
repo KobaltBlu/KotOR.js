@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -104,7 +105,6 @@ export class MenuCharacter extends GameMenu {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
-        //Game.InGameOverlay.Show();
       });
       this._button_b = this.BTN_EXIT;
 
@@ -335,7 +335,6 @@ export class MenuCharacter extends GameMenu {
       });
     });
     this.updateCharacterStats(PartyManager.party[0]);
-    GameState.MenuActive = true;
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
     let btn_change: GUIControl;

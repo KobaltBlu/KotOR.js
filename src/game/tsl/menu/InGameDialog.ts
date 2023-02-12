@@ -19,6 +19,7 @@ import { LIPObject } from "../../../resource/LIPObject";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { DLGNode } from "../../../resource/DLGNode";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The InGameDialog menu class.
@@ -102,7 +103,7 @@ export class InGameDialog extends K1_InGameDialog {
     }
     this.unequipHeadItem = false;
     this.unequipItems = false;
-    GameState.inDialog = true;
+    GameState.Mode = EngineMode.DIALOG
     this.isListening = true;
     this.canLetterbox = false;
     this.letterBoxed = false;
@@ -239,7 +240,7 @@ export class InGameDialog extends K1_InGameDialog {
   async showEntry(entry: DLGNode) {
     this.state = 0;
     entry.initProperties();
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     GameState.VideoEffect = entry.videoEffect == -1 ? null : entry.videoEffect;
     this.LBL_MESSAGE.setText(entry.getCompiledString());
@@ -394,7 +395,7 @@ export class InGameDialog extends K1_InGameDialog {
 
   async showReplies(entry: any) {
     this.state = 1;
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     this.currentEntry = null;
     let isContinueDialog = entry.replies.length == 1 && this.isContinueDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
@@ -482,7 +483,6 @@ export class InGameDialog extends K1_InGameDialog {
     this.audioEmitter.Stop();
     this.Close();
     GameState.currentCamera = GameState.camera;
-    GameState.inDialog = false;
     this.state = -1;
     if (this.dialog.animatedCamera instanceof OdysseyModel3D)
       this.dialog.animatedCamera.animationManager.currentAnimation = undefined;

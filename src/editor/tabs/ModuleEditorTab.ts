@@ -1410,7 +1410,7 @@ export class ModuleEditorTab extends EditorTab {
 
     let followee = this.player;
 
-    let camStyle = this.module.getCameraStyle();
+    let camStyle = this.module.area.getCameraStyle();
     let cameraHeight = parseFloat(camStyle.height); //Should be aquired from the appropriate camerastyle.2da row set by the current module
 
     let offsetHeight = 0;

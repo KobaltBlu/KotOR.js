@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GameMenu, GUIButton, GUILabel } from "../../../gui";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuGameOver menu class.

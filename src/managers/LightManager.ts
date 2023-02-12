@@ -161,22 +161,24 @@ export class LightManager {
       }
     }else{
     
-      if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && target == null)
+      if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && GameState.Mode != EngineMode.DIALOG && target == null)
         return;
 
-      if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME){
-        if(GameState.inDialog){
-          target = GameState.currentCamera;
-        }else{
+      switch(GameState.Mode){
+        case EngineMode.INGAME:
+        case EngineMode.MINIGAME:
           target = GameState.getCurrentPlayer();
-        }
+        break;
+        case EngineMode.DIALOG:
+          target = GameState.currentCamera;
+        break;
       }
 
     }
     
     for(let i = 0, il = LightManager.lights.length; i < il; i++){
       let light = this.lights[i];
-      if(GameState.inDialog){
+      if(GameState.Mode == EngineMode.DIALOG){
         light.getWorldPosition(light.worldPosition);
         light._distance = target.position.distanceTo(light.worldPosition);
       }else{

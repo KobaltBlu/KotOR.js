@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
 import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuSound menu class.

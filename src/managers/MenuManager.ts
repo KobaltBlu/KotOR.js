@@ -6,6 +6,7 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import { GameMenu } from "../gui";
 import { CharGenManager } from "./CharGenManager";
 import { ActionMenuManager } from "../ActionMenuManager";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 
 export class MenuManager {
@@ -129,6 +130,18 @@ export class MenuManager {
     }else{
       MenuManager.pulseOpacity = 1 - this.pulse;
     }
+
+    // if(MenuManager.InGameOverlay.bVisible){
+    //   GameState.Mode = EngineMode.INGAME;
+    // }else if(
+    //   MenuManager.InGameComputer.bVisible ||
+    //   MenuManager.InGameComputerCam.bVisible ||
+    //   MenuManager.InGameDialog.bVisible
+    // ){
+    //   GameState.Mode = EngineMode.DIALOG;
+    // }else if(!MenuManager.activeMenus.length){
+    //   GameState.RestoreEnginePlayMode();
+    // }
 
     if(MenuManager.InGameOverlay.bVisible){
       MenuManager.InGameOverlay.Update(delta);

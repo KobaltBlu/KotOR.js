@@ -3,6 +3,7 @@
 
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIControl, GUIButton, MenuManager } from "../../../gui";
 import { CharGenManager } from "../../../managers/CharGenManager";
 import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";

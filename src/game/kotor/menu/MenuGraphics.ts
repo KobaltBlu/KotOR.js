@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox, MenuManager } from "../../../gui";
 
 /* @file

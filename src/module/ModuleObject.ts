@@ -38,6 +38,7 @@ import { Utility } from "../utility/Utility";
 import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { ActionType } from "../enums/actions/ActionType";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /* @file
  * The ModuleObject class.
@@ -480,6 +481,8 @@ export class ModuleObject {
   }
 
   updatePaused(delta: number = 0){
+    // this.force = 0;
+    // this.AxisFront.set(0, 0, 0);
     if(this.spawned){
       this.setModelVisibility();
     }
@@ -499,7 +502,7 @@ export class ModuleObject {
         this.model.visible = false;
       }
 
-      if(GameState.inDialog){
+      if(GameState.Mode == EngineMode.DIALOG){
         this.model.visible = true;
       }
 
@@ -1099,7 +1102,7 @@ export class ModuleObject {
   }
 
   isInConversation(){
-    return GameState.inDialog && (MenuManager.InGameDialog.owner == this || MenuManager.InGameDialog.listener == this);
+    return (GameState.Mode == EngineMode.DIALOG) && (MenuManager.InGameDialog.owner == this || MenuManager.InGameDialog.listener == this);
   }
 
   applyVisualEffect(resref = 'v_light'){

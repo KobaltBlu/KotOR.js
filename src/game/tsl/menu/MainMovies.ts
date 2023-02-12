@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MainMovies menu class.

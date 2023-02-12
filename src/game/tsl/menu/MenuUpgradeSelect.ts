@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuUpgradeSelect menu class.

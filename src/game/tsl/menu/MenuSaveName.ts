@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUIButton, GUILabel } from "../../../gui";
 import { MenuSaveName as K1_MenuSaveName } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuSaveName menu class.

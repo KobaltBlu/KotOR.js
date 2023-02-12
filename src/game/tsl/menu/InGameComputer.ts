@@ -2,6 +2,7 @@
 */
 
 import { AudioLoader } from "../../../audio/AudioLoader";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
 import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
@@ -69,7 +70,7 @@ export class InGameComputer extends K1_InGameComputer {
     if (this.audioEmitter === undefined) {
       this.audioEmitter = MenuManager.InGameDialog.audioEmitter;
     }
-    GameState.inDialog = true;
+    GameState.Mode = EngineMode.DIALOG
     this.entryList = [];
     this.replyList = [];
     this.startingList = [];
@@ -77,7 +78,7 @@ export class InGameComputer extends K1_InGameComputer {
     this.isListening = true;
     this.LB_REPLIES.hide();
     if (gff instanceof GFFObject) {
-      GameState.inDialog = true;
+      GameState.Mode = EngineMode.DIALOG
       if (gff.json.fields.VO_ID)
         this.vo_id = gff.json.fields.VO_ID.value;
       if (gff.json.fields.EndConverAbort)
@@ -147,7 +148,6 @@ export class InGameComputer extends K1_InGameComputer {
       });
     } else {
       this.Close();
-      GameState.inDialog = false;
     }
   }
 
@@ -305,7 +305,7 @@ export class InGameComputer extends K1_InGameComputer {
   }
 
   async showEntry(entry: any) {
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     this.LB_MESSAGE.clearItems();
     this.LB_MESSAGE.addItem(entry.text.split('##')[0], () => {
@@ -443,7 +443,7 @@ export class InGameComputer extends K1_InGameComputer {
   }
 
   async showReplies(entry: any) {
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     if (!entry.replies.length) {
       this.EndConversation();
@@ -656,7 +656,6 @@ export class InGameComputer extends K1_InGameComputer {
     this.audioEmitter.Stop();
     this.Close();
     GameState.currentCamera = GameState.camera;
-    GameState.inDialog = false;
     this.state = -1;
     window.setTimeout(async () => {
       if (!aborted) {

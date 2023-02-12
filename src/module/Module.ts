@@ -469,13 +469,6 @@ export class Module {
     
   }
 
-  getCameraStyle(){
-    const cameraStyle2DA = TwoDAManager.datatables.get('camerastyle');
-    if(cameraStyle2DA){
-      return cameraStyle2DA.rows[this.area.CameraStyle];
-    }
-  }
-
   setCustomToken(tokenNumber = 0, tokenValue = ''){
     this.customTokens.set(tokenNumber, tokenValue);
   }

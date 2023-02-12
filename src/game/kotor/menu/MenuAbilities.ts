@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, MenuManager } from "../../../gui";
 
 /* @file
@@ -52,7 +53,6 @@ export class MenuAbilities extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_ABI.onHoverIn();
-    GameState.MenuActive = true;
   }
 
   triggerControllerBumperLPress() {

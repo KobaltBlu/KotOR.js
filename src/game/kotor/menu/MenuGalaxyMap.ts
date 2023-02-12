@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
@@ -56,9 +57,6 @@ export class MenuGalaxyMap extends GameMenu {
     return new Promise<void>( async (resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        //Game.MenuActive = false;
-        //Game.InGameOverlay.Show();
-        //this.Hide();
         this.Close();
         Planetary.SetCurrentPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
@@ -66,9 +64,6 @@ export class MenuGalaxyMap extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        //Game.MenuActive = false;
-        //Game.InGameOverlay.Show();
-        //this.Hide();
         this.Close();
 
         if(this.script instanceof NWScriptInstance){
@@ -138,7 +133,6 @@ export class MenuGalaxyMap extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     this.selectedPlanet = GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET');
     this.UpdateScale();
     let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;

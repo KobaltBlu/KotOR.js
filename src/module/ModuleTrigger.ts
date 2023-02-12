@@ -18,6 +18,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /* @file
  * The ModuleTrigger class.
@@ -313,7 +314,7 @@ export class ModuleTrigger extends ModuleObject {
 
   onEnter(object?: ModuleObject){
     console.log('ModuleTrigger', this.getTag(), 'enter 2')
-    if(this.linkedToModule && !GameState.inDialog){
+    if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
       if(object == GameState.getCurrentPlayer()){
         GameState.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }

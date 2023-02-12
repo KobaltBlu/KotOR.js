@@ -12,6 +12,7 @@ import { OdysseyModel } from "../../../odyssey";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MainMenu menu class.

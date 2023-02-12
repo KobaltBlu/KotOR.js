@@ -1,6 +1,7 @@
 
 
 export enum DLGNodeType {
-  K1 = 0,
-  K2 = 1
+  STARTING = 0,
+  ENTRY = 1,
+  REPLY = 2
 };

@@ -14,6 +14,7 @@ import { GFFObject } from "../../../resource/GFFObject";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClass as K1_CharGenClass } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenClass menu class.

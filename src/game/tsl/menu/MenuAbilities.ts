@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuAbilities menu class.
@@ -52,7 +53,6 @@ export class MenuAbilities extends K1_MenuAbilities {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
   }
   
 }

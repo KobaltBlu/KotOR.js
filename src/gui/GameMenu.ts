@@ -11,6 +11,7 @@ import { GameState } from "../GameState";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /* @file
  * The base GameMenu class.
@@ -44,6 +45,8 @@ export class GameMenu {
   backgroundMaterial: any;
   backgroundVoidSprite: any;
   audioEmitter: AudioEmitter;
+
+  engineMode: EngineMode = EngineMode.GUI;
 
   constructor(){
     this._button_a = undefined;
@@ -181,10 +184,12 @@ export class GameMenu {
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
       this.childMenu.Hide();
+    
+    GameState.RestoreEnginePlayMode();
   }
 
   Show(){
-    this.Hide();
+    // this.Hide();
     this.bVisible = true;
     GameState.scene_gui.add(this.tGuiPanel.getControl());
 
@@ -194,8 +199,8 @@ export class GameMenu {
   }
 
   Close(){
-    MenuManager.Remove(this);
     this.Hide();
+    MenuManager.Remove(this);
   }
 
   Open(){

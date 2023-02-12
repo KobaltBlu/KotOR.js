@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { TLKManager } from "../../../KotOR";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { DialogMessageManager } from "../../../managers/DialogMessageManager";
@@ -53,7 +54,6 @@ export class MenuMessages extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_MSG.onHoverIn();
-    GameState.MenuActive = true;
     this.LB_MESSAGES.clearItems();
     this.LB_DIALOG.clearItems();
 

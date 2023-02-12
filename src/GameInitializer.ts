@@ -19,7 +19,7 @@ import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { ConfigClient } from "./KotOR";
 import { JournalManager } from "./managers/JournalManager";
-import { GamePad } from "./controls";
+import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 
 /* @file
@@ -58,6 +58,7 @@ export class GameInitializer {
                 //Load TLK File
                 LoadingScreen.main.SetMessage("Loading TLK File");
                 TLKManager.LoadTalkTable().then( () => {
+                  KeyMapper.Init();
                   GamePad.Init();
                   if(typeof props.onLoad === 'function'){
                     props.onLoad();

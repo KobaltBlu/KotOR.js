@@ -48,6 +48,7 @@ import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { JournalManager } from "../managers/JournalManager";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { ResourceLoader } from "../KotOR";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -7188,7 +7189,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.inDialog ? 1 : 0;
+      return (GameState.Mode == EngineMode.DIALOG) ? 1 : 0;
     }
   },
   702:{

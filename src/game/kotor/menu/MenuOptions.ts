@@ -110,7 +110,6 @@ export class MenuOptions extends GameMenu {
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
-        GameState.Mode = EngineMode.MAINMENU;
         GameState.UnloadModule();
         GameState.State = EngineState.RUNNING;
               
@@ -135,7 +134,6 @@ export class MenuOptions extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_OPT.onHoverIn();
-    GameState.MenuActive = true;
   }
 
   triggerControllerDUpPress() {

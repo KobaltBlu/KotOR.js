@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuFeedback as K1_MenuFeedback } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuFeedback menu class.
@@ -37,7 +38,6 @@ export class MenuFeedback extends K1_MenuFeedback {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
   }
   
 }

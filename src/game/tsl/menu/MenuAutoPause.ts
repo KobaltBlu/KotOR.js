@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
 import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuAutoPause menu class.

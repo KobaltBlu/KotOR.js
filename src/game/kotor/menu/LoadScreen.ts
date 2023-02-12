@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIProgressBar, GUILabel, MenuManager } from "../../../gui";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { TLKManager } from "../../../managers/TLKManager";
@@ -85,6 +86,7 @@ export class LoadScreen extends GameMenu {
 
   Show() {
     super.Show();
+    GameState.Mode = EngineMode.LOADING;
     this.setProgress(0);
     MenuManager.InGameAreaTransition.Hide();
     FadeOverlayManager.plane.visible = false;

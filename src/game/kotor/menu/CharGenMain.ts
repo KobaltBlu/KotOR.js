@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CharGenManager } from "../../../managers/CharGenManager";
@@ -129,7 +130,6 @@ export class CharGenMain extends GameMenu {
     this.LBL_LEVEL_VAL.hide();
     this.OLD_LBL.hide();
     this.NEW_LBL.hide();
-    GameState.MenuActive = true;
     try {
       CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
     } catch (e: any) {

@@ -10,6 +10,7 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
 import * as THREE from "three";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenPortCust menu class.

@@ -3,6 +3,7 @@
 
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager, GUIProtoItem, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { TLKManager } from "../../../managers/TLKManager";
@@ -92,7 +93,6 @@ export class MenuSaveLoad extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     this.selectedControl = this.LB_GAMES;
     this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
     this.LB_GAMES.clearItems();

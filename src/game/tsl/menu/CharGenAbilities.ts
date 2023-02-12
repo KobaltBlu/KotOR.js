@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import { CharGenAbilities as K1_CharGenAbilities } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenAbilities menu class.

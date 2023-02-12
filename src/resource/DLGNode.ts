@@ -1,8 +1,10 @@
 import type { AudioEmitter } from "../audio";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { DLGNodeScriptParams } from "../interface/dialog/DLGNodeScriptParams";
+import { DialogMessageEntry, DialogMessageManager } from "../managers/DialogMessageManager";
 import { FadeOverlayManager } from "../managers/FadeOverlayManager";
 import { JournalManager } from "../managers/JournalManager";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
@@ -13,6 +15,7 @@ import { LIPObject } from "./LIPObject";
 
 export class DLGNode {
   nodeType: DLGNodeType;
+  nodeEngineType: DLGNodeEngineType;
   animations: any[];
   cameraAngle: number;
   cameraID: number;
@@ -59,7 +62,7 @@ export class DLGNode {
   timeout: any;
 
   constructor(args = {}){
-    this.nodeType = DLGNodeType.K1;
+    this.nodeEngineType = DLGNodeEngineType.K1;
 
     this.animations = [];
     this.cameraAngle = 0;
@@ -270,6 +273,22 @@ export class DLGNode {
       const allowOverrideHigher = false;
       JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
+    try{
+      console.log('saving', this.speaker.getName(), this.text);
+      if(this.nodeType == DLGNodeType.ENTRY){
+        DialogMessageManager.AddEntry(
+          new DialogMessageEntry(
+            this.speaker.getName(), this.text
+          )
+        )
+      }else{
+        if(this.text.length){
+
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
   }
 
   update(delta: number = 0): boolean {
@@ -444,7 +463,7 @@ export class DLGNode {
       node.script = struct.Script.value;
 
     if(typeof struct.Script2 !== 'undefined'){
-      node.nodeType = DLGNodeType.K2;
+      node.nodeEngineType = DLGNodeEngineType.K2;
       node.script2 = struct.Script2.value;
 
       //k2 MODE

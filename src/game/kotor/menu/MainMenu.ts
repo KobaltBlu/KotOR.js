@@ -5,6 +5,7 @@ import { AudioLoader } from "../../../audio/AudioLoader";
 import { CurrentGame } from "../../../CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyModel } from "../../../odyssey";

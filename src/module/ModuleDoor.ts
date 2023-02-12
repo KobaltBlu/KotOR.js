@@ -28,6 +28,7 @@ import { InventoryManager } from "../managers/InventoryManager";
 import { KEYManager } from "../managers/KEYManager";
 import { MenuManager } from "../gui";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /* @file
  * The ModuleDoor class.
@@ -567,7 +568,7 @@ export class ModuleDoor extends ModuleObject {
   transitNPC(object: ModuleObject){
     if(!(object instanceof ModuleObject)) return;
     if(object != GameState.getCurrentPlayer()) return;
-    if(this.getLinkedToModule() && !GameState.inDialog && this.isOpen()){
+    if(this.getLinkedToModule() && !(GameState.Mode == EngineMode.DIALOG) && this.isOpen()){
       if(object.controlled){
         GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
       }else{

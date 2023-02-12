@@ -7,6 +7,7 @@ import { TextureLoader } from "../../../loaders/TextureLoader";
 import { TLKManager } from "../../../managers/TLKManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuGraphicsAdvanced menu class.

@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUIButton, GUIListBox, GUILabel } from "../../../gui";
 import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuResolutions menu class.

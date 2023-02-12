@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton } from "../../../gui";
 import { MenuKeyboardEntry as K1_MenuKeyboardEntry } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuKeyboardEntry menu class.

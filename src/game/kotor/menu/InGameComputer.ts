@@ -3,6 +3,7 @@
 
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox } from "../../../gui";
 import { ModuleCreature, ModuleObject } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
@@ -92,7 +93,7 @@ export class InGameComputer extends GameMenu {
     this.currentEntry = null;
     if (this.audioEmitter === undefined) {
     }
-    GameState.inDialog = true;
+    GameState.Mode = EngineMode.DIALOG;
     this.entryList = [];
     this.replyList = [];
     this.startingList = [];
@@ -100,7 +101,7 @@ export class InGameComputer extends GameMenu {
     this.isListening = true;
     this.LB_REPLIES.hide();
     if (gff instanceof GFFObject) {
-      GameState.inDialog = true;
+      GameState.Mode = EngineMode.DIALOG;
       if (gff.json.fields.VO_ID)
         this.vo_id = gff.json.fields.VO_ID.value;
       if (gff.json.fields.EndConverAbort)
@@ -150,7 +151,6 @@ export class InGameComputer extends GameMenu {
       });
     } else {
       this.Close();
-      GameState.inDialog = false;
     }
   }
 
@@ -231,7 +231,7 @@ export class InGameComputer extends GameMenu {
   }
 
   async showEntry(entry: any) {
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     this.LB_MESSAGE.clearItems();
     this.LB_MESSAGE.addItem(entry.text.split('##')[0], () => {
@@ -331,7 +331,7 @@ export class InGameComputer extends GameMenu {
   }
 
   async showReplies(entry: any) {
-    if (!GameState.inDialog)
+    if (GameState.Mode != EngineMode.DIALOG)
       return;
     console.log('showReplies', entry);
     if (entry.replies.length == 1 && this.isContinueDialog(this.replyList[entry.replies[0].index])) {
@@ -535,7 +535,6 @@ export class InGameComputer extends GameMenu {
     this.audioEmitter.Stop();
     this.Close();
     GameState.currentCamera = GameState.camera;
-    GameState.inDialog = false;
     this.state = -1;
     window.setTimeout(async () => {
       if (!aborted) {

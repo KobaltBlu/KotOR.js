@@ -2,6 +2,7 @@ import { ActionMoveToPoint } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
@@ -36,7 +37,7 @@ export class ActionDialogObject extends Action {
     let ignoreStartRange = this.getParameter(4) || 0;
 
     if(this.owner instanceof ModuleCreature){
-      if(!GameState.inDialog){
+      if(GameState.Mode != EngineMode.DIALOG){
         let distance = Utility.Distance2D(this.owner.position, this.target.position);
         if(distance > 4.5 && !ignoreStartRange){
 

@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, MenuManager } from "../../../gui";
 import * as THREE from "three";
 import { ResourceLoader } from "../../../resource/ResourceLoader";

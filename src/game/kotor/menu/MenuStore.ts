@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { InventoryManager } from "../../../managers/InventoryManager";
@@ -75,7 +76,6 @@ export class MenuStore extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     if (this.storeObject instanceof ModuleStore) {
       this.LB_DESCRIPTION.clearItems();
       this.LB_DESCRIPTION.hide();

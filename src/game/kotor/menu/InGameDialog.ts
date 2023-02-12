@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIProtoItem, MenuManager } from "../../../gui";
 
 import * as THREE from "three";
@@ -119,7 +120,7 @@ StartConversation(dlg: string, owner: ModuleObject, listener = GameState.player,
   }
   this.unequipHeadItem = false;
   this.unequipItems = false;
-  GameState.inDialog = true;
+  GameState.Mode = EngineMode.DIALOG
   this.isListening = true;
   this.canLetterbox = false;
   this.letterBoxed = false;
@@ -256,7 +257,7 @@ PlayerSkipEntry(currentEntry: DLGNode) {
 async showEntry(entry: DLGNode) {
   this.state = 0;
   entry.initProperties();
-  if (!GameState.inDialog)
+  if (GameState.Mode != EngineMode.DIALOG)
     return;
   GameState.VideoEffect = entry.getVideoEffect();
   this.LBL_MESSAGE.setText(entry.getCompiledString());
@@ -353,7 +354,7 @@ async onReplySelect(reply: DLGNode) {
 
 async showReplies(entry: any) {
   this.state = 1;
-  if (!GameState.inDialog)
+  if (GameState.Mode != EngineMode.DIALOG)
     return;
   this.currentEntry = null;
   let isContinueDialog = entry.replies.length == 1 && this.isContinueDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
@@ -445,7 +446,6 @@ EndConversation(aborted = false) {
   this.audioEmitter.Stop();
   this.Close();
   GameState.currentCamera = GameState.camera;
-  GameState.inDialog = false;
   this.state = -1;
   if (this.dialog.animatedCamera instanceof OdysseyModel3D)
     this.dialog.animatedCamera.animationManager.currentAnimation = undefined;

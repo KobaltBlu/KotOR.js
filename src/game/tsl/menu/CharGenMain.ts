@@ -7,6 +7,7 @@ import { TextureLoader } from "../../../loaders/TextureLoader";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenMain menu class.

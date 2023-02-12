@@ -3,6 +3,7 @@
 
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { GFFStruct } from "../../../resource/GFFStruct";
@@ -406,7 +407,6 @@ export class MenuEquipment extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_EQU.onHoverIn();
-    GameState.MenuActive = true;
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;
     this.UpdateList();

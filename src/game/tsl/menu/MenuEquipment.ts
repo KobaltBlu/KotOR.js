@@ -14,6 +14,7 @@ import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuEquipment menu class.
@@ -377,7 +378,6 @@ export class MenuEquipment extends K1_MenuEquipment {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     this.UpdateList();
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();

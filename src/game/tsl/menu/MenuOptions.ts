@@ -73,7 +73,6 @@ export class MenuOptions extends K1_MenuOptions {
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
-        GameState.Mode = EngineMode.MAINMENU;
         GameState.UnloadModule();
         GameState.State = EngineState.RUNNING;
               
@@ -95,7 +94,6 @@ export class MenuOptions extends K1_MenuOptions {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
   }
   
 }

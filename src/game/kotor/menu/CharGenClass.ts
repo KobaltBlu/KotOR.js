@@ -5,6 +5,7 @@ import { AudioLoader } from "../../../audio/AudioLoader";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "../../../enums/resource/GFFDataType";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { TwoDAManager } from "../../../managers/TwoDAManager";

@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton } from "../../../gui";
 import { MenuPazaakGame as K1_MenuPazaakGame } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuPazaakGame menu class.
@@ -106,6 +107,10 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
     return new Promise<void>((resolve, reject) => {
       resolve();
     });
+  }
+
+  Hide(): void {
+    super.Hide();
   }
   
 }

@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
@@ -64,7 +65,6 @@ export class MenuMap extends K1_MenuMap {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
   }
   
 }

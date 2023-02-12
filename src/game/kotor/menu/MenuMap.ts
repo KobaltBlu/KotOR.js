@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { NWScript } from "../../../nwscript/NWScript";
@@ -92,7 +93,6 @@ export class MenuMap extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_MAP.onHoverIn();
-    GameState.MenuActive = true;
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
 

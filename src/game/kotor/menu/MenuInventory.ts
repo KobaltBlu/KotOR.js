@@ -2,6 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { InventoryManager } from "../../../managers/InventoryManager";
@@ -78,7 +79,6 @@ export class MenuInventory extends GameMenu {
   Show() {
     super.Show();
     MenuManager.MenuTop.LBLH_INV.onHoverIn();
-    GameState.MenuActive = true;
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     let inv = InventoryManager.getNonQuestInventory();

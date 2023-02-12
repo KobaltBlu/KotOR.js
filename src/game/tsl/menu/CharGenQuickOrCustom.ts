@@ -7,6 +7,7 @@ import { CharGenManager } from "../../../managers/CharGenManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { TalentFeat } from "../../../talents";
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenQuickOrCustom menu class.

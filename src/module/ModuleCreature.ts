@@ -411,7 +411,7 @@ export class ModuleCreature extends ModuleObject {
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
-    if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME){
+    if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG){
 
       if(this.animState == ModuleCreatureAnimState.IDLE){
         this.footstepEmitter.Stop();
@@ -479,7 +479,7 @@ export class ModuleCreature extends ModuleObject {
           this.updateActionQueue(delta);
         }
 
-        if(this.dialogAnimation && GameState.inDialog && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
+        if(this.dialogAnimation && (GameState.Mode == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
           if(this.model){
 
             if(!this.speed){
@@ -626,7 +626,7 @@ export class ModuleCreature extends ModuleObject {
       this.updateItems(delta);
       
       if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
-        if(!GameState.inDialog){
+        if(GameState.Mode != EngineMode.DIALOG){
           this.model.update( this.movementSpeed * delta );
           if(this.lipObject instanceof LIPObject){
             this.lipObject.update(delta, this.head ? this.head : this.model);
@@ -739,6 +739,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.collisionTimer < 0)
       this.collisionTimer = 0;
 
+    this.force = 0;
   }
 
   updateRegen(delta = 0){
@@ -1055,7 +1056,7 @@ export class ModuleCreature extends ModuleObject {
     //if(this.action && this.action.type == ActionType.ActionPlayAnimation)
     //  return;
 
-    if(GameState.inDialog && this.dialogAnimation && !this.speed && !this.isDead())
+    if((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation && !this.speed && !this.isDead())
       return;
 
     let animation = this.animationConstantToAnimation(this.animState);

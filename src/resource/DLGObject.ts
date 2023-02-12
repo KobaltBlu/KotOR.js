@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { NWScriptInstance } from "../KotOR";
 import { DLGStuntActor } from "../interface/dialog/DLGStuntActor";
+import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -90,17 +91,15 @@ export class DLGObject {
     for(let i = 0; i < this.gff.json.fields.EntryList.structs.length; i++){
       let node = DLGNode.FromDialogStruct(this.gff.json.fields.EntryList.structs[i].fields);
       node.dialog = this;
-      this.entryList.push(
-        node
-      );
+      node.nodeType = DLGNodeType.ENTRY;
+      this.entryList.push( node );
     }
 
     for(let i = 0; i < this.gff.json.fields.ReplyList.structs.length; i++){
       let node = DLGNode.FromDialogStruct(this.gff.json.fields.ReplyList.structs[i].fields);
       node.dialog = this;
-      this.replyList.push(
-        node
-      );
+      node.nodeType = DLGNodeType.REPLY;
+      this.replyList.push( node );
     }
 
     for(let i = 0; i < this.gff.json.fields.StuntList.structs.length; i++){
@@ -116,6 +115,7 @@ export class DLGObject {
       let _node = this.gff.json.fields.StartingList.structs[i].fields;
       let linkNode = new DLGNode();
       linkNode.dialog = this;
+      linkNode.nodeType = DLGNodeType.STARTING;
       
       linkNode.entries = [];
       linkNode.replies = [];

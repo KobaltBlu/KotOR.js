@@ -3,6 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GameMenu, GUILabel, GUIButton, GUIListBox, GUISlider } from "../../../gui";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MainMusic menu class.

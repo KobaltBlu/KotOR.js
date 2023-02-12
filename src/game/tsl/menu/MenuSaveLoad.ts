@@ -8,6 +8,7 @@ import { Module } from "../../../module";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
 import { MenuSaveLoad as K1_MenuSaveLoad } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuSaveLoad menu class.
@@ -71,7 +72,6 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
   Show() {
     super.Show();
-    GameState.MenuActive = true;
     this.LB_GAMES.clearItems();
     let saves = SaveGame.saves;
     for (let i = 0; i < saves.length; i++) {

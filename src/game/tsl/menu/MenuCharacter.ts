@@ -12,6 +12,7 @@ import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 import * as THREE from "three";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuCharacter menu class.
@@ -164,7 +165,7 @@ export class MenuCharacter extends K1_MenuCharacter {
         }, 100);
       });
     });
-    GameState.MenuActive = true;
+    
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
     for (let i = 0; i < PartyManager.party.length; i++) {

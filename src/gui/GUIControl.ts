@@ -105,8 +105,8 @@ export class GUIControl {
   onDragEnd?: Function;
   onHover?: Function;
 
-  onKeyUp?: Function;
-  onKeyDown?: Function;
+  onKeyUp?: (e: KeyboardEvent) => void;
+  onKeyDown?: (e: KeyboardEvent) => void;
 
   pulsing: boolean = false;
   pulse: number = 1;

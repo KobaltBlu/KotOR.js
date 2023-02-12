@@ -3,6 +3,7 @@
 
 import { AudioEngine } from "../../../audio/AudioEngine";
 import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
 
 /* @file

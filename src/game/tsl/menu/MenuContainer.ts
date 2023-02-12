@@ -7,6 +7,7 @@ import { GUILabel, GUIListBox, GUIButton, GUIProtoItem } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { ModuleCreature, ModuleObject, ModulePlaceable } from "../../../module";
 import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import * as THREE from "three";
 
 /* @file
