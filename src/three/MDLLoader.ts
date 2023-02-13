@@ -11,9 +11,9 @@ import { ResourceTypes } from "../resource/ResourceTypes";
  */
 
 export interface ModelCacheReference {
-  // model: OdysseyModel;
-  mdl: Buffer;
-  mdx: Buffer;
+  model: OdysseyModel;
+  // mdl: Buffer;
+  // mdx: Buffer;
 }
 
 export interface ModelCacheInterface {
@@ -31,17 +31,17 @@ export class MDLLoader {
       try{
         if(ModelCache.models.has(resref)){
           const ref = ModelCache.models.get(resref);
-          const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
-          resolve(mdl);
+          // const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
+          resolve(ref.model);
         }else{
           ResourceLoader.loadResource(ResourceTypes['mdl'], resref, (mdl_buffer: Buffer) => {
             ResourceLoader.loadResource(ResourceTypes['mdx'], resref, (mdx_buffer: Buffer) => {
               const mdl = MDLLoader.MDLFromBuffer(mdl_buffer, mdx_buffer);
 
               ModelCache.models.set(resref, {
-                // model: mdl,
-                mdl: mdl_buffer,
-                mdx: mdx_buffer
+                model: mdl,
+                // mdl: mdl_buffer,
+                // mdx: mdx_buffer
               });
 
               resolve(mdl);
