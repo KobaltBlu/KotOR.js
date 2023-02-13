@@ -353,11 +353,21 @@ export class GameFileSystem {
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.rmdir(dirPath, {
-          recursive: opts.recursive
-        } as fs.RmDirOptions, () => {
-          resolve(true);
-        });
+        console.log(`fs.rmdir`, path.join(GameFileSystem.rootDirectoryPath, dirPath));
+        fs.rmdir(
+          path.join(GameFileSystem.rootDirectoryPath, dirPath), 
+          {
+            recursive: opts.recursive
+          } as fs.RmDirOptions, 
+          (err) => {
+            if(err){
+              console.error(err);
+              resolve(false);
+              return;
+            }
+            resolve(true);
+          }
+        );
       }else{
         try{
           const details = path.parse(dirPath);
