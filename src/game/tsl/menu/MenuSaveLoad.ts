@@ -7,8 +7,10 @@ import { TextureLoader } from "../../../loaders/TextureLoader";
 import { Module } from "../../../module";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
-import { MenuSaveLoad as K1_MenuSaveLoad } from "../../kotor/KOTOR";
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { TLKManager } from "../../../managers/TLKManager";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 
 /* @file
 * The MenuSaveLoad menu class.
@@ -49,83 +51,42 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.selected instanceof SaveGame){
-          MenuManager.ClearMenus();
-
-          if(GameState.module instanceof Module){
-            GameState.module.dispose();
+        const savegame = this.selected;
+        if(this.mode == MenuSaveLoadMode.LOADGAME){
+          if(savegame instanceof SaveGame){
+            MenuManager.ClearMenus();
+            if(GameState.module instanceof Module){
+              GameState.module.dispose();
+            }
+            savegame.Load()
           }
-          
-          this.selected.Load()
+        }else{
+          if(savegame instanceof NewSaveItem){
+            MenuManager.MenuSaveName.Show();
+            MenuManager.MenuSaveName.onSave = ( name = '' ) => {
+              console.log('SaveGame', name);
+            };
+          }else{
+
+          }
         }
       });
+      this._button_a = this.BTN_SAVELOAD;
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
       });
+      this._button_b = this.BTN_BACK;
+
+      this.LB_GAMES.onSelected = (save: SaveGame) => {
+        this.selected = save;
+        this.UpdateSelected();
+      }
 
       this.tGuiPanel.getFill().position.z = -1;
       resolve();
     });
-  }
-
-  Show() {
-    super.Show();
-    this.LB_GAMES.clearItems();
-    let saves = SaveGame.saves;
-    for (let i = 0; i < saves.length; i++) {
-      if (!i) {
-        this.selected = saves[i];
-        this.UpdateSelected();
-      }
-      let save = saves[i];
-      this.LB_GAMES.addItem(save, undefined, (control: any, type: any) => {
-        control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(save.getFullName());
-        let _ctrl = new GUIProtoItem(this.LB_GAMES.menu, control, this.LB_GAMES, this.LB_GAMES.scale);
-        _ctrl.setList(this.LB_GAMES);
-        this.LB_GAMES.children.push(_ctrl);
-        let idx = this.LB_GAMES.itemGroup.children.length;
-        let item = _ctrl.createControl();
-        this.LB_GAMES.itemGroup.add(item);
-        _ctrl.addEventListener('click', (e: any) => {
-          e.stopPropagation();
-          this.selected = save;
-          this.UpdateSelected();
-        });
-      });
-    }
-    TextureLoader.LoadQueue();
-  }
-
-  UpdateSelected() {
-    if (this.selected instanceof SaveGame) {
-      this.selected.GetThumbnail((texture: OdysseyTexture) => {
-        this.LBL_SCREENSHOT.setFillTexture(texture);
-        (this.LBL_SCREENSHOT.getFill().material as any).transparent = false;
-      });
-    }
-    this.selected.GetPortrait(0, (texture: OdysseyTexture) => {
-      console.log(texture);
-      this.LBL_PM1.setFillTexture(texture);
-      (this.LBL_PM1.getFill().material as any).transparent = false;
-    });
-    this.selected.GetPortrait(1, (texture: OdysseyTexture) => {
-      this.LBL_PM2.setFillTexture(texture);
-      (this.LBL_PM2.getFill().material as any).transparent = false;
-    });
-    this.selected.GetPortrait(2, (texture: OdysseyTexture) => {
-      this.LBL_PM3.setFillTexture(texture);
-      (this.LBL_PM3.getFill().material as any).transparent = false;
-    });
-    let areaNames = this.selected.getAreaName().split(' - ');
-    if (areaNames.length == 2) {
-      this.LBL_PLANETNAME.setText(areaNames[0]);
-      this.LBL_AREANAME.setText(areaNames[1]);
-    } else {
-      this.LBL_PLANETNAME.setText('');
-      this.LBL_AREANAME.setText(areaNames[0]);
-    }
   }
   
 }

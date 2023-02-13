@@ -51,18 +51,17 @@ export class MenuSaveLoad extends GameMenu {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
-          if(this.selected instanceof SaveGame){
+          if(savegame instanceof SaveGame){
             MenuManager.ClearMenus();
-
             if(GameState.module instanceof Module){
               GameState.module.dispose();
             }
-
-            this.selected.Load();
+            savegame.Load();
           }
         }else{
-          if(this.selected instanceof NewSaveItem){
+          if(savegame instanceof NewSaveItem){
             MenuManager.MenuSaveName.Show();
             MenuManager.MenuSaveName.onSave = ( name = '' ) => {
               console.log('SaveGame', name);
@@ -170,7 +169,7 @@ export class MenuSaveLoad extends GameMenu {
   
 }
 
-class NewSaveItem extends SaveGame {
+export class NewSaveItem extends SaveGame {
   constructor(){
     super();
   }
@@ -180,7 +179,7 @@ class NewSaveItem extends SaveGame {
   }
 }
 
-class GUISaveGameItem extends GUIProtoItem {
+export class GUISaveGameItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
