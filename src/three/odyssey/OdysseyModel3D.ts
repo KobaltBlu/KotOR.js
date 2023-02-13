@@ -813,7 +813,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   static async FromMDL(model: OdysseyModel, _options: OdysseyModelLoaderOptions = {} as OdysseyModelLoaderOptions): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( async (resolve: Function, reject: Function) => {
-_options
+
       const _default: OdysseyModelLoaderOptions = {
         textureVar: '****',
         castShadow: false,
@@ -1141,32 +1141,32 @@ _options
             geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) ); //Works with indices
 
             //Normals
-            const normals = new Float32Array( odysseyNode.normals.length ); //Works with indices
-            geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals, 3 ).copyArray( odysseyNode.normals ) ); //Works with indices
+            // const normals = new Float32Array( odysseyNode.normals.length ); //Works with indices
+            geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( odysseyNode.normals, 3 ) );//.copyArray( odysseyNode.normals ) ); //Works with indices
 
             //Color
-            // const color = new Float32Array( odysseyNode.vertices.length ); //Works with indices
-            // geometry.setAttribute( 'color', new THREE.BufferAttribute( color, 3 ).copyArray( new Array(odysseyNode.vertices.length).fill(1, 0, odysseyNode.vertices.length) ) ); //Works with indices
+            // // const color = new Float32Array( odysseyNode.vertices.length ); //Works with indices
+            // geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) );//.copyArray( new Array(odysseyNode.vertices.length).fill(1, 0, odysseyNode.vertices.length) ) ); //Works with indices
             
             //UV1
-            const uv1 = new Float32Array( odysseyNode.tvectors[0].length ); //Works with indices
-            geometry.setAttribute( 'uv', new THREE.BufferAttribute( uv1, 2 ).copyArray( odysseyNode.tvectors[0] ) ); //Works with indices
+            // const uv1 = new Float32Array( odysseyNode.tvectors[0].length ); //Works with indices
+            geometry.setAttribute(  'uv', new THREE.Float32BufferAttribute( odysseyNode.tvectors[0], 2 ) );//.copyArray( odysseyNode.tvectors[0] ) ); //Works with indices
             
             //UV2
-            const uv2 = new Float32Array( odysseyNode.tvectors[1].length ); //Works with indices
-            geometry.setAttribute( 'uv2', new THREE.BufferAttribute( uv2, 2 ).copyArray( odysseyNode.tvectors[1] ) ); //Works with indices
+            // const uv2 = new Float32Array( odysseyNode.tvectors[1].length ); //Works with indices
+            geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( odysseyNode.tvectors[1], 2 ) );//.copyArray( odysseyNode.tvectors[1] ) ); //Works with indices
             
             //--------------------------//
             // SKIN GEOMETRY ATTRIBUTES
             //--------------------------//
             if((odysseyNode.NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin){
               //Skin Index
-              const boneIdx = new Float32Array( (odysseyNode as OdysseyModelNodeSkin).boneIdx.length * 4 ); //Works with indices
-              geometry.setAttribute( 'skinIndex', new THREE.BufferAttribute( boneIdx, 4 ).copyArray( (odysseyNode as OdysseyModelNodeSkin).boneIdx.flat() ) ); //Works with indices
+              // const boneIdx = Float32Array.from((odysseyNode as OdysseyModelNodeSkin).boneIdx);
+              geometry.setAttribute( 'skinIndex', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeSkin).boneIdx, 4 ) )
 
               //Skin Weight
-              const weights = new Float32Array( (odysseyNode as OdysseyModelNodeSkin).weights.length * 4 ); //Works with indices
-              geometry.setAttribute( 'skinWeight', new THREE.BufferAttribute( weights, 4 ).copyArray( (odysseyNode as OdysseyModelNodeSkin).weights.flat() ) ); //Works with indices
+              // const weights = Float32Array.from((odysseyNode as OdysseyModelNodeSkin).weights);
+              geometry.setAttribute( 'skinWeight', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeSkin).weights, 4 ) );
             }
 
             //----------------------------//
@@ -1174,8 +1174,8 @@ _options
             //----------------------------//
             if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               //Contstraint
-              const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length ); //Works with indices
-              geometry.setAttribute( 'constraint', new THREE.BufferAttribute( constraints, 4 ).copyArray( (odysseyNode as OdysseyModelNodeDangly).danglyVec4 ) ); //Works with indices
+              // const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length ); //Works with indices
+              geometry.setAttribute( 'constraint', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeDangly).danglyVec4, 4 ) );//.copyArray( (odysseyNode as OdysseyModelNodeDangly).danglyVec4 ) ); //Works with indices
             }
             
             //Compute Geometry Tangents
@@ -1195,16 +1195,16 @@ _options
             }).flat();
 
             //Positions
-            const vertices32 = new Float32Array( vertices );
-            geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices32, 3 ) );
+            // const vertices32 = new Float32Array( vertices );
+            geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
 
             const normals = odysseyNode.faces.map( f => {
               return [ f.normal.x, f.normal.y, f.normal.z ]
             }).flat();
 
             //Normals
-            const normals32 = new Float32Array( normals );
-            geometry.setAttribute( 'normal', new THREE.BufferAttribute( normals32, 3 ) );
+            // const normals32 = new Float32Array( normals );
+            geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
 
             const colors = odysseyNode.faces.map( f => {
               return [
@@ -1215,8 +1215,8 @@ _options
             }).flat();
 
             //Color
-            const colors32 = new Float32Array( colors );
-            geometry.setAttribute( 'color', new THREE.BufferAttribute( colors32, 3 ) ); 
+            // const colors32 = new Float32Array( colors );
+            geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) ); 
           }
 
           /*
