@@ -30,15 +30,15 @@ export class DLGNode {
   plotXPPercentage: number;
   quest: string;
   questEntry: number;
-  replies: any[];
-  entries: any[];
-  script: string;
+  replies: DLGNode[] = [];
+  entries: DLGNode[] = [];
+  script: NWScriptInstance;
   scriptParams: DLGNodeScriptParams = {} as DLGNodeScriptParams;
-  script2: string;
+  script2: NWScriptInstance;
   script2Params: DLGNodeScriptParams = {} as DLGNodeScriptParams;
-  isActive: string;
+  isActive: NWScriptInstance;
   isActiveParams: DLGNodeScriptParams = {} as DLGNodeScriptParams;
-  isActive2: string;
+  isActive2: NWScriptInstance;
   isActive2Params: DLGNodeScriptParams = {} as DLGNodeScriptParams;
   Logic: number;
   index: number;
@@ -82,14 +82,14 @@ export class DLGNode {
     this.entries = [];
 
     //Script Properties
-    this.script = '';
+    this.script = undefined;
     this.scriptParams = {} as DLGNodeScriptParams;
-    this.script2 = '';
+    this.script2 = undefined;
     this.script2Params = {} as DLGNodeScriptParams;
 
     //Conditional Active Node Properties
-    this.isActive = '';
-    this.isActive2 = '';
+    this.isActive = undefined;
+    this.isActive2 = undefined;
     this.isActiveParams = {} as DLGNodeScriptParams;
     this.isActive2Params = {} as DLGNodeScriptParams;
     this.Logic = 0;
@@ -140,128 +140,85 @@ export class DLGNode {
     this.resetChecklist();
   }
 
-  async runScript1(){
-    return new Promise<void>( async (resolve, reject) => {
-      if(this.script != ''){
-        let script = NWScript.Load(this.script);
-        if(script instanceof NWScriptInstance){
-          script.setScriptParam(1, this.scriptParams.Param1);
-          script.setScriptParam(2, this.scriptParams.Param2);
-          script.setScriptParam(3, this.scriptParams.Param3);
-          script.setScriptParam(4, this.scriptParams.Param4);
-          script.setScriptParam(5, this.scriptParams.Param5);
-          script.setScriptStringParam(this.scriptParams.String);
-          script.name = this.script;
-          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( () => {
-          });
-          resolve();
-        }else{
-          resolve();
-        }
-      }
-    });
+  runScript1(){
+    if(this.script instanceof NWScriptInstance){
+      this.script.setScriptParam(1, this.scriptParams.Param1);
+      this.script.setScriptParam(2, this.scriptParams.Param2);
+      this.script.setScriptParam(3, this.scriptParams.Param3);
+      this.script.setScriptParam(4, this.scriptParams.Param4);
+      this.script.setScriptParam(5, this.scriptParams.Param5);
+      this.script.setScriptStringParam(this.scriptParams.String);
+      this.script.name = this.script;
+      this.script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+    }
   }
 
-  async runScript2(){
-    return new Promise<void>( async (resolve, reject) => {
-      if(this.script2 != ''){
-        let script = NWScript.Load(this.script2);
-        if(script instanceof NWScriptInstance){
-          script.setScriptParam(1, this.script2Params.Param1);
-          script.setScriptParam(2, this.script2Params.Param2);
-          script.setScriptParam(3, this.script2Params.Param3);
-          script.setScriptParam(4, this.script2Params.Param4);
-          script.setScriptParam(5, this.script2Params.Param5);
-          script.setScriptStringParam(this.script2Params.String);
-          script.name = this.script2;
-          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( () => {
-            
-          });
-          resolve();
-        }else{
-          resolve();
-        }
-      }else{
-        resolve();
-      }
-    });
+  runScript2(){
+    if(this.script2 instanceof NWScriptInstance){
+      this.script2.setScriptParam(1, this.script2Params.Param1);
+      this.script2.setScriptParam(2, this.script2Params.Param2);
+      this.script2.setScriptParam(3, this.script2Params.Param3);
+      this.script2.setScriptParam(4, this.script2Params.Param4);
+      this.script2.setScriptParam(5, this.script2Params.Param5);
+      this.script2.setScriptStringParam(this.script2Params.String);
+      this.script2.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+    }
   }
 
-  async runScripts(){
+  runScripts(){
     console.log('DLGNode.runScripts', this);
-    await this.runScript1();
-    await this.runScript2();
+    this.runScript1();
+    this.runScript2();
   }
 
-  async runActiveScript1( ){
-    return new Promise<boolean>( async (resolve, reject) => {
-      if(this.isActive != ''){
-        let script = NWScript.Load(this.isActive);
-        if(script instanceof NWScriptInstance){
-          script.setScriptParam(1, this.isActiveParams.Param1);
-          script.setScriptParam(2, this.isActiveParams.Param2);
-          script.setScriptParam(3, this.isActiveParams.Param3);
-          script.setScriptParam(4, this.isActiveParams.Param4);
-          script.setScriptParam(5, this.isActiveParams.Param5);
-          script.setScriptStringParam(this.isActiveParams.String);
-          script.name = this.isActive;
-          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( (bSuccess: boolean) => {
-            if(this.isActiveParams.Not){
-              resolve(bSuccess ? false : true);
-            }else{
-              resolve(bSuccess ? true : false);
-            }
-          });
-        }else{
-          resolve(true);
-        }
+  runActiveScript1(){
+    if(this.isActive instanceof NWScriptInstance){
+      this.isActive.setScriptParam(1, this.isActiveParams.Param1);
+      this.isActive.setScriptParam(2, this.isActiveParams.Param2);
+      this.isActive.setScriptParam(3, this.isActiveParams.Param3);
+      this.isActive.setScriptParam(4, this.isActiveParams.Param4);
+      this.isActive.setScriptParam(5, this.isActiveParams.Param5);
+      this.isActive.setScriptStringParam(this.isActiveParams.String);
+      const bSuccess = this.isActive.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      if(this.isActiveParams.Not){
+        return bSuccess ? false : true;
       }else{
-        resolve(true);
+        return bSuccess ? true : false;
       }
-    });
+    }
+    
+    return true;
   }
 
-  async runActiveScript2(){
-    return new Promise<boolean>( async (resolve, reject) => {
-      if(this.isActive2 != ''){
-        let script = NWScript.Load(this.isActive2);
-        if(script instanceof NWScriptInstance){
-          script.setScriptParam(1, this.isActive2Params.Param1);
-          script.setScriptParam(2, this.isActive2Params.Param2);
-          script.setScriptParam(3, this.isActive2Params.Param3);
-          script.setScriptParam(4, this.isActive2Params.Param4);
-          script.setScriptParam(5, this.isActive2Params.Param5);
-          script.setScriptStringParam(this.isActive2Params.String);
-          script.name = this.isActive2;
-          script.runAsync(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0).then( (bSuccess: boolean) => {
-            if(this.isActive2Params.Not){
-              resolve(bSuccess ? false : true);
-            }else{
-              resolve(bSuccess ? true : false);
-            }
-          });
-        }else{
-          resolve(true);
-        }
+  runActiveScript2(){
+    if(this.isActive2 instanceof NWScriptInstance){
+      this.isActive2.setScriptParam(1, this.isActive2Params.Param1);
+      this.isActive2.setScriptParam(2, this.isActive2Params.Param2);
+      this.isActive2.setScriptParam(3, this.isActive2Params.Param3);
+      this.isActive2.setScriptParam(4, this.isActive2Params.Param4);
+      this.isActive2.setScriptParam(5, this.isActive2Params.Param5);
+      this.isActive2.setScriptStringParam(this.isActive2Params.String);
+      const bSuccess = this.isActive2.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      if(this.isActive2Params.Not){
+        return (bSuccess ? false : true);
       }else{
-        resolve(true);
+        return (bSuccess ? true : false);
       }
-    });
+    }
+    
+    return true;
   }
 
-  async runActiveScripts(){
-    let active1 = await this.runActiveScript1();
-    let active2 = await this.runActiveScript2();
-    return active1 && active2;
+  runActiveScripts(){
+    return this.runActiveScript1() && this.runActiveScript2();
   }
 
-  async getActiveReplies(){
+  getActiveReplies(): number[] {
     let totalReplies = this.replies.length;
-    let replyIds: any[] = [];
+    let replyIds: number[] = [];
     for(let i = 0; i < totalReplies; i++){
       let replyLink = this.replies[i];
-      let isActive = await replyLink.runActiveScripts();
-      if(isActive){
+      if(replyLink.runActiveScripts()){
         replyIds.push(replyLink.index);
       }
     }
@@ -459,12 +416,19 @@ export class DLGNode {
     if(typeof struct.CamVidEffect !== 'undefined')
       node.camVidEffect = struct.CamVidEffect.value;
 
-    if(typeof struct.Script !== 'undefined')
-      node.script = struct.Script.value;
+    if(typeof struct.Script !== 'undefined'){
+      node.script = NWScript.Load(struct.Script.value);
+      if(node.script instanceof NWScriptInstance){
+        node.script.name = struct.Script.value;
+      }
+    }
 
     if(typeof struct.Script2 !== 'undefined'){
       node.nodeEngineType = DLGNodeEngineType.K2;
-      node.script2 = struct.Script2.value;
+      node.script2 = NWScript.Load(struct.Script2.value);
+      if(node.script2 instanceof NWScriptInstance){
+        node.script2.name = struct.Script2.value;
+      }
 
       //k2 MODE
       node.scriptParams = {
@@ -558,11 +522,17 @@ export class DLGNode {
         }
   
         if(typeof _node.Active !== 'undefined'){
-          linkNode.isActive = _node.Active.value;
+          linkNode.isActive = NWScript.Load(_node.Active.value);
+          if(linkNode.isActive instanceof NWScriptInstance){
+            linkNode.isActive.name = _node.Active.value;
+          }
         }
   
         if(typeof _node.Active2 !== 'undefined'){
-          linkNode.isActive2 = _node.Active2.value;
+          linkNode.isActive2 = NWScript.Load(_node.Active2.value);
+          if(linkNode.isActive2 instanceof NWScriptInstance){
+            linkNode.isActive2.name = _node.Active2.value;
+          }
         }
   
         if(typeof _node.Index !== 'undefined'){
@@ -642,11 +612,17 @@ export class DLGNode {
         }
   
         if(typeof _node.Active !== 'undefined'){
-          linkNode.isActive = _node.Active.value;
+          linkNode.isActive = NWScript.Load(_node.Active.value);
+          if(linkNode.isActive instanceof NWScriptInstance){
+            linkNode.isActive.name = _node.Active.value;
+          }
         }
   
         if(typeof _node.Active2 !== 'undefined'){
-          linkNode.isActive2 = _node.Active2.value;
+          linkNode.isActive2 = NWScript.Load(_node.Active2.value);
+          if(linkNode.isActive2 instanceof NWScriptInstance){
+            linkNode.isActive2.name = _node.Active.value;
+          }
         }
   
         if(typeof _node.Index !== 'undefined'){

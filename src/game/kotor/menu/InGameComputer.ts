@@ -4,7 +4,7 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, MenuManager } from "../../../gui";
 import { ModuleCreature, ModuleObject } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
@@ -13,6 +13,9 @@ import { GFFStruct } from "../../../resource/GFFStruct";
 import { LIPObject } from "../../../resource/LIPObject";
 import * as THREE from "three";
 import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
+import { DLGObject } from "../../../resource/DLGObject";
+import { DLGNode } from "../../../resource/DLGNode";
+import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 
 /* @file
 * The InGameComputer menu class.
@@ -40,15 +43,12 @@ export class InGameComputer extends GameMenu {
   LBL_REP_UNITS_VAL: GUILabel;
   LB_MESSAGE: GUIListBox;
   LBL_OBSCURE: GUILabel;
-  nodeIndex: number;
   owner: ModuleObject;
   listener: any;
   paused: boolean;
   ended: boolean;
-  currentEntry: any;
-  entryList: any[];
-  replyList: any[];
-  startingList: any[];
+  dialog: DLGObject;
+  currentEntry: DLGNode;
   vo_id: string;
   isListening: boolean;
   onEndConversationAbort: any;
@@ -57,6 +57,8 @@ export class InGameComputer extends GameMenu {
   ambientTrack: any;
   state: number;
   startingEntry: any;
+
+  conversation_name: string = '';
 
   constructor(){
     super();
@@ -82,125 +84,125 @@ export class InGameComputer extends GameMenu {
     super.Show();
   }
 
-  StartConversation(gff: GFFObject, owner: ModuleObject, listener = GameState.player) {
+  StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
     this.LB_MESSAGE.clearItems();
-    this.Open();
     this.LB_REPLIES.clearItems();
-    this.nodeIndex = 0;
+    this.Open();
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
     this.ended = false;
     this.currentEntry = null;
-    if (this.audioEmitter === undefined) {
+    if (this.owner == GameState.player) {
+      let old_listener = this.listener;
+      this.listener = this.owner;
+      this.owner = old_listener;
     }
     GameState.Mode = EngineMode.DIALOG;
-    this.entryList = [];
-    this.replyList = [];
-    this.startingList = [];
     this.vo_id = '';
     this.isListening = true;
     this.LB_REPLIES.hide();
-    if (gff instanceof GFFObject) {
-      GameState.Mode = EngineMode.DIALOG;
-      if (gff.json.fields.VO_ID)
-        this.vo_id = gff.json.fields.VO_ID.value;
-      if (gff.json.fields.EndConverAbort)
-        this.onEndConversationAbort = gff.json.fields.EndConverAbort.value;
-      if (gff.json.fields.EndConversation)
-        this.onEndConversation = gff.json.fields.EndConversation.value;
-      if (gff.json.fields.AnimatedCut)
-        this.isAnimatedCutscene = gff.json.fields.AnimatedCut.value ? true : false;
-      if (gff.json.fields.AmbientTrack)
-        this.ambientTrack = gff.json.fields.AmbientTrack.value;
-      for (let i = 0; i < gff.json.fields.EntryList.structs.length; i++) {
-        this.entryList.push(this._parseEntryStruct(gff.json.fields.EntryList.structs[i].fields));
-      }
-      for (let i = 0; i < gff.json.fields.ReplyList.structs.length; i++) {
-        this.replyList.push(this._parseReplyStruct(gff.json.fields.ReplyList.structs[i].fields));
-      }
-      for (let i = 0; i < gff.json.fields.StartingList.structs.length; i++) {
-        let _node = gff.json.fields.StartingList.structs[i].fields;
-        let node = {
-          isActive: _node.Active.value,
-          index: _node.Index.value
-        };
-        this.startingList.push(node);
-      }
+    if (dialog instanceof DLGObject) {
+      let result = this.loadDialog(dialog);
+      if(!result) return;
+      this.isListening = true;
       this.updateTextPosition();
-      let begin = () => {
-        if (this.ambientTrack != '') {
-          AudioLoader.LoadMusic(this.ambientTrack, (data: Buffer) => {
-            GameState.audioEngine.stopBackgroundMusic();
-            GameState.audioEngine.SetDialogBackgroundMusic(data);
-            this.showEntry(this.startingEntry);
-          }, () => {
-            this.showEntry(this.startingEntry);
-          });
-        } else {
-          this.showEntry(this.startingEntry);
-        }
-      };
       this.startingEntry = null;
-      this.getNextEntry(this.startingList, (entry: any) => {
+      this.getNextEntry(this.dialog.startingList, async (entry: any) => {
         this.startingEntry = entry;
-        if (entry.replies.length == 1 && this.isEndDialog(this.replyList[entry.replies[0].index])) {
-          this.EndConversation();
-        } else {
-          begin();
-        }
+        this.beginDialog();
       });
     } else {
-      this.Close();
+      this.endConversation();
     }
   }
 
-  getNextEntry(entries: any[] = [], callback?: Function) {
-    if (!entries.length) {
-      this.EndConversation();
+  beginDialog() {
+    if (this.dialog.ambientTrack != '') {
+      AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
+        GameState.audioEngine.stopBackgroundMusic();
+        GameState.audioEngine.SetDialogBackgroundMusic(data);
+        this.showEntry(this.startingEntry);
+      }, () => {
+        this.showEntry(this.startingEntry);
+      });
+    } else {
+      this.showEntry(this.startingEntry);
+    }
+  }
+
+  loadDialog(dialog: DLGObject) {
+    this.conversation_name = ``;
+    if(dialog){
+      this.conversation_name = dialog.resref;
+      this.dialog = dialog;
+      this.dialog.owner = this.owner;
+      this.dialog.listener = this.listener;
+      switch (this.dialog.getConversationType()) {
+        case DLGConversationType.COMPUTER:
+          return true;
+        break;
+        case DLGConversationType.CONVERSATION:
+        default:
+          this.Close();
+          MenuManager.InGameDialog.StartConversation(dialog, this.owner, this.listener);
+          return false;
+        break;
+      }
+    }
+    return false;
+  }
+
+  Update(delta: number = 0) {
+    super.Update(delta);
+    if (!this.dialog)
+      return;
+
+    if(this.paused) return;
+
+    if(this.currentEntry){
+      if(this.currentEntry.update(delta)){
+        this.showReplies(this.currentEntry);
+      }
+    }
+
+  }
+
+  getNextEntry(entryLinks: DLGNode[] = [], callback?: Function) {
+    console.log('getNextEntry', entryLinks);
+    if (!entryLinks.length) {
+      this.endConversation();
+      return;
     }
     this.isListening = true;
     this.updateTextPosition();
-    let totalEntries = entries.length;
-    let entryLoop = async (idx = 0) => {
-      if (idx < totalEntries) {
-        let entry = entries[idx];
-        if (entry.isActive == '') {
-          if (typeof callback === 'function') {
-            callback(this.entryList[entry.index]);
-          } else {
-            this.showEntry(this.entryList[entry.index]);
-          }
-        } else {
-          let script = NWScript.Load(entry.isActive);
-          if (script instanceof NWScriptInstance) {
-            console.log('dialog', script);
-            script.name = entry.isActive;
-            console.log(this.owner);
-            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-              console.log('dialog', script, bSuccess);
-              if (bSuccess) {
-                if (typeof callback === 'function') {
-                  callback(this.entryList[entry.index]);
-                } else {
-                  this.showEntry(this.entryList[entry.index]);
-                }
-              } else {
-                entryLoop(++idx);
-              }
-            });
-          } else {
-            entryLoop(++idx);
-          }
-        }
+    let entryIndex = this.dialog.getNextEntryIndex(entryLinks);
+    let entry = this.dialog.getEntryByIndex(entryIndex);
+    if (entry) {
+      if (typeof callback === 'function') {
+        callback(entry);
       } else {
-        this.EndConversation();
+        this.showEntry(entry);
       }
-    };
-    entryLoop();
+    } else {
+      this.endConversation();
+      return;
+    }
   }
 
-  isEndDialog(node: any) {
+  isContinueDialog(node: DLGNode) {
+    let returnValue = null;
+    if (typeof node.entries !== 'undefined') {
+      returnValue = node.text == '' && node.entries.length;
+    } else if (typeof node.replies !== 'undefined') {
+      returnValue = node.text == '' && node.replies.length;
+    } else {
+      returnValue = node.text == '';
+    }
+    return returnValue;
+  }
+
+  isEndDialog(node: DLGNode) {
     let returnValue = null;
     if (typeof node.entries !== 'undefined') {
       returnValue = node.text == '' && !node.entries.length;
@@ -213,305 +215,158 @@ export class InGameComputer extends GameMenu {
     return returnValue;
   }
 
-  isContinueDialog(node: any) {
-    if (typeof node.entries !== 'undefined') {
-      return node.text == '' && node.entries.length;
-    } else if (typeof node.replies !== 'undefined') {
-      return node.text == '' && node.replies.length;
-    } else {
-      return true;
-    }
-  }
-
-  PlayerSkipEntry(entry: any) {
-    if (entry) {
-      clearTimeout(entry.timeout);
+  playerSkipEntry(entry: DLGNode) {
+    if (this.currentEntry instanceof DLGNode) {
       this.audioEmitter.Stop();
-      this.showReplies(entry);
+      this.showReplies(this.currentEntry);
     }
   }
 
-  async showEntry(entry: any) {
+  showEntry(entry: DLGNode) {
+    this.state = 0;
+    entry.initProperties();
     if (GameState.Mode != EngineMode.DIALOG)
       return;
+
+    //Computer Screen Message
     this.LB_MESSAGE.clearItems();
-    this.LB_MESSAGE.addItem(entry.text.split('##')[0], () => {
-    });
+    this.LB_MESSAGE.addItem(entry.getCompiledString());
+
+    //User Reply Options
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
+
     this.updateTextPosition();
     this.currentEntry = entry;
-    entry.timeout = null;
-    if (entry.speakerTag != '') {
-      entry.speaker = ModuleObjectManager.GetObjectByTag(entry.speakerTag);
-    } else {
-      entry.speaker = this.owner;
-    }
-    if (entry.listenerTag != '') {
-      if (entry.listenerTag == 'PLAYER') {
-        this.listener = GameState.player;
-      } else {
-        this.listener = ModuleObjectManager.GetObjectByTag(entry.listenerTag);
-      }
-    } else {
-      entry.listener = GameState.player;
-    }
-    let checkList = {
-      voiceOverComplete: false,
-      alreadyAllowed: false,
-      scriptComplete: true,
-      delayComplete: true,
-      isComplete: function (entry: any) {
-        console.log('checkList', entry);
-        if (this.alreadyAllowed) {
-          return false;
-        }
-        if (this.voiceOverComplete && this.delayComplete) {
-          this.alreadyAllowed = true;
-          return true;
-        }
-        return false;
-      }
-    };
-    let nodeDelay = 0;
-    this.GetAvailableReplies(entry);
-    if (entry.delay > -1) {
+
+    entry.updateJournal();
+
+    //Node Delay
+    let nodeDelay = 3000;
+    if (!this.dialog.isAnimatedCutscene && entry.delay > -1) {
       nodeDelay = entry.delay * 1000;
-    } else {
-      checkList.delayComplete = true;
     }
-    if (entry.script != '') {
-      checkList.scriptComplete = false;
-      let script = NWScript.Load(entry.script);
-      if (script instanceof NWScriptInstance) {
-        script.name = entry.script;
-        script.runAsync(this.owner, 0).then( () => {
-          checkList.scriptComplete = true;
-        });
-      } else {
-        checkList.scriptComplete = true;
-      }
-    }
-    console.error('entry delay', entry, nodeDelay);
-    this.showReplies(entry);
-    if (entry.sound != '') {
-      console.log('lip', entry.sound);
-      LIPObject.Load(entry.sound).then( (lip: LIPObject) => {
-        if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(lip);
-        }
-      });
-      this.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
-        checkList.voiceOverComplete = true;
-      });
-    } else if (entry.vo_resref != '') {
-      console.log('lip', entry.vo_resref);
-      LIPObject.Load(entry.vo_resref).then( (lip: LIPObject) => {
-        if (entry.speaker instanceof ModuleCreature) {
-          entry.speaker.setLIP(lip);
-        }
-      });
-      this.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
-        checkList.voiceOverComplete = true;
-      });
-    } else {
-      console.error('VO ERROR', entry, nodeDelay);
-    }
+    entry.setNodeDelay(nodeDelay);
+
+    this.getAvailableReplies(entry);
+    
+    // if (entry.speakerTag != '') {
+    //   entry.speaker = ModuleObjectManager.GetObjectByTag(entry.speakerTag);
+    // } else {
+    //   entry.speaker = this.owner;
+    // }
+    // if (entry.listenerTag != '') {
+    //   if (entry.listenerTag == 'PLAYER') {
+    //     this.listener = GameState.player;
+    //   } else {
+    //     this.listener = ModuleObjectManager.GetObjectByTag(entry.listenerTag);
+    //   }
+    // } else {
+    //   entry.listener = GameState.player;
+    // }
+
+    //scripts
+    entry.runScripts();
+  
+    //vo
+    entry.playVoiceOver(this.audioEmitter);
     this.state = 0;
   }
-
-  loadReplies(entry: any) {
-    if (!entry.replies.length) {
-    } else {
-      if (entry.replies.length == 1 && this.isContinueDialog(entry.replies[0])) {
-        let reply = this.replyList[entry.replies[0].index];
-        this.getNextEntry(reply.entries);
+  
+  getAvailableReplies(entry: DLGNode) {
+    let replyLinks = entry.getActiveReplies();
+    for (let i = 0; i < replyLinks.length; i++) {
+      let reply = this.dialog.getReplyByIndex(replyLinks[i]);
+      if (reply) {
+        this.LB_REPLIES.addItem(
+          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
+          (e: any) => {
+            this.onReplySelect(reply);
+          }
+        );
       } else {
+        console.warn('getAvailableReplies() Failed to find reply at index: ' + replyLinks[i]);
       }
     }
+    this.LB_REPLIES.updateList();
   }
 
-  async showReplies(entry: any) {
+   showReplies(entry: DLGNode) {
+    this.state = 1;
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    console.log('showReplies', entry);
-    if (entry.replies.length == 1 && this.isContinueDialog(this.replyList[entry.replies[0].index])) {
-      let reply = this.replyList[entry.replies[0].index];
-      console.log('We seem to have found a dialog continue entry we are going to attempt to auto pick and continue', reply);
-      if (reply.script == '') {
-        let _reply = this.replyList[reply.index];
-        console.log('showEntry.replies', _reply);
+    this.currentEntry = undefined;
+    let isContinueDialog = entry.replies.length == 1 && this.isContinueDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
+    let isEndDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
+    console.log('showReplies', entry, isContinueDialog, isEndDialog);
+    if (isContinueDialog) {
+      let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
+      if (reply) {
+        reply.runScripts();
         this.getNextEntry(reply.entries);
       } else {
-        let script = NWScript.Load(reply.script);
-        if (script instanceof NWScriptInstance) {
-          console.log('dialog', script);
-          script.name = entry.script;
-          console.log(this.owner);
-          script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-            console.log('dialog', script, bSuccess);
-            if (bSuccess) {
-              let _reply = this.replyList[reply.index];
-              console.log('showEntry.replies', _reply);
-            }
-            this.getNextEntry(reply.entries);
-          });
-        } else {
-          this.getNextEntry(reply.entries);
-        }
+        this.endConversation();
       }
       return;
-    } else if (entry.replies.length == 1 && this.isEndDialog(this.replyList[entry.replies[0].index])) {
-      let reply = this.replyList[entry.replies[0].index];
-      console.log('We seem to have found a dialog end entry we are going to attempt to end', reply);
-      if (reply.script == '') {
-        let _reply = this.replyList[reply.index];
-        console.log('showEntry.replies', _reply);
-        this.EndConversation();
-      } else {
-        let script = NWScript.Load(reply.script);
-        if (script instanceof NWScriptInstance) {
-          console.log('dialog', script);
-          script.name = entry.script;
-          console.log(this.owner);
-          script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-            console.log('dialog', script, bSuccess);
-            if (bSuccess) {
-              let _reply = this.replyList[reply.index];
-              console.log('showEntry.replies', _reply);
-            }
-            this.EndConversation();
-          });
-        } else {
-          this.EndConversation();
-        }
+    } else if (isEndDialog) {
+      let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
+      if (reply) {
+        reply.runScripts();
       }
+      this.endConversation();
       return;
     } else if (!entry.replies.length) {
-      console.log('No more replies and can\'t continue');
-      this.EndConversation();
+      this.endConversation();
+      return;
+    }
+    try {
+      if(this.getCurrentOwner() instanceof ModuleCreature){
+        (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
+      }
+    } catch (e: any) {
+    }
+    try {
+      if(this.getCurrentListener() instanceof ModuleCreature){
+        (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
+      }
+    } catch (e: any) {
     }
     this.isListening = false;
     this.updateTextPosition();
     this.LB_REPLIES.show();
-    console.log('DEBUG: Dialog Reply Options');
-    for (let i = 0; i < this.LB_REPLIES.children.length; i++) {
-      try {
-        console.log(this.LB_REPLIES.children[i].text.text);
-      } catch (e: any) {
-      }
-    }
+    this.LB_REPLIES.updateList();
+    // this.UpdateCamera();
     this.state = 1;
   }
 
-  GetAvailableReplies(entry: any) {
-    let totalReplies = entry.replies.length;
-    console.log('GetAvailableReplies', entry);
-    let replyLoop = async (idx = 0) => {
-      if (idx < totalReplies) {
-        console.log('replyLoop', entry.replies[idx], idx, idx < totalReplies);
-        let reply = entry.replies[idx];
-        if (reply.isActive == '') {
-          let _reply = this.replyList[reply.index];
-          console.log('showEntry.replies', _reply);
-          this.LB_REPLIES.addItem(this.StringTokenParser(this.LB_REPLIES.children.length + 1 + '. ' + _reply.text.split('##')[0]), (e: any) => {
-            this.onReplySelect(_reply);
-          });
-          replyLoop(++idx);
-        } else {
-          let script = NWScript.Load(reply.isActive);
-          if (script instanceof NWScriptInstance) {
-            console.log('dialog', script);
-            script.name = entry.isActive;
-            console.log(this.owner);
-            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-              console.log('dialog', script, bSuccess);
-              if (bSuccess) {
-                let _reply = this.replyList[reply.index];
-                console.log('showEntry.replies', _reply);
-                this.LB_REPLIES.addItem(this.StringTokenParser(this.LB_REPLIES.children.length + 1 + '. ' + _reply.text.split('##')[0]), () => {
-                  this.onReplySelect(_reply);
-                });
-              }
-              replyLoop(++idx);
-            });
-          } else {
-            replyLoop(++idx);
-          }
-        }
-      } else {
-      }
-    };
-    replyLoop();
-  }
-
-  StringTokenParser(text = '', entry?: any) {
-    if (this.owner instanceof ModuleCreature) {
-      text = text.replace('<FullName>', GameState.player.firstName);
-      text = text.replace('<CUSTOM31>', () => {
-        return (3).toString();
-      });
-      text = text.replace('<CUSTOM32>', () => {
-        return (5).toString();
-      });
-      text = text.replace('<CUSTOM33>', () => {
-        return (8).toString();
-      });
-      text = text.replace('<CUSTOM34>', () => {
-        return (10).toString();
-      });
-      text = text.replace('<CUSTOM35>', () => {
-        return (2).toString();
-      });
-      text = text.replace('<CUSTOM41>', () => {
-        return (1).toString();
-      });
-      text = text.replace('<CUSTOM42>', () => {
-        return (4).toString();
-      });
-      text = text.replace('<CUSTOM43>', () => {
-        return (4).toString();
-      });
-      text = text.replace('<CUSTOM44>', () => {
-        return (5).toString();
-      });
-      text = text.replace('<CUSTOM45>', () => {
-        return (6).toString();
-      });
-    }
-    return text;
-  }
-
-  async onReplySelect(reply: any) {
-    if (reply.script != '') {
-      let script = NWScript.Load(reply.script);
-      if (script instanceof NWScriptInstance) {
-        console.log('dialog.reply', script);
-        script.name = reply.script;
-        console.log(this.owner);
-        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-        });
-        this.getNextEntry(reply.entries);
-      } else {
-        this.getNextEntry(reply.entries);
-      }
-    } else {
+  onReplySelect(reply: DLGNode) {
+    if(reply){
+      reply.updateJournal();
+      reply.runScripts();
       this.getNextEntry(reply.entries);
+    } else {
+      console.error(`InGameComputer.onReplySelect: Aborting conversation because an invalid node was supplied`);
+      this.endConversation();
     }
   }
 
-  async OnBeforeConversationEnd(onEnd?: Function) {
-    if (this.onEndConversation != '') {
-      let script = NWScript.Load(this.onEndConversation);
-      if (script instanceof NWScriptInstance) {
-        script.name = this.onEndConversation;
-        script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-          if (typeof onEnd === 'function')
-            onEnd();
-        });
-      } else {
-        if (typeof onEnd === 'function')
-          onEnd();
+  endConversation(aborted: boolean = false) {
+    if (GameState.ConversationPaused) {
+      this.ended = true;
+    }
+    this.audioEmitter.Stop();
+    this.Close();
+    GameState.currentCamera = GameState.camera;
+    this.state = -1;
+    if(this.dialog){
+      if (!aborted) {
+        if(this.dialog.scripts.onEndConversation){
+          this.dialog.scripts.onEndConversation.run(this.owner, 0);
+        }
+      }else{
+        if(this.dialog.scripts.onEndConversationAbort){
+          this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
+        }
       }
     }
   }
@@ -532,179 +387,18 @@ export class InGameComputer extends GameMenu {
     }
   }
 
-  EndConversation(aborted = false) {
-    this.audioEmitter.Stop();
-    this.Close();
-    GameState.currentCamera = GameState.camera;
-    this.state = -1;
-    window.setTimeout(async () => {
-      if (!aborted) {
-        if (this.onEndConversation != '') {
-          let script = NWScript.Load(this.onEndConversation);
-          if (script instanceof NWScriptInstance) {
-            script.name = this.onEndConversation;
-            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-            });
-          }
-        }
-      } else {
-        if (this.onEndConversationAbort != '') {
-          let script = NWScript.Load(this.onEndConversationAbort);
-          if (script instanceof NWScriptInstance) {
-            script.name = this.onEndConversationAbort;
-            script.runAsync(this.owner, 0).then( (bSuccess: boolean) => {
-            });
-          }
-        }
-      }
-    });
+  getCurrentListener(): ModuleObject {
+    if (this.currentEntry) {
+      return this.currentEntry.listener;
+    }
+    return this.listener;
   }
 
-  _parseEntryStruct(struct: any) {
-    let node: any = {
-      animations: [],
-      cameraAngle: 0,
-      cameraID: 0,
-      cameraAnimation: -1,
-      camFieldOfView: -1,
-      comment: '',
-      delay: 0,
-      fadeType: 0,
-      listenerTag: '',
-      plotIndex: -1,
-      plotXPPercentage: 1,
-      quest: '',
-      replies: [],
-      script: '',
-      sound: '',
-      soundExists: 0,
-      speakerTag: '',
-      text: '',
-      vo_resref: '',
-      waitFlags: 0,
-      fade: {
-        type: 0,
-        length: 0,
-        delay: 0,
-        color: {
-          r: 0,
-          g: 0,
-          b: 0
-        }
-      }
-    };
-    if (typeof struct.Listener !== 'undefined')
-      node.listenerTag = struct.Listener.value;
-    if (typeof struct.Speaker !== 'undefined')
-      node.speakerTag = struct.Speaker.value;
-    if (typeof struct.VO_ResRef !== 'undefined')
-      node.vo_resref = struct.VO_ResRef.value;
-    if (typeof struct.Sound !== 'undefined')
-      node.sound = struct.Sound.value;
-    if (typeof struct.CameraID !== 'undefined')
-      node.cameraID = struct.CameraID.value;
-    if (typeof struct.CameraAnimation !== 'undefined')
-      node.cameraAnimation = struct.CameraAnimation.value;
-    if (typeof struct.CameraAngle !== 'undefined')
-      node.cameraAngle = struct.CameraAngle.value;
-    if (typeof struct.Script !== 'undefined')
-      node.script = struct.Script.value;
-    if (typeof struct.CamFieldOfView !== 'undefined')
-      node.camFieldOfView = struct.CamFieldOfView.value;
-    if (typeof struct.RepliesList !== 'undefined') {
-      for (let i = 0; i < struct.RepliesList.structs.length; i++) {
-        let _node = struct.RepliesList.structs[i].fields;
-        node.replies.push({
-          isActive: _node.Active.value,
-          index: _node.Index.value,
-          isChild: _node.IsChild.value
-        });
-      }
+  getCurrentOwner(): ModuleObject {
+    if (this.currentEntry) {
+      return this.currentEntry.owner;
     }
-    if (typeof struct.AnimList !== 'undefined') {
-      for (let i = 0; i < struct.AnimList.structs.length; i++) {
-        let _node = struct.AnimList.structs[i].fields;
-        node.animations.push({
-          animation: _node.Animation.value,
-          participant: _node.Participant.value.toLowerCase()
-        });
-      }
-    }
-    if (typeof struct.Text !== 'undefined')
-      node.text = struct.Text.value.GetValue();
-    if (typeof struct.Delay !== 'undefined')
-      node.delay = struct.Delay.value == 4294967295 ? -1 : struct.Delay.value;
-    if (typeof struct.FadeType !== 'undefined')
-      node.fade.type = struct.FadeType.value;
-    if (typeof struct.FadeLength !== 'undefined')
-      node.fade.length = struct.FadeLength.value;
-    if (typeof struct.FadeDelay !== 'undefined')
-      node.fade.delay = struct.FadeDelay.value;
-    return node;
-  }
-
-  _parseReplyStruct(struct: any) {
-    let node: any = {
-      animations: [],
-      cameraAngle: 0,
-      cameraID: 0,
-      comment: '',
-      delay: 0,
-      fadeType: 0,
-      listenerTag: '',
-      plotIndex: -1,
-      plotXPPercentage: 1,
-      quest: '',
-      entries: [],
-      script: '',
-      sound: '',
-      soundExists: 0,
-      speakerTag: '',
-      text: '',
-      vo_resref: '',
-      waitFlags: 0,
-      fade: {
-        type: 0,
-        length: 0,
-        delay: 0,
-        color: {
-          r: 0,
-          g: 0,
-          b: 0
-        }
-      }
-    };
-    if (typeof struct.Listener !== 'undefined')
-      node.listenerTag = struct.Listener.value;
-    if (typeof struct.Speaker !== 'undefined')
-      node.speakerTag = struct.Speaker.value;
-    if (typeof struct.Script !== 'undefined')
-      node.script = struct.Script.value;
-    if (typeof struct.EntriesList !== 'undefined') {
-      for (let i = 0; i < struct.EntriesList.structs.length; i++) {
-        let _node = struct.EntriesList.structs[i].fields;
-        node.entries.push({
-          isActive: _node.Active.value,
-          index: _node.Index.value,
-          isChild: _node.IsChild.value
-        });
-      }
-    }
-    if (typeof struct.CameraID !== 'undefined')
-      node.cameraID = struct.CameraID.value;
-    if (typeof struct.CameraAngle !== 'undefined')
-      node.cameraAngle = struct.CameraAngle.value;
-    if (typeof struct.Text !== 'undefined')
-      node.text = struct.Text.value.GetValue();
-    if (typeof struct.Delay !== 'undefined')
-      node.delay = struct.Delay.value == 4294967295 ? -1 : struct.Delay.value;
-    if (typeof struct.FadeType !== 'undefined')
-      node.fade.type = struct.FadeType.value;
-    if (typeof struct.FadeLength !== 'undefined')
-      node.fade.length = struct.FadeLength.value;
-    if (typeof struct.FadeDelay !== 'undefined')
-      node.fade.delay = struct.FadeDelay.value;
-    return node;
+    return this.owner;
   }
   
 }

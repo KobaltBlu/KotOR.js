@@ -12,7 +12,7 @@ export class ActionResumeDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    MenuManager.InGameDialog.ResumeConversation();
+    GameState.ConversationPaused = false;
     console.log('ActionResumeDialog', this.owner.getName(), this.owner.getTag());
     return ActionStatus.COMPLETE;
   }

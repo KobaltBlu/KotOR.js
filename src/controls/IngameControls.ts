@@ -492,18 +492,18 @@ export class IngameControls {
       //Dialog
       if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.isListening){
         if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
-          MenuManager.InGameDialog.PlayerSkipEntry(MenuManager.InGameDialog.currentEntry);
+          MenuManager.InGameDialog.playerSkipEntry(MenuManager.InGameDialog.currentEntry);
         }else if(Mouse.leftClick){
-          MenuManager.InGameDialog.PlayerSkipEntry(MenuManager.InGameDialog.currentEntry);
+          MenuManager.InGameDialog.playerSkipEntry(MenuManager.InGameDialog.currentEntry);
         }
       }
       
       //Computer
       else if(MenuManager.InGameComputer.bVisible && MenuManager.InGameComputer.isListening){
         if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
-          MenuManager.InGameComputer.PlayerSkipEntry(MenuManager.InGameComputer.currentEntry);
+          MenuManager.InGameComputer.playerSkipEntry(MenuManager.InGameComputer.currentEntry);
         }else if(Mouse.leftClick){
-          MenuManager.InGameComputer.PlayerSkipEntry(MenuManager.InGameComputer.currentEntry);
+          MenuManager.InGameComputer.playerSkipEntry(MenuManager.InGameComputer.currentEntry);
         }
       }
 
@@ -518,11 +518,11 @@ export class IngameControls {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
       if(MenuManager.InGameDialog.bVisible){
-        MenuManager.InGameDialog.EndConversation(true);
+        MenuManager.InGameDialog.endConversation(true);
       }else if(MenuManager.InGameComputer.bVisible){
-        MenuManager.InGameComputer.EndConversation(true);
+        MenuManager.InGameComputer.endConversation(true);
       }else if(MenuManager.InGameComputerCam.bVisible){
-        MenuManager.InGameDialog.EndConversation(true);
+        MenuManager.InGameDialog.endConversation(true);
       }
     })
 

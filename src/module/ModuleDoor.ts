@@ -29,6 +29,7 @@ import { KEYManager } from "../managers/KEYManager";
 import { MenuManager } from "../gui";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { DLGObject } from "../resource/DLGObject";
 
 /* @file
  * The ModuleDoor class.
@@ -92,7 +93,6 @@ export class ModuleDoor extends ModuleObject {
     this.appearance = 0;
     this.autoRemoveKey = false;
     this.closeLockDC = 0;
-    this.conversation = '';
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
@@ -765,8 +765,9 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.HasField('CloseLockDC'))
       this.closeLockDC = this.template.GetFieldByLabel('CloseLockDC').GetValue();
 
-    if(this.template.RootNode.HasField('Conversation'))
-      this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
+    if(this.template.RootNode.HasField('Conversation')){
+      this.conversation = DLGObject.FromResRef(this.template.GetFieldByLabel('Conversation').GetValue());
+    }
 
     if(this.template.RootNode.HasField('CurrentHP'))
       this.currentHP = this.template.GetFieldByLabel('CurrentHP').GetValue();
@@ -928,7 +929,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).SetValue(this.closeLockDC);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
     gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue('');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).SetValue(this.disarmDC);

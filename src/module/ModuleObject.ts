@@ -39,6 +39,7 @@ import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEnc
 import { CombatAction } from "../interface/combat/CombatAction";
 import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { DLGObject } from "../resource/DLGObject";
 
 /* @file
  * The ModuleObject class.
@@ -54,7 +55,6 @@ export class ModuleObject {
   initialized: boolean;
   isPlayer: boolean = false;
   name: string;
-  _conversation: string;
 
   effectIconList: EffectIconListItem[] = [];
 
@@ -127,6 +127,7 @@ export class ModuleObject {
   _healTarget: any;
 
   //Perception
+  heardStrings: any[];
   perceptionList: any[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
@@ -211,7 +212,9 @@ export class ModuleObject {
   lastPlaceableExited: ModuleObject;
   lastAoeEntered: ModuleObject;
   lastAoeExited: ModuleObject;
-  conversation: string;
+
+  conversation: DLGObject;
+  _conversation: DLGObject;
 
   static ResetPlayerId(){
     ModuleObject.PLAYER_ID = 0x7fffffff;
@@ -1351,12 +1354,8 @@ export class ModuleObject {
     return (typeof this.template !== 'undefined');
   }
 
-  GetConversation(){
-    if(this.template.RootNode.HasField('Conversation')){
-      return this.template.RootNode.GetFieldByLabel('Conversation').GetValue();
-    }
-
-    return '';
+  getConversation(): DLGObject {
+    return this.conversation;
   }
 
   GetObjectTag(){

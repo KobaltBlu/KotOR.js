@@ -44,6 +44,7 @@ import { MenuManager } from "../gui";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineState } from "../enums/engine/EngineState";
+import { DLGObject } from "../resource/DLGObject";
 
 /* @file
  * The ModuleCreature class.
@@ -108,7 +109,6 @@ export class ModuleCreature extends ModuleObject {
   up: THREE.Vector3;
   declare lipObject: LIPObject;
   walk: boolean;
-  heardStrings: any[];
   targetPositions: any[];
   declare audioEmitter: AudioEmitter;
   declare footstepEmitter: AudioEmitter;
@@ -215,7 +215,6 @@ export class ModuleCreature extends ModuleObject {
     this.classes = [];
     this.comment = '';
     this.con = 0;
-    this.conversation = '';
     this.currentForce = 0;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.regenTimer = 0;
@@ -2198,7 +2197,9 @@ export class ModuleCreature extends ModuleObject {
       GameState.getCurrentPlayer().actionUseObject(this);
     }else if(!this.isDead()){
       this.clearAllActions();
-      GameState.getCurrentPlayer().actionDialogObject(this, this.GetConversation(), false, undefined, undefined, true);
+      if(this.getConversation() && this.getConversation().resref){
+        GameState.getCurrentPlayer().actionDialogObject(this, this.getConversation().resref, false, undefined, undefined, true);
+      }
     }
     
   }
@@ -3803,8 +3804,9 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      if(this.template.RootNode.HasField('Conversation'))
-        this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
+      if(this.template.RootNode.HasField('Conversation')){
+        this.conversation = DLGObject.FromResRef(this.template.GetFieldByLabel('Conversation').GetValue());
+      }
 
       if(this.template.RootNode.HasField('CurrentForce'))
         this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
@@ -4310,7 +4312,7 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(this.getCommadable() ? 1 : 0);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Con') ).SetValue(this.str);
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).SetValue( this.spawned ? 1 : 0 );
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'CreatureSize') ).SetValue(3);
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).SetValue(this.currentForce);

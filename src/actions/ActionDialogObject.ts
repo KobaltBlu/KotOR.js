@@ -6,13 +6,19 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
-import { ModuleCreature } from "../module";
+import { GFFObject, ResourceLoader } from "../KotOR";
+import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { DLGObject } from "../resource/DLGObject";
+import { ResourceTypes } from "../resource/ResourceTypes";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
 export class ActionDialogObject extends Action {
-  _conversation: string;
+  declare target: ModuleObject;
+
+  validate_conversation_resref: boolean = false;
+  conversation: DLGObject;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -33,8 +39,15 @@ export class ActionDialogObject extends Action {
     //console.log('ActionDialogObject', this);
 
     this.target = this.getParameter(0);
-    let conversation = this.getParameter(1) || '';
+    let conversation_resref: string = this.getParameter(1) || '';
     let ignoreStartRange = this.getParameter(4) || 0;
+
+    if(!this.validate_conversation_resref){
+      this.validate_conversation_resref = true;
+      if(conversation_resref){
+        this.conversation = DLGObject.FromResRef(conversation_resref);
+      }
+    }
 
     if(this.owner instanceof ModuleCreature){
       if(GameState.Mode != EngineMode.DIALOG){
@@ -60,15 +73,14 @@ export class ActionDialogObject extends Action {
           this.owner.force = 0;
           this.owner.speed = 0;
 
-          this.target._conversation = conversation;
-          this._conversation = conversation;
+          this.target._conversation = this.conversation;
 
           this.owner.heardStrings = [];
           this.target.heardStrings = [];
           if(this.target.scripts.onDialog instanceof NWScriptInstance){
             this.target.onDialog(this.owner, -1);
           }else{
-            MenuManager.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.target, this.owner);
+            MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
           }
           return ActionStatus.COMPLETE;
         }
@@ -77,7 +89,7 @@ export class ActionDialogObject extends Action {
         return ActionStatus.FAILED;
       }
     }else{
-      MenuManager.InGameDialog.StartConversation(conversation ? conversation : this.owner.conversation, this.owner, this.target);
+      MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
       return ActionStatus.COMPLETE;
     }
     

@@ -20,6 +20,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { CExoLocString } from "../resource/CExoLocString";
+import { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -82,7 +83,6 @@ export class ModulePlaceable extends ModuleObject {
     this.autoRemoveKey = false;
     this.bodyBag = 0;
     this.closeLockDC = 0;
-    this.conversation = '';
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
@@ -409,8 +409,8 @@ export class ModulePlaceable extends ModuleObject {
     if(this.hasInventory){
       MenuManager.MenuContainer.AttachContainer(this);
       MenuManager.MenuContainer.Open();
-    }else if(this.GetConversation() != ''){
-      MenuManager.InGameDialog.StartConversation(this.GetConversation(), object);
+    }else if(this.getConversation() && this.getConversation().resref){
+      MenuManager.InGameDialog.StartConversation(this.getConversation(), object);
     }
 
     if(this.scripts.onUsed instanceof NWScriptInstance){
@@ -680,8 +680,9 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.HasField('CloseLockDC'))
       this.closeLockDC = this.template.GetFieldByLabel('CloseLockDC').GetValue();
 
-    if(this.template.RootNode.HasField('Conversation'))
-      this.conversation = this.template.GetFieldByLabel('Conversation').GetValue();
+    if(this.template.RootNode.HasField('Conversation')){
+      this.conversation = DLGObject.FromResRef(this.template.GetFieldByLabel('Conversation').GetValue());
+    }
 
     if(this.template.RootNode.HasField('CurrentHP'))
       this.currentHP = this.template.GetFieldByLabel('CurrentHP').GetValue();
@@ -834,7 +835,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).SetValue(this.closeLockDC);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation);
+    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).SetValue(this.currentHP);
     gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue('');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).SetValue( this.isBodyBag ? 1 : 0 );

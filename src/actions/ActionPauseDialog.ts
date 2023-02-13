@@ -12,7 +12,7 @@ export class ActionPauseDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    MenuManager.InGameDialog.PauseConversation();
+    GameState.ConversationPaused = true;
     return ActionStatus.COMPLETE;
   }
 

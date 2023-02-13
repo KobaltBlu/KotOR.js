@@ -8,9 +8,11 @@ import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import { NWScriptInstance } from "../KotOR";
 import { DLGStuntActor } from "../interface/dialog/DLGStuntActor";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScript } from "../nwscript/NWScript";
+import { ResourceLoader } from "./ResourceLoader";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -28,9 +30,6 @@ export class DLGObject {
   owner: any;
   listener: any;
   vo_id: any;
-
-  onEndConversationAbort: any;
-  onEndConversation: any;
 
   scripts: DLGObjectScripts = {
     onEndConversationAbort: undefined,
@@ -70,11 +69,21 @@ export class DLGObject {
     if(this.gff.json.fields.CameraModel)
       this.animatedCameraResRef = this.gff.json.fields.CameraModel.value;
     
-    if(this.gff.json.fields.EndConverAbort)
-      this.onEndConversationAbort = this.gff.json.fields.EndConverAbort.value;
+    if(this.gff.json.fields.EndConverAbort){
+      const scriptName = this.gff.json.fields.EndConverAbort.value;
+      this.scripts.onEndConversationAbort = NWScript.Load(scriptName);
+      if(this.scripts.onEndConversationAbort){
+        this.scripts.onEndConversationAbort.name = scriptName;
+      }
+    }
 
-    if(this.gff.json.fields.EndConversation)
-      this.onEndConversation = this.gff.json.fields.EndConversation.value;
+    if(this.gff.json.fields.EndConversation){
+      const scriptName = this.gff.json.fields.EndConversation.value;
+      this.scripts.onEndConversation = NWScript.Load(scriptName);
+      if(this.scripts.onEndConversation){
+        this.scripts.onEndConversation.name = scriptName;
+      }
+    }
 
     if(this.gff.json.fields.AnimatedCut)
       this.isAnimatedCutscene = this.gff.json.fields.AnimatedCut.value ? true : false;
@@ -179,13 +188,19 @@ export class DLGObject {
       if(typeof _node.Logic !== 'undefined'){
         linkNode.Logic = _node.Logic.value;
       }
-
+  
       if(typeof _node.Active !== 'undefined'){
-        linkNode.isActive = _node.Active.value;
+        linkNode.isActive = NWScript.Load(_node.Active.value);
+        if(linkNode.isActive instanceof NWScriptInstance){
+          linkNode.isActive.name = _node.Active.value;
+        }
       }
 
       if(typeof _node.Active2 !== 'undefined'){
-        linkNode.isActive2 = _node.Active2.value;
+        linkNode.isActive2 = NWScript.Load(_node.Active2.value);
+        if(linkNode.isActive2 instanceof NWScriptInstance){
+          linkNode.isActive2.name = _node.Active.value;
+        }
       }
 
       if(typeof _node.Index !== 'undefined'){
@@ -213,7 +228,7 @@ export class DLGObject {
     return this.stuntActors;
   }
 
-  async getNextEntryIndex( entryLinkList: any[] = [] ){
+  getNextEntryIndex( entryLinkList: DLGNode[] = [] ){
     if(!entryLinkList.length){
       return undefined;
     }
@@ -221,7 +236,7 @@ export class DLGObject {
     let e_count = entryLinkList.length;
     for(let i = 0; i < e_count; i++){
       let entryLink = entryLinkList[i];
-      let isActive = await entryLink.runActiveScripts();
+      let isActive = entryLink.runActiveScripts();
       if(isActive){
         return entryLink.index;
       }
@@ -358,19 +373,40 @@ export class DLGObject {
 
   async load(){
     return new Promise<void>( (resolve, reject) => {
-      TemplateLoader.Load({
-        ResRef: this.resref,
-        ResType: ResourceTypes.dlg,
-        onLoad: (gff: GFFObject) => {
-          this.gff = gff;
+      if(this.resref){
+        const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], this.resref);
+        if(buffer){
+          this.gff = new GFFObject(buffer);
           this.init();
           resolve();
-        },
-        onFail: () => {
+        }else{
           reject();
         }
-      });
+      }else{
+        reject();
+      }
     });
+  }
+
+  static FromGFFObject(gff: GFFObject): DLGObject {
+    const dlg = new DLGObject();
+    dlg.gff = gff;
+    dlg.init();
+    return dlg;
+  }
+
+  static FromResRef(resref: string): DLGObject {
+    if(resref){
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], resref);
+      if(buffer){
+        const dlg = DLGObject.FromGFFObject(new GFFObject(buffer));
+        if(dlg){
+          dlg.resref = resref;
+        }
+        return dlg;
+      }
+    }
+    return;
   }
 
 }

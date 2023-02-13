@@ -2,7 +2,7 @@
  */
 
 import * as THREE from "three";
-import { ActionPlayAnimation, ActionResumeDialog } from "../actions";
+import { ActionPauseDialog, ActionPlayAnimation, ActionResumeDialog } from "../actions";
 import { CombatEngine } from "../combat/CombatEngine";
 import { EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForceFizzle, EffectForcePushed, EffectForceResisted, EffectForceShield, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
 import { EffectDisguise } from "../effects/EffectDisguise";
@@ -49,6 +49,7 @@ import { JournalManager } from "../managers/JournalManager";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { ResourceLoader } from "../KotOR";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { DLGObject } from "../resource/DLGObject";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -2435,10 +2436,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'ActionPauseConversation');
+      if(this.caller instanceof ModuleObject){
+        this.caller.actionQueue.add( new ActionPauseDialog() );
       }
-      MenuManager.InGameDialog.PauseConversation();
       console.log('script', this.name, 'PauseConversation', this.caller);
     }
   },
@@ -2448,11 +2448,10 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-
       if(this.caller instanceof ModuleObject){
         this.caller.actionQueue.add( new ActionResumeDialog() );
       }
-      
+      console.log('script', this.name, 'ResumeConversation', this.caller);
     }
   },
   207:{
@@ -3086,11 +3085,15 @@ NWScriptDefK1.Actions = {
   
       if((args[1]) instanceof ModuleObject){
         if(args[0] != ''){
-          MenuManager.InGameDialog.StartConversation(args[0], this.caller, args[1] as any);
-          return 1;
+          const dlg = DLGObject.FromResRef(args[0]);
+          if(dlg){
+            MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
+            return 1;
+          }
+          return 0;
         }else if(this.caller._conversation){
           MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1] as any);
-          (args[1])._conversation = '';
+          (args[1])._conversation = undefined;
           return 1;
         }else if(this.caller.conversation){
           MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
@@ -6138,7 +6141,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       //console.log('RemovePartyMember', args);
-      PartyManager.RemoveNPCById(args[0]);
+      PartyManager.RemoveNPCById(args[0], true);
       return 0;
     }
   },
