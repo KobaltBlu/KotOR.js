@@ -70,6 +70,7 @@ export class NWScriptInstance {
   _effectPointer: number = 0;
   persistentObjectIdx: number = 0;
   creatureFactionIdx: number = 0;
+  attackerIndex: number = 0;
 
   constructor( args: any = {} ){
 

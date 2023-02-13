@@ -575,4 +575,25 @@ export class ModuleObjectManager {
     }
 
   }
+
+  public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {
+    let object_pool: ModuleObject[] = [];
+    
+    object_pool.concat(
+      GameState.module.area.creatures.filter( 
+        (
+          creature => 
+          {
+            return (
+              creature.combatData.lastAttackTarget == oTarget ||
+              creature.combatData.lastSpellTarget == oTarget
+            );
+          }
+        )
+      )
+    );
+
+    return object_pool[index];
+  }
+
 }

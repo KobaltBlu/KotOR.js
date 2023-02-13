@@ -2,10 +2,10 @@ import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObject } from "../module";
 
-export class EffectTemporaryHitPoints extends GameEffect {
+export class EffectConcealment extends GameEffect {
   constructor(){
     super();
-    this.type = GameEffectType.EffectTemporaryHitPoints;
+    this.type = GameEffectType.EffectConcealment;
   }
 
   onApply(){
@@ -13,7 +13,6 @@ export class EffectTemporaryHitPoints extends GameEffect {
       return;
       
     super.onApply();
-    this.object.addHP(this.getInt(0), true);
   }
 
 }

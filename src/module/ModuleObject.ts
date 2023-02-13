@@ -114,7 +114,7 @@ export class ModuleObject {
   hp: number;
   currentHP: number;
   faction: number;
-  effects: any[] = [];
+  effects: GameEffect[] = [];
   casting: any[] = [];
   damageList: any[] = [];
   _locals: { Booleans: any[]; Numbers: {}; };

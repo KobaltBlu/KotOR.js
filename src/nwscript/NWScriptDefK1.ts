@@ -4,13 +4,27 @@
 import * as THREE from "three";
 import { ActionPauseDialog, ActionPlayAnimation, ActionResumeDialog } from "../actions";
 import { CombatEngine } from "../combat/CombatEngine";
-import { EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAssuredHit, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageIncrease, EffectDamageResistance, EffectDeath, EffectForceFizzle, EffectForcePushed, EffectForceResisted, EffectForceShield, EffectHeal, EffectHealForcePoints, EffectIcon, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectVisualEffect, GameEffect } from "../effects";
+import { 
+  EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAreaOfEffect, 
+  EffectAssuredDeflection, EffectAssuredHit, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, 
+  EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectConcealment, EffectDamage, 
+  EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, 
+  EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectForceFizzle, 
+  EffectForceJump, EffectForcePushed, EffectForceResistanceDecrease, EffectForceResistanceInecrease, 
+  EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, 
+  EffectImmunity, EffectInvisibility, EffectKnockdown, EffectLink, EffectMissChance, EffectMovementSpeedDecrease, 
+  EffectMovementSpeedIncrease, EffectPoison, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, 
+  EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSpellImmunity, 
+  EffectTemporaryForce, EffectTemporaryHitPoints, EffectVisualEffect, GameEffect 
+} from "../effects";
 import { EffectDisguise } from "../effects/EffectDisguise";
 import EngineLocation from "../engine/EngineLocation";
+import { AttackResult } from "../enums/combat/AttackResult";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
 import { EngineState } from "../enums/engine/EngineState";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
@@ -50,6 +64,7 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { ResourceLoader } from "../KotOR";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
+import { DialogMessageManager } from "../managers/DialogMessageManager";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -1396,13 +1411,30 @@ NWScriptDefK1.Actions = {
     comment: "118: Create an Attack Increase effect\n- nBonus: size of attack bonus\n- nModifierType: ATTACK_BONUS_*\n",
     name: "EffectAttackIncrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      let effect = new EffectAttackIncrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]); //nBonus
+      effect.setInt(1, args[1]); //nModifierType
+      return effect.initialize();
+    }
   },
   119:{
     comment: "119: Create a Damage Reduction effect\n- nAmount: amount of damage reduction\n- nDamagePower: DAMAGE_POWER_*\n- nLimit: How much damage the effect can absorb before disappearing.\nSet to zero for infinite\n",
     name: "EffectDamageReduction",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      let effect = new EffectDamageReduction();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]); //nAmount
+      effect.setInt(1, args[1]); //nDamagePower
+      effect.setInt(2, args[2]); //nLimit
+      return effect.initialize();
+    }
   },
   120:{
     comment: "120: Create a Damage Increase effect\n- nBonus: DAMAGE_BONUS_*\n- nDamageType: DAMAGE_TYPE_*\n",
@@ -1420,7 +1452,7 @@ NWScriptDefK1.Actions = {
     }
   },
   121:{
-    comment: "121: Convert nRounds into a number of seconds\nA round is always 6.0 seconds\n",
+    comment: "121: Convert nRounds into a number of seconds\nA round is always 6.0 seconds\n", //This is actually 3.0 seconds in KotOR & TSL
     name: "RoundsToSeconds",
     type: 4,
     args: [NWScriptDataType.INTEGER],
@@ -1573,8 +1605,11 @@ NWScriptDefK1.Actions = {
     name: "EffectKnockdown",
     type: 16,
     args: [],
-    action: function(this: NWScriptInstance, args: []){
-      //return {type: -1, };
+    action: function(this: NWScriptInstance, args: [number, number]){
+      let effect = new EffectKnockdown();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
     }
   },
   135:{
@@ -1698,7 +1733,11 @@ NWScriptDefK1.Actions = {
     type: 16,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      // return {type: 73};
+      let effect = new EffectSpellImmunity();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
     }
   },
   150:{
@@ -1738,9 +1777,14 @@ NWScriptDefK1.Actions = {
     name: "EffectForceJump",
     type: 16,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
-    // action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-    //   return {type: 77};
-    // }
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      let effect = new EffectForceJump();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setObject(0, args[0]);
+      return effect.initialize();
+    }
   },
   154:{
     comment: "154: Create a Sleep effect\n",
@@ -1841,9 +1885,14 @@ NWScriptDefK1.Actions = {
     name: "EffectTemporaryForcePoints",
     type: 16,
     args: [NWScriptDataType.INTEGER],
-    // action: function(this: NWScriptInstance, args: [number]){
-    //   return {type: 10}; //?? 10 is commented out right after EFFECT_TYPE_TEMPORARY_HITPOINTS
-    // }
+    action: function(this: NWScriptInstance, args: [number]){
+      if(args[0] < 0) return undefined;
+      let effect = new EffectTemporaryForce();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   157:{
     comment: "157: Create a Confuse effect\n",
@@ -2016,7 +2065,17 @@ NWScriptDefK1.Actions = {
     comment: "171: Create an Area Of Effect effect in the area of the creature it is applied to.\nIf the scripts are not specified, default ones will be used.\n",
     name: "EffectAreaOfEffect",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [number, string, string, string]){
+      let effect = new EffectAreaOfEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setString(0, args[1]);
+      effect.setString(1, args[2]);
+      effect.setString(2, args[3]);
+      return effect.initialize();
+    }
   },
   172:{
     comment: "172: * Returns TRUE if the Faction Ids of the two objects are the same\n",
@@ -2510,7 +2569,14 @@ NWScriptDefK1.Actions = {
     comment: "212: Create a Force Resistance Increase effect.\n- nValue: size of Force Resistance increase\n",
     name: "EffectForceResistanceIncrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectForceResistanceInecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   213:{
     comment: "213: Get the location of oObject.\n",
@@ -3047,7 +3113,14 @@ NWScriptDefK1.Actions = {
     comment: "252: Assured Deflection\nThis effect ensures that all projectiles shot at a jedi will be deflected\nwithout doing an opposed roll.  It takes an optional parameter to say whether\nthe deflected projectile will return to the attacker and cause damage\n",
     name: "EffectAssuredDeflection",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectAssuredDeflection();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   253:{
     comment: "253: Get the name of oObject.\n",
@@ -3259,7 +3332,13 @@ NWScriptDefK1.Actions = {
     comment: "270: Create a Haste effect.\n",
     name: "EffectHaste",
     type: 16,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectHaste();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   271:{
     comment: "271: Give oItem to oGiveTo (instant; for similar Action use ActionGiveItem)\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.\n",
@@ -3284,7 +3363,14 @@ NWScriptDefK1.Actions = {
     comment: "273: Create an Immunity effect.\n- nImmunityType: IMMUNITY_TYPE_*\n",
     name: "EffectImmunity",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectImmunity();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   274:{
     comment: "274: - oCreature\n- nImmunityType: IMMUNITY_TYPE_*\n- oVersus: if this is specified, then we also check for the race and\nalignment of oVersus\n* Returns TRUE if oCreature has immunity of type nImmunity versus oVersus.\n",
@@ -3296,7 +3382,15 @@ NWScriptDefK1.Actions = {
     comment: "275: Creates a Damage Immunity Increase effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
     name: "EffectDamageImmunityIncrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      let effect = new EffectDamageImmunityIncrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      return effect.initialize();
+    }
   },
   276:{
     comment: "276: Determine whether oEncounter is active.\n",
@@ -3673,7 +3767,15 @@ NWScriptDefK1.Actions = {
     comment: "314: Create a Temporary Hitpoints effect.\n- nHitPoints: a positive integer\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nHitPoints < 0.\n",
     name: "EffectTemporaryHitpoints",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(args[0] < 0) return undefined;
+      let effect = new EffectTemporaryHitPoints();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   315:{
     comment: "315: Get the number of ranks that oTarget has in nSkill.\n- nSkill: SKILL_*\n- oTarget\n* Returns -1 if oTarget doesn't have nSkill.\n* Returns 0 if nSkill is untrained.\n",
@@ -5058,13 +5160,29 @@ NWScriptDefK1.Actions = {
     comment: "446: Create an Ability Decrease effect.\n- nAbility: ABILITY_*\n- nModifyBy: This is the amount by which to decrement the ability\n",
     name: "EffectAbilityDecrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      let effect = new EffectAbilityDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      return effect.initialize();
+    }
   },
   447:{
     comment: "447: Create an Attack Decrease effect.\n- nPenalty\n- nModifierType: ATTACK_BONUS_*\n",
     name: "EffectAttackDecrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      let effect = new EffectAttackDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      return effect.initialize();
+    }
   },
   448:{
     comment: "448: Create a Damage Decrease effect.\n- nPenalty\n- nDamageType: DAMAGE_TYPE_*\n",
@@ -5085,7 +5203,15 @@ NWScriptDefK1.Actions = {
     comment: "449: Create a Damage Immunity Decrease effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
     name: "EffectDamageImmunityDecrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      let effect = new EffectDamageImmunityDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      return effect.initialize();
+    }
   },
   450:{
     comment: "450: Create an AC Decrease effect.\n- nValue\n- nModifyType: AC_*\n- nDamageType: DAMAGE_TYPE_*\n* Default value for nDamageType should only ever be used in this function prototype.\n",
@@ -5151,7 +5277,14 @@ NWScriptDefK1.Actions = {
     comment: "454: Create a Force Resistance Decrease effect.\n",
     name: "EffectForceResistanceDecrease",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectForceResistanceDecrease();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   455:{
     comment: "455: Determine whether oTarget is a plot object.\n",
@@ -5179,13 +5312,27 @@ NWScriptDefK1.Actions = {
     comment: "457: Create an Invisibility effect.\n- nInvisibilityType: INVISIBILITY_TYPE_*\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nInvisibilityType\nis invalid.\n",
     name: "EffectInvisibility",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectInvisibility();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   458:{
     comment: "458: Create a Concealment effect.\n- nPercentage: 1-100 inclusive\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or\nnPercentage > 100.\n",
     name: "EffectConcealment",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectConcealment();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   459:{
     comment: "459: Create a Force Shield that has parameters from the guven index into the forceshields.2da\n",
@@ -5353,7 +5500,15 @@ NWScriptDefK1.Actions = {
     comment: "477: Create a Miss Chance effect.\n- nPercentage: 1-100 inclusive\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or\nnPercentage > 100.\n",
     name: "EffectMissChance",
     type: 16,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectMissChance();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, TwoDAManager.datatables.get('racialtypes').RowCount);
+      return effect.initialize();
+    }
   },
   478:{
     comment: "478:\nSet the current amount of stealth xp available in the area.\n",
@@ -6979,7 +7134,14 @@ NWScriptDefK1.Actions = {
     comment: "676: EffectTemporaryForcePoints\n\n",
     name: "EffectPsychicStatic",
     type: 16,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new EffectTemporaryForce();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   677:{
     comment: "677: PlayVisualAreaEffect\n",
@@ -7277,13 +7439,25 @@ NWScriptDefK1.Actions = {
     comment: "710: Clear all the effects of the caller.\n* No return value, but if an error occurs, the log file will contain\n'ClearAllEffects failed.'.\n",
     name: "ClearAllEffects",
     type: 0,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(this.caller instanceof ModuleObject){
+        this.caller.removeEffectsByType(GameEffectDurationType.TEMPORARY);
+      }
+    }
   },
   711:{
     comment: "711: GetLastConversation\nGets the last conversation string.\n\n",
     name: "GetLastConversation",
     type: 5,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const last_spoken = DialogMessageManager.Entries[0];
+      if(last_spoken){
+        return last_spoken.message;
+      }
+      return '';
+    }
   },
   712:{
     comment: "712: ShowPartySelectionGUI\nBrings up the party selection GUI for the player to\nselect the members of the party from\nif exit script is specified, will be executed when\nthe GUI is exited\n",
@@ -7466,13 +7640,22 @@ NWScriptDefK1.Actions = {
     comment: "727. GetFirstAttacker\nReturns the first object in the area that is attacking oCreature\n",
     name: "GetFirstAttacker",
     type: 6,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      this.attackerIndex = 0;
+      if(!(args[0] instanceof ModuleObject)) return;
+      return ModuleObjectManager.GetAttackerByIndex(args[0], this.attackerIndex++);
+    }
   },
   728:{
     comment: "728. GetNextAttacker\nReturns the next object in the area that is attacking oCreature\n",
     name: "GetNextAttacker",
     type: 6,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!(args[0] instanceof ModuleObject)) return;
+      return ModuleObjectManager.GetAttackerByIndex(args[0], this.attackerIndex++);
+    }
   },
   729:{
     comment: "729. SetFormation\nPut oCreature into the nFormationPattern about oAnchor at position nPosition\n- oAnchor: The formation is set relative to this object\n- oCreature: This is the creature that you wish to join the formation\n- nFormationPattern: FORMATION_*\n- nPosition: Integer from 1 to 10 to specify which position in the formation\noCreature is supposed to take.\n",
@@ -7495,7 +7678,12 @@ NWScriptDefK1.Actions = {
     comment: "731. SetForcePowerUnsuccessful\nSets the reason (through a constant) for why a force power failed\n",
     name: "SetForcePowerUnsuccessful",
     type: 0,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [AttackResult, ModuleObject]){
+      if(args[1] instanceof ModuleCreature) {
+        args[1].combatData.lastAttackResult = args[0]; 
+      }
+    }
   },
   732:{
     comment: "732. GetIsDebilitated\nReturns whether the given object is debilitated or not\n",
@@ -7600,7 +7788,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      Planetary.SetPlanetSelectable(args[0],  args[1] ? true : false);
+      Planetary.SetPlanetSelectable(args[0],  !!args[1]);
     }
   },
   741:{
