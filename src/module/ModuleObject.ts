@@ -491,21 +491,22 @@ export class ModuleObject {
   setModelVisibility(){
     if(this.model){
       this.model.wasOffscreen = !this.model.visible;
-      if(!this.room || (this.room && !this.room.model.visible)){
-        this.model.visible = false;
-      }else{
+      if(GameState.Mode == EngineMode.INGAME){
+        if(!this.room){
+          this.model.visible = true;
+          return;
+        }else{
+          this.model.visible = !!this.room?.model?.visible;
+        }
+
+        //Check to see if the model is inside the current camera's frustum
+        if(!this.isOnScreen()){
+          this.model.visible = false;
+        }
+      }
+      else if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
         this.model.visible = true;
       }
-
-      //Check to see if the model is inside the current camera's frustum
-      if(!this.isOnScreen()){
-        this.model.visible = false;
-      }
-
-      if(GameState.Mode == EngineMode.DIALOG){
-        this.model.visible = true;
-      }
-
     }
   }
 
