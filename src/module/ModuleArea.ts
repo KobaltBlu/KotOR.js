@@ -897,69 +897,66 @@ export class ModuleArea extends ModuleObject {
 
   }
 
-  async loadScene( onLoad?: Function ){
+  async loadScene(){
     try{
-      await this.loadRooms();
+      try { await this.loadRooms(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(10);
 
-      await this.loadCameras();
+      try { await this.loadCameras(); } catch(e){ console.error(e); }
 
-      await this.loadPlaceables();
+      try { await this.loadPlaceables(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(20);
 
-      await this.loadWaypoints();
+      try { await this.loadWaypoints(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(30);
 
-      await this.loadCreatures();
-      await this.loadPlayer();
-      await this.loadParty();
+      try { await this.loadCreatures(); } catch(e){ console.error(e); }
+      try { await this.loadPlayer(); } catch(e){ console.error(e); }
+      try { await this.loadParty(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(40);
 
-      await this.loadSoundTemplates();
+      try { await this.loadSoundTemplates(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(50);
 
-      await this.loadTriggers();
+      try { await this.loadTriggers(); } catch(e){ console.error(e); }
 
-      await this.loadEncounters();
+      try { await this.loadEncounters(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(60);
 
-      await this.loadMGTracks();
-      await this.loadMGPlayer();
-      await this.loadMGEnemies();
+      try { await this.loadMGTracks(); } catch(e){ console.error(e); }
+      try { await this.loadMGPlayer(); } catch(e){ console.error(e); }
+      try { await this.loadMGEnemies(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(70);
 
-      await this.loadDoors();
+      try { await this.loadDoors(); } catch(e){ console.error(e); }
 
-      await this.loadStores();
+      try { await this.loadStores(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(80);
-      await this.loadTextures();
+      try { await this.loadTextures(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(90);
 
-      await this.loadAudio();
-      await this.loadBackgroundMusic();
+      try { await this.loadAudio(); } catch(e){ console.error(e); }
+      try { await this.loadBackgroundMusic(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(100);
 
       FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
 
-      await this.weather.load();
+      try { await this.weather.load(); } catch(e){ console.error(e); }
 
       this.transWP = null;
 
       this.cleanupUninitializedObjects();
       this.detectRoomObjects();
-
-      if(typeof onLoad === 'function')
-        onLoad();
     }catch(e){
       console.error(e);
     }
@@ -1149,65 +1146,68 @@ export class ModuleArea extends ModuleObject {
   async loadPlayer(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Player', GameState.player)
+      try{
+        if(GameState.player instanceof ModuleCreature){
+          GameState.player.partyID = -1;
 
-      if(GameState.player instanceof ModuleCreature){
-        GameState.player.partyID = -1;
+          if(!this.MiniGame){
+            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
+            GameState.group.party.add( GameState.player.container );
+          }
 
-        if(!this.MiniGame){
-          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
-          GameState.group.party.add( GameState.player.container );
-        }
+          //Reset the players actions between modules
+          GameState.player.clearAllActions();
+          GameState.player.force = 0;
+          GameState.player.animState = ModuleCreatureAnimState.IDLE;
+          GameState.player.collisionData.groundFace = undefined;
+          GameState.player.collisionData.lastGroundFace = undefined;
+          GameState.player.Load();
+          GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
+            GameState.player.model = model;
+            GameState.player.model.hasCollision = true;
+            //let spawnLoc = this.getSpawnLocation();
+            let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
+            GameState.player.position.copy(spawnLoc.position);
+            GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-        //Reset the players actions between modules
-        GameState.player.clearAllActions();
-        GameState.player.force = 0;
-        GameState.player.animState = ModuleCreatureAnimState.IDLE;
-        GameState.player.collisionData.groundFace = undefined;
-        GameState.player.collisionData.lastGroundFace = undefined;
-        GameState.player.Load();
-        GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
-          GameState.player.model = model;
-          GameState.player.model.hasCollision = true;
-          //let spawnLoc = this.getSpawnLocation();
-          let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
-          GameState.player.position.copy(spawnLoc.position);
-          GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+            GameState.player.getCurrentRoom();
+            // GameState.player.computeBoundingBox(true);
 
-          GameState.player.getCurrentRoom();
-          // GameState.player.computeBoundingBox(true);
-
-          resolve();
-        }).catch(() => {
-          resolve();
-        });
-      }else{
-        let player = new ModulePlayer( this.getPlayerTemplate() );
-        player.partyID = -1;
-        player.id = ModuleObject.GetNextPlayerId();
+            resolve();
+          }).catch(() => {
+            resolve();
+          });
+        }else{
+          let player = new ModulePlayer( this.getPlayerTemplate() );
+          player.partyID = -1;
+          player.id = ModuleObject.GetNextPlayerId();
+          
+          player.Load();
+          GameState.player = player;
         
-        player.Load();
-        GameState.player = player;
-      
-        if(!this.MiniGame){
-          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
-          GameState.group.party.add( player.container );
+          if(!this.MiniGame){
+            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+            GameState.group.party.add( player.container );
+          }
+
+          player.LoadModel().then( (model: OdysseyModel3D) => {
+            model.userData.moduleObject = player;
+            model.hasCollision = true;
+
+            let spawnLoc = this.getSpawnLocation();
+
+            player.position.copy(spawnLoc.position);
+            player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+            //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+
+            player.getCurrentRoom();
+            player.computeBoundingBox(true);
+
+            resolve();
+          });
         }
-
-        player.LoadModel().then( (model: OdysseyModel3D) => {
-          model.userData.moduleObject = player;
-          model.hasCollision = true;
-
-          let spawnLoc = this.getSpawnLocation();
-
-          player.position.copy(spawnLoc.position);
-          player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-          //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-
-          player.getCurrentRoom();
-          player.computeBoundingBox(true);
-
-          resolve();
-        });
+      }catch(e){
+        console.error(e);
       }
     });
   }

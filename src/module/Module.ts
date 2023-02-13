@@ -414,7 +414,7 @@ export class Module {
         console.error(e);
       }
 
-      this.area.loadScene( () => {
+      this.area.loadScene().then( () => {
         if(typeof onLoad === 'function')
           onLoad();
 
