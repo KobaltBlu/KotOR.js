@@ -49,7 +49,6 @@ export class CharGenMain extends K1_CharGenMain {
   declare LBL_PORTBORDER: GUILabel;
   declare LBL_VIT_NAME: GUILabel;
   declare LBL_DEF_NAME: GUILabel;
-  cgbody_light: any;
 
   constructor(){
     super();
@@ -69,9 +68,10 @@ export class CharGenMain extends K1_CharGenMain {
       this._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
       this._3dView.camera.updateProjectionMatrix();
       this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
-      (this.MODEL_LBL.getFill().material as any).transparent = false;
+      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
+      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
-      // this.Init3D();
+      this.Init3D();
       resolve(); 
     });
   }

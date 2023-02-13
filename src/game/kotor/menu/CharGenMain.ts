@@ -75,7 +75,6 @@ export class CharGenMain extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
       this.tGuiPanel.getFill().position.z = -0.5;
 
       this._3dView = new LBL_3DView();
@@ -126,10 +125,10 @@ export class CharGenMain extends GameMenu {
 
   Show() {
     super.Show();
-    this.LBL_LEVEL.hide();
-    this.LBL_LEVEL_VAL.hide();
-    this.OLD_LBL.hide();
-    this.NEW_LBL.hide();
+    this.LBL_LEVEL?.hide();
+    this.LBL_LEVEL_VAL?.hide();
+    this.OLD_LBL?.hide();
+    this.NEW_LBL?.hide();
     try {
       CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
     } catch (e: any) {
@@ -138,8 +137,6 @@ export class CharGenMain extends GameMenu {
     CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
     let portraitId = CharGenManager.selectedCreature.getPortraitId();
     let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
-    MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
-    MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
     this.PORTRAIT_LBL.show();
     if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
       this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);

@@ -8,6 +8,7 @@ import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { PartyManager } from "../../../managers/PartyManager";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { CharGenManager } from "../../../managers/CharGenManager";
 
 /* @file
 * The CharGenQuickPanel menu class.
@@ -50,19 +51,17 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.player.equipment.ARMOR = undefined;
-        GameState.player.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
+        CharGenManager.selectedCreature.equipment.ARMOR = undefined;
+        CharGenManager.selectedCreature.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
         GlobalVariableManager.Init();
-        PartyManager.Player = GameState.player.template;
-        PartyManager.AddPortraitToOrder(GameState.player.getPortraitResRef());
+        PartyManager.Player = CharGenManager.selectedCreature.save();
+        PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder().then( () => {
           GameState.LoadModule('001EBO');
-
         });
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
-
         e.stopPropagation();
         MenuManager.CharGenMain.Close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -71,6 +70,8 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_BACK.reattach(this.tGuiPanel);
 
+      // this.tGuiPanel.widget.position.x = -180;
+      // this.tGuiPanel.widget.position.y = 85;
       this.RecalculatePosition();
       resolve();
     });

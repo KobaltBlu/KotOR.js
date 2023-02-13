@@ -80,7 +80,11 @@ export class CharGenPortCust extends GameMenu {
         CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
-          model.rotation.z = -Math.PI/2;
+          if(model){
+            model.rotation.z = -Math.PI/2;
+            model.removeFromParent();
+            this._3dView.addModel(model);
+          }
         });
 
       });
@@ -113,7 +117,11 @@ export class CharGenPortCust extends GameMenu {
         CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
-          model.rotation.z = -Math.PI/2;
+          if(model){
+            model.rotation.z = -Math.PI/2;
+            model.removeFromParent();
+            this._3dView.addModel(model);
+          }
         });
 
       });
@@ -159,6 +167,9 @@ export class CharGenPortCust extends GameMenu {
 
   Init3D() {
     let control = this.LBL_HEAD;
+    if(CharGenManager.selectedCreature.model){
+      CharGenManager.selectedCreature.model.removeFromParent();
+    }
     OdysseyModel3D.FromMDL(CharGenManager.cghead_light, {
       onComplete: (model: OdysseyModel3D) => {
         try{
@@ -219,7 +230,7 @@ export class CharGenPortCust extends GameMenu {
     } catch (e: any) {
       console.error(e);
     }
-    this._3dView.scene.add(CharGenManager.selectedCreature.model);
+    this._3dView.addModel(CharGenManager.selectedCreature.model);
     (this.LBL_PORTRAIT.getFill().material as THREE.ShaderMaterial).blending = 1;
     this.updateCamera();
     this.UpdatePortrait();

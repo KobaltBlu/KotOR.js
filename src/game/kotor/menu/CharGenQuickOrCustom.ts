@@ -35,9 +35,6 @@ export class CharGenQuickOrCustom extends GameMenu {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         try{
-          TwoDAManager.datatables.get('classes')
-          
-          
           let class_data = TwoDAManager.datatables.get('classes').rows[CharGenManager.selectedClass];
           let saving_throw_label = class_data['savingthrowtable'].toLowerCase();
           let saving_throw_data = TwoDAManager.datatables.get(saving_throw_label).rows[0];
@@ -65,6 +62,8 @@ export class CharGenQuickOrCustom extends GameMenu {
           }
           MenuManager.CharGenMain.Close();
           MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickPanel;
+          MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
+          MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
           MenuManager.CharGenMain.Open();
         }catch(e){
           console.log(e);
@@ -77,6 +76,8 @@ export class CharGenQuickOrCustom extends GameMenu {
         //Game.CharGenCustomPanel.Show();
         MenuManager.CharGenMain.Close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenCustomPanel;
+        MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
+        MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
         MenuManager.CharGenMain.Open();
 
         //Reset the Attributes window
@@ -101,7 +102,7 @@ export class CharGenQuickOrCustom extends GameMenu {
 
       //Hide because this submenu is very incomplete.
       //Comment out this line to work on the custom chargen screen
-      //this.CUST_CHAR_BTN.hide();
+      this.CUST_CHAR_BTN.hide();
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 100;

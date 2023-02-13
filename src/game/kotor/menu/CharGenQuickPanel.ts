@@ -78,7 +78,6 @@ export class CharGenQuickPanel extends GameMenu {
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 85;
       this.RecalculatePosition();
-
       resolve();
     });
   }

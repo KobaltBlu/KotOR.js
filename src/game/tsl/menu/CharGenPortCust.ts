@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { GUILabel, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CharGenManager } from "../../../managers/CharGenManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
@@ -54,34 +54,39 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this.BTN_ARRL.addEventListener('click', (e: any) => {
         e.stopPropagation();
       
-        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(GameState.player.appearance);
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(CharGenManager.selectedCreature.appearance);
         let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx <= 0){
-          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[arrayLength - 1];
+          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[arrayLength - 1];
         }else{
-          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
+          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
         }
 
         const portraits2DA = TwoDAManager.datatables.get('portraits');
         if(portraits2DA){
           for(let i = 0; i < portraits2DA.RowCount; i++){
             let port = portraits2DA.rows[i];
-            if(parseInt(port['appearancenumber']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            if(parseInt(port['appearancenumber']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
-            }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            }else if(parseInt(port['appearance_l']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
-            }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            }else if(parseInt(port['appearance_s']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
             }
           }
         }
 
-        GameState.player.LoadModel().then( (model: any) => {
-          // this.LBL_HEAD._3dView.camera.position.z = model.camerahook.getWorldPosition().z;
+        CharGenManager.selectedCreature.LoadModel().then( (model: any) => {
+          this.updateCamera();
           this.UpdatePortrait();
+          if(model){
+            model.rotation.z = -Math.PI/2;
+            model.removeFromParent();
+            this._3dView.addModel(model);
+          }
         });
 
       });
@@ -89,38 +94,39 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this.BTN_ARRR.addEventListener('click', (e: any) => {
         e.stopPropagation();
 
-        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(GameState.player.appearance);
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(CharGenManager.selectedCreature.appearance);
         let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx >= arrayLength - 1){
-          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[0];
+          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[0];
         }else{
-          GameState.player.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
+          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
         }
 
         const portraits2DA = TwoDAManager.datatables.get('portraits');
         if(portraits2DA){
           for(let i = 0; i < portraits2DA.RowCount; i++){
             let port = portraits2DA.rows[i];
-            if(parseInt(port['appearancenumber']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            if(parseInt(port['appearancenumber']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
-            }else if(parseInt(port['appearance_l']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            }else if(parseInt(port['appearance_l']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
-            }else if(parseInt(port['appearance_s']) == GameState.player.appearance){
-              GameState.player.portraidId = i;
+            }else if(parseInt(port['appearance_s']) == CharGenManager.selectedCreature.appearance){
+              CharGenManager.selectedCreature.portraidId = i;
               break;
             }
           }
         }
 
-        GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
-          let target = new THREE.Vector3;
-          if(model.camerahook){
-            model.camerahook.getWorldPosition(target);
-            this._3dView.camera.position.z = target.z;
-          }
+        CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
+          this.updateCamera();
           this.UpdatePortrait();
+          if(model){
+            model.rotation.z = -Math.PI/2;
+            model.removeFromParent();
+            this._3dView.addModel(model);
+          }
         });
 
       });
@@ -130,9 +136,9 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         if(!this.exiting){
           this.exiting = true;
           //Restore previous appearance
-          GameState.player.appearance = this.appearance;
-          GameState.player.portraidId = this.portraidId;
-          GameState.player.LoadModel().then( (model: any) => {
+          CharGenManager.selectedCreature.appearance = this.appearance;
+          CharGenManager.selectedCreature.portraidId = this.portraidId;
+          CharGenManager.selectedCreature.LoadModel().then( (model: any) => {
             this.exiting = false;
             this.Close();
           });
@@ -143,9 +149,9 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         e.stopPropagation();
         
         //Save appearance choice
-        GameState.player.template.GetFieldByLabel('Appearance_Type').SetValue(GameState.player.appearance);
-        GameState.player.template.GetFieldByLabel('PortraitId').SetValue(GameState.player.portraidId);
-
+        CharGenManager.selectedCreature.template.GetFieldByLabel('Appearance_Type').SetValue(CharGenManager.selectedCreature.appearance);
+        CharGenManager.selectedCreature.template.GetFieldByLabel('PortraitId').SetValue(CharGenManager.selectedCreature.portraidId);
+        MenuManager.CharGenQuickPanel.step1 = true;
         this.Close();
       });
 
@@ -159,68 +165,6 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this.Init3D();
       resolve();
     });
-  }
-
-  Init3D() {
-    OdysseyModel3D.FromMDL(CharGenManager.cghead_light, {
-      onComplete: (model: any) => {
-        this._3dViewModel = model;
-        this._3dView.addModel(this._3dViewModel);
-        try{
-          this._3dView.camera.position.copy(model.camerahookm.position);
-          this._3dView.camera.quaternion.copy(model.camerahookm.quaternion);
-        }catch(e){
-          console.error(e)
-        }
-        this._3dView.camera.position.z = 1;
-        this._3dViewModel.playAnimation(0, true);
-      },
-      manageLighting: false,
-      context: this._3dView
-    });
-  }
-
-  Update(delta = 0) {
-    super.Update(delta);
-    if (!this.bVisible)
-      return;
-    try {
-      GameState.player.update(delta);
-      this._3dView.render(delta);
-      (this.LBL_HEAD.getFill().material as any).needsUpdate = true;
-      (this.LBL_HEAD.getFill().material as any).transparent = false;
-    } catch (e: any) {
-      console.error(e);
-    }
-  }
-
-  UpdatePortrait() {
-    let portraitId = GameState.player.getPortraitId();
-    let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
-    this.LBL_PORTRAIT.show();
-    if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
-      this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref).then( (texture: any) => {
-        this.LBL_PORTRAIT.setFillTexture(texture);
-      });
-    }
-  }
-
-  Show() {
-    super.Show();
-    this.appearance = GameState.player.appearance;
-    this.portraidId = GameState.player.portraidId;
-    try {
-      GameState.player.model.parent.remove(GameState.player.model);
-    } catch (e: any) {
-    }
-    this._3dView.scene.add(GameState.player.model);
-    let target = new THREE.Vector3;
-    if(GameState.player.model.camerahook){
-      GameState.player.model.camerahook.getWorldPosition(target);
-      this._3dView.camera.position.z = target.z;
-    }
-    // this._3dView.camera.position.z = GameState.player.model.getObjectByName('camerahook').getWorldPosition().z;
-    this.UpdatePortrait();
   }
   
 }

@@ -2,9 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton } from "../../../gui";
+import { GUILabel, GUIButton, MenuManager } from "../../../gui";
 import { CharGenName as K1_CharGenName } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { CharGenManager } from "../../../managers/CharGenManager";
 
 /* @file
 * The CharGenName menu class.
@@ -39,7 +40,8 @@ export class CharGenName extends K1_CharGenName {
 
       this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.player.firstName = this.NAME_BOX_EDIT.getValue();
+        CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
+        MenuManager.CharGenQuickPanel.step2 = true;
         this.Close();
       });
       resolve();
@@ -48,7 +50,7 @@ export class CharGenName extends K1_CharGenName {
 
   Show() {
     super.Show();
-    this.NAME_BOX_EDIT.setText(GameState.player.firstName);
+    this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
   }
   
 }
