@@ -58,19 +58,15 @@ export class CharGenManager {
   static step5_complete: boolean = false;
   static step6_complete: boolean = false;
 
-  static Start(){
-    MenuManager.LoadScreen.setLoadBackground('load_chargen' ,() => {
-      MenuManager.LoadScreen.Open();
-      MenuManager.LoadScreen.setHintMessage('');
-      CharGenManager.StartBackgroundMusic().then( () => {
-        CharGenManager.Init().then( () => {
-          MenuManager.CharGenClass.Init( () => {
-            MenuManager.LoadScreen.Close();
-            MenuManager.CharGenClass.Open();
-          });
-        });
-      });
-    });
+  static async Start(){
+    await MenuManager.LoadScreen.setLoadBackground('load_chargen');
+    MenuManager.LoadScreen.Open();
+    MenuManager.LoadScreen.setHintMessage('');
+    await CharGenManager.StartBackgroundMusic();
+    await CharGenManager.Init();
+    await MenuManager.CharGenClass.Init();
+    MenuManager.LoadScreen.Close();
+    MenuManager.CharGenClass.Open();
   }
 
   static StartBackgroundMusic(){

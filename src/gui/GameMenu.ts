@@ -161,10 +161,11 @@ export class GameMenu {
 
   }
 
-  LoadTexture( resRef: string, onLoad?: Function ){
-    TextureLoader.Load(resRef, (texture: OdysseyTexture) => {
-      if(typeof onLoad === 'function')
-        onLoad(texture);
+  LoadTexture( resRef: string ): Promise<OdysseyTexture> {
+    return new Promise<OdysseyTexture>( (resolve, reject) => {
+      TextureLoader.Load(resRef, (texture: OdysseyTexture) => {
+        resolve(texture);
+      });
     });
   }
 

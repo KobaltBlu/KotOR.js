@@ -1055,7 +1055,7 @@ export class GameState implements EngineContext {
                     GameState.scene.visible = false;
 
                     MenuManager.LoadScreen.setProgress(0);
-                    MenuManager.LoadScreen.setLoadBackground('load_'+name, () => {
+                    MenuManager.LoadScreen.setLoadBackground('load_'+name).then( () => {
                       MenuManager.LoadScreen.showRandomHint();
                       MenuManager.LoadScreen.Open();
                       FadeOverlayManager.FadeOut(0, 0, 0, 0);

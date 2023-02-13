@@ -31,21 +31,9 @@ export class LoadScreen extends K1_LoadScreen {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
-      //this.showRandomHint();
-
       this.LBL_HINT.visible = false;
-
       this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
-
-      // if(this.args.loadscreen.length){
-      //   this.LoadTexture(this.args.loadscreen, (texture: OdysseyTexture) => {
-      //     (this.tGuiPanel.getFill().material as any).uniforms.map.value = texture;
-      //     resolve();
-      //   });
-      // }else{
-        resolve();
-      // }
+      resolve();
     });
   }
   

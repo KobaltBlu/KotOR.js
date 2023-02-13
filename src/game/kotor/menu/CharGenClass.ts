@@ -196,6 +196,7 @@ export class CharGenClass extends GameMenu {
       let _3dViewModel = CharGenManager.models.get(nth);
       let creature = CharGenManager.creatures.get(nth);
       _3dView.setControl(control);
+      _3dView.visible = true;
       control.border.fill.material.transparent = true;
       control.border.fill.material.blending = 1;
 
@@ -211,8 +212,8 @@ export class CharGenClass extends GameMenu {
           _3dView.camera.position.z = 0.9;
           creature.Load();
           creature.LoadModel().then((creature_model: OdysseyModel3D) => {
-            creature.position.set(0, 0, 0);
-            creature.rotation.z = -Math.PI / 2;
+            creature.model.position.set(0, 0, 0);
+            creature.model.rotation.z = -Math.PI / 2;
             _3dView.addModel(creature.model);
             TextureLoader.LoadQueue(() => {
               MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
@@ -284,12 +285,9 @@ export class CharGenClass extends GameMenu {
     super.Show();
   }
 
-  Init(onLoad?: Function) {
+  async Init() {
     MenuManager.LoadScreen.setProgress(0);
-    this.load3D().then(() => {
-      if (typeof onLoad === 'function')
-        onLoad();
-    });
+    await this.load3D();
   }
 
   GetRandomAnimation() {

@@ -32,12 +32,8 @@ export class LoadScreen extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      //this.showRandomHint();
-
       this.LBL_HINT.visible = false;
-
       (this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value;
-
       resolve();
     });
   }
@@ -46,25 +42,30 @@ export class LoadScreen extends GameMenu {
     this.PB_PROGRESS.setProgress(val);
   }
 
-  setLoadBackground(resref: string, onLoad?: Function) {
-    if (resref) {
-      this.LoadTexture(resref, (texture: OdysseyTexture) => {
+  setLoadBackground(resref: string): Promise<boolean> {
+    return new Promise<boolean>( async (resolve, reject) => {
+      if (resref) {
+        const texture = await this.LoadTexture(resref);
         if (texture) {
           (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
-          if (typeof onLoad === 'function')
-            onLoad();
+          resolve(true);
+          return;
         } else {
-          this.LoadTexture('load_default', (texture: OdysseyTexture) => {
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = texture;
-            if (typeof onLoad === 'function')
-              onLoad();
-          });
+          const default_texture = await this.LoadTexture('load_default');
+          if(default_texture){
+            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
+            resolve(true);
+            return;
+          }else{
+            resolve(true);
+            return;
+          }
         }
-      });
-    } else {
-      if (typeof onLoad === 'function')
-        onLoad();
-    }
+      } else {
+        resolve(false);
+        return;
+      }
+    });
   }
 
   showRandomHint() {
