@@ -397,11 +397,11 @@ export class DLGObject {
 
   static FromResRef(resref: string): DLGObject {
     if(resref){
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], resref);
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], resref.toLocaleLowerCase());
       if(buffer){
         const dlg = DLGObject.FromGFFObject(new GFFObject(buffer));
         if(dlg){
-          dlg.resref = resref;
+          dlg.resref = resref.toLocaleLowerCase();
         }
         return dlg;
       }

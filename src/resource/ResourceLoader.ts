@@ -179,7 +179,7 @@ export class ResourceLoader {
   }
 
   static loadCachedResource(resId: number, resRef: string): Buffer {
-    return ResourceLoader.getCache(resId, resRef);
+    return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
   }
 
   static _searchLocal(resId: number, resRef = '', onLoad?: Function, onError?: Function){
