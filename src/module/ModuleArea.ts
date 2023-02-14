@@ -674,76 +674,96 @@ export class ModuleArea extends ModuleObject {
     this.audio.MusicNight = this.git.GetFieldByLabel('MusicNight', areaPropsField).GetValue();
 
     //Cameras
-    for(let i = 0; i < cameras.ChildStructs.length; i++){
-      let strt = cameras.ChildStructs[i];
-      this.cameras.push( new ModuleCamera(GFFObject.FromStruct(strt) ) );
+    if(cameras){
+      for(let i = 0; i < cameras.ChildStructs.length; i++){
+        let strt = cameras.ChildStructs[i];
+        this.cameras.push( new ModuleCamera(GFFObject.FromStruct(strt) ) );
+      }
     }
 
     //AreaEffects
-    for(let i = 0; i < areaEffects.ChildStructs.length; i++){
-      let strt = areaEffects.ChildStructs[i];
-      this.areaOfEffects.push( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
+    if(areaEffects){
+      for(let i = 0; i < areaEffects.ChildStructs.length; i++){
+        let strt = areaEffects.ChildStructs[i];
+        this.areaOfEffects.push( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Creatures
-    for(let i = 0; i < creatures.ChildStructs.length; i++){
-      let strt = creatures.ChildStructs[i];
-      this.creatures.push( new ModuleCreature(GFFObject.FromStruct(strt)) );
+    if(creatures){
+      for(let i = 0; i < creatures.ChildStructs.length; i++){
+        let strt = creatures.ChildStructs[i];
+        this.creatures.push( new ModuleCreature(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Triggers
-    for(let i = 0; i < triggers.ChildStructs.length; i++){
-      let strt = triggers.ChildStructs[i];
-      this.triggers.push( new ModuleTrigger(GFFObject.FromStruct(strt)) );
+    if(triggers){
+      for(let i = 0; i < triggers.ChildStructs.length; i++){
+        let strt = triggers.ChildStructs[i];
+        this.triggers.push( new ModuleTrigger(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Encounter
-    for(let i = 0; i < encounters.ChildStructs.length; i++){
-      let strt = encounters.ChildStructs[i];
-      this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+    if(encounters){
+      for(let i = 0; i < encounters.ChildStructs.length; i++){
+        let strt = encounters.ChildStructs[i];
+        this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Doors
-    for(let i = 0; i < doors.ChildStructs.length; i++ ){
-      let strt = doors.ChildStructs[i];
-      this.doors.push( new ModuleDoor(GFFObject.FromStruct(strt)) );
+    if(doors){
+      for(let i = 0; i < doors.ChildStructs.length; i++ ){
+        let strt = doors.ChildStructs[i];
+        this.doors.push( new ModuleDoor(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Placeables
-    for(let i = 0; i < placeables.ChildStructs.length; i++ ){
-      let strt = placeables.ChildStructs[i];
-      this.placeables.push( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+    if(placeables){
+      for(let i = 0; i < placeables.ChildStructs.length; i++ ){
+        let strt = placeables.ChildStructs[i];
+        this.placeables.push( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Sounds
-    for(let i = 0; i < sounds.ChildStructs.length; i++ ){
-      let strt = sounds.ChildStructs[i];
-      this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), GameState.audioEngine) );
+    if(sounds){
+      for(let i = 0; i < sounds.ChildStructs.length; i++ ){
+        let strt = sounds.ChildStructs[i];
+        this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), GameState.audioEngine) );
+      }
     }
 
     //Stores
-    for(let i = 0; i < stores.ChildStructs.length; i++ ){
-      let strt = stores.ChildStructs[i];
-      this.stores.push( new ModuleStore(GFFObject.FromStruct(strt)) );
+    if(stores){
+      for(let i = 0; i < stores.ChildStructs.length; i++ ){
+        let strt = stores.ChildStructs[i];
+        this.stores.push( new ModuleStore(GFFObject.FromStruct(strt)) );
+      }
     }
 
     //Waypoints
-    for(let i = 0; i < waypoints.ChildStructs.length; i++ ){
-      let strt = waypoints.ChildStructs[i];
+    if(waypoints){
+      for(let i = 0; i < waypoints.ChildStructs.length; i++ ){
+        let strt = waypoints.ChildStructs[i];
 
-      if(this.transWP){
-        if(typeof this.transWP === 'string'){
-          if(this.transWP.toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
-            this.transWP = GFFObject.FromStruct(strt);
-          }
-        }else if(this.transWP instanceof GFFObject){
-          if(this.transWP.GetFieldByLabel('Tag').GetValue().toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
-            this.transWP = GFFObject.FromStruct(strt);
+        if(this.transWP){
+          if(typeof this.transWP === 'string'){
+            if(this.transWP.toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
+              this.transWP = GFFObject.FromStruct(strt);
+            }
+          }else if(this.transWP instanceof GFFObject){
+            if(this.transWP.GetFieldByLabel('Tag').GetValue().toLowerCase() == strt.GetFieldByLabel('Tag').GetValue().toLowerCase()){
+              this.transWP = GFFObject.FromStruct(strt);
+            }
           }
         }
+        
+        this.waypoints.push( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
       }
-      
-      this.waypoints.push( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
     }
 
     if(!(this.transWP instanceof GFFObject)){
