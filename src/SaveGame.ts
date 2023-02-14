@@ -72,8 +72,8 @@ export class SaveGame {
 
   constructor(name = ''){
 
-    this.folderName = name;
-    this.directory = path.join(this.folderName);
+    this.folderName = name.split('/').pop();
+    this.directory = path.join(SaveGame.base_directory, this.folderName);
     this.isLoaded = false;
 
     this.AREANAME = '';
