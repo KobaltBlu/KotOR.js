@@ -274,6 +274,8 @@ export class GameState implements EngineContext {
   static MenuActive: any;
   static VideoEffect: any;
 
+  static ConversationPaused: boolean = false;
+
   static addEventListener(event: string, callback: Function){
     if(GameState.eventListeners.hasOwnProperty(event)){
       const callbacks: any[] = GameState.eventListeners[event];
@@ -1167,6 +1169,7 @@ export class GameState implements EngineContext {
     GameState.hoveredObject = undefined;
 
     GameState.staticCameras = [];
+    GameState.ConversationPaused = false;
 
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
