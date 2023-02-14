@@ -2176,7 +2176,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getWeakestMember(args[1]);
+          return faction.getWeakestMember(!!args[1]);
         }
       }
       return undefined;
@@ -2191,7 +2191,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getStrongestMember(args[1]);
+          return faction.getStrongestMember(!!args[1]);
         }
       }
       return undefined;
@@ -2206,7 +2206,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getMostDamagedMember(args[1]);
+          return faction.getMostDamagedMember(!!args[1]);
         }
       }
       return undefined;
@@ -2221,7 +2221,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getLeastDamagedMember(args[1]);
+          return faction.getLeastDamagedMember(!!args[1]);
         }
       }
       return undefined;
@@ -2338,7 +2338,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getWorstACMember(args[1]);
+          return faction.getWorstACMember(!!args[1]);
         }
       }
 
@@ -2354,7 +2354,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getWorstBestMember(args[1]);
+          return faction.getBestACMember(!!args[1]);
         }
       }
 
@@ -4051,27 +4051,12 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      this.inventoryIndex = 0;
       if(args[0] instanceof ModuleObject){
         if(PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          // if(InventoryManager.inventory.length){
-          //   return InventoryManager.inventory[0];
-          // args[0]._inventoryPointer = 0;
-          // }else{
-          //   args[0]._inventoryPointer = 0;
-          //   return undefined;
-          // }
-          args[0]._inventoryPointer = 0;
-          return InventoryManager.inventory[0];
+          return InventoryManager.inventory[this.inventoryIndex++];
         }else{
-          // if(args[0].inventory.length){
-          //   args[0]._inventoryPointer = 0;
-          //   return args[0].inventory[0];
-          // }else{
-          //   args[0]._inventoryPointer = 0;
-          //   return undefined;
-          // }
-          args[0]._inventoryPointer = 0;
-          return args[0].inventory[0];
+          return args[0].inventory[this.inventoryIndex++];
         }
       }else{
         return undefined;
@@ -4084,30 +4069,11 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // if(args[0] instanceof ModuleObject){
-      //   if(args[0] == GameState.player){
-      //     if(args[0]._inventoryPointer < InventoryManager.inventory.length){
-      //       return InventoryManager.inventory[++args[0]._inventoryPointer];
-      //     }else{
-      //     args[0]._inventoryPointer = 0;
-      //       return undefined;
-      //     }
-      //   }else{
-      //     if(args[0]._inventoryPointer < args[0].inventory.length){
-      //       return args[0].inventory[++args[0]._inventoryPointer];
-      //     }else{
-      //     args[0]._inventoryPointer = 0;
-      //       return undefined;
-      //     }
-      //   }
-      // }else{
-      //   return undefined;
-      // }
       if(args[0] instanceof ModuleObject){
         if(PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          return InventoryManager.inventory[++args[0]._inventoryPointer];
+          return InventoryManager.inventory[this.inventoryIndex++];
         }else{
-          return args[0].inventory[++args[0]._inventoryPointer];
+          return args[0].inventory[this.inventoryIndex++];
         }
       }else{
         return undefined;
@@ -4464,7 +4430,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getFactionMemberByIndex(this.creatureFactionIdx, args[1]);
+          return faction.getFactionMemberByIndex(this.creatureFactionIdx, !!args[1]);
         }
       }
       return undefined;
@@ -4479,7 +4445,7 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleCreature){
         let faction = FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          return faction.getFactionMemberByIndex(++this.creatureFactionIdx, args[1]);
+          return faction.getFactionMemberByIndex(++this.creatureFactionIdx, !!args[1]);
         }
       }
       return undefined;
@@ -4841,7 +4807,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(args[0] instanceof ModuleCreature){
-        args[0].faction = args[1];
+        args[0].faction = FactionManager.factions.get(args[1]);
         FactionManager.AddCreatureToFaction(args[0]);
       }
     }
@@ -7722,7 +7688,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO
+      //TODO move all creatures from current faction to target faction
+      //TODO clear all actions 
+      //TODO clear combat
     }
   },
   737:{
@@ -7731,7 +7699,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO
+      //TODO move all creatures from current faction to target faction
     }
   },
   738:{

@@ -30,6 +30,7 @@ import { MenuManager } from "../gui";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
+import { FactionManager } from "../FactionManager";
 
 /* @file
  * The ModuleDoor class.
@@ -96,7 +97,6 @@ export class ModuleDoor extends ModuleObject {
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
-    this.faction = 0;
     this.fort = 0;
     this.genericType = 0;
     this.hp = 0;
@@ -433,7 +433,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  async onSpawn(runScript = true){
+  onSpawn(runScript = true){
     super.onSpawn(runScript);
 
     if(this.model instanceof OdysseyModel3D){
@@ -776,11 +776,12 @@ export class ModuleDoor extends ModuleObject {
       this.disarmDC = this.template.GetFieldByLabel('DisarmDC').GetValue();
 
     if(this.template.RootNode.HasField('Faction')){
-      this.faction = this.template.GetFieldByLabel('Faction').GetValue();
-      if((this.faction & 0xFFFFFFFF) == -1){
-        this.faction = 0;
+      this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
+        this.factionId = 0;
       }
     }
+    this.faction = FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.HasField('Fort'))
       this.fort = this.template.GetFieldByLabel('Fort').GetValue();

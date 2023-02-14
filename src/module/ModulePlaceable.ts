@@ -9,6 +9,7 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { SSFObjectType } from "../interface/resource/SSFType";
@@ -86,7 +87,6 @@ export class ModulePlaceable extends ModuleObject {
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
-    this.faction = 0;
     this.fort = 0;
     this.genericType = 0;
     this.hp = 0;
@@ -691,11 +691,12 @@ export class ModulePlaceable extends ModuleObject {
       this.disarmDC = this.template.GetFieldByLabel('DisarmDC').GetValue();
 
     if(this.template.RootNode.HasField('Faction')){
-      this.faction = this.template.GetFieldByLabel('Faction').GetValue();
-      if((this.faction & 0xFFFFFFFF) == -1){
-        this.faction = 0;
+      this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
+        this.factionId = 0;
       }
     }
+    this.faction = FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.HasField('Fort'))
       this.fort = this.template.GetFieldByLabel('Fort').GetValue();

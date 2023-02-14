@@ -17,6 +17,7 @@ import { OdysseyFace3 } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { FactionManager } from "../FactionManager";
 
 /* @file
  * The ModuleEncounter class.
@@ -70,7 +71,7 @@ export class ModuleEncounter extends ModuleObject {
     this.active = 1; //0: Inactive | 1: Active
     this.difficulty = 1; //OBSOLETE FIELD; Should always be identical to the VALUE in encdifficulty.2da pointed to by the DifficultyIndex Field.
     this.difficultyIndex = 1; //Index into encdifficulty.2da
-    this.faction = 0; //Faction ID; Only spawn when entered by creatures hostile to this faction
+    // this.faction = 0; //Faction ID; Only spawn when entered by creatures hostile to this faction
     this.localizedName = undefined;
     this.maxCreatures = 1; //Maximum number of creatures this encounter can spawn; 1-8
     this.playerOnly = 0; //0: Any Creature | 1: Only Player ; Can Trigger
@@ -348,8 +349,13 @@ export class ModuleEncounter extends ModuleObject {
       if(this.template.RootNode.HasField('DifficultyIndex'))
         this.difficultyIndex = this.template.GetFieldByLabel('DifficultyIndex').GetValue();
 
-      if(this.template.RootNode.HasField('Faction'))
-        this.faction = this.template.GetFieldByLabel('Faction').GetValue();
+      if(this.template.RootNode.HasField('Faction')){
+        this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+        if((this.factionId & 0xFFFFFFFF) == -1){
+          this.factionId = 0;
+        }
+      }
+      this.faction = FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.HasField('LocalizedName'))
         this.localizedName = this.template.GetFieldByLabel('LocalizedName').GetValue();

@@ -40,6 +40,7 @@ import { CombatAction } from "../interface/combat/CombatAction";
 import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
+import { Faction } from "../engine/Faction";
 
 /* @file
  * The ModuleObject class.
@@ -101,30 +102,37 @@ export class ModuleObject {
   zOrientation: number;
 
   dialogAnimation: any;
-  template: any;
-  plot: boolean;
+
+  templateResRef: string = '';
+  template: GFFObject;
+
+  plot: boolean = false;
   scripts: {[key: string]: NWScriptInstance} = { };
-  tag: string;
-  templateResRef: string;
-  bearing: number;
-  collisionTimer: number;
-  perceptionTimer: number;
-  tweakColor: number;
-  useTweakColor: boolean;
-  hp: number;
-  currentHP: number;
-  faction: number;
+  tag: string = '';
+  bearing: number = 0;
+  collisionTimer: number = 0;
+  perceptionTimer: number = 0;
+  tweakColor: number = 0xFFFFFF;
+  useTweakColor: boolean = false;
+  hp: number = 0;
+  currentHP: number = 0;
+
+  factionId: number = 0;
+  faction: Faction;
+
   effects: GameEffect[] = [];
   casting: any[] = [];
   damageList: any[] = [];
   _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
-  lockDialogOrientation: boolean;
+  lockDialogOrientation: boolean = false;
   context: any;
+
   heartbeatTimer: any;
   _heartbeatTimerOffset: number;
-  _heartbeatTimeout: any;
-  _healTarget: any;
+  _heartbeatTimeout: number;
+
+  _healTarget: ModuleObject;
 
   //Perception
   heardStrings: any[];
@@ -133,7 +141,7 @@ export class ModuleObject {
   listeningPatterns: any = {};
   perceptionRange: any;
   
-  spawned: boolean;
+  spawned: boolean = false;
   _inventoryPointer: number;
 
   //stats
@@ -143,11 +151,11 @@ export class ModuleObject {
   min1HP: boolean;
 
   //attributes
-  placedInWorld: any;
-  linkedToModule: any;
-  linkedToFlags: any;
-  linkedTo: any;
-  transitionDestin: CExoLocString;
+  placedInWorld: boolean = false;
+  linkedToModule: string = '';
+  linkedToFlags: number = 0;
+  linkedTo: string = '';
+  transitionDestin: CExoLocString = new CExoLocString();
   description: any;
   commandable: any;
   autoRemoveKey: any;
@@ -311,7 +319,6 @@ export class ModuleObject {
 
     this.hp = 0;
     this.currentHP = 0;
-    this.faction = 0;
 
     this.actionQueue = new ActionQueue();
     this.actionQueue.setOwner( this );
@@ -328,7 +335,6 @@ export class ModuleObject {
     this.lockDialogOrientation = false;
 
     this.context = GameState;
-    this.heartbeatTimer = null;
     this._heartbeatTimerOffset = Math.floor(Math.random() * 600) + 100;
     this._heartbeatTimeout = 0 + this._heartbeatTimerOffset;
 
@@ -865,9 +871,10 @@ export class ModuleObject {
     }
   }
 
-  async onSpawn(runScript = true){
+  onSpawn(runScript = true){
+
     if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
-      await this.scripts.onSpawn.run(this, 0);
+      this.scripts.onSpawn.run(this, 0);
       console.log('spawned', this.getName());
     }
     
@@ -1242,8 +1249,6 @@ export class ModuleObject {
         console.log('ModuleObject.destory', 'No module')
       }
 
-      clearTimeout(this.heartbeatTimer);
-
       //Remove the object from the global list of objects
       if(this.id >= 1 && ModuleObject.List.has(this.id)){
         ModuleObject.List.delete(this.id);
@@ -1593,7 +1598,7 @@ export class ModuleObject {
 
   getKeyName(){
     if(this.template.RootNode.HasField('KeyName')){
-      return this.template.RootNode.RootNode.GetFieldByLabel('KeyName').GetValue();
+      return this.template.RootNode.GetFieldByLabel('KeyName').GetValue();
     }
     return null;
   }
@@ -2068,10 +2073,11 @@ export class ModuleObject {
       this.cursor = this.template.GetFieldByLabel('Cursor').GetValue();
 
     if(this.template.RootNode.HasField('Faction')){
-      this.faction = this.template.GetFieldByLabel('Faction').GetValue();
-      if((this.faction & 0xFFFFFFFF) == -1){
-        this.faction = 0;
+      this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
+        this.factionId = 0;
       }
+      this.faction = FactionManager.factions.get(this.factionId);
     }
 
     if(this.template.RootNode.HasField('Geometry')){

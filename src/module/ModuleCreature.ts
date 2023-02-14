@@ -244,7 +244,6 @@ export class ModuleCreature extends ModuleObject {
     };
 
     this.experience = 0;
-    this.faction = 0;
     this.feats = [];
     this.firstName = '';
     this.forcePoints = 0;
@@ -3841,11 +3840,12 @@ export class ModuleCreature extends ModuleObject {
       }
           
       if(this.template.RootNode.HasField('FactionID')){
-        this.faction = this.template.GetFieldByLabel('FactionID').GetValue();
-        if((this.faction & 0xFFFFFFFF) == -1){
-          this.faction = 0;
+        this.factionId = this.template.GetFieldByLabel('FactionID').GetValue();
+        if((this.factionId & 0xFFFFFFFF) == -1){
+          this.factionId = 0;
         }
       }
+      this.faction = FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.HasField('FeatList')){
         let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
@@ -4270,8 +4270,8 @@ export class ModuleCreature extends ModuleObject {
 
     let gff = new GFFObject();
     gff.FileType = 'UTC ';
-
     
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
     gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).SetValue('Bad StrRef');
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).SetValue( this == GameState.player ? 1 : 0);
     

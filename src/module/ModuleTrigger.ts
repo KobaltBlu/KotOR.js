@@ -19,6 +19,7 @@ import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { FactionManager } from "../FactionManager";
 
 /* @file
  * The ModuleTrigger class.
@@ -412,11 +413,12 @@ export class ModuleTrigger extends ModuleObject {
       this.cursor = this.template.GetFieldByLabel('Cursor').GetValue();
 
     if(this.template.RootNode.HasField('Faction')){
-      this.faction = this.template.GetFieldByLabel('Faction').GetValue();
-      if((this.faction & 0xFFFFFFFF) == -1){
-        this.faction = 0;
+      this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
+        this.factionId = 0;
       }
     }
+    this.faction = FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.HasField('Geometry')){
       this.geometry = this.template.GetFieldByLabel('Geometry').GetChildStructs();

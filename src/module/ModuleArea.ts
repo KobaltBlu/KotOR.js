@@ -947,6 +947,8 @@ export class ModuleArea extends ModuleObject {
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(10);
+      
+      try { await this.loadPlayer(); } catch(e){ console.error(e); }
 
       try { await this.loadCameras(); } catch(e){ console.error(e); }
 
@@ -960,7 +962,6 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
       try { await this.loadCreatures(); } catch(e){ console.error(e); }
-      try { await this.loadPlayer(); } catch(e){ console.error(e); }
       try { await this.loadParty(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(40);
@@ -1768,106 +1769,86 @@ export class ModuleArea extends ModuleObject {
 
     for(let i = 0; i < this.doors.length; i++){
       if(this.doors[i] instanceof ModuleObject){
-        await this.doors[i].onSpawn(runSpawnScripts);
+        this.doors[i].onSpawn(runSpawnScripts);
       }
     }
 
     for(let i = 0; i < this.placeables.length; i++){
       if(this.placeables[i] instanceof ModuleObject){
-        await this.placeables[i].onSpawn(runSpawnScripts);
+        this.placeables[i].onSpawn(runSpawnScripts);
       }
     }
 
     for(let i = 0; i < this.triggers.length; i++){
       if(this.triggers[i] instanceof ModuleObject){
-        await this.triggers[i].onSpawn(runSpawnScripts);
+        this.triggers[i].onSpawn(runSpawnScripts);
       }
     }
 
     for(let i = 0; i < this.waypoints.length; i++){
       if(this.waypoints[i] instanceof ModuleObject){
-        await this.waypoints[i].onSpawn(runSpawnScripts);
+        this.waypoints[i].onSpawn(runSpawnScripts);
       }
     }
 
     for(let i = 0; i < this.creatures.length; i++){
       if(this.creatures[i] instanceof ModuleObject){
-        await this.creatures[i].onSpawn(runSpawnScripts);
+        this.creatures[i].onSpawn(runSpawnScripts);
       }
     }
 
     for(let i = 0; i < PartyManager.party.length; i++){
       if(PartyManager.party[i] instanceof ModuleObject){
-        await PartyManager.party[i].onSpawn(runSpawnScripts);
+        PartyManager.party[i].onSpawn(runSpawnScripts);
       }
     }
 
     if(this.MiniGame){
       for(let i = 0; i < this.MiniGame.Enemies.length; i++){
         if(this.MiniGame.Enemies[i] instanceof ModuleObject){
-          await this.MiniGame.Enemies[i].onCreate();
+          this.MiniGame.Enemies[i].onCreate();
         }
       }
 
       for(let i = 0; i < this.MiniGame.Obstacles.length; i++){
         if(this.MiniGame.Obstacles[i] instanceof ModuleObject){
-          await this.MiniGame.Obstacles[i].onCreate();
+          this.MiniGame.Obstacles[i].onCreate();
         }
       }
 
-      await this.MiniGame.Player.onCreate();
+      this.MiniGame.Player.onCreate();
     }
 
-    await this.runStartScripts();
+    this.runStartScripts();
 
   }
 
   runOnEnterScripts(){
-    return new Promise<void>( (resolve, reject) => {
-      if(this.scripts.onEnter instanceof NWScriptInstance){
-        console.log('onEnter', this.scripts.onEnter, GameState.player)
-        this.scripts.onEnter.enteringObject = GameState.player;
-        this.scripts.onEnter.debug.action = true;
-        this.scripts.onEnter.runAsync(this, 0).then( () => {
-          resolve();
-        });
-      }else{
-        resolve();
-      }
-    });
+    if(this.scripts.onEnter instanceof NWScriptInstance){
+      console.log('onEnter', this.scripts.onEnter, GameState.player)
+      this.scripts.onEnter.enteringObject = GameState.player;
+      this.scripts.onEnter.debug.action = true;
+      this.scripts.onEnter.run(this, 0);
+    }
   }
 
   runMiniGameScripts(){
-    return new Promise<void>( (resolve, reject) => {
+    if(!this.MiniGame){
+      return;
+    }
 
-      if(!this.MiniGame){
-        resolve();
-        return;
+    for(let i = 0; i < this.MiniGame.Enemies.length; i++){
+      const enemy = this.MiniGame.Enemies[i];
+      if(enemy.scripts.onCreate instanceof NWScriptInstance){
+        enemy.scripts.onCreate.run(enemy, 0)
       }
-
-      let loop = new AsyncLoop({
-        array: this.MiniGame.Enemies,
-        onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
-          if(enemy.scripts.onCreate instanceof NWScriptInstance){
-            enemy.scripts.onCreate.runAsync(enemy, 0).then( () => {
-              asyncLoop.next();
-            });
-          }else{
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-
-    });
+    }
 
   }
 
   async runStartScripts(){
-    await this.runMiniGameScripts();
-    await this.runOnEnterScripts();
+    this.runMiniGameScripts();
+    this.runOnEnterScripts();
   }
 
   detectRoomObjects(){

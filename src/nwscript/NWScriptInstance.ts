@@ -71,6 +71,7 @@ export class NWScriptInstance {
   persistentObjectIdx: number = 0;
   creatureFactionIdx: number = 0;
   attackerIndex: number = 0;
+  inventoryIndex: number = 0;
 
   constructor( args: any = {} ){
 
