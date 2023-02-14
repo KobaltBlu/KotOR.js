@@ -15,6 +15,7 @@ import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 export class LoadScreen extends GameMenu {
 
+  engineMode: EngineMode = EngineMode.LOADING;
   PB_PROGRESS: GUIProgressBar;
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
@@ -91,9 +92,7 @@ export class LoadScreen extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.Mode = EngineMode.LOADING;
     this.setProgress(0);
-    MenuManager.InGameAreaTransition.Hide();
     FadeOverlayManager.plane.visible = false;
   }
 
