@@ -1605,7 +1605,7 @@ NWScriptDefK1.Actions = {
     name: "EffectKnockdown",
     type: 16,
     args: [],
-    action: function(this: NWScriptInstance, args: [number, number]){
+    action: function(this: NWScriptInstance, args: []){
       let effect = new EffectKnockdown();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -2054,7 +2054,6 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [GameEffect]){
       if(typeof args[0] != 'undefined'){
-        //console.log('GetEffectType', args[0]);
         return args[0].type || GameEffectType.EffectInvalidEffect;
       }else{
         return GameEffectType.EffectInvalidEffect;
@@ -2399,7 +2398,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      //console.log('GetWaypointByTag', args[0])
       return ModuleObjectManager.GetObjectByTag(args[0], 0, ModuleObjectType.WAYPOINT);
     }
   },
@@ -2442,14 +2440,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'Run ActionWait', args[0] * 1000);
-      }
-  
       if(this.caller instanceof ModuleObject){
         this.caller.actionWait(args[0]);
       }
-  
     }
   },
   203:{
@@ -2464,29 +2457,15 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string]){
-      //try{
-        //if(this.isDebugging()){
-          //console.log('NWScript: '+this.name, 'ActionStartConversation', args, this);
-        //}
-        //console.log(this.caller.conversation);
-        //If the dialog name is blank default to the callers dialog file
-        if(args[1] == ''){
-          //args[1] = this.caller.conversation;
-        }
-  
-        if(this.caller instanceof ModuleObject){
-          console.log('ActionStartConversation', args, this.caller);
-          //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
-          //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
-          args[0].actionDialogObject( this.caller, args[1], true );
-        }else{
-          console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
-          //console.log(args, this.caller);
-        }
-  
-      /*}catch(e){
-        console.error('HEY LOOK AT ME! ActionStartConversation', e);
-      }*/
+      if(this.caller instanceof ModuleObject){
+        console.log('ActionStartConversation', args, this.caller);
+        //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
+        //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
+        args[0].actionDialogObject( this.caller, args[1], true );
+      }else{
+        console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
+        //console.log(args, this.caller);
+      }
     }
   },
   205:{
