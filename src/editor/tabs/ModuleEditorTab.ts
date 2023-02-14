@@ -707,11 +707,11 @@ export class ModuleEditorTab extends EditorTab {
           e.preventDefault();
 
           if(object.userData.moduleObject instanceof ModuleCreature){
-            let newUTCTab = Forge.tabManager.AddTab(new UTCEditorTab(object.userData.moduleObject.template));
+            let newUTCTab = Forge.tabManager.AddTab(new UTCEditorTab(object.userData.moduleObject.template as any));
           }else if(object.userData.moduleObject instanceof ModuleDoor){
-            let newUTDTab = Forge.tabManager.AddTab(new UTDEditorTab(object.userData.moduleObject.template));
+            let newUTDTab = Forge.tabManager.AddTab(new UTDEditorTab(object.userData.moduleObject.template as any));
           }else if(object.userData.moduleObject instanceof ModulePlaceable){
-            let newUTPTab = Forge.tabManager.AddTab(new UTPEditorTab(object.userData.moduleObject.template));
+            let newUTPTab = Forge.tabManager.AddTab(new UTPEditorTab(object.userData.moduleObject.template as any));
           }
 
         });
