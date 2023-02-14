@@ -270,6 +270,7 @@ export class NWScriptInstance {
 
       scope.seek = null;
       //Run the instruction's run method
+      if(scope.instr.break_point) debugger;
       NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
 
     }

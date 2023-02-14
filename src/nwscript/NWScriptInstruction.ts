@@ -13,6 +13,7 @@ export class NWScriptInstruction {
   code_hex: string;
   type_hex: string;
   address_hex: string;
+  break_point: boolean = false;
 
   constructor(args: any = {}){
 
