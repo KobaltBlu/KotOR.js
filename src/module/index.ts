@@ -7,6 +7,7 @@ export * from "./Module";
 export * from "./ModuleObject";
 
 export * from "./ModuleArea";
+export * from "./ModuleAreaOfEffect";
 export * from "./ModuleCalendar";
 export * from "./ModuleCamera";
 export * from "./ModuleCreature";

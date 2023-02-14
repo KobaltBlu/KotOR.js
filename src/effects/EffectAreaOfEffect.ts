@@ -8,7 +8,7 @@ export class EffectAreaOfEffect extends GameEffect {
     this.type = GameEffectType.EffectAreaOfEffect;
 
     // https://nwnlexicon.com/index.php?title=EffectAreaOfEffect#Area_of_Effect_Effect
-    // intList[0] : nAreaEffectId
+    // intList[0] : nAreaEffectId - vfx_persistent.2da
     // stringList[0] : sOnEnterScript
     // stringList[1] : sHeartbeatScript
     // stringList[2] : sOnExitScript

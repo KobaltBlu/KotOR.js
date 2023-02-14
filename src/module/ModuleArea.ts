@@ -8,7 +8,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
-import { Module, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
+import { Module, ModuleAreaOfEffect, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { GFFField } from "../resource/GFFField";
@@ -54,6 +54,7 @@ export class ModuleArea extends ModuleObject {
   tracks: ModuleMGTrack[] = [];
   triggers: ModuleTrigger[] = [];
   waypoints: ModuleWaypoint[] = [];
+  areaOfEffects: ModuleAreaOfEffect[] = [];
 
   audio = {
     AmbientSndDay: 0,
@@ -184,6 +185,11 @@ export class ModuleArea extends ModuleObject {
       this.rooms[0].destroy();
     }
 
+    //Clear room geometries
+    while (this.rooms.length){
+      this.areaOfEffects[0].destroy();
+    }
+
     //Clear creature geometries
     while (this.creatures.length){
       this.creatures[0].destroy();
@@ -232,6 +238,7 @@ export class ModuleArea extends ModuleObject {
 
   update(delta: number = 0){
     let roomCount = this.rooms.length;
+    let aoeCount = this.areaOfEffects.length;
     let trigCount = this.triggers.length;
     let encounterCount = this.encounters.length;
     let creatureCount = this.creatures.length;
@@ -248,6 +255,11 @@ export class ModuleArea extends ModuleObject {
     //update encounters
     for(let i = 0; i < encounterCount; i++){
       this.encounters[i].update(delta);
+    }
+    
+    //update aoe
+    for(let i = 0; i < aoeCount; i++){
+      this.areaOfEffects[i].update(delta);
     }
 
     //update party
@@ -302,6 +314,7 @@ export class ModuleArea extends ModuleObject {
     let roomCount = this.rooms.length;
     let trigCount = this.triggers.length;
     let encounterCount = this.encounters.length;
+    let aoeCount = this.areaOfEffects.length;
     let creatureCount = this.creatures.length;
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
@@ -315,6 +328,11 @@ export class ModuleArea extends ModuleObject {
     //update encounters
     for(let i = 0; i < encounterCount; i++){
       this.encounters[i].updatePaused(delta);
+    }
+
+    //update aoe
+    for(let i = 0; i < aoeCount; i++){
+      this.areaOfEffects[i].updatePaused(delta);
     }
 
     //update party
@@ -627,6 +645,7 @@ export class ModuleArea extends ModuleObject {
     //BEGIN GIT LOAD
 
     let areaProps = this.git.GetFieldByLabel('AreaProperties');
+    let areaEffects = this.git.GetFieldByLabel('AreaEffectList');
     let cameras = this.git.GetFieldByLabel('CameraList');
     let creatures = this.git.GetFieldByLabel('Creature List');
     let doors = this.git.GetFieldByLabel('Door List');
@@ -658,6 +677,12 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < cameras.ChildStructs.length; i++){
       let strt = cameras.ChildStructs[i];
       this.cameras.push( new ModuleCamera(GFFObject.FromStruct(strt) ) );
+    }
+
+    //AreaEffects
+    for(let i = 0; i < areaEffects.ChildStructs.length; i++){
+      let strt = areaEffects.ChildStructs[i];
+      this.areaOfEffects.push( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
     }
 
     //Creatures
@@ -913,6 +938,7 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(30);
 
+      try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
       try { await this.loadCreatures(); } catch(e){ console.error(e); }
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
       try { await this.loadParty(); } catch(e){ console.error(e); }
@@ -1532,6 +1558,28 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
+  async loadAreaEffects(): Promise<void>{
+    return new Promise<void>( (resolve, reject) => {
+      console.log('Loading AreaEffects');
+      let loop = new AsyncLoop({
+        array: this.areaOfEffects,
+        onLoop: (aoe: ModuleAreaOfEffect, asyncLoop: AsyncLoop) => {
+          try{
+            aoe.Load();
+            GameState.group.effects.add( aoe.container );
+            asyncLoop.next();
+          }catch(e){
+            console.error(e);
+            asyncLoop.next();
+          }
+        }
+      });
+      loop.iterate(() => {
+        resolve();
+      });
+    });
+  }
+
   async loadTriggers(): Promise<void>{
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading Triggers');
@@ -2100,6 +2148,10 @@ export class ModuleArea extends ModuleObject {
     git.FileType = 'GIT ';
 
     let aoeList = git.RootNode.AddField( new GFFField(GFFDataType.LIST, 'AreaEffectList') );
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      aoeList.AddChildStruct( this.areaOfEffects[i].save().RootNode );
+    }
+
     let areaMapField = git.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
     areaMapField.AddChildStruct( this.getAreaMapStruct() );
 

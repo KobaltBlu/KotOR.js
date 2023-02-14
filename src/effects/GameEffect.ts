@@ -243,7 +243,7 @@ export class GameEffect {
     }
   }
 
-  static EffectFromStruct( struct: GFFStruct ){
+  static EffectFromStruct( struct: GFFStruct ): GameEffect {
     if(struct instanceof GFFStruct){
       let effect = undefined;
 
