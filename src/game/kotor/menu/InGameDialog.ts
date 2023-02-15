@@ -33,9 +33,10 @@ export class InGameDialog extends GameMenu {
   LB_REPLIES: GUIListBox;
   dialog: DLGObject;
   currentEntry: DLGNode;
-  listener: any;
+
+  listener: ModuleObject;
   owner: ModuleObject;
-  paused: boolean;
+
   ended: boolean;
   state: number;
   unequipHeadItem: boolean;
@@ -43,6 +44,7 @@ export class InGameDialog extends GameMenu {
   isListening: boolean;
   canLetterbox: boolean;
   letterBoxed: boolean;
+
   topBar: any;
   bottomBar: any;
   startingEntry: DLGNode;
@@ -449,7 +451,7 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  UpdateEntryAnimations(entry: any) {
+  UpdateEntryAnimations(entry: DLGNode) {
     if (this.dialog.isAnimatedCutscene) {
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
@@ -707,6 +709,13 @@ export class InGameDialog extends GameMenu {
         }
       }
     }
+
+    this.dialog.stuntActors.forEach( async (actor) => {
+      const moduleObject = actor.moduleObject;
+      if(moduleObject){
+        moduleObject.container.box.setFromObject(moduleObject.container);
+      }
+    });
 
     if(GameState.ConversationPaused) return;
 

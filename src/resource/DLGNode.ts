@@ -359,20 +359,12 @@ export class DLGNode {
         if (MenuManager.InGameDialog.dialog.isAnimatedCutscene) {
           if (this.cameraAnimationComplete) {
             this.alreadyAllowed = true;
-            if (MenuManager.InGameDialog.paused) {
-              return false;
-            } else {
-              return true;
-            }
+            return true;
           }
         } else {
           if (this.voiceOverComplete && this.fadeComplete) {
             this.alreadyAllowed = true;
-            if (MenuManager.InGameDialog.paused) {
-              return false;
-            } else {
-              return true;
-            }
+            return true;
           }
         }
         return false;

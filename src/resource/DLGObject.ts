@@ -1,6 +1,6 @@
 import { GameState } from "../GameState";
 import { TemplateLoader } from "../loaders/TemplateLoader";
-import { ModuleCreature } from "../module";
+import { ModuleCreature, ModuleObject } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
 import { DLGNode } from "./DLGNode";
@@ -28,9 +28,10 @@ export class DLGObject {
   replyList: DLGNode[] = [];
   startingList: DLGNode[] = [];
   stuntActors: Map<string, DLGStuntActor> = new Map();
-  owner: any;
-  listener: any;
-  vo_id: any;
+  owner: ModuleObject;
+  listener: ModuleObject;
+
+  vo_id: string; //folder where the vo files reside
 
   scripts: DLGObjectScripts = {
     onEndConversationAbort: undefined,
@@ -319,12 +320,6 @@ export class DLGObject {
 
             if(this.unequipHeadItem)
               GameState.player.UnequipHeadItem();
-
-            if(GameState.player.model.skins){
-              for(let i = 0; i < GameState.player.model.skins.length; i++){
-                GameState.player.model.skins[i].frustumCulled = false;
-              }
-            }
             actor.moduleObject = GameState.player;
             resolve();
           }).catch(resolve);
@@ -358,12 +353,6 @@ export class DLGObject {
 
               if(this.unequipHeadItem && creature instanceof ModuleCreature)
                 creature.UnequipHeadItem();
-
-              if(model.skins){
-                for(let i = 0; i < model.skins.length; i++){
-                  model.skins[i].frustumCulled = false;
-                }
-              }
   
               actor.moduleObject = creature;
               resolve();
@@ -377,9 +366,9 @@ export class DLGObject {
   }
 
   async loadStuntActors(){
-    this.stuntActors.forEach( async (actor) => {
+    for (var [key, actor] of this.stuntActors.entries()) {
       await this.loadStuntActor(actor);
-    });
+    };
   }
 
   releaseStuntActors(){
@@ -389,14 +378,6 @@ export class DLGObject {
     this.stuntActors.forEach( async (actor) => {
       const moduleObject = actor.moduleObject;
       if(moduleObject){
-        const model = moduleObject.model;
-        if(model){
-          if (model.skins) {
-            for (let i = 0; i < model.skins.length; i++) {
-              model.skins[i].frustumCulled = true;
-            }
-          }
-        }
         moduleObject.clearAllActions();
       }
     });
