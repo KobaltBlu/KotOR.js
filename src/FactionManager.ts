@@ -280,16 +280,13 @@ export class FactionManager {
     let facIdx = 0;
     let repIdx = 0;
 
-    let maxFactions = FactionManager.factions.size;
-
-    for (let id of FactionManager.factions.keys()) {
-      let faction = FactionManager.factions.get(id);
+    FactionManager.factions.forEach( (faction, id) => {
       let facStruct = faction.toStruct(facIdx++);
       if(facStruct instanceof GFFStruct){
         factionList.AddChildStruct(facStruct);
       }
 
-      for(let i = 0; i < maxFactions; i++){
+      for(let i = 0; i < faction.reputations.length; i++){
         let reputation = faction.reputations[i];
         if(reputation.reputation < ReputationConstant.FRIENDLY){
           let repStruct = reputation.toStruct(repIdx++, id, i);
@@ -302,7 +299,7 @@ export class FactionManager {
           //console.log('FactionManager.save', 'skipping because 100', id, i, reputation.reputation);
         }
       }
-    }
+    });
 
     return gff;
   }

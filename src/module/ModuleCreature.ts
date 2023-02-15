@@ -4426,7 +4426,7 @@ export class ModuleCreature extends ModuleObject {
       expressionList.AddChildStruct(expressionStruct);
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') ).SetValue(this.faction);
+    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') ).SetValue(this.faction ? this.faction.id : this.factionId);
 
     //Feats
     let featList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'FeatList') );

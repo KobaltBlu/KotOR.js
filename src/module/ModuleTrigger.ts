@@ -527,7 +527,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue( this.commandable );
     gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue(2130706432);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Cursor') ).SetValue(this.cursor);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Faction') ).SetValue(this.faction);
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Faction') ).SetValue(this.faction ? this.faction.id : this.factionId);
 
     let geometry = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){

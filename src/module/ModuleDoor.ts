@@ -941,7 +941,7 @@ export class ModuleDoor extends ModuleObject {
       effectList.AddChildStruct( this.effects[i].save() );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Faction') ).SetValue(this.faction);
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Faction') ).SetValue(this.faction ? this.faction.id : this.factionId);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Fort') ).SetValue(this.fort);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'GenericType') ).SetValue(this.genericType);
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'HP') ).SetValue(this.hp);

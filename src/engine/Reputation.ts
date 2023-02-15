@@ -24,17 +24,6 @@ export class Reputation {
     return struct;
   }
 
-  // static GetReputationKey(id1 = -1, id2 = -1){
-  //   if(id1 >= 0 && id2 >= 0){
-  //     if(id1 <= id2){
-  //       return id1+''+id2;
-  //     }else{
-  //       return id2+''+id1;
-  //     }
-  //   }
-  //   return false;
-  // }
-
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let reputation = new Reputation();
