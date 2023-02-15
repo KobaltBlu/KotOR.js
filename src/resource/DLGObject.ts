@@ -69,7 +69,7 @@ export class DLGObject {
     }
 
     if(this.gff.RootNode.HasField('CameraModel')){
-      this.animatedCameraResRef = this.gff.RootNode.GetFieldByLabel('ObjectId').GetValue();
+      this.animatedCameraResRef = this.gff.RootNode.GetFieldByLabel('CameraModel').GetValue();
     }
 
     if(this.gff.RootNode.HasField('EndConverAbort')){
@@ -309,9 +309,7 @@ export class DLGObject {
         .then((actorModel: OdysseyModel) => {
           OdysseyModel3D.FromMDL(actorModel)
           .then((actorSuperModel: OdysseyModel3D) => {
-            GameState.player.model.odysseyAnimations = GameState.player.model.odysseyAnimations.concat(actorSuperModel.odysseyAnimations);
-            //console.log('actor', actorSuperModel.animations)
-            //GameState.player.anim = true;
+            actor.animations = actorSuperModel.odysseyAnimations;
 
             if(this.isAnimatedCutscene)
               GameState.player.setFacing(0, true);
@@ -348,9 +346,7 @@ export class DLGObject {
           .then((actorModel: OdysseyModel) => {
             OdysseyModel3D.FromMDL(actorModel)
             .then((actorSuperModel: OdysseyModel3D) => {
-              model.odysseyAnimations = actorSuperModel.animations;
-
-              //console.log('actor', actorSuperModel.animations)
+              actor.animations = actorSuperModel.odysseyAnimations;
 
               if(this.isAnimatedCutscene)
                 creature.setFacing(0, true);

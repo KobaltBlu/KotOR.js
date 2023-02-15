@@ -724,7 +724,7 @@ export class DLGNode {
     }
 
     if(struct.HasField('Text')){
-      node.text = (struct.GetFieldByLabel('Text').GetValue() as CExoLocString).GetValue();
+      node.text = struct.GetFieldByLabel('Text').GetValue();
     }
 
     if(struct.HasField('Delay')){
