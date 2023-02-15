@@ -135,7 +135,7 @@ export class InGameDialog extends GameMenu {
     if (dialog instanceof DLGObject) {
       let result = this.loadDialog(dialog);
       if(!result) return;
-      this.UpdateCamera();
+      this.updateCamera();
       this.isListening = true;
       this.updateTextPosition();
       this.startingEntry = null;
@@ -152,10 +152,10 @@ export class InGameDialog extends GameMenu {
           }
         } else {
           if (this.startingEntry.cameraAngle == 6) {
-            this.SetPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
+            this.setPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
           } else {
             GameState.currentCamera = GameState.camera_dialog;
-            this.UpdateCamera();
+            this.updateCamera();
           }
           this.canLetterbox = true;
           if (this.dialog.isAnimatedCutscene) {
@@ -215,7 +215,6 @@ export class InGameDialog extends GameMenu {
   }
 
   getNextEntry(entryLinks: any[] = [], callback?: Function) {
-    console.log('getNextEntry', entryLinks);
     if (!entryLinks.length) {
       this.endConversation();
       return;
@@ -257,15 +256,13 @@ export class InGameDialog extends GameMenu {
     } else {
       returnValue = node.text == '';
     }
-    console.log('isEndDialog', node, returnValue);
     return returnValue;
   }
 
   playerSkipEntry(currentEntry: DLGNode) {
     if (this.currentEntry != null) {
       this.currentEntry.checkList.isSkipped = true;
-      clearTimeout(this.currentEntry.timeout);
-      this.UpdateCamera();
+      this.updateCamera();
       this.audioEmitter.Stop();
       this.showReplies(this.currentEntry);
     }
@@ -286,7 +283,7 @@ export class InGameDialog extends GameMenu {
     entry.updateJournal();
 
     //participant animations
-    this.UpdateEntryAnimations(entry);
+    this.updateEntryAnimations(entry);
 
     //participant facing
     if (!this.dialog.isAnimatedCutscene) {
@@ -313,7 +310,7 @@ export class InGameDialog extends GameMenu {
     }
     if (!entry.cameraID) {
       GameState.currentCamera = GameState.camera_dialog;
-      this.UpdateCamera();
+      this.updateCamera();
     } else {
       GameState.currentCamera = GameState.getCameraById(entry.cameraID);
     }
@@ -321,7 +318,7 @@ export class InGameDialog extends GameMenu {
     if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.animatedCameraResRef)) {
       if (entry.cameraAnimation > -1) {
         entry.checkList.cameraAnimationComplete = false;
-        this.SetAnimatedCamera(entry.cameraAnimation, () => {
+        this.setAnimatedCamera(entry.cameraAnimation, () => {
           entry.checkList.cameraAnimationComplete = true;
           if (entry.checkList.isComplete()) {
             this.showReplies(entry);
@@ -329,10 +326,10 @@ export class InGameDialog extends GameMenu {
         });
       }
     } else if (entry.cameraAngle == 6) {
-      this.SetPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);//, entry.cameraAngle);
+      this.setPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);//, entry.cameraAngle);
     } else {
       GameState.currentCamera = GameState.camera_dialog;
-      this.UpdateCamera();
+      this.updateCamera();
     }
 
     //scripts
@@ -379,7 +376,6 @@ export class InGameDialog extends GameMenu {
     this.currentEntry = null;
     let isContinueDialog = entry.replies.length == 1 && this.isContinueDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
     let isEndDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
-    console.log('showReplies', entry, isContinueDialog, isEndDialog);
     if (isContinueDialog) {
       let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
       if (reply) {
@@ -422,7 +418,7 @@ export class InGameDialog extends GameMenu {
     this.updateTextPosition();
     this.LB_REPLIES.show();
     this.LB_REPLIES.updateList();
-    this.UpdateCamera();
+    this.updateCamera();
     this.state = 1;
   }
 
@@ -451,7 +447,7 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  UpdateEntryAnimations(entry: DLGNode) {
+  updateEntryAnimations(entry: DLGNode) {
     if (this.dialog.isAnimatedCutscene) {
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
@@ -459,7 +455,7 @@ export class InGameDialog extends GameMenu {
           try {
             const actor = this.dialog.stuntActors.get(participant.participant);
             if(actor.moduleObject instanceof ModuleCreature){
-              const animationName = this.GetActorAnimation(participant.animation);
+              const animationName = this.getActorAnimation(participant.animation);
               const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
               if(odysseyAnimation){
                 actor.moduleObject.dialogPlayOdysseyAnimation(odysseyAnimation);
@@ -511,21 +507,21 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  GetActorAnimation(index = 0) {
+  getActorAnimation(index = 0) {
     return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
   }
 
-  SetPlaceableCamera(nCamera: number) {
+  setPlaceableCamera(nCamera: number) {
     let cam = GameState.getCameraById(nCamera);
     if (cam) {
       GameState.currentCamera = cam;
     }
   }
 
-  SetAnimatedCamera(nCamera: number, onComplete?: Function) {
+  setAnimatedCamera(nCamera: number, onComplete?: Function) {
     if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
       this.dialog.animatedCamera.playAnimation(
-        this.GetActorAnimation(nCamera), false, 
+        this.getActorAnimation(nCamera), false, 
         () => {
           if (typeof onComplete === 'function')
             onComplete();
@@ -535,7 +531,7 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  UpdateCamera() {
+  updateCamera() {
     if (!this.dialog)
       return;
     if (this.dialog.isAnimatedCutscene && this.dialog.animatedCamera instanceof OdysseyModel3D) {
@@ -545,9 +541,9 @@ export class InGameDialog extends GameMenu {
     if (this.isListening) {
       if (this.currentEntry) {
         if (this.currentEntry.cameraAngle == 6) {
-          this.SetPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);//, this.startingEntry.cameraAngle);
+          this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);//, this.startingEntry.cameraAngle);
         }else if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
-          this.SetAnimatedCamera(this.currentEntry.cameraAnimation);
+          this.setAnimatedCamera(this.currentEntry.cameraAnimation);
           GameState.currentCamera = GameState.camera_animated;
         } else {
           GameState.currentCamera = GameState.camera_dialog;
@@ -658,7 +654,7 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  GetCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {
+  getCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {
     let dir = pointB.clone().sub(pointA);
     let len = dir.length();
     dir = dir.normalize().multiplyScalar(len * percentage);
@@ -694,7 +690,7 @@ export class InGameDialog extends GameMenu {
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
       } else {
-        this.UpdateCamera();
+        this.updateCamera();
       }
       if (this.canLetterbox) {
         if (this.bottomBar.position.y < -(window.innerHeight / 2) + 100 / 2) {

@@ -5309,7 +5309,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      MenuManager.InGameDialog.SetPlaceableCamera(args[0]);
+      MenuManager.InGameDialog.setPlaceableCamera(args[0]);
     }
   },
   462:{

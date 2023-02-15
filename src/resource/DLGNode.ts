@@ -169,7 +169,6 @@ export class DLGNode {
   }
 
   runScripts(){
-    console.log('DLGNode.runScripts', this);
     this.runScript1();
     this.runScript2();
   }

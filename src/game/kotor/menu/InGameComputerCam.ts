@@ -32,7 +32,7 @@ export class InGameComputerCam extends GameMenu {
   Open(cam_id = -1) {
     super.Open();
     if (cam_id >= 0) {
-      MenuManager.InGameDialog.SetPlaceableCamera(cam_id);
+      MenuManager.InGameDialog.setPlaceableCamera(cam_id);
     } else {
       GameState.currentCamera = GameState.camera;
     }

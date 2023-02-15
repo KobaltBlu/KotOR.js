@@ -28,19 +28,5 @@ export class InGameComputerCam extends K1_InGameComputerCam {
       resolve();
     });
   }
-
-  Open(cam_id = -1) {
-    super.Open();
-    if (cam_id >= 0) {
-      MenuManager.InGameDialog.SetPlaceableCamera(cam_id);
-    } else {
-      GameState.currentCamera = GameState.camera;
-    }
-  }
-
-  Hide() {
-    super.Hide();
-    GameState.currentCamera = GameState.camera;
-  }
   
 }
