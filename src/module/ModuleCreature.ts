@@ -45,6 +45,7 @@ import { AttackResult } from "../enums/combat/AttackResult";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineState } from "../enums/engine/EngineState";
 import { DLGObject } from "../resource/DLGObject";
+import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 
 /* @file
  * The ModuleCreature class.
@@ -486,7 +487,7 @@ export class ModuleCreature extends ModuleObject {
               let _animShouldChange = false;
     
               if(this.model.animationManager.currentAnimation instanceof OdysseyModelAnimation){
-                if(this.model.animationManager.currentAnimation.name.toLowerCase() != this.dialogAnimation.animation.toLowerCase()){
+                if(this.model.animationManager.currentAnimation.name.toLowerCase() != this.dialogAnimation.animation.name.toLowerCase()){
                   _animShouldChange = true;
                 }
               }else{
@@ -494,9 +495,9 @@ export class ModuleCreature extends ModuleObject {
               }
     
               if(_animShouldChange){
-                let _newAnim = this.model.getAnimationByName(this.dialogAnimation.animation);
+                let _newAnim = this.dialogAnimation.animation;
                 if(_newAnim instanceof OdysseyModelAnimation){
-                  if(this.dialogAnimation.time == -1){
+                  if(!!parseInt(this.dialogAnimation.data.looping)){
                     this.model.playAnimation(_newAnim, true);
                   }else{
                     this.model.playAnimation(_newAnim, false, () => {
@@ -505,8 +506,7 @@ export class ModuleCreature extends ModuleObject {
                     })
                   }
                 }else{
-                  //Kill the dialogAnimation if the animation isn't found
-                  //console.log('dialogAnimation missing!', this.dialogAnimation.animation, this);
+                  //Kill the dialogAnimation if the animation isn't valid
                   this.dialogAnimation = null;
                 }
               }
@@ -1415,29 +1415,21 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  dialogPlayAnimation(anim = '', loop = false, speed = 1){
-    this.dialogAnimation = { 
-      //type: ActionType.ActionPlayAnimation,
+  dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
+    this.dialogAnimation = {
       animation: anim,
-      speed: speed || 1,
-      time: loop ? -1 : 0
+      data: {
+        fireforget: 1,
+        looping: 0
+      } as any
     };
-    /*let currentAction = this.actionQueue[0];
-    if(currentAction && currentAction.type == ActionType.ActionPlayAnimation){
-      this.actionQueue[0] = { 
-        type: ActionType.ActionPlayAnimation,
-        animation: anim,
-        speed: 1,
-        time: loop ? -1 : 0
-      };
-    }else{
-      this.actionQueue.addFront({ 
-        type: ActionType.ActionPlayAnimation,
-        animation: anim,
-        speed: 1,
-        time: loop ? -1 : 0
-      });
-    }*/
+  }
+
+  dialogPlayAnimation(data: TwoDAAnimation = {} as TwoDAAnimation){
+    this.dialogAnimation = { 
+      animation: this.model.getAnimationByName(data.name),
+      data: data,
+    };
   }
 
   cancelCombat(){

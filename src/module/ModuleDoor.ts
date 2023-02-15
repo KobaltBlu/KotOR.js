@@ -31,6 +31,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
+import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 
 /* @file
  * The ModuleDoor class.
@@ -1054,7 +1055,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ){
+  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){

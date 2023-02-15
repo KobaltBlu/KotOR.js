@@ -13,6 +13,7 @@ import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
 import { SSFObjectType } from "../interface/resource/SSFType";
+import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { TemplateLoader } from "../loaders/TemplateLoader";
 import { InventoryManager } from "../managers/InventoryManager";
 import { KEYManager } from "../managers/KEYManager";
@@ -952,7 +953,7 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ){
+  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){

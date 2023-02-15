@@ -27,7 +27,7 @@ import { PartyManager } from "../managers/PartyManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { NWScriptEvent } from "../nwscript/events";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
+import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "../odyssey";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -41,6 +41,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
+import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 
 /* @file
  * The ModuleObject class.
@@ -101,7 +102,10 @@ export class ModuleObject {
   yOrientation: number;
   zOrientation: number;
 
-  dialogAnimation: any;
+  dialogAnimation: {
+    animation: OdysseyModelAnimation,
+    data: TwoDAAnimation
+  };
 
   templateResRef: string = '';
   template: GFFObject;
@@ -1990,7 +1994,7 @@ export class ModuleObject {
     }
   }
 
-  dialogPlayAnimation(anim = '', loop = false, speed = 1){
+  dialogPlayAnimation(anim: TwoDAAnimation = {} as TwoDAAnimation){
     
   }
 
@@ -2301,7 +2305,7 @@ export class ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ){
+  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation{
 
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){

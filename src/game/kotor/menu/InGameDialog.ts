@@ -20,6 +20,7 @@ import { AudioLoader } from "../../../audio/AudioLoader";
 import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 import { DLGNode } from "../../../resource/DLGNode";
+import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAnimState";
 
 /* @file
 * The InGameDialog menu class.
@@ -399,13 +400,19 @@ export class InGameDialog extends GameMenu {
     }
     try {
       if(this.getCurrentOwner() instanceof ModuleCreature){
-        (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
+        const anim = this.getCurrentOwner().animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
+        if(anim){
+          this.getCurrentOwner().dialogPlayAnimation(anim);
+        }
       }
     } catch (e: any) {
     }
     try {
       if(this.getCurrentListener() instanceof ModuleCreature){
-        (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
+        const anim = this.getCurrentListener().animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
+        if(anim){
+          this.getCurrentListener().dialogPlayAnimation(anim);
+        }
       }
     } catch (e: any) {
     }
@@ -448,7 +455,14 @@ export class InGameDialog extends GameMenu {
         let participant = entry.animations[i];
         if (this.dialog.stuntActors.has(participant.participant)) {
           try {
-            this.dialog.stuntActors.get(participant.participant).moduleObject.dialogPlayAnimation(this.GetActorAnimation(participant.animation), true);
+            const actor = this.dialog.stuntActors.get(participant.participant);
+            if(actor.moduleObject instanceof ModuleCreature){
+              const animationName = this.GetActorAnimation(participant.animation);
+              const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
+              if(odysseyAnimation){
+                actor.moduleObject.dialogPlayOdysseyAnimation(odysseyAnimation);
+              }
+            }
           } catch (e: any) {
             console.error(e);
           }
@@ -457,7 +471,7 @@ export class InGameDialog extends GameMenu {
           if (actor && participant.animation >= 10000) {
             let anim = actor.animationConstantToAnimation(participant.animation);
             if (anim) {
-              actor.dialogPlayAnimation(anim.name, anim.looping == '1');
+              actor.dialogPlayAnimation(anim);
             } else {
               console.error('Anim', participant.animation);
             }
@@ -465,19 +479,28 @@ export class InGameDialog extends GameMenu {
         }
       }
     } else {
+
       if (this.currentEntry.speaker instanceof ModuleCreature) {
-        this.currentEntry.speaker.dialogPlayAnimation('tlknorm', true);
+        const anim = this.currentEntry.speaker.animationConstantToAnimation( ModuleCreatureAnimState.TALK_NORMAL )
+        if(anim){
+          this.currentEntry.speaker.dialogPlayAnimation(anim);
+        }
       }
+
       if (this.currentEntry.listener instanceof ModuleCreature) {
-        this.currentEntry.listener.dialogPlayAnimation('listen', true);
+        const anim = this.currentEntry.listener.animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
+        if(anim){
+          this.currentEntry.listener.dialogPlayAnimation(anim);
+        }
       }
+
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
         let actor = ModuleObjectManager.GetObjectByTag(participant.participant);
         if (actor && participant.animation >= 10000) {
           let anim = actor.animationConstantToAnimation(participant.animation);
           if (anim) {
-            actor.dialogPlayAnimation(anim.name, anim.looping == '1');
+            actor.dialogPlayAnimation(anim);
           } else {
             console.error('Anim', participant.animation);
           }

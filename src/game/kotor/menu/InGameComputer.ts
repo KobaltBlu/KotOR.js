@@ -319,18 +319,18 @@ export class InGameComputer extends GameMenu {
       this.endConversation();
       return;
     }
-    try {
-      if(this.getCurrentOwner() instanceof ModuleCreature){
-        (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
-      }
-    } catch (e: any) {
-    }
-    try {
-      if(this.getCurrentListener() instanceof ModuleCreature){
-        (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
-      }
-    } catch (e: any) {
-    }
+    // try {
+    //   if(this.getCurrentOwner() instanceof ModuleCreature){
+    //     (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
+    //   }
+    // } catch (e: any) {
+    // }
+    // try {
+    //   if(this.getCurrentListener() instanceof ModuleCreature){
+    //     (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
+    //   }
+    // } catch (e: any) {
+    // }
     this.isListening = false;
     this.updateTextPosition();
     this.LB_REPLIES.show();

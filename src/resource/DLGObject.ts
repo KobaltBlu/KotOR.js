@@ -139,7 +139,7 @@ export class DLGObject {
         }
 
         if(struct.HasField('StuntModel')){
-          stunt.participant = struct.GetFieldByLabel('StuntModel').GetValue();
+          stunt.resref = struct.GetFieldByLabel('StuntModel').GetValue();
         }
 
         this.stuntActors.set(stunt.participant.toLocaleLowerCase(), stunt);
