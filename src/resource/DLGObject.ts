@@ -13,6 +13,7 @@ import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ResourceLoader } from "./ResourceLoader";
+import { GFFStruct } from "./GFFStruct";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -58,156 +59,191 @@ export class DLGObject {
 
   init(){
 
-    let conversationType = this.gff.GetFieldByLabel('ConversationType');
+    let conversationType = this.gff.RootNode.GetFieldByLabel('ConversationType');
     if(conversationType){
       this.conversationType = conversationType.GetValue();
     }
 
-    if(this.gff.json.fields.VO_ID)
-      this.vo_id = this.gff.json.fields.VO_ID.value;
-    
-    if(this.gff.json.fields.CameraModel)
-      this.animatedCameraResRef = this.gff.json.fields.CameraModel.value;
-    
-    if(this.gff.json.fields.EndConverAbort){
-      const scriptName = this.gff.json.fields.EndConverAbort.value;
+    if(this.gff.RootNode.HasField('VO_ID')){
+      this.vo_id = this.gff.RootNode.GetFieldByLabel('VO_ID').GetValue();
+    }
+
+    if(this.gff.RootNode.HasField('CameraModel')){
+      this.animatedCameraResRef = this.gff.RootNode.GetFieldByLabel('ObjectId').GetValue();
+    }
+
+    if(this.gff.RootNode.HasField('EndConverAbort')){
+      const scriptName = this.gff.RootNode.GetFieldByLabel('EndConverAbort').GetValue();
       this.scripts.onEndConversationAbort = NWScript.Load(scriptName);
       if(this.scripts.onEndConversationAbort){
         this.scripts.onEndConversationAbort.name = scriptName;
       }
     }
 
-    if(this.gff.json.fields.EndConversation){
-      const scriptName = this.gff.json.fields.EndConversation.value;
+    if(this.gff.RootNode.HasField('EndConversation')){
+      const scriptName = this.gff.RootNode.GetFieldByLabel('EndConversation').GetValue();
       this.scripts.onEndConversation = NWScript.Load(scriptName);
       if(this.scripts.onEndConversation){
         this.scripts.onEndConversation.name = scriptName;
       }
     }
 
-    if(this.gff.json.fields.AnimatedCut)
-      this.isAnimatedCutscene = this.gff.json.fields.AnimatedCut.value ? true : false;
-
-    if(this.gff.json.fields.AmbientTrack)
-      this.ambientTrack = this.gff.json.fields.AmbientTrack.value;
-
-    if(this.gff.json.fields.UnequipHItem)
-      this.unequipHeadItem = this.gff.json.fields.UnequipHItem.value ? true : false;
-
-    if(this.gff.json.fields.UnequipItems)
-      this.unequipItems = this.gff.json.fields.UnequipItems.value ? true : false;
-
-    for(let i = 0; i < this.gff.json.fields.EntryList.structs.length; i++){
-      let node = DLGNode.FromDialogStruct(this.gff.json.fields.EntryList.structs[i].fields);
-      node.dialog = this;
-      node.nodeType = DLGNodeType.ENTRY;
-      this.entryList.push( node );
+    if(this.gff.RootNode.HasField('AnimatedCut')){
+      this.isAnimatedCutscene = this.gff.RootNode.GetFieldByLabel('AnimatedCut').GetValue() ? true : false;
     }
 
-    for(let i = 0; i < this.gff.json.fields.ReplyList.structs.length; i++){
-      let node = DLGNode.FromDialogStruct(this.gff.json.fields.ReplyList.structs[i].fields);
-      node.dialog = this;
-      node.nodeType = DLGNodeType.REPLY;
-      this.replyList.push( node );
+    if(this.gff.RootNode.HasField('AmbientTrack')){
+      this.ambientTrack = this.gff.RootNode.GetFieldByLabel('AmbientTrack').GetValue();
     }
 
-    for(let i = 0; i < this.gff.json.fields.StuntList.structs.length; i++){
-      let stnt = this.gff.json.fields.StuntList.structs[i].fields;
-      let participant: string = stnt.Participant.value != '' ? stnt.Participant.value : 'OWNER';
-      this.stuntActors.set(participant.toLocaleLowerCase(), {
-        participant: participant,
-        resref: stnt.StuntModel.value
-      });
+    if(this.gff.RootNode.HasField('UnequipHItem')){
+      this.unequipHeadItem = this.gff.RootNode.GetFieldByLabel('UnequipHItem').GetValue() ? true : false;
     }
 
-    for(let i = 0; i < this.gff.json.fields.StartingList.structs.length; i++){
-      let _node = this.gff.json.fields.StartingList.structs[i].fields;
-      let linkNode = new DLGNode();
-      linkNode.dialog = this;
-      linkNode.nodeType = DLGNodeType.STARTING;
-      
-      linkNode.entries = [];
-      linkNode.replies = [];
+    if(this.gff.RootNode.HasField('UnequipItems')){
+      this.unequipItems = this.gff.RootNode.GetFieldByLabel('UnequipItems').GetValue() ? true : false;
+    }
 
-      if(typeof _node.Not !== 'undefined'){
-        linkNode.isActiveParams.Not = _node.Not.value;
+    if(this.gff.RootNode.HasField('EntryList')){
+      const entries = this.gff.RootNode.GetFieldByLabel('EntryList').GetChildStructs();
+      for(let i = 0; i < entries.length; i++){
+        let node = DLGNode.FromDialogStruct(entries[i]);
+        node.dialog = this;
+        node.nodeType = DLGNodeType.ENTRY;
+        this.entryList.push( node );
       }
+    }
 
-      if(typeof _node.Param1 !== 'undefined'){
-        linkNode.isActiveParams.Param1 = _node.Param1.value;
+    if(this.gff.RootNode.HasField('ReplyList')){
+      const replies = this.gff.RootNode.GetFieldByLabel('ReplyList').GetChildStructs();
+      for(let i = 0; i < replies.length; i++){
+        let node = DLGNode.FromDialogStruct(replies[i]);
+        node.dialog = this;
+        node.nodeType = DLGNodeType.REPLY;
+        this.replyList.push( node );
       }
+    }
 
-      if(typeof _node.Param2 !== 'undefined'){
-        linkNode.isActiveParams.Param2 = _node.Param2.value;
-      }
+    if(this.gff.RootNode.HasField('StuntList')){
+      const stunts = this.gff.RootNode.GetFieldByLabel('StuntList').GetChildStructs();
+      for(let i = 0; i < stunts.length; i++){
+        const stunt: DLGStuntActor = {
+          participant: '',
+          resref: ''
+        };
 
-      if(typeof _node.Param3 !== 'undefined'){
-        linkNode.isActiveParams.Param3 = _node.Param3.value;
-      }
-
-      if(typeof _node.Param4 !== 'undefined'){
-        linkNode.isActiveParams.Param4 = _node.Param4.value;
-      }
-
-      if(typeof _node.Param5 !== 'undefined'){
-        linkNode.isActiveParams.Param5 = _node.Param5.value;
-      }
-
-      if(typeof _node.ParamStrA !== 'undefined'){
-        linkNode.isActiveParams.String = _node.ParamStrA.value;
-      }
-
-      if(typeof _node.Not !== 'undefined'){
-        linkNode.isActive2Params.Not = _node.Not.value;
-      }
-
-      if(typeof _node.Param1b !== 'undefined'){
-        linkNode.isActive2Params.Param1 = _node.Param1b.value;
-      }
-
-      if(typeof _node.Param2b !== 'undefined'){
-        linkNode.isActive2Params.Param2 = _node.Param2b.value;
-      }
-
-      if(typeof _node.Param3b !== 'undefined'){
-        linkNode.isActive2Params.Param3 = _node.Param3b.value;
-      }
-
-      if(typeof _node.Param4b !== 'undefined'){
-        linkNode.isActive2Params.Param4 = _node.Param4b.value;
-      }
-
-      if(typeof _node.Param5b !== 'undefined'){
-        linkNode.isActive2Params.Param5 = _node.Param5b.value;
-      }
-
-      if(typeof _node.ParamStrB !== 'undefined'){
-        linkNode.isActive2Params.String = _node.ParamStrB.value;
-      }
-
-      if(typeof _node.Logic !== 'undefined'){
-        linkNode.Logic = _node.Logic.value;
-      }
-  
-      if(typeof _node.Active !== 'undefined'){
-        linkNode.isActive = NWScript.Load(_node.Active.value);
-        if(linkNode.isActive instanceof NWScriptInstance){
-          linkNode.isActive.name = _node.Active.value;
+        const struct = stunts[i];
+        if(struct.HasField('Participant')){
+          stunt.participant = struct.GetFieldByLabel('Participant').GetValue();
+          stunt.participant = stunt.participant != '' ? stunt.participant : 'OWNER';
         }
-      }
 
-      if(typeof _node.Active2 !== 'undefined'){
-        linkNode.isActive2 = NWScript.Load(_node.Active2.value);
-        if(linkNode.isActive2 instanceof NWScriptInstance){
-          linkNode.isActive2.name = _node.Active.value;
+        if(struct.HasField('StuntModel')){
+          stunt.participant = struct.GetFieldByLabel('StuntModel').GetValue();
         }
-      }
 
-      if(typeof _node.Index !== 'undefined'){
-        linkNode.index = _node.Index.value;
+        this.stuntActors.set(stunt.participant.toLocaleLowerCase(), stunt);
       }
+    }
 
-      this.startingList.push(linkNode);
+    if(this.gff.RootNode.HasField('StartingList')){
+      const startingList = this.gff.RootNode.GetFieldByLabel('StartingList').GetChildStructs();
+
+      for(let i = 0; i < startingList.length; i++){
+        let struct = startingList[i];
+        let linkNode = new DLGNode();
+        linkNode.dialog = this;
+        linkNode.nodeType = DLGNodeType.STARTING;
+        
+        linkNode.entries = [];
+        linkNode.replies = [];
+
+        if(struct.HasField('Not')){
+          linkNode.isActiveParams.Not = struct.GetFieldByLabel('Not').GetValue();
+        }
+
+        if(struct.HasField('Param1')){
+          linkNode.isActiveParams.Param1 = struct.GetFieldByLabel('Param1').GetValue();
+        }
+
+        if(struct.HasField('Param2')){
+          linkNode.isActiveParams.Param2 = struct.GetFieldByLabel('Param2').GetValue();
+        }
+
+        if(struct.HasField('Param3')){
+          linkNode.isActiveParams.Param3 = struct.GetFieldByLabel('Param3').GetValue();
+        }
+
+        if(struct.HasField('Param4')){
+          linkNode.isActiveParams.Param4 = struct.GetFieldByLabel('Param4').GetValue();
+        }
+
+        if(struct.HasField('Param5')){
+          linkNode.isActiveParams.Param5 = struct.GetFieldByLabel('Param5').GetValue();
+        }
+
+        if(struct.HasField('ParamStrA')){
+          linkNode.isActiveParams.String = struct.GetFieldByLabel('ParamStrA').GetValue();
+        }
+
+        if(struct.HasField('Not2')){
+          linkNode.isActive2Params.Not = struct.GetFieldByLabel('Not2').GetValue();
+        }
+
+        if(struct.HasField('Param1b')){
+          linkNode.isActive2Params.Param1 = struct.GetFieldByLabel('Param1b').GetValue();
+        }
+
+        if(struct.HasField('Param2b')){
+          linkNode.isActive2Params.Param2 = struct.GetFieldByLabel('Param2b').GetValue();
+        }
+
+        if(struct.HasField('Param3b')){
+          linkNode.isActive2Params.Param3 = struct.GetFieldByLabel('Param3b').GetValue();
+        }
+
+        if(struct.HasField('Param4b')){
+          linkNode.isActive2Params.Param4 = struct.GetFieldByLabel('Param4b').GetValue();
+        }
+
+        if(struct.HasField('Param5b')){
+          linkNode.isActive2Params.Param5 = struct.GetFieldByLabel('Param5b').GetValue();
+        }
+
+        if(struct.HasField('ParamStrB')){
+          linkNode.isActive2Params.String = struct.GetFieldByLabel('ParamStrB').GetValue();
+        }
+
+        if(struct.HasField('Logic')){
+          linkNode.Logic = !!struct.GetFieldByLabel('Logic').GetValue();
+        }
+
+        if(struct.HasField('Active')){
+          const resref = struct.GetFieldByLabel('Active').GetValue();
+          if(resref){
+            linkNode.isActive = NWScript.Load(resref);
+            if(linkNode.isActive instanceof NWScriptInstance){
+              linkNode.isActive.name = resref;
+            }
+          }
+        }
+
+        if(struct.HasField('Active2')){
+          const resref = struct.GetFieldByLabel('Active2').GetValue();
+          if(resref){
+            linkNode.isActive2 = NWScript.Load(resref);
+            if(linkNode.isActive2 instanceof NWScriptInstance){
+              linkNode.isActive2.name = resref;
+            }
+          }
+        }
+
+        if(struct.HasField('Index')){
+          linkNode.index = struct.GetFieldByLabel('Index').GetValue();
+        }
+
+        this.startingList.push(linkNode);
+      }
     }
 
   }

@@ -12,6 +12,9 @@ import { ModuleCreature, ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { LIPObject } from "./LIPObject";
+import { GFFStruct } from "./GFFStruct";
+import { TLKString } from "./TLKString";
+import { CExoLocString } from "./CExoLocString";
 
 export class DLGNode {
   nodeType: DLGNodeType;
@@ -40,7 +43,7 @@ export class DLGNode {
   isActiveParams: DLGNodeScriptParams = {} as DLGNodeScriptParams;
   isActive2: NWScriptInstance;
   isActive2Params: DLGNodeScriptParams = {} as DLGNodeScriptParams;
-  Logic: number;
+  Logic: boolean;
   index: number;
   isChild: number;
   sound: string;
@@ -92,7 +95,7 @@ export class DLGNode {
     this.isActive2 = undefined;
     this.isActiveParams = {} as DLGNodeScriptParams;
     this.isActive2Params = {} as DLGNodeScriptParams;
-    this.Logic = 0;
+    this.Logic = false;
     this.index = -1;
     this.isChild = 0;
 
@@ -377,166 +380,225 @@ export class DLGNode {
     };
   }
 
-  static FromDialogStruct( struct: any ){
+  static FromDialogStruct( struct: GFFStruct ){
     let node = new DLGNode();
 
-    if(typeof struct.Quest !== 'undefined')
-      node.quest = struct.Quest.value;
+    if(struct.HasField('Quest')){
+      node.quest = struct.GetFieldByLabel('Quest').GetValue();
+    }
 
-    if(typeof struct.QuestEntry !== 'undefined')
-      node.questEntry = struct.QuestEntry.value;
+    if(struct.HasField('QuestEntry')){
+      node.questEntry = struct.GetFieldByLabel('QuestEntry').GetValue();
+    }
 
-    if(typeof struct.PlotXPPercentage !== 'undefined')
-      node.plotXPPercentage = struct.PlotXPPercentage.value;
+    if(struct.HasField('PlotXPPercentage')){
+      node.plotXPPercentage = struct.GetFieldByLabel('PlotXPPercentage').GetValue();
+    }
 
-    if(typeof struct.PlotIndex !== 'undefined')
-      node.plotIndex = struct.PlotIndex.value;
+    if(struct.HasField('PlotIndex')){
+      node.plotIndex = struct.GetFieldByLabel('PlotIndex').GetValue();
+    }
 
-    if(typeof struct.Listener !== 'undefined')
-      node.listenerTag = struct.Listener.value;
+    if(struct.HasField('Listener')){
+      node.listenerTag = struct.GetFieldByLabel('Listener').GetValue();
+    }
 
-    if(typeof struct.Speaker !== 'undefined')
-      node.speakerTag = struct.Speaker.value;
+    if(struct.HasField('Speaker')){
+      node.speakerTag = struct.GetFieldByLabel('Speaker').GetValue();
+    }
 
-    if(typeof struct.VO_ResRef !== 'undefined')
-      node.vo_resref = struct.VO_ResRef.value;
+    if(struct.HasField('VO_ResRef')){
+      node.vo_resref = struct.GetFieldByLabel('VO_ResRef').GetValue();
+    }
 
-    if(typeof struct.Sound !== 'undefined')
-      node.sound = struct.Sound.value;
+    if(struct.HasField('Sound')){
+      node.sound = struct.GetFieldByLabel('Sound').GetValue();
+    }
 
-    if(typeof struct.CameraID !== 'undefined')
-      node.cameraID = struct.CameraID.value;
+    if(struct.HasField('CameraId')){
+      node.cameraID = struct.GetFieldByLabel('CameraId').GetValue();
+    }
 
-    if(typeof struct.CameraAnimation !== 'undefined')
-      node.cameraAnimation = struct.CameraAnimation.value;
+    if(struct.HasField('CameraAnimation')){
+      node.cameraAnimation = struct.GetFieldByLabel('CameraAnimation').GetValue();
+    }
 
-    if(typeof struct.CameraAngle !== 'undefined')
-      node.cameraAngle = struct.CameraAngle.value;
-      
-    if(typeof struct.CamVidEffect !== 'undefined')
-      node.camVidEffect = struct.CamVidEffect.value;
+    if(struct.HasField('CameraAngle')){
+      node.cameraAngle = struct.GetFieldByLabel('CameraAngle').GetValue();
+    }
 
-    if(typeof struct.Script !== 'undefined'){
-      node.script = NWScript.Load(struct.Script.value);
-      if(node.script instanceof NWScriptInstance){
-        node.script.name = struct.Script.value;
+    if(struct.HasField('CamVidEffect')){
+      node.camVidEffect = struct.GetFieldByLabel('CamVidEffect').GetValue();
+    }
+
+    if(struct.HasField('Script')){
+      const resref = struct.GetFieldByLabel('Script').GetValue();
+      if(resref){
+        const instance = NWScript.Load(resref);
+        if(instance instanceof NWScriptInstance){
+          node.script = instance;
+          node.script.name = resref;
+        }
       }
     }
 
-    if(typeof struct.Script2 !== 'undefined'){
+    if(struct.HasField('Script2')){
       node.nodeEngineType = DLGNodeEngineType.K2;
-      node.script2 = NWScript.Load(struct.Script2.value);
-      if(node.script2 instanceof NWScriptInstance){
-        node.script2.name = struct.Script2.value;
+      const resref = struct.GetFieldByLabel('Script2').GetValue();
+      if(resref){
+        const instance = NWScript.Load(resref);
+        if(instance instanceof NWScriptInstance){
+          node.script2 = instance;
+          node.script2.name = resref;
+        }
       }
 
       //k2 MODE
-      node.scriptParams = {
-        Param1: struct.ActionParam1.value,
-        Param2: struct.ActionParam2.value,
-        Param3: struct.ActionParam3.value,
-        Param4: struct.ActionParam4.value,
-        Param5: struct.ActionParam5.value,
-        String: struct.ActionParamStrA.value
-      };
+      if(struct.HasField('ActionParam1')){
+        node.scriptParams.Param1 = struct.GetFieldByLabel('ActionParam1').GetValue();
+      }
 
-      node.script2Params = {
-        Param1: struct.ActionParam1b.value,
-        Param2: struct.ActionParam2b.value,
-        Param3: struct.ActionParam3b.value,
-        Param4: struct.ActionParam4b.value,
-        Param5: struct.ActionParam5b.value,
-        String: struct.ActionParamStrB.value
-      };
+      if(struct.HasField('ActionParam2')){
+        node.scriptParams.Param2 = struct.GetFieldByLabel('ActionParam2').GetValue();
+      }
+
+      if(struct.HasField('ActionParam3')){
+        node.scriptParams.Param3 = struct.GetFieldByLabel('ActionParam3').GetValue();
+      }
+
+      if(struct.HasField('ActionParam4')){
+        node.scriptParams.Param4 = struct.GetFieldByLabel('ActionParam4').GetValue();
+      }
+
+      if(struct.HasField('ActionParam5')){
+        node.scriptParams.Param5 = struct.GetFieldByLabel('ActionParam5').GetValue();
+      }
+
+      if(struct.HasField('ActionParamStrA')){
+        node.scriptParams.String = struct.GetFieldByLabel('ActionParamStrA').GetValue();
+      }
+
+      //k2 MODE
+      if(struct.HasField('ActionParam1b')){
+        node.script2Params.Param1 = struct.GetFieldByLabel('ActionParam1b').GetValue();
+      }
+
+      if(struct.HasField('ActionParam2b')){
+        node.script2Params.Param2 = struct.GetFieldByLabel('ActionParam2b').GetValue();
+      }
+
+      if(struct.HasField('ActionParam3b')){
+        node.script2Params.Param3 = struct.GetFieldByLabel('ActionParam3b').GetValue();
+      }
+
+      if(struct.HasField('ActionParam4b')){
+        node.script2Params.Param4 = struct.GetFieldByLabel('ActionParam4b').GetValue();
+      }
+
+      if(struct.HasField('ActionParam5b')){
+        node.script2Params.Param5 = struct.GetFieldByLabel('ActionParam5b').GetValue();
+      }
+
+      if(struct.HasField('ActionParamStrB')){
+        node.script2Params.String = struct.GetFieldByLabel('ActionParamStrB').GetValue();
+      }
 
     }
 
-    if(typeof struct.CamFieldOfView !== 'undefined')
-      node.camFieldOfView = struct.CamFieldOfView.value;
+    if(struct.HasField('CamFieldOfView')){
+      node.camFieldOfView = struct.GetFieldByLabel('CamFieldOfView').GetValue();
+    }
 
-    if(typeof struct.RepliesList !== 'undefined'){
+    if(struct.HasField('RepliesList')){
+      const structs = struct.GetFieldByLabel('RepliesList').GetChildStructs();
       node.entries = [];
-      for(let i = 0; i < struct.RepliesList.structs.length; i++){
-        let _node = struct.RepliesList.structs[i].fields;
+      for(let i = 0; i < structs.length; i++){
+        let replyStruct = structs[i];
         let linkNode = new DLGNode();
         // linkNode.dialog = this.dialog;
 
-        if(typeof _node.Not !== 'undefined'){
-          linkNode.isActiveParams.Not = _node.Not.value;
+        if(replyStruct.HasField('Not')){
+          linkNode.isActiveParams.Not = replyStruct.GetFieldByLabel('Not').GetValue();
         }
-  
-        if(typeof _node.Param1 !== 'undefined'){
-          linkNode.isActiveParams.Param1 = _node.Param1.value;
+
+        if(replyStruct.HasField('Param1')){
+          linkNode.isActiveParams.Param1 = replyStruct.GetFieldByLabel('Param1').GetValue();
         }
-  
-        if(typeof _node.Param2 !== 'undefined'){
-          linkNode.isActiveParams.Param2 = _node.Param2.value;
+
+        if(replyStruct.HasField('Param2')){
+          linkNode.isActiveParams.Param2 = replyStruct.GetFieldByLabel('Param2').GetValue();
         }
-  
-        if(typeof _node.Param3 !== 'undefined'){
-          linkNode.isActiveParams.Param3 = _node.Param3.value;
+
+        if(replyStruct.HasField('Param3')){
+          linkNode.isActiveParams.Param3 = replyStruct.GetFieldByLabel('Param3').GetValue();
         }
-  
-        if(typeof _node.Param4 !== 'undefined'){
-          linkNode.isActiveParams.Param4 = _node.Param4.value;
+
+        if(replyStruct.HasField('Param4')){
+          linkNode.isActiveParams.Param4 = replyStruct.GetFieldByLabel('Param4').GetValue();
         }
-  
-        if(typeof _node.Param5 !== 'undefined'){
-          linkNode.isActiveParams.Param5 = _node.Param5.value;
+
+        if(replyStruct.HasField('Param5')){
+          linkNode.isActiveParams.Param5 = replyStruct.GetFieldByLabel('Param5').GetValue();
         }
-  
-        if(typeof _node.ParamStrA !== 'undefined'){
-          linkNode.isActiveParams.String = _node.ParamStrA.value;
+
+        if(replyStruct.HasField('ParamStrA')){
+          linkNode.isActiveParams.String = replyStruct.GetFieldByLabel('ParamStrA').GetValue();
         }
-  
-        if(typeof _node.Not !== 'undefined'){
-          linkNode.isActive2Params.Not = _node.Not.value;
+
+        if(replyStruct.HasField('Not2')){
+          linkNode.isActive2Params.Not = replyStruct.GetFieldByLabel('Not2').GetValue();
         }
-  
-        if(typeof _node.Param1b !== 'undefined'){
-          linkNode.isActive2Params.Param1 = _node.Param1b.value;
+
+        if(replyStruct.HasField('Param1b')){
+          linkNode.isActive2Params.Param1 = replyStruct.GetFieldByLabel('Param1b').GetValue();
         }
-  
-        if(typeof _node.Param2b !== 'undefined'){
-          linkNode.isActive2Params.Param2 = _node.Param2b.value;
+
+        if(replyStruct.HasField('Param2b')){
+          linkNode.isActive2Params.Param2 = replyStruct.GetFieldByLabel('Param2b').GetValue();
         }
-  
-        if(typeof _node.Param3b !== 'undefined'){
-          linkNode.isActive2Params.Param3 = _node.Param3b.value;
+
+        if(replyStruct.HasField('Param3b')){
+          linkNode.isActive2Params.Param3 = replyStruct.GetFieldByLabel('Param3b').GetValue();
         }
-  
-        if(typeof _node.Param4b !== 'undefined'){
-          linkNode.isActive2Params.Param4 = _node.Param4b.value;
+
+        if(replyStruct.HasField('Param4b')){
+          linkNode.isActive2Params.Param4 = replyStruct.GetFieldByLabel('Param4b').GetValue();
         }
-  
-        if(typeof _node.Param5b !== 'undefined'){
-          linkNode.isActive2Params.Param5 = _node.Param5b.value;
+
+        if(replyStruct.HasField('Param5b')){
+          linkNode.isActive2Params.Param5 = replyStruct.GetFieldByLabel('Param5b').GetValue();
         }
-  
-        if(typeof _node.ParamStrB !== 'undefined'){
-          linkNode.isActive2Params.String = _node.ParamStrB.value;
+
+        if(replyStruct.HasField('ParamStrB')){
+          linkNode.isActive2Params.String = replyStruct.GetFieldByLabel('ParamStrB').GetValue();
         }
-  
-        if(typeof _node.Logic !== 'undefined'){
-          linkNode.Logic = _node.Logic.value;
+
+        if(replyStruct.HasField('Logic')){
+          linkNode.Logic = !!replyStruct.GetFieldByLabel('Logic').GetValue();
         }
-  
-        if(typeof _node.Active !== 'undefined'){
-          linkNode.isActive = NWScript.Load(_node.Active.value);
-          if(linkNode.isActive instanceof NWScriptInstance){
-            linkNode.isActive.name = _node.Active.value;
+
+        if(replyStruct.HasField('Active')){
+          const resref = replyStruct.GetFieldByLabel('Active').GetValue();
+          if(resref){
+            linkNode.isActive = NWScript.Load(resref);
+            if(linkNode.isActive instanceof NWScriptInstance){
+              linkNode.isActive.name = resref;
+            }
           }
         }
-  
-        if(typeof _node.Active2 !== 'undefined'){
-          linkNode.isActive2 = NWScript.Load(_node.Active2.value);
-          if(linkNode.isActive2 instanceof NWScriptInstance){
-            linkNode.isActive2.name = _node.Active2.value;
+
+        if(replyStruct.HasField('Active2')){
+          const resref = replyStruct.GetFieldByLabel('Active2').GetValue();
+          if(resref){
+            linkNode.isActive2 = NWScript.Load(resref);
+            if(linkNode.isActive2 instanceof NWScriptInstance){
+              linkNode.isActive2.name = resref;
+            }
           }
         }
-  
-        if(typeof _node.Index !== 'undefined'){
-          linkNode.index = _node.Index.value;
+
+        if(replyStruct.HasField('Index')){
+          linkNode.index = replyStruct.GetFieldByLabel('Index').GetValue();
         }
 
         node.replies.push(linkNode);
@@ -544,89 +606,95 @@ export class DLGNode {
       }
     }
 
-    if(typeof struct.EntriesList !== 'undefined'){
+    if(struct.HasField('EntriesList')){
+      const structs = struct.GetFieldByLabel('EntriesList').GetChildStructs();
       node.replies = [];
-      for(let i = 0; i < struct.EntriesList.structs.length; i++){
-        let _node = struct.EntriesList.structs[i].fields;
+      for(let i = 0; i < structs.length; i++){
+        let entryStruct = structs[i];
         let linkNode = new DLGNode();
-        // linkNode.dialog = this.dialog;
         
-        if(typeof _node.Not !== 'undefined'){
-          linkNode.isActiveParams.Not = _node.Not.value;
+        if(entryStruct.HasField('Not')){
+          linkNode.isActiveParams.Not = entryStruct.GetFieldByLabel('Not').GetValue();
         }
-  
-        if(typeof _node.Param1 !== 'undefined'){
-          linkNode.isActiveParams.Param1 = _node.Param1.value;
+
+        if(entryStruct.HasField('Param1')){
+          linkNode.isActiveParams.Param1 = entryStruct.GetFieldByLabel('Param1').GetValue();
         }
-  
-        if(typeof _node.Param2 !== 'undefined'){
-          linkNode.isActiveParams.Param2 = _node.Param2.value;
+
+        if(entryStruct.HasField('Param2')){
+          linkNode.isActiveParams.Param2 = entryStruct.GetFieldByLabel('Param2').GetValue();
         }
-  
-        if(typeof _node.Param3 !== 'undefined'){
-          linkNode.isActiveParams.Param3 = _node.Param3.value;
+
+        if(entryStruct.HasField('Param3')){
+          linkNode.isActiveParams.Param3 = entryStruct.GetFieldByLabel('Param3').GetValue();
         }
-  
-        if(typeof _node.Param4 !== 'undefined'){
-          linkNode.isActiveParams.Param4 = _node.Param4.value;
+
+        if(entryStruct.HasField('Param4')){
+          linkNode.isActiveParams.Param4 = entryStruct.GetFieldByLabel('Param4').GetValue();
         }
-  
-        if(typeof _node.Param5 !== 'undefined'){
-          linkNode.isActiveParams.Param5 = _node.Param5.value;
+
+        if(entryStruct.HasField('Param5')){
+          linkNode.isActiveParams.Param5 = entryStruct.GetFieldByLabel('Param5').GetValue();
         }
-  
-        if(typeof _node.ParamStrA !== 'undefined'){
-          linkNode.isActiveParams.String = _node.ParamStrA.value;
+
+        if(entryStruct.HasField('ParamStrA')){
+          linkNode.isActiveParams.String = entryStruct.GetFieldByLabel('ParamStrA').GetValue();
         }
-  
-        if(typeof _node.Not !== 'undefined'){
-          linkNode.isActive2Params.Not = _node.Not.value;
+
+        if(entryStruct.HasField('Not2')){
+          linkNode.isActive2Params.Not = entryStruct.GetFieldByLabel('Not2').GetValue();
         }
-  
-        if(typeof _node.Param1b !== 'undefined'){
-          linkNode.isActive2Params.Param1 = _node.Param1b.value;
+
+        if(entryStruct.HasField('Param1b')){
+          linkNode.isActive2Params.Param1 = entryStruct.GetFieldByLabel('Param1b').GetValue();
         }
-  
-        if(typeof _node.Param2b !== 'undefined'){
-          linkNode.isActive2Params.Param2 = _node.Param2b.value;
+
+        if(entryStruct.HasField('Param2b')){
+          linkNode.isActive2Params.Param2 = entryStruct.GetFieldByLabel('Param2b').GetValue();
         }
-  
-        if(typeof _node.Param3b !== 'undefined'){
-          linkNode.isActive2Params.Param3 = _node.Param3b.value;
+
+        if(entryStruct.HasField('Param3b')){
+          linkNode.isActive2Params.Param3 = entryStruct.GetFieldByLabel('Param3b').GetValue();
         }
-  
-        if(typeof _node.Param4b !== 'undefined'){
-          linkNode.isActive2Params.Param4 = _node.Param4b.value;
+
+        if(entryStruct.HasField('Param4b')){
+          linkNode.isActive2Params.Param4 = entryStruct.GetFieldByLabel('Param4b').GetValue();
         }
-  
-        if(typeof _node.Param5b !== 'undefined'){
-          linkNode.isActive2Params.Param5 = _node.Param5b.value;
+
+        if(entryStruct.HasField('Param5b')){
+          linkNode.isActive2Params.Param5 = entryStruct.GetFieldByLabel('Param5b').GetValue();
         }
-  
-        if(typeof _node.ParamStrB !== 'undefined'){
-          linkNode.isActive2Params.String = _node.ParamStrB.value;
+
+        if(entryStruct.HasField('ParamStrB')){
+          linkNode.isActive2Params.String = entryStruct.GetFieldByLabel('ParamStrB').GetValue();
         }
-  
-        if(typeof _node.Logic !== 'undefined'){
-          linkNode.Logic = _node.Logic.value;
+
+        if(entryStruct.HasField('Logic')){
+          linkNode.Logic = !!entryStruct.GetFieldByLabel('Logic').GetValue();
         }
-  
-        if(typeof _node.Active !== 'undefined'){
-          linkNode.isActive = NWScript.Load(_node.Active.value);
-          if(linkNode.isActive instanceof NWScriptInstance){
-            linkNode.isActive.name = _node.Active.value;
+
+        if(entryStruct.HasField('Active')){
+          const resref = entryStruct.GetFieldByLabel('Active').GetValue();
+          if(resref){
+            linkNode.isActive = NWScript.Load(resref);
+            if(linkNode.isActive instanceof NWScriptInstance){
+              linkNode.isActive.name = resref;
+            }
           }
         }
-  
-        if(typeof _node.Active2 !== 'undefined'){
-          linkNode.isActive2 = NWScript.Load(_node.Active2.value);
-          if(linkNode.isActive2 instanceof NWScriptInstance){
-            linkNode.isActive2.name = _node.Active.value;
+
+        if(entryStruct.HasField('Active2')){
+          const resref = entryStruct.GetFieldByLabel('Active2').GetValue();
+          if(resref){
+            linkNode.isActive2 = NWScript.Load(resref);
+            if(linkNode.isActive2 instanceof NWScriptInstance){
+              linkNode.isActive2.name = resref;
+            }
           }
         }
-  
-        if(typeof _node.Index !== 'undefined'){
-          linkNode.index = _node.Index.value;
+
+        if(entryStruct.HasField('Index')){
+          linkNode.index = entryStruct.GetFieldByLabel('Index').GetValue();
         }
 
         node.entries.push(linkNode);
@@ -634,30 +702,46 @@ export class DLGNode {
       }
     }
 
-    if(typeof struct.AnimList !== 'undefined'){
-      for(let i = 0; i < struct.AnimList.structs.length; i++){
-        let _node = struct.AnimList.structs[i].fields;
-        node.animations.push({
-          animation: _node.Animation.value,
-          participant: _node.Participant.value.toLowerCase()
-        });
+    if(struct.HasField('AnimList')){
+      const structs = struct.GetFieldByLabel('AnimList').GetChildStructs();
+      for(let i = 0; i < structs.length; i++){
+        let childStruct = structs[i];
+        let animation = {
+          animation: '',
+          participant: '',
+        };
+        
+        if(childStruct.HasField('Animation')){
+          animation.animation = childStruct.GetFieldByLabel('Animation').GetValue();
+        }
+        
+        if(childStruct.HasField('Participant')){
+          animation.participant = childStruct.GetFieldByLabel('Participant').GetValue().toLocaleLowerCase();
+        }
+
+        node.animations.push(animation);
       }
     }
 
-    if(typeof struct.Text !== 'undefined')
-      node.text = struct.Text.value.GetValue();
+    if(struct.HasField('Text')){
+      node.text = (struct.GetFieldByLabel('Text').GetValue() as CExoLocString).GetValue();
+    }
 
-    if(typeof struct.Delay !== 'undefined')
-      node.delay = (struct.Delay.value == 4294967295 ? -1 : struct.Delay.value);
+    if(struct.HasField('Delay')){
+      node.delay = struct.GetFieldByLabel('Delay').GetValue();
+    }
 
-    if(typeof struct.FadeType !== 'undefined')
-      node.fade.type = struct.FadeType.value;
+    if(struct.HasField('FadeType')){
+      node.fade.type = struct.GetFieldByLabel('FadeType').GetValue();
+    }
 
-    if(typeof struct.FadeLength !== 'undefined')
-      node.fade.length = struct.FadeLength.value;
+    if(struct.HasField('FadeLength')){
+      node.fade.length = struct.GetFieldByLabel('FadeLength').GetValue();
+    }
 
-    if(typeof struct.FadeDelay !== 'undefined')
-      node.fade.delay = struct.FadeDelay.value;
+    if(struct.HasField('FadeDelay')){
+      node.fade.delay = struct.GetFieldByLabel('FadeDelay').GetValue();
+    }
 
     return node;
   }
