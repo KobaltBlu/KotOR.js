@@ -395,6 +395,15 @@ export class IngameControls {
       PartyManager.ShiftLeader();
     });
 
+    KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode == EngineMode.FREELOOK){
+        GameState.Mode = EngineMode.INGAME;
+      }else{
+        GameState.Mode = EngineMode.FREELOOK;
+      }
+    });
+
     //Dialog1
     KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;

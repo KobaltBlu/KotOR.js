@@ -276,7 +276,7 @@ export class InGameDialog extends GameMenu {
     entry.initProperties();
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    GameState.VideoEffect = entry.getVideoEffect();
+    GameState.videoEffect = entry.getVideoEffect();
     this.LBL_MESSAGE.setText(entry.getCompiledString());
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
@@ -453,6 +453,7 @@ export class InGameDialog extends GameMenu {
       }
       this.dialog.releaseStuntActors();
     }
+    GameState.videoEffect = -1;
   }
 
   updateEntryAnimations(entry: DLGNode) {

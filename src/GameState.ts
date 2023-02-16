@@ -64,26 +64,29 @@ import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedR
 
 const saturationShader: any = {
   uniforms: {
-    "tDiffuse": { type: "t", value: null },
-    "saturation": { type: "f", value: 1.0 },
+    "tDiffuse": { value: null },
+    "saturation": { value: 1.0 },
+    "modulation": new THREE.Uniform( new THREE.Vector3(1, 1, 1) )
   },
-  vertexShader: [
-    "varying vec2 vUv;",
-    "void main() {",
-      "vUv = uv;",
-      "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
-    "}"
+  vertexShader: [`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }`
   ].join("\n"),
-  fragmentShader: [
-    "uniform sampler2D tDiffuse;",
-    "varying vec2 vUv;",
-    "uniform float saturation;",
-    "void main() {",
-      "vec3 original_color = texture2D(tDiffuse, vUv).rgb;",
-      "vec3 lumaWeights = vec3(.25,.50,.25);",
-      "vec3 grey = vec3(dot(lumaWeights,original_color));",
-      "gl_FragColor = vec4(grey + saturation * (original_color - grey) ,1.0);",
-    "}"
+  fragmentShader: [`
+    uniform sampler2D tDiffuse;
+    varying vec2 vUv;
+    uniform float saturation;
+    uniform vec3 modulation;
+
+    void main() {
+      gl_FragColor = texture2D(tDiffuse, vUv);
+      vec3 lumaWeights = vec3(.25,.50,.25);
+      vec3 grey = vec3( dot( lumaWeights, gl_FragColor.rgb ) );
+      gl_FragColor.rgb = modulation * ( grey + saturation * (gl_FragColor.rgb - grey) );
+    }`
   ].join("\n")
 };
 
@@ -165,7 +168,7 @@ export class GameState implements EngineContext {
   
   static currentGamepad: Gamepad;
   static models: any[];
-  static videoEffect: any;
+  static videoEffect: number = -1;
   static onScreenShot?: Function;
   static time: number;
   static deltaTime: number;
@@ -252,7 +255,6 @@ export class GameState implements EngineContext {
   static renderPass: any;
   static renderPassAA: any;
   static saturationPass: any;
-  static colorPass: any;
   static copyPass: any;
   static renderPassGUI: any;
   static bloomPass: any;
@@ -272,7 +274,6 @@ export class GameState implements EngineContext {
   
   static loadingTextures: boolean;
   static MenuActive: any;
-  static VideoEffect: any;
 
   static ConversationPaused: boolean = false;
 
@@ -308,7 +309,7 @@ export class GameState implements EngineContext {
     
     GameState.models = [];
 
-    GameState.videoEffect = null;
+    GameState.videoEffect = -1;
 
     GameState.activeGUIElement = undefined;
     GameState.hoveredGUIElement = undefined;
@@ -504,7 +505,6 @@ export class GameState implements EngineContext {
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.saturationPass = new ShaderPass(saturationShader);
-    GameState.colorPass = new ShaderPass(ColorCorrectionShader);
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     
@@ -527,15 +527,11 @@ export class GameState implements EngineContext {
     GameState.renderPass.clear = true;
     GameState.bloomPass.clear = false;
     GameState.filmPass.clear = false;
-    GameState.colorPass.clear = false;
     GameState.saturationPass.clear = false;
     GameState.renderPassAA.clear = false;
     GameState.copyPass.clear = false;
     GameState.renderPassGUI.clear = false;
     GameState.renderPassGUI.clearDepth = true;
-
-    GameState.colorPass.uniforms.powRGB.value.set(1, 1, 1);
-    GameState.colorPass.uniforms.mulRGB.value.set(0.5, 0.5, 0.5);
 
     GameState.bokehPass.needsSwap = true;
     GameState.bokehPass.enabled = false;
@@ -543,9 +539,8 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.renderPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
-    // GameState.composer.addPass(GameState.filmPass);
-    // GameState.composer.addPass(GameState.colorPass);
-    // GameState.composer.addPass(GameState.saturationPass);
+    GameState.composer.addPass(GameState.filmPass);
+    GameState.composer.addPass(GameState.saturationPass);
     // GameState.composer.addPass(GameState.bloomPass);
 
     GameState.composer.addPass(GameState.renderPassGUI);
@@ -1176,20 +1171,21 @@ export class GameState implements EngineContext {
   }
 
   static UpdateVideoEffect(){
-    if(!isNaN(parseInt(GameState.videoEffect))){
-      let effect = TwoDAManager.datatables.get('videoeffects').rows[GameState.videoEffect];
+    const videoEffects = TwoDAManager.datatables.get('videoeffects');
+    if(GameState.videoEffect >= 0 && GameState.videoEffect < videoEffects.RowCount){
+      let effect = videoEffects.rows[GameState.videoEffect];
       if(parseInt(effect.enablesaturation)){
         GameState.saturationPass.enabled = true;
-        GameState.colorPass.enabled = true;
         GameState.saturationPass.uniforms.saturation.value = parseFloat(effect.saturation);
-        GameState.colorPass.uniforms.addRGB.value.set(
-          parseFloat(effect.modulationred)-1,
-          parseFloat(effect.modulationgreen)-1,
-          parseFloat(effect.modulationblue)-1
+        GameState.saturationPass.uniforms.modulation.value.set(
+          parseFloat(effect.modulationred),
+          parseFloat(effect.modulationgreen),
+          parseFloat(effect.modulationblue)
         );
       }else{
         GameState.saturationPass.enabled = false;
-        GameState.colorPass.enabled = false;
+        GameState.saturationPass.uniforms.saturation.value = 1;
+        GameState.saturationPass.uniforms.modulation.value.set(1, 1, 1);
       }
 
       if(parseInt(effect.enablescannoise)){
@@ -1204,7 +1200,6 @@ export class GameState implements EngineContext {
     }else{
       GameState.saturationPass.enabled = false;
       GameState.filmPass.enabled = false;
-      GameState.colorPass.enabled = false;
     }
   }
 
@@ -1263,6 +1258,19 @@ export class GameState implements EngineContext {
       if(GameState.Mode == EngineMode.INGAME){
         //Make sure we are using the follower camera while ingame
         GameState.currentCamera = GameState.camera;
+        GameState.videoEffect = -1;
+      }else if(GameState.Mode == EngineMode.FREELOOK){
+        GameState.videoEffect = -1;
+        const player = GameState.getCurrentPlayer();
+        if(player){
+          const appearance = player.getAppearance();
+          if(appearance){
+            const effectId = parseInt(appearance.freelookeffect);
+            if(!isNaN(effectId)){
+              GameState.videoEffect = effectId;
+            }
+          }
+        }
       }
       GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
       GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);

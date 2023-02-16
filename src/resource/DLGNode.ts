@@ -21,7 +21,7 @@ export class DLGNode {
   cameraID: number;
   cameraAnimation: number;
   camFieldOfView: number;
-  camVidEffect: number;
+  camVidEffect: number = -1;
   comment: string;
   delay: number;
   fadeType: number;
@@ -53,7 +53,6 @@ export class DLGNode {
   fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
   speaker: ModuleObject;
   dialog: any;
-  videoEffect: number;
 
   listener: ModuleObject;
   owner: ModuleObject;
@@ -336,8 +335,8 @@ export class DLGNode {
     }
   }
 
-  getVideoEffect(): any {
-    return this.videoEffect == -1 ? null : this.videoEffect
+  getVideoEffect(): number {
+    return this.camVidEffect == -1 ? -1 : this.camVidEffect;
   }
 
   resetChecklist(){

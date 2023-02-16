@@ -5682,7 +5682,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       //console.log('NWScript: '+this.name, 'EnableVideoEffect ', args);
-      GameState.videoEffect = args[0];
+      GameState.videoEffect = !isNaN(args[0]) ? args[0] : -1;
     }
   },
   509:{
@@ -5701,7 +5701,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       //console.log('NWScript: '+this.name, 'DisableVideoEffect ', args);
-      GameState.videoEffect = null;
+      GameState.videoEffect = -1;
     }
   },
   511:{
