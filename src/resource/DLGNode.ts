@@ -1,8 +1,7 @@
-import type { AudioEmitter } from "../audio";
+import { AudioEmitter } from "../audio";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
 import { DLGNodeScriptParams } from "../interface/dialog/DLGNodeScriptParams";
 import { DialogMessageEntry, DialogMessageManager } from "../managers/DialogMessageManager";
 import { FadeOverlayManager } from "../managers/FadeOverlayManager";
@@ -13,9 +12,6 @@ import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { LIPObject } from "./LIPObject";
 import { GFFStruct } from "./GFFStruct";
-import { TLKString } from "./TLKString";
-import { CExoLocString } from "./CExoLocString";
-import { OdysseyModelAnimation } from "../odyssey";
 
 export class DLGNode {
   nodeType: DLGNodeType;
@@ -153,7 +149,7 @@ export class DLGNode {
       this.script.setScriptParam(5, this.scriptParams.Param5);
       this.script.setScriptStringParam(this.scriptParams.String);
       this.script.name = this.script;
-      this.script.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      this.script.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
     }
   }
 
@@ -165,7 +161,7 @@ export class DLGNode {
       this.script2.setScriptParam(4, this.script2Params.Param4);
       this.script2.setScriptParam(5, this.script2Params.Param5);
       this.script2.setScriptStringParam(this.script2Params.String);
-      this.script2.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      this.script2.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
     }
   }
 
@@ -182,7 +178,7 @@ export class DLGNode {
       this.isActive.setScriptParam(4, this.isActiveParams.Param4);
       this.isActive.setScriptParam(5, this.isActiveParams.Param5);
       this.isActive.setScriptStringParam(this.isActiveParams.String);
-      const bSuccess = this.isActive.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      const bSuccess = this.isActive.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
       if(this.isActiveParams.Not){
         return bSuccess ? false : true;
       }else{
@@ -201,7 +197,7 @@ export class DLGNode {
       this.isActive2.setScriptParam(4, this.isActive2Params.Param4);
       this.isActive2.setScriptParam(5, this.isActive2Params.Param5);
       this.isActive2.setScriptStringParam(this.isActive2Params.String);
-      const bSuccess = this.isActive2.run(this.speaker || this.dialog?.owner || MenuManager.InGameDialog.dialog?.owner, 0);
+      const bSuccess = this.isActive2.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
       if(this.isActive2Params.Not){
         return (bSuccess ? false : true);
       }else{
@@ -347,23 +343,23 @@ export class DLGNode {
   resetChecklist(){
     this.checkList = {
       isSkipped: false,
-      cameraAnimationComplete: MenuManager.InGameDialog.dialog.isAnimatedCutscene ? false : true,
+      cameraAnimationComplete: this.dialog.isAnimatedCutscene ? false : true,
       voiceOverComplete: false,
       alreadyAllowed: false,
       fadeComplete: false,
       voiceOverError: false,
-      isComplete: function(): boolean {
-        if (this.alreadyAllowed || this.isSkipped) {
+      isComplete: (): boolean => {
+        if (this.checkList.alreadyAllowed || this.checkList.isSkipped) {
           return false;
         }
-        if (MenuManager.InGameDialog.dialog.isAnimatedCutscene) {
-          if (this.cameraAnimationComplete) {
-            this.alreadyAllowed = true;
+        if (this.dialog.isAnimatedCutscene) {
+          if (this.checkList.cameraAnimationComplete) {
+            this.checkList.alreadyAllowed = true;
             return true;
           }
         } else {
-          if (this.voiceOverComplete && this.fadeComplete) {
-            this.alreadyAllowed = true;
+          if (this.checkList.voiceOverComplete && this.checkList.fadeComplete) {
+            this.checkList.alreadyAllowed = true;
             return true;
           }
         }
@@ -720,7 +716,7 @@ export class DLGNode {
     }
 
     if(struct.HasField('Delay')){
-      node.delay = struct.GetFieldByLabel('Delay').GetValue();
+      node.delay = struct.GetFieldByLabel('Delay').GetValue() & 0xFFFFFFFF;
     }
 
     if(struct.HasField('FadeType')){
@@ -750,6 +746,38 @@ export class DLGNode {
     //}
 
     return text;
+  }
+
+  
+
+  isContinueDialog() {
+    switch(this.nodeType){
+      case DLGNodeType.REPLY:
+        return this.text == '' && this.entries.length == 1;
+      break;
+      case DLGNodeType.ENTRY:
+        return this.text == '' && this.replies.length == 1;
+      break;
+      default: 
+        return this.text == '';
+      break;
+    }
+
+    return false;
+  }
+
+  isEndDialog() {
+    switch(this.nodeType){
+      case DLGNodeType.REPLY:
+        return this.text == '' && !this.entries.length;
+      break;
+      case DLGNodeType.ENTRY:
+        return this.text == '' && !this.replies.length;
+      break;
+      default: 
+        return this.text == '';
+      break;
+    }
   }
 
 }

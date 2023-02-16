@@ -221,6 +221,7 @@ export class InGameComputer extends GameMenu {
   showEntry(entry: DLGNode) {
     this.state = 0;
     entry.initProperties();
+    entry.resetChecklist();
     if (GameState.Mode != EngineMode.DIALOG)
       return;
 
@@ -258,17 +259,20 @@ export class InGameComputer extends GameMenu {
     const replies = this.dialog.getAvailableReplies(entry);
     for (let i = 0; i < replies.length; i++) {
       let reply = replies[i];
-      this.LB_REPLIES.addItem(
-        this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-        (e: any) => {
-          this.onReplySelect(reply);
-        }
-      );
+      if(!this.isContinueDialog(reply)){
+        this.LB_REPLIES.addItem(
+          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
+          (e: any) => {
+            this.onReplySelect(reply);
+          }
+        );
+      }
     }
     this.LB_REPLIES.updateList();
   
     //vo
     entry.playVoiceOver(this.audioEmitter);
+    entry.checkList.voiceOverError = true;
     this.state = 0;
   }
 
