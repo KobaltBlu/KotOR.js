@@ -1,10 +1,13 @@
 import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyController } from "./OdysseyController";
 import * as THREE from "three";
 
 export class SelfIllumColorController extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.SelfIllumColor;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

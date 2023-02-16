@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
+import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
+import { OdysseyController } from "./controllers";
 
 export class OdysseyModelAnimationManager {
   model: OdysseyModel3D;
@@ -95,7 +97,7 @@ export class OdysseyModelAnimationManager {
 
   }
 
-  updateAnimation(anim: any, delta: number = 0){
+  updateAnimation(anim: OdysseyModelAnimation, delta: number = 0){
     this.currentAnimationData.delta = delta;
 
     if(!this.currentAnimationData.elapsedCount) this.currentAnimationData.elapsedCount = 0;
@@ -159,7 +161,7 @@ export class OdysseyModelAnimationManager {
     return true;
   }
 
-  updateAnimationEvents(anim: any){
+  updateAnimationEvents(anim: OdysseyModelAnimation){
 
     if(!anim.events.length)
       return;
@@ -193,7 +195,7 @@ export class OdysseyModelAnimationManager {
     
   }
 
-  updateAnimationNode(anim: any, node: any){
+  updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode){
     this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
 
     if(this.model.userData.moduleObject && this.model.userData.moduleObject.head && this.model.userData.moduleObject.head != this.model){
@@ -215,9 +217,9 @@ export class OdysseyModelAnimationManager {
       let last, next, fl, data, shouldBlend;
       
       //Loop through and animate all the controllers for the current node
-      for(let controller of node.controllers){
+      for(let c of node.controllers){
 
-        controller = controller[1];
+        const controller: OdysseyController = c[1];
 
         /*shouldBlend = false;
 
@@ -288,83 +290,83 @@ export class OdysseyModelAnimationManager {
     }
   }
 
-  updateTransitionNode(anim: any, node: any, tansWeight = 0){
-    this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
+  // updateTransitionNode(anim: any, node: any, tansWeight = 0){
+  //   this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
 
-    if(this.model.userData.moduleObject && this.model.userData.moduleObject.head && this.model.userData.moduleObject.head != this.model){
-      //This if statement is a hack to get around using getObjectByName because it was too expensive
-      //Not sure of the best approach here. This seems to work for now
-      if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
-        this.model.userData.moduleObject.head.animationManager.updateAnimationNode(anim, node);
-    }
+  //   if(this.model.userData.moduleObject && this.model.userData.moduleObject.head && this.model.userData.moduleObject.head != this.model){
+  //     //This if statement is a hack to get around using getObjectByName because it was too expensive
+  //     //Not sure of the best approach here. This seems to work for now
+  //     if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
+  //       this.model.userData.moduleObject.head.animationManager.updateAnimationNode(anim, node);
+  //   }
 
-    if(typeof this.modelNode != 'undefined'){
+  //   if(typeof this.modelNode != 'undefined'){
 
-      if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
-        return;
+  //     if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
+  //       return;
 
-      anim._position.x = anim._position.y = anim._position.z = 0;
-      anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
-      anim._quaternion.w = 1;
+  //     anim._position.x = anim._position.y = anim._position.z = 0;
+  //     anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
+  //     anim._quaternion.w = 1;
 
-      let last, next, fl, data, shouldBlend;
+  //     let last, next, fl, data, shouldBlend;
       
-      //Loop through and animate all the controllers for the current node
-      for(let controller of node.controllers){
+  //     //Loop through and animate all the controllers for the current node
+  //     for(let controller of node.controllers){
 
-        controller = controller[1];
+  //       controller = controller[1];
 
-        /*shouldBlend = false;
+  //       /*shouldBlend = false;
 
-        if(this.currentAnimationData.animation){
-          shouldBlend = parseInt(this.currentAnimationData.animation.looping) || parseInt(this.currentAnimationData.animation.running) || parseInt(this.currentAnimationData.animation.walking);
-        }*/
+  //       if(this.currentAnimationData.animation){
+  //         shouldBlend = parseInt(this.currentAnimationData.animation.looping) || parseInt(this.currentAnimationData.animation.running) || parseInt(this.currentAnimationData.animation.walking);
+  //       }*/
 
-        if(controller.frameCount == 1){
-          controller.setFrame(this, anim, controller, controller.data[0]);
-          continue;
-        }
+  //       if(controller.frameCount == 1){
+  //         controller.setFrame(this, anim, controller, controller.data[0]);
+  //         continue;
+  //       }
           
-        this.lastFrame = 0;
-        for(let f = 0, fc = controller.frameCount; f < fc; f++){
-          if(controller.data[f].time <= this.currentAnimationData.elapsed){
-            this.lastFrame = f;
-          }
-        }
+  //       this.lastFrame = 0;
+  //       for(let f = 0, fc = controller.frameCount; f < fc; f++){
+  //         if(controller.data[f].time <= this.currentAnimationData.elapsed){
+  //           this.lastFrame = f;
+  //         }
+  //       }
 
-        last = controller.data[this.lastFrame];
-        if(last){
+  //       last = controller.data[this.lastFrame];
+  //       if(last){
 
-          //If the model was offscreen last frame pose the lastFrame 
-          //To fix the spaghetti limbs issue
-          if(this.model.wasOffscreen){
-            controller.setFrame(this, anim, controller, last);
-          }
+  //         //If the model was offscreen last frame pose the lastFrame 
+  //         //To fix the spaghetti limbs issue
+  //         if(this.model.wasOffscreen){
+  //           controller.setFrame(this, anim, controller, last);
+  //         }
 
-          next = controller.data[this.lastFrame + 1];
-          fl = 0;
+  //         next = controller.data[this.lastFrame + 1];
+  //         fl = 0;
 
-          if (next) { 
-            fl = Math.abs( (this.currentAnimationData.elapsed - last.time) / (next.time - last.time) ) % 1;
-          }else{
-            fl = 1;
-            next = controller.data[this.lastFrame];
-            last = controller.data[this.lastFrame - 1] || controller.data[this.lastFrame];
-          }
+  //         if (next) { 
+  //           fl = Math.abs( (this.currentAnimationData.elapsed - last.time) / (next.time - last.time) ) % 1;
+  //         }else{
+  //           fl = 1;
+  //           next = controller.data[this.lastFrame];
+  //           last = controller.data[this.lastFrame - 1] || controller.data[this.lastFrame];
+  //         }
           
-          if(fl == Infinity) fl = 1.0;
-          if(isNaN(fl)) fl = 0;
+  //         if(fl == Infinity) fl = 1.0;
+  //         if(isNaN(fl)) fl = 0;
 
-          if(fl > 1) fl = 1;
-          if(fl < 0) fl = 0;
+  //         if(fl > 1) fl = 1;
+  //         if(fl < 0) fl = 0;
 
-          controller.animate(this, anim, controller, last, next, fl);
+  //         controller.animate(this, anim, controller, last, next, fl);
 
-        }
+  //       }
 
-      };
+  //     };
 
-    }
-  }
+  //   }
+  // }
 
 }

@@ -1,10 +1,13 @@
 import { OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNodeLight } from "..";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { OdysseyController } from "./OdysseyController";
 
 export class MultiplierController extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.Multiplier;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

@@ -1,3 +1,4 @@
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
@@ -5,6 +6,8 @@ import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 
 export class P2PBezier3Controller extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.P2P_Bezier3;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

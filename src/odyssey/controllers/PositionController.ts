@@ -7,6 +7,8 @@ import { OdysseyController } from "./OdysseyController";
 
 export class PositionController extends OdysseyController {
 
+  type: OdysseyModelControllerType = OdysseyModelControllerType.Position;
+
   constructor( controller: OdysseyControllerGeneric){
     super(controller);
   }

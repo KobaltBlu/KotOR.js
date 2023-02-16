@@ -1,9 +1,12 @@
 import { OdysseyController } from ".";
 import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 
 export class SizeEndYController extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.SizeEnd_Y;
 
   constructor( controller: OdysseyControllerGeneric ){
     super(controller);

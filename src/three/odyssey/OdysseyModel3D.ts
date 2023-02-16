@@ -19,6 +19,7 @@ import { OdysseyModelMDXFlag } from "../../interface/odyssey/OdysseyModelMDXFlag
 import { OdysseyModelClass } from "../../interface/odyssey/OdysseyModelClass";
 import { ShaderManager } from "../../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
+import { OdysseyController } from "../../odyssey/controllers";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -553,7 +554,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     let modelNode = this.nodes.get(node.name);
 
     if(typeof modelNode != 'undefined'){
-      modelNode.controllers.forEach( (controller: OdysseyControllerGeneric) => {
+      modelNode.controllers.forEach( (controller: OdysseyController) => {
       //for(let cIDX in node.controllers){
 
         //let controller = node.controllers[cIDX];

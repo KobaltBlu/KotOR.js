@@ -539,7 +539,7 @@ export class KeyFrameTimelineComponent extends Component {
       this.tab.currentAnimation.nodes.forEach( (node: OdysseyModelAnimationNode) => {
         let $nodeTrack = $(`<div class="keyframe-track-wrapper node" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;"><i class="fa-regular fa-square"></i> ${node.name}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
         this.$ui_bar_keyframes.append($nodeTrack);
-        node.controllers.forEach( (controller: OdysseyControllerGeneric) => {
+        node.controllers.forEach( (controller: OdysseyController) => {
           let $controllerTrack = $(`<div class="keyframe-track-wrapper controller" style="display: flex;"><div class="track-label" style="width: ${this.timelineOffset}px;"><i class="fa-solid fa-circle"></i> ${OdysseyModelControllerType[controller.type]}</div><div class="track-keyframes" style="position: relative;"></div></div>`);
           if(Array.isArray(controller.data)){
             controller.data.forEach( (frame: any) => {

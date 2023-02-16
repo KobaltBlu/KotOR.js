@@ -1,5 +1,6 @@
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
@@ -7,6 +8,8 @@ import { OdysseyModelNodeLight } from "../OdysseyModelNodeLight";
 import { OdysseyController } from "./OdysseyController";
 
 export class RadiusController extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.Radius;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

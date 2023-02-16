@@ -10,12 +10,16 @@ import * as THREE from "three";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 
 export class OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;
 
   vec3;
   quaternion;
   frameCount: number;
+  data: any[] = [];
 
   constructor( controller: OdysseyControllerGeneric ){
     Object.assign(this, controller);

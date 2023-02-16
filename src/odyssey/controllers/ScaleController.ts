@@ -7,6 +7,8 @@ import { OdysseyController } from "./OdysseyController";
 
 export class ScaleController extends OdysseyController {
 
+  type: OdysseyModelControllerType = OdysseyModelControllerType.Scale;
+
   constructor( controller: OdysseyControllerGeneric){
     super(controller);
   }

@@ -11,7 +11,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   moduleObject: ModuleObject;
   NodeType: number;
   isWalkmesh: boolean;
-  controllers: Map<number, OdysseyControllerGeneric>;
+  controllers: Map<number, OdysseyController>;
   controllerCache: any;
   controllerHelpers: any = {
     hasOrientation: false,

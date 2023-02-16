@@ -1,9 +1,12 @@
 import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyController } from "./OdysseyController";
 
 export class AlphaEndController extends OdysseyController {
+
+  type: OdysseyModelControllerType = OdysseyModelControllerType.AlphaEnd;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

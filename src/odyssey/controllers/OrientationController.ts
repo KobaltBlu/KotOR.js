@@ -7,6 +7,8 @@ import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controlle
 
 export class OrientationController extends OdysseyController {
 
+  type: OdysseyModelControllerType = OdysseyModelControllerType.Orientation;
+
   constructor( controller: OdysseyControllerGeneric){
     super(controller);
   }

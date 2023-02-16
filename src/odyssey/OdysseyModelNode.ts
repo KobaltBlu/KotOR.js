@@ -18,7 +18,7 @@ export class OdysseyModelNode {
   odysseyModel: OdysseyModel;
   childNodes: OdysseyModelNode[] = [];
   childOffsets: number[] = [];
-  controllers: Map<any, any> = new Map();
+  controllers: Map<OdysseyModelControllerType, OdysseyController> = new Map();
 
   roomStatic: boolean = true;
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -421,7 +421,7 @@ export class OdysseyModelNode {
           controller.data[controller.data.length-1].lastFrame = true;
 
         controller = OdysseyController.From(controller);
-        controllers.set(controller.type, controller);
+        controllers.set(controller.type, controller as OdysseyController);
         
       }
 
