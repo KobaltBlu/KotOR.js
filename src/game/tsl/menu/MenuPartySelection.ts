@@ -216,9 +216,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
         if(this.onCloseScript instanceof NWScriptInstance){
           this.Close();
-          this.onCloseScript.runAsync(undefined, 0).then( () => {
-            this.onCloseScript = undefined;
-          });
+          this.onCloseScript.run(undefined, 0);
+          this.onCloseScript = undefined;
         }else{
           this.Close();
         }

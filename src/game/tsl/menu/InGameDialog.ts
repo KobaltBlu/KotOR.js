@@ -57,7 +57,7 @@ export class InGameDialog extends K1_InGameDialog {
       this.topBar = new THREE.Mesh( geometry, material );
       this.bottomBar = new THREE.Mesh( geometry, material );
 
-      this._resetLetterBox();
+      this.resetLetterBox();
 
       this.tGuiPanel.widget.add(this.topBar);
       this.tGuiPanel.widget.add(this.bottomBar);
@@ -65,11 +65,7 @@ export class InGameDialog extends K1_InGameDialog {
     });
   }
 
-  GetActorAnimation(index = 0) {
-    return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
-  }
-
-  GetDialogAnimation(index = 0) {
+  getDialogAnimation(index = 0) {
     console.log('GetDialogAnimation', index);
     if (index >= 1000 && index < 1400) {
       switch (index) {

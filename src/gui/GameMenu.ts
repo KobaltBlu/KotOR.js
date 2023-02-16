@@ -19,31 +19,41 @@ import { EngineMode } from "../enums/engine/EngineMode";
 
 export class GameMenu {
   args: any;
-  _button_a: any;
-  _button_b: any;
-  _button_x: any;
-  _button_y: any;
-  bVisible: boolean;
+
   gui_resref: string;
-  scale: number;
-  enablePositionScaling: boolean = false;
-  isOverlayGUI: boolean;
-  textNeedsUpdate: boolean = false;
+  menuGFF: GFFObject;
+
+  //This is for MenuTop
+  childMenu: GameMenu = undefined;
+
+  tGuiPanel: GUIControl;
+  _button_a: GUIControl = undefined;
+  _button_b: GUIControl = undefined;
+  _button_x: GUIControl = undefined;
+  _button_y: GUIControl = undefined;
   selectedControl: GUIControl;
 
-  background: any;
-  backgroundSprite: any;
-  canCancel: boolean;
-  childMenu: any;
-  activeWidget: any[];
-  tGuiPanel: GUIControl;
-  menuGFF: any;
-  width: any;
-  height: any;
-  voidFill: any;
-  backgroundVoidMaterial: any;
-  backgroundMaterial: any;
-  backgroundVoidSprite: any;
+  //Used for hoverstate tracking
+  activeWidget: GUIControl[] = [];
+
+  bVisible: boolean = false;
+  scale: number = 1;
+  enablePositionScaling: boolean = false;
+  isOverlayGUI: boolean = false;
+  textNeedsUpdate: boolean = false;
+
+  canCancel: boolean = true;
+  width: number = 640;
+  height: number = 480;
+
+  background: string;
+  backgroundSprite: THREE.Mesh;
+  backgroundMaterial: THREE.MeshBasicMaterial;
+
+  voidFill: boolean = false;
+  backgroundVoidSprite: THREE.Mesh;
+  backgroundVoidMaterial: THREE.MeshBasicMaterial;
+
   audioEmitter: AudioEmitter;
 
   engineMode: EngineMode = EngineMode.GUI;
@@ -53,16 +63,6 @@ export class GameMenu {
     this._button_b = undefined;
     this._button_x = undefined;
     this._button_y = undefined;
-
-    this.bVisible = false;
-    this.scale = 1;
-    this.background = null;
-    this.backgroundSprite = new OdysseyObject3D();
-    this.canCancel = true;
-
-    this.childMenu = undefined; //This is for MenuTop
-
-    this.activeWidget = [];//undefined; //Used for hoverstate tracking
   }
 
   async Load(): Promise<GameMenu> {
@@ -94,7 +94,9 @@ export class GameMenu {
             this.tGuiPanel.widget.add(this.backgroundVoidSprite);
           }
   
-          this.tGuiPanel.widget.add(this.backgroundSprite);
+          if(this.backgroundSprite){
+            this.tGuiPanel.widget.add(this.backgroundSprite);
+          }
           
           panelControl.position.x = 0;//tGuiPanel.extent.left - ( (jQuery(window).innerWidth() - tGuiPanel.extent.width) / 2 );
           panelControl.position.y = 0;//-tGuiPanel.extent.top + ( (jQuery(window).innerHeight() - tGuiPanel.extent.height) / 2 );

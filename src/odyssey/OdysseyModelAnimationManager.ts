@@ -1,10 +1,13 @@
 import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
 
 export class OdysseyModelAnimationManager {
   model: OdysseyModel3D;
-  currentAnimation: any;
-  lastAnimation: any;
+  currentAnimation: OdysseyModelAnimation;
+  currentAnimationData: any;
+  lastAnimation: OdysseyModelAnimation;
+  lastAnimationData: any;
   _vec3: THREE.Vector3;
   _quat: THREE.Quaternion;
   _animPosition: THREE.Vector3;
@@ -15,8 +18,12 @@ export class OdysseyModelAnimationManager {
 
   constructor(model: OdysseyModel3D){
     this.model = model;
+
     this.currentAnimation = undefined;
+    this.currentAnimationData = {};
+
     this.lastAnimation = undefined;
+    this.lastAnimationData = {};
 
     this._vec3 = new THREE.Vector3();
     this._quat = new THREE.Quaternion();
@@ -37,16 +44,17 @@ export class OdysseyModelAnimationManager {
 
     if(this.currentAnimation && this.currentAnimation.type == 'OdysseyModelAnimation'){
       if(this.model.bonesInitialized){
-        this.updateAnimation(this.currentAnimation, delta, () => {
-          if(!this.currentAnimation.data.loop){
+        if(!this.updateAnimation(this.currentAnimation, delta)){
+          if(!this.currentAnimationData.loop){
             this.model.stopAnimation();
           }else{
             if(this.currentAnimation){
               this.lastAnimation = this.currentAnimation;
+              this.lastAnimationData = this.currentAnimationData;
             }
-            this.currentAnimation.data.events = [];
+            this.currentAnimationData.events = [];
           }
-        });
+        }
       }
     }
 
@@ -87,10 +95,10 @@ export class OdysseyModelAnimationManager {
 
   }
 
-  updateAnimation(anim: any, delta: number = 0, onEnd?: Function){
-    anim.data.delta = delta;
+  updateAnimation(anim: any, delta: number = 0){
+    this.currentAnimationData.delta = delta;
 
-    if(!anim.data.elapsedCount) anim.data.elapsedCount = 0;
+    if(!this.currentAnimationData.elapsedCount) this.currentAnimationData.elapsedCount = 0;
 
     this.trans = (anim.transition && this.lastAnimation && this.lastAnimation.name != anim.name);
     this.lastFrame = 0;
@@ -106,30 +114,30 @@ export class OdysseyModelAnimationManager {
     }
 
     // if(this.lastAnimation && (this.lastAnimation.transition < 1)){
-    //   if(this.lastAnimation.length * this.lastAnimation.transition < anim.data.elapsed){
+    //   if(this.lastAnimation.length * this.lastAnimation.transition < this.currentAnimationData.elapsed){
     //     if(this.model.animateFrame){
-    //       let transWeight = anim.data.elapsed / (this.lastAnimation.length * this.lastAnimation.transition);
+    //       let transWeight = this.currentAnimationData.elapsed / (this.lastAnimation.length * this.lastAnimation.transition);
     //       for(let i = 0, nl = this.lastAnimation.nodes.length; i < nl; i++){
     //         this.updateTransitionNode(this.lastAnimation, this.lastAnimation.nodes[i], transWeight);
     //       }
     //     }
-    //     this.lastAnimation.data.lastTime = this.lastAnimation.data.elapsed;
-    //     this.lastAnimation.data.elapsed += delta;
+    //     this.this.lastAnimationData.lastTime = this.this.lastAnimationData.elapsed;
+    //     this.this.lastAnimationData.elapsed += delta;
 
-    //     if(this.lastAnimation.data.elapsed >= this.lastAnimation.length){
-    //       this.lastAnimation.data.elapsed = 0;
+    //     if(this.this.lastAnimationData.elapsed >= this.lastAnimation.length){
+    //       this.this.lastAnimationData.elapsed = 0;
     //     }
     //   }
     // }
 
     //this.updateAnimationNode(anim, anim.rooNode);
-    anim.data.lastTime = anim.data.elapsed;
-    anim.data.elapsed += delta;
+    this.currentAnimationData.lastTime = this.currentAnimationData.elapsed;
+    this.currentAnimationData.elapsed += delta;
 
-    if(anim.data.elapsed >= anim.length){
+    if(this.currentAnimationData.elapsed >= anim.length){
 
-      if(anim.data.elapsed > anim.length){
-        anim.data.elapsed = anim.length;
+      if(this.currentAnimationData.elapsed > anim.length){
+        this.currentAnimationData.elapsed = anim.length;
         this.updateAnimationEvents(anim);
         //Update animation nodes if the model is being rendered
         if(this.model.animateFrame){
@@ -139,19 +147,16 @@ export class OdysseyModelAnimationManager {
         }
       }
 
-      anim.data.lastTime = anim.length;
-      anim.data.elapsed = 0;
-      anim.data.elapsedCount++;
+      this.currentAnimationData.lastTime = anim.length;
+      this.currentAnimationData.elapsed = 0;
+      this.currentAnimationData.elapsedCount++;
 
-      if(typeof anim.data.callback === 'function')
-        anim.data.callback();
+      if(typeof this.currentAnimationData.callback === 'function')
+        this.currentAnimationData.callback();
 
-      if(typeof onEnd == 'function')
-        onEnd();
-
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
 
   updateAnimationEvents(anim: any){
@@ -159,29 +164,29 @@ export class OdysseyModelAnimationManager {
     if(!anim.events.length)
       return;
 
-    if(!anim.data.events){
-      anim.data.events = [];
+    if(!this.currentAnimationData.events){
+      this.currentAnimationData.events = [];
     }
 
     for(let f = 0, el = anim.events.length; f < el; f++){
 
-      if(anim.events[f].length <= anim.data.elapsed && !anim.data.events[f]){
+      if(anim.events[f].length <= this.currentAnimationData.elapsed && !this.currentAnimationData.events[f]){
         this.model.playEvent(anim.events[f].name, f);
-        anim.data.events[f] = true;
+        this.currentAnimationData.events[f] = true;
       }
 
       /*let last = 0;
-      if(anim.events[f].length <= anim.data.elapsed){
+      if(anim.events[f].length <= this.currentAnimationData.elapsed){
         last = f;
       }
 
       let next = last + 1;
-      if (last + 1 >= anim.events.length || anim.events[last].length >= anim.data.elapsed) {
+      if (last + 1 >= anim.events.length || anim.events[last].length >= this.currentAnimationData.elapsed) {
         next = 0
       }
   
-      if(next != anim.data.lastEvent){
-        anim.data.lastEvent = next;
+      if(next != this.currentAnimationData.lastEvent){
+        this.currentAnimationData.lastEvent = next;
         this.playEvent(anim.events[next].name);
       }*/
     }
@@ -216,8 +221,8 @@ export class OdysseyModelAnimationManager {
 
         /*shouldBlend = false;
 
-        if(anim.data.animation){
-          shouldBlend = parseInt(anim.data.animation.looping) || parseInt(anim.data.animation.running) || parseInt(anim.data.animation.walking);
+        if(this.currentAnimationData.animation){
+          shouldBlend = parseInt(this.currentAnimationData.animation.looping) || parseInt(this.currentAnimationData.animation.running) || parseInt(this.currentAnimationData.animation.walking);
         }*/
 
         if(controller.frameCount == 1){
@@ -230,13 +235,13 @@ export class OdysseyModelAnimationManager {
           continue;
         }
           
-        if( (!anim.data.elapsed) /*&& !shouldBlend*/ ){
+        if( (!this.currentAnimationData.elapsed) /*&& !shouldBlend*/ ){
           controller.setFrame(this, anim, controller, controller.data[0]);
         }else{
 
           this.lastFrame = 0;
           for(let f = 0, fc = controller.frameCount; f < fc; f++){
-            if(controller.data[f].time <= anim.data.elapsed){
+            if(controller.data[f].time <= this.currentAnimationData.elapsed){
               this.lastFrame = f;
             }
           }
@@ -254,7 +259,7 @@ export class OdysseyModelAnimationManager {
             fl = 0;
 
             if (next) { 
-              fl = Math.abs( (anim.data.elapsed - last.time) / (next.time - last.time) ) % 1;
+              fl = Math.abs( (this.currentAnimationData.elapsed - last.time) / (next.time - last.time) ) % 1;
             }else{
               fl = 1;
               next = controller.data[this.lastFrame];
@@ -262,7 +267,7 @@ export class OdysseyModelAnimationManager {
             }
 
             //Make sure the last frame has already begun.
-            if(anim.data.elapsed < last.time){
+            if(this.currentAnimationData.elapsed < last.time){
               fl = 0;
             }
             
@@ -311,8 +316,8 @@ export class OdysseyModelAnimationManager {
 
         /*shouldBlend = false;
 
-        if(anim.data.animation){
-          shouldBlend = parseInt(anim.data.animation.looping) || parseInt(anim.data.animation.running) || parseInt(anim.data.animation.walking);
+        if(this.currentAnimationData.animation){
+          shouldBlend = parseInt(this.currentAnimationData.animation.looping) || parseInt(this.currentAnimationData.animation.running) || parseInt(this.currentAnimationData.animation.walking);
         }*/
 
         if(controller.frameCount == 1){
@@ -322,7 +327,7 @@ export class OdysseyModelAnimationManager {
           
         this.lastFrame = 0;
         for(let f = 0, fc = controller.frameCount; f < fc; f++){
-          if(controller.data[f].time <= anim.data.elapsed){
+          if(controller.data[f].time <= this.currentAnimationData.elapsed){
             this.lastFrame = f;
           }
         }
@@ -340,7 +345,7 @@ export class OdysseyModelAnimationManager {
           fl = 0;
 
           if (next) { 
-            fl = Math.abs( (anim.data.elapsed - last.time) / (next.time - last.time) ) % 1;
+            fl = Math.abs( (this.currentAnimationData.elapsed - last.time) / (next.time - last.time) ) % 1;
           }else{
             fl = 1;
             next = controller.data[this.lastFrame];

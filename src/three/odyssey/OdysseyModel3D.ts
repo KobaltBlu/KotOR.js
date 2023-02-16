@@ -250,6 +250,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   update(delta: number = 0){
 
+    if((GameState.debug as any).disableAnimation) return;
+
     //BEGIN: Animation Optimization
     this.animateFrame = true;
     if(this.userData.moduleObject instanceof ModuleCreature){
@@ -360,34 +362,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  playAnimation = function(anim?: any, inData: any = {}, callback?: Function){
-    let data: any = {};
-    if(typeof inData == 'object'){
-      data = Object.assign({
-        loop: false,
-        blend: true,
-        cFrame: 0,
-        elapsed: 0,
-        lastTime: 0,
-        length: 0,
-        delta: 0,
-        lastEvent: -1,
-        events: [],
-        callback: callback
-      }, inData);
-    }else{
-      data = {
-        loop: inData ? true : false,
-        blend: true,
-        cFrame: 0,
-        elapsed: 0,
-        lastTime: 0,
-        delta: 0,
-        lastEvent: -1,
-        events: [],
-        callback: callback
-      };
-    }
+  playAnimation = function(anim?: any, loop: boolean = false, callback?: Function){
+    let data: any = {
+      loop: loop,
+      blend: true,
+      cFrame: 0,
+      elapsed: 0,
+      lastTime: 0,
+      delta: 0,
+      lastEvent: -1,
+      events: [],
+      callback: callback
+    };
 
     if(this.animationManager.currentAnimation){
       this.animationManager.lastAnimation = this.animationManager.currentAnimation;
@@ -402,7 +388,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     if(typeof this.animationManager.currentAnimation != 'undefined'){
-      this.animationManager.currentAnimation.data = data;
+      this.animationManager.currentAnimationData = data;
       if(!this.animationManager.lastAnimation){
         this.animationManager.lastAnimation = this.animationManager.currentAnimation;
       }
@@ -410,7 +396,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       const animations2DA = TwoDAManager.datatables.get('animations');
       for(let i = 0, len = animations2DA.rows.length; i < len; i++){
         if(animations2DA.rows[i].name == this.animationManager.currentAnimation.name){
-          this.animationManager.currentAnimation.data.animation = animations2DA.rows[i];
+          this.animationManager.currentAnimationData.animation = animations2DA.rows[i];
           break;
         }
       }
@@ -422,7 +408,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   stopAnimation(){
     //this.pose();
     if(typeof this.animationManager.currentAnimation != 'undefined'){
-      this.animationManager.currentAnimation.data = {
+      this.animationManager.currentAnimationData = {
         loop: false,
         cFrame: 0,
         elapsed: 0,

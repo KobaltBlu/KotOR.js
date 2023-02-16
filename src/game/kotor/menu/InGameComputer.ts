@@ -16,6 +16,7 @@ import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 import { DLGObject } from "../../../resource/DLGObject";
 import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 
 /* @file
 * The InGameComputer menu class.
@@ -43,20 +44,18 @@ export class InGameComputer extends GameMenu {
   LBL_REP_UNITS_VAL: GUILabel;
   LB_MESSAGE: GUIListBox;
   LBL_OBSCURE: GUILabel;
+
   owner: ModuleObject;
-  listener: any;
-  paused: boolean;
-  ended: boolean;
+  listener: ModuleObject;
+  
+  ended: boolean = false;
+
   dialog: DLGObject;
   currentEntry: DLGNode;
-  vo_id: string;
+  startingEntry: DLGNode;
+
   isListening: boolean;
-  onEndConversationAbort: any;
-  onEndConversation: any;
-  isAnimatedCutscene: boolean;
-  ambientTrack: any;
-  state: number;
-  startingEntry: any;
+  state: number = 0;
 
   conversation_name: string = '';
 
@@ -64,7 +63,7 @@ export class InGameComputer extends GameMenu {
     super();
     this.gui_resref = 'computer';
     this.background = '1600x1200comp0';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async MenuControlInitializer(skipInit: boolean = false) {
@@ -75,22 +74,12 @@ export class InGameComputer extends GameMenu {
     });
   }
 
-  Hide() {
-    super.Hide();
-    GameState.currentCamera = GameState.camera;
-  }
-
-  Show() {
-    super.Show();
-  }
-
   StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
     this.LB_MESSAGE.clearItems();
     this.LB_REPLIES.clearItems();
     this.Open();
     this.owner = owner;
     this.listener = listener;
-    this.paused = false;
     this.ended = false;
     this.currentEntry = null;
     if (this.owner == GameState.player) {
@@ -99,14 +88,12 @@ export class InGameComputer extends GameMenu {
       this.owner = old_listener;
     }
     GameState.Mode = EngineMode.DIALOG;
-    this.vo_id = '';
     this.isListening = true;
-    this.LB_REPLIES.hide();
+    this.LB_REPLIES.show();
     if (dialog instanceof DLGObject) {
       let result = this.loadDialog(dialog);
       if(!result) return;
       this.isListening = true;
-      this.updateTextPosition();
       this.startingEntry = null;
       this.getNextEntry(this.dialog.startingList, async (entry: any) => {
         this.startingEntry = entry;
@@ -158,9 +145,19 @@ export class InGameComputer extends GameMenu {
     if (!this.dialog)
       return;
 
-    if(this.paused) return;
+    if(GameState.ConversationPaused) return;
+
+    MenuManager.InGameComputerCam.Hide();
+    MenuManager.InGameComputer.Show();
+    GameState.currentCamera = GameState.camera_dialog;
 
     if(this.currentEntry){
+      if(this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
+        MenuManager.InGameComputer.Hide();
+        MenuManager.InGameComputerCam.Show();
+        MenuManager.InGameComputerCam.Update(delta);
+        GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
+      }
       if(this.currentEntry.update(delta)){
         this.showReplies(this.currentEntry);
       }
@@ -175,7 +172,6 @@ export class InGameComputer extends GameMenu {
       return;
     }
     this.isListening = true;
-    this.updateTextPosition();
     let entryIndex = this.dialog.getNextEntryIndex(entryLinks);
     let entry = this.dialog.getEntryByIndex(entryIndex);
     if (entry) {
@@ -229,17 +225,24 @@ export class InGameComputer extends GameMenu {
       return;
 
     //Computer Screen Message
+    this.LB_MESSAGE.show();
     this.LB_MESSAGE.clearItems();
     this.LB_MESSAGE.addItem(entry.getCompiledString());
+    this.LB_MESSAGE.updateList();
 
     //User Reply Options
-    this.LB_REPLIES.hide();
+    this.LB_REPLIES.show();
     this.LB_REPLIES.clearItems();
 
-    this.updateTextPosition();
     this.currentEntry = entry;
 
     entry.updateJournal();
+
+    if(entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
+      MenuManager.InGameComputer.Hide();
+      MenuManager.InGameComputerCam.Show();
+      GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
+    }
 
     //Node Delay
     let nodeDelay = 3000;
@@ -248,47 +251,25 @@ export class InGameComputer extends GameMenu {
     }
     entry.setNodeDelay(nodeDelay);
 
-    this.getAvailableReplies(entry);
-    
-    // if (entry.speakerTag != '') {
-    //   entry.speaker = ModuleObjectManager.GetObjectByTag(entry.speakerTag);
-    // } else {
-    //   entry.speaker = this.owner;
-    // }
-    // if (entry.listenerTag != '') {
-    //   if (entry.listenerTag == 'PLAYER') {
-    //     this.listener = GameState.player;
-    //   } else {
-    //     this.listener = ModuleObjectManager.GetObjectByTag(entry.listenerTag);
-    //   }
-    // } else {
-    //   entry.listener = GameState.player;
-    // }
-
     //scripts
     entry.runScripts();
+    
+    //replies
+    const replies = this.dialog.getAvailableReplies(entry);
+    for (let i = 0; i < replies.length; i++) {
+      let reply = replies[i];
+      this.LB_REPLIES.addItem(
+        this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
+        (e: any) => {
+          this.onReplySelect(reply);
+        }
+      );
+    }
+    this.LB_REPLIES.updateList();
   
     //vo
     entry.playVoiceOver(this.audioEmitter);
     this.state = 0;
-  }
-  
-  getAvailableReplies(entry: DLGNode) {
-    let replyLinks = entry.getActiveReplies();
-    for (let i = 0; i < replyLinks.length; i++) {
-      let reply = this.dialog.getReplyByIndex(replyLinks[i]);
-      if (reply) {
-        this.LB_REPLIES.addItem(
-          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-          (e: any) => {
-            this.onReplySelect(reply);
-          }
-        );
-      } else {
-        console.warn('getAvailableReplies() Failed to find reply at index: ' + replyLinks[i]);
-      }
-    }
-    this.LB_REPLIES.updateList();
   }
 
    showReplies(entry: DLGNode) {
@@ -319,20 +300,8 @@ export class InGameComputer extends GameMenu {
       this.endConversation();
       return;
     }
-    // try {
-    //   if(this.getCurrentOwner() instanceof ModuleCreature){
-    //     (this.getCurrentOwner() as ModuleCreature).dialogPlayAnimation('listen', true);
-    //   }
-    // } catch (e: any) {
-    // }
-    // try {
-    //   if(this.getCurrentListener() instanceof ModuleCreature){
-    //     (this.getCurrentListener() as ModuleCreature).dialogPlayAnimation('listen', true);
-    //   }
-    // } catch (e: any) {
-    // }
+    
     this.isListening = false;
-    this.updateTextPosition();
     this.LB_REPLIES.show();
     this.LB_REPLIES.updateList();
     // this.UpdateCamera();
@@ -356,7 +325,6 @@ export class InGameComputer extends GameMenu {
     }
     this.audioEmitter.Stop();
     this.Close();
-    GameState.currentCamera = GameState.camera;
     this.state = -1;
     if(this.dialog){
       if (!aborted) {
@@ -368,22 +336,6 @@ export class InGameComputer extends GameMenu {
           this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
         }
       }
-    }
-  }
-
-  updateTextPosition() {
-    if (typeof this.LB_MESSAGE.text.geometry !== 'undefined') {
-      this.LB_MESSAGE.text.geometry.computeBoundingBox();
-      let bb = this.LB_MESSAGE.text.geometry.boundingBox;
-      let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
-      let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
-      let padding = 10;
-      if (this.isListening) {
-        this.LB_MESSAGE.widget.position.y = -window.innerHeight / 2 + (100 - height);
-      } else {
-        this.LB_MESSAGE.widget.position.y = window.innerHeight / 2 - (100 - height / 2);
-      }
-      this.LB_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LB_MESSAGE.widget.position.x - width / 2, this.LB_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LB_MESSAGE.widget.position.x + width / 2, this.LB_MESSAGE.widget.position.y + height / 2));
     }
   }
 

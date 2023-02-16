@@ -54,17 +54,5 @@ export class MenuMap extends K1_MenuMap {
       this.texture = texture;
     });
   }
-
-  Update(delta: number = 0): void {
-    if(this.texture instanceof THREE.Texture){
-      this.texture.offset.set(0, 0);
-      this.texture.repeat.set(1, 1);
-      this.texture.updateMatrix();
-    }
-  }
-
-  Show() {
-    super.Show();
-  }
   
 }

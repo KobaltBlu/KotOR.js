@@ -499,7 +499,7 @@ export class IngameControls {
       }
       
       //Computer
-      else if(MenuManager.InGameComputer.bVisible && MenuManager.InGameComputer.isListening){
+      else if( (MenuManager.InGameComputer.bVisible || MenuManager.InGameComputerCam.bVisible) && MenuManager.InGameComputer.isListening){
         if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
           MenuManager.InGameComputer.playerSkipEntry(MenuManager.InGameComputer.currentEntry);
         }else if(Mouse.leftClick){
@@ -508,9 +508,9 @@ export class IngameControls {
       }
 
       //Computer Camera
-      else if(MenuManager.InGameComputerCam.bVisible){
-        MenuManager.InGameComputerCam.Close();
-      }
+      // else if(MenuManager.InGameComputerCam.bVisible){
+      //   MenuManager.InGameComputerCam.Close();
+      // }
     });
 
     //DialogAbort

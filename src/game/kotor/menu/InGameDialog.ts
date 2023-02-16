@@ -21,6 +21,8 @@ import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
 import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 import { DLGNode } from "../../../resource/DLGNode";
 import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAnimState";
+import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
+import { OdysseyModelAnimation } from "../../../odyssey";
 
 /* @file
 * The InGameDialog menu class.
@@ -42,14 +44,19 @@ export class InGameDialog extends GameMenu {
   unequipHeadItem: boolean;
   unequipItems: boolean;
   isListening: boolean;
+
+  //letterbox
   canLetterbox: boolean;
   letterBoxed: boolean;
+  topBar: THREE.Mesh;
+  bottomBar: THREE.Mesh;
 
-  topBar: any;
-  bottomBar: any;
   startingEntry: DLGNode;
   conversation_name: string;
   barHeight: any;
+
+  currentCameraAnimation: OdysseyModelAnimation;
+  currentCameraAnimationElapsed: number = 0;
 
   constructor(){
     super();
@@ -72,22 +79,17 @@ export class InGameDialog extends GameMenu {
 
       this.barHeight = 100;
 
-      let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      const material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
       this.topBar = new THREE.Mesh( geometry, material );
       this.bottomBar = new THREE.Mesh( geometry, material );
 
-      this._resetLetterBox();
+      this.resetLetterBox();
 
       this.tGuiPanel.widget.add(this.topBar);
       this.tGuiPanel.widget.add(this.bottomBar);
       resolve();
     });
-  }
-
-  Hide() {
-    super.Hide();
-    GameState.currentCamera = GameState.camera;
   }
 
   getCurrentListener(): ModuleObject {
@@ -105,6 +107,7 @@ export class InGameDialog extends GameMenu {
   }
 
   StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
+    this.currentCameraAnimation = undefined;
     this.LBL_MESSAGE.setText(' ');
     this.LB_REPLIES.clearItems();
     this.Open();
@@ -127,7 +130,7 @@ export class InGameDialog extends GameMenu {
     this.letterBoxed = false;
     this.topBar.position.y = window.innerHeight / 2 + 100 / 2;
     this.bottomBar.position.y = -this.topBar.position.y;
-    this._resetLetterBox();
+    this.resetLetterBox();
     this.LB_REPLIES.hide();
     if (!dialog) {
       dialog = this.owner.getConversation();
@@ -151,7 +154,7 @@ export class InGameDialog extends GameMenu {
             reply.runScripts();
           }
         } else {
-          if (this.startingEntry.cameraAngle == 6) {
+          if (this.startingEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
             this.setPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
           } else {
             GameState.currentCamera = GameState.camera_dialog;
@@ -305,6 +308,29 @@ export class InGameDialog extends GameMenu {
     entry.setNodeDelay(nodeDelay);
 
     //Node camera
+    this.setNodeCamera(entry);
+
+    //scripts
+    entry.runScripts();
+
+    //replies
+    const replies = this.dialog.getAvailableReplies(entry);
+    for (let i = 0; i < replies.length; i++) {
+      let reply = replies[i];
+      this.LB_REPLIES.addItem(
+        this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
+        (e: any) => {
+          this.onReplySelect(reply);
+        }
+      );
+    }
+    this.LB_REPLIES.updateList();
+
+    //vo
+    entry.playVoiceOver(this.audioEmitter);
+  }
+
+  setNodeCamera(entry: DLGNode){
     if (entry.camFieldOfView != -1) {
       GameState.camera_animated.fov = entry.camFieldOfView;
     }
@@ -314,47 +340,29 @@ export class InGameDialog extends GameMenu {
     } else {
       GameState.currentCamera = GameState.getCameraById(entry.cameraID);
     }
-    this.getAvailableReplies(entry);
-    if (this.dialog.isAnimatedCutscene && (entry.cameraAngle == 4 || this.dialog.animatedCameraResRef)) {
+    if (
+      this.dialog.isAnimatedCutscene && 
+      (
+        entry.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA || 
+        this.dialog.animatedCamera
+      )
+    ) {
       if (entry.cameraAnimation > -1) {
         entry.checkList.cameraAnimationComplete = false;
-        this.setAnimatedCamera(entry.cameraAnimation, () => {
-          entry.checkList.cameraAnimationComplete = true;
-          if (entry.checkList.isComplete()) {
-            this.showReplies(entry);
-          }
-        });
+        this.setAnimatedCamera(entry.cameraAnimation);
+        const animationName = this.getCUTAnimationName(entry.cameraAnimation);
+        this.currentCameraAnimation = this.dialog.animatedCamera.getAnimationByName(animationName);
+        this.dialog.animatedCamera.animationManager.currentAnimation = this.currentCameraAnimation;
+        this.dialog.animatedCamera.animationManager.currentAnimationData = {elapsed: 0, loop: false};
+      }else{
+        entry.checkList.cameraAnimationComplete = true;
       }
-    } else if (entry.cameraAngle == 6) {
-      this.setPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);//, entry.cameraAngle);
+    } else if (entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
+      this.setPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);
     } else {
       GameState.currentCamera = GameState.camera_dialog;
       this.updateCamera();
     }
-
-    //scripts
-    entry.runScripts();
-
-    //vo
-    entry.playVoiceOver(this.audioEmitter);
-  }
-
-  getAvailableReplies(entry: DLGNode) {
-    let replyLinks = entry.getActiveReplies();
-    for (let i = 0; i < replyLinks.length; i++) {
-      let reply = this.dialog.getReplyByIndex(replyLinks[i]);
-      if (reply) {
-        this.LB_REPLIES.addItem(
-          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-          (e: any) => {
-            this.onReplySelect(reply);
-          }
-        );
-      } else {
-        console.warn('getAvailableReplies() Failed to find reply at index: ' + replyLinks[i]);
-      }
-    }
-    this.LB_REPLIES.updateList();
   }
 
   onReplySelect(reply: DLGNode) {
@@ -455,7 +463,7 @@ export class InGameDialog extends GameMenu {
           try {
             const actor = this.dialog.stuntActors.get(participant.participant);
             if(actor.moduleObject instanceof ModuleCreature){
-              const animationName = this.getActorAnimation(participant.animation);
+              const animationName = this.getCUTAnimationName(participant.animation);
               const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
               if(odysseyAnimation){
                 actor.moduleObject.dialogPlayOdysseyAnimation(odysseyAnimation);
@@ -507,7 +515,7 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  getActorAnimation(index = 0) {
+  getCUTAnimationName(index = 0) {
     return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
   }
 
@@ -518,108 +526,47 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  setAnimatedCamera(nCamera: number, onComplete?: Function) {
+  setAnimatedCamera(nCamera: number) {
     if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
-      this.dialog.animatedCamera.playAnimation(
-        this.getActorAnimation(nCamera), false, 
-        () => {
-          if (typeof onComplete === 'function')
-            onComplete();
-        }
-      );
-      return;
+      this.currentCameraAnimation = this.dialog.animatedCamera.getAnimationByName(this.getCUTAnimationName(nCamera));
+      if(this.currentCameraAnimation){
+
+      }
     }
   }
 
   updateCamera() {
-    if (!this.dialog)
-      return;
+    if (!this.dialog) return;
+
     if (this.dialog.isAnimatedCutscene && this.dialog.animatedCamera instanceof OdysseyModel3D) {
       GameState.currentCamera = GameState.camera_animated;
       return;
     }
+
     if (this.isListening) {
       if (this.currentEntry) {
-        if (this.currentEntry.cameraAngle == 6) {
+        if (
+          this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA
+        ) {
           this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);//, this.startingEntry.cameraAngle);
-        }else if (this.currentEntry.cameraAngle == 4 && this.dialog.animatedCamera instanceof OdysseyModel3D) {
+        }else if (
+          this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA && 
+          this.dialog.animatedCamera instanceof OdysseyModel3D
+        ) {
           this.setAnimatedCamera(this.currentEntry.cameraAnimation);
           GameState.currentCamera = GameState.camera_animated;
         } else {
           GameState.currentCamera = GameState.camera_dialog;
-          if (this.currentEntry.cameraAngle == 1 && this.currentEntry.listener instanceof ModuleObject) {
-            let position = this.currentEntry.speaker.position.clone();
-            let lposition = this.currentEntry.listener.position.clone();
-            let lookAt = this.currentEntry.speaker.position.clone();
-            if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
-              if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
-                lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-                position = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-              } else {
-                position.add({
-                  x: 0,
-                  y: 0,
-                  z: this.currentEntry.speaker.getCameraHeight()
-                } as THREE.Vector3);
-              }
-            }
-            if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
-              if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
-                lposition = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
-              } else {
-                lposition.add(
-                  new THREE.Vector3(
-                    0, 0, this.currentEntry.listener.getCameraHeight()
-                  )
-                );
-              }
-            }
-            position.add({
-              x: -0.5,
-              y: 0.25,
-              z: 0
-            } as THREE.Vector3);
-            let AxisFront = new THREE.Vector3();
-            let tangent = lookAt.clone().sub(lposition.clone());
-            let atan = Math.atan2(-tangent.y, -tangent.x);
-            AxisFront.x = Math.cos(atan);
-            AxisFront.y = Math.sin(atan);
-            AxisFront.normalize();
-            position.add(AxisFront);
-            GameState.camera_dialog.position.copy(position);
-            GameState.camera_dialog.lookAt(lookAt);
-          } else if (this.currentEntry.cameraAngle == 2 && this.currentEntry.listener instanceof ModuleObject) {
-            let position = this.currentEntry.listener.position.clone();
-            let lookAt = this.currentEntry.speaker.position.clone();
-            if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
-              if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
-                lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-                lookAt.add({
-                  x: 0,
-                  y: 0,
-                  z: 0.5
-                } as THREE.Vector3);
-              } else {
-                position.add(new THREE.Vector3(0, 0, 1.5));
-              }
-            }
-            if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
-              if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
-                position = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
-              } else {
-                position.add(new THREE.Vector3(0, 0, 1.5));
-              }
-            }
-            position.add(new THREE.Vector3(-1, 1, 0));
-            let AxisFront = new THREE.Vector3();
-            let tangent = lookAt.clone().sub(position.clone());
-            let atan = Math.atan2(-tangent.y, -tangent.x);
-            AxisFront.x = Math.cos(atan);
-            AxisFront.y = Math.sin(atan);
-            AxisFront.normalize();
-            position.add(AxisFront);
-            GameState.camera_dialog.position.copy(position);
-            GameState.camera_dialog.lookAt(lookAt);
+          if (
+            this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_SPEAKER && 
+            this.currentEntry.listener instanceof ModuleObject
+          ) {
+            this.setCameraAngleSpeaker();
+          } else if (
+            this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER && 
+            this.currentEntry.listener instanceof ModuleObject
+          ) {
+            this.setCameraAngleSpeakerBehindPlayer();
           } else {
             let position = this.currentEntry.speaker.position.clone().sub(new THREE.Vector3(1 * Math.cos(this.currentEntry.speaker.rotation.z - Math.PI / 1.5), 1 * Math.sin(this.currentEntry.speaker.rotation.z - Math.PI / 1.5), -1.75));
             GameState.camera_dialog.position.set(position.x, position.y, position.z);
@@ -654,6 +601,83 @@ export class InGameDialog extends GameMenu {
     }
   }
 
+  setCameraAngleSpeaker(){
+    let position = this.currentEntry.speaker.position.clone();
+    let lposition = this.currentEntry.listener.position.clone();
+    let lookAt = this.currentEntry.speaker.position.clone();
+    if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
+      if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
+        lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+        position = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+      } else {
+        position.add({
+          x: 0,
+          y: 0,
+          z: this.currentEntry.speaker.getCameraHeight()
+        } as THREE.Vector3);
+      }
+    }
+    if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
+      if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
+        lposition = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
+      } else {
+        lposition.add(
+          new THREE.Vector3(
+            0, 0, this.currentEntry.listener.getCameraHeight()
+          )
+        );
+      }
+    }
+    position.add({
+      x: -0.5,
+      y: 0.25,
+      z: 0
+    } as THREE.Vector3);
+    let AxisFront = new THREE.Vector3();
+    let tangent = lookAt.clone().sub(lposition.clone());
+    let atan = Math.atan2(-tangent.y, -tangent.x);
+    AxisFront.x = Math.cos(atan);
+    AxisFront.y = Math.sin(atan);
+    AxisFront.normalize();
+    position.add(AxisFront);
+    GameState.camera_dialog.position.copy(position);
+    GameState.camera_dialog.lookAt(lookAt);
+  }
+
+  setCameraAngleSpeakerBehindPlayer(){
+    let position = this.currentEntry.listener.position.clone();
+    let lookAt = this.currentEntry.speaker.position.clone();
+    if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
+      if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
+        lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
+        lookAt.add({
+          x: 0,
+          y: 0,
+          z: 0.5
+        } as THREE.Vector3);
+      } else {
+        position.add(new THREE.Vector3(0, 0, 1.5));
+      }
+    }
+    if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
+      if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
+        position = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
+      } else {
+        position.add(new THREE.Vector3(0, 0, 1.5));
+      }
+    }
+    position.add(new THREE.Vector3(-1, 1, 0));
+    let AxisFront = new THREE.Vector3();
+    let tangent = lookAt.clone().sub(position.clone());
+    let atan = Math.atan2(-tangent.y, -tangent.x);
+    AxisFront.x = Math.cos(atan);
+    AxisFront.y = Math.sin(atan);
+    AxisFront.normalize();
+    position.add(AxisFront);
+    GameState.camera_dialog.position.copy(position);
+    GameState.camera_dialog.lookAt(lookAt);
+  }
+
   getCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {
     let dir = pointB.clone().sub(pointA);
     let len = dir.length();
@@ -665,45 +689,37 @@ export class InGameDialog extends GameMenu {
     super.Update(delta);
     if (!this.dialog)
       return;
+
+    this.updateLetterBox(delta);
+
     if (this.dialog.isAnimatedCutscene) {
       if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
-        this.dialog.animatedCamera.update(delta);
+        this.dialog.animatedCamera.animationManager.update(delta);
         this.dialog.animatedCamera.camerahook.updateMatrixWorld();
         let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
         GameState.camera_animated.position.copy(pos);
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
         GameState.currentCamera = GameState.camera_animated;
-      }
-      if (this.canLetterbox) {
-        this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
-        this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
-        this.letterBoxed = true;
-        this.LBL_MESSAGE.show();
+        if(this.dialog.animatedCamera.animationManager.currentAnimation != this.currentCameraAnimation){
+          this.currentEntry.checkList.cameraAnimationComplete = true;
+        }
       }
     } else {
       if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
-        this.dialog.animatedCamera.update(delta);
+        this.dialog.animatedCamera.animationManager.update(delta);
         this.dialog.animatedCamera.camerahook.updateMatrixWorld();
         let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
         GameState.camera_animated.position.copy(pos);
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
+        if(this.dialog.animatedCamera.animationManager.currentAnimation != this.currentCameraAnimation){
+          this.currentEntry.checkList.cameraAnimationComplete = true;
+        }
       } else {
         this.updateCamera();
       }
-      if (this.canLetterbox) {
-        if (this.bottomBar.position.y < -(window.innerHeight / 2) + 100 / 2) {
-          this.bottomBar.position.y += 5;
-          this.topBar.position.y -= 5;
-          this.LBL_MESSAGE.hide();
-        } else {
-          this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
-          this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
-          this.letterBoxed = true;
-          this.LBL_MESSAGE.show();
-        }
-      }
+      
     }
 
     this.dialog.stuntActors.forEach( async (actor) => {
@@ -740,7 +756,7 @@ export class InGameDialog extends GameMenu {
   }
 
   Resize() {
-    this._resetLetterBox();
+    this.resetLetterBox();
     this.RecalculatePosition();
     this.updateTextPosition();
   }
@@ -750,10 +766,34 @@ export class InGameDialog extends GameMenu {
     this.LB_REPLIES.extent.top = window.innerHeight / 2 - this.LB_REPLIES.extent.height / 2;
     this.LB_REPLIES.calculatePosition();
     this.LB_REPLIES.calculateBox();
-    this._resetLetterBox();
+    this.resetLetterBox();
   }
 
-  _resetLetterBox() {
+  updateLetterBox(delta: number = 0){
+    if (this.dialog.isAnimatedCutscene) {
+      if (this.canLetterbox) {
+        this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
+        this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
+        this.letterBoxed = true;
+        this.LBL_MESSAGE.show();
+      }
+    }else{
+      if (this.canLetterbox) {
+        if (this.bottomBar.position.y < -(window.innerHeight / 2) + 100 / 2) {
+          this.bottomBar.position.y += 5;
+          this.topBar.position.y -= 5;
+          this.LBL_MESSAGE.hide();
+        } else {
+          this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
+          this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
+          this.letterBoxed = true;
+          this.LBL_MESSAGE.show();
+        }
+      }
+    }
+  }
+
+  resetLetterBox() {
     this.topBar.scale.x = this.bottomBar.scale.x = window.innerWidth;
     this.topBar.scale.y = this.bottomBar.scale.y = this.barHeight;
     if (!this.letterBoxed) {

@@ -282,6 +282,20 @@ export class DLGObject {
     return undefined;
   }
 
+  getAvailableReplies( entry: DLGNode ){
+    let replies: DLGNode[] = [];
+    let replyLinks = entry.getActiveReplies();
+    for (let i = 0; i < replyLinks.length; i++) {
+      let reply = this.getReplyByIndex(replyLinks[i]);
+      if (reply) {
+        replies.push(reply);
+      } else {
+        console.warn('getAvailableReplies() Failed to find reply at index: ' + replyLinks[i]);
+      }
+    }
+    return replies;
+  }
+
   async loadStuntCamera(){
     return new Promise<void>( (resolve, reject) => {
       if(!!this.animatedCameraResRef){

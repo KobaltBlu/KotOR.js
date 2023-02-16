@@ -15,6 +15,7 @@ import { LIPObject } from "./LIPObject";
 import { GFFStruct } from "./GFFStruct";
 import { TLKString } from "./TLKString";
 import { CExoLocString } from "./CExoLocString";
+import { OdysseyModelAnimation } from "../odyssey";
 
 export class DLGNode {
   nodeType: DLGNodeType;
@@ -406,8 +407,8 @@ export class DLGNode {
       node.sound = struct.GetFieldByLabel('Sound').GetValue();
     }
 
-    if(struct.HasField('CameraId')){
-      node.cameraID = struct.GetFieldByLabel('CameraId').GetValue();
+    if(struct.HasField('CameraID')){
+      node.cameraID = struct.GetFieldByLabel('CameraID').GetValue();
     }
 
     if(struct.HasField('CameraAnimation')){
@@ -737,7 +738,7 @@ export class DLGNode {
     return node;
   }
 
-  getCompiledString( ){
+  getCompiledString(): string {
     let text = this.text;
     text = text.split('##')[0];
     //if(this.speaker instanceof ModuleCreature){

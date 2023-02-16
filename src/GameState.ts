@@ -1255,16 +1255,23 @@ export class GameState implements EngineContext {
     if(
       GameState.Mode == EngineMode.MINIGAME || 
       GameState.Mode == EngineMode.DIALOG || 
-      GameState.Mode == EngineMode.INGAME
+      GameState.Mode == EngineMode.INGAME ||
+      GameState.Mode == EngineMode.FREELOOK
     ){// (!MenuManager.InGameConfirm.bVisible)){
 
-      //GameState.viewportFrustum.setFromProjectionMatrix(GameState.currentCamera.projectionMatrix);
+      //Update Mode Camera
+      if(GameState.Mode == EngineMode.INGAME){
+        //Make sure we are using the follower camera while ingame
+        GameState.currentCamera = GameState.camera;
+      }
       GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
       GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
       GameState.currentCameraPosition.set(0, 0, 0);
       GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
+
       GameState.updateTime(delta);
 
+      //Handle Module Tick
       if(
         GameState.State == EngineState.PAUSED
       ){
@@ -1273,6 +1280,7 @@ export class GameState implements EngineContext {
         GameState.module.tick(delta);
       }
       
+      //TODO: Move Cursor Logic Into Global Cursor Manager
       if(GameState.Mode == EngineMode.DIALOG){
         if(
           MenuManager.InGameDialog.IsVisible() && 
@@ -1297,6 +1305,7 @@ export class GameState implements EngineContext {
           GameState.currentCamera = GameState.camera;
         }
         
+        //Handle the visibility of the PAUSE overlay
         if(GameState.State == EngineState.PAUSED){
           if(!MenuManager.InGamePause.IsVisible())
             MenuManager.InGamePause.Show();
@@ -1309,6 +1318,7 @@ export class GameState implements EngineContext {
         LightManager.update(delta, GameState.getCurrentPlayer());
       }
 
+      //Handle visibility state for debug helpers
       if(GameState.Mode == EngineMode.INGAME){
         let obj: any;
         for(let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++){
@@ -1350,14 +1360,9 @@ export class GameState implements EngineContext {
     //GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 
-    // render scene into target
-    //GameState.renderer.setRenderTarget( GameState.depthTarget );
-    //GameState.renderer.render( GameState.scene, GameState.currentCamera );
-    // render post FX
-    //GameState.renderer.setRenderTarget( null );
-
     GameState.composer.render(delta);
 
+    //Handle screenshot callback
     if(typeof GameState.onScreenShot === 'function'){
       console.log('Screenshot', GameState.onScreenShot);
       
@@ -1377,12 +1382,14 @@ export class GameState implements EngineContext {
       };
       
       GameState.composer.render(delta);
+      //Remove screenshot callback so it won't be triggered again
       GameState.onScreenShot = undefined;
     }
 
+    //CameraShake: After Render
     CameraShakeManager.afterRender();
 
-    //NoClickTimer
+    //NoClickTimer: Update
     if( ((GameState.Mode == EngineMode.MINIGAME) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
       if(GameState.noClickTimer){
         GameState.noClickTimer -= (1 * delta);
@@ -1402,21 +1409,6 @@ export class GameState implements EngineContext {
 
     if(GameState.deltaTime > 1000)
       GameState.deltaTime = GameState.deltaTime % 1;
-  }
-
-  public static isObjectPC(object: ModuleObject){
-    return GameState.player === object;
-  }
-
-  public static async InitializeGameState(options: GameStateInitializeOptions = {} as GameStateInitializeOptions){
-    const _default = {
-      Game: GameEngineType.KOTOR,
-      Env: GameEngineEnv.NODE,
-    } as GameStateInitializeOptions;
-    options = {..._default, ...options};
-
-    GameState.GameKey = options.Game;
-
   }
 
 }
