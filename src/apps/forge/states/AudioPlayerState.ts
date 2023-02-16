@@ -1,8 +1,7 @@
 import { EditorFile } from "../EditorFile";
-import { AudioFile } from "../../../index";
 import * as fs from "fs";
+import * as KotOR from "../KotOR";
 
-declare const KotOR: any;
 declare const dialog: any;
 
 export type AudioPlayerEventListenerTypes =
@@ -23,7 +22,7 @@ export class AudioPlayerState {
   // this.gainNode.gain.value = 0.25;
   // this.source = GameState.audioEngine.audioCtx.createBufferSource();
   static file: EditorFile;
-  static audioFile: AudioFile;
+  static audioFile: KotOR.AudioFile;
   static buffer: any;
 
   static eventListeners: TabManagerEventListeners = {

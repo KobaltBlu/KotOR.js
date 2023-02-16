@@ -19,6 +19,7 @@ export * from "./managers/TLKManager";
 export * from "./managers/TwoDAManager";
 export * from "./managers/LightManager";
 export * from "./resource/ResourceLoader";
+export * from "./FactionManager";
 
 export * from "./LoadingScreen";
 export * from "./SaveGame";
@@ -44,6 +45,8 @@ export * from "./resource/TLKObject";
 export * from "./resource/TPCObject";
 export * from "./resource/TwoDAObject";
 export * from "./resource/VISObject";
+export * from "./resource/ResourceTypes";
+export * from "./resource/ResourceTypeInfo";
 
 export * from "./three/odyssey";
 export * from "./three/MDLLoader";

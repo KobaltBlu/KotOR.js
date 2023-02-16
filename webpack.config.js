@@ -441,7 +441,7 @@ const forgeConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      three: path.resolve('./node_modules/three')
+      three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
@@ -451,6 +451,7 @@ const forgeConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    '../../KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',

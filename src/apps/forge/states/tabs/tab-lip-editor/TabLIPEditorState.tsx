@@ -3,22 +3,15 @@ import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "..
 import BaseTabStateOptions from "../../../interfaces/BaseTabStateOptions";
 import { TabLIPEditor } from "../../../components/tabs/tab-lip-editor/TabLIPEditor";
 import { EditorFile } from "../../../EditorFile";
-import type { LIPObject } from "../../../../../resource/LIPObject";
-import type { OdysseyModel } from "../../../../../odyssey";
-import type { OdysseyModel3D } from "../../../../../three/odyssey";
 import { EditorTabManager } from "../../../managers/EditorTabManager";
 import { UI3DRendererView } from "../../../components/UI3DRendererView";
 import { UI3DRenderer } from "../../../UI3DRenderer";
-import { ResourceTypes } from "../../../../../resource/ResourceTypes";
 import { LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
 import { TabLIPEditorOptionsState } from "./TabLIPEditorOptionsState";
 import { SceneGraphNode } from "../../../SceneGraphNode";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSystem";
-
-// import type * as KType from "../../../../../KotOR";
-
-declare const KotOR: any;
+import * as KotOR from "../../../KotOR";
 
 export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -71,7 +64,7 @@ export class TabLIPEditorState extends TabState {
   tabName: string = `LIP Editor`;
 
   //Lip
-  lip: LIPObject = new KotOR.LIPObject(Buffer.alloc(0));
+  lip: KotOR.LIPObject = new KotOR.LIPObject(Buffer.alloc(0));
 
   //Audio
   gainNode: GainNode;
@@ -101,7 +94,7 @@ export class TabLIPEditorState extends TabState {
 
   scrubDuration: number|undefined;
 
-  head: OdysseyModel3D;
+  head: KotOR.OdysseyModel3D;
   head_hook: THREE.Object3D<THREE.Event> = new KotOR.THREE.Object3D();
   pointLight: THREE.PointLight;
 
@@ -163,7 +156,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<LIPObject>( (resolve, reject) => {
+    return new Promise<KotOR.LIPObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -174,7 +167,7 @@ export class TabLIPEditorState extends TabState {
             this.lip = lip;
 
             if(typeof this.lip.file != 'string')
-              this.lip.file = this.file.resref + '.' + ResourceTypes.getKeyByValue(this.file.reskey);
+              this.lip.file = this.file.resref + '.' + KotOR.ResourceTypes.getKeyByValue(this.file.reskey);
 
             this.setDuration(this.lip.duration);
 
@@ -198,14 +191,14 @@ export class TabLIPEditorState extends TabState {
   loadHead(model_name = 'p_bastilah'){
     return new Promise<void>( (resolve, reject) => {
       KotOR.GameState.ModelLoader.load(model_name)
-      .then((mdl: OdysseyModel) => {
+      .then((mdl: KotOR.OdysseyModel) => {
         this.current_head = model_name;
         localStorage.setItem('lip_head', this.current_head);
         KotOR.OdysseyModel3D.FromMDL(mdl, {
           context: this.ui3DRenderer,
           castShadow: true,
           receiveShadow: true,
-        }).then((model: OdysseyModel3D) => {
+        }).then((model: KotOR.OdysseyModel3D) => {
 
           if(this.head instanceof KotOR.THREE.Object3D){
             this.head.parent?.remove(this.head);

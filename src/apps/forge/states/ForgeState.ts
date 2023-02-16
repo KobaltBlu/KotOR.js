@@ -1,12 +1,10 @@
-import type { LoadingScreen } from "../../../LoadingScreen";
 import { EditorFile } from "../EditorFile";
 import { Project } from "../Project";
 import { EditorTabManager } from "../managers/EditorTabManager";
 import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
-
-declare const KotOR: any;
+import * as KotOR from '../KotOR';
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -76,8 +74,8 @@ export class ForgeState {
 
   static async VerifyGameDirectory(onVerified: Function, onError: Function){
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.GameFileSystem.rootDirectoryPath);
-      if(validated){
+      // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.GameFileSystem.rootDirectoryPath);
+      if(await KotOR.GameFileSystem.exists('chitin.key')){
         onVerified();
       }else{
         try{

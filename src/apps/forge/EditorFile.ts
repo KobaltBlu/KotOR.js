@@ -1,17 +1,12 @@
 import * as fs from "fs";
 import isBuffer from "is-buffer";
-import { ResourceTypes } from "../../resource/ResourceTypes";
-import type { RIMObject } from "../../resource/RIMObject";
-import type { BIFObject } from "../../resource/BIFObject";
-import type { ERFObject } from "../../resource/ERFObject";
 import { ForgeState } from "./states/ForgeState";
 import { FileLocationType } from "./enum/FileLocationType";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { Project } from "./Project";
 import { pathParse } from "./helpers/PathParse";
 import { EventListenerModel } from "./EventListenerModel";
-
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export type EditorFileEventListenerTypes =
   'onNameChanged'|'onSaveStateChanged'|'onSaved'
@@ -75,7 +70,7 @@ export class EditorFile extends EventListenerModel {
   set reskey(value){
     // console.log('reskey', value);
     this._reskey = value;
-    this._ext = ResourceTypes.getKeyByValue(this.reskey);
+    this._ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
@@ -86,7 +81,7 @@ export class EditorFile extends EventListenerModel {
   set ext(value){
     // console.log('ext', value);
     this._ext = value;
-    this._reskey = ResourceTypes[value];
+    this._reskey = KotOR.ResourceTypes[value];
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
@@ -122,13 +117,13 @@ export class EditorFile extends EventListenerModel {
     this.useGameFileSystem = !!options.useGameFileSystem;
 
     if(!this.ext && this.reskey){
-      this.ext = ResourceTypes.getKeyByValue(this.reskey);
+      this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     }
 
     this.setPath(this.path);
 
     if(!this.ext && this.reskey){
-      this.ext = ResourceTypes.getKeyByValue(this.reskey);
+      this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     }
 
     if(this.location == FileLocationType.OTHER)
@@ -157,10 +152,10 @@ export class EditorFile extends EventListenerModel {
       }
 
       if(!this.reskey){
-        this.reskey = ResourceTypes[path_obj.ext.slice(1)];
+        this.reskey = KotOR.ResourceTypes[path_obj.ext.slice(1)];
       }
 
-      this.ext = ResourceTypes.getKeyByValue(this.reskey);
+      this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     }
   }
 
@@ -177,20 +172,20 @@ export class EditorFile extends EventListenerModel {
 
   async readFile( onLoad?: Function ){
 
-    if(this.reskey == ResourceTypes.mdl || this.reskey == ResourceTypes.mdx){
+    if(this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx){
       //Mdl / Mdx Special Loader
       if(this.archive_path){
         let archive_path = pathParse(this.archive_path);
         switch(archive_path.ext.slice(1)){
           case 'bif':
-            new KotOR.BIFObject(this.archive_path, (archive: BIFObject) => {
+            new KotOR.BIFObject(this.archive_path, (archive: KotOR.BIFObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = Buffer.from(buffer);
-                  let mdl_mdx_key = ResourceTypes.mdx;
-                  if(this.reskey == ResourceTypes.mdx){
-                    mdl_mdx_key = ResourceTypes.mdl;
+                  let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                  if(this.reskey == KotOR.ResourceTypes.mdx){
+                    mdl_mdx_key = KotOR.ResourceTypes.mdl;
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
                       this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
@@ -207,9 +202,9 @@ export class EditorFile extends EventListenerModel {
                   }
                 });
               }else{
-                let mdl_mdx_key = ResourceTypes.mdx;
-                if(this.reskey == ResourceTypes.mdx){
-                  mdl_mdx_key = ResourceTypes.mdl;
+                let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                if(this.reskey == KotOR.ResourceTypes.mdx){
+                  mdl_mdx_key = KotOR.ResourceTypes.mdl;
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
                     this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
@@ -230,14 +225,14 @@ export class EditorFile extends EventListenerModel {
           break;
           case 'erf':
           case 'mod':
-            new KotOR.ERFObject(this.archive_path, (archive: ERFObject) => {
+            new KotOR.ERFObject(this.archive_path, (archive: KotOR.ERFObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
                   this.buffer = Buffer.from(buffer);
-                  let mdl_mdx_key = ResourceTypes.mdx;
-                  if(this.reskey == ResourceTypes.mdx){
-                    mdl_mdx_key = ResourceTypes.mdl;
+                  let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                  if(this.reskey == KotOR.ResourceTypes.mdx){
+                    mdl_mdx_key = KotOR.ResourceTypes.mdl;
                     archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
                       this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
@@ -254,9 +249,9 @@ export class EditorFile extends EventListenerModel {
                   }
                 });
               }else{
-                let mdl_mdx_key = ResourceTypes.mdx;
-                if(this.reskey == ResourceTypes.mdx){
-                  mdl_mdx_key = ResourceTypes.mdl;
+                let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                if(this.reskey == KotOR.ResourceTypes.mdx){
+                  mdl_mdx_key = KotOR.ResourceTypes.mdl;
                   archive.getRawResource(this.resref, mdl_mdx_key, (buffer: Buffer) => {
                     this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
@@ -276,14 +271,14 @@ export class EditorFile extends EventListenerModel {
             });
           break;
           case 'rim':
-            new KotOR.RIMObject(this.archive_path, (archive: RIMObject) => {
+            new KotOR.RIMObject(this.archive_path, (archive: KotOR.RIMObject) => {
 
               if(!isBuffer(this.buffer)){
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
-                  let mdl_mdx_key = ResourceTypes.mdx;
-                  if(this.reskey == ResourceTypes.mdx){
-                    mdl_mdx_key = ResourceTypes.mdl;
+                  let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                  if(this.reskey == KotOR.ResourceTypes.mdx){
+                    mdl_mdx_key = KotOR.ResourceTypes.mdl;
                     archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
                       this.buffer2 = Buffer.from(buffer);
                       if(typeof onLoad === 'function'){
@@ -300,9 +295,9 @@ export class EditorFile extends EventListenerModel {
                   }
                 });
               }else{
-                let mdl_mdx_key = ResourceTypes.mdx;
-                if(this.reskey == ResourceTypes.mdx){
-                  mdl_mdx_key = ResourceTypes.mdl;
+                let mdl_mdx_key = KotOR.ResourceTypes.mdx;
+                if(this.reskey == KotOR.ResourceTypes.mdx){
+                  mdl_mdx_key = KotOR.ResourceTypes.mdl;
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, mdl_mdx_key), (buffer: Buffer) => {
                     this.buffer2 = Buffer.from(buffer);
                     if(typeof onLoad === 'function'){
@@ -371,7 +366,7 @@ export class EditorFile extends EventListenerModel {
           console.log(archive_path.ext.slice(1))
           switch(archive_path.ext.slice(1)){
             case 'bif':
-              new KotOR.BIFObject(this.archive_path, (archive: BIFObject) => {
+              new KotOR.BIFObject(this.archive_path, (archive: KotOR.BIFObject) => {
 
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -384,7 +379,7 @@ export class EditorFile extends EventListenerModel {
             break;
             case 'erf':
             case 'mod':
-              new KotOR.ERFObject(this.archive_path, (archive: ERFObject) => {
+              new KotOR.ERFObject(this.archive_path, (archive: KotOR.ERFObject) => {
 
                 archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -396,7 +391,7 @@ export class EditorFile extends EventListenerModel {
               })
             break;
             case 'rim':
-              new KotOR.RIMObject(this.archive_path, (archive: RIMObject) => {
+              new KotOR.RIMObject(this.archive_path, (archive: KotOR.RIMObject) => {
 
                 archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                   this.buffer = buffer;
@@ -496,7 +491,7 @@ export class EditorFile extends EventListenerModel {
 
         //Append this file to the beginning of the list
         recent_files.unshift(this);
-        KotOR.ConfigClient.save(null, true); //Save the configuration silently
+        KotOR.ConfigClient.save(null as any, true); //Save the configuration silently
 
         //Notify the project we have opened a new file
         if(ForgeState.Project instanceof Project){

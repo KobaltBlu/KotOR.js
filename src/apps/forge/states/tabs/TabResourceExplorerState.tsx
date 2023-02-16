@@ -1,15 +1,10 @@
 import React from "react";
 import { TabState } from "./TabState";
-import type { BIFObject } from "../../../../resource/BIFObject";
-import type { RIMObject, RIMResource } from "../../../../resource/RIMObject";
-import type { ERFKeyEntry, ERFObject } from "../../../../resource/ERFObject";
 import { TabResourceExplorer } from "../../components/tabs/TabResourceExplorer";
-import { AsyncLoop } from "../../../../utility/AsyncLoop";
-import { ResourceTypes } from "../../../../resource/ResourceTypes";
 import * as path from "path";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
-declare const KotOR: any;
+import { AsyncLoop } from "../../../../utility/AsyncLoop";
+import * as KotOR from "../../KotOR";
 
 export class FileBrowserNode {
   static NODE_ID = 0;
@@ -133,8 +128,8 @@ export class TabResourceExplorerState extends TabState {
 
   static LoadBifs() {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
-      let bifs: BIFObject[] = [];
-      KotOR.BIFManager.bifs.forEach( (bif: BIFObject) => {
+      let bifs: KotOR.BIFObject[] = [];
+      KotOR.BIFManager.bifs.forEach( (bif: KotOR.BIFObject) => {
         bifs.push(bif);
       })
 
@@ -147,7 +142,7 @@ export class TabResourceExplorerState extends TabState {
 
       let bifLoader = new AsyncLoop({
         array: bifs,
-        onLoop: (bif: BIFObject, asyncLoop: AsyncLoop) => {
+        onLoop: (bif: KotOR.BIFObject, asyncLoop: AsyncLoop) => {
           let name = bif.file.split(path.sep).pop()?.split('.')[0];
           let subTypes: {[key: string]: FileBrowserNode} = {};
 
@@ -166,7 +161,7 @@ export class TabResourceExplorerState extends TabState {
 
             if (subTypes[resource.ResType] == undefined) {
               subTypes[resource.ResType] = new FileBrowserNode({
-                name: ResourceTypes.getKeyByValue(resource.ResType),
+                name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
                 canOrphan: true,
               });
@@ -175,10 +170,10 @@ export class TabResourceExplorerState extends TabState {
 
             subTypes[resource.ResType].addChildNode(
               new FileBrowserNode({
-                name: (`${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`),
+                name: (`${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`),
                 type: 'resource',
                 data: {
-                  path: `${bif.file}?${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`
+                  path: `${bif.file}?${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`
                 },
               })
             );
@@ -201,8 +196,8 @@ export class TabResourceExplorerState extends TabState {
 
   static LoadRims() {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
-      let rims: RIMObject[] = [];
-      KotOR.RIMManager.RIMs.forEach( (rim: RIMObject) => {
+      let rims: KotOR.RIMObject[] = [];
+      KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
         if(rim.group == "RIMs"){
           rims.push(rim);
         }
@@ -217,7 +212,7 @@ export class TabResourceExplorerState extends TabState {
 
       let rimLoader = new AsyncLoop({
         array: rims,
-        onLoop: (rim: RIMObject, asyncLoop: AsyncLoop) => {
+        onLoop: (rim: KotOR.RIMObject, asyncLoop: AsyncLoop) => {
           let name = rim.resource_path.split(path.sep).pop()?.split('.')[0];
           let subTypes: {[key: string]: FileBrowserNode} = {};
 
@@ -236,7 +231,7 @@ export class TabResourceExplorerState extends TabState {
 
             if (subTypes[resource.ResType] == undefined) {
               subTypes[resource.ResType] = new FileBrowserNode({
-                name: ResourceTypes.getKeyByValue(resource.ResType),
+                name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
                 canOrphan: false,
               });
@@ -244,10 +239,10 @@ export class TabResourceExplorerState extends TabState {
             }
 
             subTypes[resource.ResType].addChildNode(new FileBrowserNode({
-              name: `${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               type: 'resource',
               data: {
-                path: `${rim.resource_path}?${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+                path: `${rim.resource_path}?${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               },
             }));
           }
@@ -271,20 +266,20 @@ export class TabResourceExplorerState extends TabState {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
       let modules: any[] = [];
 
-      KotOR.RIMManager.RIMs.forEach( (rim: RIMObject) => {
+      KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
         if(rim.group == "Module"){
           modules.push(rim);
         }
       });
 
-      KotOR.ERFManager.ERFs.forEach( (erf: ERFObject) => {
+      KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
         if(erf.group == "Module"){
           modules.push(erf);
         }
       });
       
       //Sort the array by filename
-      modules = modules.sort( (a: ERFObject|RIMObject, b: ERFObject|RIMObject) => {
+      modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
         let nameA = a.resource_path.split(path.sep).pop() || '';
         let nameB = b.resource_path.split(path.sep).pop() || '';
         
@@ -302,7 +297,7 @@ export class TabResourceExplorerState extends TabState {
 
       let rimLoader = new AsyncLoop({
         array: modules,
-        onLoop: (rim: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
+        onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
           let name = rim.resource_path.split(path.sep).pop();
           let subTypes: {[key: string]: FileBrowserNode} = {};
 
@@ -323,7 +318,7 @@ export class TabResourceExplorerState extends TabState {
 
             if (subTypes[resource.ResType] == undefined) {
               subTypes[resource.ResType] = new FileBrowserNode({
-                name: ResourceTypes.getKeyByValue(resource.ResType),
+                name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
                 type: 'group',
                 canOrphan: true,
               });
@@ -331,10 +326,10 @@ export class TabResourceExplorerState extends TabState {
             }
 
             subTypes[resource.ResType].addChildNode(new FileBrowserNode({
-              name: `${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               type: 'resource',
               data: {
-                path: `${rim.resource_path}?${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+                path: `${rim.resource_path}?${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               }
             }));
           }
@@ -358,20 +353,20 @@ export class TabResourceExplorerState extends TabState {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
 			let modules: any[] = [];
 
-			KotOR.RIMManager.RIMs.forEach( (rim: RIMObject) => {
+			KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
 				if(rim.group == "Lips"){
 					modules.push(rim);
 				}
 			});
 
-			KotOR.ERFManager.ERFs.forEach( (erf: ERFObject) => {
+			KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
 				if(erf.group == "Lips"){
 					modules.push(erf);
 				}
 			});
 			
 			//Sort the array by filename
-			modules = modules.sort( (a: ERFObject|RIMObject, b: ERFObject|RIMObject) => {
+			modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
 				let nameA = a.resource_path.split(path.sep).pop() || '';
 				let nameB = b.resource_path.split(path.sep).pop() || '';
 				
@@ -389,7 +384,7 @@ export class TabResourceExplorerState extends TabState {
 
 			let rimLoader = new AsyncLoop({
 				array: modules,
-				onLoop: (rim: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
+				onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
 					let name = rim.resource_path.split(path.sep).pop();
 					let subTypes: {[key: string]: FileBrowserNode} = {};
 
@@ -410,17 +405,17 @@ export class TabResourceExplorerState extends TabState {
 
 						if (subTypes[resource.ResType] == undefined) {
 							subTypes[resource.ResType] = new FileBrowserNode({
-								name: ResourceTypes.getKeyByValue(resource.ResType),
+								name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
 								type: 'group',
 							});
 							node.addChildNode(subTypes[resource.ResType]);
 						}
 
 						subTypes[resource.ResType].addChildNode(new FileBrowserNode({
-							name: `${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+							name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
 							type: 'resource',
 							data: {
-								path: `${rim.resource_path}?${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+								path: `${rim.resource_path}?${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
 							}
 						}));
 					}
@@ -444,7 +439,7 @@ export class TabResourceExplorerState extends TabState {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
       let texture_packs: any[] = [];
 
-      KotOR.ERFManager.ERFs.forEach( (erf: ERFObject) => {
+      KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
         if(erf.group == "Textures"){
           texture_packs.push(erf);
         }
@@ -459,7 +454,7 @@ export class TabResourceExplorerState extends TabState {
 
       let erfLoader = new AsyncLoop({
         array: texture_packs,
-        onLoop: (erf: ERFObject, asyncLoop: AsyncLoop) => {
+        onLoop: (erf: KotOR.ERFObject, asyncLoop: AsyncLoop) => {
           let name = erf.resource_path.split(path.sep).pop();
           let subTypes: {[key: string]: FileBrowserNode} = {};
 
@@ -489,10 +484,10 @@ export class TabResourceExplorerState extends TabState {
             }
 
             subTypes[letter].addChildNode(new FileBrowserNode({
-              name: `${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               type: 'resource',
               data: {
-                path: `${erf.resource_path}?${resref}.${ResourceTypes.getKeyByValue(resource.ResType)}`,
+                path: `${erf.resource_path}?${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
               },
             }));
           }

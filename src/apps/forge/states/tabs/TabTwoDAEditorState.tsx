@@ -3,13 +3,11 @@ import { TabTwoDAEditor } from "../../components/tabs/TabTwoDAEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
-import type { TwoDAObject } from "../../../../resource/TwoDAObject";
-
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export class TabTwoDAEditorState extends TabState {
   tabName: string = `2DA`;
-  twoDAObject: TwoDAObject;
+  twoDAObject: KotOR.TwoDAObject;
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
@@ -18,7 +16,7 @@ export class TabTwoDAEditorState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<TwoDAObject>( (resolve, reject) => {
+    return new Promise<KotOR.TwoDAObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

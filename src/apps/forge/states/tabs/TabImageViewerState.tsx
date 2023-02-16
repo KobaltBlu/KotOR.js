@@ -3,15 +3,12 @@ import { TabState } from "./TabState";
 import { TabImageViewer } from "../../components/tabs/TabImageViewer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorFile } from "../../EditorFile";
-import type { TPCObject } from "../../../../resource/TPCObject";
-import type { TGAObject } from "../../../../resource/TGAObject";
-
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export class TabImageViewerState extends TabState {
 
   tabName: string = `Image Viewer`;
-  image: TPCObject|TGAObject;
+  image: KotOR.TPCObject|KotOR.TGAObject;
   workingData: Uint8Array;
   bitsPerPixel: number;
 
@@ -28,7 +25,7 @@ export class TabImageViewerState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<TPCObject|TGAObject>( (resolve, reject) => {
+    return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

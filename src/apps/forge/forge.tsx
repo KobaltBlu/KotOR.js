@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
 // const Jison = (window as any).Jison = require("jison").Jison;
 import React, { useEffect, useState } from "react";
@@ -20,10 +20,10 @@ import { TabResourceExplorerState } from './states/tabs/TabResourceExplorerState
 import { TabProjectExplorerState } from './states/tabs/TabProjectExplorerState';
 import { ModalChangeGame } from './components/modal/ModalChangeGame';
 import { LayoutContainerProvider } from './context/LayoutContainerContext';
+import * as KotOR from "./KotOR";
 
 console.log('script', 'begin');
 
-declare const KotOR: any;
 declare const dialog: any;
 
 const query = new URLSearchParams(window.location.search);
