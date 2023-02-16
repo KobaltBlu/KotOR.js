@@ -269,7 +269,7 @@ export class TalentSpell extends TalentObject {
         //pass the talent to the script instance and run it
         instance.talent = this;
         //instance.spellTarget = oTarget;
-        instance.runAsync(oCaster, 0);
+        instance.run(oCaster, 0);
       };
     }
 
@@ -285,7 +285,7 @@ export class TalentSpell extends TalentObject {
             if(oCaster.model.lhand){
               oCaster.model.lhand.add(this.casthandmodel);
               //TextureLoader.LoadQueue();
-              this.casthandmodel.playAnimation('cast01', {}, () => {
+              this.casthandmodel.playAnimation('cast01', false, () => {
                 //Clean up the impact effect
                 this.casthandmodel.dispose();
               });

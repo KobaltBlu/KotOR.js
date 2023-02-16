@@ -327,9 +327,8 @@ export class ModuleTrigger extends ModuleObject {
         //let script = this.scripts.onEnter.clone();
         this.scripts.onEnter.debug.action = true;
         this.scripts.onEnter.enteringObject = object;
-        this.scripts.onEnter.runAsync(this, 0).then( () => {
-          this.scripts.onEnter.running = false;
-        });
+        this.scripts.onEnter.run(this, 0);
+        this.scripts.onEnter.running = false;
         //console.log('trigger', object, this);
       }
     }
@@ -339,9 +338,10 @@ export class ModuleTrigger extends ModuleObject {
     if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.running != true){
       //this.scripts.onExit.running = true;
       this.scripts.onExit.exitingObject = object;
-      /*this.scripts.onExit.runAsync(this, 0).then( () => {
+      /*
+        this.scripts.onExit.run(this, 0);
         this.scripts.onExit.running = false;
-      });*/
+      */
     }
   }
 

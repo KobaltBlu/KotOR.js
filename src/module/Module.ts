@@ -450,9 +450,8 @@ export class Module {
           if(this.scripts[key] instanceof NWScriptInstance){
             //this.scripts[key].name = _script;
             this.scripts[key].enteringObject = GameState.player;
-            this.scripts[key].runAsync(GameState.module.area, 0).then( () => {
-              asyncLoop.next();
-            });
+            this.scripts[key].run(GameState.module.area, 0);
+            asyncLoop.next();
           }else{
             console.error('Module failed to load script', _script, key);
             asyncLoop.next();
