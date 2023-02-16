@@ -39,19 +39,19 @@ export class PositionController extends OdysseyController {
     //  break;
 
     //Cache the position controller
-    if(manager.modelNode.controllers.hasPosition === undefined){
+    if(manager.modelNode.controllerHelpers.hasPosition === undefined){
       let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Position);
       if(typeof _controller != 'undefined'){
-        manager.modelNode.controllers.hasPosition = true;
-        manager.modelNode.controllers.position = _controller;
+        manager.modelNode.controllerHelpers.hasPosition = true;
+        manager.modelNode.controllerHelpers.position = _controller;
       }else{
-        manager.modelNode.controllers.hasPosition = false;
-        manager.modelNode.controllers.position = undefined;
+        manager.modelNode.controllerHelpers.hasPosition = false;
+        manager.modelNode.controllerHelpers.position = undefined;
       }
     }
 
-    if(manager.modelNode.controllers.hasPosition){
-      anim._position.copy(manager.modelNode.controllers.position.data[0]);
+    if(manager.modelNode.controllerHelpers.hasPosition){
+      anim._position.copy(manager.modelNode.controllerHelpers.position.data[0]);
       if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
         anim._position.sub(manager.model.parent.position);
       }

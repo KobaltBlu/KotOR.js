@@ -79,9 +79,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
   wasOffscreen = false;
   animateFrame = true;
 
-  nodes = new Map();
+  nodes: Map<string, OdysseyObject3D> = new Map<string, OdysseyObject3D>();
 
-  animNodeCache = {
+  animNodeCache: {[key: string]: OdysseyObject3D} = {
 
   }; 
 
@@ -476,7 +476,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           }
         }
         skinNode.geometry.bones = bones;
-        skinNode.bind(new THREE.Skeleton( bones, inverses ));
+        skinNode.bind(new THREE.Skeleton( bones as any, inverses ));
         skinNode.skeleton.update();
         skinNode.updateMatrixWorld();
       }
@@ -593,16 +593,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
             modelNode.quaternion.set(data.x, data.y, data.z, data.w);
           break;
           case OdysseyModelControllerType.SelfIllumColor:
-            if(modelNode.mesh){
-              if(modelNode.mesh.material instanceof THREE.ShaderMaterial){
-                modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
+            if(modelNode.userData.mesh){
+              if(modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+                modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
                   data.x, 
                   data.y, 
                   data.z
                 );
-                modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
+                modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
               }else{
-                modelNode.mesh.material.emissive.setRGB(
+                modelNode.userData.mesh.material.emissive.setRGB(
                   data.x, 
                   data.y, 
                   data.z
@@ -611,8 +611,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
           break;
           case OdysseyModelControllerType.Color:
-            if ((modelNode.odysseyNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-              modelNode.odysseyNode.color.setRGB(
+            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+              (modelNode.odysseyModelNode as OdysseyModelNodeLight).color.setRGB(
                 data.x, 
                 data.y, 
                 data.z
@@ -620,21 +620,21 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
           break;
           case OdysseyModelControllerType.Multiplier:
-            if ((modelNode.odysseyNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-              modelNode.odysseyNode.multiplier = data.value;
+            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+              (modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
             }
           break;
           case OdysseyModelControllerType.Radius:
-            if ((modelNode.odysseyNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-              modelNode.odysseyNode.radius = data.value;
+            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+              (modelNode.odysseyModelNode as OdysseyModelNodeLight).radius = data.value;
             }
           break;
         }
 
       });
       modelNode.updateMatrix();
-      if(modelNode.mesh){
-        modelNode.mesh.geometry.computeBoundingSphere();
+      if(modelNode.userData.mesh){
+        modelNode.userData.mesh.geometry.computeBoundingSphere();
       }
 
     }
@@ -1278,8 +1278,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             console.error('OdysseyModel3D', 'Failed to generate mesh node', odysseyNode);
           }
 
-          (odysseyNode as any).mesh = mesh;
-
           //Need to see if this affects memory usage
           mesh.userData.odysseyModel = odysseyModel;
 
@@ -1334,6 +1332,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             mesh.matrixAutoUpdate = true;
             if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) ){
               parentNode.add( mesh );
+              parentNode.userData.mesh = mesh;
             }
             if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
               mesh.castShadow = odysseyNode.FlagShadow;// && !options.static;//options.castShadow;

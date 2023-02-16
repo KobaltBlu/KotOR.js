@@ -11,14 +11,14 @@ export class SelfIllumColorController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
-    if(manager.modelNode.mesh){
-      if(manager.modelNode.mesh.material instanceof THREE.ShaderMaterial){
-        manager.modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
+    if(manager.modelNode.userData.mesh){
+      if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+        manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
           data.x, data.y, data.z
         );
-        manager.modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
+        manager.modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
       }else{
-        manager.modelNode.mesh.material.emissive.setRGB(
+        manager.modelNode.userData.mesh.material.emissive.setRGB(
           data.x, data.y, data.z
         );
       }
@@ -30,17 +30,17 @@ export class SelfIllumColorController extends OdysseyController {
       let lerpIllumColorG = last.y + fl * (next.y - last.y);
       let lerpIllumColorB = last.z + fl * (next.z - last.z);
       //console.log(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
-      if(manager.modelNode.mesh){
+      if(manager.modelNode.userData.mesh){
 
-        if(manager.modelNode.mesh.material instanceof THREE.ShaderMaterial){
-          manager.modelNode.mesh.material.uniforms.selfIllumColor.value.setRGB(
+        if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+          manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
             lerpIllumColorR, 
             lerpIllumColorG, 
             lerpIllumColorB
           );
-          manager.modelNode.mesh.material.defines.SELFILLUMCOLOR = "";
+          manager.modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
         }else{
-          manager.modelNode.mesh.material.emissive.setRGB(
+          manager.modelNode.userData.mesh.material.emissive.setRGB(
             lerpIllumColorR, 
             lerpIllumColorG, 
             lerpIllumColorB

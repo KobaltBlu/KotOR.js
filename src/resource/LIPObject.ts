@@ -10,6 +10,8 @@ import { ResourceTypes } from "./ResourceTypes";
 import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModelAnimation } from "../odyssey";
 
 /* @file
  * The LIPObject class.
@@ -25,7 +27,7 @@ export class LIPObject {
   lastTime: number;
   duration: number;
   elapsed: number;
-  anim: any;
+  anim: OdysseyModelAnimation;
   lipDataOffset: number;
 
   static readonly MAX_LIP_SHAPES = 16;
@@ -130,7 +132,7 @@ export class LIPObject {
     return keyframe;
   }
 
-  update(delta = 0, model: any = null){
+  update(delta = 0, model: OdysseyModel3D){
     if(model){
 
       let lastFrame = 0;
@@ -229,7 +231,7 @@ export class LIPObject {
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
   
-            let modelNode = model.animNodeCache[this.anim.nodes[i].name];
+            let modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
             if(typeof modelNode != 'undefined'){
               modelNode.lipping = false;
             }

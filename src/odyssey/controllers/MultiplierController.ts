@@ -1,4 +1,4 @@
-import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+import { OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNodeLight } from "..";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
@@ -12,13 +12,13 @@ export class MultiplierController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
     if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      manager.modelNode.odysseyModelNode.multiplier = data.value;
+      (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      manager.modelNode.odysseyModelNode.multiplier = ((next.value - last.value) * fl + last.value);
+      (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = ((next.value - last.value) * fl + last.value);
     }
   }
 

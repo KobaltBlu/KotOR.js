@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
 
 export class OdysseyModelAnimationManager {
@@ -14,7 +14,7 @@ export class OdysseyModelAnimationManager {
   _animQuaternion: THREE.Quaternion;
   trans: boolean;
   lastFrame: number;
-  modelNode: any;
+  modelNode: OdysseyObject3D;
 
   constructor(model: OdysseyModel3D){
     this.model = model;

@@ -34,6 +34,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   onHover: (e: any) => void;
   getControl: () => GUIControl;
   head: any;
+  lipping: boolean = false;
   constructor( node: OdysseyModelNode = undefined ){
     super();
     this.odysseyModelNode = node;

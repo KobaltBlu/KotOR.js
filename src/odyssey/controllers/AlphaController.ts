@@ -12,31 +12,31 @@ export class AlphaController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
-    if(manager.modelNode.mesh){
-      if(manager.modelNode.mesh.material instanceof THREE.Material){
-        if(manager.modelNode.mesh.material instanceof THREE.ShaderMaterial){
-          manager.modelNode.mesh.material.uniforms.opacity.value = data.value;
-          manager.modelNode.mesh.material.opacity = data.value;
-          manager.modelNode.mesh.material.uniformsNeedUpdate = true;
-        }else if(manager.modelNode.mesh.material instanceof THREE.Material){
-          manager.modelNode.mesh.material.opacity = data.value;
+    if(manager.modelNode.userData.mesh){
+      if(manager.modelNode.userData.mesh.material instanceof THREE.Material){
+        if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+          manager.modelNode.userData.mesh.material.uniforms.opacity.value = data.value;
+          manager.modelNode.userData.mesh.material.opacity = data.value;
+          manager.modelNode.userData.mesh.material.uniformsNeedUpdate = true;
+        }else if(manager.modelNode.userData.mesh.material instanceof THREE.Material){
+          manager.modelNode.userData.mesh.material.opacity = data.value;
         }
-        manager.modelNode.mesh.material.transparent = true;
-        manager.modelNode.mesh.material.needsUpdate = true;
+        manager.modelNode.userData.mesh.material.transparent = true;
+        manager.modelNode.userData.mesh.material.needsUpdate = true;
       }
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
-    if(manager.modelNode.mesh){
-      if(manager.modelNode.mesh.material instanceof THREE.ShaderMaterial){
-        manager.modelNode.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);;
-        manager.modelNode.mesh.material.uniformsNeedUpdate = true;
+    if(manager.modelNode.userData.mesh){
+      if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+        manager.modelNode.userData.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);;
+        manager.modelNode.userData.mesh.material.uniformsNeedUpdate = true;
       }
-      manager.modelNode.mesh.material.opacity = ((next.value - last.value) * fl + last.value);
-      manager.modelNode.mesh.material.transparent = true;//manager.modelNode.mesh.material.opacity < 1.0;
-      //manager.modelNode.mesh.material.depthFunc = 4;
-      manager.modelNode.mesh.material.needsUpdate = true;
+      manager.modelNode.userData.mesh.material.opacity = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.userData.mesh.material.transparent = true;//manager.modelNode.mesh.material.opacity < 1.0;
+      //manager.modelNode.userData.mesh.material.depthFunc = 4;
+      manager.modelNode.userData.mesh.material.needsUpdate = true;
     }
   }
 

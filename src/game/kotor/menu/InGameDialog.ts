@@ -692,6 +692,13 @@ export class InGameDialog extends GameMenu {
 
     this.updateLetterBox(delta);
 
+    this.dialog.stuntActors.forEach( async (actor) => {
+      const moduleObject = actor.moduleObject;
+      if(moduleObject){
+        moduleObject.box.setFromObject(moduleObject.container);
+      }
+    });
+
     if (this.dialog.isAnimatedCutscene) {
       if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
         this.dialog.animatedCamera.animationManager.update(delta);
@@ -702,7 +709,7 @@ export class InGameDialog extends GameMenu {
         GameState.camera_animated.updateProjectionMatrix();
         GameState.currentCamera = GameState.camera_animated;
         if(this.dialog.animatedCamera.animationManager.currentAnimation != this.currentCameraAnimation){
-          this.currentEntry.checkList.cameraAnimationComplete = true;
+          if(this.currentEntry) this.currentEntry.checkList.cameraAnimationComplete = true;
         }
       }
     } else {
@@ -714,20 +721,13 @@ export class InGameDialog extends GameMenu {
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
         if(this.dialog.animatedCamera.animationManager.currentAnimation != this.currentCameraAnimation){
-          this.currentEntry.checkList.cameraAnimationComplete = true;
+          if(this.currentEntry) this.currentEntry.checkList.cameraAnimationComplete = true;
         }
       } else {
         this.updateCamera();
       }
       
     }
-
-    this.dialog.stuntActors.forEach( async (actor) => {
-      const moduleObject = actor.moduleObject;
-      if(moduleObject){
-        moduleObject.container.box.setFromObject(moduleObject.container);
-      }
-    });
 
     if(GameState.ConversationPaused) return;
 
