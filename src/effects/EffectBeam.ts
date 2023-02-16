@@ -85,6 +85,7 @@ export class EffectBeam extends GameEffect {
         this.modelName = 'v_coldray_dur';
       break;
     }
+    return this;
   }
 
   loadModel(): Promise<void> {
