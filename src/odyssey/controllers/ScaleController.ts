@@ -13,7 +13,7 @@ export class ScaleController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode && manager.model){
       let offsetScale = 0;
       if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Scale) != 'undefined'){
@@ -25,7 +25,7 @@ export class ScaleController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if(manager && manager.modelNode){
       manager.modelNode.scale.lerp( manager._vec3.setScalar( ( (next.value) * manager.model.Scale) || 0.000000001 ), fl);
       manager.modelNode.updateMatrix();

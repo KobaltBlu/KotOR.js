@@ -12,13 +12,13 @@ export class BirthRateController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.birthRate = data.value;
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.birthRate = next.value;//Math.ceil((last.value + fl * (next.value - last.value)));
     }

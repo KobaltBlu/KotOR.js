@@ -484,31 +484,25 @@ export class ModuleCreature extends ModuleObject {
 
             if(!this.speed){
                 
-              let _animShouldChange = false;
-    
-              if(this.model.animationManager.currentAnimation instanceof OdysseyModelAnimation){
-                if(this.model.animationManager.currentAnimation.name.toLowerCase() != this.dialogAnimation.animation.name.toLowerCase()){
-                  _animShouldChange = true;
-                }
-              }else{
-                _animShouldChange = true;
-              }
-    
-              if(_animShouldChange){
-                let _newAnim = this.dialogAnimation.animation;
-                if(_newAnim instanceof OdysseyModelAnimation){
-                  if(!!parseInt(this.dialogAnimation.data.looping)){
-                    this.model.playAnimation(_newAnim, true);
+              let _animIsValid = (this.dialogAnimation.animation instanceof OdysseyModelAnimation);
+              if(_animIsValid){
+                let _animIsPlaying = (this.model.animationManager.currentAnimation == this.dialogAnimation.animation);
+                if(!_animIsPlaying && !this.dialogAnimation.started){
+                  let _newAnim = this.dialogAnimation.animation;
+                  if(_newAnim instanceof OdysseyModelAnimation){
+                    this.model.playAnimation( _newAnim, !!parseInt(this.dialogAnimation.data.looping) );
+                    this.dialogAnimation.started = true;
                   }else{
-                    this.model.playAnimation(_newAnim, false, () => {
-                      //Kill the dialogAnimation after the animation ends
-                      this.dialogAnimation = null;
-                    })
+                    //Kill the dialogAnimation if the animation isn't valid
+                    this.dialogAnimation = null;
                   }
-                }else{
-                  //Kill the dialogAnimation if the animation isn't valid
+                }else if(!_animIsPlaying && this.dialogAnimation.started){
+                  //Kill the dialogAnimation if it has already played
                   this.dialogAnimation = null;
                 }
+              }else{
+                //Kill the dialogAnimation if the animation isn't valid
+                this.dialogAnimation = null;
               }
 
             }
@@ -634,6 +628,11 @@ export class ModuleCreature extends ModuleObject {
           this.model.update( delta );
           if(this.lipObject instanceof LIPObject){
             this.lipObject.update(delta, this.head ? this.head : this.model);
+          }
+          if(this.cutsceneMode && this.model){
+            for(let i = 0, len = this.model.skins.length; i < len; i++){
+              this.model.skins[i].frustumCulled = false;
+            }
           }
         }
       }
@@ -772,14 +771,11 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action instanceof Action)){
-      //this.force = 0;
-      //this.animState = ModuleCreatureAnimState.IDLE;
-      /*if(typeof this.model.animationManager.currentAnimation == 'undefined'){
-        let randomPauseIdx = Math.round(Math.random()*2) + 1;
-        this.model.playAnimation('pause'+randomPauseIdx, false);
-      }*/
-
-      if(!this.combatData.combatState && this.isPartyMember() && this != GameState.getCurrentPlayer()){
+      if(
+        !this.combatData.combatState && 
+        this.isPartyMember() && 
+        this != GameState.getCurrentPlayer()
+      ){
         this.setFacing(
           Math.atan2(
             this.position.y - GameState.getCurrentPlayer().position.y,
@@ -788,7 +784,6 @@ export class ModuleCreature extends ModuleObject {
           false
         );
       }
-
     }
 
   }
@@ -1040,10 +1035,10 @@ export class ModuleCreature extends ModuleObject {
         if( (this.animState != ModuleCreatureAnimState.WALKING && this.animState != ModuleCreatureAnimState.RUNNING) || overlayAnimationData.overlay == 1){
           if(currentAnimation != this.overlayAnimation){
             this.dialogAnimation = undefined;
-            this.model.playAnimation(this.overlayAnimation, false, () => {
-              //console.log('Overlay animation completed');
+            const anim = this.model.playAnimation(this.overlayAnimation, false);
+            setTimeout( () => {
               this.overlayAnimation = undefined;
-            });
+            }, anim ? anim.length * 1000 : 1500 );
           }
           return;
         }else{
@@ -1066,10 +1061,12 @@ export class ModuleCreature extends ModuleObject {
     if(animation){
       if(currentAnimation != animation.name.toLowerCase()){
         let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping, () => {
-          if(!aLooping)
+        const anim = this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
+        if(!aLooping){
+          setTimeout( () => {
             this.animState = ModuleCreatureAnimState.PAUSE;
-        });
+          }, anim ? anim.length * 1000 : 1500 );
+        }
       }
     }else{
       console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
@@ -1421,7 +1418,8 @@ export class ModuleCreature extends ModuleObject {
       data: {
         fireforget: 1,
         looping: 0
-      } as any
+      } as any,
+      started: false,
     };
   }
 
@@ -1429,6 +1427,7 @@ export class ModuleCreature extends ModuleObject {
     this.dialogAnimation = { 
       animation: this.model.getAnimationByName(data.name),
       data: data,
+      started: false,
     };
   }
 

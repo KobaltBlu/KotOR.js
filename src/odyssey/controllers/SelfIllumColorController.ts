@@ -13,7 +13,7 @@ export class SelfIllumColorController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.userData.mesh){
       if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
         manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
@@ -28,7 +28,7 @@ export class SelfIllumColorController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     let lerpIllumColorR = last.x + fl * (next.x - last.x);
       let lerpIllumColorG = last.y + fl * (next.y - last.y);
       let lerpIllumColorB = last.z + fl * (next.z - last.z);

@@ -334,7 +334,11 @@ export class DLGObject {
 
             if(this.unequipHeadItem)
               GameState.player.UnequipHeadItem();
+
             actor.moduleObject = GameState.player;
+            if(actor.moduleObject){
+              actor.moduleObject.setCutsceneMode(true);
+            }
             resolve();
           }).catch(resolve);
         }).catch(resolve);
@@ -343,6 +347,10 @@ export class DLGObject {
         actor.moduleObject = this.owner;
         if(this.isAnimatedCutscene)
           this.owner.setFacing(0, true);
+
+        if(actor.moduleObject){
+          actor.moduleObject.setCutsceneMode(true);
+        }
         
         resolve();
 
@@ -367,8 +375,11 @@ export class DLGObject {
 
               if(this.unequipHeadItem && creature instanceof ModuleCreature)
                 creature.UnequipHeadItem();
-  
+
               actor.moduleObject = creature;
+              if(actor.moduleObject){
+                actor.moduleObject.setCutsceneMode(true);
+              }
               resolve();
             }).catch(resolve);
           }).catch(resolve);
@@ -393,6 +404,7 @@ export class DLGObject {
       const moduleObject = actor.moduleObject;
       if(moduleObject){
         moduleObject.clearAllActions();
+        moduleObject.setCutsceneMode(false);
       }
     });
     this.stuntActors.clear()

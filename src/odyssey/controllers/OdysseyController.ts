@@ -19,7 +19,7 @@ export class OdysseyController {
   vec3;
   quaternion;
   frameCount: number;
-  data: any[] = [];
+  data: OdysseyControllerFrameGeneric[] = [];
 
   constructor( controller: OdysseyControllerGeneric ){
     Object.assign(this, controller);
@@ -28,11 +28,11 @@ export class OdysseyController {
     this.quaternion = new THREE.Quaternion(0, 0, 0, 1);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     
   }
 

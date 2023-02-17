@@ -71,11 +71,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
   target: any = null;
   controlled = false;
 
-  skins: any[] = [];
+  skins: THREE.SkinnedMesh[] = [];
   forceShieldGeometry: any[] = [];
 
   //Beta AnimationManager
-  animationManager = new OdysseyModelAnimationManager(this);
+  animationManager: OdysseyModelAnimationManager = new OdysseyModelAnimationManager(this);
 
   wasOffscreen = false;
   animateFrame = true;
@@ -363,41 +363,36 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  playAnimation = function(anim?: any, loop: boolean = false, callback?: Function){
-    let data: any = {
+  playAnimation(anim: OdysseyModelAnimation|string|number, loop: boolean = false){
+    const state: any = {
       loop: loop,
       blend: true,
       cFrame: 0,
       elapsed: 0,
+      transElapsed: 0,
       lastTime: 0,
       delta: 0,
       lastEvent: -1,
-      events: [],
-      callback: callback
+      events: []
     };
-
-    if(this.animationManager.currentAnimation){
-      this.animationManager.lastAnimation = this.animationManager.currentAnimation;
-    }
     
     if(typeof anim === 'number'){
-      this.animationManager.currentAnimation = this.odysseyAnimations[anim];
+      this.animationManager.setCurrentAnimation(this.odysseyAnimations[anim], state);
     }else if(typeof anim === 'string'){
-      this.animationManager.currentAnimation = this.getAnimationByName(anim);
+      this.animationManager.setCurrentAnimation(this.getAnimationByName(anim), state);
     }else{
-      this.animationManager.currentAnimation = anim;
+      this.animationManager.setCurrentAnimation(anim, state);
     }
 
     if(typeof this.animationManager.currentAnimation != 'undefined'){
-      this.animationManager.currentAnimationData = data;
       if(!this.animationManager.lastAnimation){
-        this.animationManager.lastAnimation = this.animationManager.currentAnimation;
+        this.animationManager.setLastAnimation( this.animationManager.currentAnimation, state )
       }
 
       const animations2DA = TwoDAManager.datatables.get('animations');
       for(let i = 0, len = animations2DA.rows.length; i < len; i++){
         if(animations2DA.rows[i].name == this.animationManager.currentAnimation.name){
-          this.animationManager.currentAnimationData.animation = animations2DA.rows[i];
+          this.animationManager.currentAnimationState.animation = animations2DA.rows[i];
           break;
         }
       }
@@ -407,54 +402,21 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   stopAnimation(){
-    //this.pose();
-    if(typeof this.animationManager.currentAnimation != 'undefined'){
-      this.animationManager.currentAnimationData = {
-        loop: false,
-        cFrame: 0,
-        elapsed: 0,
-        lastTime: 0,
-        delta: 0,
-        lastEvent: -1,
-        events: [],
-        callback: undefined
-      };
-    }
-    this.animationManager.currentAnimation = undefined;
+    this.animationManager.stopAnimation();
   }
 
-  stopAnimationLoop(){
-    //this.pose();
-    if(typeof this.animLoop != 'undefined'){
-      this.animLoop.data = {
-        loop: false,
-        cFrame: 0,
-        elapsed: 0,
-        lastTime: 0,
-        delta: 0,
-        lastEvent: -1,
-        events: [],
-        callback: undefined
-      };
-    }
-    this.animLoop = undefined;
-  }
-
-  getAnimationByName( name = '' ){
-
+  getAnimationByName(name = ''): OdysseyModelAnimation {
     for(let i = 0; i < this.odysseyAnimations.length; i++){
       if(this.odysseyAnimations[i].name == name)
         return this.odysseyAnimations[i];
     }
-
   }
 
-  getAnimationName(){
+  getAnimationName(): string {
     if(typeof this.animationManager.currentAnimation !== 'undefined'){
       return this.animationManager.currentAnimation.name;
-    }else{
-      return undefined;
     }
+    return undefined;
   }
 
   buildSkeleton(){
@@ -464,7 +426,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     this.pose();
 
     for(let i = 0; i < this.skins.length; i++){
-      let skinNode = this.skins[i];
+      let skinNode = this.skins[i] as any;
       if(typeof skinNode.odysseyNode.bone_parts !== 'undefined'){
         let bones = [];
         let inverses = [];
@@ -642,23 +604,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   }
 
-  // clone(): THREE.Object3D {
-
-  //   let cloned = (new OdysseyModel3D).copy( this );
-  //   cloned._animPosition = new THREE.Vector3();
-  //   cloned._animQuaternion = new THREE.Quaternion();
-  //   cloned.odysseyAnimations = this.odysseyAnimations.slice();
-  //   cloned.traverse( (node) => {
-  //     if(node instanceof THREE.SkinnedMesh){
-  //       cloned.push(mesh)
-  //     }
-  //   });
-  //   cloned.pose();
-  //   cloned.buildSkeleton();
-  //   return cloned;
-
-  // }
-
   disableMatrixUpdate(){
     this.traverse( (node) => {
       if(node instanceof OdysseyModel3D){
@@ -833,9 +778,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
         odysseyModel.names = model.names;
         odysseyModel.modelHeader = model.modelHeader;
         odysseyModel.affectedByFog = model.modelHeader.Fogged ? true : false;
-        
-        // odysseyModel._animPosition = new THREE.Vector3();
-        // odysseyModel._animQuaternion = new THREE.Quaternion();
 
         if(options.mergeStatic){
           odysseyModel.mergedGeometries = [];

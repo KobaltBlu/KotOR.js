@@ -14,7 +14,7 @@ export class AlphaController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.userData.mesh){
       if(manager.modelNode.userData.mesh.material instanceof THREE.Material){
         if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
@@ -30,7 +30,7 @@ export class AlphaController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.userData.mesh){
       if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
         manager.modelNode.userData.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);;

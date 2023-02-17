@@ -104,7 +104,8 @@ export class ModuleObject {
 
   dialogAnimation: {
     animation: OdysseyModelAnimation,
-    data: TwoDAAnimation
+    data: TwoDAAnimation,
+    started: boolean,
   };
 
   templateResRef: string = '';
@@ -227,6 +228,7 @@ export class ModuleObject {
 
   conversation: DLGObject;
   _conversation: DLGObject;
+  cutsceneMode: boolean;
 
   static ResetPlayerId(){
     ModuleObject.PLAYER_ID = 0x7fffffff;
@@ -1120,6 +1122,16 @@ export class ModuleObject {
     return (GameState.Mode == EngineMode.DIALOG) && (MenuManager.InGameDialog.owner == this || MenuManager.InGameDialog.listener == this);
   }
 
+  setCutsceneMode(state: boolean = false){
+    console.log('setCutsceneMode', this.getTag(), state);
+    this.cutsceneMode = state;
+    if(this.model && this.model.skins){
+      for(let i = 0, len = this.model.skins.length; i < len; i++){
+        this.model.skins[i].frustumCulled = !state;
+      }
+    }
+  }
+
   applyVisualEffect(resref = 'v_light'){
     if(this.model instanceof OdysseyModel3D){
       GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
@@ -1129,7 +1141,8 @@ export class ModuleObject {
           if(this.model instanceof OdysseyModel3D){
             this.model.effects.push(effectMDL);
             this.model.add(effectMDL);
-            effectMDL.playAnimation(0, false, () => {
+            const anim = effectMDL.playAnimation(0, false);
+            setTimeout(() => {
               effectMDL.stopAnimation();
               this.model.remove(effectMDL);
               effectMDL.disableEmitters();
@@ -1140,7 +1153,7 @@ export class ModuleObject {
                   this.model.effects.splice(index, 1);
                 }
               }, 5000);
-            })
+            }, (anim ? anim.length * 1000 : 1500) )
           }
         }).catch(() => {
 

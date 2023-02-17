@@ -13,7 +13,7 @@ export class OrientationController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     //Cache the orientation controller
     if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
       let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
@@ -28,12 +28,12 @@ export class OrientationController extends OdysseyController {
 
     if(manager.modelNode.controllerHelpers.hasOrientation){
 
-      if(manager.trans && controller.frameCount > 1){
-        manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion);
-        anim._quaternion.copy(manager.modelNode.transitionState.quaternion);
-      }else{
+      // if(manager.trans && this.frameCount > 1){
+      //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion);
+      //   anim._quaternion.copy(manager.modelNode.transitionState.quaternion);
+      // }else{
         anim._quaternion.copy(manager.modelNode.controllerHelpers.orientation.data[0] as any);
-      }
+      // }
 
     }
     if(data.x == 0 && data.y == 0 && data.z == 0 && data.w == 1){
@@ -43,21 +43,21 @@ export class OrientationController extends OdysseyController {
       data.w = anim._quaternion.w;
     }
 
-    if(manager.trans && controller.frameCount > 1){
-      manager.modelNode.quaternion.slerp(manager._quat.copy(anim._quaternion), 0);
-    }else{
+    // if(manager.trans && this.frameCount > 1){
+    //   manager.modelNode.quaternion.slerp(manager._quat.copy(anim._quaternion), 0);
+    // }else{
       manager.modelNode.quaternion.set(data.x, data.y, data.z, data.w);
-    }
+    // }
 
     manager.modelNode.updateMatrix();
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
 
-      if(manager.trans && manager.lastFrame == 0){
-        manager.modelNode.position.copy(manager.modelNode.transitionState.position);
-      }
+      // if(manager.trans && manager.lastFrame == 0){
+      //   manager.modelNode.position.copy(manager.modelNode.transitionState.position);
+      // }
       manager._quat.slerp(next as any, fl);
   
       //manager.modelNode.emitter.velocity.value.copy(manager.modelNode.emitterOptions.velocity.value.copy().applyQuaternion(manager._quat));
@@ -70,13 +70,13 @@ export class OrientationController extends OdysseyController {
       manager._quat.copy(next as any);
   
       if(next != last){
-        if(manager.trans && manager.lastFrame == 0){
-          manager.modelNode.quaternion.copy(manager.modelNode.transitionState.quaternion);
-          manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion.slerp(manager._quat, fl));
-        }else{
+        // if(manager.trans && manager.lastFrame == 0){
+        //   manager.modelNode.quaternion.copy(manager.modelNode.transitionState.quaternion);
+        //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion.slerp(manager._quat, fl));
+        // }else{
           manager.modelNode.quaternion.copy(last as any);
           manager.modelNode.quaternion.slerp(manager._quat, fl);
-        }
+        // }
       }else{
         manager.modelNode.quaternion.copy(last as any);
       }

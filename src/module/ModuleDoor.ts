@@ -345,7 +345,8 @@ export class ModuleDoor extends ModuleObject {
     }
     this.openState = true;
 
-    this.model.playAnimation('opening1', false, () => {
+    const anim = this.model.playAnimation('opening1', false);
+    setTimeout(() => {
       console.log('opening1');
       setTimeout( () => {
         if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
@@ -353,7 +354,7 @@ export class ModuleDoor extends ModuleObject {
         }
         //this.model.poseAnimation('opened1');
       }, 100);
-    });
+    }, (anim ? anim.length * 1000 : 1500) )
 
     if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh && this.collisionData.walkmesh.mesh.parent){
       GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
@@ -389,11 +390,12 @@ export class ModuleDoor extends ModuleObject {
       GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
     }
 
-    this.model.playAnimation('closing1', false, () => {
+    const anim = this.model.playAnimation('closing1', false);
+    setTimeout(() => {
       console.log('closing1');
       this.openState = false;
       this.model.playAnimation('closed', true);
-    });
+    }, (anim ? anim.length * 1000 : 1500) )
 
   }
 

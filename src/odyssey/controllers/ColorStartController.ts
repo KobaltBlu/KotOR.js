@@ -12,7 +12,7 @@ export class ColorStartController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.colorStart.copy(data);
       manager.modelNode.emitter.material.uniforms.colorStart.value.copy(data);
@@ -20,7 +20,7 @@ export class ColorStartController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.colorStart.setRGB(
         last.x + fl * (next.x - last.x),

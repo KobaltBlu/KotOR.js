@@ -13,30 +13,30 @@ export class PositionController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Position) != 'undefined'){
 
-      if(manager.trans && controller.frameCount > 1){
-        manager.modelNode.transitionState.position.copy(manager.modelNode.position);
-        anim._position.copy(manager.modelNode.transitionState.position);
-      }else{
+      // if(manager.trans && this.frameCount > 1){
+      //   manager.modelNode.transitionState.position.copy(manager.modelNode.position);
+      //   anim._position.copy(manager.modelNode.transitionState.position);
+      // }else{
         anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0]);
-      }
+      // }
 
       if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
         anim._position.sub(manager.model.parent.position);
       }
 
     }
-    if(manager.trans && controller.frameCount > 1){
-      manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
-    }else{
+    //if(manager.trans && this.frameCount > 1){
+    //  manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
+    //}else{
       manager.modelNode.position.copy(anim._position.add(data));
-    }
+    //}
     manager.modelNode.updateMatrix();
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, controller: OdysseyController, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     //if(last.x == next.x && last.y == next.y && last.z == next.z)
     //  break;
 

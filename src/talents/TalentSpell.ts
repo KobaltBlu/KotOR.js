@@ -30,7 +30,7 @@ export class TalentSpell extends TalentObject {
   castTimeProgress: number;
   projectileDistance: any;
   range: string;
-  casthandmodel: any;
+  casthandmodel: OdysseyModel3D;
   impactscript: string;
   casthandvisual: string;
   flags: number;
@@ -285,10 +285,12 @@ export class TalentSpell extends TalentObject {
             if(oCaster.model.lhand){
               oCaster.model.lhand.add(this.casthandmodel);
               //TextureLoader.LoadQueue();
-              this.casthandmodel.playAnimation('cast01', false, () => {
+
+              const anim = this.casthandmodel.playAnimation('cast01', false);
+              setTimeout(() => {
                 //Clean up the impact effect
                 this.casthandmodel.dispose();
-              });
+              }, (anim ? anim.length * 1000 : 1500) )
             }else{
               this.casthandmodel.dispose();
             }

@@ -211,9 +211,7 @@ export class ModulePlaceable extends ModuleObject {
     if(animation){
       if(currentAnimation != animation.name.toLowerCase()){
         let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping, () => {
-          this.animState = ModulePlaceableAnimState.DEFAULT;
-        });
+        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
       }
     }else{
       console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
@@ -415,7 +413,6 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.scripts.onUsed instanceof NWScriptInstance){
-      //console.log('Running script', this.scripts.onUsed)
       this.scripts.onUsed.run(this);
     }
 
