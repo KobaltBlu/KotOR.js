@@ -55,7 +55,7 @@ export class ModuleCreature extends ModuleObject {
   pm_IsDisguised: any;
   pm_Appearance: any;
   anim: any;
-  head: any;
+  head: OdysseyModel3D;
   aiStyle: number;
   isCommandable: boolean;
   lookAtObject: any;
@@ -3391,6 +3391,12 @@ export class ModuleCreature extends ModuleObject {
                   this.head.userData.moduleObject = this;
                   this.model.headhook.head = head;
                   this.model.headhook.add(head);
+
+                  head.nodes.forEach( (node, key) => {
+                    if(!this.model.nodes.has(key)){
+                      this.model.nodes.set(key, node);
+                    }
+                  })
 
                   try{
                     if(this.head.gogglehook instanceof THREE.Object3D){

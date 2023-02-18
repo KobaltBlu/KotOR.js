@@ -123,6 +123,7 @@ export class OdysseyModelAnimationManager {
       return;
     
     this.updateAnimationEvents(anim);
+
     //Update animation nodes if the model is being rendered
     if(this.model.animateFrame){
       let node;
@@ -148,7 +149,7 @@ export class OdysseyModelAnimationManager {
       if(this.lastAnimationState.elapsed >= this.lastAnimation.length){
         this.lastAnimationState.elapsed = this.lastAnimation.length;
         this.lastAnimationState.lastTime = this.lastAnimation.length;
-        this.lastAnimationState.elapsed = 0;
+        if(this.lastAnimationState.loop) this.lastAnimationState.elapsed = 0;
         this.lastAnimationState.elapsedCount++;
       }
       if(this.transElapsed >= this.currentAnimation.transition){
@@ -215,21 +216,9 @@ export class OdysseyModelAnimationManager {
     
   }
 
-  updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: any = {}, canTween: boolean = false){
+  updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: any, canTween: boolean = false){
     if(!node) return;
     this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
-
-    if(
-      this.model.userData.moduleObject && 
-      this.model.userData.moduleObject.head && 
-      this.model.userData.moduleObject.head != this.model
-    ){
-      //This if statement is a hack to get around using getObjectByName because it was too expensive
-      //Not sure of the best approach here. This seems to work for now
-      if(node.name != 'rootdummy' && node.name != 'cutscenedummy' && node.name != 'torso_g' && node.name != 'torsoupr_g')
-        this.model.userData.moduleObject.head.animationManager.updateAnimationNode(anim, node);
-    }
-
     if(this.modelNode){
 
       if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
