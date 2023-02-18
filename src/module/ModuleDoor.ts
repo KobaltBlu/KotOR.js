@@ -488,14 +488,12 @@ export class ModuleDoor extends ModuleObject {
       const outer_distance = partymember.position.distanceTo(this.position);
       if(outer_distance < 10){
         this.testTransitionLine(partymember);
-        if(this.transitionDistance < 2){
+        if(this.transitionDistance < 5){
           if(this.getLinkedToModule() && this.isOpen()){
             MenuManager.InGameAreaTransition.setTransitionObject(this);
           }
         }else{
-          if(MenuManager.InGameAreaTransition.transitionObject == this){
-            MenuManager.InGameAreaTransition.setTransitionObject(undefined);
-          }
+          MenuManager.InGameAreaTransition.unsetTransitionObject(this);
         }
         if(this.transitionDistance < 0.5){
           if(partymember.lastDoorEntered !== this){
@@ -509,6 +507,7 @@ export class ModuleDoor extends ModuleObject {
           }
         }
       }else{
+        MenuManager.InGameAreaTransition.unsetTransitionObject(this);
         if(partymember.lastDoorEntered === this){
           partymember.lastDoorExited = this;
           this.onExit(partymember);

@@ -187,8 +187,6 @@ export class GameMenu {
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
       this.childMenu.Hide();
-    
-    GameState.RestoreEnginePlayMode();
   }
 
   Show(){
@@ -205,6 +203,8 @@ export class GameMenu {
   Close(){
     this.Hide();
     MenuManager.Remove(this);
+    
+    GameState.RestoreEnginePlayMode();
   }
 
   Open(){

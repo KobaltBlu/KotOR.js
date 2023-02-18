@@ -39,43 +39,16 @@ export class InGameAreaTransition extends GameMenu {
     this.LBL_DESCRIPTION.setText(text);
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
-    // for (let i = 0; i < GameState.module.area.triggers.length; i++) {
-    //   let trig = GameState.module.area.triggers[i];
-    //   if (trig.getLinkedToModule() && trig.getTransitionDestin().length) {
-    //     let vec3 = trig.position;
-    //     let distance = GameState.getCurrentPlayer().position.distanceTo(vec3);
-    //     if (distance < 5) {
-    //       this.Show();
-    //       this.SetDescription(trig.getTransitionDestin());
-    //       return;
-    //     }
-    //   }
-    // }
-    // for (let i = 0; i < GameState.module.area.doors.length; i++) {
-    //   let door = GameState.module.area.doors[i];
-    //   if (!door.isOpen() && door.getLinkedToModule() && door.getTransitionDestin().length) {
-    //     let vec3 = new THREE.Vector3(door.getX(), door.getY(), door.getZ());
-    //     let distance = GameState.getCurrentPlayer().position.distanceTo(vec3);
-    //     if (distance < 2) {
-    //       this.Show();
-    //       this.SetDescription(door.getTransitionDestin());
-    //       return;
-    //     }
-    //   }
-    // }
-    // this.Hide();
+  setTransitionObject(object: ModuleObject){
+    if((object instanceof ModuleDoor) || (object instanceof ModuleTrigger)){
+      this.transitionObject = object;
+      this.SetDescription(object.getTransitionDestin());
+    }
   }
 
-  setTransitionObject(object: ModuleObject){
-    this.transitionObject = object;
-    if((this.transitionObject instanceof ModuleDoor) || (this.transitionObject instanceof ModuleTrigger)){
-      this.SetDescription(this.transitionObject.getTransitionDestin());
-      this.Show();
-    }else{
-      this.Hide();
-      this.SetDescription('');
+  unsetTransitionObject(object: ModuleObject){
+    if(this.transitionObject == object){
+      this.transitionObject = undefined;
     }
   }
   
