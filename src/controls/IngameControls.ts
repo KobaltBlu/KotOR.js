@@ -404,6 +404,14 @@ export class IngameControls {
       }
     });
 
+    KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const pc = GameState.getCurrentPlayer();
+      if(pc){
+        pc.walk = !pc.walk;
+      }
+    });
+
     //Dialog1
     KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
