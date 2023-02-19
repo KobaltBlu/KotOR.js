@@ -467,7 +467,7 @@ export class GameState implements EngineContext {
 
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
-    // GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
+    GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
     GameState.copyPass = new ShaderPass(CopyShader);
@@ -482,13 +482,13 @@ export class GameState implements EngineContext {
       height: window.innerHeight
     });
 
-    GameState.renderPassAA.sampleLevel = 0;
+    GameState.renderPassAA.sampleLevel = 1;
 
-    GameState.renderPassAA.renderToScreen = false;
+    GameState.renderPass.renderToScreen = false;
     GameState.copyPass.renderToScreen = false;
     GameState.renderPassGUI.renderToScreen = false;
 
-    GameState.renderPassAA.clear = true;
+    GameState.renderPass.clear = true;
     GameState.bloomPass.clear = false;
     GameState.odysseyShaderPass.clear = false;
     GameState.renderPassAA.clear = false;
@@ -499,20 +499,20 @@ export class GameState implements EngineContext {
     GameState.bokehPass.needsSwap = true;
     GameState.bokehPass.enabled = false;
 
-    // GameState.composer.addPass(GameState.renderPass);
-    GameState.composer.addPass(GameState.renderPassAA);
+    GameState.composer.addPass(GameState.renderPass);
     // GameState.composer.addPass(GameState.bokehPass);
-    GameState.composer.addPass(GameState.bloomPass);
+    // GameState.composer.addPass(GameState.renderPassAA);
     GameState.composer.addPass(GameState.odysseyShaderPass);
+    GameState.composer.addPass(GameState.bloomPass);
+
     GameState.composer.addPass(GameState.renderPassGUI);
     GameState.composer.addPass(GameState.copyPass);
 
-    // GameState.renderPassAA.clearDepth = true;
+    GameState.renderPass.clearDepth = true;
     GameState.renderPassGUI.clearDepth = true;
-    GameState.renderPassAA.clear = true;
+    GameState.renderPass.clear = true;
     GameState.renderPassGUI.clear = false;
-    GameState.bloomPass.needsSwap = true;
-    GameState.renderPassAA.needsSwap = false;
+    GameState.renderPass.needsSwap = false;
     GameState.renderPassGUI.needsSwap = false;
 
     FadeOverlayManager.Initialize();
@@ -710,6 +710,9 @@ export class GameState implements EngineContext {
   }
 
   public static getCurrentPlayer(): ModuleCreature {
+    if(GameState.Mode == EngineMode.MINIGAME){
+      return GameState.module.area.miniGame.player as any;
+    }
     let p = PartyManager.party[0];
     return p ? p : GameState.player;
   }
@@ -1084,7 +1087,7 @@ export class GameState implements EngineContext {
 
   static RestoreEnginePlayMode(): void {
     if(GameState.module){
-      if(GameState.module.area.MiniGame){
+      if(GameState.module.area.miniGame){
         GameState.Mode = EngineMode.MINIGAME
       }else{
         GameState.Mode = EngineMode.INGAME;
@@ -1302,7 +1305,7 @@ export class GameState implements EngineContext {
     CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.updateCursorPosition();
-    GameState.renderPassAA.camera = GameState.currentCamera;
+    GameState.renderPass.camera = GameState.currentCamera;
     //GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 

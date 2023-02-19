@@ -544,7 +544,8 @@ export class IngameControls {
     })
 
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
 
@@ -557,18 +558,20 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
         
         break;
         case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('z', -1 * delta);
+          GameState.module.area.miniGame.player.rotate('x', -1 * delta);
         break;
       }
     });
 
     KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
           GameState.module.area.miniGame.player.lateralForce = -GameState.module.area.miniGame.player.accel_lateral_secs;
@@ -581,12 +584,13 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
           GameState.module.area.miniGame.player.lateralForce = GameState.module.area.miniGame.player.accel_lateral_secs;
         break;
         case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('x', -1 * delta);
+          GameState.module.area.miniGame.player.rotate('z', -1 * delta);
         break;
       }
     });
@@ -597,12 +601,13 @@ export class IngameControls {
     });
 
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !(Mouse.leftClick || Mouse.MouseDown)) return;
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
-        case 1:
+        case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.fire();
         break;
-        case 2:
+        case MiniGameType.SWOOPRACE:
           GameState.module.area.miniGame.player.jump();
         break;
       }

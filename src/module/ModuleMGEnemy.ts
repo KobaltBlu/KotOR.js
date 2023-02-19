@@ -10,16 +10,21 @@ import { GameState } from "../GameState";
 import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScript } from "../nwscript/NWScript";
+import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 
 /* @file
  * The ModulMGEnemy class.
  */
 
 export class ModuleMGEnemy extends ModuleObject {
-  gunBanks: any[];
-  models: any[];
+  gunBanks: ModuleMGGunBank[] = [];
+  models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
-  animationManagers: any[];
+  animationManagers: OdysseyModelAnimationManager[] = [];
+  gun_hook: THREE.Object3D;
+
+  modelProps: ModelListItem[] = [];
+
   gear: number;
   timer: number;
   jumpVelcolity: number;
@@ -31,7 +36,6 @@ export class ModuleMGEnemy extends ModuleObject {
   hit_points: number;
   died: any;
   invince_period: number;
-  gun_hook: THREE.Object3D;
   accel_secs: any;
   bump_damage: any;
   cameraName: any;
@@ -49,11 +53,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.template = template;
 
     this.gunBanks = [];
-    this.models = [];
-    this.model = new OdysseyModel3D();
     this.track = new THREE.Object3D();
-
-    this.animationManagers = [];
 
     this.setTrack(this.track);
 
@@ -64,6 +64,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.invince = 0;
 
     this.box = new THREE.Box3();
+    this.model = this.container as any;
 
     this.alive = true;
 
@@ -74,16 +75,16 @@ export class ModuleMGEnemy extends ModuleObject {
     material.transparent = true;
     material.opacity = 0.15;
     this.sphere_geom = new THREE.Mesh( geometry, material );
+    this.sphere_geom.visible = false;
 
   }
 
   setTrack(model = new THREE.Object3D()){
     this.track = model;
-    if(this.model.parent)
-      this.model.parent.remove(this.model);
+    this.container.removeFromParent();
 
     try{
-      this.track.getObjectByName('modelhook').add(this.model);
+      this.track.getObjectByName('modelhook').add(this.container);
     }catch(e){
 
     }
@@ -96,7 +97,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.invince < 0) this.invince = 0;
 
     this.sphere.radius = this.sphere_radius;
-    this.model.getWorldPosition(this.position);
+    // this.model.getWorldPosition(this.position);
     this.sphere.center.copy(this.position);
 
     this.sphere_geom.scale.setScalar(this.sphere_radius);
@@ -107,8 +108,8 @@ export class ModuleMGEnemy extends ModuleObject {
       aManager.updateAnimation(aManager.currentAnimation, delta);
     }
 
-    for(let i = 0; i < this.model.children.length; i++){
-      let child_model = this.model.children[i];
+    for(let i = 0; i < this.models.length; i++){
+      let child_model = this.models[i];
       if(child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible){
 
         if(this.hit_points > 0){
@@ -136,7 +137,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    this.box.setFromObject(this.model.children[0]);
+    this.box.setFromObject(this.models[0]);
 
     if(this.track instanceof OdysseyModel3D){
       if(!this.track.animationManager.currentAnimation && this.alive){
@@ -150,8 +151,8 @@ export class ModuleMGEnemy extends ModuleObject {
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
       if(this.alive){
-        this.model.getWorldPosition(GameState.raycaster.ray.origin);
-        this.model.getWorldDirection(GameState.raycaster.ray.direction);
+        this.container.getWorldPosition(GameState.raycaster.ray.origin);
+        this.container.getWorldDirection(GameState.raycaster.ray.direction);
         if(GameState.raycaster.ray.intersectsSphere(GameState.module.area.miniGame.player.sphere)){
           this.gunBanks[i].fire();
         }
@@ -168,7 +169,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.alive){
       this.hit_points -= damage;
       let model: OdysseyModel3D
-      for(let i = 0; i < this.model.children.length; i++){
+      for(let i = 0; i < this.models.length; i++){
         model = this.models[i];
         if(model instanceof OdysseyModel3D){
           if(model.bonesInitialized && model.visible){
@@ -197,10 +198,9 @@ export class ModuleMGEnemy extends ModuleObject {
         if(n3){
           console.log(anim);
           const animManager = new OdysseyModelAnimationManager(model);
-          animManager.currentAnimation = anim;
-          anim.data = {
+          animManager.setCurrentAnimation(anim, {
             loop: true,
-            blend: true,
+            // blend: true,
             cFrame: 0,
             elapsed: 0,
             lastTime: 0,
@@ -208,7 +208,7 @@ export class ModuleMGEnemy extends ModuleObject {
             lastEvent: -1,
             events: [],
             callback: undefined
-          };
+          });
           this.animationManagers.push(animManager);
         }else{
           model.playAnimation(anim, false);
@@ -220,7 +220,7 @@ export class ModuleMGEnemy extends ModuleObject {
   removeAnimation(name = ''){
 
     let model: OdysseyModel3D
-    for(let i = 0; i < this.model.children.length; i++){
+    for(let i = 0; i < this.models.length; i++){
       model = this.models[i];
       if(model instanceof OdysseyModel3D){
         let anim = model.getAnimationByName(name);
@@ -255,14 +255,15 @@ export class ModuleMGEnemy extends ModuleObject {
   LoadModel (onLoad?: Function){
 
     let loop = new AsyncLoop({
-      array: this.models,
-      onLoop: (item: any, asyncLoop: AsyncLoop) => {
-        const resref =item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      array: this.modelProps,
+      onLoop: (item: ModelListItem, asyncLoop: AsyncLoop) => {
+        const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
         GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               try{
-                this.model.add(model);  
+                this.models.push(model);
+                this.container.add(model);  
                 model.name = item.model;
 
                 asyncLoop.next();
@@ -280,7 +281,7 @@ export class ModuleMGEnemy extends ModuleObject {
     });
     loop.iterate(() => {
       if(typeof onLoad === 'function')
-        onLoad(this.model);
+        onLoad();
     });
 
   }
@@ -290,7 +291,7 @@ export class ModuleMGEnemy extends ModuleObject {
       array: this.gunBanks,
       onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
         gunbank.Load().then( () => {
-          this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
+          this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
             this.gun_hook.add(gunbank.model);
           }
@@ -473,9 +474,9 @@ export class ModuleMGEnemy extends ModuleObject {
       let models = this.template.GetFieldByLabel('Models').GetChildStructs();
       for(let i = 0; i < models.length; i++){
         let modelStruct = models[i];
-        this.models.push({
+        this.modelProps.push({
           model: modelStruct.GetFieldByLabel('Model').GetValue(),
-          isRotating: modelStruct.GetFieldByLabel('RotatingModel').GetValue() ? true : false
+          rotating: modelStruct.GetFieldByLabel('RotatingModel').GetValue() ? true : false
         });
       }
     }

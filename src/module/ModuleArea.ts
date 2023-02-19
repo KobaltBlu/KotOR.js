@@ -365,35 +365,45 @@ export class ModuleArea extends ModuleObject {
   updateRoomVisibility(delta: number = 0){
     let roomList: ModuleRoom[] = [];
     let pos = undefined;
-    
-    if(GameState.Mode == EngineMode.DIALOG){
-      pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
-      for(let i = 0, il = this.rooms.length; i < il; i++){
-        const room = this.rooms[i];
-        if(!room.hasVISObject || room.box.containsPoint(pos)){
-          roomList.push(room);
-        }
-      }
 
-      for(let i = 0; i < roomList.length; i++){
-        roomList[i].show(true);
-      }
-    }else if(PartyManager.party[0]){
-      let player = GameState.getCurrentPlayer();
-      if(player && player.room){
-        player.room.show(true);
-      }
-
-      //SKYBOX Fix
-      if(player){
-        for(let i = 0, len = this.rooms.length; i < len; i++){
-          let room = this.rooms[i];
-          if(!room.hasVISObject || room.box.containsPoint(player.position)){
-            //Show the room, but don't recursively show it's children
-            room.show(false);
+    switch(GameState.Mode){
+      case EngineMode.DIALOG:
+        pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
+        for(let i = 0, il = this.rooms.length; i < il; i++){
+          const room = this.rooms[i];
+          if(!room.hasVISObject || room.box.containsPoint(pos)){
+            roomList.push(room);
           }
         }
-      }
+  
+        for(let i = 0; i < roomList.length; i++){
+          roomList[i].show(true);
+        }
+      break;
+      case EngineMode.MINIGAME:
+        for(let i = 0, len = this.rooms.length; i < len; i++){
+          let room = this.rooms[i];
+          if(room) room.show(false);
+        }
+      break;
+      case EngineMode.INGAME:
+      case EngineMode.FREELOOK:
+        let player = GameState.getCurrentPlayer();
+        if(player && player.room){
+          player.room.show(true);
+        }
+
+        //SKYBOX Fix
+        if(player){
+          for(let i = 0, len = this.rooms.length; i < len; i++){
+            let room = this.rooms[i];
+            if(!room.hasVISObject || room.box.containsPoint(player.position)){
+              //Show the room, but don't recursively show it's children
+              room.show(false);
+            }
+          }
+        }
+      break;
     }
   }
 

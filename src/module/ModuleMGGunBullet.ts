@@ -18,11 +18,11 @@ export class ModuleMGGunBullet extends ModuleObject {
   direction: THREE.Vector3;
   velocity: THREE.Vector3;
   lifespan: any;
-  model_name: any;
-  collision_sound: any;
+  model_name: string = '';
+  collision_sound: string = '';
   rate_of_fire: any;
   target_type: any;
-  damage_amt: number;
+  damage_amt: number = 0;
 
   constructor( template: GFFObject, owner: ModuleObject ){
     super();

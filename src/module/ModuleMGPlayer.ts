@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleMGEnemy, ModuleMGGunBank, ModuleMGGunBullet, ModuleMGObstacle, ModuleObject } from ".";
+import { ModuleMGEnemy, ModuleMGGunBank, ModuleMGGunBullet, ModuleMGObstacle, ModuleObject, ModuleRoom } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "../GameState";
@@ -11,20 +11,29 @@ import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
+import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 
 /* @file
  * The ModuleMGPlayer class.
  */
 
 export class ModuleMGPlayer extends ModuleObject {
-  camera: any;
-  gunBanks: any[];
-  models: any[];
-  modelProps: any[];
+
+  camera: THREE.Object3D;
+  models: OdysseyModel3D[] = [];
   track: OdysseyObject3D;
-  bullets: any[];
+  animationManagers: OdysseyModelAnimationManager[];
+  lastRoom: ModuleRoom;
+  gun_hook: THREE.Object3D;
+
+  gunBanks: ModuleMGGunBank[] = [];
+  bullets: ModuleMGGunBullet[] = [];
+
+  //debug sphere
+  sphere_geom: THREE.Mesh;
+
+  modelProps: ModelListItem[] = [];
   no_rotate: THREE.Group;
-  animationManagers: any[];
   speed_min: number;
   speed_max: number;
   accel_secs: number;
@@ -38,19 +47,17 @@ export class ModuleMGPlayer extends ModuleObject {
   falling: boolean;
   alive: boolean;
   tunnel: { neg: { x: number; y: number; z: number; }; pos: { x: number; y: number; z: number; }; };
-  sphere_geom: THREE.Mesh;
   hit_points: any;
   max_hps: any;
   onCreateRun: boolean;
   sphere_radius: number;
   invince_period: number;
-  lastRoom: any;
-  cameraName: any;
-  gun_hook: THREE.Object3D;
   bump_damage: any;
   cameraRotate: any;
   num_loops: any;
-  trackName: any;
+
+  cameraName: string = '';
+  trackName: string = '';
 
   constructor(template: GFFObject){
     super();
@@ -59,10 +66,9 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.camera = null;
     this.gunBanks = [];
-    this.models = [];
     this.modelProps = [];
-    this.model = new OdysseyModel3D();
     this.track = new OdysseyObject3D();
+    this.model = this.container as any;
 
     this.bullets = [];
 
@@ -124,20 +130,21 @@ export class ModuleMGPlayer extends ModuleObject {
     this.rotate('y', 0);
     this.rotate('z', 0);
 
-    if(this.model.parent)
-      this.model.parent.remove(this.model);
+    this.container.removeFromParent();
 
     try{
-      this.track.getObjectByName('modelhook').add(this.model);
+      this.track.getObjectByName('modelhook').add(this.container);
     }catch(e){
-
+      console.error(e);
     }
 
     try{
       this.track.parent.add(this.no_rotate);
       this.no_rotate.position.copy(this.track.position);
       this.no_rotate.quaternion.copy(this.track.quaternion);
-    }catch(e){}
+    }catch(e){
+      console.error(e);
+    }
 
     this.onCreateRun = false;
 
@@ -157,7 +164,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
     this.sphere.radius = this.sphere_radius;
-    this.model.parent.getWorldPosition(this.position);
+    // this.model.parent.getWorldPosition(this.position);
     this.sphere.center.copy(this.position);
 
     this.sphere_geom.scale.setScalar(this.sphere_radius);
@@ -167,14 +174,14 @@ export class ModuleMGPlayer extends ModuleObject {
       const aManager = this.animationManagers[i];
       if(
         aManager.currentAnimation.data.loop || 
-        ( !aManager.currentAnimation.data.loop && !aManager.currentAnimation.data.elapsedCount )
+        ( !aManager.currentAnimation.data.loop && !aManager.currentAnimationState.elapsedCount )
       ){
         aManager.updateAnimation(aManager.currentAnimation, delta);
       }
     }
 
-    for(let i = 0; i < this.model.children.length; i++){
-      const model = this.model.children[i];
+    for(let i = 0; i < this.container.children.length; i++){
+      const model = this.container.children[i];
       if(model instanceof OdysseyModel3D && model.bonesInitialized && model.visible){
         model.update(delta);
       }
@@ -244,7 +251,7 @@ export class ModuleMGPlayer extends ModuleObject {
       this.gunBanks[i].update(delta);
     }
     
-    this.model.parent.getWorldPosition(this.position);
+    // this.model.parent.getWorldPosition(this.position);
 
     this.sphere.center.copy(this.position);
     this.sphere_geom.position.copy(this.sphere.center);
@@ -267,8 +274,8 @@ export class ModuleMGPlayer extends ModuleObject {
     if(this.alive){
       this.hit_points -= damage;
       let model: OdysseyModel3D;
-      for(let i = 0; i < this.model.children.length; i++){
-        model = (this.model.children[i] as OdysseyModel3D);
+      for(let i = 0; i < this.container.children.length; i++){
+        model = (this.container.children[i] as OdysseyModel3D);
         if(model instanceof OdysseyModel3D){
           if(model.bonesInitialized && model.visible){
             model.playAnimation('damage', false);
@@ -365,18 +372,16 @@ export class ModuleMGPlayer extends ModuleObject {
 
         if(bOverlay){
           const animManager = new OdysseyModelAnimationManager(model);
-          animManager.currentAnimation = anim;
-          anim.data = {
+          animManager.setCurrentAnimation(anim, {
             loop: bLooping ? true : false,
-            blend: true,
+            // blend: true,
             cFrame: 0,
             elapsed: 0,
             lastTime: 0,
             delta: 0,
             lastEvent: -1,
-            events: [],
-            callback: undefined
-          };
+            events: []
+          })
           this.animationManagers.push(animManager);
         }else{
           model.playAnimation(anim, false);
@@ -396,7 +401,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   updateCollision(delta = 0){
 
-    if(!this.model || !GameState.module || !GameState.module.area)
+    if(!GameState.module || !GameState.module.area)
       return;
 
     let _axisFront = this.AxisFront.clone();
@@ -663,11 +668,9 @@ export class ModuleMGPlayer extends ModuleObject {
     return face;
   }
 
-  Load( onLoad?: Function ){
+  Load(){
     this.InitProperties();
     GameState.scene.add(this.sphere_geom);
-    if(onLoad != null)
-      onLoad(this.template);
   }
 
   LoadCamera( onLoad?: Function ){
@@ -676,11 +679,11 @@ export class ModuleMGPlayer extends ModuleObject {
       GameState.ModelLoader.load(resref).then(
         (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model: OdysseyModel3D) => {
+            onComplete: (camera: OdysseyModel3D) => {
               try{
-                this.camera = model;
-                model.name = this.cameraName;
-                this.model.add(model);
+                this.camera = camera;
+                camera.name = this.cameraName;
+                this.container.add(camera);
 
                 if(typeof onLoad === 'function')
                   onLoad();
@@ -705,14 +708,14 @@ export class ModuleMGPlayer extends ModuleObject {
   LoadModel (onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.modelProps,
-      onLoop: (item: any, asyncLoop: AsyncLoop) => {
+      onLoop: (item: ModelListItem, asyncLoop: AsyncLoop) => {
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
         GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               try{
-                if(item.isRotating){
-                  this.model.add(model);
+                if(item.rotating){
+                  this.container.add(model);
                 }else{
                   this.no_rotate.add(model);
                 }
@@ -737,7 +740,7 @@ export class ModuleMGPlayer extends ModuleObject {
     });
     loop.iterate(() => {
       if(typeof onLoad === 'function')
-        onLoad(this.model);
+        onLoad();
     });
 
   }
@@ -747,7 +750,7 @@ export class ModuleMGPlayer extends ModuleObject {
       array: this.gunBanks,
       onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
         gunbank.Load().then( () => {
-          this.gun_hook = this.model.getObjectByName('gunbank'+gunbank.bankID);
+          this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
             this.gun_hook.add(gunbank.model);
           }
@@ -955,7 +958,7 @@ export class ModuleMGPlayer extends ModuleObject {
         let modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.GetFieldByLabel('Model').GetValue(),
-          isRotating: modelStruct.GetFieldByLabel('RotatingModel').GetValue() ? true : false
+          rotating: !!modelStruct.GetFieldByLabel('RotatingModel').GetValue()
         });
       }
     }

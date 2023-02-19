@@ -59,10 +59,20 @@ export class ModuleMiniGame {
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i].update(delta);
     }
+    
+    for(let i = 0; i < this.obstacles.length; i++){
+      this.obstacles[i].update(delta);
+    }
   }
 
   tickPaused(delta: number = 0){
+    for(let i = 0; i < this.enemies.length; i++){
+      this.enemies[i].updatePaused(delta);
+    }
 
+    for(let i = 0; i < this.obstacles.length; i++){
+      this.obstacles[i].updatePaused(delta);
+    }
   }
 
   async load(){
@@ -91,28 +101,19 @@ export class ModuleMiniGame {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading MG Player')
       let player: ModuleMGPlayer = this.player;
-      (player as any).partyID = -1;
-      PartyManager.party.push(player as any);
-      player.Load( ( object: ModuleMGPlayer ) => {
-        
-        if(typeof object == 'undefined'){
-          // asyncLoop.next();
-          return;
-        }
-
-        player.LoadCamera( () => {
-          player.LoadModel( (model: OdysseyModel3D) => {
-            player.LoadGunBanks( () => {
-              let track = this.tracks.find(o => o.track === player.trackName);
-              model.userData.moduleObject = player;
-              model.hasCollision = true;
-              player.setTrack(track.model);
-    
-              player.getCurrentRoom();
-              // player.computeBoundingBox();
-    
-              resolve();
-            });
+      player.Load();
+      player.LoadCamera( () => {
+        player.LoadModel( () => {
+          player.LoadGunBanks( () => {
+            let track = this.tracks.find(o => o.track === player.trackName);
+            // model.userData.moduleObject = player;
+            // model.hasCollision = true;
+            player.setTrack(track.model);
+  
+            player.getCurrentRoom();
+            // player.computeBoundingBox();
+  
+            resolve();
           });
         });
       });
@@ -132,7 +133,7 @@ export class ModuleMiniGame {
               model.userData.index = trackIndex;
               //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
               model.hasCollision = true;
-              GameState.group.creatures.add( track.container );
+              GameState.group.creatures.add( track.model );
     
               track.computeBoundingBox();
               track.getCurrentRoom();
@@ -155,11 +156,11 @@ export class ModuleMiniGame {
         array: this.enemies,
         onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
           enemy.Load();
-          enemy.LoadModel( (model: OdysseyModel3D) => {
+          enemy.LoadModel( () => {
             enemy.LoadGunBanks( () => {
               let track = this.tracks.find(o => o.track === enemy.trackName);
-              model.userData.moduleObject = enemy;
-              model.hasCollision = true;
+              // model.userData.moduleObject = enemy;
+              // model.hasCollision = true;
               enemy.setTrack(track.model);
               enemy.computeBoundingBox();
               enemy.getCurrentRoom();
