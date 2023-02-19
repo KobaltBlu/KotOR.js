@@ -482,7 +482,7 @@ export class GameState implements EngineContext {
       height: window.innerHeight
     });
 
-    GameState.renderPassAA.sampleLevel = 1;
+    GameState.renderPassAA.sampleLevel = 0;
 
     GameState.renderPassAA.renderToScreen = false;
     GameState.copyPass.renderToScreen = false;
