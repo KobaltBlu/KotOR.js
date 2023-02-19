@@ -436,7 +436,7 @@ export class InGameOverlay extends GameMenu {
       this.getControlByName('LBL_BACK' + (nth + 1))?.show();
       this.getControlByName('PB_FORCE' + (nth + 1))?.show();
       this.getControlByName('PB_VIT' + (nth + 1))?.show();
-      if (!GameState.module.area.MiniGame && PartyManager.party[nth]) {
+      if (!GameState.module.area.miniGame && PartyManager.party[nth]) {
         switch (nth) {
         case 0:
           if (PartyManager.party[nth].canLevelUp()) {
@@ -679,7 +679,7 @@ export class InGameOverlay extends GameMenu {
     super.Update(delta);
     if (!this.bVisible)
       return;
-    if (!GameState.module.area.MiniGame) {
+    if (!GameState.module.area.miniGame) {
       ActionMenuManager.SetPC(GameState.getCurrentPlayer());
       ActionMenuManager.SetTarget(GameState.selectedObject);
       ActionMenuManager.UpdateMenuActions();

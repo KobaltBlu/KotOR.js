@@ -42,6 +42,8 @@ export class ModuleMGEnemy extends ModuleObject {
   num_loops: any;
   trackName: any;
 
+  collided: boolean = false;
+
   constructor(template: GFFObject){
     super();
     this.template = template;
@@ -150,7 +152,7 @@ export class ModuleMGEnemy extends ModuleObject {
       if(this.alive){
         this.model.getWorldPosition(GameState.raycaster.ray.origin);
         this.model.getWorldDirection(GameState.raycaster.ray.direction);
-        if(GameState.raycaster.ray.intersectsSphere(GameState.module.area.MiniGame.Player.sphere)){
+        if(GameState.raycaster.ray.intersectsSphere(GameState.module.area.miniGame.player.sphere)){
           this.gunBanks[i].fire();
         }
       }

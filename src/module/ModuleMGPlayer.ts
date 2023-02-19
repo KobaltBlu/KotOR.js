@@ -183,7 +183,7 @@ export class ModuleMGPlayer extends ModuleObject {
     //this.animationManagers
     this.AxisFront.set(0, 0, 0);
 
-    switch(GameState.module.area.MiniGame.Type){
+    switch(GameState.module.area.miniGame.type){
       case 1:
 
         if(this.speed_min || this.speed){
@@ -211,7 +211,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.track.position.add(this.AxisFront);
         //this.model.box.setFromObject(this.model);
 
-        const enemies = GameState.module.area.MiniGame.Enemies;
+        const enemies = GameState.module.area.miniGame.enemies;
         for(let i = 0; i < enemies.length; i++){
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.sphere.center)){

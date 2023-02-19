@@ -518,7 +518,11 @@ export class ModuleCreature extends ModuleObject {
       }else{
         this.damageList = [];
         this.getUpAnimationPlayed = false;
-        if(this.deathStarted && this.animState != ModuleCreatureAnimState.DEAD && this.animState != ModuleCreatureAnimState.DIE){
+        if(
+          this.deathStarted && 
+          this.animState != ModuleCreatureAnimState.DEAD && 
+          this.animState != ModuleCreatureAnimState.DIE
+        ){
           this.animState = ModuleCreatureAnimState.DEAD;
           this.deathAnimationPlayed = true;
         }
@@ -3392,11 +3396,25 @@ export class ModuleCreature extends ModuleObject {
                   this.model.headhook.head = head;
                   this.model.headhook.add(head);
 
-                  head.nodes.forEach( (node, key) => {
-                    if(!this.model.nodes.has(key)){
-                      this.model.nodes.set(key, node);
-                    }
-                  })
+                  // head.nodes.forEach( (node, key) => {
+                  //   if(!this.model.nodes.has(key)){
+                  //     this.model.nodes.set(key, node);
+                  //   }
+                  // });
+
+                  // for(let i = 0; i < head.skins.length; i++){
+                  //   let skin = head.skins[i];
+                  //   let skeleton = skin.skeleton;
+                  //   for(let j = 0; j < skeleton.bones.length; j++){
+                  //     let bone = skeleton.bones[j];
+                  //     if(bone){
+                  //       let newBone = this.model.nodes.has(bone.name);
+                  //       if(newBone){
+                  //         skeleton.bones[j] = this.model.nodes.get(bone.name) as any;
+                  //       }
+                  //     }
+                  //   }
+                  // }
 
                   try{
                     if(this.head.gogglehook instanceof THREE.Object3D){

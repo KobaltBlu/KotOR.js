@@ -131,15 +131,15 @@ export class FollowerCamera {
         followee.camera.camerahook.getWorldPosition(FollowerCamera.camera.position);
         followee.camera.camerahook.getWorldQuaternion(FollowerCamera.camera.quaternion);
 
-        switch(area.MiniGame.Type){
+        switch(area.miniGame.type){
           case MiniGameType.SWOOPRACE:
-            FollowerCamera.camera.fov = area.MiniGame.CameraViewAngle;
+            FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
           break;
           case MiniGameType.TURRET:
-            FollowerCamera.camera.fov = area.MiniGame.CameraViewAngle;
+            FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
           break;
         }
-        FollowerCamera.camera.fov = area.MiniGame.CameraViewAngle;
+        FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
       }
     }else{
       FollowerCamera.camera.position.copy(followee.position);

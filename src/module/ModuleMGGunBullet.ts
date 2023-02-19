@@ -53,7 +53,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       this.model.position.copy(this.position);
       
       if(this.owner.isPlayer){
-        const enemies = GameState.module.area.MiniGame.Enemies;
+        const enemies = GameState.module.area.miniGame.enemies;
         for(let i = 0, len = enemies.length; i < len; i++){
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.position)){
@@ -64,7 +64,7 @@ export class ModuleMGGunBullet extends ModuleObject {
           }
         }
       }else{
-        const player = GameState.module.area.MiniGame.Player;
+        const player = GameState.module.area.miniGame.player;
         if(player.sphere.containsPoint(this.position)){
           player.damage(this.damage_amt);
           //Set the life to Infinity so it will be culled on the next pass

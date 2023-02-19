@@ -23,6 +23,7 @@ export * from "./ModuleStore";
 export * from "./ModuleTrigger";
 export * from "./ModuleWaypoint";
 
+export * from "./ModuleMiniGame";
 export * from "./ModuleMGEnemy";
 export * from "./ModuleMGGunBank";
 export * from "./ModuleMGGunBullet";

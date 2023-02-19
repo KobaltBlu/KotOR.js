@@ -190,7 +190,7 @@ export class ModuleRoom extends ModuleObject {
             castShadow: false,
             receiveShadow: true,
             //Merge Static Geometry *Experimental*
-            mergeStatic: !GameState.module.area.MiniGame ? true : false
+            mergeStatic: !GameState.module.area.miniGame ? true : false
           }).then( (room: OdysseyModel3D) => {
             if(this.model instanceof OdysseyModel3D){
               this.model.removeFromParent();

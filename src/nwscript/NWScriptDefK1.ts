@@ -5789,7 +5789,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.MiniGame.Player.accel_lateral_secs = args[0];
+      GameState.module.area.miniGame.player.accel_lateral_secs = args[0];
     }
   },
   521:{
@@ -6339,14 +6339,14 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      for(let i = 0, len = GameState.module.area.MiniGame.Obstacles.length; i < len; i++){
-        const obstacle = GameState.module.area.MiniGame.Obstacles[i];
+      for(let i = 0, len = GameState.module.area.miniGame.obstacles.length; i < len; i++){
+        const obstacle = GameState.module.area.miniGame.obstacles[i];
         if(obstacle.name == args[0]){
           return obstacle;
         }
       }
-      for(let i = 0, len = GameState.module.area.MiniGame.Enemies.length; i < len; i++){
-        const enemy = GameState.module.area.MiniGame.Enemies[i];
+      for(let i = 0, len = GameState.module.area.miniGame.enemies.length; i < len; i++){
+        const enemy = GameState.module.area.miniGame.enemies[i];
         if(enemy.name == args[0]){
           return enemy;
         }
@@ -6474,7 +6474,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return (GameState.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0) ? 1 : 0;
+      return (GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy ) >= 0) ? 1 : 0;
     }
   },
   600:{
@@ -6483,7 +6483,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.MiniGame.Player == args[0] ? 1 : 0;
+      return GameState.module.area.miniGame.player == args[0] ? 1 : 0;
     }
   },
   601:{
@@ -6492,7 +6492,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+      return GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0;
     }
   },
   602:{
@@ -6510,7 +6510,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.MiniGame.Obstacles.indexOf(args[0]) >= 0;
+      return GameState.module.area.miniGame.obstacles.indexOf(args[0] as ModuleMGObstacle) >= 0;
     }
   },
   604:{
@@ -6576,7 +6576,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player;
+      return GameState.module.area.miniGame.player;
     }
   },
   612:{
@@ -6585,7 +6585,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Enemies.length;
+      return GameState.module.area.miniGame.enemies.length;
     }
   },
   613:{
@@ -6594,7 +6594,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return GameState.module.area.MiniGame.Enemies[ args[0] ];
+      return GameState.module.area.miniGame.enemies[ args[0] ];
     }
   },
   614:{
@@ -6603,7 +6603,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Obstacles.length;
+      return GameState.module.area.miniGame.obstacles.length;
     }
   },
   615:{
@@ -6612,7 +6612,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return GameState.module.area.MiniGame.Obstacles[args[0]];
+      return GameState.module.area.miniGame.obstacles[args[0]];
     }
   },
   616:{
@@ -6791,15 +6791,15 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(GameState.module.area.MiniGame.Type == 2){
-        const rot = GameState.module.area.MiniGame.Player.rotation;
+      if(GameState.module.area.miniGame.type == 2){
+        const rot = GameState.module.area.miniGame.player.rotation;
         return new THREE.Vector3(
           THREE.MathUtils.radToDeg(rot.x),
           THREE.MathUtils.radToDeg(rot.y),
           THREE.MathUtils.radToDeg(rot.z)
         );
       }else{
-        return GameState.module.area.MiniGame.Player.position;
+        return GameState.module.area.miniGame.player.position;
       }
     }
   },
@@ -6815,7 +6815,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.speed;
+      return GameState.module.area.miniGame.player.speed;
     }
   },
   644:{
@@ -6824,7 +6824,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.speed_min;
+      return GameState.module.area.miniGame.player.speed_min;
     }
   },
   645:{
@@ -6833,7 +6833,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.accel_secs;
+      return GameState.module.area.miniGame.player.accel_secs;
     }
   },
   646:{
@@ -6842,7 +6842,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.tunnel.pos;
+      return GameState.module.area.miniGame.player.tunnel.pos;
     }
   },
   647:{
@@ -6851,7 +6851,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.MiniGame.Player.position.copy(args[0]);
+      GameState.module.area.miniGame.player.position.copy(args[0]);
     }
   },
   648:{
@@ -6866,7 +6866,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.MiniGame.Player.speed = args[0];
+      GameState.module.area.miniGame.player.speed = args[0];
     }
   },
   650:{
@@ -6875,7 +6875,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.MiniGame.Player.speed_min = args[0];
+      GameState.module.area.miniGame.player.speed_min = args[0];
     }
   },
   651:{
@@ -6884,7 +6884,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.MiniGame.Player.accel_secs = args[0];
+      GameState.module.area.miniGame.player.accel_secs = args[0];
     }
   },
   652:{
@@ -6893,7 +6893,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.MiniGame.Player.tunnel.pos = args[0];
+      GameState.module.area.miniGame.player.tunnel.pos = args[0];
     }
   },
   653:{
@@ -6902,7 +6902,7 @@ NWScriptDefK1.Actions = {
     type: 20,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.tunnel.neg;
+      return GameState.module.area.miniGame.player.tunnel.neg;
     }
   },
   654:{
@@ -6911,7 +6911,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.MiniGame.Player.tunnel.neg = args[0];
+      GameState.module.area.miniGame.player.tunnel.neg = args[0];
     }
   },
   655:{
@@ -7003,7 +7003,7 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.MiniGame.Player.speed_max;
+      return GameState.module.area.miniGame.player.speed_max;
     }
   },
   668:{
@@ -7012,7 +7012,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.MiniGame.Player.speed_max = args[0];
+      GameState.module.area.miniGame.player.speed_max = args[0];
     }
   },
   669:{

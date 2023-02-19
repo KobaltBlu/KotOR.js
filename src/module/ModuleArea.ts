@@ -8,7 +8,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
-import { Module, ModuleAreaOfEffect, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
+import { Module, ModuleAreaOfEffect, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleMiniGame, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { GFFField } from "../resource/GFFField";
@@ -44,17 +44,14 @@ export class ModuleArea extends ModuleObject {
   doorhooks: any[] = [];
   doors: ModuleDoor[] = [];
   encounters: ModuleEncounter[] = [];
-  obstacles: ModuleMGObstacle[] = [];
-  items: any[] = [];
-  party: any[] = [];
+  items: ModuleItem[] = [];
   placeables: ModulePlaceable[] = [];
-  // rooms: ModuleRoom[] = [];
   sounds: ModuleSound[] = [];
   stores: ModuleStore[] = [];
-  tracks: ModuleMGTrack[] = [];
   triggers: ModuleTrigger[] = [];
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
+  miniGame: ModuleMiniGame;
 
   audio = {
     AmbientSndDay: 0,
@@ -151,7 +148,6 @@ export class ModuleArea extends ModuleObject {
   git: GFFObject;
   transWP: string|GFFObject;
   weather: AreaWeather;
-  MiniGame: any;
   cameraBoundingBox: any;
   Alphatest: any;
   onEnter: any;
@@ -293,9 +289,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
-        this.MiniGame.Enemies[i].update(delta);
-      }
+      this.miniGame.tick(delta);
     }
 
     //update rooms
@@ -356,9 +350,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
-        this.MiniGame.Enemies[i].update(delta);
-      }
+      this.miniGame.tickPaused(delta);
     }
 
     //update rooms
@@ -535,40 +527,10 @@ export class ModuleArea extends ModuleObject {
       WorldPt2Y: map.GetFieldByLabel('WorldPt2Y').GetValue()
     };
 
-    this.MiniGame = null;
-
     if(this.are.RootNode.HasField('MiniGame')){
-
-      let MG = this.are.GetFieldByLabel('MiniGame').GetChildStructs()[0];
-
-      this.MiniGame = {
-        Bump_Plane: MG.GetFieldByLabel('Bump_Plane').GetValue(),
-        CameraViewAngle: MG.GetFieldByLabel('CameraViewAngle').GetValue(),
-        DOF: MG.GetFieldByLabel('DOF').GetValue(),
-        DoBumping: MG.GetFieldByLabel('DoBumping').GetValue(),
-        Enemies: [],
-        Far_Clip: MG.GetFieldByLabel('Far_Clip').GetValue(),
-        LateralAccel: MG.GetFieldByLabel('LateralAccel').GetValue(),
-        Mouse: {}, //TODO
-        MovementPerSec: MG.GetFieldByLabel('MovementPerSec').GetValue(),
-        Music: MG.GetFieldByLabel('Music').GetValue(),
-        Near_Clip: MG.GetFieldByLabel('Near_Clip').GetValue(),
-        Obstacles: [],
-        Type: MG.GetFieldByLabel('Type').GetValue(),
-        UseInertia: MG.GetFieldByLabel('UseInertia').GetValue()
-      };
-
-      this.MiniGame.Player = new ModuleMGPlayer(GFFObject.FromStruct(MG.GetFieldByLabel('Player').GetChildStructs()[0]));
-
-      let enemies = MG.GetFieldByLabel('Enemies').GetChildStructs();
-      for(let i = 0; i < enemies.length; i++){
-        this.MiniGame.Enemies.push(
-          new ModuleMGEnemy(
-            GFFObject.FromStruct(enemies[i])
-          )
-        );
-      }
-
+      this.miniGame = new ModuleMiniGame(
+        this.are.GetFieldByLabel('MiniGame').GetChildStructs()[0]
+      );
     }
 
 
@@ -787,8 +749,8 @@ export class ModuleArea extends ModuleObject {
     GameState.audioEngine.SetReverbProfile(this.audio.EnvAudio);
 
     FollowerCamera.setCameraStyle(this.getCameraStyle());
-    if(this.MiniGame){
-      FollowerCamera.setCameraFOV(this.MiniGame.CameraViewAngle);
+    if(this.miniGame){
+      FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
     }else{
       FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     }
@@ -861,12 +823,14 @@ export class ModuleArea extends ModuleObject {
         this.doorhooks.push(_doorHook);
       }
 
-      for(let i = 0; i < this.layout.tracks.length; i++){
-        this.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
-      }
-
-      for(let i = 0; i < this.layout.obstacles.length; i++){
-        this.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
+      if(this.miniGame){
+        for(let i = 0; i < this.layout.tracks.length; i++){
+          this.miniGame.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
+        }
+  
+        for(let i = 0; i < this.layout.obstacles.length; i++){
+          this.miniGame.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
+        }
       }
 
       //Room Linking Pass 1
@@ -976,9 +940,9 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(60);
 
-      try { await this.loadMGTracks(); } catch(e){ console.error(e); }
-      try { await this.loadMGPlayer(); } catch(e){ console.error(e); }
-      try { await this.loadMGEnemies(); } catch(e){ console.error(e); }
+      if(this.miniGame){
+        try { await this.miniGame.load(); } catch(e){ console.error(e); }
+      }
 
       MenuManager.LoadScreen.setProgress(70);
 
@@ -1061,41 +1025,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  async loadMGPlayer(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      if(this.MiniGame){
-        console.log('Loading MG Player')
-        let player: ModuleMGPlayer = this.MiniGame.Player;
-        (player as any).partyID = -1;
-        PartyManager.party.push(player as any);
-        player.Load( ( object: ModuleMGPlayer ) => {
-          
-          if(typeof object == 'undefined'){
-            // asyncLoop.next();
-            return;
-          }
-
-          player.LoadCamera( () => {
-            player.LoadModel( (model: OdysseyModel3D) => {
-              player.LoadGunBanks( () => {
-                let track = this.tracks.find(o => o.track === player.trackName);
-                model.userData.moduleObject = player;
-                model.hasCollision = true;
-                player.setTrack(track.model);
-      
-                player.getCurrentRoom();
-                // player.computeBoundingBox();
-      
-                resolve();
-              });
-            });
-          });
-        });
-      }else{
-        resolve();
-      }
-    });
-  }
+  
 
   async loadPlayer(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
@@ -1104,7 +1034,7 @@ export class ModuleArea extends ModuleObject {
         if(GameState.player instanceof ModuleCreature){
           GameState.player.partyID = -1;
 
-          if(!this.MiniGame){
+          if(!this.miniGame){
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
             GameState.group.party.add( GameState.player.container );
           }
@@ -1139,7 +1069,7 @@ export class ModuleArea extends ModuleObject {
           player.Load();
           GameState.player = player;
         
-          if(!this.MiniGame){
+          if(!this.miniGame){
             PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
             GameState.group.party.add( player.container );
           }
@@ -1163,69 +1093,6 @@ export class ModuleArea extends ModuleObject {
       }catch(e){
         console.error(e);
       }
-    });
-  }
-
-  async loadMGTracks(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      if(this.MiniGame){
-        let trackIndex = 0;
-        let loop = new AsyncLoop({
-          array: this.tracks,
-          onLoop: (track: ModuleMGTrack, asyncLoop: AsyncLoop) => {
-            track.Load( () => {
-              track.LoadModel( (model: OdysseyModel3D) => {
-                track.model = model;
-                model.userData.moduleObject = track;
-                model.userData.index = trackIndex;
-                //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-                model.hasCollision = true;
-                GameState.group.creatures.add( track.container );
-      
-                track.computeBoundingBox();
-                track.getCurrentRoom();
-                trackIndex++;
-                asyncLoop.next();
-              });
-            });
-          }
-        });
-        loop.iterate(() => {
-          resolve();
-        });
-      }else{
-        resolve();
-      }
-    });
-  }
-
-  async loadMGEnemies(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-    
-      if(this.MiniGame){
-        let loop = new AsyncLoop({
-          array: this.MiniGame.Enemies,
-          onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
-            enemy.Load();
-            enemy.LoadModel( (model: OdysseyModel3D) => {
-              enemy.LoadGunBanks( () => {
-                let track = this.tracks.find(o => o.track === enemy.trackName);
-                model.userData.moduleObject = enemy;
-                model.hasCollision = true;
-                enemy.setTrack(track.model);
-                enemy.computeBoundingBox();
-                enemy.getCurrentRoom();
-                asyncLoop.next();
-
-              });
-            });
-          }
-        });
-        loop.iterate(() => {
-          resolve();
-        });
-      }else
-        resolve();
     });
   }
 
@@ -1710,20 +1577,8 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    if(this.MiniGame){
-      for(let i = 0; i < this.MiniGame.Enemies.length; i++){
-        if(this.MiniGame.Enemies[i] instanceof ModuleObject){
-          this.MiniGame.Enemies[i].onCreate();
-        }
-      }
-
-      for(let i = 0; i < this.MiniGame.Obstacles.length; i++){
-        if(this.MiniGame.Obstacles[i] instanceof ModuleObject){
-          this.MiniGame.Obstacles[i].onCreate();
-        }
-      }
-
-      this.MiniGame.Player.onCreate();
+    if(this.miniGame){
+      this.miniGame.initMiniGameObjects();
     }
 
     this.runStartScripts();
@@ -1739,22 +1594,8 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  runMiniGameScripts(){
-    if(!this.MiniGame){
-      return;
-    }
-
-    for(let i = 0; i < this.MiniGame.Enemies.length; i++){
-      const enemy = this.MiniGame.Enemies[i];
-      if(enemy.scripts.onCreate instanceof NWScriptInstance){
-        enemy.scripts.onCreate.run(enemy, 0)
-      }
-    }
-
-  }
-
   async runStartScripts(){
-    this.runMiniGameScripts();
+    if(this.miniGame) this.miniGame.runMiniGameScripts();
     this.runOnEnterScripts();
   }
 
