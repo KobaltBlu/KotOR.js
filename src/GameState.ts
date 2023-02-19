@@ -52,7 +52,6 @@ import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
-import { FilmPass } from "three/examples/jsm/postprocessing/FilmPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { ModuleObjectManager } from "./managers/ModuleObjectManager";
@@ -61,35 +60,7 @@ import { GlobalVariableManager } from "./managers/GlobalVariableManager";
 import { FollowerCamera } from "./engine/FollowerCamera";
 import { OdysseyTexture } from "./resource/OdysseyTexture";
 import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
-
-const saturationShader: any = {
-  uniforms: {
-    "tDiffuse": { value: null },
-    "saturation": { value: 1.0 },
-    "modulation": new THREE.Uniform( new THREE.Vector3(1, 1, 1) )
-  },
-  vertexShader: [`
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    }`
-  ].join("\n"),
-  fragmentShader: [`
-    uniform sampler2D tDiffuse;
-    varying vec2 vUv;
-    uniform float saturation;
-    uniform vec3 modulation;
-
-    void main() {
-      gl_FragColor = texture2D(tDiffuse, vUv);
-      vec3 lumaWeights = vec3(.25,.50,.25);
-      vec3 grey = vec3( dot( lumaWeights, gl_FragColor.rgb ) );
-      gl_FragColor.rgb = modulation * ( grey + saturation * (gl_FragColor.rgb - grey) );
-    }`
-  ].join("\n")
-};
-
+import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
@@ -251,15 +222,14 @@ export class GameState implements EngineContext {
   static controls: IngameControls;
 
   //Render pass properties
-  static composer: any;
-  static renderPass: any;
-  static renderPassAA: any;
-  static saturationPass: any;
-  static copyPass: any;
+  static composer: EffectComposer;
+  static renderPass: RenderPass;
+  static renderPassAA: SSAARenderPass;
+  static odysseyShaderPass: OdysseyShaderPass;
+  static copyPass: ShaderPass;
   static renderPassGUI: any;
-  static bloomPass: any;
-  static bokehPass: any;
-  static filmPass: any;
+  static bloomPass: BloomPass;
+  static bokehPass: BokehPass;
   
   static module: Module;
   static TutorialWindowTracker: any[];
@@ -269,11 +239,10 @@ export class GameState implements EngineContext {
   static State: EngineState;
   static inMenu: boolean;
   static OnReadyCalled: boolean;
-  static selectedObject: any;
-  static hoveredObject: any;
+  static selectedObject: ModuleObject;
+  static hoveredObject: ModuleObject;
   
   static loadingTextures: boolean;
-  static MenuActive: any;
 
   static ConversationPaused: boolean = false;
 
@@ -496,15 +465,11 @@ export class GameState implements EngineContext {
 
     GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas);
 
-    // document.getElementById('#renderer-containe').appendChild(GameState.stats.dom);
-    // if(!ConfigClient.get('GameState.debug.show_fps'))
-    //   GameState.stats.showPanel(false);
-
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
-    GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
+    // GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
-    GameState.saturationPass = new ShaderPass(saturationShader);
+    GameState.odysseyShaderPass = new OdysseyShaderPass();
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     
@@ -516,18 +481,16 @@ export class GameState implements EngineContext {
       width: window.innerWidth,
       height: window.innerHeight
     });
-    GameState.filmPass = new FilmPass(1, 0.325, 512);
 
     GameState.renderPassAA.sampleLevel = 1;
 
-    GameState.renderPass.renderToScreen = false;
+    GameState.renderPassAA.renderToScreen = false;
     GameState.copyPass.renderToScreen = false;
     GameState.renderPassGUI.renderToScreen = false;
 
-    GameState.renderPass.clear = true;
+    GameState.renderPassAA.clear = true;
     GameState.bloomPass.clear = false;
-    GameState.filmPass.clear = false;
-    GameState.saturationPass.clear = false;
+    GameState.odysseyShaderPass.clear = false;
     GameState.renderPassAA.clear = false;
     GameState.copyPass.clear = false;
     GameState.renderPassGUI.clear = false;
@@ -536,21 +499,20 @@ export class GameState implements EngineContext {
     GameState.bokehPass.needsSwap = true;
     GameState.bokehPass.enabled = false;
 
-    GameState.composer.addPass(GameState.renderPass);
+    // GameState.composer.addPass(GameState.renderPass);
+    GameState.composer.addPass(GameState.renderPassAA);
     // GameState.composer.addPass(GameState.bokehPass);
-    // GameState.composer.addPass(GameState.renderPassAA);
-    GameState.composer.addPass(GameState.filmPass);
-    GameState.composer.addPass(GameState.saturationPass);
-    // GameState.composer.addPass(GameState.bloomPass);
-
+    GameState.composer.addPass(GameState.bloomPass);
+    GameState.composer.addPass(GameState.odysseyShaderPass);
     GameState.composer.addPass(GameState.renderPassGUI);
     GameState.composer.addPass(GameState.copyPass);
 
-    GameState.renderPass.clearDepth = true;
+    // GameState.renderPassAA.clearDepth = true;
     GameState.renderPassGUI.clearDepth = true;
-    GameState.renderPass.clear = true;
+    GameState.renderPassAA.clear = true;
     GameState.renderPassGUI.clear = false;
-    GameState.renderPass.needsSwap = false;
+    GameState.bloomPass.needsSwap = true;
+    GameState.renderPassAA.needsSwap = false;
     GameState.renderPassGUI.needsSwap = false;
 
     FadeOverlayManager.Initialize();
@@ -700,14 +662,6 @@ export class GameState implements EngineContext {
     }
 
     //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
-
-    /*if(GameState.scene_gui.background != null){
-      let x = width / 1600;
-      let y = height / 1200;
-
-      GameState.scene_gui.background.repeat.set(x, y);
-      GameState.scene_gui.background.offset.set( (1.0 - x) / 2, (1.0 - y) / 2);
-    }*/
 
     GameState.screenCenter.x = ( (window.innerWidth/2) / window.innerWidth ) * 2 - 1;
     GameState.screenCenter.y = - ( (window.innerHeight/2) / window.innerHeight ) * 2 + 1; 
@@ -1174,32 +1128,9 @@ export class GameState implements EngineContext {
     const videoEffects = TwoDAManager.datatables.get('videoeffects');
     if(GameState.videoEffect >= 0 && GameState.videoEffect < videoEffects.RowCount){
       let effect = videoEffects.rows[GameState.videoEffect];
-      if(parseInt(effect.enablesaturation)){
-        GameState.saturationPass.enabled = true;
-        GameState.saturationPass.uniforms.saturation.value = parseFloat(effect.saturation);
-        GameState.saturationPass.uniforms.modulation.value.set(
-          parseFloat(effect.modulationred),
-          parseFloat(effect.modulationgreen),
-          parseFloat(effect.modulationblue)
-        );
-      }else{
-        GameState.saturationPass.enabled = false;
-        GameState.saturationPass.uniforms.saturation.value = 1;
-        GameState.saturationPass.uniforms.modulation.value.set(1, 1, 1);
-      }
-
-      if(parseInt(effect.enablescannoise)){
-        GameState.filmPass.uniforms.grayscale.value = true;
-        GameState.filmPass.enabled = true;
-        GameState.filmPass.uniforms.sCount.value = Math.floor(Math.random() * 256) + 250;
-      }else{
-        GameState.filmPass.uniforms.grayscale.value = false;
-        GameState.filmPass.enabled = false;
-      }
-
+      GameState.odysseyShaderPass.setOdysseyVideoEffect(effect);
     }else{
-      GameState.saturationPass.enabled = false;
-      GameState.filmPass.enabled = false;
+      GameState.odysseyShaderPass.setOdysseyVideoEffect(undefined);
     }
   }
 
@@ -1237,6 +1168,7 @@ export class GameState implements EngineContext {
     GameState.controls.Update(delta);
     GameState.UpdateVideoEffect();
     MenuManager.Update(delta);
+    MenuManager.InGameAreaTransition.Hide();
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
@@ -1326,20 +1258,26 @@ export class GameState implements EngineContext {
         LightManager.update(delta, GameState.getCurrentPlayer());
       }
 
+      if(GameState.Mode == EngineMode.INGAME){
+        if(MenuManager.InGameAreaTransition.transitionObject){
+          MenuManager.InGameAreaTransition.Show();
+        }
+      }
+
       //Handle visibility state for debug helpers
       if(GameState.Mode == EngineMode.INGAME){
         let obj: any;
         for(let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++){
           obj = GameState.group.room_walkmeshes.children[i];
           if(obj.type === 'Mesh'){
-            obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
+            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
   
         for(let i = 0, len = GameState.walkmeshList.length; i < len; i++){
           obj = GameState.walkmeshList[i];
           if(obj.type === 'Mesh'){
-            obj.material.visible = ConfigClient.get('GameState.debug.show_collision_meshes');
+            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
     
@@ -1364,7 +1302,7 @@ export class GameState implements EngineContext {
     CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.updateCursorPosition();
-    GameState.renderPass.camera = GameState.currentCamera;
+    GameState.renderPassAA.camera = GameState.currentCamera;
     //GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 
