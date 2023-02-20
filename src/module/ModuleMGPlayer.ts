@@ -19,7 +19,7 @@ import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 
 export class ModuleMGPlayer extends ModuleObject {
 
-  camera: THREE.Object3D;
+  camera: OdysseyModel3D;
   models: OdysseyModel3D[] = [];
   track: OdysseyObject3D;
   animationManagers: OdysseyModelAnimationManager[];
@@ -258,10 +258,11 @@ export class ModuleMGPlayer extends ModuleObject {
 
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
-    }else if(!this.camera){
-      let camerahook = this.model.getObjectByName('camerahook');
+    }
+    else if(!this.camera){
+      let camerahook = this.container.getObjectByName('camerahook');
       if(camerahook)
-        this.camera = camerahook.parent.parent;
+        this.camera = camerahook.parent.parent as OdysseyModel3D;
     }
     
   }
