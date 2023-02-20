@@ -626,12 +626,12 @@ export class ModuleCreature extends ModuleObject {
         if(GameState.Mode != EngineMode.DIALOG){
           this.model.update( this.movementSpeed * delta );
           if(this.lipObject instanceof LIPObject){
-            this.lipObject.update(delta, this.head ? this.head : this.model);
+            this.lipObject.update(delta, this.model);
           }
         }else{
           this.model.update( delta );
           if(this.lipObject instanceof LIPObject){
-            this.lipObject.update(delta, this.head ? this.head : this.model);
+            this.lipObject.update(delta, this.model);
           }
           if(this.cutsceneMode && this.model){
             for(let i = 0, len = this.model.skins.length; i < len; i++){
@@ -3393,28 +3393,7 @@ export class ModuleCreature extends ModuleObject {
 
                   this.head = head;
                   this.head.userData.moduleObject = this;
-                  this.model.headhook.head = head;
-                  this.model.headhook.add(head);
-
-                  // head.nodes.forEach( (node, key) => {
-                  //   if(!this.model.nodes.has(key)){
-                  //     this.model.nodes.set(key, node);
-                  //   }
-                  // });
-
-                  // for(let i = 0; i < head.skins.length; i++){
-                  //   let skin = head.skins[i];
-                  //   let skeleton = skin.skeleton;
-                  //   for(let j = 0; j < skeleton.bones.length; j++){
-                  //     let bone = skeleton.bones[j];
-                  //     if(bone){
-                  //       let newBone = this.model.nodes.has(bone.name);
-                  //       if(newBone){
-                  //         skeleton.bones[j] = this.model.nodes.get(bone.name) as any;
-                  //       }
-                  //     }
-                  //   }
-                  // }
+                  this.model.attachHead(head);
 
                   try{
                     if(this.head.gogglehook instanceof THREE.Object3D){

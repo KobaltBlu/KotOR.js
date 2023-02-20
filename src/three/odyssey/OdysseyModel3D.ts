@@ -137,6 +137,50 @@ export class OdysseyModel3D extends OdysseyObject3D {
   hasCollision: boolean;
   animLoop: any;
 
+  attachHead(head: OdysseyModel3D){
+
+    const rootNode = head.children[0];
+    // console.log('attachHead', rootNode);
+    let remapper: [OdysseyObject3D, OdysseyObject3D][] = [];
+    if(rootNode){
+      rootNode.traverse( (node: OdysseyObject3D) => {
+        // console.log('traverse', node);
+        if(node == rootNode) return;
+
+        if(node instanceof THREE.SkinnedMesh){
+          node.userData.boneNames = [...head.nodes.keys()];
+          this.skins.push(node);
+          let m_node = node.parent;
+          let n_parent = this.nodes.get(m_node.parent?.name);
+          if(n_parent) remapper.push([m_node as OdysseyObject3D, n_parent]);
+        }else if(node instanceof THREE.Mesh){
+          let m_node = node.parent;
+          let n_parent = this.nodes.get(m_node.parent?.name);
+          if(n_parent) remapper.push([m_node as OdysseyObject3D, n_parent]);
+        }else if(node instanceof THREE.Light){
+          let n_parent = this.nodes.get(node.parent?.name);
+          if(n_parent) remapper.push([node, n_parent]);
+        }else if(node instanceof OdysseyObject3D){
+          if(!this.nodes.has(node.name)){
+            this.nodes.set(node.name, node);
+          }
+        }
+
+      });
+
+      for(let i = 0; i < remapper.length; i++){
+        remapper[i][0].removeFromParent();
+        remapper[i][1].add(remapper[i][0]);
+      }
+
+      this.headhook.add(rootNode);
+
+      //fix skins
+      this.buildSkeleton();
+    }
+
+  }
+
   disableEmitters(){
     for(let i = 0; i < this.emitters.length; i++){
       this.emitters[i].disable();
@@ -297,21 +341,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
     }
-
-    //TODO: Reimplement
-    // if(this.headhook && this.headhook.children){
-    //   for(let i = 0; i < this.headhook.children.length; i++){
-    //     let node = this.headhook.children[i];
-    //     if(node.type == 'OdysseyModel'){
-    //       for(let j = 0; j < node.materials.length; j++){
-    //         let material = node.materials[j];
-    //         if(material.type == 'ShaderMaterial'){
-    //           material.uniforms.time.value = this.context.deltaTime;
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
     
     //Update emitters
     for(let i = 0; i < this.emitters.length; i++){
@@ -426,20 +455,26 @@ export class OdysseyModel3D extends OdysseyObject3D {
     this.pose();
 
     for(let i = 0; i < this.skins.length; i++){
-      let skinNode = this.skins[i] as any;
-      if(typeof skinNode.odysseyNode.bone_parts !== 'undefined'){
-        let bones = [];
-        let inverses = [];
-        let parts = Array.from(this.nodes.values());
-        for(let j = 0; j < skinNode.odysseyNode.bone_parts.length; j++){
-          let boneNode = parts[skinNode.odysseyNode.bone_parts[j]];
+      const skinNode = this.skins[i];
+      if(typeof skinNode.userData.boneNames === 'undefined'){
+        skinNode.userData.boneNames = [...this.nodes.keys()];
+      }
+      const odysseyModelNode = skinNode.userData.odysseyModelNode;
+      if(typeof odysseyModelNode?.bone_parts !== 'undefined'){
+        const bones = [];
+        const inverses = [];
+        // let parts = Array.from(this.nodes.values());
+        const boneNames = skinNode.userData.boneNames;
+        for(let j = 0; j < odysseyModelNode.bone_parts.length; j++){
+          const boneName = boneNames[odysseyModelNode.bone_parts[j]];
+          const boneNode = this.nodes.get(boneName);
           if(typeof boneNode != 'undefined'){
             bones[j] = boneNode;
-            inverses[j] = skinNode.odysseyNode.bone_inverse_matrix[j];
+            inverses[j] = odysseyModelNode.bone_inverse_matrix[j];
           }
         }
-        skinNode.geometry.bones = bones;
-        skinNode.bind(new THREE.Skeleton( bones as any, inverses ));
+        // (skinNode.geometry as any).bones = bones;
+        skinNode.bind(new THREE.Skeleton( bones as any[], inverses ));
         skinNode.skeleton.update();
         skinNode.updateMatrixWorld();
       }
@@ -642,6 +677,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMaterial.defines.FORCE_SHIELD = '';
       skinMaterial.defines.AURORA = '';
       skinMaterial.defines.USE_UV = '';
+      skinMaterial.defines.USE_SKINNING = '';
       skinMaterial.uniforms.diffuse.value.r = 0.5;
 
       // skinMaterial.opacity = 0.5;
@@ -1206,7 +1242,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           // SKIN MESH
           //-----------//
           if ((odysseyNode.NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
-            (material as any).skinning = true;
+            material.defines.USE_SKINNING = '';
             mesh = new THREE.SkinnedMesh( geometry , material );
             odysseyModel.skins.push(mesh);
           }
@@ -1272,6 +1308,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
             //mesh.visible = !node.isWalkmesh;
             (mesh as any).odysseyNode = odysseyNode;
+            mesh.userData.odysseyModelNode = odysseyNode;
             mesh.matrixAutoUpdate = true;
             if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) ){
               parentNode.add( mesh );

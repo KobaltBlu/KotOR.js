@@ -121,17 +121,6 @@ export class EffectVisualEffect extends GameEffect {
           c_node.scale.copy(node[1].scale);
         }
       }
-      
-      if(this.object instanceof ModuleCreature){
-        if(this.object.head && this.model.headhook.head){
-          for(let node of this.object.head.nodes){
-            let c_node = this.model.headhook.head.nodes.get(node[0]);
-            c_node.position.copy(node[1].position);
-            c_node.quaternion.copy(node[1].quaternion);
-            c_node.scale.copy(node[1].scale);
-          }
-        }
-      }
 
       this.model.position.copy(this.object.position);
       this.model.rotation.copy(this.object.model.rotation);
@@ -322,8 +311,7 @@ export class EffectVisualEffect extends GameEffect {
                       context: this.object.context,
                       isForceShield: true,
                     }).then((head: OdysseyModel3D) => {
-                      this.model.headhook.head = head;
-                      this.model.headhook.add(head);
+                      this.model.attachHead(head);
                       //head.disableMatrixUpdate();
                       TextureLoader.LoadQueue();
                     })
@@ -373,8 +361,7 @@ export class EffectVisualEffect extends GameEffect {
                       context: this.object.context,
                       isForceShield: true,
                     }).then((head: OdysseyModel3D) => {
-                      this.model.headhook.head = head;
-                      this.model.headhook.add(head);
+                      this.model.attachHead(head);
                       //head.disableMatrixUpdate();
                       TextureLoader.LoadQueue();
                     }).catch(() => {

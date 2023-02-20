@@ -161,8 +161,7 @@ export class AppearanceLoader {
                         context: this.context,
                         onComplete: (head: OdysseyModel3D) => {
                           try{
-                            this.model.headhook.head = head;
-                            this.model.headhook.add(head);
+                            this.model.attachHead(head);
 
                             if(typeof onLoad === 'function')
                               onLoad(this.model);

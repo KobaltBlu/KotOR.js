@@ -22,6 +22,9 @@ export class OdysseyModelAnimationManager {
   lastFrame: number;
   modelNode: OdysseyObject3D;
 
+  headModel: OdysseyModel3D;
+  headModelNode: OdysseyObject3D;
+
   transElapsed: number = 0;
 
   constructor(model: OdysseyModel3D){
@@ -92,6 +95,7 @@ export class OdysseyModelAnimationManager {
   }
 
   setCurrentAnimation(anim: OdysseyModelAnimation, state: any = {}){
+    // if(anim) console.log(this.model?.name, anim.name);
     if(this.currentAnimation){
       this.setLastAnimation(this.currentAnimation, this.currentAnimationState);
     }
@@ -166,11 +170,11 @@ export class OdysseyModelAnimationManager {
         state.elapsed = anim.length;
         this.updateAnimationEvents(anim, state);
         //Update animation nodes if the model is being rendered
-        if(this.model.animateFrame){
-          for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-            this.updateAnimationNode(anim, anim.nodes[i], state, false);
-          }
-        }
+        // if(this.model.animateFrame){
+        //   for(let i = 0, nl = anim.nodes.length; i < nl; i++){
+        //     this.updateAnimationNode(anim, anim.nodes[i], state, false);
+        //   }
+        // }
       }
 
       state.lastTime = anim.length;
@@ -218,11 +222,9 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: any, canTween: boolean = false){
     if(!node) return;
-    this.modelNode = this.model.nodes.get(node.name);//node.getNode(node, this.model);//
-    if(this.modelNode){
+    this.modelNode = this.model.nodes.get(node.name);
 
-      if(this.modelNode.lipping && this.model.userData.moduleObject && this.model.userData.moduleObject.lipObject)
-        return;
+    if(this.modelNode){
 
       anim._position.x = anim._position.y = anim._position.z = 0;
       anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
@@ -247,72 +249,66 @@ export class OdysseyModelAnimationManager {
           console.log('Missing Controller Data', controller);
           continue;
         }
-          
-        // if( (!state.elapsed && !canTween) /*&& !shouldBlend*/ ){
-        //   controller.setFrame(this, anim, controller.data[0]);
-        // }else{
 
-          lastFrame = 0;
-          for(let f = 0, fc = controller.frameCount; f < fc; f++){
-            if(controller.data[f].time <= state.elapsed){
-              lastFrame = f;
-            }
+        lastFrame = 0;
+        for(let f = 0, fc = controller.frameCount; f < fc; f++){
+          if(controller.data[f].time <= state.elapsed){
+            lastFrame = f;
+          }
+        }
+
+        last = controller.data[lastFrame];
+        if(last){
+
+          //If the model was offscreen last frame pose the lastFrame 
+          //To fix the spaghetti limbs issue
+          if(this.model.wasOffscreen){
+            controller.setFrame(this, anim, last);
           }
 
-          last = controller.data[lastFrame];
-          if(last){
+          next = controller.data[lastFrame + 1];
+          fl = 0;
 
-            //If the model was offscreen last frame pose the lastFrame 
-            //To fix the spaghetti limbs issue
-            if(this.model.wasOffscreen){
-              controller.setFrame(this, anim, last);
-            }
+          if (next) { 
+            fl = Math.abs( (state.elapsed - last.time) / (next.time - last.time) ) % 1;
+          }else{
+            fl = 1;
+            next = controller.data[lastFrame];
+            last = controller.data[lastFrame - 1] || controller.data[lastFrame];
+          }
 
-            next = controller.data[lastFrame + 1];
+          //Make sure the last frame has already begun.
+          if(state.elapsed < last.time){
             fl = 0;
+          }
+          
+          if(fl == Infinity) fl = 1.0;
+          if(isNaN(fl)) fl = 0;
 
-            if (next) { 
-              fl = Math.abs( (state.elapsed - last.time) / (next.time - last.time) ) % 1;
-            }else{
-              fl = 1;
-              next = controller.data[lastFrame];
-              last = controller.data[lastFrame - 1] || controller.data[lastFrame];
-            }
+          if(fl > 1) fl = 1;
+          if(fl < 0) fl = 0;
 
-            //Make sure the last frame has already begun.
-            if(state.elapsed < last.time){
-              fl = 0;
-            }
-            
-            if(fl == Infinity) fl = 1.0;
-            if(isNaN(fl)) fl = 0;
-
-            if(fl > 1) fl = 1;
-            if(fl < 0) fl = 0;
-
-            if(canTween){
-              if( controller.type == OdysseyModelControllerType.Position ){
-                let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
-                this._animPosition.copy(this.modelNode.position);
-                controller.animate(this, anim, last, next, fl);
-                this._animPosition2.copy(this.modelNode.position);
-                this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, tweenFL);
-              }else if( controller.type == OdysseyModelControllerType.Orientation ){
-                let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
-                this._animQuaternion.copy(this.modelNode.quaternion);
-                controller.animate(this, anim, last, next, fl);
-                this._animQuaternion2.copy(this.modelNode.quaternion);
-                this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, tweenFL);
-              }else{
-                controller.animate(this, anim, last, next, fl);
-              }
+          if(canTween){
+            if( controller.type == OdysseyModelControllerType.Position ){
+              let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+              this._animPosition.copy(this.modelNode.position);
+              controller.animate(this, anim, last, next, fl);
+              this._animPosition2.copy(this.modelNode.position);
+              this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, tweenFL);
+            }else if( controller.type == OdysseyModelControllerType.Orientation ){
+              let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+              this._animQuaternion.copy(this.modelNode.quaternion);
+              controller.animate(this, anim, last, next, fl);
+              this._animQuaternion2.copy(this.modelNode.quaternion);
+              this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, tweenFL);
             }else{
               controller.animate(this, anim, last, next, fl);
             }
-
+          }else{
+            controller.animate(this, anim, last, next, fl);
           }
 
-        // }
+        }
 
       }
 
