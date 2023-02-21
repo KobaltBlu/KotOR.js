@@ -141,8 +141,9 @@ export class GameState implements EngineContext {
   static models: any[];
   static videoEffect: number = -1;
   static onScreenShot?: Function;
-  static time: number;
-  static deltaTime: number;
+  static time: number = 0;
+  static deltaTime: number = 0;
+  static deltaTimeFixed: number = 0;
 
   static canvas: HTMLCanvasElement;
   static context: WebGLRenderingContext;
@@ -286,6 +287,7 @@ export class GameState implements EngineContext {
 
     GameState.time = 0;
     GameState.deltaTime = 0;
+    GameState.deltaTimeFixed = 0;
 
     GameState.canvas = document.createElement( 'canvas' );
     //GameState.canvas = GameState.renderer.domElement;
@@ -1163,6 +1165,8 @@ export class GameState implements EngineContext {
     let delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
+    GameState.deltaTime += delta;
+    GameState.deltaTimeFixed += (1/60);
     GameState.clampedDelta = Math.max(0, Math.min(delta, 0.016666666666666666 * 5));
 
     GameState.limiter.now = Date.now();
@@ -1354,7 +1358,6 @@ export class GameState implements EngineContext {
 
   static updateTime(delta: number = 0){
     GameState.time += delta;
-    GameState.deltaTime += delta;
 
     if(GameState.deltaTime > 1000)
       GameState.deltaTime = GameState.deltaTime % 1;
