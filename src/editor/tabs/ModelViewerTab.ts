@@ -180,7 +180,7 @@ export class ModelViewerTab extends EditorTab {
     this.modelViewTimelineComponent.addEventListener('onStop', () => {
       if(!!this.model){
         if(!!this.model.animationManager.currentAnimation){
-          this.model.animationManager.currentAnimation.data.elapsed = 0;
+          this.model.animationManager.currentAnimationState.elapsed = 0;
           this.model.update(0.00000000001);
         }
       }
@@ -234,7 +234,7 @@ export class ModelViewerTab extends EditorTab {
 
     this.modelViewTimelineComponent.addEventListener('onSeek', (elapsed: number = 0) => {
       if(this.model.animationManager.currentAnimation){
-        this.model.animationManager.currentAnimation.data.elapsed = elapsed;
+        this.model.animationManager.currentAnimationState.elapsed = elapsed;
         this.model.update(0.00000000001);
       }
     });
