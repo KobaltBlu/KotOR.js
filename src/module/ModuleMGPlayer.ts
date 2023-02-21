@@ -12,6 +12,7 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ModelListItem } from "../interface/module/minigame/ModelListItem";
+import { MiniGameType } from "../enums/engine/MiniGameType";
 
 /* @file
  * The ModuleMGPlayer class.
@@ -173,8 +174,8 @@ export class ModuleMGPlayer extends ModuleObject {
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
       if(
-        aManager.currentAnimation.data.loop || 
-        ( !aManager.currentAnimation.data.loop && !aManager.currentAnimationState.elapsedCount )
+        aManager.currentAnimationState.loop || 
+        ( !aManager.currentAnimationState.loop && !aManager.currentAnimationState.elapsedCount )
       ){
         aManager.updateAnimation(aManager.currentAnimation, delta);
       }
@@ -295,6 +296,17 @@ export class ModuleMGPlayer extends ModuleObject {
     this.invince = this.invince_period || 0;
   }
 
+  shoot(){
+    switch(GameState.module.area.miniGame.type){
+      case MiniGameType.SWOOPRACE:
+        this.jump();
+      break;
+      case MiniGameType.TURRET:
+        this.fire();
+      break;
+    }
+  }
+
   jump(){
     this.jumpVelcolity = 0.4;
     /*if(this.gear > -1 && !this.falling){
@@ -358,7 +370,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
-    const padding = '                                             ';
+    // const padding = '                                             ';
     //console.log(`play: ${name}${padding}`.substring(0, 20), `bLooping: ${bLooping ? 'true' : 'false'}${padding}`.substring(0, 20), `bQueue: ${bQueue ? 'true' : 'false'}${padding}`.substring(0, 20), `bOverlay: ${bOverlay ? 'true' : 'false'}${padding}`.substring(0, 20));
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
@@ -392,7 +404,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   removeAnimation(name = ''){
-    const padding = '                                             ';
+    // const padding = '                                             ';
     //console.log( `remove: ${name}${padding}`.substring(0, 20) );
     const existingIndex = this.animationManagers.findIndex( am => am?.currentAnimation?.name == name );
     if(existingIndex >= 0){
@@ -767,38 +779,38 @@ export class ModuleMGPlayer extends ModuleObject {
 
   onAnimEvent(){
     if(this.scripts.onAnimEvent instanceof NWScriptInstance){
-      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
+      this.scripts.onAnimEvent.run(this, 0);
     }
   }
 
   onCreate(){
     if(this.scripts.onCreate instanceof NWScriptInstance){
-      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
+      this.scripts.onCreate.run(this, 0);
     }
   }
 
   onDamage(): boolean{
     if(this.scripts.onDamage instanceof NWScriptInstance){
-      this.scripts.onDamage.nwscript.newInstance().run(this, 0);
+      this.scripts.onDamage.run(this, 0);
     }
     return true;
   }
 
   onFire(){
     if(this.scripts.onFire instanceof NWScriptInstance){
-      this.scripts.onFire.nwscript.newInstance().run(this, 0);
+      this.scripts.onFire.run(this, 0);
     }
   }
 
   onAccelerate(){
     if(this.scripts.onAccelerate instanceof NWScriptInstance){
-      this.scripts.onAccelerate.nwscript.newInstance().run(this, 0);
+      this.scripts.onAccelerate.run(this, 0);
     }
   }
 
   onHitBullet( bullet: ModuleMGGunBullet ){
     if(this.scripts.onHitBullet instanceof NWScriptInstance){
-      const instance = this.scripts.onHitBullet.nwscript.newInstance();
+      const instance = this.scripts.onHitBullet;
       instance.mgBullet = bullet;
       instance.run(this, 0);
     }
@@ -806,7 +818,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   onHitFollower( follower: ModuleMGEnemy ){
     if(this.scripts.onHitFollower instanceof NWScriptInstance){
-      const instance = this.scripts.onHitFollower.nwscript.newInstance();
+      const instance = this.scripts.onHitFollower;
       instance.mgFollower = follower;
       instance.run(this, 0);
     }
@@ -814,7 +826,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   onHitObstacle( obstacle: ModuleMGObstacle ){
     if(this.scripts.onHitObstacle instanceof NWScriptInstance){
-      const instance = this.scripts.onHitObstacle.nwscript.newInstance();
+      const instance = this.scripts.onHitObstacle;
       instance.mgObstacle = obstacle;
       instance.run(this, 0);
     }
@@ -822,7 +834,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   onTrackLoop(){
     if(this.scripts.onTrackLoop instanceof NWScriptInstance){
-      this.scripts.onTrackLoop.nwscript.newInstance().run(this, 0);
+      this.scripts.onTrackLoop.run(this, 0);
     }
   }
 

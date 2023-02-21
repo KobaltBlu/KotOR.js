@@ -24,6 +24,9 @@ export class ModuleMGGunBullet extends ModuleObject {
   target_type: any;
   damage_amt: number = 0;
 
+  directionLine: THREE.Line3 = new THREE.Line3();
+  directionLinePoint: THREE.Vector3 = new THREE.Vector3();
+
   constructor( template: GFFObject, owner: ModuleObject ){
     super();
     this.template = template;
@@ -48,6 +51,10 @@ export class ModuleMGGunBullet extends ModuleObject {
     }else{
       this.velocity.set(0, this.speed * delta, 0);
       this.velocity.applyQuaternion(this.quaternion);
+
+      this.directionLine.start.copy(this.position);
+      this.directionLine.end.copy(this.position).add(this.velocity);
+
       this.position.add( this.velocity );
       this.model.quaternion.copy(this.quaternion);
       this.model.position.copy(this.position);
@@ -96,6 +103,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       GameState.ModelLoader.load(resref).then(
         (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
+            context: this.context,
             onComplete: (model: OdysseyModel3D) => {
               this.model = model;
               resolve();

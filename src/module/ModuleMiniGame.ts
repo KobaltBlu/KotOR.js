@@ -56,6 +56,8 @@ export class ModuleMiniGame {
   }
 
   tick(delta: number = 0){
+    this.player.update(delta);
+
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i].update(delta);
     }
@@ -66,6 +68,8 @@ export class ModuleMiniGame {
   }
 
   tickPaused(delta: number = 0){
+    this.player.updatePaused(delta);
+    
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i].updatePaused(delta);
     }

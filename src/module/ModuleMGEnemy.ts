@@ -307,56 +307,56 @@ export class ModuleMGEnemy extends ModuleObject {
 
   onAnimEvent(){
     if(this.scripts.onAnimEvent instanceof NWScriptInstance){
-      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
+      this.scripts.onAnimEvent.run(this, 0);
     }
   }
 
   onCreate(){
     if(this.scripts.onCreate instanceof NWScriptInstance){
-      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
+      this.scripts.onCreate.run(this, 0);
     }
   }
 
   onDamage(){
     if(this.scripts.onDamage instanceof NWScriptInstance){
-      this.scripts.onDamage.nwscript.newInstance().run(this, 0);
+      this.scripts.onDamage.run(this, 0);
     }
     return true;
   }
 
   onFire(){
     if(this.scripts.onFire instanceof NWScriptInstance){
-      this.scripts.onFire.nwscript.newInstance().run(this, 0);
+      this.scripts.onFire.run(this, 0);
     }
   }
 
   onAccelerate(){
     if(this.scripts.onAccelerate instanceof NWScriptInstance){
-      this.scripts.onAccelerate.nwscript.newInstance().run(this, 0);
+      this.scripts.onAccelerate.run(this, 0);
     }
   }
 
   onHitBullet(){
     if(this.scripts.onHitBullet instanceof NWScriptInstance){
-      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
+      this.scripts.onHitBullet.run(this, 0);
     }
   }
 
   onHitFollower(){
     if(this.scripts.onHitFollower instanceof NWScriptInstance){
-      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
+      this.scripts.onHitFollower.run(this, 0);
     }
   }
 
   onHitObstacle(){
     if(this.scripts.onHitObstacle instanceof NWScriptInstance){
-      this.scripts.onHitObstacle.nwscript.newInstance().run(this, 0);
+      this.scripts.onHitObstacle.run(this, 0);
     }
   }
 
   onTrackLoop(){
     if(this.scripts.onTrackLoop instanceof NWScriptInstance){
-      this.scripts.onTrackLoop.nwscript.newInstance().run(this, 0);
+      this.scripts.onTrackLoop.run(this, 0);
     }
   }
 
