@@ -6,7 +6,7 @@ import * as THREE from "three";
 import isBuffer from "is-buffer";
 
 export class GFFField {
-
+  uuid: string;
   Type: number;
   Label: string;
   Data: Buffer;
@@ -20,6 +20,7 @@ export class GFFField {
   labelIndex: number = 0;
 
   constructor(Type: number = 0, Label: string = "", Value?: any){
+    this.uuid = crypto.randomUUID();
     this.Type = Type;
     this.Label = Label;
     this.Data = Buffer.alloc(0);

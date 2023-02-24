@@ -355,6 +355,17 @@ body {
 
 @import 'styles/tab-manager';
 
+.input-group {
+  .input-group-text {
+    background-color: #114a77;
+    color: #cccccc;
+    margin-bottom: 5px;
+    border-color: #2a7ab9;
+    z-index: 1;
+    border-width: 2px;
+  }
+}
+
 .form-control, pre, input[type=text], input[type=number], input[type=cexolocstring], textarea {
   /* display: block; */
   width: 100%;
@@ -551,6 +562,18 @@ div#editor-content {
   color: #2196f3;
   font-size: 16px;
   margin: 0 5px 0 0;
+}
+
+.css-treeview label.single::before {
+  font-size: 10px;
+  content: "\f219"; //fa-diamond
+  color: #DDD;
+}
+
+.css-treeview input:checked + label.single::before {
+  font-size: 10px;
+  content: "\f219"; //fa-diamond
+  color: #DDD;
 }
 
 .css-treeview input:checked + label::before {

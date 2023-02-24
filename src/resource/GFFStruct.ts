@@ -2,7 +2,7 @@ import { GFFField } from "./GFFField";
 import { GFFObject } from "./GFFObject";
 
 export class GFFStruct {
-
+  uuid: string;
   Fields: GFFField[];
   Type: number;
 
@@ -10,6 +10,7 @@ export class GFFStruct {
   fieldCount: number = 0;
 
   constructor(Type = 0){
+    this.uuid = crypto.randomUUID();
     this.Fields = [];
     this.Type = Type;
   }

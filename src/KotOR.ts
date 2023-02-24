@@ -8,6 +8,9 @@ export * from "./GameState";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 
+export * from "./interface/resource/LIPHeader";
+export * from "./interface/resource/LIPKeyFrame";
+
 export * from "./combat";
 
 export * from "./managers/BIFManager";
@@ -34,6 +37,9 @@ export * from "./resource/BIFObject";
 export * from "./resource/BIKObject";
 export * from "./resource/ERFObject";
 export * from "./resource/GFFObject";
+export * from "./resource/GFFStruct";
+export * from "./resource/GFFField";
+export * from "./enums/resource/GFFDataType";
 export * from "./resource/KEYObject";
 export * from "./resource/LIPObject";
 export * from "./resource/LTRObject";

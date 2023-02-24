@@ -13,6 +13,7 @@ import { ResourceTypes } from "../../KotOR";
 import { TabUTCEditorState } from "./states/tabs/TabUTCEditorState";
 import { TabUTDEditorState } from "./states/tabs/TabUTDEditorState";
 import { TabUTPEditorState } from "./states/tabs/TabUTPEditorState";
+import { TabGFFEditorState } from "./states/tabs/TabGFFEditorState";
 
 /* @file
  * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine
@@ -94,7 +95,7 @@ export class FileTypeManager {
       case 'uts': 
       case 'utw': 
       case 'ute': 
-        // ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik': 
         // ForgeState.tabManager.addTab(new TabMovieViewerState({editorFile: res}));
