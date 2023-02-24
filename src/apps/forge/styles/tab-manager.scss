@@ -30,6 +30,9 @@
       padding: 2.5px 10px;
       border-left: 3px solid #212121;
       border-radius: 0;
+      border-top: none;
+      border-bottom: none;
+      border-right: none;
 
       &.current, &.active {
         position: relative;
@@ -69,6 +72,12 @@
 
       &:hover {
         color: #CCC;
+      }
+
+      &:focus, &:hover, &:active {
+        border-top: none;
+        border-bottom: none;
+        border-right: none;
       }
 
     }

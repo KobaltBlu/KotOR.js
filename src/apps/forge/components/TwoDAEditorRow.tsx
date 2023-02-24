@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import type { TwoDAObject } from "../../../resource/TwoDAObject";
+
+import * as KotOR from "../KotOR";
 
 
 export const TwoDAEditorRow = function(props: any){
   const [render, rerender] = useState<boolean>(false);
 
-  const twoDAObject: TwoDAObject = props.twoDAObject;
+  const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
   const row = props.row;
   const rIndex = props.index;
 

@@ -3,7 +3,7 @@ import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { ForgeState } from "../../states/ForgeState";
 import { useApp } from "../../context/AppContext";
 
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export interface ModalGrantAccessProps {
   onUserGrant: Function,

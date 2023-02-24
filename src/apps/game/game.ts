@@ -1,6 +1,8 @@
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 // import { ConfigClient } from "../../utility/ConfigClient";
 
+import * as KotOR from "./KotOR";
+
 const query = new URLSearchParams(window.location.search);
 let env: ApplicationEnvironment;
 let app_profile: any;
@@ -22,8 +24,6 @@ async function getProfile(){
   await KotOR.ConfigClient.Init();
   return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
 }
-
-declare const KotOR: any;
 
 const initializeApp = function(){
   KotOR.ApplicationProfile.ENV = env;

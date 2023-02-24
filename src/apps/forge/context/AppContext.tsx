@@ -2,7 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { ForgeState } from "../states/ForgeState";
 import { EditorTabManager } from "../managers/EditorTabManager";
 import { LoadingScreenProvider } from "./LoadingScreenContext";
-declare const KotOR: any;
+
+import * as KotOR from "../KotOR";
 
 export interface AppProviderValues {
   // someValue: [any, React.Dispatch<any>];

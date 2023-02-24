@@ -7,7 +7,7 @@ import * as fs from "fs";
 import { EventListenerModel } from "../../EventListenerModel";
 import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
 
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -274,7 +274,7 @@ export class TabState extends EventListenerModel {
               resolve(false);
             }
           }
-        }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.WEB){
+        }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
           let newHandle = await window.showSaveFilePicker();
           if(newHandle){
             currentFile.handle = newHandle;

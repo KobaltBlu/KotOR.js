@@ -6,13 +6,13 @@ import
 import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
 import { EventListenerModel } from "./EventListenerModel";
 
+import * as KotOR from "./KotOR";
+
 /* @file
  * The UI3DRenderer class.
  * This class is used to create and manage 3d rendering instances in the KotOR Forge application.
  * The main use is for the model previews in the template editors for UTC, UTD, and UTP files
  */
-
-declare const KotOR: any;
 
 export type UI3DRendererEventListenerTypes =
   'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize';

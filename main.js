@@ -104,7 +104,7 @@ async function createWindowFromProfile( profile = {} ) {
     webPreferences: {
       preload: path.join(__dirname, 'dist/game/preload.js'),
       webviewTag: false,
-      nodeIntegration: true,
+      nodeIntegration: false,
       enableRemoteModule: false,
       //worldSafeExecuteJavaScript: true,
       contextIsolation: true,
@@ -113,8 +113,19 @@ async function createWindowFromProfile( profile = {} ) {
 
   _window.state = profile;
 
+  let queryString = new URLSearchParams();
+  if(typeof profile.launch.args === 'object'){
+    queryString = new URLSearchParams(
+      Object.keys(profile.launch.args)
+      .map( key => key + '=' + profile.launch.args[key] )
+      .join('&')
+    );
+  }
+
+  queryString.set('key', profile.key);
+
   // and load the index.html of the app.
-  _window.loadURL(`file://${__dirname}/dist/${profile.launch.path}?key=${profile.key}`);
+  _window.loadURL(`file://${__dirname}/dist/${profile.launch.path}?${queryString.toString()}`);
   _window.setMenuBarVisibility(false);
 
   // Emitted when the window is closed.
@@ -239,21 +250,21 @@ app.on('ready', async () => {
   // fs.readdirSync()
 
   // on macOS
-  if (process.platform === 'win32') {
-    const reactDevToolsPath = path.join(
-      os.homedir(),
-      '\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.27.1_0'
-    );
-    await session.defaultSession.loadExtension(reactDevToolsPath);
-  }else if(process.platform === 'darwin'){
-    const reactDevToolsPath = path.join(
-      os.homedir(),
-      '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.27.1_0'
-    );
-    await session.defaultSession.loadExtension(reactDevToolsPath);
-  }else if(process.platform === 'linux'){
+  // if (process.platform === 'win32') {
+  //   const reactDevToolsPath = path.join(
+  //     os.homedir(),
+  //     '\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.27.1_0'
+  //   );
+  //   await session.defaultSession.loadExtension(reactDevToolsPath);
+  // }else if(process.platform === 'darwin'){
+  //   const reactDevToolsPath = path.join(
+  //     os.homedir(),
+  //     '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.27.1_0'
+  //   );
+  //   await session.defaultSession.loadExtension(reactDevToolsPath);
+  // }else if(process.platform === 'linux'){
 
-  }
+  // }
 
   // console.log(__dirname);
   if(!fs.existsSync(path.join(__dirname, 'icon.png'))){

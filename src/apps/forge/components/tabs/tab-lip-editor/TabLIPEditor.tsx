@@ -6,13 +6,11 @@ import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../..
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabManagerProvider } from "../../../context/TabManagerContext";
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import type { LIPObject } from "../../../../../resource/LIPObject";
-import type{ LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
 import Draggable from "react-draggable";
 import { Form } from "react-bootstrap";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 
-declare const KotOR: any;
+import * as KotOR from "../../../KotOR";
 
 export const TabLIPEditor = function(props: BaseTabProps){
 
@@ -27,7 +25,7 @@ export const TabLIPEditor = function(props: BaseTabProps){
   );
 
   useEffectOnce(() => {
-    tab.openFile().then( (lip: LIPObject) => {
+    tab.openFile().then( (lip: KotOR.LIPObject) => {
       console.log('lip', lip);
     });
     return () => {
@@ -51,8 +49,8 @@ export const UILIPKeyFramePanel = function(props: any){
   const [playing, setPlaying] = useState<boolean>(tab.playing);
   const [seekPositionLeft, setSeekPositionLeft] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(tab.timeline_zoom);
-  const [keyframes, setKeyFrames] = useState<LIPKeyFrame[]>([]);
-  const [selectedFrame, setSelectedFrame] = useState<LIPKeyFrame>(tab.selected_frame);
+  const [keyframes, setKeyFrames] = useState<KotOR.LIPKeyFrame[]>([]);
+  const [selectedFrame, setSelectedFrame] = useState<KotOR.LIPKeyFrame>(tab.selected_frame);
   const [duration, setDuration] = useState<number>(1);
   const [timestamps, setTimestamps] = useState<string[]>([]);
   // const [timelineWidth, setTimelineWidth] = useState<number>(250);
@@ -101,7 +99,7 @@ export const UILIPKeyFramePanel = function(props: any){
     }
   };
 
-  const onLoad = (lip: LIPObject) => {
+  const onLoad = (lip: KotOR.LIPObject) => {
     setKeyFrames(lip.keyframes);
     setDuration(lip.duration);
   }
@@ -114,7 +112,7 @@ export const UILIPKeyFramePanel = function(props: any){
 
   };
 
-  const onKeyFrameSelect = (keyframe: LIPKeyFrame) => {
+  const onKeyFrameSelect = (keyframe: KotOR.LIPKeyFrame) => {
     setSelectedFrame(keyframe);
     tab.lip.elapsed = keyframe.time;
     updateSeekerPosition();
@@ -327,7 +325,7 @@ export const UILIPKeyFramePanel = function(props: any){
     updateScrollBoundsFocus(true);
   }
 
-  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: LIPKeyFrame) => {
+  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.LIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.selectKeyFrame(keyframe);
@@ -335,7 +333,7 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.dragging_frame = keyframe;
   }
 
-  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: LIPKeyFrame) => {
+  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.LIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.seek(keyframe.time);
@@ -461,7 +459,7 @@ export const UILIPKeyFramePanel = function(props: any){
           {
             (
               keyframes.length ? keyframes.map( 
-                (keyframe: LIPKeyFrame, index: number) => {
+                (keyframe: KotOR.LIPKeyFrame, index: number) => {
                   //onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }
                   return (
                     <div key={`${keyframe.uuid}`} className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}} 

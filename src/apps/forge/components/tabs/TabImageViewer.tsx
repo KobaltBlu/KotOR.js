@@ -2,11 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
-import type { TPCObject } from "../../../../resource/TPCObject";
-import type { TGAObject } from "../../../../resource/TGAObject";
 import { LayoutContainer } from "../LayoutContainer";
 
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export const TabImageViewer = function(props: BaseTabProps){
 
@@ -20,7 +18,7 @@ export const TabImageViewer = function(props: BaseTabProps){
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const setPixelData = (image: TPCObject|TGAObject) => {
+  const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject) => {
     const tab = props.tab as TabImageViewerState;
     rerender(!render);
     if(canvasRef.current){

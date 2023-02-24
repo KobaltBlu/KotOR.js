@@ -421,6 +421,11 @@ export class ModuleObject {
 
   setContext(ctx = GameState){
     this.context = ctx;
+    if(this.model instanceof OdysseyModel3D){
+      this.model.emitters.forEach( (emitter) => {
+        emitter.context = this.context;
+      });
+    }
   }
 
   //Reload the template

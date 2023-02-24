@@ -10,7 +10,7 @@ import { FileTypeManager } from "../FileTypeManager";
 import { ModalChangeGameState } from "./modal/ModalChangeGame";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 
-declare const KotOR: any;
+import * as KotOR from "../KotOR";
 declare const dialog: any;
 
 export class ProtoMenuItem {

@@ -4,7 +4,10 @@ import * as fs from "fs";
 import { DeepObject } from "../../DeepObject";
 import { ForgeState } from "./states/ForgeState";
 import { TabQuickStartState } from "./states/tabs/TabQuickStartState";
-declare const KotOR: any;
+
+import * as KotOR from "./KotOR";
+import { ProjectType } from "./enum/ProjectType";
+import { FileTypeManager } from "./FileTypeManager";
 
 export class Project {
 
@@ -102,7 +105,7 @@ export class Project {
 
         //Append this project to the beginning of the list
         KotOR.ConfigClient.options.recent_projects.unshift(this.directory);
-        KotOR.ConfigClient.save(null, true); //Save the configuration silently
+        KotOR.ConfigClient.save(undefined, true); //Save the configuration silently
 
         this.GetFiles(()=>{
 
@@ -142,7 +145,7 @@ export class Project {
 
   InitializeProject(onComplete?: Function){
     switch(this.settings.type){
-      case KotOR.ProjectType.MODULE:
+      case ProjectType.MODULE:
         //Initialize the Map Editor
         if(this.settings.module_editor.open)
           this.InitEditor();
@@ -151,7 +154,7 @@ export class Project {
         if(typeof onComplete == 'function')
           onComplete();
       break;
-      case KotOR.ProjectType.OTHER:
+      case ProjectType.OTHER:
 
         //All done??? ok Complete
         if(typeof onComplete == 'function')
@@ -162,7 +165,7 @@ export class Project {
 
     //Reopen files
     for(let i = 0, len = this.settings.open_files.length; i < len; i++){
-      KotOR.FileTypeManager.onOpenResource(this.settings.open_files[i]);
+      FileTypeManager.onOpenResource(this.settings.open_files[i]);
     }
 
   }

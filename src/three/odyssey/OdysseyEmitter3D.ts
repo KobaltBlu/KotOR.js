@@ -2,7 +2,6 @@
  */
 
 import * as THREE from "three";
-import { GameState } from "../../GameState";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
 import { TextureLoader } from "../../loaders/TextureLoader";
@@ -277,7 +276,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       });
   
       this.maxParticleCount = this.birthRate * this.lifeExp;
-      this.material.uniforms.tDepth.value = GameState.depthTarget.depthTexture;
+      this.material.uniforms.tDepth.value = this.context?.depthTarget?.depthTexture;
       this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
       this.material.uniforms.colorStart.value.copy(this.colorStart);
       this.material.uniforms.colorMid.value.copy(this.colorMid);

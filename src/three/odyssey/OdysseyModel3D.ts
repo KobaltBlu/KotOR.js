@@ -54,7 +54,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   meshes: any[] = [];
   danglyMeshes: any[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
-  emitters: any = [];
+  emitters: OdysseyEmitter3D[] = [];
   lights: any = [];
   aabb: any = {};
   materials: THREE.Material[] = [];
@@ -187,14 +187,14 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  dispose(node?: any){
+  dispose(node?: THREE.Object3D){
 
     if(node == null)
       node = this;
 
     for(let i = 0; i < this.emitters.length; i++){
-      if(this.emitters[i].group)
-        this.emitters[i].remove();
+      if((this.emitters[i] as any).group)
+        this.emitters[i].removeFromParent();
     }
 
     // console.log('dispose', node)
@@ -202,35 +202,36 @@ export class OdysseyModel3D extends OdysseyObject3D {
       const object = node.children[i-1];
       node.remove(object);
       if (object.type === 'Mesh' || object.type === 'SkinnedMesh' || object.type === 'Points') {
-        if(Array.isArray(object.material)){
-          while(object.material.length){
-            let material = object.material.splice(0, 1)[0];
-            this.disposeMaterial(material);
-            material.dispose();
+        if(object instanceof THREE.Mesh){
+          if(Array.isArray(object.material)){
+            while(object.material.length){
+              let material = object.material.splice(0, 1)[0];
+              this.disposeMaterial(material);
+              material.dispose();
+            }
+          }else{
+            this.disposeMaterial(object.material);
+            object.material.dispose();
           }
-        }else{
-          this.disposeMaterial(object.material);
-          object.material.dispose();
+          object.geometry.dispose();
         }
-        object.geometry.dispose();
-        //object.dispose();
       }else if(object.type === 'OdysseyLight'){
         //console.log('Light', node);
         LightManager.removeLight(node);
       }else{
         if(object.hasOwnProperty('mesh')){
-          object.mesh = undefined;
+          (object as any).mesh = undefined;
         }
       }
 
-      if(object.emitter){
+      if((object as any).emitter){
         if(this.modelHeader.Classification == 1){
-          if(object.emitter.group){
-            object.emitter.group.dispose();
+          if((object as any).emitter.group){
+            (object as any).emitter.group.dispose();
           }
         }else{
-          if(object.emitter.group){
-            object.emitter.remove();
+          if((object as any).emitter.group){
+            (object as any).emitter.remove();
           }
         }
       }

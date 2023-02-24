@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export const ModalChangeGame = function(props: any){
   const [show, setShow] = useState(false);

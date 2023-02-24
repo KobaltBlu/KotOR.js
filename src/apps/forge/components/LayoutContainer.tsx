@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Draggable from 'react-draggable';
 import { useLayoutContext } from "../context/LayoutContainerContext";
 
-declare const KotOR: any;
+import * as KotOR from "../KotOR";
 
 export interface LayoutContainerProps {
   northContent?: JSX.Element;

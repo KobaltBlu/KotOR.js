@@ -34,7 +34,15 @@ const libraryConfig = (name, color) => ({
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+              experimentalWatchApi: true,
+            },
+          },
+        ],
         exclude: /node_modules/,
       },
       {
@@ -72,6 +80,7 @@ const libraryConfig = (name, color) => ({
     library: 'KotOR',
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
+    pathinfo: false,
   },
 });
 
@@ -312,6 +321,7 @@ const gameConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    '../../KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',

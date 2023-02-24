@@ -3,7 +3,9 @@ import TabButton from "./TabButton";
 import { TabManagerProvider, useTabManager } from "../../context/TabManagerContext";
 import { ForgeState } from "../../states/ForgeState";
 import { TabState } from "../../states/tabs/TabState";
-declare const KotOR: any;
+
+import * as KotOR from "../../KotOR";
+
 export interface TabManagerProps {
   // manager: EditorTabManager
 }

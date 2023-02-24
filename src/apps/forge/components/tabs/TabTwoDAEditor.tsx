@@ -1,17 +1,16 @@
 import React, { useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 
-import type { TwoDAObject } from "../../../../resource/TwoDAObject";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { TabTwoDAEditorState } from "../../states/tabs/TabTwoDAEditorState";
 import { ProgressBar } from "react-bootstrap";
 import { TwoDAEditorRow } from "../TwoDAEditorRow";
 import { TwoDAEditorColumnHeader } from "../TwoDAEditorColumnHeader";
 
-declare const KotOR: any;
+import * as KotOR from "../../KotOR";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
-  const [twoDAObject, setTwoDAObject] = useState<TwoDAObject>();
+  const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
 
   const onFileLoad = () => {
     const tab: TabTwoDAEditorState = props.tab as TabTwoDAEditorState;

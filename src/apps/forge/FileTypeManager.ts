@@ -10,6 +10,9 @@ import { TabImageViewerState } from "./states/tabs/TabImageViewerState";
 import { TabLIPEditorState } from "./states/tabs/tab-lip-editor/TabLIPEditorState";
 import { TabTwoDAEditorState } from "./states/tabs/TabTwoDAEditorState";
 import { ResourceTypes } from "../../KotOR";
+import { TabUTCEditorState } from "./states/tabs/TabUTCEditorState";
+import { TabUTDEditorState } from "./states/tabs/TabUTDEditorState";
+import { TabUTPEditorState } from "./states/tabs/TabUTPEditorState";
 
 /* @file
  * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine
@@ -78,13 +81,13 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':
-        // ForgeState.tabManager.addTab(new TabUTCEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabUTCEditorState({editorFile: res}));
       break;
       case 'utd':
-        // ForgeState.tabManager.addTab(new TabUTDEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabUTDEditorState({editorFile: res}));
       break;
       case 'utp':
-        // ForgeState.tabManager.addTab(new TabUTPEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabUTPEditorState({editorFile: res}));
       break;
       case 'gui': 
       case 'utt': 

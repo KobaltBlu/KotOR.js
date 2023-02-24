@@ -2,7 +2,7 @@ import { FileTypeManager } from "./FileTypeManager";
 import { pathParse } from "./helpers/PathParse";
 import * as fs from "fs";
 
-declare const KotOR: any;
+import * as KotOR from "./KotOR";
 declare const dialog: any;
 
 export enum ForgeFileSystemResponseType {

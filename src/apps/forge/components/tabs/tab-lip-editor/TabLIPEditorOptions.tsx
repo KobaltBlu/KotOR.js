@@ -3,19 +3,17 @@ import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 import { SceneGraphNode } from "../../../SceneGraphNode";
 import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs/tab-lip-editor/TabLIPEditorState";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
 import { Button, Form } from "react-bootstrap";
 import { TabLIPEditorOptionsState } from "../../../states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
-import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 import { SectionContainer } from "../../SectionContainer";
 
-declare const KotOR: any;
+import * as KotOR from "../../../KotOR";
 
 export const TabLIPEditorOptions = function(props: any){
   const tab: TabLIPEditorOptionsState = props.tab;
   const parentTab: TabLIPEditorState = props.parentTab;
   const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
-  const [selectedFrame, setSelectedFrame] = useState<LIPKeyFrame>(parentTab.selected_frame);
+  const [selectedFrame, setSelectedFrame] = useState<KotOR.LIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
   const [duration, setDuration] = useState<number>(parentTab.lip.duration);
 
@@ -72,7 +70,7 @@ export const TabLIPEditorOptions = function(props: any){
     parentTab.fitDurationToKeyFrames();
   }
 
-  const heads = Object.values(KotOR.TwoDAManager.datatables.get('heads').rows);
+  const heads = Object.values(KotOR.TwoDAManager.datatables.get('heads')?.rows);
 
   return (
     <>
