@@ -1,9 +1,15 @@
 import * as THREE from "three";
+
+import {shadertoy_perlin} from "../shaders/chunks/ShaderToyPerlin";
+THREE.ShaderChunk.shadertoy_perlin = shadertoy_perlin;
+
 import { Shader } from "../shaders/Shader";
 import { ShaderOdysseyEmitter } from "../shaders/ShaderOdysseyEmitter";
 import { ShaderAuroraGUI } from "../shaders/ShaderAuroraGUI";
 import { ShaderOdysseyModel } from "../shaders/ShaderOdysseyModel";
 import { ShaderGrass } from "../shaders/ShaderGrass";
+import { ShaderGUIVoid } from "../shaders/ShaderGUIVoid";
+import { ShaderGUIBackground } from "../shaders/ShaderGUIBackground";
 
 export class ShaderManager {
 
@@ -21,7 +27,6 @@ export class ShaderManager {
   static Init(){
     
   }
-  
 
 }
 
@@ -29,3 +34,5 @@ ShaderManager.AddShader(new ShaderGrass());
 ShaderManager.AddShader(new ShaderOdysseyModel());
 ShaderManager.AddShader(new ShaderOdysseyEmitter());
 ShaderManager.AddShader(new ShaderAuroraGUI());
+ShaderManager.AddShader(new ShaderGUIVoid());
+ShaderManager.AddShader(new ShaderGUIBackground());

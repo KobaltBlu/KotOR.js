@@ -12,6 +12,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { ShaderManager } from "../managers/ShaderManager";
 
 /* @file
  * The base GameMenu class.
@@ -48,11 +49,11 @@ export class GameMenu {
 
   background: string;
   backgroundSprite: THREE.Mesh;
-  backgroundMaterial: THREE.MeshBasicMaterial;
+  backgroundMaterial: THREE.ShaderMaterial;
 
   voidFill: boolean = false;
   backgroundVoidSprite: THREE.Mesh;
-  backgroundVoidMaterial: THREE.MeshBasicMaterial;
+  backgroundVoidMaterial: THREE.ShaderMaterial;
 
   audioEmitter: AudioEmitter;
 
@@ -135,22 +136,40 @@ export class GameMenu {
 
   LoadBackground( onLoad?: Function ){
     if(this.voidFill){
-      let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
+      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
+      this.backgroundVoidMaterial = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.merge([
+          ShaderManager.Shaders.get('void-gui').getUniforms()
+        ]),
+        vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
+        fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
+      })
       this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
       this.backgroundVoidSprite.position.z = -6;
       this.backgroundVoidSprite.renderOrder = -6;
+
+      // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
+      this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
     }
 
 
     if(this.background){
       TextureLoader.tpcLoader.fetch(this.background, (texture: OdysseyTexture) => {
-
-        let geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
-        this.backgroundMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: texture, side: THREE.DoubleSide} );
+        const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
+        this.backgroundMaterial = new THREE.ShaderMaterial({
+          uniforms: THREE.UniformsUtils.merge([
+            ShaderManager.Shaders.get('background-gui').getUniforms()
+          ]),
+          vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
+          fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
+        });
+        this.backgroundMaterial.transparent = true;
         this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
         this.backgroundSprite.position.z = -5;
         this.backgroundSprite.renderOrder = -5;
+        this.backgroundMaterial.uniforms.map.value = texture;
 
         if(typeof onLoad === 'function')
           onLoad();
@@ -226,7 +245,14 @@ export class GameMenu {
       return;
 
     if(this.voidFill){
+      this.backgroundVoidMaterial.uniforms.u_time.value = GameState.deltaTimeFixed;
+      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
       this.backgroundVoidSprite.scale.set(window.innerWidth, window.innerHeight, 1);
+    }
+
+    if(this.background){
+      this.backgroundMaterial.uniforms.u_time.value = GameState.deltaTimeFixed;
+      this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 
     if(this.tGuiPanel && this.tGuiPanel.children){
