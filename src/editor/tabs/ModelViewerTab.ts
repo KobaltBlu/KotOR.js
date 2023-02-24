@@ -15,9 +15,6 @@ import { WindowDialog } from "../../utility/WindowDialog";
 
 import * as THREE from "three";
 import { LYTObject } from "../../resource/LYTObject";
-import { KEYManager } from "../../KotOR";
-import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { UI3DRenderer } from "../UI3DRenderer";
 import { ModelViewSideBarComponent, KeyFrameTimelineComponent } from "../components";
 

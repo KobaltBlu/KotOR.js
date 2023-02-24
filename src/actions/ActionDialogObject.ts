@@ -6,7 +6,6 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { MenuManager } from "../gui";
-import { GFFObject, ResourceLoader } from "../KotOR";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { DLGObject } from "../resource/DLGObject";

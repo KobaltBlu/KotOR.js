@@ -8,10 +8,12 @@ import { WindowDialog } from "../../utility/WindowDialog";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
 import * as path from "path";
-import { GameState, KEYManager, OdysseyModelAnimation } from "../../KotOR";
 import { OdysseyModel3D } from "../../three/odyssey";
 import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
 import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
+import { OdysseyModelAnimation } from "../../odyssey";
+import { KEYManager } from "../../managers/KEYManager";
+import { GameState } from "../../GameState";
 
 export class ModelViewSideBarComponent extends Component {
   declare tab: ModelViewerTab;

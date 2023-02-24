@@ -61,10 +61,10 @@ import { GlobalVariableManager } from "../managers/GlobalVariableManager";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { JournalManager } from "../managers/JournalManager";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { ResourceLoader } from "../KotOR";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { DialogMessageManager } from "../managers/DialogMessageManager";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I

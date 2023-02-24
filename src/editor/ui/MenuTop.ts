@@ -1,5 +1,4 @@
 import { AudioEngine } from "../../audio/AudioEngine";
-import { ApplicationEnvironment, ApplicationProfile } from "../../KotOR";
 import { ResourceTypes } from "../../resource/ResourceTypes";
 import { ConfigClient } from "../../utility/ConfigClient";
 import { EditorFile } from "../EditorFile";
@@ -10,6 +9,8 @@ import { EditorTab, LIPEditorTab, QuickStartTab, ScriptEditorTab, UTCEditorTab, 
 import { ModalMessageBox, NewProjectWizard } from "../wizards";
 import * as path from "path";
 import * as fs from "fs";
+import { ApplicationProfile } from "../../utility/ApplicationProfile";
+import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 
 export class MenuTop {
   

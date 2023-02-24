@@ -11,7 +11,9 @@ import { Forge } from "./Forge";
 import { Project } from "./Project";
 import { ConfigClient } from "../utility/ConfigClient";
 import isBuffer from "is-buffer";
-import { ApplicationEnvironment, ApplicationProfile, GameFileSystem } from "../KotOR";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 const path_parse = (filepath: string): {root:string, dir: string, base: string, ext: string, name: string} => {
   let parsed: {root:string, dir: string, base: string, ext: string, name: string} = 

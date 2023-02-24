@@ -10,7 +10,7 @@ import { PartyManager } from "../managers/PartyManager";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
-import type { NWScriptInstance } from "./NWScriptInstance";
+import { NWScriptInstance } from "./NWScriptInstance";
 
 /* @file
  * The NWScriptDefK2 class. This class holds all of the important NWScript declarations for KotOR II

@@ -10,7 +10,7 @@ import { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../..
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
 import * as THREE from "three";
-import { TLKManager } from "../../../KotOR";
+import { TLKManager } from "../../../managers/TLKManager";
 
 /* @file
 * The MenuContainer menu class.

@@ -17,10 +17,10 @@ import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { AsyncLoop } from "./utility/AsyncLoop";
 import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
-import { ConfigClient } from "./KotOR";
 import { JournalManager } from "./managers/JournalManager";
 import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
+import { ConfigClient } from "./utility/ConfigClient";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime

@@ -14,11 +14,11 @@ import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
 import { OdysseyModel3D } from "../three/odyssey";
 import { PartyTableManager } from "./PartyTableManager";
-import { ResourceLoader } from "../KotOR";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
+import { ResourceLoader } from "../resource/ResourceLoader";
 
 /* @file
  * The PartyManager class.

@@ -27,8 +27,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Signal } from "signals";
 
 import template from "../templates/editor-module-3d.html";
-import { ConfigClient } from "../../KotOR";
 import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
+import { ConfigClient } from "../../utility/ConfigClient";
 
 export class ModuleEditorTab extends EditorTab {
   template: string = template;

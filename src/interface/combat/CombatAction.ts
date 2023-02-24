@@ -1,6 +1,6 @@
 import { AttackResult } from "../../enums/combat/AttackResult";
 import { ActionType } from "../../enums/actions/ActionType";
-import type { ModuleObject } from "../../module/ModuleObject";
+import { ModuleObject } from "../../module";
 import { TalentFeat, TalentSpell } from "../../talents";
 import { Action } from "../../actions";
 
