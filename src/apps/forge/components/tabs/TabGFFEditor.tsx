@@ -35,7 +35,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
 
   return (
 <>
-  <div id="gffContainer" className="css-treeview container" style={{position: 'relative', overflow: 'hidden', height: '100%', width:'50%', float: 'left'}}>
+  <div id="gffContainer" className="css-treeview container" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', float: 'left'}}>
     {
       (
         gff ? <GFFStructElement struct={ gff.RootNode } key={ gff.RootNode.uuid } open={true} tab={tab}  /> : <></>
@@ -212,6 +212,8 @@ const GFFFieldProperties = function(props: any){
   const [valueZ, setValueZ] = useState<any>( 0 );
   const [valueW, setValueW] = useState<any>( 0 );
 
+  const [valueStrRef, setValueStrRef] = useState<any>( -1 );
+
   useEffect( () => {
     if(node instanceof KotOR.GFFField){
       setValue(node.GetValue());
@@ -226,6 +228,10 @@ const GFFFieldProperties = function(props: any){
         setValueY(node.GetOrientation().y);
         setValueZ(node.GetOrientation().z);
         setValueW(node.GetOrientation().w);
+      }
+
+      if(node.GetType() == KotOR.GFFDataType.CEXOLOCSTRING){
+        setValueStrRef(node.GetCExoLocString().GetRESREF());
       }
     }
   });
@@ -451,6 +457,41 @@ const GFFFieldProperties = function(props: any){
               />
             </InputGroup>
           </fieldset>
+        );
+      break;
+      case KotOR.GFFDataType.CEXOLOCSTRING:
+        return (
+          <>
+          <fieldset>
+            <legend>CExoLocString</legend>
+            <InputGroup>
+              <InputGroup.Text>StringRef</InputGroup.Text>
+              <Form.Control
+                placeholder=""
+                aria-label=""
+                aria-describedby="basic-addon1"
+                type="number"
+                value={valueStrRef}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => console.log(e) }
+              />
+            </InputGroup>
+            <InputGroup>
+              <InputGroup.Text>Text</InputGroup.Text>
+              <Form.Control
+                disabled={true}
+                placeholder=""
+                aria-label=""
+                aria-describedby="basic-addon1"
+                type="text"
+                value={node.GetCExoLocString().GetValue()}
+                as="textarea" rows={5}
+              />
+            </InputGroup>
+          </fieldset>
+          <fieldset>
+            <legend>Sub String</legend>
+          </fieldset>
+          </>
         );
       break;
       default:
