@@ -1,8 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import
- * as THREE from "three";
 import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
 import { EventListenerModel } from "./EventListenerModel";
 
@@ -15,7 +13,7 @@ import * as KotOR from "./KotOR";
  */
 
 export type UI3DRendererEventListenerTypes =
-  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize';
+  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached';
 
 export interface UI3DRendererEventListeners {
   onBeforeRender: Function[],
@@ -23,6 +21,7 @@ export interface UI3DRendererEventListeners {
   onCreate:       Function[],
   onDispose:      Function[],
   onResize:       Function[],
+  onCanvasAttached: Function[],
 }
 
 export class UI3DRenderer extends EventListenerModel {
@@ -33,6 +32,7 @@ export class UI3DRenderer extends EventListenerModel {
     onCreate:       [],
     onDispose:      [],
     onResize:       [],
+    onCanvasAttached: [],
   }
   sceneGraphManager: SceneGraphTreeViewManager;
   
@@ -43,16 +43,18 @@ export class UI3DRenderer extends EventListenerModel {
   width: number = 640;
   height: number = 480;
 
-  clock: THREE.Clock;
-  renderer?: THREE.WebGLRenderer;
-  scene: THREE.Scene = new KotOR.THREE.Scene();
-  camera: THREE.PerspectiveCamera;
-  currentCamera: THREE.PerspectiveCamera;
-  light: THREE.AmbientLight;
-  lights: THREE.Group = new KotOR.THREE.Group();
-  globalLight: THREE.Light;
-  depthTarget: THREE.WebGLRenderTarget;
-  raycaster: THREE.Raycaster = new KotOR.THREE.Raycaster();
+  clock: KotOR.THREE.Clock;
+  renderer?: KotOR.THREE.WebGLRenderer;
+  scene: KotOR.THREE.Scene = new KotOR.THREE.Scene();
+  camera: KotOR.THREE.PerspectiveCamera;
+  currentCamera: KotOR.THREE.PerspectiveCamera;
+  light: KotOR.THREE.AmbientLight;
+  lights: KotOR.THREE.Group = new KotOR.THREE.Group();
+  globalLight: KotOR.THREE.Light;
+  depthTarget: KotOR.THREE.WebGLRenderTarget;
+  raycaster: KotOR.THREE.Raycaster = new KotOR.THREE.Raycaster();
+
+  selectable: KotOR.THREE.Group = new KotOR.THREE.Group();
 
   resizeObserver: ResizeObserver;
   loadingTextures: boolean;
@@ -102,6 +104,7 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
+      this.processEventListener('onCanvasAttached', [this.canvas]);
     }
   }
 

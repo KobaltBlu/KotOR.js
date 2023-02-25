@@ -22,7 +22,7 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
 
   return (
     <div className="UI3DRendererView-container" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,}}>
-      <canvas ref={canvasRef} className="UI3DRendererView-canvas" />
+      <canvas ref={canvasRef} className="UI3DRendererView-canvas" tabIndex={1} />
     </div>
   );
 

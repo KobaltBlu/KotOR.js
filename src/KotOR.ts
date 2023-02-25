@@ -8,6 +8,8 @@ export * from "./GameState";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 
+export * from "./controls/Mouse";
+
 export * from "./interface/resource/LIPHeader";
 export * from "./interface/resource/LIPKeyFrame";
 
