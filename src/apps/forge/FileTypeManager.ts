@@ -52,6 +52,7 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
+        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
         // ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
       break;
       case 'lip':
@@ -95,6 +96,9 @@ export class FileTypeManager {
       case 'uts': 
       case 'utw': 
       case 'ute': 
+      case 'ifo': 
+      case 'are': 
+      case 'git': 
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik': 
