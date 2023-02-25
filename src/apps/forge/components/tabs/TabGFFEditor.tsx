@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from "react"
+import React, { ChangeEvent, useEffect, useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
@@ -206,14 +206,81 @@ const GFFStructProperties = function(props: any){
 const GFFFieldProperties = function(props: any){
   const node: KotOR.GFFField = props.node;
 
-  const [value, setValue] = useState<any>( node.GetValue() );
-  const [valueX, setValueX] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().x : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().x : 0 ) ) );
-  const [valueY, setValueY] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().y : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().y : 0 ) ) );
-  const [valueZ, setValueZ] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().y : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().z : 0 ) ) );
-  const [valueW, setValueW] = useState<any>( (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().w : 0 ) );
+  const [value, setValue] = useState<any>( '' );
+  const [valueX, setValueX] = useState<any>( 0 );
+  const [valueY, setValueY] = useState<any>( 0 );
+  const [valueZ, setValueZ] = useState<any>( 0 );
+  const [valueW, setValueW] = useState<any>( 0 );
+
+  useEffect( () => {
+    if(node instanceof KotOR.GFFField){
+      setValue(node.GetValue());
+      if(node.GetType() == KotOR.GFFDataType.VECTOR){
+        setValueX(node.GetVector().x);
+        setValueY(node.GetVector().y);
+        setValueZ(node.GetVector().z);
+      }
+      
+      if(node.GetType() == KotOR.GFFDataType.ORIENTATION){
+        setValueX(node.GetOrientation().x);
+        setValueY(node.GetOrientation().y);
+        setValueZ(node.GetOrientation().z);
+        setValueW(node.GetOrientation().w);
+      }
+    }
+  });
 
   const onSimpleValueChange = function(e: ChangeEvent<HTMLInputElement>){
-    node.SetValue(e.target.value);
+    let value: any = e.target.value;
+    if(node.GetType() == KotOR.GFFDataType.RESREF){
+      value = value.substring(0, 16);
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.CEXOSTRING){
+      value = new String(value);
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.FLOAT){
+      value = parseFloat(value);
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.DOUBLE){
+      value = parseFloat(value);
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.BYTE){
+      value = parseInt(value) & 0xFF;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.CHAR){
+      value = parseInt(value) << 24 >> 24;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.WORD){
+      value = parseInt(value) & 0xFFFF;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.SHORT){
+      value = parseInt(value) << 16 >> 16;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.DWORD){
+      value = parseInt(value) & 0xFFFFFFFF;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.INT){
+      value = parseInt(value) << 0 >> 0;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.DWORD64){
+      value = value;
+    }
+
+    if(node.GetType() == KotOR.GFFDataType.INT64){
+      value = value;
+    }
+
+    node.SetValue(value);
     setValue(node.GetValue());
   }
 
@@ -259,6 +326,7 @@ const GFFFieldProperties = function(props: any){
       case KotOR.GFFDataType.DWORD:
       case KotOR.GFFDataType.INT:
       case KotOR.GFFDataType.DWORD64:
+      case KotOR.GFFDataType.INT64:
       case KotOR.GFFDataType.DOUBLE:
       case KotOR.GFFDataType.FLOAT:
       case KotOR.GFFDataType.RESREF:
