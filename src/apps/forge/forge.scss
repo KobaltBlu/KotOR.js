@@ -888,74 +888,7 @@ hr {
   border-top: 1px solid #656565;
 }
 
-/* GFF Tab */
-#gffContainer {
-  padding-top:10px;
-  padding-left:10px;
-  white-space: nowrap;
-}
-
-ul.gff-struct, ul.gff-fields {
-  position: relative;
-  list-style: none;
-  padding-left: 0;
-}
-
-ul.gff-struct.gff-root-struct {
-  padding-left: 10px;
-  padding-top: 10px;
-
-  background: linear-gradient(to bottom, rgba(137,255,241,0) 0%,rgba(26, 78, 109, 0.25) 100%);
-  background-size: 100% 50px;
-  background-position: bottom;
-  background-repeat: no-repeat;
-}
-
-ul.gff-fields {
-  /*padding-left: 0;*/
-}
-
-li.gff-field.selected, li.gff-struct.selected {
-  background: #133652;
-}
-
-li.gff-struct.gff-root-struct > label {
-  color: #8476A2;
-}
-
-li.gff-struct > label {
-  color: #8476A2;
-}
-
-li.gff-field span.field-label {
-  color: #337A9C;
-  /* color: #BD18FF; */
-}
-
-li.gff-field span.field-type {
-
-}
-
-li.gff-field span.field-value {
-  /* color: #288A43; */
-}
-
-/*ul.gff-struct:before {
-  content: '';
-  width: 20px;
-  height: 20px;
-  left: 0px;
-  position: absolute;
-  background: white;
-}*/
-
-ul.gff-struct, ul.gff-fields, li.gff-field {
-  cursor: pointer;
-}
-
-#gffProperties legend {
-  margin-bottom:0;
-}
+@import url('styles/tabs/tab-gff-editor.scss');
 
 .marquee {
   margin: 0 auto;

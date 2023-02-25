@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { ChangeEvent, useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
@@ -12,6 +12,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
   const [gff, setGFF] = useState<KotOR.GFFObject>();
   const [selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
+  const [render, rerender] = useState<boolean>(true);
 
   const onEditorFileLoad = function(tab: TabGFFEditorState){
     setGFF(tab.gff);
@@ -19,6 +20,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
 
   const onNodeSelected = function(node: KotOR.GFFField|KotOR.GFFStruct){
     setSelectedNode(node);
+    rerender(!render);
   };
 
   useEffectOnce( () => { //constructor
@@ -43,7 +45,11 @@ export const TabGFFEditor = function(props: BaseTabProps){
   <div id="gffProperties" className="container" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', padding:'10px', float: 'left'}}>
     {(
       selectedNode ? (
-        <GFFNodeProperties node={selectedNode} />
+        selectedNode instanceof KotOR.GFFField ? 
+          <GFFFieldProperties node={selectedNode} /> :
+        selectedNode instanceof KotOR.GFFStruct ? 
+          <GFFStructProperties node={selectedNode} /> : 
+        <></>
       ) : 
       <></>
     )}
@@ -55,6 +61,8 @@ export const TabGFFEditor = function(props: BaseTabProps){
 const GFFStructElement = function(props: any){
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
   const [openState, setOpenState] = useState<boolean>(!!props.open);
+  const struct: KotOR.GFFStruct = props.struct;
+  const [render, rerender] = useState<boolean>(true);
 
   const onChangeCheckbox = (e: React.ChangeEvent<HTMLInputElement>, struct: KotOR.GFFStruct) => {
     setOpenState(!openState);
@@ -65,7 +73,11 @@ const GFFStructElement = function(props: any){
     tab.setSelectedField(struct);
   }
 
-  const struct: KotOR.GFFStruct = props.struct;
+  const onAddField = function(){
+    struct.AddField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'New Field [Untitled]', 0));
+    rerender(!render);
+  };
+
   if(struct){
     return (
       <li className="gff-struct">
@@ -79,6 +91,16 @@ const GFFStructElement = function(props: any){
             return <GFFFieldElement field={ field } key={ field.uuid } tab={props.tab} />
           })
         }
+        {( 
+          <li className="gff-field add" onClick={(e) => onAddField()}>
+            <span className="field-icon">
+              <i className="fa-solid fa-plus"></i>
+            </span>
+            <span className="field-label">
+              <a>[Add Field]</a>
+            </span>
+          </li> 
+        )}
         </ul>
       </li>
     );
@@ -90,7 +112,10 @@ const GFFStructElement = function(props: any){
 const GFFFieldElement = function(props: any){
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
   const [openState, setOpenState] = useState<boolean>(!!props.open);
+  const [render, rerender] = useState<boolean>(true);
+
   const field: KotOR.GFFField = props.field;
+
   if(field){
     let is_list = false;
     let field_value = '';
@@ -130,6 +155,14 @@ const GFFFieldElement = function(props: any){
       tab.setSelectedField(field);
     }
 
+    const onAddStruct = function(){
+      if(field.GetType() == KotOR.GFFDataType.LIST){
+        const struct = new KotOR.GFFStruct(-1);
+        field.AddChildStruct(struct);
+        rerender(!render);
+      }
+    };
+
     return (
       <li className="gff-field">
         <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.field)}/>
@@ -148,6 +181,15 @@ const GFFFieldElement = function(props: any){
               }
             )
           }
+          {( field.GetType() == KotOR.GFFDataType.LIST ? ( 
+          <li className="gff-struct add" onClick={ (e) => onAddStruct() }>
+            <span className="struct-icon">
+              <i className="fa-solid fa-plus"></i>
+            </span>
+            <span className="struct-label">
+              <a>[Add Struct]</a>
+            </span>
+          </li> ) : <></> )}
         </ul>
       </li>
     );
@@ -155,14 +197,60 @@ const GFFFieldElement = function(props: any){
   return <></>;
 }
 
-const GFFNodeProperties = function(props: any){
-  const node: KotOR.GFFField|KotOR.GFFStruct = props.node;
+const GFFStructProperties = function(props: any){
+  const node: KotOR.GFFStruct = props.node;
 
-  if(node instanceof KotOR.GFFStruct){
-    return (
-      <></>
-    )
-  }else if(node instanceof KotOR.GFFField){
+  return <></>;
+}
+
+const GFFFieldProperties = function(props: any){
+  const node: KotOR.GFFField = props.node;
+
+  const [value, setValue] = useState<any>( node.GetValue() );
+  const [valueX, setValueX] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().x : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().x : 0 ) ) );
+  const [valueY, setValueY] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().y : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().y : 0 ) ) );
+  const [valueZ, setValueZ] = useState<any>( (node.GetType() == KotOR.GFFDataType.VECTOR ? node.GetVector().y : (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().z : 0 ) ) );
+  const [valueW, setValueW] = useState<any>( (node.GetType() == KotOR.GFFDataType.ORIENTATION ? node.GetOrientation().w : 0 ) );
+
+  const onSimpleValueChange = function(e: ChangeEvent<HTMLInputElement>){
+    node.SetValue(e.target.value);
+    setValue(node.GetValue());
+  }
+
+  const onVectorValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'){
+    node.GetVector()[mode] = parseFloat(e.target.value);
+    switch(mode){
+      case 'x':
+        setValueX(parseFloat(e.target.value));
+      break;
+      case 'y':
+        setValueY(parseFloat(e.target.value));
+      break;
+      case 'z':
+        setValueZ(parseFloat(e.target.value));
+      break;
+    }
+  }
+
+  const onOrientationValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'|'w'){
+    node.GetOrientation()[mode] = parseFloat(e.target.value);
+    switch(mode){
+      case 'x':
+        setValueX(parseFloat(e.target.value));
+      break;
+      case 'y':
+        setValueY(parseFloat(e.target.value));
+      break;
+      case 'z':
+        setValueZ(parseFloat(e.target.value));
+      break;
+      case 'w':
+        setValueW(parseFloat(e.target.value));
+      break;
+    }
+  }
+
+  if(node instanceof KotOR.GFFField){
     switch(node.GetType()){
       case KotOR.GFFDataType.BYTE:
       case KotOR.GFFDataType.CHAR:
@@ -185,7 +273,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="text"
-                value={node.GetValue()}
+                value={value}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onSimpleValueChange(e) }
               />
             </InputGroup>
           </fieldset>
@@ -216,7 +305,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetVector().x}
+                value={valueX}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'x') }
               />
             </InputGroup>
             <InputGroup>
@@ -226,7 +316,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetVector().y}
+                value={valueY}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'y') }
               />
             </InputGroup>
             <InputGroup>
@@ -236,7 +327,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetVector().z}
+                value={valueZ}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'z') }
               />
             </InputGroup>
           </fieldset>
@@ -253,7 +345,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetOrientation().x}
+                value={valueX}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'x') }
               />
             </InputGroup>
             <InputGroup>
@@ -263,7 +356,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetOrientation().y}
+                value={valueY}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'y') }
               />
             </InputGroup>
             <InputGroup>
@@ -273,7 +367,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetOrientation().z}
+                value={valueZ}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'z') }
               />
             </InputGroup>
             <InputGroup>
@@ -283,7 +378,8 @@ const GFFNodeProperties = function(props: any){
                 aria-label=""
                 aria-describedby="basic-addon1"
                 type="number"
-                value={node.GetOrientation().w}
+                value={valueW}
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'w') }
               />
             </InputGroup>
           </fieldset>
