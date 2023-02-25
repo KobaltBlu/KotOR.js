@@ -48,6 +48,78 @@ li.gff-field span.field-label {
 
 li.gff-field span.field-type {
 
+  &.BYTE {
+    color: #2e8b57;
+  }
+
+  &.CHAR {
+    color: #800000;
+  }
+  
+  &.WORD {
+    color: #808000;
+  }
+  
+  &.SHORT {
+    color: #8b008b;
+  }
+  
+  &.DWORD {
+    color: #ff0000;
+  }
+  
+  &.INT {
+    color: #ffa500;
+  }
+  
+  &.DWORD64 {
+    color: #ffff00;
+  }
+  
+  &.INT64 {
+    color: #0000cd;
+  }
+  
+  &.FLOAT {
+    color: #00ff00;
+  }
+  
+  &.DOUBLE {
+    color: #00fa9a;
+  }
+  
+  &.CEXOSTRING {
+    color: #4169e1;
+  }
+  
+  &.RESREF {
+    color: #00ffff;
+  }
+  
+  &.CEXOLOCSTRING {
+    color: #00bfff;
+  }
+  
+  &.VOID {
+    color: #696969;
+  }
+  
+  &.STRUCT {
+    color: #ff00ff;
+  }
+  
+  &.LIST {
+    color: #dda0dd;
+  }
+  
+  &.ORIENTATION {
+    color: #ff1493;
+  }
+  
+  &.VECTOR {
+    color: #ffdab9;
+  }
+
 }
 
 li.gff-field span.field-value {

@@ -169,7 +169,7 @@ const GFFFieldElement = function(props: any){
         <label className={ !is_list ? `single` : `list` } onClick={(e) => onLabelClick(e, props.field)}>
           <span>
             <span className="field-label">{field.GetLabel()}</span>&nbsp;
-            <span className="field-type">{`[${ KotOR.GFFObject.TypeValueToString( field.GetType() ) }]`}</span>&nbsp;
+            <span className={`field-type ${KotOR.GFFDataType[field.GetType()]}`}>{`[${ KotOR.GFFObject.TypeValueToString( field.GetType() ) }]`}</span>&nbsp;
             <span className="field-value">{field_value}</span>
           </span>
         </label>
