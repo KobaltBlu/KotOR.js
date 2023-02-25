@@ -38,12 +38,14 @@ li.gff-struct.gff-root-struct > label {
 }
 
 li.gff-struct > label {
-  color: #8476A2;
+  color: #a378ff;
+  // color: #8476A2;
 }
 
 li.gff-field span.field-label {
-  color: #337A9C;
-  /* color: #BD18FF; */
+  color: #FFFFFF;
+  // color: #337A9C;
+  // color: #BD18FF;
 }
 
 li.gff-field span.field-type {
@@ -145,6 +147,7 @@ li.gff-field.add {
   .field-label {
     margin-left: 6px;
     font-weight: bold;
+    color: chartreuse;
   }
 }
 
@@ -159,5 +162,6 @@ li.gff-struct.add {
   .struct-label {
     margin-left: 6px;
     font-weight: bold;
+    color: mediumpurple;
   }
 }

@@ -420,9 +420,9 @@ select:focus, .form-select:focus {
 }
 
 button[disabled], html input[disabled], textarea[disabled] {
-  cursor: default;
-  background: #364550;
-  border: 2px solid #2D5A7D;
+  cursor: default!important;
+  background: #364550!important;
+  border: 2px solid #2D5A7D!important;
 }
 
 fieldset {
