@@ -56,6 +56,12 @@ export * from "./resource/VISObject";
 export * from "./resource/ResourceTypes";
 export * from "./resource/ResourceTypeInfo";
 
+export * from "./enums/odyssey/OdysseyWalkMeshType";
+export * from "./interface/odyssey/OdysseyModelAABBNode";
+export * from "./interface/odyssey/OdysseyModelControllerType";
+export * from "./interface/odyssey/OdysseyModelNodeType";
+export * from "./odyssey/controllers/OdysseyController"
+
 export * from "./three/odyssey";
 export * from "./three/MDLLoader";
 
