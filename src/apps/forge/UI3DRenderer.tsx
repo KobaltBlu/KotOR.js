@@ -6,6 +6,7 @@ import { EventListenerModel } from "./EventListenerModel";
 
 import * as KotOR from "./KotOR";
 import { ModelViewerControls } from "./ModelViewerControls";
+import { SceneGraphNode } from "./SceneGraphNode";
 
 /* @file
  * The UI3DRenderer class.
@@ -58,6 +59,7 @@ export class UI3DRenderer extends EventListenerModel {
   raycaster: KotOR.THREE.Raycaster = new KotOR.THREE.Raycaster();
 
   selectable: KotOR.THREE.Group = new KotOR.THREE.Group();
+  unselectable: KotOR.THREE.Group = new KotOR.THREE.Group();
 
   resizeObserver: ResizeObserver;
   loadingTextures: boolean;
@@ -68,10 +70,13 @@ export class UI3DRenderer extends EventListenerModel {
 
   queuedAnimationFrame: number;
 
+  odysseyModels: KotOR.OdysseyModel3D[] = [];
+
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
     this.uuid = crypto.randomUUID();
     this.sceneGraphManager = new SceneGraphTreeViewManager();
+    this.sceneGraphManager.attachUI3DRenderer(this);
     this.canvas = canvas;
     this.width = width;
     this.height = height;
@@ -98,6 +103,38 @@ export class UI3DRenderer extends EventListenerModel {
     
     this.controls = new ModelViewerControls(this);
 
+  }
+
+  attachObject(object: KotOR.THREE.Object3D, selectable: boolean = true){
+    if(object){
+      if(selectable) this.selectable.add(object);
+      else this.unselectable.add(object);
+
+      object.traverse( (node) => {
+        if(node instanceof KotOR.OdysseyModel3D){
+          if(this.odysseyModels.indexOf(node) == -1){
+            this.odysseyModels.push(node);
+          }
+        }
+      });
+
+      this.sceneGraphManager.rebuild();
+    }
+  }
+
+  detachObject(object: KotOR.THREE.Object3D){
+    object.removeFromParent();
+
+    object.traverse( (node) => {
+      if(node instanceof KotOR.OdysseyModel3D){
+        const index = this.odysseyModels.indexOf(node);
+        if(index >= 0){
+          this.odysseyModels.splice(index, 1);
+        }
+      }
+    });
+
+    this.sceneGraphManager.rebuild();
   }
 
   setCanvas(canvas: HTMLCanvasElement){
@@ -150,6 +187,9 @@ export class UI3DRenderer extends EventListenerModel {
     // this.scene = new KotOR.THREE.Scene();
 
     this.scene.add(this.lights);
+    this.scene.add(this.selectable);
+    this.scene.add(this.unselectable);
+    this.sceneGraphManager.rebuild();
   }
   
   private buildWebGLRenderer(){

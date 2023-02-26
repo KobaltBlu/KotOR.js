@@ -141,7 +141,7 @@ export class TabModelViewerState extends TabState {
             onComplete: (model: KotOR.OdysseyModel3D) => {
               this.model = model;
               this.processEventListener('onEditorFileLoad', [this]);
-              this.ui3DRenderer.scene.add(this.model);
+              this.ui3DRenderer.attachObject(this.model, true);
               // this.updateCameraFocus();
               resolve(this.model);
             }

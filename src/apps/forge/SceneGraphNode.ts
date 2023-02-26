@@ -1,6 +1,7 @@
 import { EventListenerModel } from "./EventListenerModel";
 
 export interface SceneGraphNodeOptions {
+  uuid?: string;
   name: string;
   nodes?: SceneGraphNode[];
   onClick?: Function;
@@ -23,6 +24,7 @@ export interface SceneGraphNodeEventListeners {
 export class SceneGraphNode extends EventListenerModel {
   static NODE_ID = 0;
   id: number = 0;
+  uuid: string;
   name: string = '';
   nodes: SceneGraphNode[] = [];
   onClick: Function;
