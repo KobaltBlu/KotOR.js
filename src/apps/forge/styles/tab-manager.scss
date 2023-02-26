@@ -20,6 +20,7 @@
     &.tabs-flex-wrap {
       display: flex;
       flex-flow: wrap;
+      height: auto;
     }
 
     li.btn.btn-tab {
@@ -203,6 +204,10 @@
   content: "\3009";
   line-height: 30px;
   font-weight: bold;
+}
+
+.tab-container {
+  position: relative;
 }
 
 @import "./tabs/tab-image-viewer";

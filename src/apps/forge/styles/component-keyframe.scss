@@ -54,3 +54,32 @@
   }
 
 }
+
+.keyframe-controls {
+
+  .keyframe-controls-left {
+    display: flex;
+    flex-basis: 25%;
+    justify-content: flex-start;
+    font-size: 12pt;
+    align-items: center;
+  }
+
+  .keyframe-controls-center {
+    flex: 1;
+    font-size: 18pt;
+    flex-basis: 100%;
+  }
+
+  .keyframe-controls-right {
+    display: flex;
+    flex-basis: 25%;
+    justify-content: flex-end;
+  }
+
+  a {
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+}

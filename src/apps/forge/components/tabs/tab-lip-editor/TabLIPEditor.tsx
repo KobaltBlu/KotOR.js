@@ -426,16 +426,16 @@ export const UILIPKeyFramePanel = function(props: any){
         }
         </div>
         <div className="keyframe-controls-center">
-          <a href="#" title="Delete Keyframe" className="fa-solid fa-trash" style={{textDecoration: 'none'}}></a>
-          <a href="#" title="Previous Keyframe" className="fa-solid fa-chevron-left" style={{textDecoration: 'none'}} onClick={onClickPreviousKeyFrame}></a>
-          <a href="#" title={playing ? `Pause` : `Play`} className={`fa-solid fa-${playing ? `pause` : `play`}`} style={{textDecoration: 'none'}} onClick={onClickPlayPause}></a>
-          <a href="#" title="Stop" className="fa-solid fa-stop" style={{textDecoration: 'none'}} onClick={onClickStop}></a>
-          <a href="#" title="Next Keyframe" className="fa-solid fa-chevron-right" style={{textDecoration: 'none'}} onClick={onClickNextKeyFrame}></a>
-          <a href="#" title="Add Keyframe" className="fa-solid fa-plus" style={{textDecoration: 'none'}} onClick={onClickAddKeyFrame}></a>
+          <a href="#" title="Delete Keyframe" className="fa-solid fa-trash"></a>
+          <a href="#" title="Previous Keyframe" className="fa-solid fa-chevron-left" onClick={onClickPreviousKeyFrame}></a>
+          <a href="#" title={playing ? `Pause` : `Play`} className={`fa-solid fa-${playing ? `pause` : `play`}`} onClick={onClickPlayPause}></a>
+          <a href="#" title="Stop" className="fa-solid fa-stop" onClick={onClickStop}></a>
+          <a href="#" title="Next Keyframe" className="fa-solid fa-chevron-right" onClick={onClickNextKeyFrame}></a>
+          <a href="#" title="Add Keyframe" className="fa-solid fa-plus" onClick={onClickAddKeyFrame}></a>
         </div>
         <div className="keyframe-controls-right">
-          <a href="#" title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" style={{textDecoration: 'none'}} onClick={onClickZoomIn}></a>
-          <a href="#" title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" style={{textDecoration: 'none'}} onClick={onClickZoomOut}></a>
+          <a href="#" title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" onClick={onClickZoomIn}></a>
+          <a href="#" title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={onClickZoomOut}></a>
         </div>
       </div>
       <div className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow}>

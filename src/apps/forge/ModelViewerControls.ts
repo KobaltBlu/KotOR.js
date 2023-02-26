@@ -17,7 +17,7 @@ export class ModelViewerControls {
   pointerLockVector: KotOR.THREE.Vector2 = new KotOR.THREE.Vector2();
   currentTool: EditorControlsTool;
 
-  static CameraMoveSpeed: number = 1;
+  static CameraMoveSpeed: number = 10;
 
   keys: any = {};
   plMoveEvent: Function;
