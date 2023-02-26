@@ -160,8 +160,9 @@ export class ModelViewerControls {
   }
 
   onMouseMove(event: MouseEvent) {
-    KotOR.Mouse.MouseX = event.pageX - this.element.offsetLeft;
-    KotOR.Mouse.MouseY = event.pageY - this.element.offsetTop;
+    const offset = this.element.getBoundingClientRect();
+    KotOR.Mouse.MouseX = event.pageX - offset.left;
+    KotOR.Mouse.MouseY = event.pageY - offset.top;
     KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.element.width ) * 2 - 1;
     KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.element.height ) * 2 + 1;
 
@@ -176,10 +177,11 @@ export class ModelViewerControls {
 
   onMouseDown(event: MouseEvent) {
     if(event.target == this.element){
+      const offset = this.element.getBoundingClientRect();
       KotOR.Mouse.ButtonState = event.which;
       KotOR.Mouse.MouseDown = true;
-      KotOR.Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
-      KotOR.Mouse.MouseDownY = event.pageY - this.element.offsetTop;
+      KotOR.Mouse.MouseX = event.pageX - offset.left;
+      KotOR.Mouse.MouseY = event.pageY - offset.top;
 
       if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
         //let axisMoverSelected = false;
