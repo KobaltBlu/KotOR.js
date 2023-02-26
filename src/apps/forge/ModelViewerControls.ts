@@ -10,8 +10,7 @@ export class ModelViewerControls {
   context: UI3DRenderer;
   element: HTMLCanvasElement;
 
-  editor: TabModelViewerState;
-  axisFront: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3();
+  axisFront: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3(0, -1, 0);
   pitch: number = 0;
   yaw: number = 0;
   pointerLockVector: KotOR.THREE.Vector2 = new KotOR.THREE.Vector2();
@@ -19,8 +18,13 @@ export class ModelViewerControls {
 
   static CameraMoveSpeed: number = 10;
 
+  _onKeyDown: (this: HTMLCanvasElement, ev: KeyboardEvent) => any;
+  _onKeyUp: (this: HTMLCanvasElement, ev: KeyboardEvent) => any;
+  _onMouseMove: (this: HTMLCanvasElement, ev: MouseEvent) => any;
+  _onMouseDown: (this: HTMLCanvasElement, ev: MouseEvent) => any;
+  _onMouseUp: (this: HTMLCanvasElement, ev: MouseEvent) => any;
+
   keys: any = {};
-  plMoveEvent: Function;
 
   eventListeners: any = {
     onMouseDown: [],
@@ -62,12 +66,11 @@ export class ModelViewerControls {
     }
   }
 
-  constructor(context: UI3DRenderer, editor: TabModelViewerState){
+  constructor(context: UI3DRenderer){
 
     this.context = context;
-    this.editor = editor;
 
-    this.axisFront = new KotOR.THREE.Vector3(0.0, 1.0, 0.0);
+    this.axisFront = new KotOR.THREE.Vector3(0.0, -1.0, 0.0);
 
     this.pitch = 0;
     this.yaw = -90;
@@ -83,122 +86,141 @@ export class ModelViewerControls {
       'shift':false
     };
 
+    // this._onPointerLockChange = this.plChangeCallback.bind(this);
+
   }
 
   attachCanvasElement(canvas: HTMLCanvasElement){
+    this.detachCanvasElement();
     this.element = canvas;
-    //this.element.requestPointerLock = this.element.requestPointerLock;
+
+    if(this.element){
+      this._onKeyDown = this.onKeyDown.bind(this);
+      this._onKeyUp = this.onKeyUp.bind(this);
+      this._onMouseMove = this.onMouseMove.bind(this);
+      this._onMouseDown = this.onMouseDown.bind(this);
+      this._onMouseUp = this.onMouseUp.bind(this);
+      this.element.addEventListener('keydown', this._onKeyDown, false);
+      this.element.addEventListener('keyup', this._onKeyUp, false);
+      this.element.addEventListener('mousedown', this._onMouseDown, false);
+      this.element.addEventListener('mousemove', this._onMouseMove, false);
+      this.element.addEventListener('mouseup', this._onMouseUp, false);
+    }
+  }
+
+  detachCanvasElement(){
+    try{ document.exitPointerLock(); } catch(e) { console.error(e); }
+
+    if(this.element){
+      this.element.removeEventListener('keydown', this._onKeyDown);
+      this.element.removeEventListener('keyup', this._onKeyUp);
+      this.element.removeEventListener('mousedown', this._onMouseDown);
+      this.element.removeEventListener('mousemove', this._onMouseMove);
+      this.element.removeEventListener('mouseup', this._onMouseUp);
+    }
+  }
+
+  onKeyDown(event: KeyboardEvent){
+    //console.log(event.which)
+    if ( event.which == 87 )
+      this.keys['w'] = true;
+    if ( event.which == 65 )
+      this.keys['a'] = true;
+    if ( event.which == 83 )
+      this.keys['s'] = true;
+    if ( event.which == 68 )
+      this.keys['d'] = true;
+    if ( event.which == 32 )
+      this.keys['space'] = true;
+    if ( event.which == 16 )
+      this.keys['shift'] = true;
+    if ( event.which == 27 )
+      this.keys['escape'] = true;
+    if ( event.which == 70 )
+      this.keys['f'] = true;
+  }
+
+  onKeyUp( event: KeyboardEvent ) {
+    if ( event.which == 87 )
+      this.keys['w'] = false;
+    if ( event.which == 65 )
+      this.keys['a'] = false;
+    if ( event.which == 83 )
+      this.keys['s'] = false;
+    if ( event.which == 68 )
+      this.keys['d'] = false;
+    if ( event.which == 32 )
+      this.keys['space'] = false;
+    if ( event.which == 16 )
+      this.keys['shift'] = false;
+    if ( event.which == 27 )
+      this.keys['escape'] = false;
+    if ( event.which == 70 )
+      this.keys['f'] = false;
+  }
+
+  onMouseMove(event: MouseEvent) {
+    KotOR.Mouse.MouseX = event.pageX - this.element.offsetLeft;
+    KotOR.Mouse.MouseY = event.pageY - this.element.offsetTop;
+    KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.element.width ) * 2 - 1;
+    KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.element.height ) * 2 + 1;
+
+    if(KotOR.Mouse.MouseDown && !KotOR.Mouse.Dragging && KotOR.Mouse.ButtonState == KotOR.MouseState.RIGHT){
+      KotOR.Mouse.Dragging = true;
+      this.currentTool = EditorControlsTool.CAMERA_MOVE;
+    }else if(KotOR.Mouse.MouseDown && !KotOR.Mouse.Dragging && KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
+      KotOR.Mouse.Dragging = true;
+      this.currentTool = EditorControlsTool.CAMERA_MOVE;
+    }
+  }
+
+  onMouseDown(event: MouseEvent) {
+    if(event.target == this.element){
+      KotOR.Mouse.ButtonState = event.which;
+      KotOR.Mouse.MouseDown = true;
+      KotOR.Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
+      KotOR.Mouse.MouseDownY = event.pageY - this.element.offsetTop;
+
+      if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
+        //let axisMoverSelected = false;
+        //this.editor.axes.selected = null;
+        this.context.raycaster.setFromCamera( KotOR.Mouse.Vector, this.context.camera );
+        /*let axisMoverIntersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
+        if(axisMoverIntersects.length){
+          this.editor.axes.selected = axisMoverIntersects[0].object.name;
+          axisMoverSelected = true;
+        }*/
+
+        //if(!axisMoverSelected){
+          let intersects = this.context.raycaster.intersectObjects( this.context.selectable.children, true );
+          if(intersects.length){
+            let intersection = intersects[ 0 ],
+              obj = intersection.object;
+            this.processEventListener('onSelect', obj);
+          }else{
+            this.processEventListener('onSelect', undefined);
+          }
+        //}
+      }else{
+        // Ask the browser to lock the pointer
+        this.element.requestPointerLock();
+      }
+    }else{
+      //console.log('Invalid Mouse Target', this.element);
+    }
+  }
+
+  onMouseUp(event: MouseEvent) {
+    KotOR.Mouse.MouseDown = false;
+    KotOR.Mouse.Dragging = false;
+    KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
 
     // Ask the browser to release the pointer
-    document.exitPointerLock = document.exitPointerLock;
+    document.exitPointerLock();
+  }
 
-    document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
-
-    this.element.addEventListener('keydown', ( event: KeyboardEvent ) => {
-      //console.log(event.which)
-      if ( event.which == 87 )
-        this.keys['w'] = true;
-      if ( event.which == 65 )
-        this.keys['a'] = true;
-      if ( event.which == 83 )
-        this.keys['s'] = true;
-      if ( event.which == 68 )
-        this.keys['d'] = true;
-      if ( event.which == 32 )
-        this.keys['space'] = true;
-      if ( event.which == 16 )
-        this.keys['shift'] = true;
-      if ( event.which == 27 )
-        this.keys['escape'] = true;
-      if ( event.which == 70 )
-        this.keys['f'] = true;
-    })
-    
-    this.element.addEventListener('keyup', ( event: KeyboardEvent ) => {
-      if ( event.which == 87 )
-        this.keys['w'] = false;
-      if ( event.which == 65 )
-        this.keys['a'] = false;
-      if ( event.which == 83 )
-        this.keys['s'] = false;
-      if ( event.which == 68 )
-        this.keys['d'] = false;
-      if ( event.which == 32 )
-        this.keys['space'] = false;
-      if ( event.which == 16 )
-        this.keys['shift'] = false;
-      if ( event.which == 27 )
-        this.keys['escape'] = false;
-      if ( event.which == 70 )
-        this.keys['f'] = false;
-    })
-    
-    this.element.addEventListener('mousedown', (event: MouseEvent) => {
-      if(event.target == this.element){
-        //console.log('Valid Mouse Target');
-        KotOR.Mouse.ButtonState = event.which;
-        KotOR.Mouse.MouseDown = true;
-        KotOR.Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
-        KotOR.Mouse.MouseDownY = event.pageY - this.element.offsetTop;
-
-        if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
-          //let axisMoverSelected = false;
-          //this.editor.axes.selected = null;
-          this.context.raycaster.setFromCamera( KotOR.Mouse.Vector, this.context.camera );
-          /*let axisMoverIntersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
-          if(axisMoverIntersects.length){
-            this.editor.axes.selected = axisMoverIntersects[0].object.name;
-            axisMoverSelected = true;
-          }*/
-
-          //if(!axisMoverSelected){
-            let intersects = this.context.raycaster.intersectObjects( this.context.selectable.children, true );
-            if(intersects.length){
-              let intersection = intersects[ 0 ],
-                obj = intersection.object;
-              this.processEventListener('onSelect', obj);
-            }else{
-              this.processEventListener('onSelect', undefined);
-            }
-          //}
-        }else{
-          // Ask the browser to lock the pointer
-          this.element.requestPointerLock();
-        }
-      }else{
-        //console.log('Invalid Mouse Target', this.element);
-      }
-
-    })
-    
-    this.element.addEventListener('mousemove', (event: MouseEvent) => {
-      KotOR.Mouse.MouseX = event.pageX - this.element.offsetLeft;
-      KotOR.Mouse.MouseY = event.pageY - this.element.offsetTop;
-      KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.element.width ) * 2 - 1;
-      KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.element.height ) * 2 + 1;
-
-      if(KotOR.Mouse.MouseDown && !KotOR.Mouse.Dragging && KotOR.Mouse.ButtonState == KotOR.MouseState.RIGHT){
-        KotOR.Mouse.Dragging = true;
-        this.currentTool = EditorControlsTool.CAMERA_MOVE;
-      }else if(KotOR.Mouse.MouseDown && !KotOR.Mouse.Dragging && KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
-        KotOR.Mouse.Dragging = true;
-        this.currentTool = EditorControlsTool.CAMERA_MOVE;
-      }
-
-    })
-    
-    this.element.addEventListener('mouseup', (event: MouseEvent) => {
-      KotOR.Mouse.MouseDown = false;
-      KotOR.Mouse.Dragging = false;
-      KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
-
-      // Ask the browser to release the pointer
-      document.exitPointerLock();
-
-
-      /*document.removeEventListener('mozpointerlockchange', this.plChangeCallback.bind(this), false);
-      document.removeEventListener("webkitpointerlockchange", this.plChangeCallback.bind(this), false);*/
-    });
+  dispose(){
+    this.detachCanvasElement();
   }
 
   update(delta: number = 0){
@@ -287,15 +309,11 @@ export class ModelViewerControls {
 
   }
 
-
-  axisUpdate(axisFront: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3()){
+  axisUpdate(){
     let front = new KotOR.THREE.Vector3();
     front.x = Math.cos(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
     front.y = Math.sin(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
     front.z = Math.sin(KotOR.THREE.MathUtils.degToRad(this.pitch));
-
-    // if(axisFront != null)
-    //   front = axisFront;
 
     this.axisFront = front.normalize();
 
@@ -303,35 +321,6 @@ export class ModelViewerControls {
     lookAt.addVectors(this.context.camera.position, this.axisFront);
     this.context.camera.lookAt(lookAt);
     this.context.camera.updateProjectionMatrix();
-  }
-
-  plChangeCallback(e: any){
-    // document.pointerLockElement = this.element;
-    //console.log('ModelViewerControls', document.pointerLockElement, this.element);
-    if(document.pointerLockElement === this.element) {
-      //console.log('The pointer lock status is now locked');
-      document.body.addEventListener("mousemove", this.plMoveEvent = (e: any) => { this.plMouseMove(e); }, true);
-      KotOR.Mouse.Dragging = true;
-    } else {
-      //console.log('The pointer lock status is now unlocked');
-      document.body.removeEventListener("mousemove", this.plMoveEvent as any, true);
-      //this.plMoveEvent = undefined;
-      KotOR.Mouse.Dragging = false;
-      //document.removeEventListener('pointerlockchange', this.plEvent, true);
-    }
-  }
-
-  plMouseMove(event: any){
-    if(KotOR.Mouse.Dragging && (event.movementX || event.movementY)){
-      let range = 100;
-      //console.log(event.movementX, event.movementY);
-      if(event.movementX > -range && event.movementX < range){
-        KotOR.Mouse.OffsetX = event.movementX || 0;
-      }
-      if(event.movementY > -range && event.movementY < range){
-        KotOR.Mouse.OffsetY = (event.movementY || 0)*-1.0;
-      }
-    }
   }
 
 }

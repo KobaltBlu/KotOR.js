@@ -70,7 +70,7 @@ export class TabModelViewerState extends TabState {
   ui3DRenderer: UI3DRenderer;
   ui3DRendererView: JSX.Element;
 
-  controls: ModelViewerControls;
+  // controls: ModelViewerControls;
 
   selectedAnimationIndex: number = 0;
   currentAnimation: KotOR.OdysseyModelAnimation;
@@ -107,15 +107,14 @@ export class TabModelViewerState extends TabState {
     // this.unselectable.add( this.groundMesh );
     
     this.ui3DRenderer = new UI3DRenderer();
-    this.controls = new ModelViewerControls(this.ui3DRenderer, this);
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', (canvas: HTMLCanvasElement) => {
-      this.controls.attachCanvasElement(canvas);
-    });
+    // this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', (canvas: HTMLCanvasElement) => {
+    //   this.controls.attachCanvasElement(canvas);
+    // });
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
     this.ui3DRendererView = (
       <UI3DRendererView context={this.ui3DRenderer}></UI3DRendererView>
     );
-
+    this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.scene.add(this.groundMesh);
 
     this.tabContentView = <TabModelViewer tab={this}></TabModelViewer>
@@ -156,15 +155,18 @@ export class TabModelViewerState extends TabState {
     super.show();
     this.ui3DRenderer.enabled = true;
     this.ui3DRenderer.render();
+    // if(this.ui3DRenderer.canvas)
+    //   this.controls.attachCanvasElement(this.ui3DRenderer.canvas);
   }
 
   hide(): void {
     super.hide();
     this.ui3DRenderer.enabled = false;
+    // this.controls.detachCanvasElement();
   }
 
   animate(delta: number = 0){
-    this.controls.update(delta);
+    // this.controls.update(delta);
     if(this.model){
       this.model.update(delta);
     }
@@ -220,6 +222,11 @@ export class TabModelViewerState extends TabState {
     if(this.currentAnimation){
       this.model.playAnimation(this.currentAnimation, this.looping);
     }
+  }
+
+  destroy(): void {
+    this.ui3DRenderer.destroy();
+    super.destroy();
   }
 
 }

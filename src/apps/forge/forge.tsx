@@ -49,3 +49,34 @@ const loadJQueryApplication = () => {
   document.body.classList.add(KotOR.ApplicationProfile.GameKey);
   loadReactApplication();
 })();
+
+const plChangeCallback = (e: any) => {
+  // document.pointerLockElement = this.element;
+  // console.log('ModelViewerControls', e);
+  if(document.pointerLockElement instanceof HTMLCanvasElement) {
+    //console.log('The pointer lock status is now locked');
+    document.body.addEventListener("mousemove", plMouseMove, true);
+    KotOR.Mouse.Dragging = true;
+  } else {
+    //console.log('The pointer lock status is now unlocked');
+    document.body.removeEventListener("mousemove", plMouseMove, true);
+    //this.plMoveEvent = undefined;
+    KotOR.Mouse.Dragging = false;
+    //document.removeEventListener('pointerlockchange', this.plEvent, true);
+  }
+}
+
+const plMouseMove = (event: any) => {
+  if(KotOR.Mouse.Dragging && (event.movementX || event.movementY)){
+    let range = 100;
+    //console.log(event.movementX, event.movementY);
+    if(event.movementX > -range && event.movementX < range){
+      KotOR.Mouse.OffsetX = event.movementX || 0;
+    }
+    if(event.movementY > -range && event.movementY < range){
+      KotOR.Mouse.OffsetY = (event.movementY || 0)*-1.0;
+    }
+  }
+}
+
+document.addEventListener('pointerlockchange', plChangeCallback, true);

@@ -5,6 +5,7 @@ import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager"
 import { EventListenerModel } from "./EventListenerModel";
 
 import * as KotOR from "./KotOR";
+import { ModelViewerControls } from "./ModelViewerControls";
 
 /* @file
  * The UI3DRenderer class.
@@ -25,6 +26,8 @@ export interface UI3DRendererEventListeners {
 }
 
 export class UI3DRenderer extends EventListenerModel {
+
+  uuid: string;
 
   protected eventListeners: UI3DRendererEventListeners = {
     onBeforeRender: [],
@@ -60,8 +63,14 @@ export class UI3DRenderer extends EventListenerModel {
   loadingTextures: boolean;
   enabled: boolean = false;
 
+  controls: ModelViewerControls;
+  controlsEnabled: boolean = false;
+
+  queuedAnimationFrame: number;
+
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
+    this.uuid = crypto.randomUUID();
     this.sceneGraphManager = new SceneGraphTreeViewManager();
     this.canvas = canvas;
     this.width = width;
@@ -86,6 +95,8 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildAmbientLight();
       this.buildScene();
     }
+    
+    this.controls = new ModelViewerControls(this);
 
   }
 
@@ -104,6 +115,7 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
+      this.controls.attachCanvasElement(this.canvas);
       this.processEventListener('onCanvasAttached', [this.canvas]);
     }
   }
@@ -210,7 +222,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   render(){
     if(!this.enabled) return;
-    requestAnimationFrame( () => {
+    this.queuedAnimationFrame = requestAnimationFrame( () => {
       this.render();
     });
     if(this.renderer){
@@ -219,6 +231,10 @@ export class UI3DRenderer extends EventListenerModel {
       const delta = this.clock.getDelta();
       this.time += delta;
       this.deltaTime += delta;
+
+      if(this.controlsEnabled){
+        this.controls.update(delta);
+      }
 
       //Custom render logic can run here
       this.processEventListener('onBeforeRender', [delta]);
@@ -238,7 +254,13 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   destroy(){
+    this.enabled = false;
+    cancelAnimationFrame(this.queuedAnimationFrame);
+    if(this.renderer) this.renderer.dispose();
     this.renderer = undefined;
+
+    this.controls.dispose();
+    
     if(this.camera){
       this.camera.removeFromParent();
     }

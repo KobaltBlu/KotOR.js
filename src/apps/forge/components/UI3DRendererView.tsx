@@ -8,16 +8,24 @@ export interface UI3DRendererViewProps {
 }
 
 export const UI3DRendererView = function(props: UI3DRendererViewProps){
-  const canvasRef: any = useRef<HTMLCanvasElement>();
+  const canvasRef: React.RefObject<HTMLCanvasElement> = useRef<HTMLCanvasElement>() as any;
 
   useEffectOnce(() => {
     if(!(props.context instanceof UI3DRenderer)){
-      props.context = new UI3DRenderer(canvasRef.current);
+      props.context = new UI3DRenderer(canvasRef.current as any);
+    }
+    return () => {
+      if(props.context){
+        props.context.controls.dispose();
+      }
     }
   });
 
   useEffect( () => {
-    props.context.setCanvas(canvasRef.current);
+    props.context.setCanvas(canvasRef.current as any);
+    if(canvasRef.current){
+      canvasRef.current.dataset.uuid = crypto.randomUUID();
+    }
   }, [canvasRef.current]);
 
   return (

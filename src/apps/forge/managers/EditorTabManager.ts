@@ -76,6 +76,7 @@ export class EditorTabManager extends EventListenerModel {
     for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
         console.log('removeTab', 'Tab found. Deleting');
+        tab.destroy();
         this.tabs.splice(i, 1);
         break;
       }
