@@ -11,6 +11,7 @@ export class ModelViewerControls {
   element: HTMLCanvasElement;
 
   axisFront: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3(0, -1, 0);
+  lookAt: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3();
   pitch: number = 0;
   yaw: number = 0;
   pointerLockVector: KotOR.THREE.Vector2 = new KotOR.THREE.Vector2();
@@ -56,7 +57,7 @@ export class ModelViewerControls {
     }
   }
 
-  processEventListener(key: string, data: any = {}){
+  processEventListener(key: string, data: any = undefined){
     let event = this.eventListeners.hasOwnProperty(key);
     if(!!event){
       event = this.eventListeners[key];
@@ -312,16 +313,15 @@ export class ModelViewerControls {
   }
 
   axisUpdate(){
-    let front = new KotOR.THREE.Vector3();
-    front.x = Math.cos(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
-    front.y = Math.sin(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
-    front.z = Math.sin(KotOR.THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.x = Math.cos(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.y = Math.sin(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.z = Math.sin(KotOR.THREE.MathUtils.degToRad(this.pitch));
 
-    this.axisFront = front.normalize();
+    this.axisFront.normalize();
 
-    let lookAt = new KotOR.THREE.Vector3();
-    lookAt.addVectors(this.context.camera.position, this.axisFront);
-    this.context.camera.lookAt(lookAt);
+    this.lookAt.set(0, 0, 0);
+    this.lookAt.addVectors(this.context.camera.position, this.axisFront);
+    this.context.camera.lookAt(this.lookAt);
     this.context.camera.updateProjectionMatrix();
   }
 
