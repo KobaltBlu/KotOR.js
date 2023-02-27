@@ -8,12 +8,14 @@ import { UI3DRendererView } from "../../components/UI3DRendererView";
 import { EditorFile } from "../../EditorFile";
 import { BinaryReader } from "../../../../BinaryReader";
 import { ModelViewerControls } from "../../ModelViewerControls";
+import { SceneGraphNode } from "../../SceneGraphNode";
+import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onModelLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
-  'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange';
+  'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange'|'onLoopChange';
 
 export interface TabModelViewerStateEventListeners extends TabStateEventListeners {
   onModelLoaded: Function[],
@@ -30,6 +32,7 @@ export interface TabModelViewerStateEventListeners extends TabStateEventListener
   onKeyFramesChange: Function[],
   onDurationChange: Function[],
   onAnimationChange: Function[],
+  onLoopChange: Function[],
 }
 
 export class TabModelViewerState extends TabState {
@@ -57,6 +60,7 @@ export class TabModelViewerState extends TabState {
     onKeyFramesChange: [],
     onDurationChange: [],
     onAnimationChange: [],
+    onLoopChange: [],
   };
 
   tabName: string = `Model Viewer`;
@@ -90,6 +94,12 @@ export class TabModelViewerState extends TabState {
   groundMaterial: KotOR.THREE.LineBasicMaterial;
   groundMesh: KotOR.THREE.LineSegments<KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>, KotOR.THREE.LineBasicMaterial>;
 
+  //layout
+  layout_group: KotOR.THREE.Group = new KotOR.THREE.Group();
+  selectedLayoutIndex: number = -1;
+  layoutSceneGraphNode: SceneGraphNode;
+  layout: KotOR.LYTObject;
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     // this.singleInstance = true;
@@ -101,7 +111,7 @@ export class TabModelViewerState extends TabState {
 
     // Geometry
     this.groundColor = new KotOR.THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new KotOR.THREE.WireframeGeometry(new KotOR.THREE.PlaneGeometry( 25, 25, 25, 25 ));
+    this.groundGeometry = new KotOR.THREE.WireframeGeometry(new KotOR.THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new KotOR.THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new KotOR.THREE.LineSegments( this.groundGeometry, this.groundMaterial );
     // this.unselectable.add( this.groundMesh );
@@ -112,10 +122,19 @@ export class TabModelViewerState extends TabState {
     // });
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
     this.ui3DRendererView = (
-      <UI3DRendererView context={this.ui3DRenderer}></UI3DRendererView>
+      <UI3DRendererView context={this.ui3DRenderer}>
+        <UI3DOverlayComponent context={this.ui3DRenderer}></UI3DOverlayComponent>
+      </UI3DRendererView>
     );
     this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.scene.add(this.groundMesh);
+    this.ui3DRenderer.scene.add(this.layout_group);
+
+    this.layoutSceneGraphNode = new SceneGraphNode({
+      name: 'Layout'
+    });
+
+    this.ui3DRenderer.sceneGraphManager.sceneNode.addChildNode(this.layoutSceneGraphNode);
 
     this.tabContentView = <TabModelViewer tab={this}></TabModelViewer>
     this.openFile();
@@ -142,6 +161,15 @@ export class TabModelViewerState extends TabState {
               this.model = model;
               this.processEventListener('onEditorFileLoad', [this]);
               this.ui3DRenderer.attachObject(this.model, true);
+
+              if(model.camerahook){
+                const camera = new KotOR.THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+                camera.name = model.name;
+                model.camerahook.add(camera);
+                this.ui3DRenderer.attachCamera(camera);
+              }
+              this.ui3DRenderer.sceneGraphManager.rebuild();
+
               // this.updateCameraFocus();
               resolve(this.model);
             }
@@ -222,11 +250,92 @@ export class TabModelViewerState extends TabState {
     if(this.currentAnimation){
       this.model.playAnimation(this.currentAnimation, this.looping);
     }
+    this.processEventListener('onLoopChange', [this.looping]);
   }
 
   destroy(): void {
     this.ui3DRenderer.destroy();
+    this.disposeLayout();
     super.destroy();
+  }
+
+  loadLayout(key?: KotOR.KEY){
+    this.disposeLayout();
+    if(key) {
+      // this.layoutSceneGraphNode
+      return new Promise<void>( async (resolve, reject) => {
+        KotOR.KEYManager.Key.GetFileData(key, async (data: Buffer) => {
+          // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
+          // this.tab.tabLoader.Show();
+          const lyt = new KotOR.LYTObject(data);
+          this.layout = lyt;
+          for(let i = 0, len = this.layout.rooms.length; i < len; i++){
+            let room = this.layout.rooms[i];
+            // this.tabLoader.SetMessage(`Loading: ${room.name}`);
+            let mdl = await KotOR.GameState.ModelLoader.load(room.name);
+            if(mdl){
+              let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+                manageLighting: false,
+                context: this.ui3DRenderer, 
+                mergeStatic: false,
+              });
+              if(model){
+                model.position.copy( room.position )
+                this.layout_group.add(model);
+              }
+            }
+            this.layoutSceneGraphNode.addChildNode(
+              new SceneGraphNode({
+                name: room.name,
+              })
+            )
+          }
+          this.ui3DRenderer.sceneGraphManager.rebuild();
+          KotOR.TextureLoader.LoadQueue(() => {
+            if(this.ui3DRenderer.renderer)
+              this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
+            // this.tab.tabLoader.Hide();
+            resolve();
+          }, (texObj: KotOR.TextureLoaderQueuedRef) => {
+            if(texObj.material){
+              if(texObj.material instanceof KotOR.THREE.ShaderMaterial){
+                if(texObj.material.uniforms.map.value){
+                  // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
+                  console.log('iniTexture', texObj.name);
+
+                  if(this.ui3DRenderer.renderer)
+                    this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
+                }
+              }
+            }
+          });
+        });
+      });
+    }
+  }
+
+  
+
+  disposeLayout(){
+    this.layoutSceneGraphNode.setNodes([]);
+    this.ui3DRenderer.sceneGraphManager.rebuild();
+    try{
+      if(this.layout_group.children.length){
+        let modelIndex = this.layout_group.children.length - 1;
+        while(modelIndex >= 0){
+          let model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
+          if(model){
+            model.dispose();
+            this.layout_group.remove(model);
+          }
+          modelIndex--;
+        }
+      }
+      // this.modelViewSideBarComponent.buildNodeTree();
+    }catch(e){
+      console.error(e);
+    }
+    // this.layout = undefined;
   }
 
 }
