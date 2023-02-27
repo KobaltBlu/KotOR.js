@@ -69,20 +69,22 @@ export const App = (props: any) => {
   );
 
   return (
-    <div id="app" style={{ opacity: (appReady) ? '1': '0' }}>
-      <MenuTop />
-      <div id="container">
-        <LayoutContainerProvider>
-          <LayoutContainer westContent={westContent}>
-            <TabManagerProvider manager={ForgeState.tabManager}>
-              <TabManager></TabManager>
-            </TabManagerProvider>
-          </LayoutContainer>
-        </LayoutContainerProvider>
+    <>
+      <div id="app" style={{ opacity: (appReady) ? '1': '0' }}>
+        <MenuTop />
+        <div id="container">
+          <LayoutContainerProvider>
+            <LayoutContainer westContent={westContent}>
+              <TabManagerProvider manager={ForgeState.tabManager}>
+                <TabManager></TabManager>
+              </TabManagerProvider>
+            </LayoutContainer>
+          </LayoutContainerProvider>
+        </div>
+        <ModalChangeGame></ModalChangeGame>
       </div>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
-      <ModalChangeGame></ModalChangeGame>
-    </div>
+    </>
   );
 
 };
