@@ -36,16 +36,22 @@ export const KeyFrameTimelineComponent = function(props: any){
     }
   };
 
+  const onLoopChange = function(){
+    setLooping(tab.looping);
+  };
+
   useEffectOnce( () => { //constructor
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener('onKeyFrameTrackZoomIn', onKeyFrameTrackZoomIn);
     tab.addEventListener('onKeyFrameTrackZoomOut', onKeyFrameTrackZoomOut);
     tab.addEventListener('onAnimationChange', onAnimationChange);
+    tab.addEventListener('onLoopChange', onLoopChange);
     return () => { //destructor
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener('onKeyFrameTrackZoomIn', onKeyFrameTrackZoomIn);
       tab.removeEventListener('onKeyFrameTrackZoomOut', onKeyFrameTrackZoomOut);
       tab.removeEventListener('onAnimationChange', onAnimationChange);
+      tab.removeEventListener('onLoopChange', onLoopChange);
     }
   });
 
@@ -67,7 +73,7 @@ export const KeyFrameTimelineComponent = function(props: any){
     tab.stopAnimation();
   };
 
-  const onLoopChange = function(e: React.ChangeEvent<HTMLInputElement>){
+  const onCheckboxLoopChange = function(e: React.ChangeEvent<HTMLInputElement>){
     tab.setLooping(e.target.checked);
     setLooping(e.target.checked);
   }
@@ -118,7 +124,7 @@ export const KeyFrameTimelineComponent = function(props: any){
             }
           </Form.Select>
           &nbsp;<i className="fa-solid fa-rotate"></i>
-          &nbsp;<input type="checkbox" checked={looping} onChange={onLoopChange} />
+          &nbsp;<input type="checkbox" checked={looping} onChange={onCheckboxLoopChange} />
         </div>
         <div className="keyframe-controls-center">
           {/* <a title="Delete Keyframe" className="fa-solid fa-trash"></a> */}
