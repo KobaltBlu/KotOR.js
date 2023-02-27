@@ -62,6 +62,8 @@ export * from "./interface/odyssey/OdysseyModelControllerType";
 export * from "./interface/odyssey/OdysseyModelNodeType";
 export * from "./odyssey/controllers/OdysseyController"
 
+export * from "./interface/loaders/TextureLoaderQueuedRef";
+
 export * from "./three/odyssey";
 export * from "./three/MDLLoader";
 
