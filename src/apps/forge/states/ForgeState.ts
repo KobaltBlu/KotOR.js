@@ -5,10 +5,11 @@ import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
 import * as KotOR from '../KotOR';
+import { ProjectFileSystem } from "../ProjectFileSystem";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
-  static Project: Project;
+  static project: Project;
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
   static tabManager: EditorTabManager = new EditorTabManager();
   static explorerTabManager: EditorTabManager = new EditorTabManager();
@@ -135,3 +136,4 @@ export class ForgeState {
   }
 }
 (window as any).ForgeState = ForgeState;
+(window as any).ProjectFileSystem = ProjectFileSystem;

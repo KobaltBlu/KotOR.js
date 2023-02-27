@@ -12,7 +12,7 @@ export enum ForgeFileSystemResponseType {
 
 export interface ForgeFileSystemResponse {
   type: ForgeFileSystemResponseType;
-  handles?: FileSystemFileHandle[];
+  handles?: FileSystemFileHandle[]|FileSystemDirectoryHandle[];
   paths?: string[];
   multiple?: boolean;
 }
@@ -23,7 +23,7 @@ export interface OpenFileOptions {
 }
 
 export class ForgeFileSystem {
-  static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse>{
+  static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
     options = Object.assign({
       multiple: false,
       exts: []
@@ -33,7 +33,7 @@ export class ForgeFileSystem {
         dialog.showOpenDialog({
           title: 'Open File',
           filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          properties: ['createDirectory'],
+          properties: ['createDirectory', 'openFile'],
         }).then( (result: any) => {
           if(!result.canceled){
             if(result.filePaths.length){
@@ -106,7 +106,7 @@ export class ForgeFileSystem {
         }
       }else{
         if(Array.isArray(response.handles)){
-          const [handle] = response.handles;
+          const [handle] = response.handles as FileSystemFileHandle[];
           let file = await handle.getFile();
           return Buffer.from( await file.arrayBuffer() );
         }
@@ -115,6 +115,74 @@ export class ForgeFileSystem {
       console.error(e);
     }
     return Buffer.alloc(0);
+  }
+
+  static OpenDirectory(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
+    options = Object.assign({
+      multiple: false,
+      exts: []
+    }, options);
+    options.multiple = false;
+    return new Promise( (resolve, reject) => {
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        dialog.showOpenDialog({
+          title: 'Open Directory',
+          // filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+          properties: ['createDirectory', 'openDirectory'],
+        }).then( (result: any) => {
+          if(!result.canceled){
+            if(result.filePaths.length){
+              resolve({
+                type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+                paths: result.filePaths as string[],
+                multiple: false,
+              });
+              return;
+            }
+          }
+          resolve({
+            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+            paths: [],
+            multiple: false,
+          });
+          // console.log(result.canceled);
+          // console.log(result.filePaths);
+        }).catch( (e: any) => {
+          console.error(e);
+          resolve({
+            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+            paths: [],
+            multiple: options.multiple,
+          });
+        })
+      }else{
+        window.showDirectoryPicker({
+          types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+          multiple: false,
+        }).then( (handle: FileSystemDirectoryHandle) => {
+          if(handle){
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+              handles: [handle as any],
+              multiple: false,
+            });
+            return;
+          }
+          resolve({
+            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+            handles: [],
+            multiple: options.multiple,
+          });
+        }).catch((e: any) => {
+          console.error(e);
+          resolve({
+            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+            handles: [],
+            multiple: options.multiple,
+          });
+        });
+      }
+    });
   }
 
   static GetFilteredFilePickerTypes(ext: string[] = []){

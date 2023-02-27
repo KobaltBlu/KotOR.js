@@ -58,14 +58,15 @@ export class ModuleStore extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.InitProperties();
-        // this.LoadScripts();
       }else{
         console.error('Failed to load ModuleStore template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.InitProperties();
-      // this.LoadScripts();
     }
   }
 

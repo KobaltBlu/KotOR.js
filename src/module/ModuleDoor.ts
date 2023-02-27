@@ -587,6 +587,10 @@ export class ModuleDoor extends ModuleObject {
         this.LoadScripts();
       }else{
         console.error(`Failed to load ${ModuleDoor.name} template`);
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+          this.LoadScripts();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

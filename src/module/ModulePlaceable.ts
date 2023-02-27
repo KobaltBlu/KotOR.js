@@ -470,6 +470,11 @@ export class ModulePlaceable extends ModuleObject {
         this.LoadScripts();
       }else{
         console.error('Failed to load ModulePlaceable template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+          this.LoadInventory();
+          this.LoadScripts();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

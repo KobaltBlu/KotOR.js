@@ -7,6 +7,7 @@ import { Project } from "./Project";
 import { pathParse } from "./helpers/PathParse";
 import { EventListenerModel } from "./EventListenerModel";
 import * as KotOR from "../../KotOR";
+import { ProjectFileSystem } from "./ProjectFileSystem";
 
 export type EditorFileEventListenerTypes =
   'onNameChanged'|'onSaveStateChanged'|'onSaved'
@@ -23,6 +24,7 @@ export class EditorFile extends EventListenerModel {
   handle?: FileSystemFileHandle;
   handle2?: FileSystemFileHandle; //for dual file types like mdl/mdx
   useGameFileSystem: boolean = false;
+  useProjectFileSystem: boolean = false;
 
   buffer?: Buffer;
   buffer2?: Buffer; //for dual file types like mdl/mdx
@@ -99,7 +101,8 @@ export class EditorFile extends EventListenerModel {
       ext: null,
       archive_path: null,
       location: FileLocationType.OTHER,
-      useGameFileSystem: false
+      useGameFileSystem: false,
+      useProjectFileSystem: false,
     }, options);
 
     this.buffer = options.buffer;
@@ -115,6 +118,7 @@ export class EditorFile extends EventListenerModel {
     this.handle = options.handle;
     this.handle2 = options.handle2;
     this.useGameFileSystem = !!options.useGameFileSystem;
+    this.useProjectFileSystem = !!options.useProjectFileSystem;
 
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
@@ -415,6 +419,16 @@ export class EditorFile extends EventListenerModel {
               }).catch( (err: any) => {
                 throw err;
               })
+            }else if(this.useProjectFileSystem){
+              ProjectFileSystem.readFile(this.path).then( (buffer: Buffer) => {
+                this.buffer = buffer;
+  
+                if(typeof onLoad === 'function'){
+                  onLoad(this.buffer);
+                }
+              }).catch( (err: any) => {
+                throw err;
+              })
             }else{
               if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
                 fs.readFile(this.path, (err, buffer) => {
@@ -494,8 +508,8 @@ export class EditorFile extends EventListenerModel {
         KotOR.ConfigClient.save(null as any, true); //Save the configuration silently
 
         //Notify the project we have opened a new file
-        if(ForgeState.Project instanceof Project){
-          ForgeState.Project.addToOpenFileList(this);
+        if(ForgeState.project instanceof Project){
+          ForgeState.project.addToOpenFileList(this);
         }
       }
     }catch(e){

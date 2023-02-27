@@ -193,6 +193,11 @@ export class ModuleEncounter extends ModuleObject {
         //this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+          this.LoadScripts();
+          try{ this.buildGeometry(); }catch(e){console.error(e)}
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

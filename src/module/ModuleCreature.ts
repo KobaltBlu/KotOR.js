@@ -3152,6 +3152,10 @@ export class ModuleCreature extends ModuleObject {
         FactionManager.AddCreatureToFaction(this);
       }else{
         console.error('Failed to load character template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+          this.LoadScripts();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

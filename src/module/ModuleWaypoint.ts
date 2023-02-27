@@ -71,6 +71,9 @@ export class ModuleWaypoint extends ModuleObject {
         this.InitProperties();
       }else{
         console.error('Failed to load ModuleWaypoint template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

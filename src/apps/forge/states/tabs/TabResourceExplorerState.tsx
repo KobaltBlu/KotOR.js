@@ -565,6 +565,7 @@ export class TabResourceExplorerState extends TabState {
 
         resolve(folder);
       }).catch( (err: any) => {
+        console.error(err);
         resolve(folder)
       }); 
     });

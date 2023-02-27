@@ -82,6 +82,9 @@ export class ModuleSound extends ModuleObject {
         this.InitProperties();
       }else{
         console.error('Failed to load ModuleSound template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

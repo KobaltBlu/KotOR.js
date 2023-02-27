@@ -363,6 +363,9 @@ export class ModuleItem extends ModuleObject {
         //
       }else{
         console.error('Failed to load ModuleItem template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+        }
       }
     }else if(!this.loaded && this.getInventoryRes()){
       //Load template and merge fields
@@ -371,10 +374,11 @@ export class ModuleItem extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.InitProperties();
-        // this.LoadScripts();
-        //
       }else{
         console.error('Failed to load ModuleItem template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+        }
       }
     }else{
       //We already have the template (From SAVEGAME)

@@ -11,6 +11,8 @@ import { ModalChangeGameState } from "./modal/ModalChangeGame";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 
 import * as KotOR from "../KotOR";
+import { Project } from "../Project";
+import { ProjectFileSystem } from "../ProjectFileSystem";
 declare const dialog: any;
 
 export class ProtoMenuItem {
@@ -96,25 +98,17 @@ const MenuTopOptions = {
   items: [
     {name: 'File', items: [
       {name: 'Open Project', onClick: async () => {
-        // let payload = await dialog.showOpenDialog({
-        //   properties: ['openFile', 'createDirectory'],
-        //   filters: [
-        //     {name: 'KForge Project', extensions: ['json']}
-        // ]});
-        // if(!payload.canceled && payload.filePaths.length){
-        //   Forge.Project = new Project( path.dirname(payload.filePaths[0]) );
-        //   Forge.Project.Open(() => {
-        //     Forge.loader.SetMessage("Loading Complete");
-        //     //Fade out the loading screen because the app is ready
-        //     Forge.loader.Dismiss();
-        //   });
-        // }
+        Project.OpenByDirectory();
       }},
       {name: 'New Project', onClick: () => {
         // let newProjectWizard = new NewProjectWizard();
         // newProjectWizard.Show();
       }},
-      {name: 'Save Project'},
+      {name: 'Save Project', onClick: () => {
+        if(ForgeState.project){
+          ForgeState.project.save();
+        }
+      }},
       {name: 'Close Project', onClick: () => {
         // Forge.Project = undefined as any;
         // for(let i = 0; i < Forge.tabManager.tabs.length; i++){
@@ -194,7 +188,7 @@ const MenuTopOptions = {
             }
           }else{
             if(Array.isArray(response.handles)){
-              const [handle] = response.handles;
+              const [handle] = response.handles as FileSystemFileHandle[];
               let parsed = pathParse(handle.name);
               let fileParts = parsed.name.split('.');
               FileTypeManager.onOpenFile({
@@ -247,20 +241,21 @@ const MenuTopOptions = {
     ]},
     {name: 'Project', items: [
       {name: 'Open Module Editor', onClick: () => {
-        // if(Forge.Project instanceof Project){
-        //   Forge.Project.openModuleEditor();
-        // }else{
-        //   alert('Open or start a new project to use this feature');
-        // }
+        ForgeState.project
+        if(ForgeState.project instanceof Project){
+          ForgeState.project.openModuleEditor();
+        }else{
+          alert('Open or start a new project to use this feature');
+        }
       }}
     ]},
     {name: 'View', items: [
       {name: 'Start Page', onClick: () => {
         ForgeState.tabManager.addTab(new TabQuickStartState());
       }},
-      {name: 'Left Pane Toggle', onClick: () => {
-        // $('#container').layout().toggle('west');
-      }},
+      // {name: 'Left Pane Toggle', onClick: () => {
+      //   // $('#container').layout().toggle('west');
+      // }},
       /*{name: 'Right Pane Toggle', onClick: () => {
         $('#container').layout().toggle('east');
       }},
@@ -271,9 +266,9 @@ const MenuTopOptions = {
           inlineAudioPlayer.Show();
         }
       }},*/
-      {name: 'Audio Toggle Mute', onClick: () => {
-        // AudioEngine.ToggleMute();
-      }}
+      // {name: 'Audio Toggle Mute', onClick: () => {
+      //   // AudioEngine.ToggleMute();
+      // }}
     ]},
     /*{name: 'Settings', onClick: function(){
       let configWizard = new ConfigWizard();

@@ -137,6 +137,12 @@ export class ModuleTrigger extends ModuleObject {
         this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
+        if(this.template instanceof GFFObject){
+          this.InitProperties();
+          this.LoadScripts();
+          this.buildGeometry();
+          this.initObjectsInside();
+        }
       }
 
     }else{

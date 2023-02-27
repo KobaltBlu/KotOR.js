@@ -8,6 +8,11 @@ import { TabQuickStartState } from "./states/tabs/TabQuickStartState";
 import * as KotOR from "./KotOR";
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
+import { TabModuleEditorState } from "./states/tabs/TabModuleEditorState";
+import { ProjectFileSystem } from "./ProjectFileSystem";
+import { ForgeFileSystem } from "./ForgeFileSystem";
+import { StringDecoder } from "string_decoder";
+import { ProjectSettings } from "./interfaces/ProjectSettings";
 
 export class Project {
 
@@ -15,81 +20,84 @@ export class Project {
   static project_assets_dir: string = 'assets';
   dir: string = '';
 
-  ClassName: string;
-  directory: string;
+  className: string;
   files: any[];
-  settings: any = {};
-  custom: Function;
+  settings: ProjectSettings = {} as ProjectSettings;
   moduleEditor: any;
   module: any;
+
   static Types: any;
 
-  constructor(directory: string){
+  constructor(){
     console.log("Project Class");
-    this.ClassName = "Project";
-    this.directory = directory;
+    this.className = "Project";
     this.files = [];
-    this.settings = {};
-    this.custom = function(){
-
-    };
+  }
+  
+  static OpenByDirectory() {
+    ForgeFileSystem.OpenDirectory().then( async (response) => {
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(response.paths && response.paths.length){
+          ProjectFileSystem.rootDirectoryPath = response.paths[0];
+          ForgeState.project = new Project();
+          await ForgeState.project.load();
+          await ProjectFileSystem.initializeProjectExplorer();
+        }
+      }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+        if(response.handles && response.handles.length){
+          ProjectFileSystem.rootDirectoryHandle = response.handles[0] as FileSystemDirectoryHandle;
+          ForgeState.project = new Project();
+          await ForgeState.project.load();
+          await ProjectFileSystem.initializeProjectExplorer();
+        }
+      }
+    });
   }
 
   //Save any altered files in the project
-  Save(){
+  save(){
 
   }
 
   //Closes the current project
-  Close(){
+  close(){
 
   }
 
-  Load(onLoad?: Function){
-
-    if (fs.existsSync(path.join(this.directory, 'project.json'))) {
+  async load(){
+    if ( await ProjectFileSystem.exists('.forge/settings.json') ) {
       try{
-        this.settings = {};//require(path.join(this.directory, 'project.json'));
+        const buffer = await ProjectFileSystem.readFile('.forge/settings.json');
+        let decoder = new StringDecoder('utf8');
+        this.settings = JSON.parse(
+          decoder.write(buffer)
+        );
 
         if(typeof this.settings != 'object'){
           console.warn('Project.Load', 'Malformed project.json file data', this.settings);
-          this.settings = {};
+          this.settings = {} as ProjectSettings;
         }
 
         this.settings = DeepObject.Merge(defaults, this.settings);
-
-        //Name Key Case Fix
-        if(this.settings.hasOwnProperty('Name')){
-          this.settings.name = this.settings.Name;
-          delete this.settings.Name;
-        }
-
-        if(typeof onLoad == 'function')
-          onLoad();
       }catch(e){
         console.error('Project.Load', e);
         alert('Project.Load: Failed');
         this.settings = DeepObject.Merge(defaults, {});
-        if(typeof onLoad == 'function')
-          onLoad();
       }
     }else{
       alert('Project.Load: project.json not found!');
       console.warn('Project.Load', 'project.json not found!');
       this.settings = DeepObject.Merge(defaults, {});
-      if(typeof onLoad == 'function')
-        onLoad();
     }
   }
 
   //Opens a project from it's location
-  Open(onSuccess?: Function, deferInit = false){
+  open(onSuccess?: Function, deferInit = false){
     // ForgeState.loader.SetMessage("Loading Project..");
     // ForgeState.loader.Show();
     //load project.json
-    this.Load( () => {
+    this.load().then( () => {
       try{
-
         console.log('project', this.settings);
 
         let quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
@@ -98,16 +106,16 @@ export class Project {
           ForgeState.tabManager.removeTab(quickStart);
         }
 
-        let pjIndex = KotOR.ConfigClient.options.recent_projects.indexOf(this.directory);
-        if (pjIndex > -1) {
-          KotOR.ConfigClient.options.recent_projects.splice(pjIndex, 1);
-        }
+        // let pjIndex = KotOR.ConfigClient.options.recent_projects.indexOf(this.directory);
+        // if (pjIndex > -1) {
+        //   KotOR.ConfigClient.options.recent_projects.splice(pjIndex, 1);
+        // }
 
-        //Append this project to the beginning of the list
-        KotOR.ConfigClient.options.recent_projects.unshift(this.directory);
-        KotOR.ConfigClient.save(undefined, true); //Save the configuration silently
+        // //Append this project to the beginning of the list
+        // KotOR.ConfigClient.options.recent_projects.unshift(this.directory);
+        // KotOR.ConfigClient.save(undefined, true); //Save the configuration silently
 
-        this.GetFiles(()=>{
+        // this.getFiles(()=>{
 
           let project = this;
 
@@ -116,7 +124,7 @@ export class Project {
             onLoad: () => {
               //This is where we initialize ProjectType specific operations
               if(!deferInit){
-                project.InitializeProject( () => {
+                project.initializeProject( () => {
                   // ForgeState.loader.SetMessage("Loading Complete");
                   //When everything is done
                   if(typeof onSuccess == 'function')
@@ -129,9 +137,9 @@ export class Project {
             }
           });
 
-        });
+        // });
 
-        ForgeState.Project = this;
+        ForgeState.project = this;
 
       }catch(e){
         console.log(e);
@@ -143,12 +151,12 @@ export class Project {
 
   }
 
-  InitializeProject(onComplete?: Function){
+  initializeProject(onComplete?: Function){
     switch(this.settings.type){
       case ProjectType.MODULE:
         //Initialize the Map Editor
         if(this.settings.module_editor.open)
-          this.InitEditor();
+          this.initEditor();
 
         //All done??? ok Complete
         if(typeof onComplete == 'function')
@@ -171,74 +179,74 @@ export class Project {
   }
 
   //Exports the finished project to a .mod file
-  Export(){
+  export(){
 
   }
 
-  async GetFiles(onSuccess?: Function){
+  // async getFiles(onSuccess?: Function){
 
-    await this.parseProjectFolder();
+  //   // await this.parseProjectFolder();
 
-    // ForgeState.projectExplorerTab.initialize();
+  //   // ForgeState.projectExplorerTab.initialize();
       
-    if(typeof onSuccess == 'function')
-      onSuccess(this.files);
+  //   if(typeof onSuccess == 'function')
+  //     onSuccess(this.files);
 
-  }
+  // }
 
-  async parseProjectFolder( folder: string = '' ){
-    return new Promise<void>( async (resolve, reject) => {
-      if(typeof folder === 'undefined')
-        folder = this.directory;
+  // async parseProjectFolder( folder: string = '' ){
+  //   return new Promise<void>( async (resolve, reject) => {
+  //     if(typeof folder === 'undefined')
+  //       folder = this.directory;
 
-      console.log('parseProjectFolder', folder);
+  //     console.log('parseProjectFolder', folder);
 
-      fs.readdir(folder, {withFileTypes: true}, async (err, directory_objects) => {
-        if (err){
-          resolve();
-        }
+  //     fs.readdir(folder, {withFileTypes: true}, async (err, directory_objects) => {
+  //       if (err){
+  //         resolve();
+  //       }
 
-        for(let i = 0, len = directory_objects.length; i < len; i++){
-          let directory_object = directory_objects[i];
-          let name = directory_object.name;
-          let args = name.split('.');
+  //       for(let i = 0, len = directory_objects.length; i < len; i++){
+  //         let directory_object = directory_objects[i];
+  //         let name = directory_object.name;
+  //         let args = name.split('.');
 
-          if(directory_object.isDirectory()){
-            //DIRECTORY
-            this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: null, type: 'group'});
-            await this.parseProjectFolder( path.join(folder, name) );
-          }else{
-            //FILE
-            this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: args[1], type: 'resource'});
-          }
-        }
+  //         if(directory_object.isDirectory()){
+  //           //DIRECTORY
+  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: null, type: 'group'});
+  //           await this.parseProjectFolder( path.join(folder, name) );
+  //         }else{
+  //           //FILE
+  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: args[1], type: 'resource'});
+  //         }
+  //       }
 
-        resolve();
+  //       resolve();
           
-      });
-    });
-  }
+  //     });
+  //   });
+  // }
 
 
   /**
    * Creates a new THREE.js Engine and initialize the scene
    */
-  InitEditor() {
-    // this.moduleEditor = new ModuleEditorTab();
-    // ForgeState.tabManager.AddTab(this.moduleEditor);
-    // //this.moduleEditor.Init();
+  initEditor() {
+    this.moduleEditor = new TabModuleEditorState();
+    ForgeState.tabManager.addTab(this.moduleEditor);
+    //this.moduleEditor.Init();
   }
 
   openModuleEditor(){
-    // if(this.moduleEditor instanceof ModuleEditorTab){
-    //   ForgeState.tabManager.AddTab(this.moduleEditor);
-    //   this.moduleEditor.Show();
-    // }else{
-    //   this.InitEditor();
-    // }
+    if(this.moduleEditor instanceof TabModuleEditorState){
+      ForgeState.tabManager.addTab(this.moduleEditor);
+      this.moduleEditor.show();
+    }else{
+      this.initEditor();
+    }
   }
 
-  GetTemplatesByType ( restype = '' ) {
+  getTemplatesByType ( restype = '' ) {
     let files: any[] = [];
 
     for(let i = 0; i < this.files.length; i++){
@@ -277,21 +285,18 @@ export class Project {
     }
   }
 
-  saveSettings(onSave?: Function){
+  async saveSettings(){
     try{
-      fs.writeFile(path.join(this.directory, 'project.json'),
-        JSON.stringify(this.settings, null, "\t"),
-        (err) => {
-          if(err){
-            console.error('Project.saveSettings', err);
-            return;
-          }
-
-          if(typeof onSave === 'function'){
-            onSave();
-          }
-        }
+      const saved = await ProjectFileSystem.writeFile(
+        '.forge/settings.json', 
+        Buffer.from(
+          JSON.stringify(this.settings, null, "\t")
+        )
       );
+      if(!saved){
+        console.error('Project.saveSettings');
+        return;
+      }
     }catch(e){
       console.error('Project.saveSettings', e);
     }

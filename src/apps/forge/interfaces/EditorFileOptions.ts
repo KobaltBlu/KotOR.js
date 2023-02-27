@@ -14,4 +14,5 @@ export interface EditorFileOptions {
   archive_path?: string;
   location?: FileLocationType;
   useGameFileSystem?: boolean;
+  useProjectFileSystem?: boolean;
 }
