@@ -4,7 +4,7 @@ export interface SceneGraphNodeOptions {
   uuid?: string;
   name: string;
   nodes?: SceneGraphNode[];
-  onClick?: Function;
+  onClick?: (node: SceneGraphNode) => void;
   parent?: SceneGraphNode;
   data?: any;
   open?: boolean;
@@ -27,7 +27,7 @@ export class SceneGraphNode extends EventListenerModel {
   uuid: string;
   name: string = '';
   nodes: SceneGraphNode[] = [];
-  onClick: Function;
+  onClick: (node: SceneGraphNode) => void;
   data: any = {};
   open: boolean = false;
   selected: boolean = false;
