@@ -94,7 +94,8 @@ contextBridge.exposeInMainWorld(
     },
     exists: (...args) => {
       return fs.exists(...args);
-    }
+    },
+    constants: fs.constants
   }
 );
 contextBridge.exposeInMainWorld(
