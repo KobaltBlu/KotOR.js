@@ -52,6 +52,7 @@ export class UI3DRenderer extends EventListenerModel {
   scene: KotOR.THREE.Scene = new KotOR.THREE.Scene();
   camera: KotOR.THREE.PerspectiveCamera;
   currentCamera: KotOR.THREE.PerspectiveCamera;
+  cameras: KotOR.THREE.PerspectiveCamera[] = [];
   light: KotOR.THREE.AmbientLight;
   lights: KotOR.THREE.Group = new KotOR.THREE.Group();
   globalLight: KotOR.THREE.Light;
@@ -71,6 +72,7 @@ export class UI3DRenderer extends EventListenerModel {
   queuedAnimationFrame: number;
 
   odysseyModels: KotOR.OdysseyModel3D[] = [];
+  selectionBox = new KotOR.THREE.BoxHelper(new KotOR.THREE.Object3D(), 0xffffff);
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -85,6 +87,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.deltaTime = 0;
 
     this.clock = new KotOR.THREE.Clock();
+    this.selectionBox.visible = false;
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
       for(let i = 0; i < elements.length; i++){
@@ -102,6 +105,10 @@ export class UI3DRenderer extends EventListenerModel {
     }
     
     this.controls = new ModelViewerControls(this);
+    this.controls.attachEventListener('onSelect', (obj: KotOR.THREE.Object3D) => {
+      this.selectObject(obj);
+    })
+    this.selectionBox.visible = false;
 
   }
 
@@ -135,6 +142,17 @@ export class UI3DRenderer extends EventListenerModel {
     });
 
     this.sceneGraphManager.rebuild();
+  }
+  
+  attachCamera(camera: KotOR.THREE.PerspectiveCamera){
+    camera.userData.heler = new KotOR.THREE.CameraHelper( camera );
+    this.scene.add( camera.userData.heler );
+    this.cameras.push(camera);
+  }
+
+  selectObject(object: KotOR.THREE.Object3D){
+    this.selectionBox.setFromObject(object);
+    this.selectionBox.visible = true;
   }
 
   setCanvas(canvas: HTMLCanvasElement){
@@ -186,6 +204,7 @@ export class UI3DRenderer extends EventListenerModel {
   private buildScene(){
     // this.scene = new KotOR.THREE.Scene();
 
+    this.scene.add(this.selectionBox);
     this.scene.add(this.lights);
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
@@ -267,6 +286,7 @@ export class UI3DRenderer extends EventListenerModel {
     });
     if(this.renderer){
       this.renderer.clear();
+      this.selectionBox.update();
 
       const delta = this.clock.getDelta();
       this.time += delta;
