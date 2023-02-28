@@ -50,8 +50,8 @@ export class TabGFFEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile( (buffer: Buffer) => {
-          this.gff = new KotOR.GFFObject(buffer);
+        file.readFile().then( (response) => {
+          this.gff = new KotOR.GFFObject(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.gff);
         });

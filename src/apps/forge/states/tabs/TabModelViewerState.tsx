@@ -150,10 +150,10 @@ export class TabModelViewerState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile( (buffer: Buffer, buffer2: Buffer) => {
-          this.mdl = buffer;
-          this.mdx = buffer2;
-          this.odysseyModel = new KotOR.OdysseyModel(new BinaryReader(buffer), new BinaryReader(buffer2));
+        file.readFile().then( (response) => {
+          this.mdl = response.buffer;
+          this.mdx = response.buffer2 as Buffer;
+          this.odysseyModel = new KotOR.OdysseyModel(new BinaryReader(response.buffer), new BinaryReader(response.buffer2 as Buffer));
           KotOR.OdysseyModel3D.FromMDL(this.odysseyModel, {
             manageLighting: false,
             context: this.ui3DRenderer, 

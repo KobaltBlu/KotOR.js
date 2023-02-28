@@ -38,8 +38,8 @@ export class TabUTPEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile( (buffer: Buffer) => {
-          this.blueprint = new KotOR.GFFObject(buffer);
+        file.readFile().then( (response) => {
+          this.blueprint = new KotOR.GFFObject(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
           this.modulePlaceable = new KotOR.ModulePlaceable(this.blueprint);
           this.modulePlaceable.setContext(this.ui3DRenderer as any);

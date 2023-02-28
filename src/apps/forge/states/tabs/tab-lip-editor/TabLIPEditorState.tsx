@@ -162,8 +162,8 @@ export class TabLIPEditorState extends TabState {
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
-        file.readFile( (buffer: any) => {
-          new KotOR.LIPObject(buffer, (lip: any) => {
+        file.readFile().then( (response) => {
+          new KotOR.LIPObject(response.buffer, (lip: any) => {
             this.lip = lip;
 
             if(typeof this.lip.file != 'string')

@@ -25,8 +25,8 @@ export class TabTwoDAEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile( (buffer: Buffer) => {
-          this.twoDAObject = new KotOR.TwoDAObject(buffer);
+        file.readFile().then( (response) => {
+          this.twoDAObject = new KotOR.TwoDAObject(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.twoDAObject);
         });

@@ -95,10 +95,10 @@ export class AudioPlayerState {
     
     AudioPlayerState.file = file;
     if(file instanceof EditorFile){
-      file.readFile( (buffer: Buffer) => {
+      file.readFile().then( (response) => {
         try{
           // AudioPlayerState.$title.text(file.resref+'.'+file.ext);
-          AudioPlayerState.audioFile = new KotOR.AudioFile(buffer);
+          AudioPlayerState.audioFile = new KotOR.AudioFile(response.buffer);
           if(AudioPlayerState.isPlaying()){
             AudioPlayerState.Stop();
           }

@@ -31,18 +31,18 @@ export class TabImageViewerState extends TabState {
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
-        file.readFile( (buffer: Buffer) => {
+        file.readFile().then( (response) => {
           switch(file?.ext){
             case 'tga':
               // this.file = file.getLocalPath();
               // this.filename = file.resref + '.tga';
-              this.image = new KotOR.TGAObject({file: buffer, filename: file.resref+'.tga' });
+              this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
               // this.$tabName.text(file.getFilename());
             break;
             case 'tpc':
               // this.file = file.getLocalPath();
               // this.filename = file.resref + '.tpc';
-              this.image = new KotOR.TPCObject({file: buffer, filename: file.resref+'.tpc' });
+              this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
               // this.$tabName.text(file.getFilename());
             break;
           }
