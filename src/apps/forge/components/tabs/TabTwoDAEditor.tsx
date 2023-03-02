@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabTwoDAEditorState } from "../../states/tabs/TabTwoDAEditorState";
+import { TabTwoDAEditorState } from "../../states/tabs";
 import { ProgressBar } from "react-bootstrap";
 import { TwoDAEditorRow } from "../TwoDAEditorRow";
 import { TwoDAEditorColumnHeader } from "../TwoDAEditorColumnHeader";

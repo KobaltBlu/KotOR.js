@@ -14,18 +14,14 @@ export class TabUTDEditorState extends TabState {
   blueprint: KotOR.GFFObject;
 
   ui3DRenderer: UI3DRenderer;
-  ui3DRendererView: JSX.Element;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRendererView = (
-      <UI3DRendererView context={this.ui3DRenderer}></UI3DRendererView>
-    );
 
-    this.tabContentView = <TabUTDEditor tab={this}></TabUTDEditor>
+    this.setContentView(<TabUTDEditor tab={this}></TabUTDEditor>);
     this.openFile();
   }
 

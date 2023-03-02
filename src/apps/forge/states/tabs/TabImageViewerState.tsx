@@ -1,5 +1,5 @@
 import React from "react";
-import { TabState } from "./TabState";
+import { TabState } from "./";
 import { TabImageViewer } from "../../components/tabs/TabImageViewer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorFile } from "../../EditorFile";
@@ -21,7 +21,7 @@ export class TabImageViewerState extends TabState {
       this.tabName = this.file.getFilename();
     }
 
-    this.tabContentView = <TabImageViewer tab={this}></TabImageViewer>
+    this.setContentView(<TabImageViewer tab={this}></TabImageViewer>);
   }
 
   openFile(file?: EditorFile){

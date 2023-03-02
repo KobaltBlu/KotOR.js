@@ -1,5 +1,11 @@
+import { EditorFile } from "../EditorFile";
 import { EventListenerModel } from "../EventListenerModel";
-import { TabState } from "../states/tabs/TabState";
+import { TabStoreState } from "../interfaces/TabStoreState";
+import { 
+  TabGFFEditorState, TabImageViewerState, TabModelViewerState, 
+  TabModuleEditorState, TabQuickStartState, TabTwoDAEditorState, 
+  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
+} from "../states/tabs";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
@@ -135,6 +141,60 @@ export class EditorTabManager extends EventListenerModel {
   hideAll(){
     for(let i = 0; i < this.tabs.length; i++){
       this.tabs[i].hide();
+    }
+  }
+
+  restoreTabState(tabState: TabStoreState) {
+    if(tabState.file){
+      tabState.file = Object.assign(new EditorFile(), tabState.file);
+      console.log('file', tabState.file);
+    }
+    switch(tabState.type){
+      case 'TabQuickStartState':
+        this.addTab(
+          new TabQuickStartState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabImageViewerState':
+        this.addTab(
+          new TabImageViewerState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabModelViewerState':
+        this.addTab(
+          new TabModelViewerState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabGFFEditorState':
+        this.addTab(
+          new TabGFFEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabModuleEditorState':
+        this.addTab(
+          new TabModuleEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabTwoDAEditorState':
+        this.addTab(
+          new TabTwoDAEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabUTCEditorState':
+        this.addTab(
+          new TabUTCEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabUTDEditorState':
+        this.addTab(
+          new TabUTDEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabUTPEditorState':
+        this.addTab(
+          new TabUTPEditorState({editorFile: tabState.file})
+        );
+      break;
     }
   }
 

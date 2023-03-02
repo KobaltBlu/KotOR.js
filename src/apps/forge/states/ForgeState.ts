@@ -10,6 +10,8 @@ import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 import { pathParse } from "../helpers/PathParse";
 import { FileTypeManager } from "../FileTypeManager";
 import { EditorFileProtocol } from "../enum/EditorFileProtocol";
+import { TabStoreState } from "../interfaces/TabStoreState";
+import { TabState } from "./tabs/TabState";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -100,7 +102,24 @@ export class ForgeState {
           ForgeState.recentProjects = ForgeState.getRecentProjects();
           this.processEventListener('onRecentFilesUpdated', []);
           
-          ForgeState.tabManager.addTab(new TabQuickStartState());
+          const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
+          if(tabStates.length){
+            for(let i = 0; i < tabStates.length; i++){
+              const tabState = tabStates[i];
+              this.tabManager.restoreTabState(tabState);
+            }
+          }else{
+            ForgeState.tabManager.addTab(new TabQuickStartState());
+          }
+
+          ForgeState.tabManager.addEventListener('onTabAdded', () => {
+            ForgeState.saveOpenTabsState();
+          });
+
+          ForgeState.tabManager.addEventListener('onTabRemoved', () => {
+            ForgeState.saveOpenTabsState();
+          });
+
           ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
           ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
           ForgeState.resourceExplorerTab.show();
@@ -317,6 +336,26 @@ export class ForgeState {
     });
   }
 
+  static saveOpenTabsState(){
+    return;
+    try{
+      const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
+        return {
+          type: state.type,
+          file: state.file
+        }
+      });
+      KotOR.ConfigClient.set('open_tabs', states);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
 }
 (window as any).ForgeState = ForgeState;
 (window as any).ProjectFileSystem = ProjectFileSystem;
+
+window.addEventListener('beforeunload', (event) => { 
+  console.log('Saving Editor Config');
+  ForgeState.saveOpenTabsState();
+});

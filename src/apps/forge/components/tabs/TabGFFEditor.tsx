@@ -2,7 +2,7 @@ import React, { ChangeEvent, useEffect, useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
-import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../states/tabs/TabGFFEditorState";
+import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../states/tabs";
 
 import * as KotOR from "../../KotOR";
 import { Form, InputGroup } from "react-bootstrap";

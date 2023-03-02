@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form } from "react-bootstrap";
 import * as KotOR from "../KotOR";
-import { TabModelViewerState } from "../states/tabs/TabModelViewerState";
+import { TabModelViewerState } from "../states/tabs";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 
 export const KeyFrameTimelineComponent = function(props: any){

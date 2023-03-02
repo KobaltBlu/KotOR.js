@@ -1,9 +1,7 @@
 import React from "react";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
+import { TabState } from "./";
 import * as KotOR from "../../KotOR";
 
 export class TabModuleEditorState extends TabState {
@@ -11,7 +9,6 @@ export class TabModuleEditorState extends TabState {
   tabName: string = `Module Editor`;
 
   ui3DRenderer: UI3DRenderer;
-  ui3DRendererView: JSX.Element;
   groundColor: KotOR.THREE.Color;
   groundGeometry: KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>;
   groundMaterial: KotOR.THREE.LineBasicMaterial;
@@ -30,11 +27,6 @@ export class TabModuleEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
-    this.ui3DRendererView = (
-      <UI3DRendererView context={this.ui3DRenderer}>
-        <UI3DOverlayComponent context={this.ui3DRenderer}></UI3DOverlayComponent>
-      </UI3DRendererView>
-    );
     this.ui3DRenderer.controlsEnabled = true;
 
     this.ui3DRenderer.scene.add(this.groundMesh);

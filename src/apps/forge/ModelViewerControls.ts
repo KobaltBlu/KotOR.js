@@ -1,8 +1,6 @@
 import { EditorControlsTool } from "./enum/EditorControlsTool";
-import { TabState } from "./states/tabs/TabState";
 
 import * as KotOR from "./KotOR";
-import { TabModelViewerState } from "./states/tabs/TabModelViewerState";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "./UI3DRenderer";
 
 export class ModelViewerControls {

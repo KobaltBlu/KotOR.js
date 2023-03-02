@@ -6,15 +6,8 @@ import { Project } from "./Project";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
-import { TabImageViewerState } from "./states/tabs/TabImageViewerState";
-import { TabLIPEditorState } from "./states/tabs/tab-lip-editor/TabLIPEditorState";
-import { TabTwoDAEditorState } from "./states/tabs/TabTwoDAEditorState";
+import { TabGFFEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabTwoDAEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
-import { TabUTCEditorState } from "./states/tabs/TabUTCEditorState";
-import { TabUTDEditorState } from "./states/tabs/TabUTDEditorState";
-import { TabUTPEditorState } from "./states/tabs/TabUTPEditorState";
-import { TabGFFEditorState } from "./states/tabs/TabGFFEditorState";
-import { TabModelViewerState } from "./states/tabs/TabModelViewerState";
 
 /* @file
  * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine

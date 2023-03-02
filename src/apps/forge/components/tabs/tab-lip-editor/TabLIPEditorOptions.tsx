@@ -1,10 +1,9 @@
 import React, { NewLifecycle, useEffect, useState } from "react";
 import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 import { SceneGraphNode } from "../../../SceneGraphNode";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs/tab-lip-editor/TabLIPEditorState";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { Button, Form } from "react-bootstrap";
-import { TabLIPEditorOptionsState } from "../../../states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
 import { SectionContainer } from "../../SectionContainer";
 
 import * as KotOR from "../../../KotOR";

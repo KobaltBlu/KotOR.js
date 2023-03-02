@@ -75,7 +75,7 @@ export class TabResourceExplorerState extends TabState {
     super(options);
     this.isClosable = false;
 
-    this.tabContentView = (
+    this.setContentView(
       <TabResourceExplorer tab={this} nodes={TabResourceExplorerState.Resources}></TabResourceExplorer>
     );
 

@@ -99,7 +99,6 @@ export class TabLIPEditorState extends TabState {
   pointLight: THREE.PointLight;
 
   ui3DRenderer: UI3DRenderer;
-  ui3DRendererView: JSX.Element;
   box3: THREE.Box3 = new KotOR.THREE.Box3();
 
   keyframesSceneGraphNode: SceneGraphNode = new SceneGraphNode({
@@ -125,9 +124,6 @@ export class TabLIPEditorState extends TabState {
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRendererView = (
-      <UI3DRendererView context={this.ui3DRenderer}></UI3DRendererView>
-    )
 
     this.ui3DRenderer.sceneGraphManager.parentNodes.push(this.keyframesSceneGraphNode);
 
@@ -137,7 +133,7 @@ export class TabLIPEditorState extends TabState {
 
     this.utilitiesTabManager.addTab(this.lipOptionsTab);
 
-    this.tabContentView = <TabLIPEditor tab={this}></TabLIPEditor>
+    this.setContentView(<TabLIPEditor tab={this}></TabLIPEditor>);
   }
 
   show(): void {

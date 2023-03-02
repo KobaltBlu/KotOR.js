@@ -1,5 +1,5 @@
 import React, {forwardRef, useImperativeHandle, useState} from "react";
-import { FileBrowserNode, TabResourceExplorerState } from "../../states/tabs/TabResourceExplorerState";
+import { FileBrowserNode, TabResourceExplorerState } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { FileTypeManager } from "../../FileTypeManager";

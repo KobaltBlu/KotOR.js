@@ -2,7 +2,7 @@ import { EditorFile } from "./EditorFile";
 import * as KotOR from "./KotOR";
 import { EditorFileProtocol } from "./enum/EditorFileProtocol";
 import { ForgeState } from "./states/ForgeState";
-import { TabProjectExplorerState } from "./states/tabs/TabProjectExplorerState";
+import { TabProjectExplorerState } from "./states/tabs";
 
 export class ProjectFileSystem extends KotOR.GameFileSystem {
 

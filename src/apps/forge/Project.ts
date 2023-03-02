@@ -3,12 +3,11 @@ import * as path from "path";
 import * as fs from "fs";
 import { DeepObject } from "../../DeepObject";
 import { ForgeState } from "./states/ForgeState";
-import { TabQuickStartState } from "./states/tabs/TabQuickStartState";
+import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
 
 import * as KotOR from "./KotOR";
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
-import { TabModuleEditorState } from "./states/tabs/TabModuleEditorState";
 import { ProjectFileSystem } from "./ProjectFileSystem";
 import { ForgeFileSystem } from "./ForgeFileSystem";
 import { StringDecoder } from "string_decoder";

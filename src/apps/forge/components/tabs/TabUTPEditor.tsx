@@ -2,7 +2,8 @@ import React, { useState } from "react"
 import { BaseTabProps } from "../../interfaces/BaseTabProps"
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
-import { TabUTPEditorState } from "../../states/tabs/TabUTPEditorState";
+import { TabUTPEditorState } from "../../states/tabs";
+import { UI3DRendererView } from "../UI3DRendererView";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
@@ -25,7 +26,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
     </div>
     <div style={{position: 'relative', height: '100%'}}>
       <div className="editor-3d-preview" style={{position: 'absolute', top:0, bottom: 0, left: 0, right: '50%'}}>
-        {tab.ui3DRendererView}
+        <UI3DRendererView context={tab.ui3DRenderer} />
       </div>
       <div className="tabs" style={{position: 'absolute', top:0, bottom: 0, left: '50%', right: 0, overflowY: 'auto', padding: '0 10px'}}>
         <div className="tab-pane" style={{display: (selectedTab == 'basic' ? 'block' : 'none')}}>

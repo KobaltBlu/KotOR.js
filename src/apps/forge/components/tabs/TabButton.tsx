@@ -1,6 +1,6 @@
 import React, { MouseEventHandler, useEffect, useState } from "react";
 import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs/TabState";
+import { TabState } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
 export interface TabButtonProps {
@@ -59,7 +59,7 @@ export const TabButton = function(props: TabButtonProps) {
   }
 
   return (
-    <li className={`btn btn-tab ${tab.tabManager.currentTab == tab ? `active` : ''}`} onClick={onTabClick}>
+    <li className={`btn btn-tab ${tab.getTabManager()?.currentTab == tab ? `active` : ''}`} onClick={onTabClick}>
       <a>{tabName}</a>&nbsp;
       {(
         tab.isClosable ? (

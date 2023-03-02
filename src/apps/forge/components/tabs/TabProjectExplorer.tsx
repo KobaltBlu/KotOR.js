@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { FileBrowserNode } from "../../states/tabs/TabResourceExplorerState";
+import { FileBrowserNode } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabProjectExplorerState } from "../../states/tabs/TabProjectExplorerState";
+import { TabProjectExplorerState } from "../../states/tabs";
 import { FileTypeManager } from "../../FileTypeManager";
 import { EditorFile } from "../../EditorFile";
 import { FileLocationType } from "../../enum/FileLocationType";

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TabModelViewerState } from "../states/tabs/TabModelViewerState";
+import { TabModelViewerState } from "../states/tabs";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { Form } from "react-bootstrap";
 import { SceneGraphTreeView } from "./SceneGraphTreeView";

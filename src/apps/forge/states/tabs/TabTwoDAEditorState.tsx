@@ -11,7 +11,7 @@ export class TabTwoDAEditorState extends TabState {
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
-    this.tabContentView = <TabTwoDAEditor tab={this}></TabTwoDAEditor>
+    this.setContentView(<TabTwoDAEditor tab={this}></TabTwoDAEditor>);
     this.openFile();
   }
 

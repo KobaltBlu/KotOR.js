@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import TabButton from "./TabButton";
 import { TabManagerProvider, useTabManager } from "../../context/TabManagerContext";
-import { ForgeState } from "../../states/ForgeState";
-import { TabState } from "../../states/tabs/TabState";
+import { TabState } from "../../states/tabs";
 
 import * as KotOR from "../../KotOR";
 

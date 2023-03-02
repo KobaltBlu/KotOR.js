@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { LayoutContainer } from "../../LayoutContainer";
 import TabManager from "../TabManager";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs/tab-lip-editor/TabLIPEditorState";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabManagerProvider } from "../../../context/TabManagerContext";
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
@@ -11,6 +11,7 @@ import { Form } from "react-bootstrap";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 
 import * as KotOR from "../../../KotOR";
+import { UI3DRendererView } from "../../UI3DRendererView";
 
 export const TabLIPEditor = function(props: BaseTabProps){
 
@@ -36,7 +37,7 @@ export const TabLIPEditor = function(props: BaseTabProps){
   return (
     <LayoutContainerProvider>
       <LayoutContainer southContent={southPanel} southSize={140} eastContent={eastPanel}>
-        {tab.ui3DRendererView}
+        <UI3DRendererView context={tab.ui3DRenderer} />
       </LayoutContainer>
     </LayoutContainerProvider>
   )

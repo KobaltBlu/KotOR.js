@@ -8,6 +8,7 @@ import { EventListenerModel } from "../../EventListenerModel";
 import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
 
 import * as KotOR from "../../KotOR";
+import { TabStoreState } from "../../interfaces/TabStoreState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -27,18 +28,19 @@ export interface TabStateEventListeners {
 export class TabState extends EventListenerModel {
 
   id: number;
+  type: string = this.constructor.name;
 
   isDestroyed: boolean;
   isClosable: boolean = true;
   singleInstance: boolean;
   visible: boolean;
 
-  tabManager: EditorTabManager;
+  #tabManager: EditorTabManager;
   tabName: string = 'Unnamed Tab';
 
   file: EditorFile;
   
-  tabContentView: JSX.Element = (<></>);
+  #tabContentView: JSX.Element = (<></>);
 
   // protected eventListeners: TabStateEventListeners = {
   //   onTabDestroyed: [],
@@ -90,7 +92,7 @@ export class TabState extends EventListenerModel {
   }
 
   attachTabContentView(view: any){
-    this.tabContentView = view;
+    this.#tabContentView = view;
   }
 
   editorFileUpdated(){
@@ -109,9 +111,17 @@ export class TabState extends EventListenerModel {
     this.processEventListener('onTabNameChange', [this]);
   }
 
+  getContentView(){
+    return this.#tabContentView;
+  }
+
+  setContentView(tabContentView: JSX.Element){
+    this.#tabContentView = tabContentView;
+  }
+
   render(){
-    if(!this.tabContentView) return (<></>);
-    return this.tabContentView;
+    if(!this.#tabContentView) return (<></>);
+    return this.#tabContentView;
   }
 
   getResourceID(): any{
@@ -127,29 +137,33 @@ export class TabState extends EventListenerModel {
   }
 
   show(){
-    this.tabManager.hideAll();
+    this.#tabManager.hideAll();
     this.visible = true;
 
-    this.tabManager.currentTab = this;
-    this.tabManager.triggerEventListener('onTabShow', [this]);
+    this.#tabManager.currentTab = this;
+    this.#tabManager.triggerEventListener('onTabShow', [this]);
     this.processEventListener('onTabShow', [this]);
   }
 
   hide(){
     this.visible = false;
-    this.tabManager.triggerEventListener('onTabHide', [this]);
+    this.#tabManager.triggerEventListener('onTabHide', [this]);
     this.processEventListener('onTabHide', [this]);
   }
 
   remove(){
     this.visible = false;
-    this.tabManager.removeTab(this);
+    this.#tabManager.removeTab(this);
     this.processEventListener('onTabRemoved', [this]);
   }
 
   attach(tabManager: EditorTabManager){
-    this.tabManager = tabManager;
+    this.#tabManager = tabManager;
     this.isDestroyed = false;
+  }
+
+  getTabManager(){
+    return this.#tabManager;
   }
 
   destroy() {
@@ -294,6 +308,13 @@ export class TabState extends EventListenerModel {
 
   async compile() {
     throw new Error("Method not implemented.");
+  }
+
+  storeState(): TabStoreState {
+    return {
+      type: this.type,
+      file: this.file
+    };
   }
 
 }

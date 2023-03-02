@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
+import { TabImageViewerState } from "../../states/tabs";
 import { LayoutContainer } from "../LayoutContainer";
 
 import * as KotOR from "../../KotOR";

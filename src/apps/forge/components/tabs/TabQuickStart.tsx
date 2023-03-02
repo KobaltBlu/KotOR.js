@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { ForgeFileSystem } from "../../ForgeFileSystem";
 import { Project } from "../../Project";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { ForgeState } from "../../states/ForgeState";

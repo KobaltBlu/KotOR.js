@@ -1,10 +1,10 @@
 import React from "react";
 import { TabProjectExplorer } from "../../components/tabs/TabProjectExplorer";
-import { TabState } from "./TabState";
+import { TabState } from "./";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 
 import * as KotOR from "../../KotOR";
-import { FileBrowserNode } from "./TabResourceExplorerState";
+import { FileBrowserNode } from "./";
 import { ProjectFileSystem } from "../../ProjectFileSystem";
 import * as path from "path";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
@@ -21,7 +21,7 @@ export class TabProjectExplorerState extends TabState {
     // this.singleInstance = true;
     this.isClosable = false;
 
-    this.tabContentView = <TabProjectExplorer tab={this}></TabProjectExplorer>
+    this.setContentView(<TabProjectExplorer tab={this}></TabProjectExplorer>);
   }
 
   reload(){

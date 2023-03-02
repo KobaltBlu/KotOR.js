@@ -1,5 +1,5 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./TabState";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
@@ -36,7 +36,7 @@ export class TabGFFEditorState extends TabState {
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
-    this.tabContentView = <TabGFFEditor tab={this}></TabGFFEditor>
+    this.setContentView(<TabGFFEditor tab={this}></TabGFFEditor>);
     this.openFile();
   }
 

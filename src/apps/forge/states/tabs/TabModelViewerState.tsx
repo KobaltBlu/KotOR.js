@@ -1,5 +1,5 @@
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./TabState";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
 import * as KotOR from "../../KotOR";
 import React from "react";
 import { TabModelViewer } from "../../components/tabs/TabModelViewer";
@@ -72,7 +72,6 @@ export class TabModelViewerState extends TabState {
   mdx: Buffer;
 
   ui3DRenderer: UI3DRenderer;
-  ui3DRendererView: JSX.Element;
 
   // controls: ModelViewerControls;
 
@@ -121,11 +120,6 @@ export class TabModelViewerState extends TabState {
     //   this.controls.attachCanvasElement(canvas);
     // });
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
-    this.ui3DRendererView = (
-      <UI3DRendererView context={this.ui3DRenderer}>
-        <UI3DOverlayComponent context={this.ui3DRenderer}></UI3DOverlayComponent>
-      </UI3DRendererView>
-    );
     this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.layout_group);
@@ -136,7 +130,7 @@ export class TabModelViewerState extends TabState {
 
     this.ui3DRenderer.sceneGraphManager.sceneNode.addChildNode(this.layoutSceneGraphNode);
 
-    this.tabContentView = <TabModelViewer tab={this}></TabModelViewer>
+    this.setContentView(<TabModelViewer tab={this}></TabModelViewer>);
     this.openFile();
   }
 

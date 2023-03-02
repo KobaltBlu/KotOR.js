@@ -20,7 +20,7 @@ export class TabLIPEditorOptionsState extends TabState {
       this.sceneGraphNode, this.keyframesGraphNode
     ];
 
-    this.tabContentView = <TabLIPEditorOptions tab={this} parentTab={options.parentTab}></TabLIPEditorOptions>
+    this.setContentView(<TabLIPEditorOptions tab={this} parentTab={options.parentTab}></TabLIPEditorOptions>);
   }
 
 }

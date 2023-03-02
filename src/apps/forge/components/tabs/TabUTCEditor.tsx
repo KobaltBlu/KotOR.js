@@ -4,7 +4,8 @@ import { BaseTabProps } from "../../interfaces/BaseTabProps"
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
 import * as KotOR from "../../KotOR";
-import { TabUTCEditorState } from "../../states/tabs/TabUTCEditorState";
+import { TabUTCEditorState } from "../../states/tabs";
+import { UI3DRendererView } from "../UI3DRendererView";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
@@ -31,7 +32,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
       </div>
       <div style={{position: 'relative', height: "100%"}}>
         <div className="editor-3d-preview" style={{position: 'absolute', top:0, bottom: 0, left: '0', right: '50%'}}>
-          {tab.ui3DRendererView}
+          <UI3DRendererView context={tab.ui3DRenderer} />
         </div>
         <div id="editor-content" className="tabs" style={{position: 'absolute', top:0, bottom: 0, left: '50%', right: 0, overflowY: 'auto', padding: '0 10px'}}>
           <div className="tab-pane" style={{display: (selectedTab == 'basic' ? 'block' : 'none'), padding: '10px'}}>

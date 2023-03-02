@@ -1,4 +1,4 @@
-import { TabState } from "../states/tabs/TabState";
+import { TabState } from "../states/tabs";
 
 export interface BaseTabProps {
   tab: TabState;
