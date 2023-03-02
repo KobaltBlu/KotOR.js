@@ -33,6 +33,7 @@ export class EditorFile extends EventListenerModel {
   handle2?: FileSystemFileHandle; //for dual file types like mdl/mdx
   useGameFileSystem: boolean = false;
   useProjectFileSystem: boolean = false;
+  useSystemFileSystem: boolean = false;
 
   buffer?: Buffer;
   buffer2?: Buffer; //for dual file types like mdl/mdx
@@ -157,6 +158,11 @@ export class EditorFile extends EventListenerModel {
       if(pathname.indexOf('project.dir') >= 0){ //Use: ProjectFileSystem
         pathname = pathname.replace('project.dir', '').replace(/^\/+|\/+$/g, '');
         this.useProjectFileSystem = true;
+      }
+
+      if(pathname.indexOf('system.dir') >= 0){ //Use: SystemFileSytem
+        pathname = pathname.replace('system.dir', '').replace(/^\/+|\/+$/g, '');
+        this.useSystemFileSystem = true;
       }
       pathname = pathname.replace(/^\/+|\/+$/g, '');
 
@@ -304,13 +310,12 @@ export class EditorFile extends EventListenerModel {
                       });
                     }else{
                       if(this.handle){
-                        if(await this.handle.queryPermission({mode: 'readwrite'})){
-                          let file = await this.handle.getFile();
-                          this.buffer = Buffer.from( await file.arrayBuffer() );
-                          resolve({
-                            buffer: this.buffer as Buffer,
-                          });
-                        }else if( await this.handle.requestPermission({mode: 'readwrite'}) ){
+                        let granted = (await this.handle.queryPermission({mode: 'readwrite'})) === 'granted';
+                        if(!granted){
+                          granted = (await this.handle.requestPermission({mode: 'readwrite'})) === 'granted';
+                        }
+                        
+                        if(granted){
                           let file = await this.handle.getFile();
                           this.buffer = Buffer.from( await file.arrayBuffer() );
                           resolve({
@@ -461,9 +466,9 @@ export class EditorFile extends EventListenerModel {
                 //MDL
                 let granted = false;
                 if(this.handle){
-                  granted = !!(await this.handle.queryPermission({mode: 'readwrite'}));
+                  granted = (await this.handle.queryPermission({mode: 'readwrite'})) === 'granted';
                   if(!granted){
-                    granted = !!(await this.handle.requestPermission({mode: 'readwrite'}));
+                    granted = (await this.handle.requestPermission({mode: 'readwrite'})) === 'granted';
                   }
 
                   if(!granted){
@@ -484,9 +489,9 @@ export class EditorFile extends EventListenerModel {
                 //MDX
                 let granted2 = false;
                 if(this.handle2){
-                  granted2 = !!(await this.handle2.queryPermission({mode: 'readwrite'}));
+                  granted2 = (await this.handle2.queryPermission({mode: 'readwrite'})) === 'granted';
                   if(!granted2){
-                    granted2 = !!(await this.handle2.requestPermission({mode: 'readwrite'}));
+                    granted2 = (await this.handle2.requestPermission({mode: 'readwrite'})) === 'granted';
                   }
 
                   if(!granted2){

@@ -197,7 +197,7 @@ export class ForgeFileSystem {
     }else{
       if(ext.length){
         return supportedFilePickerTypes.filter( (element: any) => {
-          return element.accept['*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
+          return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
         });
       }else{
         return supportedFilePickerTypes
@@ -213,171 +213,171 @@ export const supportedFilePickerTypes: any[] = [
   {
     description: 'All Supported Formats', 
     accept: {
-      '*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
+      'application/*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
     }
   },
   {
     description: 'TPC Image', 
     accept: {
-      '*': ['.tpc']
+      'application/*': ['.tpc']
     }
   },
   {
     description: 'TGA Image', 
     accept: {
-      '*': ['.tga']
+      'application/*': ['.tga']
     }
   },
   {
     description: '.GFF', 
     accept: {
-      '*': ['.gff']
+      'application/*': ['.gff']
     }
   },
   {
     description: 'Creature Template', 
     accept: {
-      '*': ['.utc']
+      'application/*': ['.utc']
     }
   },
   {
     description: 'Door Template', 
     accept: {
-      '*': ['.utd']
+      'application/*': ['.utd']
     }
   },
   {
     description: 'Placeable Template', 
     accept: {
-      '*': ['.utp']
+      'application/*': ['.utp']
     }
   },
   {
     description: 'Merchant Template', 
     accept: {
-      '*': ['.utm']
+      'application/*': ['.utm']
     }
   },
   {
     description: 'Sound Template', 
     accept: {
-      '*': ['.uts']
+      'application/*': ['.uts']
     }
   },
   {
     description: 'Trigger Template', 
     accept: {
-      '*': ['.utt']
+      'application/*': ['.utt']
     }
   },
   {
     description: 'Waypoint Template', 
     accept: {
-      '*': ['.utw']
+      'application/*': ['.utw']
     }
   },
   {
     description: 'LIP Animation', 
     accept: {
-      '*': ['.lip']
+      'application/*': ['.lip']
     }
   },
   {
     description: 'PHN File', 
     accept: {
-      '*': ['.phn']
+      'application/*': ['.phn']
     }
   },
   {
     description: 'Audio File', 
     accept: {
-      '*': ['.wav', '.mp3']
+      'application/*': ['.wav', '.mp3']
     }
   },
   {
     description: 'Video File', 
     accept: {
-      '*': ['.bik']
+      'application/*': ['.bik']
     }
   },
   {
     description: 'MOD File', 
     accept: {
-      '*': ['.mod']
+      'application/*': ['.mod']
     }
   },
   {
     description: 'ERF File', 
     accept: {
-      '*': ['.erf']
+      'application/*': ['.erf']
     }
   },
   {
     description: 'RIM File', 
     accept: {
-      '*': ['.rim']
+      'application/*': ['.rim']
     }
   },
   {
     description: 'Model File', 
     accept: {
-      '*': ['.mdl', '.mdx', '.wok', '.pwk', '.dwk']
+      'application/*': ['.mdl', '.mdx', '.wok', '.pwk', '.dwk']
     }
   },
   {
     description: 'Module File', 
     accept: {
-      '*': ['.git', '.ifo']
+      'application/*': ['.git', '.ifo']
     }
   },
   {
     description: 'Area File', 
     accept: {
-      '*': ['.are']
+      'application/*': ['.are']
     }
   },
   {
     description: 'Path File', 
     accept: {
-      '*': ['.pth']
+      'application/*': ['.pth']
     }
   },
   {
     description: 'Script Source File', 
     accept: {
-      '*': ['.ncs']
+      'application/*': ['.ncs']
     }
   },
   {
     description: 'Script Compiled File', 
     accept: {
-      '*': ['.nss']
+      'application/*': ['.nss']
     }
   },
   {
     description: 'VIS File', 
     accept: {
-      '*': ['.vis']
+      'application/*': ['.vis']
     }
   },
   {
     description: 'Layout File', 
     accept: {
-      '*': ['.lyt']
+      'application/*': ['.lyt']
     }
   },
   {
     description: '2D Array File', 
     accept: {
-      '*': ['.2da']
+      'application/*': ['.2da']
     }
   },
-  {
-    description: 'All Formats', 
-    accept: {
-      '*': ['*']
-    }
-  },
+  // {
+  //   description: 'All Formats', 
+  //   accept: {
+  //     'application/*': ['.*']
+  //   }
+  // },
 ];
 
 export const supportedFileDialogTypes: any[] = [

@@ -9,6 +9,7 @@ import { ProjectFileSystem } from "../ProjectFileSystem";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 import { pathParse } from "../helpers/PathParse";
 import { FileTypeManager } from "../FileTypeManager";
+import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -279,7 +280,7 @@ export class ForgeState {
           let parsed = pathParse(handle.name);
           let fileParts = parsed.name.split('.');
           FileTypeManager.onOpenFile({
-            path: handle.name, 
+            path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
             handle: handle, 
             filename: handle.name, 
             resref: fileParts[0], 
