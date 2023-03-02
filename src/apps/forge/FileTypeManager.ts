@@ -38,7 +38,7 @@ export class FileTypeManager {
     }
 
     //Update the opened files list
-    res.updateOpenedFiles();
+    ForgeState.addRecentFile(res);
 
     console.log('FileTypeManager.onOpenResource', res, ext);
 

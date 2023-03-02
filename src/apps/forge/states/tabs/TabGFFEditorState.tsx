@@ -17,17 +17,17 @@ export interface TabGFFEditorStateEventListeners extends TabStateEventListeners 
 
 export class TabGFFEditorState extends TabState {
 
-  protected eventListeners: TabGFFEditorStateEventListeners = {
-    onTabDestroyed: [],
-    onTabRemoved: [],
-    onTabShow: [],
-    onTabHide: [],
-    onTabNameChange: [],
-    onEditorFileLoad: [],
-    onEditorFileChange: [],
-    onEditorFileSaved: [],
-    onNodeSelected: [],
-  };
+  // protected eventListeners: TabGFFEditorStateEventListeners = {
+  //   onTabDestroyed: [],
+  //   onTabRemoved: [],
+  //   onTabShow: [],
+  //   onTabHide: [],
+  //   onTabNameChange: [],
+  //   onEditorFileLoad: [],
+  //   onEditorFileChange: [],
+  //   onEditorFileSaved: [],
+  //   onNodeSelected: [],
+  // };
 
   tabName: string = `GFF`;
   gff: KotOR.GFFObject;

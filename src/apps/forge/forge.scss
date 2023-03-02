@@ -1332,11 +1332,19 @@ border: 1px solid #29b3dc;
 
 
 .checkerboard {
-background-color: white;
-background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, #ccc), color-stop(.25, rgba(255, 255, 255, 0))), -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, #ccc), color-stop(.25, transparent)), -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, #ccc)), -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.75, transparent), color-stop(.75, #ccc));
-background-size: 64px 64px;
--webkit-background-size: 64px 64px;
-background-position: 0 0, 32px 0, 32px -32px, 0px 32px;
+  background-color: #FFFFFF;
+  background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, #ccc), color-stop(.25, rgba(255, 255, 255, 0))), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, #ccc), color-stop(.25, transparent)), 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, #ccc)), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.75, transparent), color-stop(.75, #ccc));
+  background-color: #333333;
+  background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, #676767), color-stop(0.25, rgb(255 255 255 / 0%))), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.25, #676767), color-stop(0.25, transparent)), 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.75, transparent), color-stop(0.75, #676767)), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.75, transparent), color-stop(0.75, #676767));
+  background-size: 64px 64px;
+  -webkit-background-size: 64px 64px;
+  background-position: 0 0, 32px 0, 32px -32px, 0px 32px;
 }
 
 .info-pane {

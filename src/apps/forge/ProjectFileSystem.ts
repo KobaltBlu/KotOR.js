@@ -1,4 +1,6 @@
+import { EditorFile } from "./EditorFile";
 import * as KotOR from "./KotOR";
+import { EditorFileProtocol } from "./enum/EditorFileProtocol";
 import { ForgeState } from "./states/ForgeState";
 import { TabProjectExplorerState } from "./states/tabs/TabProjectExplorerState";
 
@@ -17,6 +19,21 @@ export class ProjectFileSystem extends KotOR.GameFileSystem {
         }, 500);
       });
     });
+  }
+
+  static async openEditorFile(resource: string): Promise<EditorFile> {
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      return new EditorFile({
+        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
+        useProjectFileSystem: true,
+      });
+    }else{
+      const handle = await this.open(resource, "w") as FileSystemFileHandle;
+      return new EditorFile({
+        handle: handle,
+        useProjectFileSystem: true,
+      });
+    }
   }
 
 }

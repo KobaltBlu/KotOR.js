@@ -15,12 +15,12 @@ export class EditorTabManager extends EventListenerModel {
   currentTab?: TabState;
   tabs: TabState[] = [];
 
-  eventListeners: TabManagerEventListeners = {
-    onTabAdded: [],
-    onTabRemoved: [],
-    onTabShow: [],
-    onTabHide: []
-  };
+  // eventListeners: TabManagerEventListeners = {
+  //   onTabAdded: [],
+  //   onTabRemoved: [],
+  //   onTabShow: [],
+  //   onTabHide: []
+  // };
 
   static __tabId: number = 0;
   react: any;

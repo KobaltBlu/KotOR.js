@@ -2,7 +2,7 @@ import React from "react";
 import TabManager from "./components/tabs/TabManager";
 import { TabManagerProvider } from "./context/TabManagerContext";
 import { ForgeState } from "./states/ForgeState";
-import MenuTop from "./components/MenuTop";
+import { MenuTop } from "./components/MenuTop";
 import { LayoutContainerProvider } from "./context/LayoutContainerContext";
 import { LayoutContainer } from "./components/LayoutContainer";
 import ModalGrantAccess from "./components/modal/ModalGrantAccess";

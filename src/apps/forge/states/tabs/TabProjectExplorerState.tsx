@@ -7,6 +7,7 @@ import * as KotOR from "../../KotOR";
 import { FileBrowserNode } from "./TabResourceExplorerState";
 import { ProjectFileSystem } from "../../ProjectFileSystem";
 import * as path from "path";
+import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
 
 export class TabProjectExplorerState extends TabState {
 
@@ -63,7 +64,7 @@ export class TabProjectExplorerState extends TabState {
               name: (`${file}`),
               type: 'resource',
               data: {
-                path: `${file}`
+                path: `${EditorFileProtocol.FILE}//project.dir/${file}`
               },
             })
           );

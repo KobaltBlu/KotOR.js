@@ -6,6 +6,9 @@ import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
 import * as KotOR from '../KotOR';
 import { ProjectFileSystem } from "../ProjectFileSystem";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
+import { pathParse } from "../helpers/PathParse";
+import { FileTypeManager } from "../FileTypeManager";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -15,8 +18,60 @@ export class ForgeState {
   static explorerTabManager: EditorTabManager = new EditorTabManager();
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
-  // static inlineAudioPlayer: InlineAudioPlayer;
-  // static GameMaps: GameMap[] = [];
+
+  static recentFiles: EditorFile[] = [];
+  static recentProjects: string[] = [];
+
+  static #eventListeners: any = {};
+
+  static addEventListener<T>(type: T, cb: Function): void {
+    if(!Array.isArray(this.#eventListeners[type])){
+      this.#eventListeners[type] = [];
+    }
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index == -1){
+        ev.push(cb);
+      }else{
+        console.warn('Event Listener: Already added', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  static removeEventListener<T>(type: T, cb: Function): void {
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index >= 0){
+        ev.splice(index, 1);
+      }else{
+        console.warn('Event Listener: Already removed', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  static processEventListener<T>(type: T, args: any[] = []): void {
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      for(let i = 0; i < ev.length; i++){
+        const callback = ev[i];
+        if(typeof callback === 'function'){
+          callback(...args);
+        }
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  static triggerEventListener<T>(type: T, args: any[] = []): void {
+    this.processEventListener(type, args);
+  }
 
   static async InitializeApp(): Promise<void>{
     return new Promise( (resolve, reject) => {
@@ -37,35 +92,24 @@ export class ForgeState {
           //ConfigClient.get('Game.debug.light_helpers') ? true : false
           KotOR.LightManager.toggleLightHelpers();
           KotOR.GameState.audioEngine = new KotOR.AudioEngine();
+
+          ForgeState.recentFiles = ForgeState.getRecentFiles();
+          this.processEventListener('onRecentProjectsUpdated', []);
+
+          ForgeState.recentProjects = ForgeState.getRecentProjects();
+          this.processEventListener('onRecentFilesUpdated', []);
           
           ForgeState.tabManager.addTab(new TabQuickStartState());
           ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
           ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
           ForgeState.resourceExplorerTab.show();
 
-          // let pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBFormat };
-          // KotOR.GameState.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
-          // KotOR.GameState.depthTarget.texture.generateMipmaps = false;
-          // KotOR.GameState.depthTarget.stencilBuffer = false;
-          // KotOR.GameState.depthTarget.depthBuffer = true;
-          // KotOR.GameState.depthTarget.depthTexture = new KotOR.THREE.DepthTexture(window.innerWidth, window.innerHeight);
-          // KotOR.GameState.depthTarget.depthTexture.type = KotOR.THREE.UnsignedShortType;
-
-          // console.log('loaded')
-          // GameState.OpeningMoviesComplete = true;
-          // GUIListBox.InitTextures();
-          // OdysseyWalkMesh.Init();
-          // GameState.Init();
-          // GameState.audioEngine.musicGain.gain.value = 0;
-          // document.body.append(GameState.stats.domElement)
           TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
-            // ForgeState.resourceExplorerTab.tabContentView.setResourceList(TabResourceExplorerState.Resources);
             KotOR.LoadingScreen.main.Hide();
             setTimeout( () => {
               KotOR.LoadingScreen.main.loader.style.display = 'none';
               resolve();
             }, 500);
-            // Forge.tabManager.AddTab(new QuickStartTab());
             // ScriptEditorTab.InitNWScriptLanguage();
           });
         }
@@ -132,8 +176,120 @@ export class ForgeState {
     }else{
       KotOR.ConfigClient.options.recent_files = [];
     }
-    return KotOR.ConfigClient.options.recent_files;
+    return KotOR.ConfigClient.options.recent_files as EditorFile[];
   }
+
+  static addRecentFile(file: EditorFile){
+    try{
+      //Update the opened files list
+      let file_path = file.getPath();
+      if(file_path){
+        this.removeRecentFile(file);
+
+        //Append this file to the beginning of the list
+        ForgeState.recentFiles.unshift(file);
+
+        this.saveState();
+
+        //Notify the project we have opened a new file
+        if(ForgeState.project instanceof Project){
+          ForgeState.project.addToOpenFileList(file);
+        }
+        this.processEventListener('onRecentFilesUpdated', [file]);
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  static removeRecentFile(file: EditorFile){
+    if(!file) return;
+    let file_path = file.getPath();
+    if(file_path){
+      const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
+        return file.getPath() == file_path;
+      })
+      if (index >= 0) {
+        ForgeState.recentFiles.splice(index, 1);
+      }
+    }
+    this.processEventListener('onRecentFilesUpdated', [file]);
+    this.saveState();
+  }
+
+  static saveState(){
+    try{
+      KotOR.ConfigClient.save(null as any, true); //Save the configuration silently
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  static switchGame(profile: any = {}){
+    //TODO
+
+    //check if the new profile is different from the current profile
+
+    //check for open unsaved work
+
+    //save the current forge state
+
+    //switch to the new profile
+
+    //give the use back control of the application
+  }
+
+  static openFile(){
+    ForgeFileSystem.OpenFile().then( (response: ForgeFileSystemResponse) => {
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(Array.isArray(response.paths)){
+          const file_path = response.paths[0];
+          let parsed = pathParse(file_path);
+          let fileParts = parsed.name.split('.');
+          if(parsed.ext == '.mdl'){
+            (window as any).dialog.showOpenDialog({
+              title: `Open MDX File (${fileParts[0]}.mdx)`,
+              filters: [
+                {name: 'Model File', extensions: ['mdx']},
+                {name: 'All Formats', extensions: ['*']},
+              ],
+              properties: ['createDirectory'],
+            }).then( (result: any) => {
+              let file_path2 = result.filePaths[0];
+              FileTypeManager.onOpenFile({
+                path: file_path, 
+                path2: file_path2, 
+                filename: parsed.base, 
+                resref: parsed.name, 
+                ext: fileParts[1]
+              });
+            });
+          }else{
+            FileTypeManager.onOpenFile({
+              path: file_path, 
+              filename: parsed.base, 
+              resref: parsed.name, 
+              ext: fileParts[1]
+            });
+          }
+        }
+      }else{
+        if(Array.isArray(response.handles)){
+          const [handle] = response.handles as FileSystemFileHandle[];
+          let parsed = pathParse(handle.name);
+          let fileParts = parsed.name.split('.');
+          FileTypeManager.onOpenFile({
+            path: handle.name, 
+            handle: handle, 
+            filename: handle.name, 
+            resref: fileParts[0], 
+            ext: fileParts[1]
+          });
+        }
+      }
+    });
+  }
+
 }
 (window as any).ForgeState = ForgeState;
 (window as any).ProjectFileSystem = ProjectFileSystem;

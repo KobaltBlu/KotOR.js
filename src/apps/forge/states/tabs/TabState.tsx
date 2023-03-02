@@ -40,16 +40,16 @@ export class TabState extends EventListenerModel {
   
   tabContentView: JSX.Element = (<></>);
 
-  protected eventListeners: TabStateEventListeners = {
-    onTabDestroyed: [],
-    onTabRemoved: [],
-    onTabShow: [],
-    onTabHide: [],
-    onTabNameChange: [],
-    onEditorFileLoad: [],
-    onEditorFileChange: [],
-    onEditorFileSaved: [],
-  };
+  // protected eventListeners: TabStateEventListeners = {
+  //   onTabDestroyed: [],
+  //   onTabRemoved: [],
+  //   onTabShow: [],
+  //   onTabHide: [],
+  //   onTabNameChange: [],
+  //   onEditorFileLoad: [],
+  //   onEditorFileChange: [],
+  //   onEditorFileSaved: [],
+  // };
 
   constructor(options: BaseTabStateOptions = {}){
     super();

@@ -9,7 +9,7 @@ export interface ParsedPath {
 
 export const pathParse = (filepath: string): ParsedPath => {
   let parsed: ParsedPath = { root: '', dir: '', base: '', ext: '', name: '' };
-  let sep = window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
+  let sep = '/'; //window.navigator.platform.toLocaleLowerCase() == 'win32' ? '\\' : '/';
   let parts = filepath.split(sep);
   let filename = parts.pop() || '';
   let filename_parts = filename.split('.');

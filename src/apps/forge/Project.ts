@@ -26,6 +26,10 @@ export class Project {
   moduleEditor: any;
   module: any;
 
+  module_ifo: EditorFile;
+  module_are: EditorFile;
+  module_git: EditorFile;
+
   static Types: any;
 
   constructor(){
@@ -40,15 +44,19 @@ export class Project {
         if(response.paths && response.paths.length){
           ProjectFileSystem.rootDirectoryPath = response.paths[0];
           ForgeState.project = new Project();
-          await ForgeState.project.load();
-          await ProjectFileSystem.initializeProjectExplorer();
+          const loaded = await ForgeState.project.load();
+          if(loaded){
+            await ProjectFileSystem.initializeProjectExplorer();
+          }
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
           ProjectFileSystem.rootDirectoryHandle = response.handles[0] as FileSystemDirectoryHandle;
           ForgeState.project = new Project();
-          await ForgeState.project.load();
-          await ProjectFileSystem.initializeProjectExplorer();
+          const loaded = await ForgeState.project.load();
+          if(loaded){
+            await ProjectFileSystem.initializeProjectExplorer();
+          }
         }
       }
     });
@@ -64,7 +72,46 @@ export class Project {
 
   }
 
-  async load(){
+  async load(): Promise<boolean> {
+    const loaded = await this.loadSettings();
+    if(!loaded){
+      return false;
+    }
+
+    await this.initModule();
+
+    return true;
+  }
+
+  async initModule(): Promise<boolean> {
+    if ( await ProjectFileSystem.exists('module.ifo') ) {
+      this.module_ifo = await ProjectFileSystem.openEditorFile('module.ifo');
+      if(this.module_ifo){
+        const ifo_response = await this.module_ifo.readFile();
+        if(ifo_response.buffer){
+          const ifo = new KotOR.GFFObject(ifo_response.buffer);
+          if(ifo.RootNode.HasField('Mod_Area_list')){
+            const area_struct = ifo.RootNode.GetFieldByLabel('Mod_Area_list')?.GetChildStructs()[0];
+            if(area_struct){
+              const area_name = area_struct.GetFieldByLabel('Area_Name')?.GetValue();
+              if(area_name){
+                this.module_are = await ProjectFileSystem.openEditorFile(`${area_name}.are`);
+                const are_response = await this.module_are.readFile();
+
+                this.module_git = await ProjectFileSystem.openEditorFile(`${area_name}.git`);
+                const git_response = await this.module_git.readFile();
+
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  async loadSettings(): Promise<boolean> {
     if ( await ProjectFileSystem.exists('.forge/settings.json') ) {
       try{
         const buffer = await ProjectFileSystem.readFile('.forge/settings.json');
@@ -74,20 +121,23 @@ export class Project {
         );
 
         if(typeof this.settings != 'object'){
-          console.warn('Project.Load', 'Malformed project.json file data', this.settings);
+          console.warn('Project.Load', 'Malformed .forge/settings.json file data', this.settings);
           this.settings = {} as ProjectSettings;
         }
 
         this.settings = DeepObject.Merge(defaults, this.settings);
+        return true;
       }catch(e){
         console.error('Project.Load', e);
         alert('Project.Load: Failed');
         this.settings = DeepObject.Merge(defaults, {});
+        return false;
       }
     }else{
-      alert('Project.Load: project.json not found!');
-      console.warn('Project.Load', 'project.json not found!');
+      alert('Project.Load: .forge/settings.json not found!');
+      console.warn('Project.Load', '.forge/settings.json not found!');
       this.settings = DeepObject.Merge(defaults, {});
+      return false;
     }
   }
 

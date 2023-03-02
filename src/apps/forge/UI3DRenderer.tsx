@@ -30,14 +30,14 @@ export class UI3DRenderer extends EventListenerModel {
 
   uuid: string;
 
-  protected eventListeners: UI3DRendererEventListeners = {
-    onBeforeRender: [],
-    onAfterRender:  [],
-    onCreate:       [],
-    onDispose:      [],
-    onResize:       [],
-    onCanvasAttached: [],
-  }
+  // protected eventListeners: UI3DRendererEventListeners = {
+  //   onBeforeRender: [],
+  //   onAfterRender:  [],
+  //   onCreate:       [],
+  //   onDispose:      [],
+  //   onResize:       [],
+  //   onCanvasAttached: [],
+  // }
   sceneGraphManager: SceneGraphTreeViewManager;
   
   time: number;
