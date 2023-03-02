@@ -112,7 +112,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   //
   
   return (
-    <div style={{
+    <div className="flex-vertical" style={{
       position: 'absolute',
       top: '0px',
       bottom: '0px',

@@ -124,6 +124,17 @@
         right: 0;
         bottom: 0;
       }
+
+      .flex-vertical {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .flex-horizontal {
+        display: flex;
+        flex-direction: row;
+      }
+
     }
 
     .tab-pane.TabQuickStartState {
