@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import BaseTab from "./BaseTab";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { FileBrowserNode } from "../../states/tabs/TabResourceExplorerState";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
