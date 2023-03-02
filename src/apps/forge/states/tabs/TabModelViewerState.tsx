@@ -37,32 +37,6 @@ export interface TabModelViewerStateEventListeners extends TabStateEventListener
 
 export class TabModelViewerState extends TabState {
 
-  // protected eventListeners: TabModelViewerStateEventListeners = {
-  //   onTabDestroyed: [],
-  //   onTabRemoved: [],
-  //   onTabShow: [],
-  //   onTabHide: [],
-  //   onTabNameChange: [],
-  //   onEditorFileLoad: [],
-  //   onEditorFileChange: [],
-  //   onEditorFileSaved: [],
-  //   onModelLoaded: [],
-  //   onPlay: [],
-  //   onPause: [],
-  //   onStop: [],
-  //   onAudioLoad: [],
-  //   onHeadChange: [],
-  //   onHeadLoad: [],
-  //   onKeyFrameSelect: [],
-  //   onKeyFrameTrackZoomIn: [],
-  //   onKeyFrameTrackZoomOut: [],
-  //   onAnimate: [],
-  //   onKeyFramesChange: [],
-  //   onDurationChange: [],
-  //   onAnimationChange: [],
-  //   onLoopChange: [],
-  // };
-
   tabName: string = `Model Viewer`;
 
   model: KotOR.OdysseyModel3D;

@@ -37,30 +37,6 @@ export interface TabLIPEditorStateEventListeners extends TabStateEventListeners 
 
 export class TabLIPEditorState extends TabState {
 
-  // protected eventListeners: TabLIPEditorStateEventListeners = {
-  //   onTabDestroyed: [],
-  //   onTabRemoved: [],
-  //   onTabShow: [],
-  //   onTabHide: [],
-  //   onTabNameChange: [],
-  //   onEditorFileLoad: [],
-  //   onEditorFileChange: [],
-  //   onEditorFileSaved: [],
-  //   onLIPLoaded: [],
-  //   onPlay: [],
-  //   onPause: [],
-  //   onStop: [],
-  //   onAudioLoad: [],
-  //   onHeadChange: [],
-  //   onHeadLoad: [],
-  //   onKeyFrameSelect: [],
-  //   onKeyFrameTrackZoomIn: [],
-  //   onKeyFrameTrackZoomOut: [],
-  //   onAnimate: [],
-  //   onKeyFramesChange: [],
-  //   onDurationChange: [],
-  // };
-
   tabName: string = `LIP Editor`;
 
   //Lip

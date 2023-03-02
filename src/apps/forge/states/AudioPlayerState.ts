@@ -33,6 +33,7 @@ export class AudioPlayerState {
     onVolume: [],
     onLoop: [],
   };
+  
   static source: AudioBufferSourceNode;
   static gainNode: GainNode;
   static loading: boolean;

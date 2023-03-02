@@ -33,14 +33,6 @@ export class SceneGraphNode extends EventListenerModel {
   selected: boolean = false;
   parent: SceneGraphNode;
 
-  // protected eventListeners: SceneGraphNodeEventListeners = {
-  //   onExpandStateChange: [],
-  //   onNameChange: [],
-  //   onNodesChange: [],
-  //   onParentChanged: [],
-  //   onSelectStateChange: [],
-  // };
-
   constructor( props: SceneGraphNodeOptions){
     super();
     props = Object.assign({
