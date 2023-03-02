@@ -194,7 +194,11 @@ export class TabState extends EventListenerModel {
         }else{
           try{
             if(currentFile.handle instanceof FileSystemFileHandle){
-              if((await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted'){
+              let granted = (await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted';
+              if(!granted){
+                granted = (await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted';
+              }
+              if(granted){
                 try{
                   let saveBuffer = this.getExportBuffer();
                   let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
@@ -205,20 +209,8 @@ export class TabState extends EventListenerModel {
                   resolve(false);
                 }
               }else{
-                if((await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted'){
-                  try{
-                    let saveBuffer = this.getExportBuffer();
-                    let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
-                    await ws.write(saveBuffer);
-                    resolve(true);
-                  }catch(e){
-                    console.error(e);
-                    resolve(false);
-                  }
-                }else{
-                  console.error('Write permissions could not be obtained to save this file');
-                  resolve(false);
-                }
+                console.error('Write permissions could not be obtained to save this file');
+                resolve(false);
               }
             }else{
               let newHandle = await window.showSaveFilePicker();

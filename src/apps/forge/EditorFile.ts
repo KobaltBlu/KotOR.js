@@ -310,9 +310,9 @@ export class EditorFile extends EventListenerModel {
                       });
                     }else{
                       if(this.handle){
-                        let granted = (await this.handle.queryPermission({mode: 'readwrite'})) === 'granted';
+                        let granted = (await this.handle.queryPermission({mode: 'read'})) === 'granted';
                         if(!granted){
-                          granted = (await this.handle.requestPermission({mode: 'readwrite'})) === 'granted';
+                          granted = (await this.handle.requestPermission({mode: 'read'})) === 'granted';
                         }
                         
                         if(granted){
@@ -489,9 +489,9 @@ export class EditorFile extends EventListenerModel {
                 //MDX
                 let granted2 = false;
                 if(this.handle2){
-                  granted2 = (await this.handle2.queryPermission({mode: 'readwrite'})) === 'granted';
+                  granted2 = (await this.handle2.queryPermission({mode: 'read'})) === 'granted';
                   if(!granted2){
-                    granted2 = (await this.handle2.requestPermission({mode: 'readwrite'})) === 'granted';
+                    granted2 = (await this.handle2.requestPermission({mode: 'read'})) === 'granted';
                   }
 
                   if(!granted2){

@@ -26,7 +26,7 @@ export class ForgeFileSystem {
   static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
     options = Object.assign({
       multiple: false,
-      exts: []
+      ext: []
     }, options);
     return new Promise( (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -196,9 +196,17 @@ export class ForgeFileSystem {
       }
     }else{
       if(ext.length){
-        return supportedFilePickerTypes.filter( (element: any) => {
-          return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
-        });
+        // return supportedFilePickerTypes.filter( (element: any) => {
+        //   return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
+        // });
+        return [
+          {
+            description: 'File',
+            accept: {
+              'application/*': ext
+            }
+          },
+        ]
       }else{
         return supportedFilePickerTypes
       }
@@ -321,7 +329,7 @@ export const supportedFilePickerTypes: any[] = [
   {
     description: 'Model File', 
     accept: {
-      'application/*': ['.mdl', '.mdx', '.wok', '.pwk', '.dwk']
+      'application/*': ['.mdl', '.wok', '.pwk', '.dwk']
     }
   },
   {

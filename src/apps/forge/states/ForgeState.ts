@@ -241,7 +241,7 @@ export class ForgeState {
   }
 
   static openFile(){
-    ForgeFileSystem.OpenFile().then( (response: ForgeFileSystemResponse) => {
+    ForgeFileSystem.OpenFile().then( async (response: ForgeFileSystemResponse) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(Array.isArray(response.paths)){
           const file_path = response.paths[0];
@@ -279,13 +279,39 @@ export class ForgeState {
           const [handle] = response.handles as FileSystemFileHandle[];
           let parsed = pathParse(handle.name);
           let fileParts = parsed.name.split('.');
-          FileTypeManager.onOpenFile({
-            path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
-            handle: handle, 
-            filename: handle.name, 
-            resref: fileParts[0], 
-            ext: fileParts[1]
-          });
+
+          if(parsed.ext == '.mdl'){
+
+            const originalTitle = document.title;
+            document.title = `Open MDX File (${fileParts[0]}.mdx)`;
+
+            const mdxResponse = await ForgeFileSystem.OpenFile({
+              ext: ['.mdx'],
+            });
+            const [mdxHandle] = mdxResponse.handles as FileSystemFileHandle[];
+
+            document.title = originalTitle;
+
+            FileTypeManager.onOpenFile({
+              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
+              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`, 
+              handle: handle, 
+              handle2: mdxHandle, 
+              filename: handle.name, 
+              resref: fileParts[0], 
+              ext: fileParts[1]
+            });
+
+
+          }else{
+            FileTypeManager.onOpenFile({
+              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
+              handle: handle, 
+              filename: handle.name, 
+              resref: fileParts[0], 
+              ext: fileParts[1]
+            });
+          }
         }
       }
     });
