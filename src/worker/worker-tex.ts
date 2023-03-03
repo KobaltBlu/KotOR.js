@@ -1,5 +1,6 @@
 import { PixelManager } from "../utility/PixelManager";
 import { TPCObject } from "../resource/TPCObject";
+import isBuffer from "is-buffer";
 
 function concatenate (resultConstructor: any, ...arrays: any) {
   let totalLength = 0;
@@ -15,15 +16,15 @@ function concatenate (resultConstructor: any, ...arrays: any) {
   return result;
 }
 
-onmessage = function (e){
-
+onmessage = function (e: any = {}){
+  if(!e.data || !e.data.buffer || !isBuffer(e.data.buffer)) return;
   let tpc = new TPCObject({
     file: Buffer.from(e.data.buffer)
   });
   tpc.header = e.data.Header;
 
   const dds = tpc.getDDS(false);
-	let imagePixels = new Uint8Array(0);
+  let imagePixels = new Uint8Array(0);
 
   const width = tpc.header.width;
   const height = tpc.header.height;
@@ -55,5 +56,4 @@ onmessage = function (e){
 
   //@ts-expect-error
   postMessage(imagePixels, [imagePixels.buffer]);
-
 }
