@@ -1,14 +1,6 @@
-//const util = require('util');
-// const Jison = require("jison").Jison;
-// const grammar = require('./AST/nwscript.jison.js').grammar;
 
-// import jison from "jison";
-
-// const Jison = require('jison');
+import * as Jison from "jison";
 import { grammar } from "./AST/nwscript.jison";
-declare const Jison: any;
-
-//const Lexer = require("jison").Lexer;
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -111,7 +103,7 @@ export class NWScriptParser {
       }
     }
 
-    this.nwscript_gen = (Jison.Generator(this.grammar) as any);
+    this.nwscript_gen = (Jison.Jison.Generator(this.grammar) as any);
     this.nwscript_parser = this.nwscript_gen.createParser();
 
     //console.log(util.inspect(this.grammar, {showHidden: false, depth: null, colors: true}));

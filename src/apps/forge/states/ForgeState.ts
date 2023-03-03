@@ -12,6 +12,9 @@ import { FileTypeManager } from "../FileTypeManager";
 import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import { TabStoreState } from "../interfaces/TabStoreState";
 import { TabState } from "./tabs/TabState";
+import { NWScriptParser } from "../../../nwscript/NWScriptParser";
+
+declare const monaco: any;
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -26,6 +29,9 @@ export class ForgeState {
   static recentProjects: string[] = [];
 
   static #eventListeners: any = {};
+
+  static nwscript_nss: Buffer;
+  static nwScriptParser: NWScriptParser;
 
   static addEventListener<T>(type: T, cb: Function): void {
     if(!Array.isArray(this.#eventListeners[type])){
@@ -90,7 +96,8 @@ export class ForgeState {
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
       KotOR.GameInitializer.Init({
         game: KotOR.ApplicationProfile.GameKey,
-        onLoad: () => {
+        onLoad: async () => {
+          await this.initNWScriptParser();
           KotOR.OdysseyWalkMesh.Init();
           //ConfigClient.get('Game.debug.light_helpers') ? true : false
           KotOR.LightManager.toggleLightHelpers();
@@ -175,6 +182,498 @@ export class ForgeState {
     // ForgeState.explorerTabManager = new EditorTabManager();
     // ForgeState.projectExplorerTab = new ProjectExplorerTab();
     // ForgeState.resourceExplorerTab = new ResourceExplorerTab();
+  }
+
+  static initNWScriptParser(){
+    return new Promise<void>( (resolve, reject) => {
+      KotOR.ResourceLoader.loadResource(
+        KotOR.ResourceTypes.nss, 'nwscript', 
+        (nss: Buffer) => {
+          this.nwscript_nss = nss;
+          this.nwScriptParser = new NWScriptParser(this.nwscript_nss.toString());
+          this.initNWScriptLanguage();
+          resolve();
+        }
+      );
+    });
+  }
+
+  
+
+  static initNWScriptLanguage(){
+    const arg_value_parser = function( value: any ): any {
+      if(typeof value === 'undefined') return 'NULL';
+      if(typeof value == 'object'){
+        if(typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
+          return `[${value.x}, ${value.y}, ${value.z}]`;
+        }else if(value.type == 'neg'){
+          return '-'+arg_value_parser(value.value);
+        }else if(value?.datatype?.value == 'object'){
+          if(value.value == 0x7FFFFFFF) return 'OBJECT_INVALID';
+          if(value.value == 0) return 'OBJECT_SELF';
+          return arg_value_parser(value.value);
+        }else if(value?.datatype?.value == 'int'){
+          return arg_value_parser(value.value);
+        }else if(value?.datatype?.value == 'float'){
+          return arg_value_parser(value.value);
+        }else if(value?.datatype?.value == 'string'){
+          return arg_value_parser(value.value);
+        }else if(value?.datatype?.value == 'vector'){
+          return arg_value_parser(value.value);
+        }
+      }else if(typeof value == 'string'){
+        return value;
+      }else if(typeof value == 'number'){
+        return value;
+      }
+    }
+
+    // Register a new language
+    monaco.languages.register({ id: 'nwscript' });
+
+    const tokenConfig: any = {
+      keywords: [
+        'int', 'float', 'object', 'vector', 'string', 'void', 'action', 
+        'default', 'const', 'if', 'else', 'switch', 'case',
+        'while', 'do', 'for', 'break', 'continue', 'return', 'struct', 'OBJECT_SELF', 'OBJECT_INVALID',
+      ],
+
+      functions: [
+        //'GN_SetListeningPatterns'
+      ],
+
+      parenFollows: [
+        'if', 'for', 'while', 'switch',
+      ],
+    
+      operators: [
+        '=', '??', '||', '&&', '|', '^', '&', '==', '!=', '<=', '>=', '<<',
+        '+', '-', '*', '/', '%', '!', '~', '++', '--', '+=',
+        '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<=', '>>=', '>>', '=>', '>>>'
+      ],
+
+      tokenizer: {
+        root: [
+          // identifiers and keywords
+          [/\@?[a-zA-Z0-9_]\w*/, {
+            cases: {
+              //'@namespaceFollows': { token: 'keyword.$0', next: '@namespace' },
+              '@keywords': { token: 'keyword.$0', next: '@qualified' },
+              '@functions': { token: 'functions', next: '@qualified' },
+              '@default': { token: 'identifier', next: '@qualified' }
+            }
+          }],
+
+          // whitespace
+          { include: '@whitespace' },
+
+          // numbers
+          [/[0-9_]*\.[0-9_]+([eE][\-+]?\d+)?[fFdD]?/, 'number.float'],
+          [/0[xX][0-9a-fA-F_]+/, 'number.hex'],
+          [/0[bB][01_]+/, 'number.hex'], // binary: use same theme style as hex
+          [/[0-9_]+/, 'number'],
+
+          // strings
+          [/"([^"\\]|\\.)*$/, 'string.invalid'],  // non-teminated string
+          [/"/, { token: 'string.quote', next: '@string' }],
+          //[/\$\@"/, { token: 'string.quote', next: '@litinterpstring' }],
+          //[/\@"/, { token: 'string.quote', next: '@litstring' }],
+          //[/\$"/, { token: 'string.quote', next: '@interpolatedstring' }],
+
+          // characters
+          [/'[^\\']'/, 'string'],
+          //[/(')(@escapes)(')/, ['string', 'string.escape', 'string']],
+          [/'/, 'string.invalid'],
+        ],
+
+        qualified: [
+          [/[a-zA-Z0-9_][\w]*/, {
+            cases: {
+              '@keywords': { token: 'keyword.$0' },
+              '@functions': { token: 'functions.$0' },
+              '@default': 'identifier'
+            }
+          }],
+          [/\./, 'delimiter'],
+          ['', '', '@pop'],
+        ],          
+        
+        comment: [
+          [/[^\/*]+/, 'comment'],
+          // [/\/\*/,    'comment', '@push' ],    // no nested comments :-(
+          ['\\*/', 'comment', '@pop'],
+          [/[\/*]/, 'comment']
+        ],
+
+        whitespace: [
+          [/^[ \t\v\f]*#((r)|(load))(?=\s)/, 'directive.csx'],
+          [/^[ \t\v\f]*#\w.*$/, 'namespace.cpp'],
+          [/[ \t\v\f\r\n]+/, ''],
+          [/\/\*/, 'comment', '@comment'],
+          [/\/\/.*$/, 'comment'],
+        ],
+
+        string: [
+          [/[^\\"]+/, 'string'],
+          //[/@escapes/, 'string.escape'],
+          [/\\./, 'string.escape.invalid'],
+          [/"/, { token: 'string.quote', next: '@pop' }]
+        ],
+    
+        litstring: [
+          [/[^"]+/, 'string'],
+          [/""/, 'string.escape'],
+          [/"/, { token: 'string.quote', next: '@pop' }]
+        ],
+    
+        litinterpstring: [
+          [/[^"{]+/, 'string'],
+          [/""/, 'string.escape'],
+          [/{{/, 'string.escape'],
+          [/}}/, 'string.escape'],
+          [/{/, { token: 'string.quote', next: 'root.litinterpstring' }],
+          [/"/, { token: 'string.quote', next: '@pop' }]
+        ],
+    
+        interpolatedstring: [
+          [/[^\\"{]+/, 'string'],
+          //[/@escapes/, 'string.escape'],
+          [/\\./, 'string.escape.invalid'],
+          [/{{/, 'string.escape'],
+          [/}}/, 'string.escape'],
+          [/{/, { token: 'string.quote', next: 'root.interpolatedstring' }],
+          [/"/, { token: 'string.quote', next: '@pop' }]
+        ],
+      }
+    };
+
+    //Engine Types
+    const _nw_types = this.nwScriptParser.engine_types.slice(0);
+    for(let i = 0; i < _nw_types.length; i++){
+      const nw_type = _nw_types[i];
+      tokenConfig.keywords.push(nw_type.name);
+    }
+
+    monaco.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
+
+    monaco.languages.setLanguageConfiguration('nwscript', {
+      comments: {
+        lineComment: '//',
+        blockComment: ['/*', '*/']
+      },
+      brackets: [
+        ['{', '}'],
+        ['[', ']'],
+        ['(', ')']
+      ],
+      autoClosingPairs: [
+        { open: '[', close: ']' },
+        { open: '{', close: '}' },
+        { open: '(', close: ')' },
+        { open: "'", close: "'", notIn: ['string', 'comment'] },
+        { open: '"', close: '"', notIn: ['string'] }
+      ],
+      surroundingPairs: [
+        { open: '{', close: '}' },
+        { open: '[', close: ']' },
+        { open: '(', close: ')' },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" }
+      ]
+    });
+
+    // Define a new theme that contains only rules that match this language
+    monaco.editor.defineTheme('nwscript-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        // { token: 'comment', foreground: 'aaaaaa', fontStyle: 'italic' },
+        // { token: 'keyword', foreground: 'ce63eb' },
+        // { token: 'operator', foreground: '000000' },
+        // { token: 'namespace', foreground: '66afce' },
+        { token: 'functions', foreground: 'ce63eb' },
+        // { token: 'lineComment', foreground: '60cf30' },
+        // { token: 'blockComment', foreground: '60cf30' },
+        // { token: 'HEXADECIMAL', foreground: 'CD5AC5' },
+        // { token: 'INTEGER', foreground: 'A6E22E' },
+        // { token: 'FLOAT', foreground: '90E7F7' },
+        // { token: 'TEXT', foreground: 'FFEE99' },
+        // { token: 'NAME', foreground: 'C8C8C8' },
+        // { token: 'CONST', foreground: 'C586C0' },
+        // { token: 'VOID', foreground: 'C586C0' },
+        // { token: 'INT', foreground: 'C586C0' },
+        // { token: 'FLOAT', foreground: 'C586C0' },
+        // { token: 'OBJECT', foreground: 'C586C0' },
+        // { token: 'STRING', foreground: 'C586C0' },
+        // { token: 'VECTOR', foreground: 'C586C0' },
+        // { token: 'STRUCT', foreground: 'C586C0' },
+        // { token: 'FOR', foreground: 'C586C0' },
+        // { token: 'IF', foreground: 'C586C0' },
+        // { token: 'WHILE', foreground: 'C586C0' },
+        // { token: 'DO', foreground: 'C586C0' },
+        // { token: 'SWITCH', foreground: 'C586C0' },
+        // { token: 'CASE', foreground: 'C586C0' },
+        // { token: 'DEFAULT', foreground: 'C586C0' },
+        // { token: 'RETURN', foreground: 'C586C0' },
+        // { token: 'CONTINUE', foreground: 'C586C0' },
+        // { token: 'OBJECT_SELF', foreground: 'C586C0' },
+        // { token: 'OBJECT_INVALID', foreground: 'C586C0' },
+      ],
+      colors: {
+        'editor.foreground': '#FFFFFF'
+      }
+    });
+
+    const nw_suggestions: any[] = [];
+    const keywords = ['void', 'int', 'float', 'string', 'object', 'vector', 'struct', 'action'];
+
+    for(let i = 0; i < keywords.length; i++){
+      nw_suggestions.push({
+        label: keywords[i],
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        insertText: keywords[i],
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+      });
+    }
+
+    //Engine Types
+    const nw_types = this.nwScriptParser.engine_types.slice(0);
+    for(let i = 0; i < nw_types.length; i++){
+      const nw_type = nw_types[i];
+      nw_suggestions.push({
+        label: nw_type.name,
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        insertText: `${nw_type.name}`,
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
+      });
+    }
+
+    //Engine Constants
+    const nw_constants = this.nwScriptParser.engine_constants.slice(0);
+    for(let i = 0; i < nw_constants.length; i++){
+      const nw_constant = nw_constants[i];
+      nw_suggestions.push({
+        label: nw_constant.name,
+        kind: monaco.languages.CompletionItemKind.Constant,
+        insertText: `${nw_constant.name}`,
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Constant #${nw_constant.index+1}:\n\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)};`
+      });
+    }
+
+    //Engine Routines
+    const nw_actions = Object.entries(
+      KotOR.ApplicationProfile.GameKey == KotOR.GameEngineType.KOTOR ? 
+      KotOR.NWScriptDefK1.Actions : 
+      KotOR.NWScriptDefK2.Actions
+    );
+    nw_actions.forEach( (entry: any) =>{
+      const action = entry[1];
+      const args: any[] = [];
+      const args2: any[] = [];
+      const action_definition = this.nwScriptParser.engine_actions[entry[0]];
+      for(let i = 0; i < action.args.length; i++){
+        const arg = action.args[i];
+        const def_arg = action_definition.arguments[i];
+        // if(i > 0) args += ', ';
+        if(def_arg.value){
+          const value = arg_value_parser(def_arg.value);
+          args.push(`\${${(i+1)}:${arg} ${def_arg.name} = ${value}}`);
+          args2.push(`${arg} ${def_arg.name} = ${value}`);
+        }else{
+          args.push(`\${${(i+1)}:${arg} ${def_arg.name}}`);
+          args2.push(`${arg} ${def_arg.name}`);
+        }
+      }
+      
+      nw_suggestions.push({
+        label: action.name,
+        kind: monaco.languages.CompletionItemKind.Function,
+        insertText: `${action.name}(${args.join(', ')})`,
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Routine #${action_definition.index}:\n\n${action_definition.returntype.value} ${action.name}(${args2.join(', ')})\n\n`+action.comment
+      });
+    });
+
+    // Register a completion item provider for the new language
+    monaco.languages.registerCompletionItemProvider('nwscript', {
+      provideCompletionItems: () => {
+        // console.log('auto complete');
+        try{
+          const local_suggestions: any[] = [
+            {
+              label: 'void main()',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: ['void main () {', '\t$0', '}'].join('\n'),
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'void main() Statement'
+            },
+            {
+              label: 'int StartingConditional()',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'int StartingConditional() Statement'
+            },
+            {
+              label: 'ifelse',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'If-Else Statement'
+            }
+          ];
+
+          const parser = (ForgeState.tabManager.currentTab as any).nwScriptParser;
+          if(parser){
+            //Local Variables
+            const l_variables = parser.local_variables;
+            for(let i = 0; i < l_variables.length; i++){
+              const l_variable = l_variables[i];
+              // console.log(l_variable);
+              const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
+              local_suggestions.push({
+                label: l_variable.name,
+                kind: kind,
+                insertText: `${l_variable.name}`,
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                documentation: `Variable:\n\n${l_variable.datatype.value} ${l_variable.name};`
+              });
+            }
+          }
+          console.log('Autocomplete', ([] as any[]).concat(local_suggestions, nw_suggestions))
+          return { 
+            incomplete: true, 
+            suggestions: ([] as any[]).concat(local_suggestions, nw_suggestions) 
+          };
+        }catch(e){
+          console.error(e);
+        }
+      }
+    });
+
+    monaco.languages.registerHoverProvider('nwscript', {
+      provideHover: function (model: any, position: any) {
+        const wordObject = model.getWordAtPosition(position);
+        if(wordObject){
+          
+          //Engine Constants
+          const nw_constant = ForgeState.nwScriptParser.engine_constants.find( (obj: any) => obj.name == wordObject.word );
+          if(nw_constant){
+            return {
+              contents: [
+                { value: `**nwscript.nss**` },
+                { value: `\`\`\`nwscript\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)}\n \n\`\`\`` }
+              ]
+            };
+          }
+
+          const action: any = nw_actions.find( (obj: any) => obj[1].name == wordObject.word );
+          if(action){
+            // console.log(action);
+            let args = '';
+            const function_definition = ForgeState.nwScriptParser.engine_actions[action[0]];
+            // console.log(function_definition);
+            for(let i = 0; i < action[1].args.length; i++){
+              const arg = action[1].args[i];
+              const def_arg = function_definition.arguments[i];
+              if(i > 0) args += ', ';
+              if(def_arg.value){
+                const value = arg_value_parser(def_arg.value);
+                args += `${arg} ${def_arg.name} = ${value}`;
+              }else{
+                args += `${arg} ${def_arg.name}`;
+              }
+            }
+            return {
+              contents: [
+                { value: `**nwscript.nss**` },
+                { value: `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n/*\n ${action[1].comment.trim()} '\n*/ \n\`\`\`` }
+              ]
+            };
+          }
+
+          const parser = (ForgeState.tabManager.currentTab as any).nwScriptParser;
+          if(parser){
+
+            const structPropertyMatches = model.getValue().matchAll(
+              new RegExp("(?:[A-Za-z_]|[A-Za-z_][A-Za-z0-9_]+)\\b[\\s|\\t+]?\\.[\\s|\\t+]?"+wordObject.word+"\\b", 'g')
+            );
+            //model.getPositionAt(324); // return { lineNumber: Number, column: Number };
+            const structProperty = structPropertyMatches?.next()?.value;
+            if(structProperty){
+              const parts = structProperty["0"].split('.');
+              const structName = parts[0];
+              const structPropertyName = parts[1];
+              if(structName){
+                //Local Variables
+                const l_struct = parser.local_variables.find( (obj: any) => obj.name == structName );
+                if(l_struct?.datatype?.value == 'struct'){
+                  const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
+                  for(let i = 0; i < struct_ref.properties.length; i++){
+                    const prop = struct_ref.properties[i];
+                    if(prop && prop.name == wordObject.word){
+                      return {
+                        contents: [
+                          { value: '**SOURCE**' },
+                          { value: `\`\`\`nwscript\n${prop.datatype.value} ${prop.name} \n\`\`\`` }
+                        ]
+                      };
+                    }
+                  }
+                }
+                // console.log('struct', l_variable);
+              }
+            }
+
+
+            //Local Variables
+            const l_variable = parser.local_variables.find( (obj: any) => obj.name == wordObject.word );
+            if(l_variable){
+              // console.log(l_variable);
+              return {
+                contents: [
+                  { value: `**nwscript.nss**` },
+                  { value: `\`\`\`nwscript\n${l_variable.datatype.value} ${l_variable.name} \n\`\`\`` }
+                ]
+              };
+            }
+
+            //Local Function
+            const l_function = parser.local_functions.find( (obj: any) => obj.name == wordObject.word );
+            if(l_function){
+              // console.log(l_function);
+              let args: any[] = [];
+              for(let i = 0; i < l_function.arguments.length; i++){
+                const def_arg = l_function.arguments[i];
+                if(def_arg.value){
+                  const value = arg_value_parser(def_arg.value);
+                  args.push(`${def_arg.datatype.value} ${def_arg.name} = ${value}`);
+                }else{
+                  args.push(`${def_arg.datatype.value} ${def_arg.name}`);
+                }
+              }
+              return {
+                contents: [
+                  { value: '**SOURCE**' },
+                  { value: `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}(${args.join(', ')}) \n\`\`\`` }
+                ]
+              };
+            }
+          }
+
+        }
+        return {
+          range: new monaco.Range(
+            1,
+            1,
+            model.getLineCount(),
+            model.getLineMaxColumn(model.getLineCount())
+          ),
+        };
+      }
+    } as any);
   }
 
   static getRecentProjects(): string[] {

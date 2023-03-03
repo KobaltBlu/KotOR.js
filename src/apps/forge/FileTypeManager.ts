@@ -6,7 +6,7 @@ import { Project } from "./Project";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
-import { TabGFFEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabTwoDAEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState } from "./states/tabs";
+import { TabGFFEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
 
 /* @file
@@ -40,7 +40,7 @@ export class FileTypeManager {
       case 'vis':
       case 'txi':
       case 'txt':
-        // ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
       break;
       case '2da':
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
@@ -67,6 +67,7 @@ export class FileTypeManager {
         // ForgeState.tabManager.addTab(new TabWalkmeshViewerState({editorFile: res}));
       break;
       case 'nss':
+        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
         // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
       break;
       case 'ncs':

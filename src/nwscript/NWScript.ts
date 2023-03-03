@@ -48,7 +48,7 @@ export class NWScript {
   verified: boolean;
   globalCache: any;
   prevByteCode: number;
-  instructions: Map<any, any>;
+  instructions: Map<number, NWScriptInstruction>;
   eofFound: boolean;
   prog: number;
   progSize: number;

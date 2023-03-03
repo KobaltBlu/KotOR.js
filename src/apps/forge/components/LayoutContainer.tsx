@@ -3,6 +3,7 @@ import Draggable from 'react-draggable';
 import { useLayoutContext } from "../context/LayoutContainerContext";
 
 import * as KotOR from "../KotOR";
+import { useEffectOnce } from "../helpers/UseEffectOnce";
 
 export interface LayoutContainerProps {
   northContent?: JSX.Element;
@@ -19,25 +20,25 @@ export interface LayoutContainerProps {
 export const LayoutContainer = function(props: LayoutContainerProps) {
   const layoutContext = useLayoutContext();
   console.log('ctx', layoutContext);
-  const containerRef = useRef<HTMLDivElement>();
-  const centerRef = useRef<HTMLDivElement>();
-  const northRef = useRef<HTMLDivElement>();
-  const northHandleRef = useRef<HTMLDivElement>();
-  const northHandleToggleRef = useRef<HTMLDivElement>();
-  const southRef = useRef<HTMLDivElement>();
-  const southHandleRef = useRef<HTMLDivElement>();
-  const southHandleToggleRef = useRef<HTMLDivElement>();
-  const eastRef = useRef<HTMLDivElement>();
-  const eastHandleRef = useRef<HTMLDivElement>();
-  const eastHandleToggleRef = useRef<HTMLDivElement>();
-  const westRef = useRef<HTMLDivElement>();
-  const westHandleRef = useRef<HTMLDivElement>();
-  const westHandleToggleRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const centerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
 
-  const northContent: JSX.Element = props.northContent;
-  const southContent: JSX.Element = props.southContent;
-  const eastContent: JSX.Element = props.eastContent;
-  const westContent: JSX.Element = props.westContent;
+  const northContent: JSX.Element = props.northContent as JSX.Element;
+  const southContent: JSX.Element = props.southContent as JSX.Element;
+  const eastContent: JSX.Element = props.eastContent as JSX.Element;
+  const westContent: JSX.Element = props.westContent as JSX.Element;
   
   let layout_south_size: number = (typeof props?.southSize === 'number') ? props.southSize : 250;
   let layout_east_size: number = (typeof props?.eastSize === 'number') ? props.eastSize : 250;
@@ -54,7 +55,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   let layout_east_open: boolean = true;
   let layout_west_open: boolean = true;
 
-  let centerStyle: any = {};//{ position: string; top: number; bottom: number; left: number; right: number; };
+  let centerStyle: any = {width: `100%`, height: `100%`};//{ position: string; top: number; bottom: number; left: number; right: number; };
   let eastStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
   let westStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
   let northStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
@@ -146,13 +147,13 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   }, [containerRef.current]);
 
   const [render, rerender] = useState<boolean>(false);
-  useEffect( () => {
+  useEffectOnce( () => {
     rerender(!render);
     window.addEventListener('resize', onWindowResize);
     return () => {
       window.removeEventListener('resize', onWindowResize);
     }
-  }, []);
+  });
 
   const calculateLayout = (width: number = 0, height: number = 0) => {
     // if(!enableLayoutContainers) return;
@@ -284,6 +285,9 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       centerRef.current.style.bottom = centerStyle.bottom+'px';
       centerRef.current.style.left = centerStyle.left+'px';
       centerRef.current.style.right = centerStyle.right+'px';
+
+      centerRef.current.style.width = center_bounds.width + 'px';
+      centerRef.current.style.height = center_bounds.height +'px';
     }
 
     if(eastRef.current){

@@ -11,6 +11,11 @@ export * from "./TabTwoDAEditorState";
 export * from "./TabUTCEditorState";
 export * from "./TabUTDEditorState";
 export * from "./TabUTPEditorState";
+export * from "./TabTextEditorState";
+
+export * from "./TabScriptErrorLogState";
+export * from "./TabScriptCompileLogState";
+export * from "./TabScriptInspectorState";
 
 export * from "./tab-lip-editor/TabLIPEditorState";
 export * from "./tab-lip-editor/TabLIPEditorOptionsState";

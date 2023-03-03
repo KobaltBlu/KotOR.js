@@ -182,6 +182,7 @@ export class TabState extends EventListenerModel {
             try{
               let saveBuffer = this.getExportBuffer();
               fs.writeFile(currentFile.path, saveBuffer, () => {
+                currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
                 resolve(true);
               });
@@ -206,6 +207,8 @@ export class TabState extends EventListenerModel {
                   let saveBuffer = this.getExportBuffer();
                   let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
                   await ws.write(saveBuffer);
+                  currentFile.buffer = saveBuffer;
+                  currentFile.unsaved_changes = false;
                   resolve(true);
                 }catch(e){
                   console.error(e);
@@ -221,7 +224,10 @@ export class TabState extends EventListenerModel {
                 currentFile.handle = newHandle;
                 try{
                   let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  await ws.write(currentFile.getData() || Buffer.allocUnsafe(0));
+                  let saveBuffer = this.getExportBuffer();
+                  await ws.write(saveBuffer || Buffer.allocUnsafe(0));
+                  currentFile.buffer = saveBuffer;
+                  currentFile.unsaved_changes = false;
                   resolve(true);
                 }catch(e){
                   console.error(e);
@@ -251,7 +257,7 @@ export class TabState extends EventListenerModel {
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           let savePath = await dialog.showSaveDialog({
             title: 'Save File As',
-            defaultPath: currentFile.path,
+            defaultPath: currentFile.getFilename(),
           });
           if(savePath && !savePath.cancelled){
             console.log('savePath', savePath.filePath);
@@ -261,6 +267,7 @@ export class TabState extends EventListenerModel {
                 currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
                 currentFile.archive_path2 = undefined;
+                currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
                 resolve(true);
               });
@@ -276,8 +283,11 @@ export class TabState extends EventListenerModel {
             console.log('handle', newHandle.name, newHandle);
             try{
               currentFile.setPath(newHandle.name);
+              let saveBuffer = this.getExportBuffer();
               let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-              await ws.write(currentFile.getData() || Buffer.allocUnsafe(0));
+              await ws.write(saveBuffer || Buffer.allocUnsafe(0));
+              currentFile.buffer = saveBuffer;
+              currentFile.unsaved_changes = false;
               resolve(true);
             }catch(e){
               console.error(e);
