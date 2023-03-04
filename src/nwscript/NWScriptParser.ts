@@ -430,7 +430,7 @@ export class NWScriptParser {
             if(!scriptFunction.called) scriptFunction.called = true;
             object.function_reference = scriptFunction;
           }else{
-            this.throwError("Tried to called an undefined function", object, object);
+            this.throwError("Tried to call an undefined function", object, object);
           }
         }
 
