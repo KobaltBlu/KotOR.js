@@ -10,6 +10,11 @@ export * from "./utility/GameFileSystem";
 
 export * from "./controls/Mouse";
 
+export * from "./enums/engine/GameEngineType";
+export * from "./enums/engine/GameEngineEnv";
+export * from "./enums/engine/EngineMode";
+export * from "./enums/engine/EngineState";
+
 export * from "./interface/resource/LIPHeader";
 export * from "./interface/resource/LIPKeyFrame";
 
@@ -67,7 +72,14 @@ export * from "./interface/loaders/TextureLoaderQueuedRef";
 export * from "./three/odyssey";
 export * from "./three/MDLLoader";
 
+export * from "./enums/nwscript/NWScriptDataType";
+export * from "./enums/nwscript/NWScriptByteCode";
+export * from "./enums/nwscript/NWScriptDefTypes";
+export * from "./enums/nwscript/NWScriptTypes";
 export * from "./nwscript/NWScript";
 export * from "./nwscript/NWScriptInstance";
+export * from "./nwscript/NWScriptInstruction";
+export * from "./nwscript/NWScriptDefK1";
+export * from "./nwscript/NWScriptDefK2";
 
 export * as THREE from "three";
