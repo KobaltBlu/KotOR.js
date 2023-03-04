@@ -22,6 +22,7 @@ export class TabImageViewerState extends TabState {
     }
 
     this.setContentView(<TabImageViewer tab={this}></TabImageViewer>);
+    this.openFile();
   }
 
   openFile(file?: EditorFile){
@@ -42,91 +43,34 @@ export class TabImageViewerState extends TabState {
           }
           
           resolve(this.image);
+          this.processEventListener('onEditorFileLoad');
         });
       }
     });
 
   }
 
-  // setPixelData(pixelData: Uint8Array){
-
-  //   this.data = pixelData;
-  //   this.workingData = pixelData;
-
-  //   this.width = this.image.header.width;
-  //   this.height = this.image.header.height;
-
-  //   //If the image is a TPC we will need to times the height by the number of faces
-  //   //to correct the height incase we have a cubemap
-  //   if(this.image instanceof KotOR.TPCObject){
-  //     if(this.image.txi.procedureType == 1){
-  //       this.width = this.image.header.width;
-  //       this.height = this.image.header.height;
-  //     }else{
-  //       this.height = this.image.header.height * ((this.image.header as any).faces || 1);
-  //     }
-  //   }
-
-  //   this.bitsPerPixel = this.image.header.bitsPerPixel;
-
-  //   this.canvas.width = this.width;
-  //   this.canvas.height = this.height;
-  //   this.$canvas.css({
-  //     width: this.width,
-  //     height: this.height,
-  //     position: 'absolute',
-  //     left: 'calc(50% - '+this.width+'px / 2)',
-  //     top: 'calc(50% - '+this.height+'px / 2)',
-  //   });
-
-  //   let imageData = this.ctx.getImageData(0, 0, this.width, this.height);
-  //   let data = imageData.data;
-
-  //   if(this.image instanceof KotOR.TPCObject){
-
-  //     if(this.bitsPerPixel == 24)
-  //       this.workingData = TabImageViewerState.PixelDataToRGBA(this.workingData, this.width, this.height);
-
-  //     if(this.bitsPerPixel == 8)
-  //       this.workingData = TabImageViewerState.TGAGrayFix(this.workingData);
-
-  //     //FlipY
-  //     TabImageViewerState.FlipY(this.workingData, this.width, this.height);
-
-  //   }
-
-  //   if(this.image instanceof KotOR.TGAObject){
-      
-  //     switch(this.bitsPerPixel){
-  //       case 32:
-  //         this.workingData = TabImageViewerState.TGAColorFix(this.workingData);
-  //       break;
-  //       case 24:
-  //         //HTML Canvas requires 32bpp pixel data so we will need to add an alpha channel
-  //         this.workingData = TabImageViewerState.RGBToRGBA(this.workingData, this.width, this.height);
-  //         this.workingData = TabImageViewerState.TGAColorFix(this.workingData);
-  //       break;
-  //       case 8:
-  //         this.workingData = TabImageViewerState.TGAGrayFix(this.workingData);
-  //       break;
-  //     }
-
-  //     TabImageViewerState.FlipY(this.workingData, this.width, this.height);
-
-  //   }
-
-  //   //Set the preview image to opaque
-  //   //this.PreviewAlphaFix(this.workingData);
-
-  //   imageData.data.set(this.workingData);
-
-  //   this.ctx.putImageData(imageData, 0, 0);
-
-  //   this.$canvas.off('click').on('click', (e: any) => {
-  //     e.preventDefault();
-  //   });
-
-  // }
+  getPixelData(): Promise<Uint8Array>{
+    return new Promise<Uint8Array>( (resolve, reject) => {
+      if(this.image instanceof KotOR.TPCObject){
+        const worker = new Worker('worker-tex.js'); 
+    
+        worker.addEventListener('message', function(e) {
+          resolve(new Uint8Array(e.data));
+        }, false);
+    
+        worker.postMessage({
+          Header: this.image.header,
+          buffer: this.image.file,
+          txi: this.image.txi
+        }, [this.image.file.buffer]);
+      }else{
+        this.image.getPixelData( (buffer: Uint8Array) => {
+          resolve(new Uint8Array(buffer));
+        })
+      }
+    });
+  }
 
   static FlipY(pixelData: Uint8Array, width = 1, height = 1){
     let offset = 0;

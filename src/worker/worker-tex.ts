@@ -17,7 +17,7 @@ function concatenate (resultConstructor: any, ...arrays: any) {
 }
 
 onmessage = function (e: any = {}){
-  if(!e.data || !e.data.buffer || !isBuffer(e.data.buffer)) return;
+  if(!e.data || !e.data.buffer) return;
   let tpc = new TPCObject({
     file: Buffer.from(e.data.buffer)
   });

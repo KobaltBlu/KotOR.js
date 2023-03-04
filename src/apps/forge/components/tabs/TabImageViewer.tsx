@@ -19,11 +19,11 @@ export const TabImageViewer = function(props: BaseTabProps){
   const containerRef = useRef<HTMLDivElement>(null);
 
   const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject) => {
-    const tab = props.tab as TabImageViewerState;
     rerender(!render);
     if(canvasRef.current){
       const canvas = canvasRef.current;
-      image.getPixelData( (pixelData: any) => {
+      tab.getPixelData().then( (pixelData) => {
+        console.log('pixel data', pixelData);
         let ctx = canvas.getContext('2d');
         if(ctx){
           // let data = pixelData;
@@ -52,8 +52,6 @@ export const TabImageViewer = function(props: BaseTabProps){
           canvas.height = height;
 
           let imageData = ctx.getImageData(0, 0, width, height);
-          let data = imageData.data;
-
           if(image instanceof KotOR.TPCObject){
 
             if(tab.bitsPerPixel == 24)
@@ -117,16 +115,14 @@ export const TabImageViewer = function(props: BaseTabProps){
     setCanvasScale(tmpCanvasScale);
   }
 
-  useEffectOnce( () => {
-    const tab = props.tab as TabImageViewerState;
-    if(tab){
-      tab.openFile().then( (image) => {
-        setPixelData(image);
-      });
-    }
+  const onEditorFileLoad = () => {
+    setPixelData(tab.image);
+  };
 
+  useEffectOnce( () => {
+    tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     return () => {
-      
+      tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
     }
   });
 
