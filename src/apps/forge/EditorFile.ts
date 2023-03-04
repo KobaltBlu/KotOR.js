@@ -229,9 +229,9 @@ export class EditorFile extends EventListenerModel {
         );
       }else{
         //Common Loader
-        if(isBuffer(this.buffer)){
+        if(isBuffer(this.buffer) || this.buffer?.length){
           resolve({
-            buffer: this.buffer as Buffer,
+            buffer: Buffer.from(this.buffer as Buffer),
           });
         }else{
           if(this.archive_path){
@@ -244,7 +244,7 @@ export class EditorFile extends EventListenerModel {
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
-                      buffer: this.buffer as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
                     });
                   });
                 });
@@ -255,7 +255,7 @@ export class EditorFile extends EventListenerModel {
                   archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
-                      buffer: this.buffer as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
                     });
                   });
                 });
@@ -265,7 +265,7 @@ export class EditorFile extends EventListenerModel {
                   archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
-                      buffer: this.buffer as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
                     });
                   });
                 });
@@ -283,7 +283,7 @@ export class EditorFile extends EventListenerModel {
                       this.buffer = buffer;
         
                       resolve({
-                        buffer: this.buffer as Buffer,
+                        buffer: Buffer.from(this.buffer as Buffer),
                       });
                     }).catch( (err: any) => {
                       throw err;
@@ -293,7 +293,7 @@ export class EditorFile extends EventListenerModel {
                       this.buffer = buffer;
         
                       resolve({
-                        buffer: this.buffer as Buffer,
+                        buffer: Buffer.from(this.buffer as Buffer),
                       });
                     }).catch( (err: any) => {
                       throw err;
@@ -305,7 +305,7 @@ export class EditorFile extends EventListenerModel {
       
                         this.buffer = Buffer.from(buffer);
                         resolve({
-                          buffer: this.buffer as Buffer,
+                          buffer: Buffer.from(this.buffer as Buffer),
                         });
                       });
                     }else{
@@ -319,14 +319,14 @@ export class EditorFile extends EventListenerModel {
                           let file = await this.handle.getFile();
                           this.buffer = Buffer.from( await file.arrayBuffer() );
                           resolve({
-                            buffer: this.buffer as Buffer,
+                            buffer: Buffer.from(this.buffer as Buffer),
                           });
                         }else{
                           //cannot open file
                           console.warn('EditorFile.readFile', 'unable to open file', this.protocol);
                           this.buffer = Buffer.alloc(0);
                           resolve({
-                            buffer: this.buffer as Buffer,
+                            buffer: Buffer.from(this.buffer as Buffer),
                           });
                         }
                       }
@@ -341,7 +341,7 @@ export class EditorFile extends EventListenerModel {
               console.warn('EditorFile.readFile', 'unable to open file', this.protocol);
               this.buffer = Buffer.alloc(0);
               resolve({
-                buffer: this.buffer as Buffer,
+                buffer: Buffer.from(this.buffer as Buffer),
               });
             }
           }
@@ -359,16 +359,16 @@ export class EditorFile extends EventListenerModel {
             const key_mdl = KotOR.KEYManager.Key.GetFileKey(this.resref, KotOR.ResourceTypes['mdl']);
             const key_mdx = KotOR.KEYManager.Key.GetFileKey(this.resref, KotOR.ResourceTypes['mdx']);
 
-            if(!isBuffer(this.buffer) && key_mdl){
+            if((!isBuffer(this.buffer) || !this.buffer?.length) && key_mdl){
               this.buffer = await KotOR.KEYManager.Key.GetFileDataAsync(key_mdl);
             }
 
-            if(!isBuffer(this.buffer2) && key_mdx){
+            if((!isBuffer(this.buffer2) || !this.buffer2?.length) && key_mdx){
               this.buffer2 = await KotOR.KEYManager.Key.GetFileDataAsync(key_mdx);
             }
             
             resolve({
-              buffer: this.buffer as Buffer,
+              buffer: Buffer.from(this.buffer as Buffer),
               buffer2: this.buffer2 as Buffer
             });
           break;
@@ -376,17 +376,17 @@ export class EditorFile extends EventListenerModel {
           case EditorFileProtocol.MOD:
             new KotOR.ERFObject(this.archive_path, async (archive: KotOR.ERFObject) => {
               //MDL
-              if(!isBuffer(this.buffer)){
+              if(!isBuffer(this.buffer) || !this.buffer?.length){
                 this.buffer = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdl']);
               }
 
               //MDX
-              if(!isBuffer(this.buffer2)){
+              if(!isBuffer(this.buffer2) || !this.buffer2?.length){
                 this.buffer2 = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdx']);
               }
 
               resolve({
-                buffer: this.buffer as Buffer,
+                buffer: Buffer.from(this.buffer as Buffer),
                 buffer2: this.buffer2 as Buffer
               });
             });
@@ -394,17 +394,17 @@ export class EditorFile extends EventListenerModel {
           case EditorFileProtocol.RIM:
             new KotOR.RIMObject(this.archive_path, async (archive: KotOR.RIMObject) => {
               //MDL
-              if(!isBuffer(this.buffer)){
+              if(!isBuffer(this.buffer) || !this.buffer?.length){
                 this.buffer = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdl']);
               }
 
               //MDX
-              if(!isBuffer(this.buffer2)){
+              if(!isBuffer(this.buffer2) || !this.buffer2?.length){
                 this.buffer2 = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdx']);
               }
 
               resolve({
-                buffer: this.buffer as Buffer,
+                buffer: Buffer.from(this.buffer as Buffer),
                 buffer2: this.buffer2 as Buffer
               });
             });
@@ -419,32 +419,32 @@ export class EditorFile extends EventListenerModel {
             if(this.useGameFileSystem){
               try{
                 //MDL
-                if(!isBuffer(this.buffer)) this.buffer = await KotOR.GameFileSystem.readFile(this.path);
+                if(!isBuffer(this.buffer) || !this.buffer?.length) this.buffer = await KotOR.GameFileSystem.readFile(this.path);
 
                 //MDX
-                if(!isBuffer(this.buffer2)) this.buffer2 = await KotOR.GameFileSystem.readFile(this.path2);
+                if(!isBuffer(this.buffer2) || !this.buffer2?.length) this.buffer2 = await KotOR.GameFileSystem.readFile(this.path2);
               }catch(e){
                 console.error(e);
               }
   
               resolve({
-                buffer: this.buffer as Buffer,
-                buffer2: this.buffer2 as Buffer,
+                buffer: Buffer.from(this.buffer as Buffer),
+                buffer2: Buffer.from(this.buffer2 as Buffer),
               });
             }else if(this.useProjectFileSystem){
               try{
                 //MDL
-                if(!isBuffer(this.buffer)) this.buffer = await ProjectFileSystem.readFile(this.path);
+                if(!isBuffer(this.buffer) || !this.buffer?.length) this.buffer = await ProjectFileSystem.readFile(this.path);
                 
                 //MDX
-                if(!isBuffer(this.buffer2)) this.buffer2 = await ProjectFileSystem.readFile(this.path2);
+                if(!isBuffer(this.buffer2) || !this.buffer2?.length) this.buffer2 = await ProjectFileSystem.readFile(this.path2);
               }catch(e){
                 console.error(e);
               }
   
               resolve({
-                buffer: this.buffer as Buffer,
-                buffer2: this.buffer2 as Buffer,
+                buffer: Buffer.from(this.buffer as Buffer),
+                buffer2: Buffer.from(this.buffer2 as Buffer),
               });
             }else{
               if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -457,8 +457,8 @@ export class EditorFile extends EventListenerModel {
 
                     this.buffer2 = Buffer.from(buffer2);
                     resolve({
-                      buffer: this.buffer as Buffer,
-                      buffer2: this.buffer2 as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
+                      buffer2: Buffer.from(this.buffer2 as Buffer),
                     });
                   });
                 });
@@ -474,8 +474,8 @@ export class EditorFile extends EventListenerModel {
                   if(!granted){
                     console.warn('EditorFile.readFile', 'unable to open (mdl) file', this.protocol);
                     resolve({
-                      buffer: this.buffer as Buffer,
-                      buffer2: this.buffer as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
+                      buffer2: Buffer.from(this.buffer2 as Buffer),
                     });
                     return;
                   }
@@ -497,8 +497,8 @@ export class EditorFile extends EventListenerModel {
                   if(!granted2){
                     console.warn('EditorFile.readFile', 'unable to open (mdx) file', this.protocol);
                     resolve({
-                      buffer: this.buffer as Buffer,
-                      buffer2: this.buffer as Buffer,
+                      buffer: Buffer.from(this.buffer as Buffer),
+                      buffer2: Buffer.from(this.buffer2 as Buffer),
                     });
                     return;
                   }
@@ -510,8 +510,8 @@ export class EditorFile extends EventListenerModel {
                 }
 
                 resolve({
-                  buffer: this.buffer as Buffer,
-                  buffer2: this.buffer2 as Buffer,
+                  buffer: Buffer.from(this.buffer as Buffer),
+                  buffer2: Buffer.from(this.buffer2 as Buffer),
                 });
               }
             }
