@@ -446,7 +446,7 @@ const forgeConfig = (name, color) => ({
     new MonacoWebpackPlugin({
       publicPath: '/monaco',
       globalAPI: true,
-      languages: []
+      languages: ['json']
     }),
   ],
   resolve: {
