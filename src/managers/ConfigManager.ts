@@ -158,7 +158,8 @@ export class ConfigManager{
       if(typeof property[parts[i]] != 'undefined'){
         property = property[parts[i]];
       }else{
-        return undefined;
+        property = undefined;
+        break;
       }
     }
 
