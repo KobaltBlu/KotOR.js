@@ -22,7 +22,7 @@ export class ApplicationProfile {
     if(window.location.origin === 'file://'){
       ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
       if(window.navigator.platform.toLocaleLowerCase() == 'win32'){
-        ApplicationProfile.path_sep = '\\';
+        ApplicationProfile.path_sep = '/';
       }else{
         ApplicationProfile.path_sep = '/';
       }
