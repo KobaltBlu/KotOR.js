@@ -406,7 +406,12 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
         eastHandleRef.current.style.position = eastHandleStyle.position
         eastHandleRef.current.style.bottom = eastHandleStyle.bottom+'px';
         eastHandleRef.current.style.top = eastHandleStyle.top+'px';
-        eastHandleRef.current.style.left = eastHandleStyle.left+'px';
+        if(!layout_east_open){
+          eastHandleRef.current.style.right = '0px';
+          eastHandleRef.current.style.left = 'initial';
+        }else{
+          eastHandleRef.current.style.left = eastHandleStyle.left+'px';
+        }
         eastHandleRef.current.style.width = eastHandleStyle.width+'px';
         eastHandleRef.current.style.display = eastHandleStyle.display;
         eastHandleRef.current.style.justifyContent = eastHandleStyle.justifyContent;
