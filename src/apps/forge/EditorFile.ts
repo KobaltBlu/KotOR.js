@@ -145,7 +145,7 @@ export class EditorFile extends EventListenerModel {
       const url = new URL(filepath);
 
       this.protocol = url.protocol as EditorFileProtocol;
-      let pathname = url.pathname;
+      let pathname = url.pathname.replace(/%20/g, " ");
 
       //remove excess slashes on both ends
       pathname = pathname.replace(/^\/+|\/+$/g, '');
