@@ -1059,18 +1059,18 @@ li.list-group-item:hover {
 .file-browser-header {
   position: absolute;
   top: 0;
-  bottom: 42px;
   left: 0;
   right: 0;
+  height: 42px;
   background-color: #337ab7;
   color: white;
   padding-left: 0;
-}
 
-.file-browser-header span {
-  display: inline-flex; width: 33.33%;
-  padding: 10px 0 10px 10px;
-  cursor: pointer;
+  span {
+    display: inline-flex; width: 33.33%;
+    padding: 10px 0 10px 10px;
+    cursor: pointer;
+  }
 }
 
 .file-browser-item {
@@ -1079,18 +1079,28 @@ li.list-group-item:hover {
   margin-bottom: -1px;
   background-color: #333;
   border: 1px solid #1f1f1f;
-}
+  user-select: none;
 
-.file-browser-item span {
-  padding: 10px 0 10px 10px;
-  display: inline-flex; width: 33.33%;
-}
+  &.selected {
+    background-color: #255d8e;
+    border: 1px solid #337ab7;
+    z-index: 2;
+    span {
+      border-right: 1px solid #337ab7;
+    }
+  }
+  
+  &:hover, &:focus {
+    z-index: 1;
+    cursor: pointer;
+  }
 
-.file-browser-item:hover, .file-browser-item:focus {
-  background-color: #255d8e;
-  border: 1px solid #337ab7;
-  z-index: 1;
-  cursor: pointer;
+  span {
+    padding: 10px 0 10px 10px;
+    display: inline-flex; width: 33.33%;
+    border-right: 1px solid #1f1f1f;
+  }
+
 }
 
 
