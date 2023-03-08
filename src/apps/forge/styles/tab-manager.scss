@@ -135,6 +135,16 @@
         flex-direction: row;
       }
 
+      .vertical-tabs {
+        .vertical-tabs-nav {
+          height: 30px;
+        }
+        .vertical-tabs-container {
+          position: relative;
+          height: calc(100% - 30px);
+        }
+      }
+
     }
 
     .tab-pane.TabQuickStartState {

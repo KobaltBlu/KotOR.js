@@ -13,7 +13,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
   return <>
 <div style={{height: '100%'}}>
   <div className="vertical-tabs" style={{height: '100%'}}>
-    <div className="navbar navbar-sidebar-wizard-horizontal" role="navigation">
+    <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
       <ul className="tabs-menu" style={{textAlign: 'center'}}>
         <li className={`btn btn-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
         <li className={`btn btn-tab ${selectedTab == 'lock' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('lock') }>Lock</a></li>
@@ -24,7 +24,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
         <li className={`btn btn-tab ${selectedTab == 'trap' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('trap') }>Trap</a></li>
       </ul>
     </div>
-    <div style={{position: 'relative', height: '100%'}}>
+    <div className="vertical-tabs-container">
       <div className="editor-3d-preview" style={{position: 'absolute', top:0, bottom: 0, left: 0, right: '50%'}}>
         <UI3DRendererView context={tab.ui3DRenderer} />
       </div>
