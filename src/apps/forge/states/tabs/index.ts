@@ -13,6 +13,7 @@ export * from "./TabUTDEditorState";
 export * from "./TabUTPEditorState";
 export * from "./TabTextEditorState";
 export * from "./TabWOKEditorState";
+export * from "./TabERFEditorState";
 
 export * from "./TabScriptErrorLogState";
 export * from "./TabScriptCompileLogState";

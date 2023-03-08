@@ -85,4 +85,6 @@ export * from "./nwscript/NWScriptInstruction";
 export * from "./nwscript/NWScriptDefK1";
 export * from "./nwscript/NWScriptDefK2";
 
+export * from "./utility/Utility";
+
 export * as THREE from "three";
