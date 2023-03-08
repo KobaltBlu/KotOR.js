@@ -4,6 +4,8 @@ import * as KotOR from "../KotOR";
 
 
 export const TwoDAEditorRow = function(props: any){
+  let selected = props.selected as boolean;
+  const onCellSelectedCallback = props.onCellSelected as Function;
   const [render, rerender] = useState<boolean>(false);
 
   const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
@@ -16,8 +18,16 @@ export const TwoDAEditorRow = function(props: any){
     rerender(!render);
   };
 
+  const onClickRow = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    onCellSelectedCallback(row, undefined, rIndex);
+  }
+
+  const onClickCell = (e: React.MouseEvent<HTMLTableCellElement>, cellName: string) => {
+    onCellSelectedCallback(row, cellName, rIndex);
+  }
+
   return (
-    <tr tabIndex={rIndex * twoDAObject.ColumnCount}>
+    <tr className={selected ? `focus` : ``} tabIndex={rIndex * twoDAObject.ColumnCount} onClick={onClickRow}>
       {
         twoDAObject.columns.map( (column: string, cIndex: number) => {
           const value: string = row[column];
@@ -28,6 +38,7 @@ export const TwoDAEditorRow = function(props: any){
               contentEditable={true} 
               suppressContentEditableWarning={true}
               spellCheck={false}
+              onClick={(e) => onClickCell(e, column)}
 
               // onInput={
               //   (e: React.ChangeEvent<HTMLTableCellElement>) => {

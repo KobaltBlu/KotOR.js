@@ -11,6 +11,7 @@ import * as KotOR from "../../KotOR";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
   const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
+  const [selectedRowIndex, setSelectedRowIndex] = useState<any>(-1);
 
   const onFileLoad = () => {
     const tab: TabTwoDAEditorState = props.tab as TabTwoDAEditorState;
@@ -24,6 +25,14 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       tab.removeEventListener('onEditorFileLoad', onFileLoad);
     }
   });
+
+  const onClickRow = (e: React.MouseEvent<any>, rowIndex: string = '0') => {
+    setSelectedRowIndex(rowIndex);
+  }
+
+  const onCellSelected = (row: any, cell: any, rowIndex: any) => {
+    setSelectedRowIndex(rowIndex);
+  }
 
   return (
     (!!twoDAObject) ? (
@@ -45,7 +54,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
               Object.entries(twoDAObject.rows).map( (row_parts: any[], rIndex: number) => {
                 const row: any = row_parts[1];
                 return (
-                  <TwoDAEditorRow key={`row-${rIndex * twoDAObject.ColumnCount}`} row={row} index={rIndex} twoDAObject={twoDAObject}></TwoDAEditorRow>
+                  <TwoDAEditorRow key={`row-${rIndex * twoDAObject.ColumnCount}`} selected={rIndex == selectedRowIndex} onCellSelected={onCellSelected} row={row} index={rIndex} twoDAObject={twoDAObject} onClick={onClickRow}></TwoDAEditorRow>
                 )
               })
             }
