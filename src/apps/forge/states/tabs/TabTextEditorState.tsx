@@ -11,6 +11,9 @@ import { NWScriptParser } from "../../../../nwscript/NWScriptParser";
 import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from ".";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
+import * as KotOR from "../../KotOR";
+import isBuffer from "is-buffer";
+
 export class TabTextEditorState extends TabState {
 
   tabName: string = `TEXT`;
@@ -25,6 +28,8 @@ export class TabTextEditorState extends TabState {
   #tabScriptInspectorState: TabScriptInspectorState;
   editor: monacoEditor.editor.IStandaloneCodeEditor;
   monaco: typeof monacoEditor;
+
+  resolvedIncludes: Map<string, string> = new Map();
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -56,6 +61,7 @@ export class TabTextEditorState extends TabState {
         file.readFile().then( (response) => {
           let decoder = new StringDecoder('utf8');
           this.code = decoder.write(response.buffer);
+          this.triggerLinterTimeout();
           
           this.processEventListener('onEditorFileLoad');
           resolve();
@@ -94,56 +100,89 @@ export class TabTextEditorState extends TabState {
 
   triggerLinter(){
     if(!this.editor || !this.monaco) return;
-    try{
-      this.nwScriptParser.parseScript( this.code );
-      console.log(this.nwScriptParser.errors);
-      const markers: any[] = [ ];
-      for(let i = 0; i < this.nwScriptParser.errors.length; i++){
-        const error = this.nwScriptParser.errors[i];
-        if(error && error.offender && error.offender.source){
-          markers.push({
+    this.resolveIncludes(this.code, this.resolvedIncludes).then( (resolvedIncludes) => {
+      this.resolvedIncludes = resolvedIncludes;
+      try{
+        this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
+        console.log(this.nwScriptParser.errors);
+        const markers: any[] = [ ];
+        for(let i = 0; i < this.nwScriptParser.errors.length; i++){
+          const error = this.nwScriptParser.errors[i];
+          if(error && error.offender && error.offender.source){
+            markers.push({
+              severity: this.monaco.MarkerSeverity.Error,
+              startLineNumber: error.offender.source.first_line,
+              startColumn: error.offender.source.first_column + 1,
+              endLineNumber: error.offender.source.last_line,
+              endColumn: error.offender.source.last_column + 1,
+              message: error.message
+            });
+          }else{
+            markers.push({
+              severity: this.monaco.MarkerSeverity.Warning,
+              startLineNumber: 0,
+              startColumn: 0,
+              endLineNumber: 0,
+              endColumn: 0,
+              message: error.message
+            });
+          }
+        }
+        this.#tabErrorLogState.setErrors(markers);
+        if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
+      }catch(e){
+        console.log(e);
+        if(e.hash){
+          console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
+          console.log(JSON.stringify(e));
+          const markers = [{
             severity: this.monaco.MarkerSeverity.Error,
-            startLineNumber: error.offender.source.first_line,
-            startColumn: error.offender.source.first_column + 1,
-            endLineNumber: error.offender.source.last_line,
-            endColumn: error.offender.source.last_column + 1,
-            message: error.message
-          });
+            startLineNumber: e.hash.loc.first_line,
+            startColumn: e.hash.loc.first_column + 1,
+            endLineNumber: e.hash.loc.last_line,
+            endColumn: e.hash.loc.last_column + 1,
+            message: e.message
+          }];
+          this.#tabErrorLogState.setErrors(markers);
+  
+          if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
         }else{
-          markers.push({
-            severity: this.monaco.MarkerSeverity.Warning,
-            startLineNumber: 0,
-            startColumn: 0,
-            endLineNumber: 0,
-            endColumn: 0,
-            message: error.message
-          });
+          if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', []);
+          this.#tabErrorLogState.setErrors([]);
         }
       }
-      this.#tabErrorLogState.setErrors(markers);
-      if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
-    }catch(e){
-      console.log(e);
-      if(e.hash){
-        console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
-        console.log(JSON.stringify(e));
-        const markers = [{
-          severity: this.monaco.MarkerSeverity.Error,
-          startLineNumber: e.hash.loc.first_line,
-          startColumn: e.hash.loc.first_column + 1,
-          endLineNumber: e.hash.loc.last_line,
-          endColumn: e.hash.loc.last_column + 1,
-          message: e.message
-        }];
-        this.#tabErrorLogState.setErrors(markers);
+    });
+  }
 
-        if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
-      }else{
-        if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', []);
-        this.#tabErrorLogState.setErrors([]);
+  resolveIncludes( code: string = ``, includeMap: Map<string, string> = new Map(), includeOrder: string[] = [] ){
+    return new Promise<Map<string, string>>( async (resolve, reject) => {
+      const includes = [...code.matchAll(/#include\s?"(\w+)"/g)];
+      for(let i = 0; i < includes.length; i++){
+        const match = includes[i];
+        const resref = match[1];
+        if(!includeMap.has(resref)){
+          if(resref){
+            const key = KotOR.KEYManager.Key.GetFileKey(resref, KotOR.ResourceTypes.nss);
+            if(key){
+              const buffer = await KotOR.KEYManager.Key.GetFileDataAsync(key);
+              if(isBuffer(buffer)){
+                const source = buffer.toString();
+                includeMap.set(resref, source);
+                includeOrder.push(resref);
+                await this.resolveIncludes(source, includeMap, includeOrder);
+              }
+            }
+          }
+        }else{
+          // let index = includeOrder.indexOf(resref);
+          // if(index >= 0){
+          //   includeOrder.splice(index, 1);
+          //   includeOrder.unshift(resref);
+          // }
+        }
       }
-    }
-
+      resolve(includeMap);
+    });
   }
 
   getExportBuffer(): Buffer {

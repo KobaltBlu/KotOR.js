@@ -28,6 +28,7 @@ export const TabTextEditor = function(props: any){
     console.log('editorDidMount', editor, monaco)
     tab.setEditor(editor);
     tab.setMonaco(monaco);
+    tab.triggerLinterTimeout();
   }
 
   const onEditorFileLoad = () => {
