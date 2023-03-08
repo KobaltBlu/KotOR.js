@@ -144,7 +144,10 @@ export const TabImageViewer = function(props: BaseTabProps){
         {
           Object.entries(tab.image.txi).map( (element: [string, any]) => {
             return (
-              <div className="txi-element" key={element[0]}>{element[0]}: {element[1]}</div>
+              <div className="txi-element" key={element[0]}>
+                <span className="txi-property">{element[0]}</span>
+                <span className="txi-value">{element[1]}</span>
+              </div>
             )
           })
         }
