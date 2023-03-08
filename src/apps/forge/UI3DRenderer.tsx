@@ -97,8 +97,8 @@ export class UI3DRenderer extends EventListenerModel {
     }
     
     this.controls = new ModelViewerControls(this);
-    this.controls.attachEventListener('onSelect', (obj: KotOR.THREE.Object3D) => {
-      this.selectObject(obj);
+    this.controls.attachEventListener('onSelect', (intersect: KotOR.THREE.Intersection) => {
+      this.selectObject(intersect?.object);
     })
     this.selectionBox.visible = false;
 
@@ -143,8 +143,12 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   selectObject(object: KotOR.THREE.Object3D){
-    this.selectionBox.setFromObject(object);
-    this.selectionBox.visible = true;
+    if(object){
+      this.selectionBox.setFromObject(object);
+      this.selectionBox.visible = true;
+    }else{
+      this.selectionBox.visible = false;
+    }
   }
 
   setCanvas(canvas: HTMLCanvasElement){

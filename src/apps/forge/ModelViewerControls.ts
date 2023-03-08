@@ -195,9 +195,8 @@ export class ModelViewerControls {
         //if(!axisMoverSelected){
           let intersects = this.context.raycaster.intersectObjects( this.context.selectable.children, true );
           if(intersects.length){
-            let intersection = intersects[ 0 ],
-              obj = intersection.object;
-            this.processEventListener('onSelect', obj);
+            let intersection = intersects[ 0 ];
+            this.processEventListener('onSelect', intersection);
           }else{
             this.processEventListener('onSelect', undefined);
           }

@@ -8,6 +8,9 @@ export * from "./GameState";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 
+export * from "./BinaryReader";
+export * from "./BinaryWriter";
+
 export * from "./controls/Mouse";
 
 export * from "./enums/engine/GameEngineType";
