@@ -370,7 +370,7 @@ body {
     margin-bottom: 5px;
     border-color: #2a7ab9;
     z-index: 1;
-    border-width: 2px;
+    border-width: 1px;
   }
 }
 
@@ -388,16 +388,18 @@ body {
   -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
   -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
   transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
-  background: #133652;
-  background: linear-gradient(#133652 0%, #205784 100%);
+  // background: #133652;
+  background: #292929;
+  // background: linear-gradient(#133652 0%, #205784 100%);
   /* border: 2px solid #2196F3; */
-  border: 2px solid #2a7ab9;
+  border: 1px solid #2a7ab9;
   color: #CCC;
   border-radius:5px;
   margin-bottom: 5px;
   box-shadow: 2px 2px 10px #1d1d1d;
   &:focus {
     color: #ffffff;
+    background-color: #313131;
   }
 }
 
@@ -441,6 +443,7 @@ fieldset {
 }
 
 legend {
+  float: initial;
   color: #ccc;
   border-bottom: none;
   margin-bottom: 0;
