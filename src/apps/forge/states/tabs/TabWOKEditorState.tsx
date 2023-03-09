@@ -18,6 +18,8 @@ export class TabWOKEditorState extends TabState {
   faceHelperMesh: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.Material | KotOR.THREE.Material[]>;
   faceHelperGeometry: KotOR.THREE.BufferGeometry;
   faceHelperMaterial: KotOR.THREE.MeshBasicMaterial;
+  wireMaterial: KotOR.THREE.MeshBasicMaterial;
+  wireframe: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.MeshBasicMaterial>;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -124,6 +126,11 @@ export class TabWOKEditorState extends TabState {
           this.wok.material.visible = true;
           this.wok.material.side = KotOR.THREE.DoubleSide;
           this.ui3DRenderer.selectable.add(this.wok.mesh);
+
+          this.wireMaterial = new KotOR.THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+          this.wireframe = new KotOR.THREE.Mesh(this.wok.geometry, this.wireMaterial);
+          this.ui3DRenderer.unselectable.add(this.wireframe);
+
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.wok);
         });
