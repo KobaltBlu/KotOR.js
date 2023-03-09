@@ -53,7 +53,7 @@ export class OdysseyWalkMesh {
   aabbGroup: THREE.Object3D;
   aabbRoot: OdysseyModelAABBNode;
   
-  constructor( wokReader?: BinaryReader, onLoad?: Function, onError?: Function ){
+  constructor( wokReader?: BinaryReader ){
 
     this.header = {
       walkMeshType: OdysseyWalkMeshType.NONE
