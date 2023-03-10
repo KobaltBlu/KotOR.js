@@ -570,4 +570,8 @@ export class EditorFile extends EventListenerModel {
     //stub
   }
 
+  static From(editorFile: EditorFile){
+    return new EditorFile(editorFile);
+  }
+
 }

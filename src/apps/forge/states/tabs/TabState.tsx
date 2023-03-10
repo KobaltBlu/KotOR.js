@@ -42,6 +42,9 @@ export class TabState extends EventListenerModel {
   
   #tabContentView: JSX.Element = (<></>);
 
+  #_onSaveStateChanged: (file: EditorFile) => void;
+  #_onNameChanged: (file: EditorFile) => void;
+
   constructor(options: BaseTabStateOptions = {}){
     super();
     this.isDestroyed = false;
@@ -69,13 +72,17 @@ export class TabState extends EventListenerModel {
       this.isClosable = options.closeable;
     }
 
+    this.#_onSaveStateChanged = (file: EditorFile) => {
+      this.editorFileUpdated();
+    }
+
+    this.#_onNameChanged = (file: EditorFile) => {
+      this.editorFileUpdated();
+    }
+
     if(this.file instanceof EditorFile){
-      this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', (file: EditorFile) => {
-        this.editorFileUpdated();
-      });
-      this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', (file: EditorFile) => {
-        this.editorFileUpdated();
-      });
+      this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+      this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     }
     this.editorFileUpdated();
   }
@@ -251,7 +258,9 @@ export class TabState extends EventListenerModel {
   }
 
   async saveAs() {
-    let currentFile = this.getFile();
+    let currentFile = EditorFile.From(this.getFile());
+    currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+    currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     return new Promise<boolean>( async (resolve, reject) => {
       try{
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -264,11 +273,15 @@ export class TabState extends EventListenerModel {
             try{
               let saveBuffer = this.getExportBuffer();
               fs.writeFile(savePath.filePath, saveBuffer, () => {
+                this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+                this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+                this.file = currentFile;
                 currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
                 currentFile.archive_path2 = undefined;
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
+                this.editorFileUpdated();
                 resolve(true);
               });
             }catch(e){
@@ -286,8 +299,14 @@ export class TabState extends EventListenerModel {
               let saveBuffer = this.getExportBuffer();
               let ws: FileSystemWritableFileStream = await newHandle.createWritable();
               await ws.write(saveBuffer || Buffer.allocUnsafe(0));
+              this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+              this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+              this.file = currentFile;
+              currentFile.archive_path = undefined;
+              currentFile.archive_path2 = undefined;
               currentFile.buffer = saveBuffer;
               currentFile.unsaved_changes = false;
+              this.editorFileUpdated();
               resolve(true);
             }catch(e){
               console.error(e);

@@ -20,6 +20,7 @@ export class TabWOKEditorState extends TabState {
   faceHelperMaterial: KotOR.THREE.MeshBasicMaterial;
   wireMaterial: KotOR.THREE.MeshBasicMaterial;
   wireframe: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.MeshBasicMaterial>;
+  selectColor = new KotOR.THREE.Color(0x607D8B);
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -47,63 +48,15 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: KotOR.THREE.Intersection) => {
       this.ui3DRenderer.selectionBox.visible = false;
 
-      for(let i = 0; i < this.wok.faces.length; i++){
-        const face = this.wok.faces[i];
-        const index = i * 3;
-        this.wok.geometry.attributes.color.setX(index, face.color.r);
-        this.wok.geometry.attributes.color.setY(index, face.color.g);
-        this.wok.geometry.attributes.color.setZ(index, face.color.b);
-        
-        this.wok.geometry.attributes.color.setX(index + 1, face.color.r);
-        this.wok.geometry.attributes.color.setY(index + 1, face.color.g);
-        this.wok.geometry.attributes.color.setZ(index + 1, face.color.b);
-        
-        this.wok.geometry.attributes.color.setX(index + 2, face.color.r);
-        this.wok.geometry.attributes.color.setY(index + 2, face.color.g);
-        this.wok.geometry.attributes.color.setZ(index + 2, face.color.b);
-      }
-
       if(intersect && intersect.face){
-        const selectColor = new KotOR.THREE.Color(0x607D8B);
-
         const f_idx = Math.floor(intersect.face.a / 3);
         const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
-
-        this.wok.geometry.attributes.color.setX(intersect.face.a, selectColor.r);
-        this.wok.geometry.attributes.color.setY(intersect.face.a, selectColor.g);
-        this.wok.geometry.attributes.color.setZ(intersect.face.a, selectColor.b);
-        
-        this.wok.geometry.attributes.color.setX(intersect.face.b, selectColor.r);
-        this.wok.geometry.attributes.color.setY(intersect.face.b, selectColor.g);
-        this.wok.geometry.attributes.color.setZ(intersect.face.b, selectColor.b);
-        
-        this.wok.geometry.attributes.color.setX(intersect.face.c, selectColor.r);
-        this.wok.geometry.attributes.color.setY(intersect.face.c, selectColor.g);
-        this.wok.geometry.attributes.color.setZ(intersect.face.c, selectColor.b);
-
-        this.faceHelperGeometry.attributes.position.setX(0, this.wok.geometry.attributes.position.getX(intersect.face.a) );
-        this.faceHelperGeometry.attributes.position.setY(0, this.wok.geometry.attributes.position.getY(intersect.face.a) );
-        this.faceHelperGeometry.attributes.position.setZ(0, this.wok.geometry.attributes.position.getZ(intersect.face.a) );
-
-        this.faceHelperGeometry.attributes.position.setX(1, this.wok.geometry.attributes.position.getX(intersect.face.b) );
-        this.faceHelperGeometry.attributes.position.setY(1, this.wok.geometry.attributes.position.getY(intersect.face.b) );
-        this.faceHelperGeometry.attributes.position.setZ(1, this.wok.geometry.attributes.position.getZ(intersect.face.b) );
-
-        this.faceHelperGeometry.attributes.position.setX(2, this.wok.geometry.attributes.position.getX(intersect.face.c) );
-        this.faceHelperGeometry.attributes.position.setY(2, this.wok.geometry.attributes.position.getY(intersect.face.c) );
-        this.faceHelperGeometry.attributes.position.setZ(2, this.wok.geometry.attributes.position.getZ(intersect.face.c) );
-
-        this.faceHelperGeometry.attributes.position.needsUpdate = true;
-        this.faceHelperGeometry.computeBoundingSphere();
-        this.faceHelperMaterial.visible = true;
-
-        this.processEventListener('onFaceSelected', [face]);
+        this.selectFace(face);
       }else{
+        this.resetFaceColors();
         this.processEventListener('onFaceSelected');
         this.faceHelperMaterial.visible = false;
       }
-
-      this.wok.geometry.attributes.color.needsUpdate = true;
     })
 
     this.setContentView(<TabWOKEditor tab={this}></TabWOKEditor>);
@@ -175,6 +128,69 @@ export class TabWOKEditorState extends TabState {
 
     
     
+  }
+
+  resetFaceColors(){
+    for(let i = 0; i < this.wok.faces.length; i++){
+      const face = this.wok.faces[i];
+      const index = i * 3;
+      this.wok.geometry.attributes.color.setX(index, face.color.r);
+      this.wok.geometry.attributes.color.setY(index, face.color.g);
+      this.wok.geometry.attributes.color.setZ(index, face.color.b);
+      
+      this.wok.geometry.attributes.color.setX(index + 1, face.color.r);
+      this.wok.geometry.attributes.color.setY(index + 1, face.color.g);
+      this.wok.geometry.attributes.color.setZ(index + 1, face.color.b);
+      
+      this.wok.geometry.attributes.color.setX(index + 2, face.color.r);
+      this.wok.geometry.attributes.color.setY(index + 2, face.color.g);
+      this.wok.geometry.attributes.color.setZ(index + 2, face.color.b);
+    }
+    this.wok.geometry.attributes.color.needsUpdate = true;
+  }
+
+  selectFace(face: KotOR.OdysseyFace3){
+
+    // const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
+    if(face){
+      this.resetFaceColors();
+      const index = this.wok.faces.indexOf(face) * 3;
+      this.wok.geometry.attributes.color.setX(index, this.selectColor.r);
+      this.wok.geometry.attributes.color.setY(index, this.selectColor.g);
+      this.wok.geometry.attributes.color.setZ(index, this.selectColor.b);
+      
+      this.wok.geometry.attributes.color.setX(index + 1, this.selectColor.r);
+      this.wok.geometry.attributes.color.setY(index + 1, this.selectColor.g);
+      this.wok.geometry.attributes.color.setZ(index + 1, this.selectColor.b);
+      
+      this.wok.geometry.attributes.color.setX(index + 2, this.selectColor.r);
+      this.wok.geometry.attributes.color.setY(index + 2, this.selectColor.g);
+      this.wok.geometry.attributes.color.setZ(index + 2, this.selectColor.b);
+
+      this.faceHelperGeometry.attributes.position.setX(0, this.wok.geometry.attributes.position.getX(index) );
+      this.faceHelperGeometry.attributes.position.setY(0, this.wok.geometry.attributes.position.getY(index) );
+      this.faceHelperGeometry.attributes.position.setZ(0, this.wok.geometry.attributes.position.getZ(index) );
+
+      this.faceHelperGeometry.attributes.position.setX(1, this.wok.geometry.attributes.position.getX(index + 1) );
+      this.faceHelperGeometry.attributes.position.setY(1, this.wok.geometry.attributes.position.getY(index + 1) );
+      this.faceHelperGeometry.attributes.position.setZ(1, this.wok.geometry.attributes.position.getZ(index + 1) );
+
+      this.faceHelperGeometry.attributes.position.setX(2, this.wok.geometry.attributes.position.getX(index + 2) );
+      this.faceHelperGeometry.attributes.position.setY(2, this.wok.geometry.attributes.position.getY(index + 2) );
+      this.faceHelperGeometry.attributes.position.setZ(2, this.wok.geometry.attributes.position.getZ(index + 2) );
+
+      this.faceHelperGeometry.attributes.position.needsUpdate = true;
+      this.faceHelperGeometry.computeBoundingSphere();
+      this.faceHelperMaterial.visible = true;
+      this.wok.geometry.attributes.color.needsUpdate = true;
+
+      this.processEventListener('onFaceSelected', [face]);
+    }
+  }
+
+  getExportBuffer(): Buffer {
+    const buffer = this.wok.toExportBuffer();
+    return buffer;
   }
 
 }
