@@ -11,6 +11,7 @@ import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";
 import { TileColor } from "../engine/TileColor";
+import { BinaryWriter } from "../BinaryWriter";
 
 /* @file
  * The OdysseyWalkMesh is used for reading and handling the various walkmesh filetypes found in the game
@@ -41,8 +42,7 @@ export class OdysseyWalkMesh {
   facePlaneCoefficients: number[] = [];
   aabbNodes: OdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
-  edges: { [key: string]: WalkmeshEdge } = {};
-  edgeKeys: string[] = [];
+  edges: Map<number, WalkmeshEdge>;
   perimeters: Perimeter[] = [];
   edgeLines: any[] = [];
   wokReader: BinaryReader;
@@ -63,7 +63,7 @@ export class OdysseyWalkMesh {
     this.mesh = new THREE.Mesh();
     this.box = new THREE.Box3();
     this.mat4 = new THREE.Matrix4();
-    this.edges = {};
+    this.edges = new Map<number, WalkmeshEdge>();
 
     this.wokReader = wokReader;
     this.readBinary();
@@ -108,32 +108,32 @@ export class OdysseyWalkMesh {
       let edge2 = (i * 3) + 1;
       let edge3 = (i * 3) + 2;
 
-      if(!face.adjacentWalkableFaces.a && typeof this.edges[edge1] != 'undefined'){
-        face.adjacentWalkableFaces.a = this.edges[edge1];
+      if(!face.adjacentWalkableFaces.a && this.edges.has(edge1)){
+        face.adjacentWalkableFaces.a = this.edges.get(edge1);
         if(face.adjacentWalkableFaces.a instanceof WalkmeshEdge){
-          //face.adjacentWalkableFaces.a.line = new THREE.Line3( this.vertices[face.a].clone(), this.vertices[face.b].clone() );
+          face.adjacentWalkableFaces.a.index = edge1;
           face.adjacentWalkableFaces.a.face = face;
-          face.adjacentWalkableFaces.a.index = 0;
+          face.adjacentWalkableFaces.a.side = 0;
           face.adjacentWalkableFaces.a.update();
         }
       }
 
-      if(!face.adjacentWalkableFaces.b && typeof this.edges[edge2] != 'undefined'){
-        face.adjacentWalkableFaces.b = this.edges[edge2];
+      if(!face.adjacentWalkableFaces.b && this.edges.has(edge2)){
+        face.adjacentWalkableFaces.b = this.edges.get(edge2);
         if(face.adjacentWalkableFaces.b instanceof WalkmeshEdge){
-          //face.adjacentWalkableFaces.b.line = new THREE.Line3( this.vertices[face.b].clone(), this.vertices[face.c].clone() );
+          face.adjacentWalkableFaces.b.index = edge2;
           face.adjacentWalkableFaces.b.face = face;
-          face.adjacentWalkableFaces.b.index = 1;
+          face.adjacentWalkableFaces.b.side = 1;
           face.adjacentWalkableFaces.b.update();
         }
       }
 
-      if(!face.adjacentWalkableFaces.c && typeof this.edges[edge3] != 'undefined'){
-        face.adjacentWalkableFaces.c = this.edges[edge3];
+      if(!face.adjacentWalkableFaces.c && this.edges.has(edge3)){
+        face.adjacentWalkableFaces.c = this.edges.get(edge3);
         if(face.adjacentWalkableFaces.c instanceof WalkmeshEdge){
-          //face.adjacentWalkableFaces.c.line = new THREE.Line3( this.vertices[face.c].clone(), this.vertices[face.a].clone() );
+          face.adjacentWalkableFaces.c.index = edge3;
           face.adjacentWalkableFaces.c.face = face;
-          face.adjacentWalkableFaces.c.index = 2;
+          face.adjacentWalkableFaces.c.side = 2;
           face.adjacentWalkableFaces.c.update();
         }
       }
@@ -200,7 +200,6 @@ export class OdysseyWalkMesh {
     }
 
     this.aabbRoot = this.aabbNodes[0];
-    this.edgeKeys = Object.keys(this.edges);
 
   }
 
@@ -242,10 +241,9 @@ export class OdysseyWalkMesh {
 
   updateMatrix(){
     //updateMatrix
-    let edgeKeys = Object.keys(this.edges);
-    for(let i = 0, len = edgeKeys.length; i < len; i++){
-      this.edges[edgeKeys[i]].update();
-    }
+    this.edges.forEach( (edge) => {
+      edge.update();
+    });
     
     //transform vertex positions
     for(let i = 0, len = this.vertices.length; i < len; i++){
@@ -332,7 +330,9 @@ export class OdysseyWalkMesh {
 
       this.wokReader.Seek(this.header.offsetToEdges);
       for (let i = 0; i < this.header.edgesCount; i++){
-        let edge = this.edges[this.wokReader.ReadInt32()] = new WalkmeshEdge(this.wokReader.ReadInt32());
+        const index = this.wokReader.ReadInt32();
+        const edge = new WalkmeshEdge(this.wokReader.ReadInt32());
+        this.edges.set(index, edge);
         edge.setWalkmesh(this);
       }
 
@@ -399,10 +399,10 @@ export class OdysseyWalkMesh {
     if(face){
       let edge = new WalkmeshEdge(-1);
       edge.setWalkmesh(this);
-      edge.setSideIndex(index);
+      edge.setSide(index);
       edge.setFace(face);
       edge.update();
-      this.edges[Object.keys(this.edges).length] = edge;
+      // this.edges[Object.keys(this.edges).length] = edge;
     }
   }
 
@@ -609,6 +609,338 @@ export class OdysseyWalkMesh {
         OdysseyWalkMesh.SURFACEMATERIALS[i] = SurfaceMaterial.From2DA(surfacemat2DA.rows[i]);
       }
     }
+  }
+
+  getAdjacentFaces(faceIndex: number = 0): { a: OdysseyFace3, b: OdysseyFace3, c: OdysseyFace3 } {
+    const face = this.faces[1];
+    const vertIndexes = [face.a, face.b, face.c];
+    const adjacent = this.faces.filter( (f) => {
+      if(face != f){
+        const _a = vertIndexes.indexOf(f.a) >= 0;
+        const _b = vertIndexes.indexOf(f.b) >= 0;
+        const _c = vertIndexes.indexOf(f.c) >= 0;
+
+        const _sideA = (_a && _b);
+        const _sideB = (_b && _c);
+        const _sideC = (_c && _a);
+        
+        return _sideA || _sideB || _sideC;
+      } return false;
+    });
+    return {
+      a: adjacent.find( (f) => {
+        const _a = vertIndexes.indexOf(f.a) >= 0;
+        const _b = vertIndexes.indexOf(f.b) >= 0;
+
+        const _sideA = (_a && _b);
+        return _sideA;
+      }),
+      b: adjacent.find( (f) => {
+        const _b = vertIndexes.indexOf(f.b) >= 0;
+        const _c = vertIndexes.indexOf(f.c) >= 0;
+
+        const _sideB = (_b && _c);
+        return _sideB;
+      }),
+      c: adjacent.find( (f) => {
+        const _c = vertIndexes.indexOf(f.c) >= 0;
+        const _a = vertIndexes.indexOf(f.a) >= 0;
+
+        const _sideC = (_c && _a);
+        return _sideC;
+      }),
+    };
+  }
+
+  getAdjacentFaceByIndex(faceIndex: number = 0, side: 0 | 1 | 2 = 0): OdysseyFace3 {
+    const adjacent = this.getAdjacentFaces(faceIndex);
+    switch(side){
+      case 0:
+        return adjacent.a;
+      case 1:
+        return adjacent.b;
+      case 2:
+        return adjacent.c;
+    }
+  }
+
+  rebuild(){
+    
+    const faces = [...this.faces].sort( (x, y) => (x.surfacemat.walk === y.surfacemat.walk) ? 0 : x.surfacemat.walk ? -1 : 1 );
+    const walkableFaces = faces.filter( (f) => f.surfacemat.walk );
+
+    for(let i = 0; i < faces.length; i++){
+      const face = faces[i];
+      const vertex_1 = this.vertices[face.a];
+      const vertex_2 = this.vertices[face.b];
+      const vertex_3 = this.vertices[face.c];
+
+      //calculate face normal
+      const cb = vertex_3.clone().sub(vertex_2);
+      const ab = vertex_1.clone().sub(vertex_2);
+      cb.cross(ab);
+
+      face.normal.copy(cb);
+
+      //calculate face plane coefficient
+      face.coeff = -((vertex_1.x * face.normal.x) + (vertex_1.y * face.normal.y) + (vertex_1.z * face.normal.z))
+    }
+
+    this.faces = faces;
+    this.walkableFaces = walkableFaces;
+  }
+
+  buildPerimeters(){
+    const edges: WalkmeshEdge[] = this.walkableFaces.reduce( (acc: WalkmeshEdge[], c: OdysseyFace3) => {
+      if(c.adjacentWalkableFaces.a instanceof WalkmeshEdge) acc.push(c.adjacentWalkableFaces.a);
+      if(c.adjacentWalkableFaces.b instanceof WalkmeshEdge) acc.push(c.adjacentWalkableFaces.b);
+      if(c.adjacentWalkableFaces.c instanceof WalkmeshEdge) acc.push(c.adjacentWalkableFaces.c);
+      return acc;
+    }, [] as WalkmeshEdge[]);
+
+    const perimeters: {
+      closed: boolean;
+      start: number;
+      next: number;
+      edges: WalkmeshEdge[];
+    }[] = [];
+
+    let current_perimeter: {
+      closed: boolean;
+      start: number;
+      next: number;
+      edges: WalkmeshEdge[];
+    };
+
+    const start_perimeter = () => {
+      if(edges.length){
+        let edge: WalkmeshEdge = edges.shift();
+        return {
+          closed: false,
+          start: edge.vertex_1,
+          next: edge.vertex_2,
+          edges: [edge]
+        }
+      }
+    };
+    
+    while(edges.length){
+      if(!current_perimeter){
+        console.log('Walkmesh perimeter start...');
+        current_perimeter = start_perimeter();
+        perimeters.push(current_perimeter);
+      }
+
+      if(current_perimeter){
+        if(current_perimeter.next == current_perimeter.start){
+          console.log('Walkmesh perimeter end found! Closing perimeter...');
+          current_perimeter.closed = true;
+          current_perimeter = undefined;
+          continue;
+        }
+
+        //Find next perimeter edge
+        let next_idx = edges.findIndex( (n_edge) => n_edge.vertex_1 == current_perimeter.next );
+        if(next_idx >= 0){
+          let n_edge = edges.splice(next_idx, 1)[0];
+          current_perimeter.edges.push(n_edge);
+          current_perimeter.next = n_edge.vertex_2;
+          continue;
+        }else{
+          console.warn('Walkmesh edge perimeter open');
+          current_perimeter = undefined;
+        }
+
+      }
+    }
+
+    console.log('perimeters', perimeters);
+    return perimeters;
+  }
+
+  public toExportBuffer(){
+
+    const perimeters = this.buildPerimeters();
+
+    const header_size     = 136;
+
+    const vertices_offset = header_size;
+    const vertices_size   = 12 * this.vertices.length;
+
+    const faces_offset = vertices_offset + vertices_size;
+    const faces_size   = 12 * this.faces.length;
+
+    const walkTypes_offset = faces_offset + faces_size;
+    const walkTypes_size   = 4 * this.faces.length;
+
+    const normals_offset  = walkTypes_offset + walkTypes_size;
+    const normals_size    = 12 * this.faces.length;
+
+    const planeCoeff_offset = normals_offset + normals_size;
+    const planeCoeff_size   = 4 * this.faces.length;
+
+    const aabb_offset = planeCoeff_offset + planeCoeff_size;
+    const aabb_size   = 44 * this.aabbNodes.length;
+
+    const adjacent_offset = aabb_offset + aabb_size;
+    const adjacent_size   = 12 * this.walkableFaces.length;
+
+    const edge_offset = adjacent_offset + adjacent_size;
+    const edge_size   = 8 * this.edges.size;
+
+    const perimeter_offset  = edge_offset + edge_size;
+    const perimeter_size    = 4 * perimeters.length;
+
+    const EOF = perimeter_size;
+
+    const bw = new BinaryWriter(Buffer.alloc(EOF));
+
+    //--------//
+    // HEADER
+    //--------//
+
+    bw.WriteChars(this.header.fileType);
+    bw.WriteChars(this.header.version);
+    bw.WriteUInt32(this.header.walkMeshType);
+    bw.WriteBytes(Buffer.alloc(48));
+    bw.WriteSingle(this.header.position.x);
+    bw.WriteSingle(this.header.position.y);
+    bw.WriteSingle(this.header.position.z);
+
+    //verts
+    bw.WriteUInt32(this.vertices.length);
+    bw.WriteUInt32(vertices_offset);
+
+    //faces
+    bw.WriteUInt32(this.faces.length);
+    bw.WriteUInt32(faces_offset);
+
+    //offsetToWalkTypes
+    bw.WriteUInt32(walkTypes_offset);
+
+    //offsetToNormalizedInvertedNormals
+    bw.WriteUInt32(normals_offset); //96
+
+    //offsetToFacePlanesCoefficien
+    bw.WriteUInt32(planeCoeff_offset);
+
+    //aabb
+    bw.WriteUInt32(this.aabbNodes.length);
+    bw.WriteUInt32(aabb_offset); //108
+
+    //unknownEntry
+    bw.WriteUInt32(0); //112
+
+    //walkable adjacent matrix
+    bw.WriteUInt32(this.walkableFacesEdgesAdjacencyMatrix.length); //116
+    bw.WriteUInt32(adjacent_offset);
+
+    //edges
+    bw.WriteUInt32(this.edges.size);
+    bw.WriteUInt32(edge_offset);
+
+    //------//
+    // DATA
+    //------//
+
+    //perimeters
+    bw.WriteUInt32(perimeters.length);
+    bw.WriteUInt32(perimeter_offset);
+
+    //vertices
+    for(let i = 0; i < this.vertices.length; i++){
+      const vertex = this.vertices[i];
+      bw.WriteSingle(vertex.x);
+      bw.WriteSingle(vertex.y);
+      bw.WriteSingle(vertex.z);
+    }
+
+    //faces
+    for(let i = 0; i < this.faces.length; i++){
+      const face = this.faces[i];
+      bw.WriteInt32(face.a);
+      bw.WriteInt32(face.b);
+      bw.WriteInt32(face.c);
+    }
+
+    //walkIndexes
+    for(let i = 0; i < this.faces.length; i++){
+      const face = this.faces[i];
+      bw.WriteInt32(face.walkIndex);
+    }
+
+    //normals
+    for(let i = 0; i < this.faces.length; i++){
+      const face = this.faces[i];
+      bw.WriteSingle(face.normal.x);
+      bw.WriteSingle(face.normal.y);
+      bw.WriteSingle(face.normal.z);
+    }
+
+    //face plane coeff
+    for(let i = 0; i < this.faces.length; i++){
+      const face = this.faces[i];
+      bw.WriteSingle(face.coeff);
+    }
+
+    //aabb
+    for(let i = 0; i < this.aabbNodes.length; i++){
+      const aabb = this.aabbNodes[i];
+      bw.WriteSingle(aabb.box.min.x);
+      bw.WriteSingle(aabb.box.min.y);
+      bw.WriteSingle(aabb.box.min.z + 10);
+      bw.WriteSingle(aabb.box.max.x);
+      bw.WriteSingle(aabb.box.max.y);
+      bw.WriteSingle(aabb.box.max.z - 10);
+      bw.WriteInt32(aabb.faceIdx);
+      bw.WriteInt32(aabb.unknownFixedAt4);
+      bw.WriteInt32(aabb.mostSignificantPlane);
+      bw.WriteInt32(aabb.leftNodeOffset);
+      bw.WriteInt32(aabb.rightNodeOffset);
+    }
+
+    //walkable face edge adjacency matrix
+    for(let i = 0; i < this.walkableFacesEdgesAdjacencyMatrix.length; i++){
+      const adj = this.walkableFacesEdgesAdjacencyMatrix[i];
+
+      if(adj[0] >= 0){
+        const face = this.walkableFaces[adj[0]];
+        const adjacentIndex = face.adjacent.indexOf(i);
+        bw.WriteInt32( (adj[0] * 3) + adjacentIndex );
+      }else{ bw.WriteInt32(-1); }
+
+      if(adj[1] >= 0){
+        const face = this.walkableFaces[adj[1]];
+        const adjacentIndex = face.adjacent.indexOf(i);
+        bw.WriteInt32( (adj[1] * 3) + adjacentIndex );
+      }else{ bw.WriteInt32(-1); }
+
+      if(adj[2] >= 0){
+        const face = this.walkableFaces[adj[2]];
+        const adjacentIndex = face.adjacent.indexOf(i);
+        bw.WriteInt32( (adj[2] * 3) + adjacentIndex );
+      }else{ bw.WriteInt32(-1); }
+    }
+
+    //edges
+    for(let i = 0; i < perimeters.length; i++){
+      const perimeter = perimeters[i];
+      for(let j = 0; j < perimeter.edges.length; j++){
+        const edge = perimeter.edges[j];
+        bw.WriteInt32(edge.index);
+        bw.WriteInt32(edge.transition);
+      }
+    }
+
+    //perimeters
+    let offset = 0;
+    for(let i = 0; i < perimeters.length; i++){
+      const perimeter = perimeters[i];
+      offset += perimeter.edges.length;
+      bw.WriteInt32(offset);
+    }
+
+    return bw.buffer;
   }
 
 }

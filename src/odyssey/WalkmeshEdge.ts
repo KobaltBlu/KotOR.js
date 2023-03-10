@@ -11,7 +11,11 @@ export class WalkmeshEdge {
   center_point: THREE.Vector3;
   face: OdysseyFace3;
   walkmesh: OdysseyWalkMesh;
-  index: number;
+  side: number;
+  vertex_1: number = -1;
+  vertex_2: number = -1;
+  index: number = -1;
+
   constructor(transition = -1){
     this.transition = transition;
     this.line = undefined;
@@ -21,15 +25,20 @@ export class WalkmeshEdge {
     this.center_point = new THREE.Vector3(0, 0, 0);
     this.face = undefined;
     this.walkmesh = undefined;
-    this.index = -1;
+    this.side = -1;
+  }
+
+  //index into the walkable face adjacency array
+  setIndex(index: number){
+    this.index = index;
   }
 
   setFace(face: OdysseyFace3){
     this.face = face;
   }
 
-  setSideIndex(index: number){
-    this.index = index;
+  setSide(side: number){
+    this.side = side;
   }
 
   setWalkmesh(walkmesh: OdysseyWalkMesh){
@@ -39,12 +48,18 @@ export class WalkmeshEdge {
   update(){
     if(this.walkmesh){
       this.line = undefined;
-      if(this.index == 0){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.a], this.walkmesh.vertices[this.face.b] );
-      }else if(this.index == 1){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.b], this.walkmesh.vertices[this.face.c] );
-      }else if(this.index == 2){
-        this.line = new THREE.Line3( this.walkmesh.vertices[this.face.c], this.walkmesh.vertices[this.face.a] );
+      if(this.side == 0){
+        this.vertex_1 = this.face.a;
+        this.vertex_2 = this.face.b;
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
+      }else if(this.side == 1){
+        this.vertex_1 = this.face.b;
+        this.vertex_2 = this.face.c;
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
+      }else if(this.side == 2){
+        this.vertex_1 = this.face.c;
+        this.vertex_2 = this.face.a;
+        this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
       }
 
       if(this.line instanceof THREE.Line3){
