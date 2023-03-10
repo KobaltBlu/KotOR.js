@@ -486,8 +486,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
       //room walkable edge check
       let roomCollision = false;
-      for(let i = 0, len = this.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
-        edge = this.room.collisionData.walkmesh.edges[this.room.collisionData.walkmesh.edgeKeys[i]];
+      for (const [index, edge] of this.room.collisionData.walkmesh.edges) {
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.tmpPos);
@@ -548,8 +547,7 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       
         //DETECT: ROOM TRANSITION
-        for(let i = 0, len = this.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
-          edge = this.room.collisionData.walkmesh.edges[this.room.collisionData.walkmesh.edgeKeys[i]];
+        for (const [index, edge] of this.room.collisionData.walkmesh.edges) {
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(

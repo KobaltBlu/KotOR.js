@@ -34,6 +34,10 @@ export class CollisionData {
     if(!this.object.model || !GameState.module || !GameState.module.area)
       return;
 
+    if(this.groundFace && this.object.room && this.object.room.model?.wok && this.object.room.model.wok.walkableFaces.indexOf(this.groundFace) == -1){
+      this.findWalkableFace();
+    }
+
     let _axisFront = this.object.AxisFront.clone();
     let _oPosition = this.object.position.clone();
 
@@ -208,8 +212,7 @@ export class CollisionData {
         if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
           obj.box.setFromObject(obj.container);
           if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
-            for(let l = 0, ll = obj.collisionData.walkmesh.edgeKeys.length; l < ll; l++){
-              edge = obj.collisionData.walkmesh.edges[obj.collisionData.walkmesh.edgeKeys[l]];
+            for (const [index, edge] of obj.room.collisionData.walkmesh.edges) {
               edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
               distance = closestPoint.distanceTo(this.object.tmpPos);
               if(distance < hitdist_half){
@@ -244,8 +247,7 @@ export class CollisionData {
 
       //room walkable edge check
       let roomCollision = false;
-      for(let i = 0, len = this.object.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
-        edge = this.object.room.collisionData.walkmesh.edges[this.object.room.collisionData.walkmesh.edgeKeys[i]];
+      for (const [index, edge] of this.object.room.collisionData.walkmesh.edges) {
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.object.tmpPos);
@@ -331,8 +333,7 @@ export class CollisionData {
         }
       
         //DETECT: ROOM TRANSITION
-        for(let i = 0, len = this.object.room.collisionData.walkmesh.edgeKeys.length; i < len; i++){
-          edge = this.object.room.collisionData.walkmesh.edges[this.object.room.collisionData.walkmesh.edgeKeys[i]];
+      for (const [index, edge] of this.object.room.collisionData.walkmesh.edges) {
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(
