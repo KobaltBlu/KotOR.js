@@ -7,6 +7,7 @@ import { EventListenerModel } from "./EventListenerModel";
 import * as KotOR from "./KotOR";
 import { ModelViewerControls } from "./ModelViewerControls";
 import { SceneGraphNode } from "./SceneGraphNode";
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 
 /* @file
  * The UI3DRenderer class.
@@ -66,6 +67,8 @@ export class UI3DRenderer extends EventListenerModel {
   odysseyModels: KotOR.OdysseyModel3D[] = [];
   selectionBox = new KotOR.THREE.BoxHelper(new KotOR.THREE.Object3D(), 0xffffff);
 
+  transformControls: TransformControls;
+
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
     this.uuid = crypto.randomUUID();
@@ -101,7 +104,24 @@ export class UI3DRenderer extends EventListenerModel {
       this.selectObject(intersect?.object);
     })
     this.selectionBox.visible = false;
+    this.buildTransformControls();
 
+  }
+
+  buildTransformControls() {
+    if(this.transformControls){
+      this.transformControls.dispose();
+      this.transformControls.removeFromParent();
+    }
+    if(this.canvas){
+      this.transformControls = new TransformControls(this.currentCamera, this.canvas);
+      this.transformControls.visible = false;
+      this.unselectable.add(this.transformControls);
+      this.transformControls.userData.uuids = [];
+      this.transformControls.traverse( (obj) => {
+        this.transformControls.userData.uuids.push(obj.uuid);
+      });
+    }
   }
 
   attachObject(object: KotOR.THREE.Object3D, selectable: boolean = true){
@@ -164,6 +184,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildScene();
     }
     if(this.canvas){
+      this.buildTransformControls();
       if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
       this.controls.attachCanvasElement(this.canvas);

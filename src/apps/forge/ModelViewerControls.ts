@@ -192,10 +192,28 @@ export class ModelViewerControls {
           axisMoverSelected = true;
         }*/
 
+        const isObjectTransformControl = (intersection?: KotOR.THREE.Intersection) => {
+          if(!intersection) return false;
+          return (intersection.object as any).isTransformControls 
+            || (intersection.object as any).isTransformControlsGizmo 
+            || (intersection.object as any).isTransformControlsPlane
+        }
+
         //if(!axisMoverSelected){
-          let intersects = this.context.raycaster.intersectObjects( this.context.selectable.children, true );
+          const selectable = [...this.context.selectable.children];
+
+          if(this.context.transformControls.visible && this.context.transformControls.enabled){
+            const gizmo = (this.context.transformControls as any)._gizmo.picker[
+              this.context.transformControls.mode
+            ]
+            if(gizmo){
+              selectable.push(gizmo);
+            }
+          }
+
+          let intersects = this.context.raycaster.intersectObjects( selectable, true );
           if(intersects.length){
-            let intersection = intersects[ 0 ];
+            let intersection = intersects.shift();
             this.processEventListener('onSelect', intersection);
           }else{
             this.processEventListener('onSelect', undefined);

@@ -6,6 +6,12 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { UI3DRenderer } from "../../UI3DRenderer";
 import { TabWOKEditor } from "../../components/tabs/TabWOKEditor";
 
+export enum TabWOKEditorControlMode {
+  FACE = 0,
+  VERTEX = 1,
+  EDGE = 2,
+};
+
 export class TabWOKEditorState extends TabState {
   tabName: string = `WOK`;
 
@@ -21,6 +27,17 @@ export class TabWOKEditorState extends TabState {
   wireMaterial: KotOR.THREE.MeshBasicMaterial;
   wireframe: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.MeshBasicMaterial>;
   selectColor = new KotOR.THREE.Color(0x607D8B);
+
+  vertexHelperGeometry = new KotOR.THREE.BoxGeometry(1, 1, 1, 1, 1);
+  vertexHelpersGroup: KotOR.THREE.Group = new KotOR.THREE.Group();
+  vertexHelpers: KotOR.THREE.Mesh[] = [];
+  vertexHelperSize: number = 0.125;
+
+  controlMode: TabWOKEditorControlMode = TabWOKEditorControlMode.FACE;
+
+  selectedFaceIndex: number = -1;
+  selectedVertexIndex: number = -1;
+  selectedEdgeIndex: number = -1;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -43,19 +60,36 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
-
     
     this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: KotOR.THREE.Intersection) => {
       this.ui3DRenderer.selectionBox.visible = false;
 
-      if(intersect && intersect.face){
-        const f_idx = Math.floor(intersect.face.a / 3);
-        const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
-        this.selectFace(face);
-      }else{
-        this.resetFaceColors();
-        this.processEventListener('onFaceSelected');
-        this.faceHelperMaterial.visible = false;
+      switch(this.controlMode){
+        case TabWOKEditorControlMode.FACE:
+          if(intersect && intersect.face){
+            if(intersect.object == this.wok.mesh){
+              const f_idx = Math.floor(intersect.face.a / 3);
+              const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
+              this.selectFace(face);
+            }else{
+              this.selectFace(undefined);
+            }
+          }else{
+            this.selectFace(undefined);
+          }
+        break;
+        case TabWOKEditorControlMode.VERTEX:
+          if(intersect && intersect.object){
+            if(intersect.object != this.wok.mesh){
+              const helperIndex = this.vertexHelpersGroup.children.indexOf(intersect.object);
+              if(helperIndex >= 0) this.selectVertex(helperIndex);
+            }else{
+              this.selectVertex(-1);
+            }
+          }else{
+            this.selectVertex(-1);
+          }
+        break;
       }
     })
 
@@ -83,12 +117,19 @@ export class TabWOKEditorState extends TabState {
           this.wireMaterial = new KotOR.THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
           this.wireframe = new KotOR.THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.ui3DRenderer.unselectable.add(this.wireframe);
+          this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
+          this.buildVertexHelpers();
 
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.wok);
         });
       }
     });
+  }
+
+  setControlMode(mode: TabWOKEditorControlMode = 0) {
+    this.controlMode = mode;
+    this.processEventListener('onControlModeChange', [mode]);
   }
 
   updateCameraFocus(){
@@ -126,8 +167,86 @@ export class TabWOKEditorState extends TabState {
 
   animate(delta: number = 0){
 
+    this.vertexHelpersGroup.visible = false;
+    this.ui3DRenderer.transformControls.visible = false;
+    this.faceHelperMesh.visible = false;
+
+    switch(this.controlMode){
+      case TabWOKEditorControlMode.FACE:
+        this.selectVertex(-1);
+
+
+      break;
+      case TabWOKEditorControlMode.VERTEX:
+        this.selectFace(undefined);
+        this.vertexHelpersGroup.visible = true;
+
+        if(!this.ui3DRenderer.transformControls.object)
+          this.ui3DRenderer.transformControls.visible = false;
+        else
+          this.ui3DRenderer.transformControls.visible = true;
+
+        const selectedVertex = this.wok.vertices[this.selectedVertexIndex];
+        if(selectedVertex){
+          const selectedVertexHelper = this.vertexHelpers[this.selectedVertexIndex];
+          const vertexNeedsUpdate = (
+            !selectedVertexHelper.position.equals(selectedVertex)
+          )
+          if(vertexNeedsUpdate){
+            selectedVertex.copy(selectedVertexHelper.position);
+            for(let i = 0; i < this.wok.faces.length; i++){
+              const face = this.wok.faces[i];
+              if(face.a == this.selectedVertexIndex){
+                this.wok.geometry.attributes.position.setX( (i * 3) + 0, selectedVertex.x);
+                this.wok.geometry.attributes.position.setY( (i * 3) + 0, selectedVertex.y);
+                this.wok.geometry.attributes.position.setZ( (i * 3) + 0, selectedVertex.z);
+              }
+
+              if(face.b == this.selectedVertexIndex){
+                this.wok.geometry.attributes.position.setX( (i * 3) + 1, selectedVertex.x);
+                this.wok.geometry.attributes.position.setY( (i * 3) + 1, selectedVertex.y);
+                this.wok.geometry.attributes.position.setZ( (i * 3) + 1, selectedVertex.z);
+              }
+
+              if(face.c == this.selectedVertexIndex){
+                this.wok.geometry.attributes.position.setX( (i * 3) + 2, selectedVertex.x);
+                this.wok.geometry.attributes.position.setY( (i * 3) + 2, selectedVertex.y);
+                this.wok.geometry.attributes.position.setZ( (i * 3) + 2, selectedVertex.z);
+              }
+            }
+            this.wok.geometry.attributes.position.needsUpdate = true;
+          }
+
+        }
+
+      break;
+      case TabWOKEditorControlMode.EDGE:
+
+      break;
+    }
     
-    
+  }
+
+  buildVertexHelpers(){
+    while(this.vertexHelpers.length){
+      const helper = this.vertexHelpers.splice(this.alignVertexHelpers.length-1, 1)[0];
+      helper.removeFromParent();
+    }
+    for(let i = 0; i < this.wok.vertices.length; i++){
+      const helper = new KotOR.THREE.Mesh(this.vertexHelperGeometry, new KotOR.THREE.MeshBasicMaterial({color: 0x000000}));
+      this.vertexHelpers.push(helper);
+      this.vertexHelpersGroup.add(helper);
+    }
+    this.alignVertexHelpers();
+  }
+
+  alignVertexHelpers(){
+    for(let i = 0; i < this.wok.vertices.length; i++){
+      const vertex = this.wok.vertices[i];
+      const helper = this.vertexHelpers[i];
+      helper.position.copy(vertex);
+      helper.scale.setScalar(this.vertexHelperSize);
+    }
   }
 
   resetFaceColors(){
@@ -149,12 +268,12 @@ export class TabWOKEditorState extends TabState {
     this.wok.geometry.attributes.color.needsUpdate = true;
   }
 
-  selectFace(face: KotOR.OdysseyFace3){
-
-    // const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
+  selectFace(face?: KotOR.OdysseyFace3){
+    this.resetFaceColors();
+    this.selectedFaceIndex = -1;
     if(face){
-      this.resetFaceColors();
-      const index = this.wok.faces.indexOf(face) * 3;
+      this.selectedFaceIndex = this.wok.faces.indexOf(face);
+      const index = this.selectedFaceIndex * 3;
       this.wok.geometry.attributes.color.setX(index, this.selectColor.r);
       this.wok.geometry.attributes.color.setY(index, this.selectColor.g);
       this.wok.geometry.attributes.color.setZ(index, this.selectColor.b);
@@ -181,10 +300,26 @@ export class TabWOKEditorState extends TabState {
 
       this.faceHelperGeometry.attributes.position.needsUpdate = true;
       this.faceHelperGeometry.computeBoundingSphere();
-      this.faceHelperMaterial.visible = true;
+      this.faceHelperMaterial.visible = false;
       this.wok.geometry.attributes.color.needsUpdate = true;
+      this.ui3DRenderer.transformControls.detach();
+    }
+    this.processEventListener('onFaceSelected', [face]);
+  }
 
-      this.processEventListener('onFaceSelected', [face]);
+  selectVertex(index: number = -1){
+    this.selectedVertexIndex = index;
+    this.ui3DRenderer.transformControls.detach();
+    for(let i = 0; i < this.vertexHelpersGroup.children.length; i++){
+      const helper = this.vertexHelpersGroup.children[i] as KotOR.THREE.Mesh;
+      const material = helper.material as KotOR.THREE.MeshBasicMaterial;
+      if(i == index){
+        material.color.setHex(0xFFFFFF);
+        this.ui3DRenderer.transformControls.attach(helper);
+        this.ui3DRenderer.transformControls.size = 0.5;
+      }else{
+        material.color.setHex(0x000000);
+      }
     }
   }
 

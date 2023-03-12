@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { TabWOKEditorState } from "../../states/tabs";
+import { TabWOKEditorControlMode, TabWOKEditorState } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { UI3DRendererView } from "../UI3DRendererView";
 import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
@@ -8,6 +8,7 @@ import { LayoutContainer } from "../LayoutContainer";
 
 import * as KotOR from "../../KotOR";
 import { SectionContainer } from "../SectionContainer";
+import { Button, ButtonGroup } from "react-bootstrap";
 
 export const TabWOKEditor = function(props: BaseTabProps) {
   const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
@@ -43,15 +44,22 @@ const WOKSidebarComponent = function(props: any){
   const [walkmesh, setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
   const [selectedFace, setSelectedFace] = useState<KotOR.OdysseyFace3>();
   const [render, rerender] = useState<boolean>();
+  const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
 
   const onFaceSelected = (face: KotOR.OdysseyFace3) => {
     setSelectedFace(face);
   };
 
+  const onControlModeChange = () => {
+    setControlMode(tab.controlMode);
+  };
+
   useEffectOnce( () => { //constructor
     tab.addEventListener('onFaceSelected', onFaceSelected);
+    tab.addEventListener('onControlModeChange', onControlModeChange);
     return () => { //destructor
       tab.removeEventListener('onFaceSelected', onFaceSelected);
+      tab.removeEventListener('onControlModeChange', onControlModeChange);
     };
   });
 
@@ -62,6 +70,13 @@ const WOKSidebarComponent = function(props: any){
 
   return (
     <>
+      <SectionContainer name="Mode" slim={true}>
+        <ButtonGroup aria-label="Basic example">
+          <Button variant="secondary" active={controlMode == 0} onClick={(e) => tab.setControlMode(0)}>Face</Button>
+          <Button variant="secondary" active={controlMode == 1} onClick={(e) => tab.setControlMode(1)}>Vertex</Button>
+          <Button variant="secondary" active={controlMode == 2} onClick={(e) => tab.setControlMode(2)}>Edge</Button>
+        </ButtonGroup>
+      </SectionContainer>
       <SectionContainer name="Selected Face" slim={true}>
         <div>
           <b>Face Index:</b> {walkmesh?.faces.indexOf(selectedFace as any)}
