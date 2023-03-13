@@ -33,9 +33,36 @@ export const TabWOKEditor = function(props: BaseTabProps) {
     <LayoutContainerProvider>
       <LayoutContainer eastContent={eastPanel}>
         <UI3DRendererView context={tab.ui3DRenderer} />
+        <UI3DToolPalette tab={tab} />
       </LayoutContainer>
     </LayoutContainerProvider>
   )
+}
+
+const UI3DToolPalette = function(props: any){
+  const tab = props.tab as TabWOKEditorState;
+  const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
+
+  const onControlModeChange = () => {
+    setControlMode(tab.controlMode);
+  };
+
+  useEffectOnce( () => {
+    tab.addEventListener('onControlModeChange', onControlModeChange);
+    return () => {
+      tab.removeEventListener('onControlModeChange', onControlModeChange);
+    };
+  });
+
+  return (
+    <div className="UI3DToolPalette">
+      <ul>
+        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}><a title="Face Mode"><i className="fa-solid fa-cube"></i></a></li>
+        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}><a title="Vertex Mode"><i className="fa-solid fa-vector-square"></i></a></li>
+        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(2)}><a title="Edge Mode"><i className="fa-solid fa-circle-nodes"></i></a></li>
+      </ul>
+    </div>
+  );
 }
 
 const WOKSidebarComponent = function(props: any){
