@@ -77,7 +77,7 @@ export class UI3DRenderer {
     this.renderer.autoClear = false;
     this.renderer.setSize( this.args.width, this.args.height );
 
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
 		this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
     this.depthTarget.texture.generateMipmaps = false;
     this.depthTarget.stencilBuffer = false;

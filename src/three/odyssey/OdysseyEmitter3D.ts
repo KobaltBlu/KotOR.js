@@ -823,7 +823,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           if(!this.geometry.attributes.props){
             age = 0;
           }else{
-            age = (this.geometry.attributes.props.getX( 0 ) || 0) + delta;
+            age = ((this.geometry.attributes.props as THREE.BufferAttribute).getX( 0 ) || 0) + delta;
           }
 
           if(age >= 1)
@@ -869,7 +869,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           if(!this.geometry.attributes.props){
             age = 0;
           }else{
-            age = (this.geometry.attributes.props.getX( 0 ) || 0) + delta;
+            age = ((this.geometry.attributes.props as THREE.BufferAttribute).getX( 0 ) || 0) + delta;
           }
 
           if(age >= 1)
@@ -1026,7 +1026,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     //
 
     let index = this.geometry.getIndex();
-    let positions = this.geometry.getAttribute( 'position' ).array;
+    let positions = (this.geometry.getAttribute( 'position' ) as THREE.BufferAttribute).array;
     let length = positions.length / 3;
     if ( index === null ) {
       let array = new Uint16Array( length );

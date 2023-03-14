@@ -7,7 +7,10 @@ import { EventListenerModel } from "./EventListenerModel";
 import * as KotOR from "./KotOR";
 import { ModelViewerControls } from "./ModelViewerControls";
 import { SceneGraphNode } from "./SceneGraphNode";
+import { FlyControls } from 'three/examples/jsm/controls/FlyControls.js';
+import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 
 /* @file
  * The UI3DRenderer class.
@@ -67,7 +70,9 @@ export class UI3DRenderer extends EventListenerModel {
   odysseyModels: KotOR.OdysseyModel3D[] = [];
   selectionBox = new KotOR.THREE.BoxHelper(new KotOR.THREE.Object3D(), 0xffffff);
 
+  flyControls: FirstPersonControls;
   transformControls: TransformControls;
+  viewHelper: ViewHelper;
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -105,6 +110,8 @@ export class UI3DRenderer extends EventListenerModel {
     })
     this.selectionBox.visible = false;
     this.buildTransformControls();
+    this.buildViewHelper();
+    this.buildFlyControls();
 
   }
 
@@ -121,6 +128,20 @@ export class UI3DRenderer extends EventListenerModel {
       this.transformControls.traverse( (obj) => {
         this.transformControls.userData.uuids.push(obj.uuid);
       });
+    }
+  }
+
+  buildFlyControls() {
+    // if(this.flyControls) this.flyControls.dispose();
+    // if(this.canvas){
+    //   this.flyControls = new FirstPersonControls(this.currentCamera as any, this.canvas);
+    // }
+  }
+
+  buildViewHelper() {
+    if(this.viewHelper) this.viewHelper.dispose();
+    if(this.canvas){
+      this.viewHelper = new ViewHelper(this.currentCamera as any, this.canvas);
     }
   }
 
@@ -185,6 +206,8 @@ export class UI3DRenderer extends EventListenerModel {
     }
     if(this.canvas){
       this.buildTransformControls();
+      this.buildViewHelper();
+      this.buildFlyControls();
       if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
       this.controls.attachCanvasElement(this.canvas);
@@ -248,7 +271,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   private buildDepthTarget(){
     if(this.depthTarget) this.depthTarget.dispose();
-    const pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBFormat };
+    const pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBAFormat };
 		this.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
     this.depthTarget.texture.generateMipmaps = false;
     this.depthTarget.stencilBuffer = false;
@@ -309,6 +332,14 @@ export class UI3DRenderer extends EventListenerModel {
       this.time += delta;
       this.deltaTime += delta;
 
+      // if(this.controlsEnabled && this.flyControls){
+      //   this.flyControls.update(delta);
+      // }
+
+      if(this.viewHelper && this.viewHelper.animating === true ) {
+        this.viewHelper.update(delta);
+      }
+
       if(this.controlsEnabled){
         this.controls.update(delta);
       }
@@ -324,6 +355,10 @@ export class UI3DRenderer extends EventListenerModel {
       } 
 
       this.renderer.render( this.scene, this.currentCamera );
+
+      if(this.viewHelper){
+        this.viewHelper.render(this.renderer);
+      }
 
       //Custom render logic can run here
       this.processEventListener('onAfterRender', [delta]);

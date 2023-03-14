@@ -1283,11 +1283,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
             mesh.updateMatrix(); // as needed
 
             //apply matrix to positions
-            geometry.getAttribute('position').applyMatrix4( mesh.matrix );
+            (geometry.getAttribute('position') as THREE.BufferAttribute).applyMatrix4( mesh.matrix );
 
             //apply matrix to normals
             let normalMatrix = new THREE.Matrix3().getNormalMatrix( mesh.matrix );
-            geometry.getAttribute('normal').applyNormalMatrix( normalMatrix );
+            (geometry.getAttribute('normal') as THREE.BufferAttribute).applyNormalMatrix( normalMatrix );
             geometry.normalizeNormals();
 
             if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){

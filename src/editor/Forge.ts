@@ -54,7 +54,7 @@ export class Forge {
           // ScriptEditorTab.InitNWScriptLanguage();
         // });
 
-        let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+        let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
         GameState.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
         GameState.depthTarget.texture.generateMipmaps = false;
         GameState.depthTarget.stencilBuffer = false;

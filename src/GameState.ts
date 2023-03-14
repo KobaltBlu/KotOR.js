@@ -317,7 +317,7 @@ export class GameState implements EngineContext {
     GameState.renderer.setSize( window.innerWidth, window.innerHeight );
     GameState.renderer.setClearColor(0x000000);
 
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
 		GameState.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
@@ -480,8 +480,8 @@ export class GameState implements EngineContext {
       focus: 1.0,
       aperture:	0.0001,
       maxblur:	1.0,
-      width: window.innerWidth,
-      height: window.innerHeight
+      // width: window.innerWidth,
+      // height: window.innerHeight
     });
 
     GameState.renderPassAA.sampleLevel = 1;

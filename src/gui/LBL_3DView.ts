@@ -35,7 +35,7 @@ export class LBL_3DView {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 22.5, this.width/this.height, 0.1, 15000 );
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
-		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat } );
+		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
     this.clearColor = new THREE.Color(0x000000);
 
     this.currentCamera = this.camera;

@@ -119,6 +119,7 @@ export class TabWOKEditorState extends TabState {
           this.ui3DRenderer.unselectable.add(this.wireframe);
           this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
           this.buildVertexHelpers();
+          this.recenterCamera();
 
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.wok);
@@ -149,6 +150,14 @@ export class TabWOKEditorState extends TabState {
     // this.ui3DRenderer.camera.position.z = 0;
     // this.ui3DRenderer.camera.position.y = size.x + size.y;
     // this.ui3DRenderer.camera.lookAt(origin)
+  }
+
+  recenterCamera(){
+    const lookAt = this.wok.vertices.reduce( (acc, value) => {
+      return acc.add(value)
+    }, new KotOR.THREE.Vector3);
+    lookAt.divideScalar(this.wok.vertices.length);
+    // this.ui3DRenderer.controls.lookAt(lookAt);
   }
 
   show(): void {
@@ -193,28 +202,29 @@ export class TabWOKEditorState extends TabState {
             !selectedVertexHelper.position.equals(selectedVertex)
           )
           if(vertexNeedsUpdate){
+            const position = this.wok.geometry.attributes.position as KotOR.THREE.BufferAttribute;
             selectedVertex.copy(selectedVertexHelper.position);
             for(let i = 0; i < this.wok.faces.length; i++){
               const face = this.wok.faces[i];
               if(face.a == this.selectedVertexIndex){
-                this.wok.geometry.attributes.position.setX( (i * 3) + 0, selectedVertex.x);
-                this.wok.geometry.attributes.position.setY( (i * 3) + 0, selectedVertex.y);
-                this.wok.geometry.attributes.position.setZ( (i * 3) + 0, selectedVertex.z);
+                position.setX( (i * 3) + 0, selectedVertex.x);
+                position.setY( (i * 3) + 0, selectedVertex.y);
+                position.setZ( (i * 3) + 0, selectedVertex.z);
               }
 
               if(face.b == this.selectedVertexIndex){
-                this.wok.geometry.attributes.position.setX( (i * 3) + 1, selectedVertex.x);
-                this.wok.geometry.attributes.position.setY( (i * 3) + 1, selectedVertex.y);
-                this.wok.geometry.attributes.position.setZ( (i * 3) + 1, selectedVertex.z);
+                position.setX( (i * 3) + 1, selectedVertex.x);
+                position.setY( (i * 3) + 1, selectedVertex.y);
+                position.setZ( (i * 3) + 1, selectedVertex.z);
               }
 
               if(face.c == this.selectedVertexIndex){
-                this.wok.geometry.attributes.position.setX( (i * 3) + 2, selectedVertex.x);
-                this.wok.geometry.attributes.position.setY( (i * 3) + 2, selectedVertex.y);
-                this.wok.geometry.attributes.position.setZ( (i * 3) + 2, selectedVertex.z);
+                position.setX( (i * 3) + 2, selectedVertex.x);
+                position.setY( (i * 3) + 2, selectedVertex.y);
+                position.setZ( (i * 3) + 2, selectedVertex.z);
               }
             }
-            this.wok.geometry.attributes.position.needsUpdate = true;
+            position.needsUpdate = true;
           }
 
         }
@@ -250,58 +260,62 @@ export class TabWOKEditorState extends TabState {
   }
 
   resetFaceColors(){
+    const color = this.wok.geometry.attributes.color as KotOR.THREE.BufferAttribute;
     for(let i = 0; i < this.wok.faces.length; i++){
       const face = this.wok.faces[i];
       const index = i * 3;
-      this.wok.geometry.attributes.color.setX(index, face.color.r);
-      this.wok.geometry.attributes.color.setY(index, face.color.g);
-      this.wok.geometry.attributes.color.setZ(index, face.color.b);
+      color.setX(index, face.color.r);
+      color.setY(index, face.color.g);
+      color.setZ(index, face.color.b);
       
-      this.wok.geometry.attributes.color.setX(index + 1, face.color.r);
-      this.wok.geometry.attributes.color.setY(index + 1, face.color.g);
-      this.wok.geometry.attributes.color.setZ(index + 1, face.color.b);
+      color.setX(index + 1, face.color.r);
+      color.setY(index + 1, face.color.g);
+      color.setZ(index + 1, face.color.b);
       
-      this.wok.geometry.attributes.color.setX(index + 2, face.color.r);
-      this.wok.geometry.attributes.color.setY(index + 2, face.color.g);
-      this.wok.geometry.attributes.color.setZ(index + 2, face.color.b);
+      color.setX(index + 2, face.color.r);
+      color.setY(index + 2, face.color.g);
+      color.setZ(index + 2, face.color.b);
     }
-    this.wok.geometry.attributes.color.needsUpdate = true;
+    color.needsUpdate = true;
   }
 
   selectFace(face?: KotOR.OdysseyFace3){
     this.resetFaceColors();
     this.selectedFaceIndex = -1;
     if(face){
+      const position = this.wok.geometry.attributes.position as KotOR.THREE.BufferAttribute;
+      const h_position = this.faceHelperGeometry.attributes.position as KotOR.THREE.BufferAttribute;
+      const color = this.wok.geometry.attributes.color as KotOR.THREE.BufferAttribute;
       this.selectedFaceIndex = this.wok.faces.indexOf(face);
       const index = this.selectedFaceIndex * 3;
-      this.wok.geometry.attributes.color.setX(index, this.selectColor.r);
-      this.wok.geometry.attributes.color.setY(index, this.selectColor.g);
-      this.wok.geometry.attributes.color.setZ(index, this.selectColor.b);
+      color.setX(index, this.selectColor.r);
+      color.setY(index, this.selectColor.g);
+      color.setZ(index, this.selectColor.b);
       
-      this.wok.geometry.attributes.color.setX(index + 1, this.selectColor.r);
-      this.wok.geometry.attributes.color.setY(index + 1, this.selectColor.g);
-      this.wok.geometry.attributes.color.setZ(index + 1, this.selectColor.b);
+      color.setX(index + 1, this.selectColor.r);
+      color.setY(index + 1, this.selectColor.g);
+      color.setZ(index + 1, this.selectColor.b);
       
-      this.wok.geometry.attributes.color.setX(index + 2, this.selectColor.r);
-      this.wok.geometry.attributes.color.setY(index + 2, this.selectColor.g);
-      this.wok.geometry.attributes.color.setZ(index + 2, this.selectColor.b);
+      color.setX(index + 2, this.selectColor.r);
+      color.setY(index + 2, this.selectColor.g);
+      color.setZ(index + 2, this.selectColor.b);
 
-      this.faceHelperGeometry.attributes.position.setX(0, this.wok.geometry.attributes.position.getX(index) );
-      this.faceHelperGeometry.attributes.position.setY(0, this.wok.geometry.attributes.position.getY(index) );
-      this.faceHelperGeometry.attributes.position.setZ(0, this.wok.geometry.attributes.position.getZ(index) );
+      h_position.setX(0, position.getX(index) );
+      h_position.setY(0, position.getY(index) );
+      h_position.setZ(0, position.getZ(index) );
 
-      this.faceHelperGeometry.attributes.position.setX(1, this.wok.geometry.attributes.position.getX(index + 1) );
-      this.faceHelperGeometry.attributes.position.setY(1, this.wok.geometry.attributes.position.getY(index + 1) );
-      this.faceHelperGeometry.attributes.position.setZ(1, this.wok.geometry.attributes.position.getZ(index + 1) );
+      h_position.setX(1, position.getX(index + 1) );
+      h_position.setY(1, position.getY(index + 1) );
+      h_position.setZ(1, position.getZ(index + 1) );
 
-      this.faceHelperGeometry.attributes.position.setX(2, this.wok.geometry.attributes.position.getX(index + 2) );
-      this.faceHelperGeometry.attributes.position.setY(2, this.wok.geometry.attributes.position.getY(index + 2) );
-      this.faceHelperGeometry.attributes.position.setZ(2, this.wok.geometry.attributes.position.getZ(index + 2) );
+      h_position.setX(2, position.getX(index + 2) );
+      h_position.setY(2, position.getY(index + 2) );
+      h_position.setZ(2, position.getZ(index + 2) );
 
-      this.faceHelperGeometry.attributes.position.needsUpdate = true;
+      h_position.needsUpdate = true;
       this.faceHelperGeometry.computeBoundingSphere();
       this.faceHelperMaterial.visible = false;
-      this.wok.geometry.attributes.color.needsUpdate = true;
+      color.needsUpdate = true;
       this.ui3DRenderer.transformControls.detach();
     }
     this.processEventListener('onFaceSelected', [face]);
