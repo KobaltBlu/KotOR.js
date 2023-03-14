@@ -15,6 +15,7 @@ export class WalkmeshEdge {
   vertex_1: number = -1;
   vertex_2: number = -1;
   index: number = -1;
+  exportable: boolean = true;
 
   constructor(transition = -1){
     this.transition = transition;

@@ -402,7 +402,9 @@ export class OdysseyWalkMesh {
       edge.setSide(index);
       edge.setFace(face);
       edge.update();
-      // this.edges[Object.keys(this.edges).length] = edge;
+      edge.exportable = false;
+      const f_idx = this.faces.indexOf(face);
+      this.edges.set(f_idx + index, edge);
     }
   }
 
@@ -786,7 +788,7 @@ export class OdysseyWalkMesh {
     const adjacent_size   = 12 * this.walkableFaces.length;
 
     const edge_offset = adjacent_offset + adjacent_size;
-    const edge_size   = 8 * this.edges.size;
+    const edge_size   = 8 * perimeters.reduce( (acc, perimeter) => acc + perimeter.edges.length, 0);
 
     const perimeter_offset  = edge_offset + edge_size;
     const perimeter_size    = 4 * perimeters.length;
