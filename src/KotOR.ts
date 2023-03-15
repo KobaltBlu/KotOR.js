@@ -66,8 +66,8 @@ export * from "./resource/ResourceTypeInfo";
 
 export * from "./enums/odyssey/OdysseyWalkMeshType";
 export * from "./interface/odyssey/OdysseyModelAABBNode";
-export * from "./interface/odyssey/OdysseyModelControllerType";
-export * from "./interface/odyssey/OdysseyModelNodeType";
+export * from "./enums/odyssey/OdysseyModelControllerType";
+export * from "./enums/odyssey/OdysseyModelNodeType";
 export * from "./odyssey/controllers/OdysseyController"
 
 export * from "./interface/loaders/TextureLoaderQueuedRef";

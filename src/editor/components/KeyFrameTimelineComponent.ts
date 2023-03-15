@@ -3,7 +3,7 @@ import { Component } from ".";
 import { OdysseyModelAnimation, OdysseyModelAnimationNode } from "../../odyssey";
 import { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
 export class KeyFrameTimelineComponent extends Component {
   declare tab: ModelViewerTab;

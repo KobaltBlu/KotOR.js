@@ -124,7 +124,8 @@ export class TabModelViewerState extends TabState {
           this.odysseyModel = new KotOR.OdysseyModel(new BinaryReader(response.buffer), new BinaryReader(response.buffer2 as Buffer));
           KotOR.OdysseyModel3D.FromMDL(this.odysseyModel, {
             manageLighting: false,
-            context: this.ui3DRenderer, 
+            context: this.ui3DRenderer,
+            editorMode: true, 
             onComplete: (model: KotOR.OdysseyModel3D) => {
               this.model = model;
               this.processEventListener('onEditorFileLoad', [this]);

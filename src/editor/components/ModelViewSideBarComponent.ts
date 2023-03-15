@@ -9,7 +9,7 @@ import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
 import * as path from "path";
 import { OdysseyModel3D } from "../../three/odyssey";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { TextureLoaderQueuedRef } from "../../interface/loaders/TextureLoaderQueuedRef";
 import { OdysseyModelAnimation } from "../../odyssey";
 import { KEYManager } from "../../managers/KEYManager";
@@ -469,38 +469,38 @@ export class ModelViewSideBarComponent extends Component {
         nodeList: []
       };
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header){
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header){
         modelNode.icon = 'fa-regular fa-square';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
         modelNode.icon = 'fa-solid fa-circle-nodes';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
         modelNode.icon = 'fa-solid fa-lightbulb';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
         modelNode.icon = 'fa-solid fa-vector-square';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
         modelNode.icon = 'fa-solid fa-shirt';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
         modelNode.icon = 'fa-solid fa-person-walking-dashed-line-arrow-right';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
         modelNode.icon = 'fa-solid fa-flag';
       }
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
         modelNode.icon = 'fa-solid fa-wand-magic';
       }
 
-      if ((node.odysseyModelNode.NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
+      if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
         modelNode.icon = 'fa-solid fa-burst';
       }
 

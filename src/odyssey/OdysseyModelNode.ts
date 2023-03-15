@@ -2,8 +2,8 @@
  */
 
 import * as THREE from "three";
-import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModel, OdysseyModelAnimationNode } from "./";
 import { OdysseyController } from "./controllers";
 
@@ -14,17 +14,17 @@ import { OdysseyController } from "./controllers";
 export class OdysseyModelNode {
   parent: OdysseyModelNode;
   type: OdysseyModelNodeType;
-  NodeType: OdysseyModelNodeType;
+  nodeType: OdysseyModelNodeType;
   odysseyModel: OdysseyModel;
-  childNodes: OdysseyModelNode[] = [];
+  children: OdysseyModelNode[] = [];
   childOffsets: number[] = [];
   controllers: Map<OdysseyModelControllerType, OdysseyController> = new Map();
 
   roomStatic: boolean = true;
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   quaternion: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
-  Supernode: number;
-  NodePosition: number;
+  supernode: number;
+  nodePosition: number;
   name: string;
 
   constructor(parent: OdysseyModelNode){
@@ -37,12 +37,12 @@ export class OdysseyModelNode {
   }
 
   setType(type: OdysseyModelNodeType){
-    this.NodeType = type;
+    this.nodeType = type;
     this.type = type;
   }
 
   add(node: OdysseyModelNode){
-    this.childNodes.push(node);
+    this.children.push(node);
   }
 
   addController(controller: OdysseyController){
@@ -56,25 +56,25 @@ export class OdysseyModelNode {
   readBinary(odysseyModel: OdysseyModel){
     this.odysseyModel = odysseyModel;
 
-    this.NodeType = this.odysseyModel.mdlReader.readUInt16();  
+    this.nodeType = this.odysseyModel.mdlReader.readUInt16();  
 
-    this.Supernode = this.odysseyModel.mdlReader.readUInt16();
-    this.NodePosition = this.odysseyModel.mdlReader.readUInt16();
+    this.supernode = this.odysseyModel.mdlReader.readUInt16();
+    this.nodePosition = this.odysseyModel.mdlReader.readUInt16();
 
-    if (this.NodePosition < this.odysseyModel.names.length){
-      this.name = this.odysseyModel.names[this.NodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
+    if (this.nodePosition < this.odysseyModel.names.length){
+      this.name = this.odysseyModel.names[this.nodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
     }else{
       this.name = '';
     }
 
-    if(!this.odysseyModel.nodes[this.name])
-      this.odysseyModel.nodes[this.name] = this;
+    if(!this.odysseyModel.nodes.has(this.name))
+      this.odysseyModel.nodes.set(this.name, this);
 
     //Non static objects in room meshes are children of the node that is the name of the model plus a
     //like: MODELNAMEa or m02ac_02ba
 
     if(this.parent){
-      if(this.name == (this.odysseyModel.geometryHeader.ModelName.trim()+'a').toLowerCase()){
+      if(this.name == (this.odysseyModel.geometryHeader.modelName.trim()+'a').toLowerCase()){
         this.roomStatic = false;
       }else{
         this.roomStatic = this.parent.roomStatic;
@@ -96,15 +96,15 @@ export class OdysseyModelNode {
 
     //Node Children
     let _childDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.childOffsets = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.ModelDataOffset + _childDef.offset, _childDef.count);
+    this.childOffsets = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _childDef.offset, _childDef.count);
 
     //Node Controllers
     let _contKeyDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
     let _contDataDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    let controllerData = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.ModelDataOffset + _contDataDef.offset, _contDataDef.count);
-    let controllerData2 = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.ModelDataOffset + _contDataDef.offset, _contDataDef.count);
+    let controllerData = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _contDataDef.offset, _contDataDef.count);
+    let controllerData2 = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _contDataDef.offset, _contDataDef.count);
 
-    this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.ModelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData, controllerData2);
+    this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData, controllerData2);
 
   }
 
@@ -129,11 +129,9 @@ export class OdysseyModelNode {
       
       let tmpQuat = new THREE.Quaternion();
 
-      let NodeType = this.NodeType;
-      if(this.odysseyModel.nodes[this.name]){
-        controller.nodeType = NodeType = this.odysseyModel.nodes[this.name].NodeType;
+      if(this.odysseyModel.nodes.has(this.name)){
+        controller.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
       }
-      //console.log(this.name, controller.nodeType, this.odysseyModel.nodes);
     
       if(controller.frameCount != -1){
 
@@ -297,7 +295,7 @@ export class OdysseyModelNode {
           }
 
           //Mesh Controllers
-          if ((NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
+          if ((this.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
             switch(controller.type){
               case OdysseyModelControllerType.Alpha:
                 for (let r = 0; r < controller.frameCount; r++) {
@@ -324,7 +322,7 @@ export class OdysseyModelNode {
           }
 
           //Light Controllers
-          if ((NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+          if ((this.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
             switch(controller.type){
               case OdysseyModelControllerType.Color:
                 for (let r = 0; r < controller.frameCount; r++) {
@@ -351,7 +349,7 @@ export class OdysseyModelNode {
           }
 
           //Emitter Controllers
-          if ((NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
+          if ((this.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
             switch(controller.type){
               //case OdysseyModelControllerType.P2P_Bezier3:
               case OdysseyModelControllerType.ColorStart:

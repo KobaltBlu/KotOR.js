@@ -4,7 +4,7 @@ import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
 import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
 import { OdysseyController } from "./controllers";
 import { OdysseyControllerFrameGeneric } from "../interface/odyssey/controller/OdysseyControllerFrameGeneric";
-import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 
 export class OdysseyModelAnimationManager {
   model: OdysseyModel3D;
@@ -134,7 +134,7 @@ export class OdysseyModelAnimationManager {
       for(let i = 0, nl = anim.nodes.length; i < nl; i++){
         let node = anim.nodes[i];
         if(this.trans){
-          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.NodePosition == node.NodePosition ), this.lastAnimationState, false);
+          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodePosition == node.nodePosition ), this.lastAnimationState, false);
         }
         this.updateAnimationNode(anim, node, state, this.trans);
       }

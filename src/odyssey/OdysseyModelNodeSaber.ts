@@ -2,8 +2,8 @@
  */
 
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelNodeMesh } from ".";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
 /* @file
  * The OdysseyModelNodeSaber
@@ -16,7 +16,7 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
   invCount1: number;
   invCount2: number;
 
-  constructor(parent: OdysseyModelNodeMesh){
+  constructor(parent: OdysseyModelNode){
     super(parent);
     this.type |= OdysseyModelNodeType.Saber;
   }
@@ -43,15 +43,15 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
 
     for(let i = 0; i < 176; i++){
       //SABER Vertices
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberVerts + (vertexDataSize * i);
+      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberVerts + (vertexDataSize * i);
       this.vertices.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
 
       //SABER Normals
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
+      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
       this.normals.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
 
       //SABER UVs
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
+      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
       this.tvectors[0].push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
       // this.tvectors[1][i] = this.tvectors[0][i];
     }

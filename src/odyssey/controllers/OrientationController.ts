@@ -2,7 +2,7 @@ import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 
 export class OrientationController extends OdysseyController {

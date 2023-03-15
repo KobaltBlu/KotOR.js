@@ -7,7 +7,7 @@ import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "./ResourceTypes";
-import { OdysseyModelControllerType } from "../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -202,7 +202,7 @@ export class LIPObject {
                 switch(controller.type){
                   case OdysseyModelControllerType.Position:
                     if(modelNode.controllers.get(OdysseyModelControllerType.Position)){
-                      this.anim._position.copy(modelNode.controllers.get(OdysseyModelControllerType.Position).data[0]);
+                      this.anim._position.copy(modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
                     }
                     modelNode.position.copy(last_frame).add(this.anim._position);
                     modelNode.position.lerp(this.anim._position.add(next_frame), fl);

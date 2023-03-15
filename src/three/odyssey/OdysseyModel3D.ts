@@ -13,13 +13,14 @@ import { LightManager } from "../../managers/LightManager";
 import { PartyManager } from "../../managers/PartyManager";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { TextureType } from "../../enums/loaders/TextureType";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
-import { OdysseyModelMDXFlag } from "../../interface/odyssey/OdysseyModelMDXFlag";
-import { OdysseyModelClass } from "../../interface/odyssey/OdysseyModelClass";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelMDXFlag } from "../../enums/odyssey/OdysseyModelMDXFlag";
+import { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
 import { ShaderManager } from "../../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { OdysseyController } from "../../odyssey/controllers";
+import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -42,6 +43,7 @@ export interface OdysseyModelLoaderOptions {
   isHologram?: boolean,
   context?: any,
   onComplete?: Function,
+  editorMode?: boolean,
 }
 
 //THREE.js representation of OdysseyModel
@@ -119,7 +121,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   moduleObject: any = undefined;
   bonesInitialized = false;
   Scale: number;
-  modelHeader: any = {};
+  modelHeader: OdysseyModelHeader = {} as OdysseyModelHeader;
   affectedByFog: boolean;
   options: any = {};
   oldAnim: OdysseyModelAnimation;
@@ -225,7 +227,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
 
       if((object as any).emitter){
-        if(this.modelHeader.Classification == 1){
+        if(this.modelHeader.classification == 1){
           if((object as any).emitter.group){
             (object as any).emitter.group.dispose();
           }
@@ -610,7 +612,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
           break;
           case OdysseyModelControllerType.Color:
-            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+            if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).color.setRGB(
                 data.x, 
                 data.y, 
@@ -619,12 +621,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
           break;
           case OdysseyModelControllerType.Multiplier:
-            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+            if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
             }
           break;
           case OdysseyModelControllerType.Radius:
-            if ((modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+            if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).radius = data.value;
             }
           break;
@@ -772,7 +774,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       // Supermodel: Animations Merge - End
       //------------------------------------//
 
-      let superModelName = supermodel.modelHeader.SuperModelName;
+      let superModelName = supermodel.modelHeader.superModelName;
       if(superModelName != 'null' && superModelName.indexOf("NULL") == -1 && superModelName != ''){
         return OdysseyModel3D.SuperModelLoader( superModelName.toLowerCase(), odysseyModel ); 
       }
@@ -801,7 +803,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
         let odysseyModel = new OdysseyModel3D();
         odysseyModel.context = options.context;
-        odysseyModel.name = model.geometryHeader.ModelName.toLowerCase().trim();
+        odysseyModel.name = model.geometryHeader.modelName.toLowerCase().trim();
         odysseyModel.options = options;
         odysseyModel.odysseyAnimations = [];//model.animations.slice();
         if(!(odysseyModel.odysseyAnimations instanceof Array)){
@@ -814,7 +816,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         odysseyModel.Scale = 1;
         odysseyModel.names = model.names;
         odysseyModel.modelHeader = model.modelHeader;
-        odysseyModel.affectedByFog = model.modelHeader.Fogged ? true : false;
+        odysseyModel.affectedByFog = model.modelHeader.fogged ? true : false;
 
         if(options.mergeStatic){
           odysseyModel.mergedGeometries = [];
@@ -875,17 +877,17 @@ export class OdysseyModel3D extends OdysseyObject3D {
         
         odysseyModel.buildSkeleton();
 
-        if(model.modelHeader.SuperModelName.indexOf("NULL") == -1 && model.modelHeader.SuperModelName != ''){
-          await OdysseyModel3D.SuperModelLoader(model.modelHeader.SuperModelName.toLowerCase(), odysseyModel);
+        if(model.modelHeader.superModelName.indexOf("NULL") == -1 && model.modelHeader.superModelName != ''){
+          await OdysseyModel3D.SuperModelLoader(model.modelHeader.superModelName.toLowerCase(), odysseyModel);
         }
 
         odysseyModel.box.setFromArray([
-          model.modelHeader.BoundingMinX,
-          model.modelHeader.BoundingMinY,
-          model.modelHeader.BoundingMinZ,
-          model.modelHeader.BoundingMaxX,
-          model.modelHeader.BoundingMaxY,
-          model.modelHeader.BoundingMaxZ,
+          model.modelHeader.boundingMinX,
+          model.modelHeader.boundingMinY,
+          model.modelHeader.boundingMinZ,
+          model.modelHeader.boundingMaxX,
+          model.modelHeader.boundingMaxY,
+          model.modelHeader.boundingMaxZ,
         ]);
 
         if(typeof _options.onComplete === 'function') _options.onComplete(odysseyModel);
@@ -907,9 +909,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     let node = new OdysseyObject3D(odysseyNode);
-    node.NodeType = odysseyNode.NodeType;
+    node.NodeType = odysseyNode.nodeType;
 
-    if((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB){
+    if((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB){
       odysseyModel.aabb = odysseyNode;
     }
 
@@ -947,18 +949,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
     //-----------//
     // MESH NODE
     //-----------//
-    if ((odysseyNode.NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh && odysseyNode instanceof OdysseyModelNodeMesh) {
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh && odysseyNode instanceof OdysseyModelNodeMesh) {
       OdysseyModel3D.NodeMeshBuilder(odysseyModel, node, odysseyNode, options);  
     }
 
     //------------//
     // LIGHT NODE
     //------------//
-    if ((odysseyNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode instanceof OdysseyModelNodeLight) {
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode instanceof OdysseyModelNodeLight) {
       OdysseyModel3D.NodeLightBuilder(odysseyModel, node, odysseyNode, options);      
     }
 
-    if ((odysseyNode.NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode instanceof OdysseyModelNodeEmitter) {
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode instanceof OdysseyModelNodeEmitter) {
       let emitter = new OdysseyEmitter3D(odysseyNode);
       emitter.context = odysseyModel.context;
       emitter.name = odysseyNode.name + '_em'
@@ -967,7 +969,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       odysseyModel.emitters.push(emitter);
     }
 
-    if((odysseyNode.NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
+    if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
       //console.log('OdysseyModel', 'Reference Node', options.parent);
       if(parentNode.parent instanceof OdysseyEmitter3D)
         parentNode.parent.emitter.referenceNode = node;
@@ -1068,8 +1070,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
     //node.matrixInverse.getInverse( node.matrix.clone() );
 
     if(options.parseChildren){
-      for(let i = 0; i < odysseyNode.childNodes.length; i++){
-        OdysseyModel3D.NodeParser(odysseyModel, node, odysseyNode.childNodes[i], options);
+      for(let i = 0; i < odysseyNode.children.length; i++){
+        OdysseyModel3D.NodeParser(odysseyModel, node, odysseyNode.children[i], options);
       }
     }
 
@@ -1077,7 +1079,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   };
 
-  static NodeMeshBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh|OdysseyModelNodeDangly|OdysseyModelNodeSkin|OdysseyModelNodeAABB|OdysseyModelNodeSaber, options: OdysseyModelLoaderOptions){
+  static NodeMeshBuilder(
+    odysseyModel: OdysseyModel3D, 
+    parentNode: THREE.Object3D, 
+    odysseyNode: OdysseyModelNodeMesh|OdysseyModelNodeDangly|OdysseyModelNodeSkin|OdysseyModelNodeAABB|OdysseyModelNodeSaber, 
+    options: OdysseyModelLoaderOptions
+  ){
     try{
       //Create geometry only if the mesh is visible or it is a walkmesh
 
@@ -1087,7 +1094,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         //Optimization: Only create a mesh if it is actually rendered. Ignore this for placeable models
         //This breaks shadows because the original game uses the bones of the model to cast shadows. 
         //This can possibly be remedied by setting skin meshes to cast shadows.
-        if(odysseyNode.FlagRender || (odysseyModel.modelHeader.Classification == OdysseyModelClass.PLACEABLE)){
+        if( ( odysseyNode.flagRender || options.editorMode ) || (odysseyModel.modelHeader.classification == OdysseyModelClass.PLACEABLE)){
 
           //-------------------------//
           // BEGIN: GEOMETRY BUILDER
@@ -1098,7 +1105,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //-------------------//
           // BUFFERED GEOMETRY
           //-------------------//
-          if ((odysseyNode.NodeType & OdysseyModelNodeType.AABB) != OdysseyModelNodeType.AABB) {
+          if ((odysseyNode.nodeType & OdysseyModelNodeType.AABB) != OdysseyModelNodeType.AABB) {
 
             geometry = new THREE.BufferGeometry();
             geometry.setIndex(odysseyNode.indices); //Works with indices
@@ -1125,7 +1132,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             //--------------------------//
             // SKIN GEOMETRY ATTRIBUTES
             //--------------------------//
-            if((odysseyNode.NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin){
+            if((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin){
               //Skin Index
               // const boneIdx = Float32Array.from((odysseyNode as OdysseyModelNodeSkin).boneIdx);
               geometry.setAttribute( 'skinIndex', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeSkin).boneIdx, 4 ) )
@@ -1138,14 +1145,14 @@ export class OdysseyModel3D extends OdysseyObject3D {
             //----------------------------//
             // DANGLY GEOMETRY ATTRIBUTES
             //----------------------------//
-            if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
+            if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               //Contstraint
               // const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length ); //Works with indices
               geometry.setAttribute( 'constraint', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeDangly).danglyVec4, 4 ) );//.copyArray( (odysseyNode as OdysseyModelNodeDangly).danglyVec4 ) ); //Works with indices
             }
             
             //Compute Geometry Tangents
-            if((odysseyNode.NodeType & OdysseyModelNodeType.Saber) != OdysseyModelNodeType.Saber){
+            if((odysseyNode.nodeType & OdysseyModelNodeType.Saber) != OdysseyModelNodeType.Saber){
               // BufferGeometryUtils.computeTangents(geometry);
             }
             
@@ -1185,49 +1192,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) ); 
           }
 
-          /*
-          * This project has moved away from using Geometry.
-          */
-          
-          //----------------//
-          // BASIC GEOMETRY
-          //----------------//
-          // if(typeof geometry == 'undefined'){
-          //   geometry = new Geometry();
-          //   geometry.boundingBox = new THREE.Box3(odysseyNode.boundingBox.min, odysseyNode.boundingBox.max);
-      
-          //   geometry.vertices = [];
-          //   for(let i = 0, len = odysseyNode.vertices.length; i < len; i+=3){
-          //     geometry.vertices.push(new THREE.Vector3(odysseyNode.vertices[i], odysseyNode.vertices[i+1], odysseyNode.vertices[i+2]));
-          //   }
-          //   geometry.faces = odysseyNode.faces || [];
-          //   geometry.faceVertexUvs = [[],[]];
-            
-          //   //Base Texture UVs
-          //   if(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV1){
-          //     geometry.faceVertexUvs[0] = odysseyNode.texCords[0];
-          //     geometry.faceVertexUvs[1] = odysseyNode.texCords[0];
-          //   }
-
-          //   //Lightmap UVs
-          //   if(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV2){
-          //     geometry.faceVertexUvs[1] = odysseyNode.texCords[1];
-          //   }
-
-          //   //Colors
-          //   if(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.COLOR){
-          //     geometry.colors = odysseyNode.colors;
-          //   }
-            
-          //   //if(odysseyModel.modelHeader.Smoothing)
-          //     //geometry.mergeVertices();
-      
-          //   geometry.verticesNeedUpdate = true;
-          //   geometry.normalsNeedUpdate = true;
-          //   geometry.uvsNeedUpdate = true;
-          //   //geometry.computeBoundingBox();
-          // }
-
           //-------------------------//
           // BEGIN: MATERIAL BUILDER
           //-------------------------//
@@ -1242,7 +1206,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //-----------//
           // SKIN MESH
           //-----------//
-          if ((odysseyNode.NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
+          if ((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
             material.defines.USE_SKINNING = '';
             mesh = new THREE.SkinnedMesh( geometry , material );
             odysseyModel.skins.push(mesh);
@@ -1276,7 +1240,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //----------------//
           // MERGE GEOMETRY
           //----------------//
-          if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.BackgroundGeometry && options.mergeStatic && odysseyNode.roomStatic && odysseyNode.faces.length){
+          if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && odysseyNode.roomStatic && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
             parentNode.getWorldQuaternion( mesh.quaternion );
@@ -1290,7 +1254,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             (geometry.getAttribute('normal') as THREE.BufferAttribute).applyNormalMatrix( normalMatrix );
             geometry.normalizeNormals();
 
-            if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
+            if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               odysseyModel.mergedDanglyGeometries.push(geometry);
               odysseyModel.mergedDanglyMaterials.push(material);
             }else{
@@ -1311,16 +1275,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
             (mesh as any).odysseyNode = odysseyNode;
             mesh.userData.odysseyModelNode = odysseyNode;
             mesh.matrixAutoUpdate = true;
-            if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) ){
+            if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) ){
               parentNode.add( mesh );
               parentNode.userData.mesh = mesh;
             }
-            if(!((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
-              mesh.castShadow = odysseyNode.FlagShadow;// && !options.static;//options.castShadow;
+            if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
+              mesh.castShadow = odysseyNode.flagShadow;// && !options.static;//options.castShadow;
               mesh.receiveShadow = options.receiveShadow;
             }
 
-            if(odysseyNode.HasLightmap && options.manageLighting){
+            if(odysseyNode.hasLightmap && options.manageLighting){
               // mesh.onBeforeRender = (renderer, scene, camera, geometry, material: THREE.ShaderMaterial, group) => {
               //   if(material.type == "ShaderMaterial"){
               //     (material.uniforms.pointLights as any).properties.animated = {} as any;
@@ -1356,8 +1320,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   static NodeMaterialBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh, options: OdysseyModelLoaderOptions){
       
-    let tMap1 = odysseyNode.TextureMap1+'';
-    let tMap2 = odysseyNode.TextureMap2+'';
+    let tMap1 = odysseyNode.textureMap1+'';
+    let tMap2 = odysseyNode.textureMap2+'';
     let fallbackTexture = null;
 
     if(options.textureVar != '' && options.textureVar.indexOf('****') == -1){
@@ -1369,7 +1333,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       //odysseyNode.Diffuse.r = odysseyNode.Diffuse.g = odysseyNode.Diffuse.b = 0.8;
     }
     let material: THREE.Material;
-    if((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB){
+    if((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB){
       material = new THREE.MeshBasicMaterial({
         vertexColors: true,
         fog: false,
@@ -1390,7 +1354,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.extensions.derivatives = true;
         //material.extensions.fragDepth = true;
         if(options.useTweakColor){
-          material.uniforms.diffuse.value = new THREE.Color( odysseyNode.Diffuse.r, odysseyNode.Diffuse.g, odysseyNode.Diffuse.b );
+          material.uniforms.diffuse.value = new THREE.Color( odysseyNode.diffuse.r, odysseyNode.diffuse.g, odysseyNode.diffuse.b );
           material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
         }else{
           material.uniforms.tweakColor.value.setRGB(1, 1, 1);
@@ -1410,7 +1374,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV2 || 
           odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV3 || 
           odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV4 ||
-          ((odysseyNode.NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber)
+          ((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber)
           ){
           material.defines.USE_UV = "";
         }
@@ -1424,13 +1388,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
 
-      if(!odysseyNode.FlagRender && !((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
+      if(!odysseyNode.flagRender && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
         material.visible = false;
       }
 
       odysseyModel.materials.push(material);
       
-      if(odysseyNode.HasLightmap && tMap2.length){
+      if(odysseyNode.hasLightmap && tMap2.length){
         material.userData.lightmap = tMap2;
         TextureLoader.enQueue(tMap2, material, TextureType.LIGHTMAP);
       }
@@ -1439,13 +1403,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
         !(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT2) && 
         !(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT3) && 
         !(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT4) &&
-        !odysseyNode.FlagShadow && !options.castShadow) || odysseyNode.BackgroundGeometry || options.static){
+        !odysseyNode.flagShadow && !options.castShadow) || odysseyNode.backgroundGeometry || options.static){
           if(!options.lighting){
             material.defines.IGNORE_LIGHTING = "";
           }
       }
 
-      if((odysseyNode.NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber){
+      if((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber){
         material.defines.IGNORE_LIGHTING = "";
         material.defines.SABER = "";
       }
@@ -1453,14 +1417,14 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if(options.isHologram){
         material.defines.HOLOGRAM = "";
         material.transparent = true;
-        if(odysseyNode.HideInHolograms){
+        if(odysseyNode.hideInHolograms){
           material.visible = false;
         }
       }
 
       if(material instanceof THREE.ShaderMaterial){
         //Set dangly uniforms
-        if((odysseyNode.NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly && odysseyNode instanceof OdysseyModelNodeDangly) {
+        if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly && odysseyNode instanceof OdysseyModelNodeDangly) {
           material.uniforms.danglyDisplacement.value = odysseyNode.danglyDisplacement;
           material.uniforms.danglyTightness.value = odysseyNode.danglyTightness;
           material.uniforms.danglyPeriod.value = odysseyNode.danglyPeriod;
@@ -1474,7 +1438,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
 
-      if(odysseyNode.Transparent){
+      if(odysseyNode.transparencyHint){
         material.transparent = true;
       }
 
@@ -1502,7 +1466,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         TextureLoader.enQueue(tMap1, material, TextureType.TEXTURE, undefined, fallbackTexture);
       }else{
         if(material instanceof THREE.ShaderMaterial){
-          material.uniforms.diffuse.value.copy(odysseyNode.Diffuse);
+          material.uniforms.diffuse.value.copy(odysseyNode.diffuse);
         }
       }
 
@@ -1544,7 +1508,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     if(!options.manageLighting){
       let lightNode: THREE.Light;
-      if(odysseyNode.AmbientFlag){
+      if(odysseyNode.ambientFlag){
         lightNode = new THREE.AmbientLight( odysseyNode.color );
         lightNode.intensity = odysseyNode.multiplier * 0.5;
       }else{
@@ -1573,7 +1537,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lightNode = new OdysseyLight3D(odysseyNode);
       lightNode.odysseyModel = odysseyModel;
       lightNode.isAnimated = !odysseyNode.roomStatic;
-      //if(!odysseyNode.AmbientFlag){
+      //if(!odysseyNode.ambientFlag){
         lightNode.position.copy(odysseyNode.position);
       //}
       //odysseyNode.light = lightNode;
@@ -1583,13 +1547,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lightNode.userData.odysseyModel = odysseyModel;
       lightNode.userData.odysseyNode = odysseyNode;
   
-      lightNode.priority = odysseyNode.LightPriority;
-      lightNode.isAmbient = odysseyNode.AmbientFlag ? true : false;
-      lightNode.isDynamic = odysseyNode.DynamicFlag ? true : false;
-      lightNode.affectDynamic = odysseyNode.AffectDynamicFlag ? true : false;
-      lightNode.castShadow = odysseyNode.ShadowFlag ? true : false;
-      lightNode.genFlare = odysseyNode.GenerateFlareFlag ? true : false;
-      lightNode.isFading = odysseyNode.FadingLightFlag;
+      lightNode.priority = odysseyNode.lightPriority;
+      lightNode.isAmbient = odysseyNode.ambientFlag ? true : false;
+      lightNode.isDynamic = odysseyNode.dynamicFlag ? true : false;
+      lightNode.affectDynamic = odysseyNode.affectDynamicFlag ? true : false;
+      lightNode.castShadow = odysseyNode.shadowFlag ? true : false;
+      lightNode.genFlare = odysseyNode.generateFlareFlag ? true : false;
+      lightNode.isFading = odysseyNode.fadingLightFlag;
       lightNode.maxIntensity = odysseyNode.intensity;
       lightNode.color = odysseyNode.color;
       OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);

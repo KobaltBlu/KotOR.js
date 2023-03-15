@@ -2,7 +2,7 @@
  */
 
 import { OdysseyModel, OdysseyModelNode } from ".";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
 /* @file
  * The OdysseyModelNodeReference

@@ -1,8 +1,8 @@
 import { OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNodeLight } from "..";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyController } from "./OdysseyController";
 
 export class MultiplierController extends OdysseyController {
@@ -14,13 +14,13 @@ export class MultiplierController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
-    if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+    if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
       (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
-    if ((manager.modelNode.odysseyModelNode.NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+    if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
       (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = ((next.value - last.value) * fl + last.value);
     }
   }

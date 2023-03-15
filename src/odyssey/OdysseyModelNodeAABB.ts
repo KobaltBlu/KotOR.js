@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
 /* @file
  * The OdysseyModelNodeAABB
@@ -43,7 +43,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   }
 
   readBinaryAABBNode(aabbNodeOffset: number){
-    this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + aabbNodeOffset);
+    this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + aabbNodeOffset);
 
     let aabb: OdysseyModelAABBNode = {
       type: 'AABB',

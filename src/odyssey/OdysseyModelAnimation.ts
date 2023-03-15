@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { OdysseyModelAnimationNode } from "./";
+import { OdysseyModel, OdysseyModelAnimationNode } from "./";
 import * as THREE from 'three';
 import { TwoDAManager } from "../managers/TwoDAManager";
 
@@ -10,25 +10,25 @@ import { TwoDAManager } from "../managers/TwoDAManager";
  */
 
 export class OdysseyModelAnimation {
-  _position: any;
-  _quaternion: any;
-  p_func1: any;
-  p_func12: any;
-  name: any;
-  RootNodeOffset: any;
-  NodeCount: any;
-  RefCount: any;
-  GeometryType: any;
-  Unknown4: any;
-  length: any;
-  transition: any;
-  ModelName: any;
+  _position: THREE.Vector3 = new THREE.Vector3();
+  _quaternion: THREE.Quaternion = new THREE.Quaternion();
+  p_func1: number;
+  p_func12: number;
+  name: string;
+  rootNodeOffset: number;
+  nodeCount: number;
+  refCount: number;
+  geometryType: number;
+  unknown4: Buffer;
+  length: number;
+  transition: number;
+  modelName: string;
   events: any[];
   nodes: OdysseyModelAnimationNode[];
   rootNode: OdysseyModelAnimationNode;
-  currentFrame: number;
-  elapsed: number;
-  lastTime: number;
+  currentFrame: number = 0;
+  elapsed: number = 0;
+  lastTime: number = 0;
   type: string;
 
   data: { 
@@ -49,6 +49,7 @@ export class OdysseyModelAnimation {
   bezierC: THREE.Vector3;
   static _position: THREE.Vector3;
   static _quaternion: THREE.Quaternion;
+  odysseyModel: OdysseyModel;
 
   constructor(){
     this.type = 'OdysseyModelAnimation';
@@ -80,13 +81,74 @@ export class OdysseyModelAnimation {
 
   }
 
+  readBinary(odysseyModel: OdysseyModel){
+    this.odysseyModel = odysseyModel;
+
+    //GeometryHeader
+    this.p_func1 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
+    this.p_func12 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
+
+    this.name = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
+    this.nodeCount = this.odysseyModel.mdlReader.readUInt32();
+
+    this.odysseyModel.mdlReader.movePointerForward(24); //Skip unknown array definitions
+
+    this.refCount = this.odysseyModel.mdlReader.readUInt32();
+    this.geometryType = this.odysseyModel.mdlReader.readByte(); //Model Type
+    this.unknown4 = this.odysseyModel.mdlReader.readBytes(3); //Padding
+
+    //Animation
+    this.length = this.odysseyModel.mdlReader.readSingle();
+    this.transition = this.odysseyModel.mdlReader.readSingle();
+    this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
+
+    let _eventsDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    //anim.events = OdysseyModel.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
+    this.events = new Array(_eventsDef.count);
+    this.odysseyModel.mdlReader.movePointerForward(4); //Unknown uint32
+
+    if (_eventsDef.count > 0) {
+      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + _eventsDef.offset);
+      for (let i = 0; i < _eventsDef.count; i++) {
+        this.events[i] = { 
+          length: this.odysseyModel.mdlReader.readSingle(), 
+          name: this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'') 
+        };
+      }
+    }
+
+    //Animation Node
+    this.nodes = [];
+    this.rootNode = this.readAnimationNode(this.odysseyModel.fileHeader.modelDataOffset + this.rootNodeOffset);
+
+  }
+
+  readAnimationNode(offset: number){
+    this.odysseyModel.mdlReader.seek(offset);
+
+    const node = new OdysseyModelAnimationNode(this);
+    node.readBinary(this.odysseyModel);
+    this.nodes.push(node);
+
+    //Child Animation Nodes
+    let len = node.childOffsets.length;
+    for (let i = 0; i < len; i++) {
+      node.children.push(
+        this.readAnimationNode( this.odysseyModel.fileHeader.modelDataOffset + node.childOffsets[i] )
+      );
+    }
+    
+    return node;
+  }
+
   static From(original: any){
     let anim = new OdysseyModelAnimation();
     //anim = Object.assign(Object.create( Object.getPrototypeOf(original)), original);
     anim.rootNode = original.rootNode;
     anim.currentFrame = original.currentFrame;
     anim.nodes = original.nodes;
-    anim.ModelName = original.ModelName;
+    anim.modelName = original.ModelName;
     anim.events = original.events;
     anim.name = original.name;
     anim.length = original.length;

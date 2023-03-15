@@ -347,7 +347,7 @@ export class ModuleRoom extends ModuleObject {
         
             grass_material.defines.USE_FOG = '';
 
-            lm_texture = aabb.TextureMap2;
+            lm_texture = aabb.textureMap2;
 
             for(let k = 0; k < aabb.grassFaces.length; k++){
               let face = aabb.grassFaces[k];

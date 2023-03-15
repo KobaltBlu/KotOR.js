@@ -7,10 +7,10 @@ import {
 } from ".";
 
 import * as THREE from "three";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
 export class OdysseyController {
 

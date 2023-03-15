@@ -841,13 +841,13 @@ export class OdysseyWalkMesh {
     bw.writeUInt32(this.edges.size);
     bw.writeUInt32(edge_offset);
 
-    //------//
-    // DATA
-    //------//
-
     //perimeters
     bw.writeUInt32(perimeters.length);
     bw.writeUInt32(perimeter_offset);
+
+    //------//
+    // DATA
+    //------//
 
     //vertices
     for(let i = 0; i < this.vertices.length; i++){

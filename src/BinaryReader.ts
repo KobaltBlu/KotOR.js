@@ -142,7 +142,7 @@ export class BinaryReader {
     return this.readInt8();
   }
 
-  readBytes(num: number){
+  readBytes(num: number): Buffer {
     if(this.position >= this.buffer.length)
       return Buffer.allocUnsafe(0);
 

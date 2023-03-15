@@ -4,7 +4,7 @@ import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/Ody
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
 export class AlphaController extends OdysseyController {
 

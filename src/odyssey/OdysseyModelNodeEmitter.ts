@@ -2,8 +2,8 @@
  */
 
 import { OdysseyModel, OdysseyModelNode } from ".";
-import { OdysseyModelEmitterFlag } from "../interface/odyssey/OdysseyModelEmitterFlag";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelEmitterFlag } from "../enums/odyssey/OdysseyModelEmitterFlag";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
 /* @file
  * The OdysseyModelNodeEmitter

@@ -2,7 +2,7 @@ import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyController } from ".";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
 export class LightningScaleController extends OdysseyController {
 

@@ -3,21 +3,22 @@
 
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
-import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNodeSkin
  */
 
  export class OdysseyModelNodeSkin extends OdysseyModelNodeMesh {
-  weights_def: { offset: number; count: number; count2: number; };
+  weights_def: OdysseyArrayDefinition;
   MDXBoneWeightOffset: number;
   MDXBoneIndexOffset: number;
-  BoneMapOffset: number;
-  BoneMapCount: number;
-  BoneQuaternionDef: { offset: number; count: number; count2: number; };
-  BonePositionDef: { offset: number; count: number; count2: number; };
-  BoneConstantsDef: { offset: number; count: number; count2: number; };
+  boneMapOffset: number;
+  boneMapCount: number;
+  boneQuaternionDefinition: OdysseyArrayDefinition;
+  bonePositionDefinition: OdysseyArrayDefinition;
+  boneConstantsDefinition: OdysseyArrayDefinition;
   bone_parts: number[];
   weights: number[];
   boneIdx: number[];
@@ -39,12 +40,12 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
 
     this.MDXBoneWeightOffset = this.odysseyModel.mdlReader.readUInt32();
     this.MDXBoneIndexOffset = this.odysseyModel.mdlReader.readUInt32();
-    this.BoneMapOffset = this.odysseyModel.mdlReader.readUInt32();
-    this.BoneMapCount = this.odysseyModel.mdlReader.readUInt32();
+    this.boneMapOffset = this.odysseyModel.mdlReader.readUInt32();
+    this.boneMapCount = this.odysseyModel.mdlReader.readUInt32();
 
-    this.BoneQuaternionDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.BonePositionDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.BoneConstantsDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.boneQuaternionDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.bonePositionDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.boneConstantsDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.bone_parts = [];
 
@@ -62,9 +63,9 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
     this.bone_translations = [];
     this.bone_inverse_matrix = [];
 
-    for (let i = 0; i < this.VerticiesCount; i++) {
+    for (let i = 0; i < this.verticesCount; i++) {
       // Seek To Weights
-      this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneWeightOffset;
+      this.odysseyModel.mdxReader.position = (this.MDXNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneWeightOffset;
       this.weights.push(
         this.odysseyModel.mdxReader.readSingle(),
         this.odysseyModel.mdxReader.readSingle(),
@@ -73,7 +74,7 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
       );
 
       // Seek To Bone Indexes
-      this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneIndexOffset;
+      this.odysseyModel.mdxReader.position = (this.MDXNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneIndexOffset;
       this.boneIdx.push(
         this.odysseyModel.mdxReader.readSingle(),
         this.odysseyModel.mdxReader.readSingle(),
@@ -82,41 +83,41 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
       );
     }
 
-    if (this.BoneMapCount > 0) {
-      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneMapOffset);
-      for(let i = 0; i < this.BoneMapCount; i++){
+    if (this.boneMapCount > 0) {
+      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneMapOffset);
+      for(let i = 0; i < this.boneMapCount; i++){
         this.bone_mapping[i] = this.odysseyModel.mdlReader.readSingle();
       }
     
 
       //Inverse Bone Quaternions
-      if (this.BoneQuaternionDef.count > 0) {
-        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneQuaternionDef.offset);
-        for(let i = 0; i < this.BoneQuaternionDef.count; i++){
+      if (this.boneQuaternionDefinition.count > 0) {
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneQuaternionDefinition.offset);
+        for(let i = 0; i < this.boneQuaternionDefinition.count; i++){
           let w = this.odysseyModel.mdlReader.readSingle();
           this.bone_quaternions[i] = new THREE.Quaternion(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), w);
         }
       }
 
       //Inverse Bone Translations
-      if (this.BonePositionDef.count > 0) {
-        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BonePositionDef.offset);
-        for(let i = 0; i < this.BonePositionDef.count; i++){
+      if (this.bonePositionDefinition.count > 0) {
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.bonePositionDefinition.offset);
+        for(let i = 0; i < this.bonePositionDefinition.count; i++){
           this.bone_translations[i] = new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
         }
       }
 
       //Unused Array of Bytes
-      if (this.BoneConstantsDef.count > 0) {
-        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneConstantsDef.offset);
-        for(let i = 0; i < this.BoneConstantsDef.count; i++){
+      if (this.boneConstantsDefinition.count > 0) {
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneConstantsDefinition.offset);
+        for(let i = 0; i < this.boneConstantsDefinition.count; i++){
           this.bone_constants[i] = this.odysseyModel.mdlReader.readByte();
         }
       }
 
       //Rebuild the inverse bone matrix from the QBone and TBone values
-      if (this.BonePositionDef.count > 0) {
-        for(let i = 0; i < this.BonePositionDef.count; i++){
+      if (this.bonePositionDefinition.count > 0) {
+        for(let i = 0; i < this.bonePositionDefinition.count; i++){
           this.bone_inverse_matrix[i] = new THREE.Matrix4();
           this.bone_inverse_matrix[i].compose( this.bone_translations[i], this.bone_quaternions[i], new THREE.Vector3(1, 1, 1) );
         }

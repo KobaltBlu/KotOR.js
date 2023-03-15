@@ -1,7 +1,7 @@
 import { OdysseyModelAnimation } from "..";
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 
@@ -20,7 +20,7 @@ export class PositionController extends OdysseyController {
       //   manager.modelNode.transitionState.position.copy(manager.modelNode.position);
       //   anim._position.copy(manager.modelNode.transitionState.position);
       // }else{
-        anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0]);
+        anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
       // }
 
       if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
@@ -31,7 +31,7 @@ export class PositionController extends OdysseyController {
     //if(manager.trans && this.frameCount > 1){
     //  manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
     //}else{
-      manager.modelNode.position.copy(anim._position.add(data));
+      manager.modelNode.position.copy(anim._position.add(data as any));
     //}
     manager.modelNode.updateMatrix();
   }

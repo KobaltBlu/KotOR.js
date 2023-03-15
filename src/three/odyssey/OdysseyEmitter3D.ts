@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../interface/odyssey/OdysseyModelControllerType";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { OdysseyModelNode } from "../../odyssey";
 import { OdysseyController } from "../../odyssey/controllers";

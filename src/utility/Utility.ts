@@ -346,7 +346,7 @@ export class Utility {
   };*/
 
 
-  static ArrayMatch(array1: any[], array2: any[]){
+  static ArrayMatch(array1: any[]|Buffer, array2: any[]|Buffer){
     return (array1.length == array2.length) && array1.every(function(element, index) {
       return element === array2[index];
     });

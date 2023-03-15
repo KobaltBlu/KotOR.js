@@ -10,7 +10,7 @@ import { OdysseyModel3D } from "../three/odyssey";
  */
 
 export class OdysseyModelAnimationNode extends OdysseyModelNode {
-  children: any[];
+  children: OdysseyModelAnimationNode[] = [];
   modelNodeCache: any = {};
   animation: OdysseyModelAnimation;
 

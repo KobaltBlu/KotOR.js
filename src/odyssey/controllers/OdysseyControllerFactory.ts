@@ -1,6 +1,6 @@
 import { OdysseyController } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyModelNodeType } from "../../interface/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { AlphaController } from "./AlphaController";
 import { AlphaEndController } from "./AlphaEndController";
 import { AlphaMidController } from "./AlphaMidController";
