@@ -216,7 +216,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       right: east_bounds.width + east_gutter_size,
 
       width: ((tabWidth - east_bounds.width) - west_bounds.width) - west_gutter_size - east_gutter_size,
-      height: ((tabHeight - north_bounds.height) - north_bounds.height) - north_gutter_size - south_gutter_size,
+      height: ((tabHeight - north_bounds.height) - south_bounds.height) - north_gutter_size - south_gutter_size,
     };
 
     centerStyle ={
