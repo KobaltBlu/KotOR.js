@@ -98,18 +98,18 @@ export class LIPObject {
 
       let reader = new BinaryReader(buffer);
 
-      const fileType = reader.ReadChars(4);
-      const fileVersion = reader.ReadChars(4);
-      this.duration = reader.ReadSingle();
-      const entryCount = reader.ReadUInt32();
+      const fileType = reader.readChars(4);
+      const fileVersion = reader.readChars(4);
+      this.duration = reader.readSingle();
+      const entryCount = reader.readUInt32();
 
       this.lipDataOffset = 16;
-      reader.Seek(this.lipDataOffset);
+      reader.seek(this.lipDataOffset);
 
       for (let i = 0; i < entryCount; i++) {
         this.addKeyFrame(
-          reader.ReadSingle(),
-          reader.ReadByte(),
+          reader.readSingle(),
+          reader.readByte(),
         );
       }
 
@@ -254,16 +254,16 @@ export class LIPObject {
     let writer = new BinaryWriter();
 
     //Write the header to the buffer
-    writer.WriteChars(LIPObject.FILE_TYPE);
-    writer.WriteChars(LIPObject.FILE_VER);
-    writer.WriteSingle(this.duration);
-    writer.WriteUInt32(this.keyframes.length);
+    writer.writeChars(LIPObject.FILE_TYPE);
+    writer.writeChars(LIPObject.FILE_VER);
+    writer.writeSingle(this.duration);
+    writer.writeUInt32(this.keyframes.length);
 
     //Write the keyframe data to the buffer
     for (let i = 0; i < this.keyframes.length; i++) {
       let keyframe = this.keyframes[i];
-      writer.WriteSingle(keyframe.time);
-      writer.WriteByte(keyframe.shape);
+      writer.writeSingle(keyframe.time);
+      writer.writeByte(keyframe.shape);
     }
     return writer.buffer;
   }

@@ -91,8 +91,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.faces = [];
     this.indices = [];
 
-    this.functionPointer0 = this.odysseyModel.mdlReader.ReadUInt32();
-    this.functionPointer1 = this.odysseyModel.mdlReader.ReadUInt32();
+    this.functionPointer0 = this.odysseyModel.mdlReader.readUInt32();
+    this.functionPointer1 = this.odysseyModel.mdlReader.readUInt32();
 
     let _faceArrDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
@@ -100,22 +100,22 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.FaceArrayCount = _faceArrDef.count;
 
     this.boundingBox = {
-      min: new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle()),
-      max: new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle())
+      min: new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle()),
+      max: new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle())
     };
 
-    this.Radius = this.odysseyModel.mdlReader.ReadSingle();
+    this.Radius = this.odysseyModel.mdlReader.readSingle();
 
-    this.PointsAverage = new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
-    this.Diffuse = new THREE.Color(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
-    this.Ambient = new THREE.Color(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+    this.PointsAverage = new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
+    this.Diffuse = new THREE.Color(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
+    this.Ambient = new THREE.Color(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
 
-    this.Transparent = this.odysseyModel.mdlReader.ReadUInt32() ? true : false;
+    this.Transparent = this.odysseyModel.mdlReader.readUInt32() ? true : false;
 
-    this.TextureMap1 = this.odysseyModel.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,''); //This stores the texture filename
-    this.TextureMap2 = this.odysseyModel.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,''); //This stores the lightmap filename
-    this.TextureMap3 = this.odysseyModel.mdlReader.ReadChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
-    this.TextureMap4 = this.odysseyModel.mdlReader.ReadChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 4th texture filename (?)
+    this.TextureMap1 = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,''); //This stores the texture filename
+    this.TextureMap2 = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,''); //This stores the lightmap filename
+    this.TextureMap3 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
+    this.TextureMap4 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 4th texture filename (?)
 
     this.IndexCountArrayDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //IndexCounterArray
     this.VertexLocArrayDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //vertex_indices_offset
@@ -127,63 +127,63 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.InvertedCountArrayDefDuplicate = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
 
     this.saberBytes = [
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte(),
-      this.odysseyModel.mdlReader.ReadByte()
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte(),
+      this.odysseyModel.mdlReader.readByte()
     ];
 
-    this.nAnimateUV = this.odysseyModel.mdlReader.ReadUInt32() ? true : false;
-    this.fUVDirectionX = this.odysseyModel.mdlReader.ReadSingle();
-    this.fUVDirectionY = this.odysseyModel.mdlReader.ReadSingle();
-    this.fUVJitter = this.odysseyModel.mdlReader.ReadSingle();
-    this.fUVJitterSpeed = this.odysseyModel.mdlReader.ReadSingle();
+    this.nAnimateUV = this.odysseyModel.mdlReader.readUInt32() ? true : false;
+    this.fUVDirectionX = this.odysseyModel.mdlReader.readSingle();
+    this.fUVDirectionY = this.odysseyModel.mdlReader.readSingle();
+    this.fUVJitter = this.odysseyModel.mdlReader.readSingle();
+    this.fUVJitterSpeed = this.odysseyModel.mdlReader.readSingle();
 
-    this.MDXDataSize = this.odysseyModel.mdlReader.ReadUInt32();
-    this.MDXDataBitmap = this.odysseyModel.mdlReader.ReadUInt32();
+    this.MDXDataSize = this.odysseyModel.mdlReader.readUInt32();
+    this.MDXDataBitmap = this.odysseyModel.mdlReader.readUInt32();
 
-    let MDXVertexOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    let MDXVertexNormalsOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    let MDXVertexColorsOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    let MDXUVOffset1 = this.odysseyModel.mdlReader.ReadInt32();
-    let MDXUVOffset2 = this.odysseyModel.mdlReader.ReadInt32();
-    let MDXUVOffset3 = this.odysseyModel.mdlReader.ReadInt32();
-    let MDXUVOffset4 = this.odysseyModel.mdlReader.ReadInt32();
+    let MDXVertexOffset = this.odysseyModel.mdlReader.readUInt32();
+    let MDXVertexNormalsOffset = this.odysseyModel.mdlReader.readUInt32();
+    let MDXVertexColorsOffset = this.odysseyModel.mdlReader.readUInt32();
+    let MDXUVOffset1 = this.odysseyModel.mdlReader.readInt32();
+    let MDXUVOffset2 = this.odysseyModel.mdlReader.readInt32();
+    let MDXUVOffset3 = this.odysseyModel.mdlReader.readInt32();
+    let MDXUVOffset4 = this.odysseyModel.mdlReader.readInt32();
 
-    let OffsetToMdxTangent1 = this.odysseyModel.mdlReader.ReadInt32();
-    let OffsetToMdxTangent2 = this.odysseyModel.mdlReader.ReadInt32();
-    let OffsetToMdxTangent3 = this.odysseyModel.mdlReader.ReadInt32();
-    let OffsetToMdxTangent4 = this.odysseyModel.mdlReader.ReadInt32();
+    let OffsetToMdxTangent1 = this.odysseyModel.mdlReader.readInt32();
+    let OffsetToMdxTangent2 = this.odysseyModel.mdlReader.readInt32();
+    let OffsetToMdxTangent3 = this.odysseyModel.mdlReader.readInt32();
+    let OffsetToMdxTangent4 = this.odysseyModel.mdlReader.readInt32();
 
-    this.VerticiesCount = this.odysseyModel.mdlReader.ReadUInt16();
-    this.TextureCount = this.odysseyModel.mdlReader.ReadUInt16();
+    this.VerticiesCount = this.odysseyModel.mdlReader.readUInt16();
+    this.TextureCount = this.odysseyModel.mdlReader.readUInt16();
 
-    this.HasLightmap = this.odysseyModel.mdlReader.ReadByte() ? true : false;
-    this.RotateTexture = this.odysseyModel.mdlReader.ReadByte() ? true : false;
-    this.BackgroundGeometry = this.odysseyModel.mdlReader.ReadByte() ? true : false;
-    this.FlagShadow = this.odysseyModel.mdlReader.ReadByte() ? true : false;
-    this.Beaming = this.odysseyModel.mdlReader.ReadByte() ? true : false;
-    this.FlagRender = this.odysseyModel.mdlReader.ReadByte() ? true : false;
+    this.HasLightmap = this.odysseyModel.mdlReader.readByte() ? true : false;
+    this.RotateTexture = this.odysseyModel.mdlReader.readByte() ? true : false;
+    this.BackgroundGeometry = this.odysseyModel.mdlReader.readByte() ? true : false;
+    this.FlagShadow = this.odysseyModel.mdlReader.readByte() ? true : false;
+    this.Beaming = this.odysseyModel.mdlReader.readByte() ? true : false;
+    this.FlagRender = this.odysseyModel.mdlReader.readByte() ? true : false;
 
     if (this.odysseyModel.engine == OdysseyModelEngine.K2){
-      this.DirtEnabled = this.odysseyModel.mdlReader.ReadByte();
-      this.tslPadding1 = this.odysseyModel.mdlReader.ReadByte();
-      this.DirtTexture = this.odysseyModel.mdlReader.ReadUInt16();
-      this.DirtCoordSpace = this.odysseyModel.mdlReader.ReadUInt16();
-      this.HideInHolograms = this.odysseyModel.mdlReader.ReadByte();
-      this.tslPadding2 = this.odysseyModel.mdlReader.ReadByte();
+      this.DirtEnabled = this.odysseyModel.mdlReader.readByte();
+      this.tslPadding1 = this.odysseyModel.mdlReader.readByte();
+      this.DirtTexture = this.odysseyModel.mdlReader.readUInt16();
+      this.DirtCoordSpace = this.odysseyModel.mdlReader.readUInt16();
+      this.HideInHolograms = this.odysseyModel.mdlReader.readByte();
+      this.tslPadding2 = this.odysseyModel.mdlReader.readByte();
     } 
 
-    this._Unknown2 = this.odysseyModel.mdlReader.ReadUInt16();
-    this._TotalArea = this.odysseyModel.mdlReader.ReadSingle();
-    this._Unknown4 = this.odysseyModel.mdlReader.ReadUInt32();
+    this._Unknown2 = this.odysseyModel.mdlReader.readUInt16();
+    this._TotalArea = this.odysseyModel.mdlReader.readSingle();
+    this._Unknown4 = this.odysseyModel.mdlReader.readUInt32();
 
-    let MDXNodeDataOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    let VertexCoordinatesOffset = this.odysseyModel.mdlReader.ReadUInt32();
+    let MDXNodeDataOffset = this.odysseyModel.mdlReader.readUInt32();
+    let VertexCoordinatesOffset = this.odysseyModel.mdlReader.readUInt32();
 
     this._mdxNodeDataOffset = MDXNodeDataOffset;
 
@@ -239,32 +239,32 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
       // Vertex
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.VERTEX){
         this.odysseyModel.mdxReader.position = basePosition + MDXVertexOffset;
-        this.vertices.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.vertices.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
       }
 
       // Normal
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.NORMAL){
         this.odysseyModel.mdxReader.position = basePosition + MDXVertexNormalsOffset;
-        this.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
       }
 
       // Color
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.COLOR){
         this.odysseyModel.mdxReader.position = basePosition + MDXVertexColorsOffset;
-        this.colors.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.colors.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
       }
       
       // TexCoords1
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV1){
         this.odysseyModel.mdxReader.position = basePosition + MDXUVOffset1;
-        this.tvectors[0].push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tvectors[0].push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
         // this.tvectors[1][i] = this.tvectors[0][i];
       }
 
       // TexCoords2
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2){
         this.odysseyModel.mdxReader.position = basePosition + MDXUVOffset2;
-        this.tvectors[1].push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tvectors[1].push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
       }
 
       // TexCoords3
@@ -280,36 +280,36 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
       //Tangent1
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1){
         this.odysseyModel.mdxReader.position = basePosition + OffsetToMdxTangent1;
-        this.tangent1.tangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent1.bitangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent1.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tangent1.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent1.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent1.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
         //this.computeTangent(this.tangent1, i);
       }
 
       //Tangent2
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT2){
         this.odysseyModel.mdxReader.position = basePosition + OffsetToMdxTangent2;
-        this.tangent2.tangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent2.bitangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent2.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tangent2.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent2.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent2.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
         //this.computeTangent(this.tangent2, i);
       }
 
       //Tangent3
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT3){
         this.odysseyModel.mdxReader.position = basePosition + OffsetToMdxTangent3;
-        this.tangent3.tangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent3.bitangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent3.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tangent3.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent3.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent3.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
         //this.computeTangent(this.tangent3, i);
       }
 
       //Tangent4
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT4){
         this.odysseyModel.mdxReader.position = basePosition + OffsetToMdxTangent4;
-        this.tangent4.tangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent4.bitangents.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
-        this.tangent4.normals.push(this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle(), this.odysseyModel.mdxReader.ReadSingle());
+        this.tangent4.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent4.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+        this.tangent4.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
         //this.computeTangent(this.tangent4, i);
       }
 
@@ -324,7 +324,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     if(this.VertexLocArrayDef.count){
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.VertexLocArrayDef.offset;
-      let offVerts = this.odysseyModel.mdlReader.ReadUInt32();
+      let offVerts = this.odysseyModel.mdlReader.readUInt32();
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + offVerts;
     }
 
@@ -333,17 +333,17 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
       for (let i = 0; i < this.FaceArrayCount; i++) {
 
         this.faces[i] = new OdysseyFace3(0, 0, 0);
-        this.faces[i].normal.x = this.odysseyModel.mdlReader.ReadSingle();
-        this.faces[i].normal.y = this.odysseyModel.mdlReader.ReadSingle();
-        this.faces[i].normal.z = this.odysseyModel.mdlReader.ReadSingle();
-        this.faces[i].distance = this.odysseyModel.mdlReader.ReadSingle();
-        this.faces[i].materialId = this.odysseyModel.mdlReader.ReadUInt32();
-        this.faces[i].nAdjacentFaces1 = this.odysseyModel.mdlReader.ReadUInt16();
-        this.faces[i].nAdjacentFaces2 = this.odysseyModel.mdlReader.ReadUInt16();
-        this.faces[i].nAdjacentFaces3 = this.odysseyModel.mdlReader.ReadUInt16();
-        this.faces[i].a = this.odysseyModel.mdlReader.ReadUInt16();
-        this.faces[i].b = this.odysseyModel.mdlReader.ReadUInt16();
-        this.faces[i].c = this.odysseyModel.mdlReader.ReadUInt16();
+        this.faces[i].normal.x = this.odysseyModel.mdlReader.readSingle();
+        this.faces[i].normal.y = this.odysseyModel.mdlReader.readSingle();
+        this.faces[i].normal.z = this.odysseyModel.mdlReader.readSingle();
+        this.faces[i].distance = this.odysseyModel.mdlReader.readSingle();
+        this.faces[i].materialId = this.odysseyModel.mdlReader.readUInt32();
+        this.faces[i].nAdjacentFaces1 = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].nAdjacentFaces2 = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].nAdjacentFaces3 = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].a = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].surfacemat = OdysseyWalkMesh.SURFACEMATERIALS[this.faces[i].materialId];
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);

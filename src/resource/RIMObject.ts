@@ -80,28 +80,28 @@ export class RIMObject {
   ReadHeaderFromBuffer(buffer: Buffer){
     this.Header = {} as RIMHeader;
 
-    this.Header.FileType = this.Reader.ReadChars(4);
-    this.Header.FileVersion = this.Reader.ReadChars(4);
+    this.Header.FileType = this.Reader.readChars(4);
+    this.Header.FileVersion = this.Reader.readChars(4);
 
-    this.Reader.Skip(4);
+    this.Reader.skip(4);
 
-    this.Header.ResourceCount = this.Reader.ReadUInt32();
-    this.Header.ResourcesOffset = this.Reader.ReadUInt32();
+    this.Header.ResourceCount = this.Reader.readUInt32();
+    this.Header.ResourcesOffset = this.Reader.readUInt32();
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
     this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
     let header = Buffer.from(buffer, 0, this.rimDataOffset);
     this.Reader = new BinaryReader(header);
-    this.Reader.Seek(this.Header.ResourcesOffset);
+    this.Reader.seek(this.Header.ResourcesOffset);
 
     for (let i = 0; i < this.Header.ResourceCount; i++) {
       let res = {
-        ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
-        ResType: this.Reader.ReadUInt16(),
-        Unused: this.Reader.ReadUInt16(),
-        ResID: this.Reader.ReadUInt32(),
-        DataOffset: this.Reader.ReadUInt32(),
-        DataSize: this.Reader.ReadUInt32()
+        ResRef: this.Reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+        ResType: this.Reader.readUInt16(),
+        Unused: this.Reader.readUInt16(),
+        ResID: this.Reader.readUInt32(),
+        DataOffset: this.Reader.readUInt32(),
+        DataSize: this.Reader.readUInt32()
       };
       this.Resources.push(res);
     }
@@ -115,29 +115,29 @@ export class RIMObject {
 
         this.Header = {} as RIMHeader;
 
-        this.Header.FileType = this.Reader.ReadChars(4);
-        this.Header.FileVersion = this.Reader.ReadChars(4);
+        this.Header.FileType = this.Reader.readChars(4);
+        this.Header.FileVersion = this.Reader.readChars(4);
 
-        this.Reader.Skip(4);
+        this.Reader.skip(4);
 
-        this.Header.ResourceCount = this.Reader.ReadUInt32();
-        this.Header.ResourcesOffset = this.Reader.ReadUInt32();
+        this.Header.ResourceCount = this.Reader.readUInt32();
+        this.Header.ResourcesOffset = this.Reader.readUInt32();
 
         //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
         this.rimDataOffset = (this.Header.ResourcesOffset + (this.Header.ResourceCount * 34));
         header = Buffer.allocUnsafe(this.rimDataOffset);
         GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0).then( () => {
           this.Reader.reuse(header);
-          this.Reader.Seek(this.Header.ResourcesOffset);
+          this.Reader.seek(this.Header.ResourcesOffset);
 
           for (let i = 0; i < this.Header.ResourceCount; i++) {
             let res: RIMResource = {
-              ResRef: this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
-              ResType: this.Reader.ReadUInt16(),
-              Unused: this.Reader.ReadUInt16(),
-              ResID: this.Reader.ReadUInt32(),
-              DataOffset: this.Reader.ReadUInt32(),
-              DataSize: this.Reader.ReadUInt32()
+              ResRef: this.Reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+              ResType: this.Reader.readUInt16(),
+              Unused: this.Reader.readUInt16(),
+              ResID: this.Reader.readUInt32(),
+              DataOffset: this.Reader.readUInt32(),
+              DataSize: this.Reader.readUInt32()
             } as RIMResource;
             this.Resources.push(res);
           }

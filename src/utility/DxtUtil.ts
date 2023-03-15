@@ -32,18 +32,18 @@ export class DxtUtil {
 	}
 
 	static DecompressDxt5Block(imageReader: any, x: number, y: number, blockCountX: number, width: number, height: number, imageData: Uint8Array) {
-		let alpha0 = imageReader.ReadByte();
-		let alpha1 = imageReader.ReadByte();
+		let alpha0 = imageReader.readByte();
+		let alpha1 = imageReader.readByte();
 
-		let alphaMask = imageReader.ReadByte();
-		alphaMask += imageReader.ReadByte() << 8;
-		alphaMask += imageReader.ReadByte() << 16;
-		alphaMask += imageReader.ReadByte() << 24;
-		alphaMask += imageReader.ReadByte() << 32;
-		alphaMask += imageReader.ReadByte() << 40;
+		let alphaMask = imageReader.readByte();
+		alphaMask += imageReader.readByte() << 8;
+		alphaMask += imageReader.readByte() << 16;
+		alphaMask += imageReader.readByte() << 24;
+		alphaMask += imageReader.readByte() << 32;
+		alphaMask += imageReader.readByte() << 40;
 
-		let c0 = imageReader.ReadUInt16();
-		let c1 = imageReader.ReadUInt16();
+		let c0 = imageReader.readUInt16();
+		let c1 = imageReader.readUInt16();
 
 		let r0, g0, b0;
 		let r1, g1, b1;
@@ -58,7 +58,7 @@ export class DxtUtil {
 		g1 = converted1.g;
 		b1 = converted1.b;
 
-		let lookupTable = imageReader.ReadUInt32();
+		let lookupTable = imageReader.readUInt32();
 
 		for (let blockY = 0; blockY < 4; blockY++){
 			for (let blockX = 0; blockX < 4; blockX++){

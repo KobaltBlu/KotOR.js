@@ -24,13 +24,13 @@ export class SSFObject {
     if(isBuffer(this.data)){
 
       let reader = new BinaryReader(this.data);
-      this.FileType = reader.ReadChars(4);
-      this.FileVersion = reader.ReadChars(4);
-      let unknown = reader.ReadUInt32(); //Always 12?
+      this.FileType = reader.readChars(4);
+      this.FileVersion = reader.readChars(4);
+      let unknown = reader.readUInt32(); //Always 12?
 
       let soundCount = (this.data.length - 12) / 4;
       for(let i = 0; i < soundCount; i++){
-        this.sound_refs.push(reader.ReadUInt32() & 0xFFFFFFFF);
+        this.sound_refs.push(reader.readUInt32() & 0xFFFFFFFF);
       }
 
       this.data = Buffer.allocUnsafe(0);

@@ -86,11 +86,11 @@ export class BIFObject {
       GameFileSystem.read(fd, header, 0, this.HeaderSize, 0).then( (buffer) => {
         this.reader = new BinaryReader(header);
 
-        this.FileType = this.reader.ReadChars(4);
-        this.FileVersion = this.reader.ReadChars(4);
-        this.VariableResourceCount = this.reader.ReadUInt32();
-        this.FixedResourceCount = this.reader.ReadUInt32();
-        this.VariableTableOffset = this.reader.ReadUInt32();
+        this.FileType = this.reader.readChars(4);
+        this.FileVersion = this.reader.readChars(4);
+        this.VariableResourceCount = this.reader.readUInt32();
+        this.FixedResourceCount = this.reader.readUInt32();
+        this.VariableTableOffset = this.reader.readUInt32();
 
         this.VariableTableRowSize = 16;
         this.VariableTableSize = this.VariableResourceCount * this.VariableTableRowSize;
@@ -101,10 +101,10 @@ export class BIFObject {
           this.reader.reuse(variableTable);
           for(let i = 0; i < this.VariableResourceCount; i++){
             this.resources[i] = {
-              ID: this.reader.ReadUInt32(),
-              Offset: this.reader.ReadUInt32(),
-              FileSize: this.reader.ReadUInt32(),
-              ResType: this.reader.ReadUInt32()
+              ID: this.reader.readUInt32(),
+              Offset: this.reader.readUInt32(),
+              FileSize: this.reader.readUInt32(),
+              ResType: this.reader.readUInt32()
             } as BIFResource;
           }
 

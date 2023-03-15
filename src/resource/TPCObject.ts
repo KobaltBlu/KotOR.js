@@ -92,7 +92,7 @@ export class TPCObject {
         let txiData = '';
         let ch;
         
-        while ((ch = txiReader.ReadChar() || '\0').charCodeAt(0) != 0)
+        while ((ch = txiReader.readChar() || '\0').charCodeAt(0) != 0)
           txiData = txiData + ch;
 
         return txiData;
@@ -354,19 +354,19 @@ export class TPCObject {
     // Parse header
     let Header: TPCHeader = {} as TPCHeader;
     let Reader = new BinaryReader(Buffer.from(this.file, 0, TPCHeaderLength ));
-    Reader.Seek(0);
-    Header.dataSize = Reader.ReadUInt32();
-    Header.alphaTest = Reader.ReadSingle();
+    Reader.seek(0);
+    Header.dataSize = Reader.readUInt32();
+    Header.alphaTest = Reader.readSingle();
 
     // Image dimensions
-    Header.width = Reader.ReadUInt16();
-    Header.height = Reader.ReadUInt16();
+    Header.width = Reader.readUInt16();
+    Header.height = Reader.readUInt16();
 
     // How's the pixel data encoded?
-    Header.encoding = Reader.ReadByte();
+    Header.encoding = Reader.readByte();
 
     // Number of mip maps in the image
-    Header.mipMapCount = Math.max( 1, Reader.ReadByte() );
+    Header.mipMapCount = Math.max( 1, Reader.readByte() );
 
     Header.bytesPerPixel = 4;
     Header.bitsPerPixel = (Header.bytesPerPixel * 8);

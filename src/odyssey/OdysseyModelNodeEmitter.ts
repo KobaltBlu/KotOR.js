@@ -47,27 +47,27 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.odysseyModel.mdlReader.Skip(8);
+    this.odysseyModel.mdlReader.skip(8);
 
-    this.DeadSpace = this.odysseyModel.mdlReader.ReadSingle();
-    this.BlastRadius = this.odysseyModel.mdlReader.ReadSingle();
-    this.BlastLength = this.odysseyModel.mdlReader.ReadSingle();
-    this.GridX = this.odysseyModel.mdlReader.ReadUInt32();
-    this.GridY = this.odysseyModel.mdlReader.ReadUInt32();
-    this.SpaceType = this.odysseyModel.mdlReader.ReadUInt32();
+    this.DeadSpace = this.odysseyModel.mdlReader.readSingle();
+    this.BlastRadius = this.odysseyModel.mdlReader.readSingle();
+    this.BlastLength = this.odysseyModel.mdlReader.readSingle();
+    this.GridX = this.odysseyModel.mdlReader.readUInt32();
+    this.GridY = this.odysseyModel.mdlReader.readUInt32();
+    this.SpaceType = this.odysseyModel.mdlReader.readUInt32();
 
-    this.Update = this.odysseyModel.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Render = this.odysseyModel.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Blend = this.odysseyModel.mdlReader.ReadChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Texture = this.odysseyModel.mdlReader.ReadChars(64).replace(/\0[\s\S]*$/g,'');
-    this.Chunk = this.odysseyModel.mdlReader.ReadChars(16).replace(/\0[\s\S]*$/g,'');
+    this.Update = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.Render = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.Blend = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.Texture = this.odysseyModel.mdlReader.readChars(64).replace(/\0[\s\S]*$/g,'');
+    this.Chunk = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g,'');
 
-    this.TwoSidedTex = this.odysseyModel.mdlReader.ReadUInt32();
-    this.Loop = this.odysseyModel.mdlReader.ReadUInt32();
-    this.RenderOrder = this.odysseyModel.mdlReader.ReadUInt16();
-    this.Padding = this.odysseyModel.mdlReader.ReadUInt16();
+    this.TwoSidedTex = this.odysseyModel.mdlReader.readUInt32();
+    this.Loop = this.odysseyModel.mdlReader.readUInt32();
+    this.RenderOrder = this.odysseyModel.mdlReader.readUInt16();
+    this.Padding = this.odysseyModel.mdlReader.readUInt16();
 
-    this.Flags = this.odysseyModel.mdlReader.ReadUInt32();
+    this.Flags = this.odysseyModel.mdlReader.readUInt32();
 
     this.isP2P = (this.Flags & OdysseyModelEmitterFlag.P2P);
     this.isP2PSel = (this.Flags & OdysseyModelEmitterFlag.P2P_SEL);

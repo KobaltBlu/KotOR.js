@@ -90,19 +90,19 @@ export class ERFObject {
           let header = Buffer.from(this.buffer, 0, HeaderSize);
           this.Reader = new BinaryReader(header);
 
-          this.Header.FileType = this.Reader.ReadChars(4);
-          this.Header.FileVersion = this.Reader.ReadChars(4);
+          this.Header.FileType = this.Reader.readChars(4);
+          this.Header.FileVersion = this.Reader.readChars(4);
 
-          this.Header.LanguageCount = this.Reader.ReadUInt32();
-          this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
-          this.Header.EntryCount = this.Reader.ReadUInt32();
-          this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
-          this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
-          this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
-          this.Header.BuildYear = this.Reader.ReadUInt32();
-          this.Header.BuildDay = this.Reader.ReadUInt32();
-          this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
-          this.Header.Reserved = this.Reader.ReadBytes(116);                 //Byte 116
+          this.Header.LanguageCount = this.Reader.readUInt32();
+          this.Header.LocalizedStringSize = this.Reader.readUInt32();
+          this.Header.EntryCount = this.Reader.readUInt32();
+          this.Header.OffsetToLocalizedString = this.Reader.readUInt32();
+          this.Header.OffsetToKeyList = this.Reader.readUInt32();
+          this.Header.OffsetToResourceList = this.Reader.readUInt32();
+          this.Header.BuildYear = this.Reader.readUInt32();
+          this.Header.BuildDay = this.Reader.readUInt32();
+          this.Header.DescriptionStrRef = this.Reader.readUInt32();
+          this.Header.Reserved = this.Reader.readBytes(116);                 //Byte 116
 
           header = Buffer.allocUnsafe(0);
           this.Reader.dispose();
@@ -112,33 +112,33 @@ export class ERFObject {
           header = Buffer.from(this.buffer, 0, this.erfDataOffset);
           this.Reader.reuse(header);
 
-          this.Reader.Seek(this.Header.OffsetToLocalizedString);
+          this.Reader.seek(this.Header.OffsetToLocalizedString);
 
           for (let i = 0; i < this.Header.LanguageCount; i++) {
             let language: ERFLanguage = {} as ERFLanguage;
-            language.LanguageID = this.Reader.ReadUInt32();
-            language.StringSize = this.Reader.ReadUInt32();
-            language.String = this.Reader.ReadChars(language.StringSize);
+            language.LanguageID = this.Reader.readUInt32();
+            language.StringSize = this.Reader.readUInt32();
+            language.String = this.Reader.readChars(language.StringSize);
             this.LocalizedStrings.push(language);
           }
 
-          this.Reader.Seek(this.Header.OffsetToKeyList);
+          this.Reader.seek(this.Header.OffsetToKeyList);
 
           for (let i = 0; i < this.Header.EntryCount; i++) {
             let key: ERFKeyEntry = {} as ERFKeyEntry;
-            key.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-            key.ResID = this.Reader.ReadUInt32();
-            key.ResType = this.Reader.ReadUInt16();
-            key.Unused = this.Reader.ReadUInt16();
+            key.ResRef = this.Reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+            key.ResID = this.Reader.readUInt32();
+            key.ResType = this.Reader.readUInt16();
+            key.Unused = this.Reader.readUInt16();
             this.KeyList.push(key);
           }
 
-          this.Reader.Seek(this.Header.OffsetToResourceList);
+          this.Reader.seek(this.Header.OffsetToResourceList);
 
           for (let i = 0; i < this.Header.EntryCount; i++) {
             let resource: ERFResource = {} as ERFResource;
-            resource.OffsetToResource = this.Reader.ReadUInt32();
-            resource.ResourceSize = this.Reader.ReadUInt32();
+            resource.OffsetToResource = this.Reader.readUInt32();
+            resource.ResourceSize = this.Reader.readUInt32();
             this.Resources.push(resource);
           }
 
@@ -155,19 +155,19 @@ export class ERFObject {
             GameFileSystem.read(fd, header, 0, HeaderSize, 0).then( () => {
               this.Reader = new BinaryReader(header);
 
-              this.Header.FileType = this.Reader.ReadChars(4);
-              this.Header.FileVersion = this.Reader.ReadChars(4);
+              this.Header.FileType = this.Reader.readChars(4);
+              this.Header.FileVersion = this.Reader.readChars(4);
 
-              this.Header.LanguageCount = this.Reader.ReadUInt32();
-              this.Header.LocalizedStringSize = this.Reader.ReadUInt32();
-              this.Header.EntryCount = this.Reader.ReadUInt32();
-              this.Header.OffsetToLocalizedString = this.Reader.ReadUInt32();
-              this.Header.OffsetToKeyList = this.Reader.ReadUInt32();
-              this.Header.OffsetToResourceList = this.Reader.ReadUInt32();
-              this.Header.BuildYear = this.Reader.ReadUInt32();
-              this.Header.BuildDay = this.Reader.ReadUInt32();
-              this.Header.DescriptionStrRef = this.Reader.ReadUInt32();
-              this.Header.Reserved = this.Reader.ReadBytes(116);               //Byte 116
+              this.Header.LanguageCount = this.Reader.readUInt32();
+              this.Header.LocalizedStringSize = this.Reader.readUInt32();
+              this.Header.EntryCount = this.Reader.readUInt32();
+              this.Header.OffsetToLocalizedString = this.Reader.readUInt32();
+              this.Header.OffsetToKeyList = this.Reader.readUInt32();
+              this.Header.OffsetToResourceList = this.Reader.readUInt32();
+              this.Header.BuildYear = this.Reader.readUInt32();
+              this.Header.BuildDay = this.Reader.readUInt32();
+              this.Header.DescriptionStrRef = this.Reader.readUInt32();
+              this.Header.Reserved = this.Reader.readBytes(116);               //Byte 116
 
               header = Buffer.allocUnsafe(0);
 
@@ -177,33 +177,33 @@ export class ERFObject {
               GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0).then( () => {
                 this.Reader.reuse(header);
 
-                this.Reader.Seek(this.Header.OffsetToLocalizedString);
+                this.Reader.seek(this.Header.OffsetToLocalizedString);
 
                 for (let i = 0; i < this.Header.LanguageCount; i++) {
                   let language: ERFLanguage = {} as ERFLanguage;
-                  language.LanguageID = this.Reader.ReadUInt32();
-                  language.StringSize = this.Reader.ReadUInt32();
-                  language.String = this.Reader.ReadChars(language.StringSize);
+                  language.LanguageID = this.Reader.readUInt32();
+                  language.StringSize = this.Reader.readUInt32();
+                  language.String = this.Reader.readChars(language.StringSize);
                   this.LocalizedStrings.push(language);
                 }
 
-                this.Reader.Seek(this.Header.OffsetToKeyList);
+                this.Reader.seek(this.Header.OffsetToKeyList);
 
                 for (let i = 0; i < this.Header.EntryCount; i++) {
                   let key: ERFKeyEntry = {} as ERFKeyEntry;
-                  key.ResRef = this.Reader.ReadChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-                  key.ResID = this.Reader.ReadUInt32();
-                  key.ResType = this.Reader.ReadUInt16();
-                  key.Unused = this.Reader.ReadUInt16();
+                  key.ResRef = this.Reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+                  key.ResID = this.Reader.readUInt32();
+                  key.ResType = this.Reader.readUInt16();
+                  key.Unused = this.Reader.readUInt16();
                   this.KeyList.push(key);
                 }
 
-                this.Reader.Seek(this.Header.OffsetToResourceList);
+                this.Reader.seek(this.Header.OffsetToResourceList);
 
                 for (let i = 0; i < this.Header.EntryCount; i++) {
                   let resource: ERFResource = {} as ERFResource;
-                  resource.OffsetToResource = this.Reader.ReadUInt32();
-                  resource.ResourceSize = this.Reader.ReadUInt32();
+                  resource.OffsetToResource = this.Reader.readUInt32();
+                  resource.ResourceSize = this.Reader.readUInt32();
                   this.Resources.push(resource);
                 }
 
@@ -470,43 +470,43 @@ export class ERFObject {
       offset += this.Resources[i].ResourceSize;
     }
 
-    output.WriteString(this.Header.FileType);
-    output.WriteString(this.Header.FileVersion);
-    output.WriteUInt32(this.Header.LanguageCount);
-    output.WriteUInt32(this.Header.LocalizedStringSize);
-    output.WriteUInt32(this.Header.EntryCount);
-    output.WriteUInt32(this.Header.OffsetToLocalizedString);
-    output.WriteUInt32(this.Header.OffsetToKeyList);
-    output.WriteUInt32(this.Header.OffsetToResourceList);
-    output.WriteUInt32(new Date().getFullYear() - 1900);
-    output.WriteUInt32(ERFObject.DayOfTheYear());
-    output.WriteUInt32(0);
-    output.WriteBytes(Buffer.alloc(116));
+    output.writeString(this.Header.FileType);
+    output.writeString(this.Header.FileVersion);
+    output.writeUInt32(this.Header.LanguageCount);
+    output.writeUInt32(this.Header.LocalizedStringSize);
+    output.writeUInt32(this.Header.EntryCount);
+    output.writeUInt32(this.Header.OffsetToLocalizedString);
+    output.writeUInt32(this.Header.OffsetToKeyList);
+    output.writeUInt32(this.Header.OffsetToResourceList);
+    output.writeUInt32(new Date().getFullYear() - 1900);
+    output.writeUInt32(ERFObject.DayOfTheYear());
+    output.writeUInt32(0);
+    output.writeBytes(Buffer.alloc(116));
 
     //LocalStrings
     for(let i = 0; i < this.LocalizedStrings.length; i++){
-      output.WriteUInt32(this.LocalizedStrings[i].LanguageID);
-      output.WriteUInt32(this.LocalizedStrings[i].StringSize);
-      output.WriteString(this.LocalizedStrings[i].String);
+      output.writeUInt32(this.LocalizedStrings[i].LanguageID);
+      output.writeUInt32(this.LocalizedStrings[i].StringSize);
+      output.writeString(this.LocalizedStrings[i].String);
     }
 
     //Key List
     for(let i = 0; i < this.KeyList.length; i++){
-      output.WriteString( this.KeyList[i].ResRef.padEnd(16, '\0').substr(0, 16) );
-      output.WriteUInt32( this.KeyList[i].ResID );
-      output.WriteUInt16( this.KeyList[i].ResType );
-      output.WriteUInt16( 0 );
+      output.writeString( this.KeyList[i].ResRef.padEnd(16, '\0').substr(0, 16) );
+      output.writeUInt32( this.KeyList[i].ResID );
+      output.writeUInt16( this.KeyList[i].ResType );
+      output.writeUInt16( 0 );
     }
 
     //Resource List
     for(let i = 0; i < this.Resources.length; i++){
-      output.WriteUInt32( this.Resources[i].OffsetToResource );
-      output.WriteUInt32( this.Resources[i].ResourceSize );
+      output.writeUInt32( this.Resources[i].OffsetToResource );
+      output.writeUInt32( this.Resources[i].ResourceSize );
     }
 
     //Data
     for(let i = 0; i < this.Resources.length; i++){
-      output.WriteBytes( this.Resources[i].data );
+      output.writeBytes( this.Resources[i].data );
     }
 
     return output.buffer;

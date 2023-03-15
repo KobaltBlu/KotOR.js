@@ -51,9 +51,9 @@ export class LTRObject {
 
       let header_len = 9;
 
-      this.fileType = br.ReadChars(4);
-      this.fileVersion = br.ReadChars(4);
-      this.charCount = br.ReadByte();
+      this.fileType = br.readChars(4);
+      this.fileVersion = br.readChars(4);
+      this.charCount = br.readByte();
 
       this.singleArray = [
         [], [], []
@@ -63,15 +63,15 @@ export class LTRObject {
 
       //Single Array
       for(let i = 0; i < this.charCount; i++){
-        this.singleArray[0][i] = br.ReadSingle();
+        this.singleArray[0][i] = br.readSingle();
       }
 
       for(let i = 0; i < this.charCount; i++){
-        this.singleArray[1][i] = br.ReadSingle();
+        this.singleArray[1][i] = br.readSingle();
       }
 
       for(let i = 0; i < this.charCount; i++){
-        this.singleArray[2][i] = br.ReadSingle();
+        this.singleArray[2][i] = br.readSingle();
       }
 
       //Double Array
@@ -81,15 +81,15 @@ export class LTRObject {
         ];
 
         for(let j = 0; j < this.charCount; j++){
-          this.doubleArray[i][0][j] = br.ReadSingle();
+          this.doubleArray[i][0][j] = br.readSingle();
         }
   
         for(let j = 0; j < this.charCount; j++){
-          this.doubleArray[i][1][j] = br.ReadSingle();
+          this.doubleArray[i][1][j] = br.readSingle();
         }
   
         for(let j = 0; j < this.charCount; j++){
-          this.doubleArray[i][2][j] = br.ReadSingle();
+          this.doubleArray[i][2][j] = br.readSingle();
         }
 
       }
@@ -103,15 +103,15 @@ export class LTRObject {
           ];
 
           for(let k = 0; k < this.charCount; k++){
-            this.tripleArray[i][j][0][k] = br.ReadSingle();
+            this.tripleArray[i][j][0][k] = br.readSingle();
           }
     
           for(let k = 0; k < this.charCount; k++){
-            this.tripleArray[i][j][1][k] = br.ReadSingle();
+            this.tripleArray[i][j][1][k] = br.readSingle();
           }
     
           for(let k = 0; k < this.charCount; k++){
-            this.tripleArray[i][j][2][k] = br.ReadSingle();
+            this.tripleArray[i][j][2][k] = br.readSingle();
           }
         }
       }

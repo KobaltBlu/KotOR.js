@@ -56,10 +56,10 @@ export class OdysseyModelNode {
   readBinary(odysseyModel: OdysseyModel){
     this.odysseyModel = odysseyModel;
 
-    this.NodeType = this.odysseyModel.mdlReader.ReadUInt16();  
+    this.NodeType = this.odysseyModel.mdlReader.readUInt16();  
 
-    this.Supernode = this.odysseyModel.mdlReader.ReadUInt16();
-    this.NodePosition = this.odysseyModel.mdlReader.ReadUInt16();
+    this.Supernode = this.odysseyModel.mdlReader.readUInt16();
+    this.NodePosition = this.odysseyModel.mdlReader.readUInt16();
 
     if (this.NodePosition < this.odysseyModel.names.length){
       this.name = this.odysseyModel.names[this.NodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -84,15 +84,15 @@ export class OdysseyModelNode {
     this.odysseyModel.mdlReader.position += (6 + 4);
 
     //Node Position
-    this.position.x = this.odysseyModel.mdlReader.ReadSingle();
-    this.position.y = this.odysseyModel.mdlReader.ReadSingle();
-    this.position.z = this.odysseyModel.mdlReader.ReadSingle();
+    this.position.x = this.odysseyModel.mdlReader.readSingle();
+    this.position.y = this.odysseyModel.mdlReader.readSingle();
+    this.position.z = this.odysseyModel.mdlReader.readSingle();
 
     //Node Quaternion
-    this.quaternion.w = this.odysseyModel.mdlReader.ReadSingle();
-    this.quaternion.x = this.odysseyModel.mdlReader.ReadSingle();
-    this.quaternion.y = this.odysseyModel.mdlReader.ReadSingle();
-    this.quaternion.z = this.odysseyModel.mdlReader.ReadSingle();
+    this.quaternion.w = this.odysseyModel.mdlReader.readSingle();
+    this.quaternion.x = this.odysseyModel.mdlReader.readSingle();
+    this.quaternion.y = this.odysseyModel.mdlReader.readSingle();
+    this.quaternion.z = this.odysseyModel.mdlReader.readSingle();
 
     //Node Children
     let _childDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
@@ -110,7 +110,7 @@ export class OdysseyModelNode {
 
   readBinaryNodeControllers(offset: number, count: number, data: any[], data2: any[]){
     let pos = this.odysseyModel.mdlReader.position;
-    this.odysseyModel.mdlReader.Seek(offset);
+    this.odysseyModel.mdlReader.seek(offset);
 
     let controllers = new Map();
     for(let i = 0; i < count; i++){
@@ -119,13 +119,13 @@ export class OdysseyModelNode {
         data: []
       };
 
-      controller.type = this.odysseyModel.mdlReader.ReadInt32();
-      this.odysseyModel.mdlReader.Skip(2); //controller.unk_keyflag = this.odysseyModel.mdlReader.ReadInt16();
-      controller.frameCount = this.odysseyModel.mdlReader.ReadUInt16();
-      controller.timeKeyIndex = this.odysseyModel.mdlReader.ReadUInt16(); //Index into the float array of the first time key
-      controller.dataValueIndex = this.odysseyModel.mdlReader.ReadUInt16(); //Index into the float array of the first controller data value
-      controller.columnCount = this.odysseyModel.mdlReader.ReadByte();//Number of columns excluding the time key column
-      this.odysseyModel.mdlReader.Skip(3); //Skip unused padding
+      controller.type = this.odysseyModel.mdlReader.readInt32();
+      this.odysseyModel.mdlReader.skip(2); //controller.unk_keyflag = this.odysseyModel.mdlReader.readInt16();
+      controller.frameCount = this.odysseyModel.mdlReader.readUInt16();
+      controller.timeKeyIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first time key
+      controller.dataValueIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first controller data value
+      controller.columnCount = this.odysseyModel.mdlReader.readByte();//Number of columns excluding the time key column
+      this.odysseyModel.mdlReader.skip(3); //Skip unused padding
       
       let tmpQuat = new THREE.Quaternion();
 
@@ -427,7 +427,7 @@ export class OdysseyModelNode {
 
     }
 
-    this.odysseyModel.mdlReader.Seek(pos);
+    this.odysseyModel.mdlReader.seek(pos);
     return controllers;
   }
 

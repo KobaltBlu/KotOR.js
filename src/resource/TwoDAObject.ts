@@ -56,15 +56,15 @@ export class TwoDAObject {
   }
 
   read2DA(br: BinaryReader): void {
-    this.FileType = br.ReadChars(4);
-    this.FileVersion = br.ReadChars(4);
+    this.FileType = br.readChars(4);
+    this.FileVersion = br.readChars(4);
 
     br.position += 1; //0x0A = Newline (Skip)
 
     let str = "";
     let ch;
     this.columns = ["__rowlabel"];
-    while ((ch = br.ReadChar()).charCodeAt(0) != 0){
+    while ((ch = br.readChar()).charCodeAt(0) != 0){
       if(ch.charCodeAt(0) != 9){
         str = str + ch;
       }else{
@@ -74,7 +74,7 @@ export class TwoDAObject {
     }
 
     this.ColumnCount = this.columns.length - 1;
-    this.RowCount = br.ReadUInt32();
+    this.RowCount = br.readUInt32();
 
     //Get the row index numbers
     let RowIndexes = [];
@@ -82,7 +82,7 @@ export class TwoDAObject {
       let rowIndex = "";
       let c;
 
-      while ((c = br.ReadChar()).charCodeAt(0) != 9){
+      while ((c = br.readChar()).charCodeAt(0) != 9){
         rowIndex = rowIndex + c;
       }
 
@@ -93,10 +93,10 @@ export class TwoDAObject {
     this.CellCount = this.ColumnCount * this.RowCount;
     let offsets = [];
     for (let i = 0; i < this.CellCount; i++){
-      offsets[i] = br.ReadUInt16();
+      offsets[i] = br.readUInt16();
     }
 
-    const dataSize = br.ReadUInt16();
+    const dataSize = br.readUInt16();
     let dataOffset = br.position;
 
     //Get the Row Data
@@ -118,7 +118,7 @@ export class TwoDAObject {
         let token = "";
         let c;
 
-        while((c = br.ReadChar()).charCodeAt(0) != 0)
+        while((c = br.readChar()).charCodeAt(0) != 0)
           token = token + c;
 
         if(token == "")
@@ -136,24 +136,24 @@ export class TwoDAObject {
   toExportBuffer(): Buffer {
     try{
       const bw = new BinaryWriter();
-      bw.WriteChars('2DA ');
-      bw.WriteChars('V2.b');
-      bw.WriteByte(0x0A);//NewLine
+      bw.writeChars('2DA ');
+      bw.writeChars('V2.b');
+      bw.writeByte(0x0A);//NewLine
 
       for(let i = 1; i < this.columns.length; i++){
-        bw.WriteChars(this.columns[i]);
-        bw.WriteByte(0x09); //HT Delineate Column Entry 
+        bw.writeChars(this.columns[i]);
+        bw.writeByte(0x09); //HT Delineate Column Entry 
       }
 
-      bw.WriteByte(0x00); //Null Terminate Columns List
+      bw.writeByte(0x00); //Null Terminate Columns List
 
       const indexes = Object.keys(this.rows);
       //Write the row count as a UInt32
-      bw.WriteUInt32(indexes.length);
+      bw.writeUInt32(indexes.length);
 
       for(let i = 0; i < indexes.length; i++){
-        bw.WriteChars(indexes[i]);
-        bw.WriteByte(0x09); //HT Delineate Row Index Entry 
+        bw.writeChars(indexes[i]);
+        bw.writeByte(0x09); //HT Delineate Row Index Entry 
       }
 
       const valuesWriter = new BinaryWriter();
@@ -168,19 +168,19 @@ export class TwoDAObject {
           if(key != '__rowlabel' && key != '__index'){
             const value: string = row[key] == '****' ? '' : String(row[key]);
             if(values.has(value)){
-              bw.WriteUInt16(values.get(value));
+              bw.writeUInt16(values.get(value));
             }else{
               const offset = valuesWriter.position;
-              bw.WriteUInt16(offset);
-              valuesWriter.WriteStringNullTerminated(value);
+              bw.writeUInt16(offset);
+              valuesWriter.writeStringNullTerminated(value);
               values.set(value, offset);
             }
           }
         }
       }
 
-      bw.WriteUInt16(valuesWriter.buffer.length);
-      bw.WriteBytes(valuesWriter.buffer);
+      bw.writeUInt16(valuesWriter.buffer.length);
+      bw.writeBytes(valuesWriter.buffer);
 
       return bw.buffer;
     }catch(e){

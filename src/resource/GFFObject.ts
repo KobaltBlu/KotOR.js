@@ -40,7 +40,7 @@ export class GFFObject {
   json: any = {};
   RootNode: GFFStruct;
   file: string;
-  reader: any;
+  reader: BinaryReader;
   StructOffset: any;
   FieldOffset: any;
   LabelOffset: any;
@@ -158,50 +158,50 @@ export class GFFObject {
   Parse(binary: Buffer, onComplete?: Function){
     this.reader = new BinaryReader(binary);
 
-    this.FileType = this.reader.ReadChars(4);
-    this.FileVersion = this.reader.ReadChars(4);
-    this.StructOffset = this.reader.ReadUInt32();
-    this.StructCount = this.reader.ReadUInt32();
-    this.FieldOffset = this.reader.ReadUInt32();
-    this.FieldCount = this.reader.ReadUInt32();
-    this.LabelOffset = this.reader.ReadUInt32();
-    this.LabelCount = this.reader.ReadUInt32();
-    this.FieldDataOffset = this.reader.ReadUInt32();
-    this.FieldDataCount = this.reader.ReadUInt32();
-    this.FieldIndicesOffset = this.reader.ReadUInt32();
-    this.FieldIndicesCount = this.reader.ReadUInt32();
-    this.ListIndicesOffset = this.reader.ReadUInt32();
-    this.ListIndicesCount = this.reader.ReadUInt32();
+    this.FileType = this.reader.readChars(4);
+    this.FileVersion = this.reader.readChars(4);
+    this.StructOffset = this.reader.readUInt32();
+    this.StructCount = this.reader.readUInt32();
+    this.FieldOffset = this.reader.readUInt32();
+    this.FieldCount = this.reader.readUInt32();
+    this.LabelOffset = this.reader.readUInt32();
+    this.LabelCount = this.reader.readUInt32();
+    this.FieldDataOffset = this.reader.readUInt32();
+    this.FieldDataCount = this.reader.readUInt32();
+    this.FieldIndicesOffset = this.reader.readUInt32();
+    this.FieldIndicesCount = this.reader.readUInt32();
+    this.ListIndicesOffset = this.reader.readUInt32();
+    this.ListIndicesCount = this.reader.readUInt32();
 
     this.tmpStructArray = [];
     this.tmpLabelArray = [];
     this.tmpFieldsArray = [];
 
     //Start Structs
-    this.reader.Seek(this.StructOffset);
+    this.reader.seek(this.StructOffset);
     for (let i = 0; i < this.StructCount; i++) {
       this.tmpStructArray[i] = {
-        Type: this.reader.ReadInt32(), 
-        DataOrDataOffset: this.reader.ReadInt32(), 
-        FieldCount: this.reader.ReadInt32()
+        Type: this.reader.readInt32(), 
+        DataOrDataOffset: this.reader.readInt32(), 
+        FieldCount: this.reader.readInt32()
       };
     }
     //End Structs
 
     //Start Labels
-    this.reader.Seek(this.LabelOffset);
+    this.reader.seek(this.LabelOffset);
     for (let i = 0; i < this.LabelCount; i++) {
-      this.tmpLabelArray[i] = this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,'');
+      this.tmpLabelArray[i] = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'');
     }
     //End Labels
 
     //Start Fields
-    this.reader.Seek(this.FieldOffset);
+    this.reader.seek(this.FieldOffset);
     for (let i = 0; i < this.FieldCount; i++) {
       this.tmpFieldsArray[i] = {
-        Type: this.reader.ReadInt32(), 
-        Label: this.reader.ReadInt32(), 
-        Data: this.reader.ReadBytes(4), 
+        Type: this.reader.readInt32(), 
+        Label: this.reader.readInt32(), 
+        Data: this.reader.readBytes(4), 
         Val: "", Index: i
       };
     }
@@ -283,13 +283,13 @@ export class GFFObject {
       strt.AddField(this.BuildField(this.tmpFieldsArray[index]));
     }
     else if(struct.FieldCount != 0){
-      let originalPos = this.reader.Tell();
-      this.reader.Seek(this.FieldIndicesOffset + struct.DataOrDataOffset);
+      let originalPos = this.reader.tell();
+      this.reader.seek(this.FieldIndicesOffset + struct.DataOrDataOffset);
       for (let i = 0; i < struct.FieldCount; i++){
-        let index = this.reader.ReadInt32();
+        let index = this.reader.readInt32();
         strt.AddField(this.BuildField(this.tmpFieldsArray[index]));
       }
-      this.reader.Seek(originalPos);
+      this.reader.seek(originalPos);
     }
 
     return strt;
@@ -301,7 +301,7 @@ export class GFFObject {
     let data = f.Data;
     let offset = data.readUInt32LE();
 
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
     switch (field.GetType()){
       case GFFDataType.BYTE: //Byte
         field.SetValue(data.readUInt8());
@@ -350,11 +350,11 @@ export class GFFObject {
         break;
       case GFFDataType.LIST:
         if (offset != 0xFFFFFFFF){
-          this.reader.Seek(this.ListIndicesOffset + offset);
-          let ListSize = this.reader.ReadUInt32();//The first 4 bytes indicate the size of the array
+          this.reader.seek(this.ListIndicesOffset + offset);
+          let ListSize = this.reader.readUInt32();//The first 4 bytes indicate the size of the array
           let arr: GFFStruct[] = [];
           for (let i = 0; i < ListSize; i++){
-            arr[i] = this.BuildStruct(this.tmpStructArray[this.reader.ReadInt32()]);
+            arr[i] = this.BuildStruct(this.tmpStructArray[this.reader.readInt32()]);
           }
 
           field.SetChildStructs(arr);
@@ -367,7 +367,7 @@ export class GFFObject {
         field.SetVector(this.GetVector(offset));
         break;
     }
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    this.reader.seek(OriginalPos);//Return the reader position to the original
 
     return field;
   }
@@ -419,14 +419,14 @@ export class GFFObject {
   //Gets data from the FieldDataHeader
   GetRESREF(offset: number){
     let RESREF = "";
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
 
-    let length = this.reader.ReadByte();// Get the length of the string
+    let length = this.reader.readByte();// Get the length of the string
     if (length != 0)
-      RESREF = this.reader.ReadChars(length);
+      RESREF = this.reader.readChars(length);
 
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return RESREF;
   }
 
@@ -435,92 +435,92 @@ export class GFFObject {
     //console.log('GetCExoLocString', offset);
     let data = new CExoLocString(-1);
 
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
 
-    let length = this.reader.ReadInt32();// Get the length of the string
-    data.SetRESREF(this.reader.ReadInt32());
-    let stringCount = this.reader.ReadInt32()
+    let length = this.reader.readInt32();// Get the length of the string
+    data.SetRESREF(this.reader.readInt32());
+    let stringCount = this.reader.readInt32()
 
     for (let i = 0; i < stringCount; i++) {
-      let stringID = this.reader.ReadInt32();
-      let stringLength = this.reader.ReadInt32();
-      let subString = new CExoLocSubString(stringID, this.reader.ReadChars(stringLength));
+      let stringID = this.reader.readInt32();
+      let stringLength = this.reader.readInt32();
+      let subString = new CExoLocSubString(stringID, this.reader.readChars(stringLength));
       data.AddSubString(subString);
     }
 
     //if (length != 0)
-      //RESREF = new string(Reader.ReadChars(length));
+      //RESREF = new string(Reader.readChars(length));
 
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return data;
   }
 
   //Gets data from the FieldDataHeader
   GetCExoString(offset: number){
     let str = "";
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
     //console.log('GetCExoString', this.FieldDataOffset + offset, this.FieldDataOffset, offset)
-    let length = this.reader.ReadInt32();// Get the length of the string
+    let length = this.reader.readInt32();// Get the length of the string
     if (length != 0)
-      str = this.reader.ReadChars(length);
+      str = this.reader.readChars(length);
 
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return str;
   }
 
   //Gets data from the FieldDataHeader
   GetDword64(offset: number){
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let Dword64 = this.reader.ReadUInt64();
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let Dword64 = this.reader.readUInt64();
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return Dword64;
   }
 
   //Gets data from the FieldDataHeader
   GetInt64(offset: number){
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let value = this.reader.ReadInt64();
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let value = this.reader.readInt64();
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return value;
   }
 
   //Gets data from the FieldDataHeader
   GetDouble(offset: number){
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let Double = this.reader.ReadDouble();
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let Double = this.reader.readDouble();
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return Double;
   }
 
   //Gets data from the FieldDataHeader
   GetOrientation(offset: number): THREE.Quaternion{
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let o = new THREE.Quaternion(this.reader.ReadSingle(), this.reader.ReadSingle(), this.reader.ReadSingle(), this.reader.ReadSingle());
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let o = new THREE.Quaternion(this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle());
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return o;
   }
 
   //Gets data from the FieldDataHeader
   GetVector(offset: number): THREE.Vector3{
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let v = new THREE.Vector3(this.reader.ReadSingle(), this.reader.ReadSingle(), this.reader.ReadSingle());
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let v = new THREE.Vector3(this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle());
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return v;
   }
 
   GetVoid(offset: number){
-    let OriginalPos = this.reader.Tell();//Store the original position of the reader object
-    this.reader.Seek(this.FieldDataOffset + offset);
-    let size =  this.reader.ReadUInt32();
-    let bytes = this.reader.ReadBytes(size);
-    this.reader.Seek(OriginalPos);//Return the reader position to the original
+    let OriginalPos = this.reader.tell();//Store the original position of the reader object
+    this.reader.seek(this.FieldDataOffset + offset);
+    let size =  this.reader.readUInt32();
+    let bytes = this.reader.readBytes(size);
+    this.reader.seek(OriginalPos);//Return the reader position to the original
     return bytes;
   }
 
@@ -684,58 +684,58 @@ export class GFFObject {
     //Write the Structs data
     _header.StructOffset = 56;
     bw.position = _header.StructOffset;
-    bw.Write(this.BWStructs.buffer);
+    bw.write(this.BWStructs.buffer);
 
     //Write the Fields data
     _header.FieldOffset = (_header.StructOffset + StructsLength); //(uint)
     bw.position = _header.FieldOffset;
-    bw.Write(this.BWFields.buffer);
+    bw.write(this.BWFields.buffer);
 
     //Write the Labels data
     _header.LabelOffset = (_header.FieldOffset + FieldsLength); //(uint)
     bw.position = _header.LabelOffset;
-    bw.Write(this.BWLabels.buffer);
+    bw.write(this.BWLabels.buffer);
 
     //Write the FieldData data
     _header.FieldDataOffset = (_header.LabelOffset + LabelsLength); //(uint)
     bw.position = _header.FieldDataOffset;
-    bw.Write(this.BWFieldData.buffer);
+    bw.write(this.BWFieldData.buffer);
 
     //Write the FieldIndicies data
     _header.FieldIndicesOffset = (_header.FieldDataOffset + FieldDataLength); //(uint)
     bw.position = _header.FieldIndicesOffset;
-    bw.Write(this.BWFieldIndicies.buffer);
+    bw.write(this.BWFieldIndicies.buffer);
 
     //Write the ListIndicies data
     _header.ListIndicesOffset = (_header.FieldIndicesOffset + FieldIndiciesLength); //(uint)
     bw.position = _header.ListIndicesOffset;
-    bw.Write(this.BWListIndicies.buffer);
+    bw.write(this.BWListIndicies.buffer);
 
     bw.position = 0;
 
-    bw.WriteChars(this.PadRight(_header.FileType, '\0', 4).substr(0, 4));
-    bw.WriteChars(this.PadRight(_header.FileVersion, '\0', 4).substr(0, 4));
-    bw.WriteUInt32(_header.StructOffset);
-    bw.WriteUInt32(_header.StructCount);
-    bw.WriteUInt32(_header.FieldOffset);
-    bw.WriteUInt32(_header.FieldCount);
-    bw.WriteUInt32(_header.LabelOffset);
-    bw.WriteUInt32(_header.LabelCount);
-    bw.WriteUInt32(_header.FieldDataOffset);
-    bw.WriteUInt32(_header.FieldDataCount);
-    bw.WriteUInt32(_header.FieldIndicesOffset);
-    bw.WriteUInt32(_header.FieldIndicesCount);
-    bw.WriteUInt32(_header.ListIndicesOffset);
-    bw.WriteUInt32(_header.ListIndicesCount);
+    bw.writeChars(this.PadRight(_header.FileType, '\0', 4).substr(0, 4));
+    bw.writeChars(this.PadRight(_header.FileVersion, '\0', 4).substr(0, 4));
+    bw.writeUInt32(_header.StructOffset);
+    bw.writeUInt32(_header.StructCount);
+    bw.writeUInt32(_header.FieldOffset);
+    bw.writeUInt32(_header.FieldCount);
+    bw.writeUInt32(_header.LabelOffset);
+    bw.writeUInt32(_header.LabelCount);
+    bw.writeUInt32(_header.FieldDataOffset);
+    bw.writeUInt32(_header.FieldDataCount);
+    bw.writeUInt32(_header.FieldIndicesOffset);
+    bw.writeUInt32(_header.FieldIndicesCount);
+    bw.writeUInt32(_header.ListIndicesOffset);
+    bw.writeUInt32(_header.ListIndicesCount);
 
-    bw.Close();
+    bw.close();
 
-    this.BWStructs.Dispose();
-    this.BWFields.Dispose();
-    this.BWFieldData.Dispose();
-    this.BWLabels.Dispose();
-    this.BWFieldIndicies.Dispose();
-    this.BWListIndicies.Dispose();
+    this.BWStructs.dispose();
+    this.BWFields.dispose();
+    this.BWFieldData.dispose();
+    this.BWLabels.dispose();
+    this.BWFieldIndicies.dispose();
+    this.BWListIndicies.dispose();
 
     return bw.buffer;
   }
@@ -769,34 +769,34 @@ export class GFFObject {
   ExportStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       //console.log('Export Struct', struct);
-      this.BWStructs.WriteUInt32(struct.GetType() == -1 ? 0xFFFFFFFF : struct.GetType() );
+      this.BWStructs.writeUInt32(struct.GetType() == -1 ? 0xFFFFFFFF : struct.GetType() );
       if(struct.GetFields().length == 1){
-        this.BWStructs.WriteUInt32( struct.GetFields()[0].index );
+        this.BWStructs.writeUInt32( struct.GetFields()[0].index );
       }else if(struct.GetFields().length){
-        this.BWStructs.WriteUInt32( this.BWFieldIndicies.position );
+        this.BWStructs.writeUInt32( this.BWFieldIndicies.position );
         for(let i = 0; i < struct.GetFields().length; i++){
-          this.BWFieldIndicies.WriteUInt32( struct.GetFields()[i].index );
+          this.BWFieldIndicies.writeUInt32( struct.GetFields()[i].index );
         }
       }else{
-        this.BWStructs.WriteUInt32( 0 );
+        this.BWStructs.writeUInt32( 0 );
       }
 
-      this.BWStructs.WriteUInt32(struct.GetFields().length);
+      this.BWStructs.writeUInt32(struct.GetFields().length);
     }
   }
 
   //The method returns the exported fields index in the FieldsArray
   ExportField(field: GFFField){
     if(field instanceof GFFField){
-      this.BWFields.WriteUInt32(field.GetType());
-      this.BWFields.WriteUInt32(field.labelIndex);
+      this.BWFields.writeUInt32(field.GetType());
+      this.BWFields.writeUInt32(field.labelIndex);
       try{
         switch (field.GetType()) {
           case GFFDataType.BYTE:
-            this.BWFields.WriteUInt32(field.Value);
+            this.BWFields.writeUInt32(field.Value);
             break;
           case GFFDataType.CEXOLOCSTRING:
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
             //Calculate the total length of the CExoLocString structure
             let CExoLocStringTotalSize = 8;//the size of two DWORDS
             for(let i = 0; i < field.GetCExoLocString().GetStrings().length; i++){
@@ -804,94 +804,94 @@ export class GFFObject {
               CExoLocStringTotalSize += (8 + field.GetCExoLocString().GetStrings()[i].getString().length);
             }
 
-            this.BWFieldData.WriteUInt32(CExoLocStringTotalSize);
-            this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetRESREF() == -1 ? 0xFFFFFFFF : field.GetCExoLocString().GetRESREF() );
-            this.BWFieldData.WriteUInt32(field.GetCExoLocString().GetStrings().length);
+            this.BWFieldData.writeUInt32(CExoLocStringTotalSize);
+            this.BWFieldData.writeUInt32(field.GetCExoLocString().GetRESREF() == -1 ? 0xFFFFFFFF : field.GetCExoLocString().GetRESREF() );
+            this.BWFieldData.writeUInt32(field.GetCExoLocString().GetStrings().length);
 
             for(let i = 0; i < field.GetCExoLocString().GetStrings().length; i++){
               let sub = field.GetCExoLocString().GetStrings()[i];
-              this.BWFieldData.WriteUInt32(sub.GetStringID());
-              this.BWFieldData.WriteUInt32(sub.getString().length);
-              this.BWFieldData.WriteChars(sub.getString());
+              this.BWFieldData.writeUInt32(sub.GetStringID());
+              this.BWFieldData.writeUInt32(sub.getString().length);
+              this.BWFieldData.writeChars(sub.getString());
             }
 
             break;
           case GFFDataType.CEXOSTRING:
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteUInt32(field.Value.length);
-            this.BWFieldData.WriteChars(field.Value);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeUInt32(field.Value.length);
+            this.BWFieldData.writeChars(field.Value);
             break;
           case GFFDataType.CHAR:
-            this.BWFields.WriteUInt32(field.Value.charCodeAt());
+            this.BWFields.writeUInt32(field.Value.charCodeAt());
             break;
           case GFFDataType.DOUBLE:
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteDouble(field.Value);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeDouble(field.Value);
             break;
           case GFFDataType.DWORD:
-            this.BWFields.WriteUInt32(field.Value);
+            this.BWFields.writeUInt32(field.Value);
             break;
           case GFFDataType.DWORD64:
             //console.log('DWORD64', field);
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteBytes(field.Data);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeBytes(field.Data);
             break;
           case GFFDataType.FLOAT:
-            this.BWFields.WriteSingle(field.Value);
+            this.BWFields.writeSingle(field.Value);
             break;
           case GFFDataType.INT:
-            this.BWFields.WriteInt32(field.Value);
+            this.BWFields.writeInt32(field.Value);
             break;
           case GFFDataType.INT64:
             //console.log('INT64', field);
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteBytes(field.Data);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeBytes(field.Data);
             break;
           case GFFDataType.LIST:
             if (field.GetChildStructs().length == 0){
-              this.BWFields.WriteUInt32(0xFFFFFFFF);
+              this.BWFields.writeUInt32(0xFFFFFFFF);
             }
             else {
-              this.BWFields.WriteUInt32(this.BWListIndicies.position);
-              this.BWListIndicies.WriteUInt32(field.GetChildStructs().length);
+              this.BWFields.writeUInt32(this.BWListIndicies.position);
+              this.BWListIndicies.writeUInt32(field.GetChildStructs().length);
               for(let i = 0; i < field.GetChildStructs().length; i++){
-                this.BWListIndicies.WriteUInt32(field.GetChildStructs()[i].index);
+                this.BWListIndicies.writeUInt32(field.GetChildStructs()[i].index);
               }
             }
             break;
           case GFFDataType.ORIENTATION:
             //Export the Orientation data to the FieldData block and record the offset with the field
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteSingle(field.GetOrientation().x);
-            this.BWFieldData.WriteSingle(field.GetOrientation().y);
-            this.BWFieldData.WriteSingle(field.GetOrientation().z);
-            this.BWFieldData.WriteSingle(field.GetOrientation().w);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeSingle(field.GetOrientation().x);
+            this.BWFieldData.writeSingle(field.GetOrientation().y);
+            this.BWFieldData.writeSingle(field.GetOrientation().z);
+            this.BWFieldData.writeSingle(field.GetOrientation().w);
             break;
           case GFFDataType.RESREF:
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteByte(field.Value.length);
-            this.BWFieldData.WriteChars(field.Value);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeByte(field.Value.length);
+            this.BWFieldData.writeChars(field.Value);
             break;
           case GFFDataType.SHORT:
-            this.BWFields.WriteInt32(field.Value);
+            this.BWFields.writeInt32(field.Value);
             break;
           case GFFDataType.STRUCT:
-            this.BWFields.WriteUInt32( field.GetChildStructs()[0].index );//Write the struct index value
+            this.BWFields.writeUInt32( field.GetChildStructs()[0].index );//Write the struct index value
             break;
           case GFFDataType.VECTOR:
             //Export the vector data to the FieldData block and record the offset with the field
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteSingle(field.GetVector().x);
-            this.BWFieldData.WriteSingle(field.GetVector().y);
-            this.BWFieldData.WriteSingle(field.GetVector().z);
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeSingle(field.GetVector().x);
+            this.BWFieldData.writeSingle(field.GetVector().y);
+            this.BWFieldData.writeSingle(field.GetVector().z);
             break;
           case GFFDataType.VOID:
-            this.BWFields.WriteUInt32(this.BWFieldData.position);
-            this.BWFieldData.WriteUInt32(field.GetVoid().length);
-            this.BWFieldData.WriteBytes(field.GetVoid());
+            this.BWFields.writeUInt32(this.BWFieldData.position);
+            this.BWFieldData.writeUInt32(field.GetVoid().length);
+            this.BWFieldData.writeBytes(field.GetVoid());
             break;
           case GFFDataType.WORD:
-            this.BWFields.WriteUInt32(field.Value);
+            this.BWFields.writeUInt32(field.Value);
             break;
           default:
             throw('Unknown');
@@ -906,7 +906,7 @@ export class GFFObject {
   ExportLabel(label = ""){
     //PadRight is not implemented in JavaScript
     let newLabel = this.PadRight(label, '\0', 16);
-    this.BWLabels.WriteChars(newLabel.substr(0, 16));
+    this.BWLabels.writeChars(newLabel.substr(0, 16));
   }
 
   PadRight(str = "", pad = '\0', count = 16){

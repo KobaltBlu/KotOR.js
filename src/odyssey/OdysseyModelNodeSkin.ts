@@ -37,10 +37,10 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
 
     this.weights_def = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
-    this.MDXBoneWeightOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    this.MDXBoneIndexOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    this.BoneMapOffset = this.odysseyModel.mdlReader.ReadUInt32();
-    this.BoneMapCount = this.odysseyModel.mdlReader.ReadUInt32();
+    this.MDXBoneWeightOffset = this.odysseyModel.mdlReader.readUInt32();
+    this.MDXBoneIndexOffset = this.odysseyModel.mdlReader.readUInt32();
+    this.BoneMapOffset = this.odysseyModel.mdlReader.readUInt32();
+    this.BoneMapCount = this.odysseyModel.mdlReader.readUInt32();
 
     this.BoneQuaternionDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
     this.BonePositionDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
@@ -51,7 +51,7 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
     //Models appear have up to 17 bones. Not sure if this is the limit or just the known max used.
     //Example: c_ithorian.mdl uses 17 bones, while most other models use 16
     for(let i = 0; i < 17; i++){
-      this.bone_parts[i] = this.odysseyModel.mdlReader.ReadUInt16();
+      this.bone_parts[i] = this.odysseyModel.mdlReader.readUInt16();
     }
 
     this.weights = [];
@@ -66,51 +66,51 @@ import { OdysseyModelNodeType } from "../interface/odyssey/OdysseyModelNodeType"
       // Seek To Weights
       this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneWeightOffset;
       this.weights.push(
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle()
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle()
       );
 
       // Seek To Bone Indexes
       this.odysseyModel.mdxReader.position = (this._mdxNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneIndexOffset;
       this.boneIdx.push(
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle(),
-        this.odysseyModel.mdxReader.ReadSingle()
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle(),
+        this.odysseyModel.mdxReader.readSingle()
       );
     }
 
     if (this.BoneMapCount > 0) {
-      this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneMapOffset);
+      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneMapOffset);
       for(let i = 0; i < this.BoneMapCount; i++){
-        this.bone_mapping[i] = this.odysseyModel.mdlReader.ReadSingle();
+        this.bone_mapping[i] = this.odysseyModel.mdlReader.readSingle();
       }
     
 
       //Inverse Bone Quaternions
       if (this.BoneQuaternionDef.count > 0) {
-        this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneQuaternionDef.offset);
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneQuaternionDef.offset);
         for(let i = 0; i < this.BoneQuaternionDef.count; i++){
-          let w = this.odysseyModel.mdlReader.ReadSingle();
-          this.bone_quaternions[i] = new THREE.Quaternion(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), w);
+          let w = this.odysseyModel.mdlReader.readSingle();
+          this.bone_quaternions[i] = new THREE.Quaternion(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), w);
         }
       }
 
       //Inverse Bone Translations
       if (this.BonePositionDef.count > 0) {
-        this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BonePositionDef.offset);
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BonePositionDef.offset);
         for(let i = 0; i < this.BonePositionDef.count; i++){
-          this.bone_translations[i] = new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+          this.bone_translations[i] = new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
         }
       }
 
       //Unused Array of Bytes
       if (this.BoneConstantsDef.count > 0) {
-        this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneConstantsDef.offset);
+        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.BoneConstantsDef.offset);
         for(let i = 0; i < this.BoneConstantsDef.count; i++){
-          this.bone_constants[i] = this.odysseyModel.mdlReader.ReadByte();
+          this.bone_constants[i] = this.odysseyModel.mdlReader.readByte();
         }
       }
 

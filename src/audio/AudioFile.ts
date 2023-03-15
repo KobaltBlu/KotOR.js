@@ -107,9 +107,9 @@ export class AudioFile {
 
   ProcessFile(onComplete?: Function){
     this.isProcessed = true;
-    let flag = this.reader.ReadBytes(4);
-    let riffSize = this.reader.ReadUInt32(); //for an MP3 this will be 50
-    this.reader.Seek(0);
+    let flag = this.reader.readBytes(4);
+    let riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
+    this.reader.seek(0);
     let fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
     let riffHeaderTest = [0x52, 0x49, 0x46, 0x46];
 
@@ -121,10 +121,10 @@ export class AudioFile {
     if(Utility.ArrayMatch(flag, fakeHeaderTest)) {
       this.audioType = AudioFileAudioType.WAVE;
 
-      this.reader = this.reader.Slice(470, this.reader.Length()); //Remove the fake data
+      this.reader = this.reader.slice(470, this.reader.length()); //Remove the fake data
       this.header = this.ReadWavHeader(this.reader);
       //console.log(this.header);
-      this.reader.Seek(0);
+      this.reader.seek(0);
       this.data = this.reader.buffer;
       if(onComplete != null)
         onComplete(this.data);
@@ -137,16 +137,16 @@ export class AudioFile {
     if(Utility.ArrayMatch(flag, riffHeaderTest)) {
 
       this.header = this.ReadWavHeader(this.reader);
-      this.reader.Seek(0);
+      this.reader.seek(0);
 
       //Test for MP3 offset
       if(riffSize == 50){
 
         this.audioType = AudioFileAudioType.MP3;
 
-        this.reader = this.reader.Slice(58, this.reader.Length()); //Remove the fake data
+        this.reader = this.reader.slice(58, this.reader.length()); //Remove the fake data
         this.header = this.ReadMP3Header(this.reader);
-        this.reader.Seek(0);
+        this.reader.seek(0);
         this.data = this.reader.buffer; 
         
         if(onComplete != null)
@@ -175,7 +175,7 @@ export class AudioFile {
       this.audioType = AudioFileAudioType.MP3;
 
       this.header = this.ReadMP3Header(this.reader);
-      this.reader.Seek(0);
+      this.reader.seek(0);
       
       if(onComplete != null)
         onComplete(this.reader);
@@ -194,15 +194,15 @@ export class AudioFile {
       if(!(this.reader instanceof BinaryReader))
         console.error('AudioFile.GetPlayableByteStream', this.data);
 
-      this.reader.Seek(0);
+      this.reader.seek(0);
 
       if(this.audioType == AudioFileAudioType.WAVE){
         if(this.header.format == AudioFileWaveEncoding.ADPCM){
 
           let rawDataOffset = 60;
           //console.log('rawDataOffset', rawDataOffset);
-          this.reader.Seek(rawDataOffset);
-          let dataADPCM = this.reader.ReadBytes(this.reader.Length() - (rawDataOffset));
+          this.reader.seek(rawDataOffset);
+          let dataADPCM = this.reader.readBytes(this.reader.length() - (rawDataOffset));
           let adpcm = new ADPCMDecoder({header: this.header, data: Buffer.from(dataADPCM)});
           //console.log('ADPCMDecoder', adpcm);
 
@@ -246,43 +246,43 @@ export class AudioFile {
   ReadWavHeader (reader: BinaryReader){
 
     let header = {
-      riff: reader.ReadChars(4),
-      riffSize: reader.ReadUInt32(),
-      wave: reader.ReadChars(4)
+      riff: reader.readChars(4),
+      riffSize: reader.readUInt32(),
+      wave: reader.readChars(4)
     };
 
     if(header.wave != 'WAVE')
       throw 'Not a valid wave header';
 
     let subChunkParser = (header: any, reader: BinaryReader) => {
-      let chunkID = reader.ReadChars(4);
+      let chunkID = reader.readChars(4);
       switch(chunkID){
         case 'fmt ':
           header.fmt = chunkID;
-          header.chunkSize = reader.ReadUInt32();
-          header.format = reader.ReadUInt16();
-          header.channels = reader.ReadUInt16();
-          header.sampleRate = reader.ReadUInt32();
-          header.bytesPerSec = reader.ReadUInt32();
-          header.frameSize = reader.ReadUInt16();
-          header.bits = reader.ReadUInt16();
+          header.chunkSize = reader.readUInt32();
+          header.format = reader.readUInt16();
+          header.channels = reader.readUInt16();
+          header.sampleRate = reader.readUInt32();
+          header.bytesPerSec = reader.readUInt32();
+          header.frameSize = reader.readUInt16();
+          header.bits = reader.readUInt16();
 
           if(header.format == AudioFileWaveEncoding.ADPCM){
-            header.blobSize = reader.ReadUInt16();
-            header.blobData = reader.ReadBytes(header.blobSize);
+            header.blobSize = reader.readUInt16();
+            header.blobData = reader.readBytes(header.blobSize);
           }
           return true;
         break;
         case 'fact':
           header.fact = chunkID;
-          header.factSize = reader.ReadUInt32();
-          header.factBOH = reader.ReadUInt32();
+          header.factSize = reader.readUInt32();
+          header.factBOH = reader.readUInt32();
           return true;
         break;
         case 'data':
           header.data = chunkID;
-          header.dataSize = reader.ReadUInt32();
-          header.dataOffset = reader.Tell();
+          header.dataSize = reader.readUInt32();
+          header.dataOffset = reader.tell();
           return false;
         break;
         default:
@@ -318,22 +318,22 @@ export class AudioFile {
 
 	  header.bits = 16;
 
-    bWriter.WriteChars('RIFF');
-    bWriter.WriteUInt32(riffSize);
-    bWriter.WriteChars('WAVE');
-    bWriter.WriteChars('fmt ');
-    bWriter.WriteUInt32(16);
-    bWriter.WriteUInt16(1);
-    bWriter.WriteUInt16( header.channels );
-    bWriter.WriteUInt32( header.sampleRate );
-    bWriter.WriteUInt32(header.sampleRate * 4);
-    bWriter.WriteUInt16( (header.bits*header.channels) / 8 );
-    bWriter.WriteUInt16( header.bits );
+    bWriter.writeChars('RIFF');
+    bWriter.writeUInt32(riffSize);
+    bWriter.writeChars('WAVE');
+    bWriter.writeChars('fmt ');
+    bWriter.writeUInt32(16);
+    bWriter.writeUInt16(1);
+    bWriter.writeUInt16( header.channels );
+    bWriter.writeUInt32( header.sampleRate );
+    bWriter.writeUInt32(header.sampleRate * 4);
+    bWriter.writeUInt16( (header.bits*header.channels) / 8 );
+    bWriter.writeUInt16( header.bits );
     //bWriter.WriteUInt16(0);
-    bWriter.WriteChars('data');
-    bWriter.WriteUInt32(data.length);
+    bWriter.writeChars('data');
+    bWriter.writeUInt32(data.length);
 
-    bWriter.WriteBytes(data);
+    bWriter.writeBytes(data);
 
     /*fs.writeFile('test.wav', bWriter.buffer, (err) => {
       if (err) {
@@ -354,8 +354,8 @@ export class AudioFile {
           case AudioFileWaveEncoding.ADPCM:
             /*let rawDataOffset = 60;
             console.log('rawDataOffset', rawDataOffset);
-            this.data.Seek(rawDataOffset);
-            let dataADPCM = this.data.ReadBytes(this.data.Length() - (rawDataOffset));
+            this.data.seek(rawDataOffset);
+            let dataADPCM = this.data.readBytes(this.data.Length() - (rawDataOffset));
             let adpcm = new ADPCMDecoder({header: this.header, data: Buffer.from(dataADPCM)});
             console.log('ADPCMDecoder', adpcm);
 

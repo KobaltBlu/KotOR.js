@@ -302,16 +302,16 @@ export class ImageViewerTab extends EditorTab {
 
     let writer = new BinaryWriter();
 
-    writer.WriteByte(0);
-    writer.WriteByte(0);
-    writer.WriteByte(2);
-    writer.WriteByte(0);
-    writer.WriteUInt32(0);
-    writer.WriteUInt32(0);
-    writer.WriteUInt16(this.width);
-    writer.WriteUInt16(this.height);
-    writer.WriteByte(this.bitsPerPixel);
-    writer.WriteByte(0);
+    writer.writeByte(0);
+    writer.writeByte(0);
+    writer.writeByte(2);
+    writer.writeByte(0);
+    writer.writeUInt32(0);
+    writer.writeUInt32(0);
+    writer.writeUInt16(this.width);
+    writer.writeUInt16(this.height);
+    writer.writeByte(this.bitsPerPixel);
+    writer.writeByte(0);
 
     let pixels = this.data;
 
@@ -331,7 +331,7 @@ export class ImageViewerTab extends EditorTab {
     }
 
     try{
-      writer.WriteBytes(pixels);
+      writer.writeBytes(pixels);
     }catch(e){
       console.log(e);
     }

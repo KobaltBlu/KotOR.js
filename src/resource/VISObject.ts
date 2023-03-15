@@ -138,16 +138,16 @@ export class VISObject {
       let room = this.rooms[i];
       let roomCount = room.rooms.length;
 
-      data.WriteChars(room.name+' '+roomCount);
+      data.writeChars(room.name+' '+roomCount);
 
-      data.WriteByte(13); //CarriageReturn
-      data.WriteByte(10); //NewLine
+      data.writeByte(13); //CarriageReturn
+      data.writeByte(10); //NewLine
 
       for( let j = 0; j < roomCount; j++ ){
-        data.WriteChars('  '+room.rooms[j]);
+        data.writeChars('  '+room.rooms[j]);
         if(i < ( this.rooms.length - 1 ) || j < (roomCount - 1)){
-          data.WriteByte(13); //CarriageReturn
-          data.WriteByte(10); //NewLine
+          data.writeByte(13); //CarriageReturn
+          data.writeByte(10); //NewLine
         }
       }
 

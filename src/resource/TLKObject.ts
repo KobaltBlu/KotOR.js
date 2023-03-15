@@ -49,31 +49,31 @@ export class TLKObject {
       try{
         console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
-        this.reader.Seek(0);
+        this.reader.seek(0);
         
-        this.FileType = this.reader.ReadChars(4);
-        this.FileVersion = this.reader.ReadChars(4);
-        this.LanguageID = this.reader.ReadUInt32();
-        this.StringCount = this.reader.ReadUInt32();
-        this.StringEntriesOffset = this.reader.ReadUInt32();
-        this.reader.Seek(20);
+        this.FileType = this.reader.readChars(4);
+        this.FileVersion = this.reader.readChars(4);
+        this.LanguageID = this.reader.readUInt32();
+        this.StringCount = this.reader.readUInt32();
+        this.StringEntriesOffset = this.reader.readUInt32();
+        this.reader.seek(20);
         for(let i = 0, len = this.StringCount; i < len; i++) {
           this.TLKStrings[i] = new TLKString(
-            this.reader.ReadUInt32(), //flags
-            this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
-            this.reader.ReadUInt32(), //VolumeVariance
-            this.reader.ReadUInt32(), //PitchVariance
-            this.StringEntriesOffset + this.reader.ReadUInt32(), //StringOffset
-            this.reader.ReadUInt32(), //StringLength
-            this.reader.ReadUInt32(), //SoundLength
+            this.reader.readUInt32(), //flags
+            this.reader.readChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
+            this.reader.readUInt32(), //VolumeVariance
+            this.reader.readUInt32(), //PitchVariance
+            this.StringEntriesOffset + this.reader.readUInt32(), //StringOffset
+            this.reader.readUInt32(), //StringLength
+            this.reader.readUInt32(), //SoundLength
             null
           );
 
-          let pos = this.reader.Tell();
-          this.reader.Seek(this.TLKStrings[i].StringOffset);
+          let pos = this.reader.tell();
+          this.reader.seek(this.TLKStrings[i].StringOffset);
           //console.log(this.TLKStrings[i].StringOffset);
-          this.TLKStrings[i].Value = this.reader.ReadChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
-          this.reader.Seek(pos);
+          this.TLKStrings[i].Value = this.reader.readChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
+          this.reader.seek(pos);
 
           if(typeof onProgress == 'function')
             onProgress(i+1, this.StringCount);

@@ -27,20 +27,20 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
 
     let contraintArray = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
-    this.danglyDisplacement = this.odysseyModel.mdlReader.ReadSingle();
-    this.danglyTightness = this.odysseyModel.mdlReader.ReadSingle();
-    this.danglyPeriod = this.odysseyModel.mdlReader.ReadSingle();
+    this.danglyDisplacement = this.odysseyModel.mdlReader.readSingle();
+    this.danglyTightness = this.odysseyModel.mdlReader.readSingle();
+    this.danglyPeriod = this.odysseyModel.mdlReader.readSingle();
 
-    this.danglyMDLOffset = this.odysseyModel.mdlReader.ReadUInt32();
+    this.danglyMDLOffset = this.odysseyModel.mdlReader.readUInt32();
     
     this.constraints = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.ModelDataOffset + contraintArray.offset, contraintArray.count);
-    this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + this.danglyMDLOffset);
+    this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + this.danglyMDLOffset);
     this.danglyVec4 = [];
     for(let i = 0; i < contraintArray.count; i++){
       this.danglyVec4.push(
-        this.odysseyModel.mdlReader.ReadSingle(), 
-        this.odysseyModel.mdlReader.ReadSingle(), 
-        this.odysseyModel.mdlReader.ReadSingle(), 
+        this.odysseyModel.mdlReader.readSingle(), 
+        this.odysseyModel.mdlReader.readSingle(), 
+        this.odysseyModel.mdlReader.readSingle(), 
         this.constraints[i]
       );
     }

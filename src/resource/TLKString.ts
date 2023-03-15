@@ -33,12 +33,12 @@ export class TLKString {
 
   GetValue(binary: BinaryReader, onReturn?: Function) {
     if(this.Value == null) {
-      let pos = binary.Tell();
-      binary.Seek(this.StringOffset);
-      this.Value = binary.ReadChars(this.StringLength).replace(/\0[\s\S]*$/g,'');
+      let pos = binary.tell();
+      binary.seek(this.StringOffset);
+      this.Value = binary.readChars(this.StringLength).replace(/\0[\s\S]*$/g,'');
       if(onReturn != null)
         onReturn(this.Value);
-      binary.Seek(pos);
+      binary.seek(pos);
     }
   }
 

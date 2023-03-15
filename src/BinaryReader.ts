@@ -24,27 +24,27 @@ export class BinaryReader {
     this._value = undefined;
   }
 
-  Seek(pos: number): void {
+  seek(pos: number): void {
     this.position = pos;
   }
 
-  Skip(num: number): void {
-    this.MovePointerForward(num);
+  skip(num: number): void {
+    this.movePointerForward(num);
   }
 
-  Length(){
+  length(){
     return this.buffer.length;
   }
 
-  MovePointerForward(num: number): void {
+  movePointerForward(num: number): void {
     this.position += num;
   }
 
-  Tell(): number {
+  tell(): number {
     return this.position;
   }
 
-  ReadInt8(): number {
+  readInt8(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -53,7 +53,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadUInt8(): number {
+  readUInt8(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -62,7 +62,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadInt16(): number {
+  readInt16(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -71,7 +71,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadUInt16(): number {
+  readUInt16(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -80,7 +80,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadUInt32(): number {
+  readUInt32(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -89,7 +89,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadInt32(): number {
+  readInt32(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -98,15 +98,15 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadChar(): string {
+  readChar(): string {
     if(this.position >= this.buffer.length)
       return '\0';
 
-    this._value = String.fromCharCode(this.ReadInt8());
+    this._value = String.fromCharCode(this.readInt8());
     return this._value;
   }
 
-  ReadChars(num: number, encoding: BufferEncoding = 'latin1'): string {
+  readChars(num: number, encoding: BufferEncoding = 'latin1'): string {
     if(this.position >= this.buffer.length)
       return '\0';
 
@@ -116,33 +116,33 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadString(): string{
+  readString(): string{
     if(this.position >= this.buffer.length)
       return '';
 
     let _value = '';
     let lastChar;
-    while((lastChar = this.ReadInt8()) > 0){
+    while((lastChar = this.readInt8()) > 0){
       _value += String.fromCharCode(lastChar);
     }
     return _value;
   }
 
-  ReadByte(): number {
+  readByte(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
-    return this.ReadUInt8();
+    return this.readUInt8();
   }
 
-  ReadSByte(): number {
+  readSByte(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
-    return this.ReadInt8();
+    return this.readInt8();
   }
 
-  ReadBytes(num: number){
+  readBytes(num: number){
     if(this.position >= this.buffer.length)
       return Buffer.allocUnsafe(0);
 
@@ -151,7 +151,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadSingle(): number {
+  readSingle(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -160,7 +160,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadDouble(): number {
+  readDouble(): number {
     if(this.position >= this.buffer.length)
       return 0;
 
@@ -169,7 +169,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadUInt64(): Buffer {
+  readUInt64(): Buffer {
     if(this.position >= this.buffer.length)
       return Buffer.allocUnsafe(0);
 
@@ -178,7 +178,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  ReadInt64(): Buffer {
+  readInt64(): Buffer {
     if(this.position >= this.buffer.length)
       return Buffer.allocUnsafe(0);
 
@@ -187,7 +187,7 @@ export class BinaryReader {
     return this._value;
   }
 
-  Slice(offset = 0, end = 0): BinaryReader {
+  slice(offset = 0, end = 0): BinaryReader {
     if(!end)
       end = this.buffer.length;
 

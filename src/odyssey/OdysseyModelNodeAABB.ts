@@ -26,7 +26,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    let rootNodeOffset = this.odysseyModel.mdlReader.ReadUInt32();
+    let rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
     this.rootAABBNode = this.readBinaryAABBNode(rootNodeOffset);
 
     let face;
@@ -43,18 +43,18 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   }
 
   readBinaryAABBNode(aabbNodeOffset: number){
-    this.odysseyModel.mdlReader.Seek(this.odysseyModel.fileHeader.ModelDataOffset + aabbNodeOffset);
+    this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.ModelDataOffset + aabbNodeOffset);
 
     let aabb: OdysseyModelAABBNode = {
       type: 'AABB',
       box: new THREE.Box3(
-        new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle()),
-        new THREE.Vector3(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle())
+        new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle()),
+        new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle())
       ),
-      leftNodeOffset: this.odysseyModel.mdlReader.ReadInt32(),
-      rightNodeOffset: this.odysseyModel.mdlReader.ReadInt32(),
-      faceIdx: this.odysseyModel.mdlReader.ReadInt32(),
-      mostSignificantPlane: this.odysseyModel.mdlReader.ReadInt32(),
+      leftNodeOffset: this.odysseyModel.mdlReader.readInt32(),
+      rightNodeOffset: this.odysseyModel.mdlReader.readInt32(),
+      faceIdx: this.odysseyModel.mdlReader.readInt32(),
+      mostSignificantPlane: this.odysseyModel.mdlReader.readInt32(),
       leftNode: undefined,
       rightNode: undefined,
       face: undefined

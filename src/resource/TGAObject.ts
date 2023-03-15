@@ -61,25 +61,25 @@ export class TGAObject {
     if(isBuffer(this.file)){
       let reader = new BinaryReader(this.file);
 
-      Header.ID = reader.ReadByte();
-      Header.ColorMapType = reader.ReadByte();
-      Header.FileType = reader.ReadByte();
+      Header.ID = reader.readByte();
+      Header.ColorMapType = reader.readByte();
+      Header.FileType = reader.readByte();
 
       //Simple color map detection (May not be adequate)
       Header.hasColorMap = Header.ColorMapType === 0 ? false : true;
-      Header.ColorMapIndex = reader.ReadByte();
+      Header.ColorMapIndex = reader.readByte();
 
       if(Header.hasColorMap){
 
       }
 
-      Header.offsetX = reader.ReadUInt32();
-      Header.offsetY = reader.ReadUInt32();
-      Header.width = reader.ReadUInt16();
-      Header.height = reader.ReadUInt16();
+      Header.offsetX = reader.readUInt32();
+      Header.offsetY = reader.readUInt32();
+      Header.width = reader.readUInt16();
+      Header.height = reader.readUInt16();
 
-      Header.bitsPerPixel = reader.ReadByte();
-      Header.imageDescriptor = reader.ReadByte();
+      Header.bitsPerPixel = reader.readByte();
+      Header.imageDescriptor = reader.readByte();
 
       Header.pixelDataOffset = reader.position;
 
@@ -93,24 +93,24 @@ export class TGAObject {
 
     let reader = new BinaryReader(this.file);
     console.log('TGAObject', this.header)
-  	reader.Seek(this.header.pixelDataOffset);
+  	reader.seek(this.header.pixelDataOffset);
 
     //32bpp RGBA
     if(this.header.bitsPerPixel == 32){
       if(onLoad != null)
-        onLoad( reader.ReadBytes( this.header.width * this.header.height * 4 ) );
+        onLoad( reader.readBytes( this.header.width * this.header.height * 4 ) );
     }
 
     //24bpp RGB
     if(this.header.bitsPerPixel == 24){
       if(onLoad != null)
-        onLoad( reader.ReadBytes( this.header.width * this.header.height * 3 ) );
+        onLoad( reader.readBytes( this.header.width * this.header.height * 3 ) );
     }
 
     //8bpp Gray
     if(this.header.bitsPerPixel == 8){
       if(onLoad != null)
-        onLoad( reader.ReadBytes( this.header.width * this.header.height ) );
+        onLoad( reader.readBytes( this.header.width * this.header.height ) );
     }
 
   }
@@ -119,19 +119,19 @@ export class TGAObject {
     return new Promise( (resolve, reject) => {
       let writer = new BinaryWriter();
 
-      writer.WriteByte(this.header.ID);
-      writer.WriteByte(this.header.ColorMapType);
-      writer.WriteByte(this.header.FileType);
-      writer.WriteByte(this.header.ColorMapIndex);
-      writer.WriteUInt32(this.header.offsetX);
-      writer.WriteUInt32(this.header.offsetY);
-      writer.WriteUInt16(this.header.width);
-      writer.WriteUInt16(this.header.height);
-      writer.WriteByte(this.header.bitsPerPixel);
-      writer.WriteByte(this.header.imageDescriptor);
+      writer.writeByte(this.header.ID);
+      writer.writeByte(this.header.ColorMapType);
+      writer.writeByte(this.header.FileType);
+      writer.writeByte(this.header.ColorMapIndex);
+      writer.writeUInt32(this.header.offsetX);
+      writer.writeUInt32(this.header.offsetY);
+      writer.writeUInt16(this.header.width);
+      writer.writeUInt16(this.header.height);
+      writer.writeByte(this.header.bitsPerPixel);
+      writer.writeByte(this.header.imageDescriptor);
   
       try{
-        writer.WriteBytes(this.pixelData);
+        writer.writeBytes(this.pixelData);
       }catch(e){
         reject(e);
       }

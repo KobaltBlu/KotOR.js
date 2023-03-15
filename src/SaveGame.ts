@@ -355,7 +355,7 @@ export class SaveGame {
         let numCat = catNumbers[i];
         let numLabel = numCat.GetFieldByLabel('Name').GetValue();
         if(GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
-          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = numBytes.ReadByte();
+          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = numBytes.readByte();
         }
       }
 
@@ -369,12 +369,12 @@ export class SaveGame {
           locLabel.toLowerCase(), { 
             name: locLabel, 
             value: new EngineLocation(
-              locBytes.ReadSingle(),
-              locBytes.ReadSingle(),
-              locBytes.ReadSingle(),
-              locBytes.ReadSingle(),
-              locBytes.ReadSingle(),
-              locBytes.ReadSingle(),
+              locBytes.readSingle(),
+              locBytes.readSingle(),
+              locBytes.readSingle(),
+              locBytes.readSingle(),
+              locBytes.readSingle(),
+              locBytes.readSingle(),
             )
           }
         );

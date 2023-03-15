@@ -24,12 +24,12 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.offsetToSaberVerts = this.odysseyModel.mdlReader.ReadUInt32();
-    this.offsetToSaberUVs = this.odysseyModel.mdlReader.ReadUInt32();
-    this.offsetToSaberNormals = this.odysseyModel.mdlReader.ReadUInt32();
+    this.offsetToSaberVerts = this.odysseyModel.mdlReader.readUInt32();
+    this.offsetToSaberUVs = this.odysseyModel.mdlReader.readUInt32();
+    this.offsetToSaberNormals = this.odysseyModel.mdlReader.readUInt32();
 
-    this.invCount1 = this.odysseyModel.mdlReader.ReadUInt32();
-    this.invCount2 = this.odysseyModel.mdlReader.ReadUInt32();
+    this.invCount1 = this.odysseyModel.mdlReader.readUInt32();
+    this.invCount2 = this.odysseyModel.mdlReader.readUInt32();
 
     this.vertices = [];
     this.normals = [];
@@ -44,15 +44,15 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
     for(let i = 0; i < 176; i++){
       //SABER Vertices
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberVerts + (vertexDataSize * i);
-      this.vertices.push(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+      this.vertices.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
 
       //SABER Normals
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
-      this.normals.push(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+      this.normals.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
 
       //SABER UVs
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.ModelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
-      this.tvectors[0].push(this.odysseyModel.mdlReader.ReadSingle(), this.odysseyModel.mdlReader.ReadSingle());
+      this.tvectors[0].push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
       // this.tvectors[1][i] = this.tvectors[0][i];
     }
 

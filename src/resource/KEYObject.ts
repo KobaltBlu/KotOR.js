@@ -49,39 +49,39 @@ export class KEYObject {
 
       this.reader = new BinaryReader(buffer);
 
-      this.FileType = this.reader.ReadChars(4);
-      this.FileVersion = this.reader.ReadChars(4);
-      this.BIFCount = this.reader.ReadUInt32();
-      this.KeyCount = this.reader.ReadUInt32();
-      this.OffsetToFileTable = this.reader.ReadUInt32();
-      this.OffsetToKeyTable = this.reader.ReadUInt32();
-      this.BuildYear = this.reader.ReadUInt32();
-      this.BuildDay = this.reader.ReadUInt32();
-      this.Reserved = this.reader.ReadBytes(32);
+      this.FileType = this.reader.readChars(4);
+      this.FileVersion = this.reader.readChars(4);
+      this.BIFCount = this.reader.readUInt32();
+      this.KeyCount = this.reader.readUInt32();
+      this.OffsetToFileTable = this.reader.readUInt32();
+      this.OffsetToKeyTable = this.reader.readUInt32();
+      this.BuildYear = this.reader.readUInt32();
+      this.BuildDay = this.reader.readUInt32();
+      this.Reserved = this.reader.readBytes(32);
 
       this.bifs = [];
 
-      this.reader.Seek(this.OffsetToFileTable);
+      this.reader.seek(this.OffsetToFileTable);
       for(let i = 0; i < this.BIFCount; i++){
         this.bifs[i] = {
-          FileSize:this.reader.ReadUInt32(),
-          FilenameOffset: this.reader.ReadUInt32(),
-          FilenameSize: this.reader.ReadUInt16(),
-          Drives: this.reader.ReadUInt16()
+          FileSize:this.reader.readUInt32(),
+          FilenameOffset: this.reader.readUInt32(),
+          FilenameSize: this.reader.readUInt16(),
+          Drives: this.reader.readUInt16()
         } as BIF;
       }
 
       for(let i = 0; i < this.BIFCount; i++){
-        this.reader.Seek(this.bifs[i].FilenameOffset);
-        this.bifs[i].filename = this.reader.ReadChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
+        this.reader.seek(this.bifs[i].FilenameOffset);
+        this.bifs[i].filename = this.reader.readChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
       }
 
-      this.reader.Seek(this.OffsetToKeyTable);
+      this.reader.seek(this.OffsetToKeyTable);
       for(let i = 0; i < this.KeyCount; i++){
         this.keys[i] = {
-          ResRef: this.reader.ReadChars(16).replace(/\0[\s\S]*$/g,''),
-          ResType: this.reader.ReadUInt16(),
-          ResID: this.reader.ReadUInt32(),
+          ResRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
+          ResType: this.reader.readUInt16(),
+          ResID: this.reader.readUInt32(),
         } as KEY;
       }
 

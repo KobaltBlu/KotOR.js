@@ -20,8 +20,8 @@ export class OdysseyModelNodeReference extends OdysseyModelNode {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.modelName = this.odysseyModel.mdlReader.ReadChars(32);
-    this.reattachable = this.odysseyModel.mdlReader.ReadInt32();
+    this.modelName = this.odysseyModel.mdlReader.readChars(32);
+    this.reattachable = this.odysseyModel.mdlReader.readInt32();
   }
 
 }

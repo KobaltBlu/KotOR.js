@@ -115,8 +115,8 @@ export class NWScript {
   }
 
   verifyNCS (reader: BinaryReader){
-    reader.Seek(0);
-    if(this.verified || reader.ReadChars(8) == 'NCS V1.0')
+    reader.seek(0);
+    if(this.verified || reader.readChars(8) == 'NCS V1.0')
       return this.verified = true;
 
     return false;
@@ -131,9 +131,9 @@ export class NWScript {
     this.eofFound = false;
 
     if(!progSize){
-      reader.Skip(8);
-      this.prog = reader.ReadByte();
-      this.progSize = reader.ReadUInt32(); //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
+      reader.skip(8);
+      this.prog = reader.readByte();
+      this.progSize = reader.readUInt32(); //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
       
       //Store a binary code of the code for exporting ScriptSituations
       this.code = data.slice( 13, this.progSize );
@@ -163,8 +163,8 @@ export class NWScript {
     let _pos = reader.position;
 
     let instr = new NWScriptInstruction({
-      code: reader.ReadByte(),
-      type: reader.ReadByte(),
+      code: reader.readByte(),
+      type: reader.readByte(),
       address: _pos,
       prevInstr: ( this._lastOffset >= 0 ? this.instructions.get(this._lastOffset) : null ),
       eof: false,
@@ -313,8 +313,8 @@ export class NWScript {
         );
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
-        instr.size = reader.ReadUInt16();
+        instr.offset = reader.readUInt32();
+        instr.size = reader.readUInt16();
       }
     },
     2 : { 
@@ -368,8 +368,8 @@ export class NWScript {
         }
       }, 
       parse: function( instr: any, reader: any ){
-        instr.pointer = reader.ReadUInt32();
-        instr.size = reader.ReadUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        instr.pointer = reader.readUInt32();
+        instr.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         instr.data = null;
       }
     },
@@ -404,17 +404,17 @@ export class NWScript {
       parse: function( instr: any, reader: any ){
         switch(instr.type){
           case 3:
-            instr.integer = parseInt(reader.ReadInt32());
+            instr.integer = parseInt(reader.readInt32());
           break;
           case 4:
-            instr.float = parseFloat(reader.ReadSingle());
+            instr.float = parseFloat(reader.readSingle());
           break;
           case 5:
-            instr.strLen = reader.ReadUInt16();
-            instr.string = reader.ReadChars(instr.strLen);
+            instr.strLen = reader.readUInt16();
+            instr.string = reader.readChars(instr.strLen);
           break;
           case 6:
-            instr.object = reader.ReadInt32();
+            instr.object = reader.readInt32();
           break;
         }
       }
@@ -471,8 +471,8 @@ export class NWScript {
   
       }, 
       parse: function( instr: any, reader: any ){
-        instr.action = reader.ReadUInt16();
-        instr.argCount = reader.ReadByte();
+        instr.action = reader.readUInt16();
+        instr.argCount = reader.readByte();
         instr.arguments = [];
       }
     },
@@ -617,7 +617,7 @@ export class NWScript {
       }, 
       parse: function( instr: any, reader: any ){
         if(instr.type == NWScriptDataType.STRUCTURE){
-          instr.sizeOfStructure = parseInt(reader.ReadUInt16());
+          instr.sizeOfStructure = parseInt(reader.readUInt16());
         }
       }
     }, //Constant Type is declared by the next byte x03, x04, x05, x06
@@ -698,7 +698,7 @@ export class NWScript {
       }, 
       parse: function( instr: any, reader: any ){
         if(instr.type == NWScriptDataType.STRUCTURE){
-          instr.sizeOfStructure = parseInt(reader.ReadUInt16());
+          instr.sizeOfStructure = parseInt(reader.readUInt16());
         }
       }
     }, //Constant Type is declared by the next byte x03, x04, x05, x06
@@ -1051,7 +1051,7 @@ export class NWScript {
         );
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadInt32();
+        instr.offset = reader.readInt32();
       }
     },
     28 : { 
@@ -1069,7 +1069,7 @@ export class NWScript {
         scope.seek = scope.instr.address + scope.instr.offset;
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
+        instr.offset = reader.readUInt32();
       }
     },
     30 : { 
@@ -1084,7 +1084,7 @@ export class NWScript {
           throw 'JSR seems to be looping endlessly';
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
+        instr.offset = reader.readUInt32();
       }
     },
     31 : { 
@@ -1096,7 +1096,7 @@ export class NWScript {
         }
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
+        instr.offset = reader.readUInt32();
       }
     },
     32 : { 
@@ -1162,9 +1162,9 @@ export class NWScript {
         this.stack.pointer -= (scope.instr.sizeToDestroy - scope.instr.sizeOfElementToSave);
       }, 
       parse: function( instr: any, reader: any ){
-        instr.sizeToDestroy = reader.ReadInt16();
-        instr.offsetToSaveElement = reader.ReadInt16();
-        instr.sizeOfElementToSave = reader.ReadInt16();
+        instr.sizeToDestroy = reader.readInt16();
+        instr.offsetToSaveElement = reader.readInt16();
+        instr.sizeOfElementToSave = reader.readInt16();
       }
     },
     34 : { 
@@ -1186,7 +1186,7 @@ export class NWScript {
         this.var1.value -= 1;
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadInt32();
+        instr.offset = reader.readInt32();
       }
     },
     36 : { 
@@ -1196,7 +1196,7 @@ export class NWScript {
         this.var1.value += 1;
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadInt32();
+        instr.offset = reader.readInt32();
       }
     },
     37 : { 
@@ -1208,7 +1208,7 @@ export class NWScript {
         }
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadInt32();
+        instr.offset = reader.readInt32();
       }
     },
     38 : { 
@@ -1220,8 +1220,8 @@ export class NWScript {
         );
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadInt32();
-        instr.size = reader.ReadUInt16();
+        instr.offset = reader.readInt32();
+        instr.size = reader.readUInt16();
       }
     },
     39 : { 
@@ -1236,8 +1236,8 @@ export class NWScript {
         }
       }, 
       parse: function( instr: any, reader: any ){
-        instr.pointer = reader.ReadUInt32();
-        instr.size = reader.ReadUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        instr.pointer = reader.readUInt32();
+        instr.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         instr.data = null;
       }
     },
@@ -1248,7 +1248,7 @@ export class NWScript {
         this.var1.value -= 1;
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
+        instr.offset = reader.readUInt32();
       }
     },
     41 : { 
@@ -1258,7 +1258,7 @@ export class NWScript {
         this.var1.value += 1;
       }, 
       parse: function( instr: any, reader: any ){
-        instr.offset = reader.ReadUInt32();
+        instr.offset = reader.readUInt32();
       }
     },
     42 : { 
@@ -1319,8 +1319,8 @@ export class NWScript {
   
       }, 
       parse: function( instr: any, reader: any ){
-        instr.bpOffset = reader.ReadUInt32();
-        instr.spOffset = reader.ReadUInt32();
+        instr.bpOffset = reader.readUInt32();
+        instr.spOffset = reader.readUInt32();
       }
     },
     45 : { 
@@ -1340,7 +1340,7 @@ export class NWScript {
       parse: function( instr: any, reader: any ){
         reader.position -= 2; //We need to go back 2bytes because this instruction
         //doesn't have a int16 type arg. We then need to read the 4Byte Int32 size arg
-        instr.size = reader.ReadInt32();
+        instr.size = reader.readInt32();
       }
     },
   
