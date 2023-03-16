@@ -45,6 +45,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   clock: KotOR.THREE.Clock;
   renderer?: KotOR.THREE.WebGLRenderer;
+  clearColor: KotOR.THREE.Color = new KotOR.THREE.Color(0x333333);
   scene: KotOR.THREE.Scene = new KotOR.THREE.Scene();
   camera: KotOR.THREE.PerspectiveCamera;
   currentCamera: KotOR.THREE.PerspectiveCamera;
@@ -264,6 +265,7 @@ export class UI3DRenderer extends EventListenerModel {
     });
 
     if(this.renderer){
+      this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
       this.renderer.setSize( this.width, this.height );
     }
