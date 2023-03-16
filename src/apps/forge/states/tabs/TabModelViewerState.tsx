@@ -131,6 +131,8 @@ export class TabModelViewerState extends TabState {
               this.processEventListener('onEditorFileLoad', [this]);
               this.ui3DRenderer.attachObject(this.model, true);
 
+              this.currentAnimation = model.odysseyAnimations[0];
+
               model.emitters.map( (emitter) => {
                 emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
               })
