@@ -6,6 +6,7 @@ import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControl
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModel, OdysseyModelAnimationNode } from "./";
 import { OdysseyController } from "./controllers";
+import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNode
@@ -26,6 +27,12 @@ export class OdysseyModelNode {
   supernode: number;
   nodePosition: number;
   name: string;
+  padding: number;
+  offsetToRoot: number;
+  offsetToParent: number;
+  childArrayDefinition: OdysseyArrayDefinition;
+  controllerArrayDefinition: OdysseyArrayDefinition;
+  controllerDataArrayDefinition: OdysseyArrayDefinition;
 
   constructor(parent: OdysseyModelNode){
     this.parent = parent;
@@ -60,6 +67,9 @@ export class OdysseyModelNode {
 
     this.supernode = this.odysseyModel.mdlReader.readUInt16();
     this.nodePosition = this.odysseyModel.mdlReader.readUInt16();
+    this.padding = this.odysseyModel.mdlReader.readUInt16();
+    this.offsetToRoot = this.odysseyModel.mdlReader.readUInt32();
+    this.offsetToParent = this.odysseyModel.mdlReader.readUInt32();
 
     if (this.nodePosition < this.odysseyModel.names.length){
       this.name = this.odysseyModel.names[this.nodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -81,8 +91,6 @@ export class OdysseyModelNode {
       }
     }
 
-    this.odysseyModel.mdlReader.position += (6 + 4);
-
     //Node Position
     this.position.x = this.odysseyModel.mdlReader.readSingle();
     this.position.y = this.odysseyModel.mdlReader.readSingle();
@@ -95,17 +103,16 @@ export class OdysseyModelNode {
     this.quaternion.z = this.odysseyModel.mdlReader.readSingle();
 
     //Node Children
-    let _childDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.childOffsets = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _childDef.offset, _childDef.count);
+    this.childArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.childOffsets = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.childArrayDefinition.offset, this.childArrayDefinition.count);
 
     //Node Controllers
-    let _contKeyDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    let _contDataDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    let controllerData = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _contDataDef.offset, _contDataDef.count);
-    let controllerData2 = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + _contDataDef.offset, _contDataDef.count);
+    this.controllerArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.controllerDataArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    let controllerData = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
+    let controllerData2 = OdysseyModel.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
 
-    this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + _contKeyDef.offset, _contKeyDef.count, controllerData, controllerData2);
-
+    this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + this.controllerArrayDefinition.offset, this.controllerArrayDefinition.count, controllerData, controllerData2);
   }
 
   readBinaryNodeControllers(offset: number, count: number, data: any[], data2: any[]){
