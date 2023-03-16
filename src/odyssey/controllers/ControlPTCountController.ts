@@ -4,26 +4,24 @@ import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelCont
 import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 
-export class ColorController extends OdysseyController {
+export class ControlPTCountController extends OdysseyController {
 
-  type: OdysseyModelControllerType = OdysseyModelControllerType.Color;
+  type: OdysseyModelControllerType = OdysseyModelControllerType.ControlPTCount;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
-    // if ((manager.modelNode.odysseyModelNode.nodeType & NODETYPE.Light) == NODETYPE.Light) {
-    //   manager.modelNode.odysseyModelNode.light.color.setRGB( data.x, data.y, data.z );
-    // }
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.controlPTCount = data.value;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
-    // if ((manager.modelNode.odysseyModelNode.nodeType & NODETYPE.Light) == NODETYPE.Light) {
-    //   manager.modelNode.odysseyModelNode.light.color.r = ((next.x - last.x) * fl + last.x);
-    //   manager.modelNode.odysseyModelNode.light.color.g = ((next.y - last.y) * fl + last.y);
-    //   manager.modelNode.odysseyModelNode.light.color.b = ((next.z - last.z) * fl + last.z);
-    // }
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.controlPTCount = next.value;
+    }
   }
 
 }

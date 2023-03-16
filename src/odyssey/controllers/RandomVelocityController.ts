@@ -7,7 +7,7 @@ import { OdysseyController } from "./OdysseyController";
 
 export class RandomVelocityController extends OdysseyController {
 
-  type: OdysseyModelControllerType = OdysseyModelControllerType.RandVel;
+  type: OdysseyModelControllerType = OdysseyModelControllerType.RandomVelocity;
 
   constructor( controller: OdysseyControllerGeneric){
     super(controller);

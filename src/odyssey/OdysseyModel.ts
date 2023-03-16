@@ -155,10 +155,10 @@ export class OdysseyModel {
   readNode(offset: number, parent = this.rootNode){
 
     this.mdlReader.position = this.fileHeader.modelDataOffset + offset;  
-    let node = undefined;
+    let node: OdysseyModelNode;
 
     //Read the node type so we can know what type of node we are dealing with
-    let NodeType = this.mdlReader.readUInt16();
+    const NodeType = this.mdlReader.readUInt16();
     this.mdlReader.position -= 2;
 
     if ((NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {

@@ -1,14 +1,14 @@
-import { OdysseyController } from ".";
 import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { OdysseyController } from ".";
+import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
-export class GravityController extends OdysseyController {
+export class LightningZigZagController extends OdysseyController {
 
-  type: OdysseyModelControllerType = OdysseyModelControllerType.Gravity;
+  type: OdysseyModelControllerType = OdysseyModelControllerType.LightningZigZag;
 
-  constructor( controller: OdysseyControllerGeneric){
+  constructor( controller: OdysseyControllerGeneric ){
     super(controller);
   }
 
@@ -21,3 +21,4 @@ export class GravityController extends OdysseyController {
   }
 
 }
+

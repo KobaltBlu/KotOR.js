@@ -12,8 +12,8 @@ import { TwoDAManager } from "../managers/TwoDAManager";
 export class OdysseyModelAnimation {
   _position: THREE.Vector3 = new THREE.Vector3();
   _quaternion: THREE.Quaternion = new THREE.Quaternion();
-  p_func1: number;
-  p_func12: number;
+  functionPointer0: number;
+  functionPointer1: number;
   name: string;
   rootNodeOffset: number;
   nodeCount: number;
@@ -85,8 +85,8 @@ export class OdysseyModelAnimation {
     this.odysseyModel = odysseyModel;
 
     //GeometryHeader
-    this.p_func1 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
-    this.p_func12 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
+    this.functionPointer0 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
+    this.functionPointer1 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
 
     this.name = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
     this.rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
@@ -138,7 +138,7 @@ export class OdysseyModelAnimation {
         this.readAnimationNode( this.odysseyModel.fileHeader.modelDataOffset + node.childOffsets[i] )
       );
     }
-    
+
     return node;
   }
 

@@ -14,8 +14,8 @@ export class ColorMidController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.colorMid.set(data.x, data.y, data.z);
-      manager.modelNode.emitter.material.uniforms.colorMid.value.set(data.x, data.y, data.z);
+      manager.modelNode.emitter.colorMid.setRGB( data.x, data.y, data.z );
+      manager.modelNode.emitter.material.uniforms.colorMid.value.copy(manager.modelNode.emitter.colorMid);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }

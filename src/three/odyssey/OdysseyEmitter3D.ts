@@ -40,7 +40,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   d2: any;
   context: any;
   lifeExp: number = 0;
+
   birthRate: number = 0;
+  birthRateRandom: number = 0;
+
   velocity: number = 0;
   randVelocity: number = 0;
   drag: number = 0;
@@ -55,9 +58,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   node: any;
   geometry: THREE.BufferGeometry;
   material: THREE.ShaderMaterial;
-  colorStart: any;
-  colorMid: any;
-  colorEnd: any;
+  
+  colorStart: THREE.Color = new THREE.Color(1, 1, 1);
+  colorMid: THREE.Color = new THREE.Color(1, 1, 1);
+  colorEnd: THREE.Color = new THREE.Color(1, 1, 1);
+
   threshold: any;
   gravity: any;
   sizes: any;
@@ -72,6 +77,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   zangle: number;
   mesh: THREE.Points|THREE.Mesh;
   attributes: any = {};
+  targetSize: number = 0;
+  controlPTCount: number = 0;
+  controlPTDelay: number = 0;
+  tangentSpread: number = 0;
+  tangentLength: number = 0;
+  controlPTRadius: number = 0;
 
   constructor(odysseyNode: OdysseyModelNode){
     super();
@@ -117,10 +128,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.lifeExp = 0;
     this._detonate = 0;
     this.birthRate = 0;
-  
-    this.colorStart = new THREE.Color(1, 1, 1);
-    this.colorMid = new THREE.Color(1, 1, 1);
-    this.colorEnd = new THREE.Color(1, 1, 1);
 
     
 
@@ -174,13 +181,19 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
               //controllerOptions.orientation = new THREE.Quaternion(controller.data[0].x, controller.data[0].y, controller.data[0].z, controller.data[0].w);
             break;
             case OdysseyModelControllerType.ColorStart:
-              this.colorStart.copy(controller.data[0]);
+              this.colorStart.r = controller.data[0].x;
+              this.colorStart.g = controller.data[0].y;
+              this.colorStart.b = controller.data[0].z;
             break;
             case OdysseyModelControllerType.ColorMid:
-              this.colorMid.copy(controller.data[0]);
+              this.colorMid.r = controller.data[0].x;
+              this.colorMid.g = controller.data[0].y;
+              this.colorMid.b = controller.data[0].z;
             break;
             case OdysseyModelControllerType.ColorEnd:
-              this.colorEnd.copy(controller.data[0]);
+              this.colorEnd.r = controller.data[0].x;
+              this.colorEnd.g = controller.data[0].y;
+              this.colorEnd.b = controller.data[0].z;
             break;
             case OdysseyModelControllerType.XSize:
               //if(this.node.Render == 'Aligned_to_Particle_Dir'){
@@ -211,7 +224,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
             case OdysseyModelControllerType.Threshold:
               this.threshold = controller.data[0].value;
             break;
-            case OdysseyModelControllerType.Grav:
+            case OdysseyModelControllerType.Gravity:
               this.gravity = controller.data[0].value;
             break;
             case OdysseyModelControllerType.Mass:
@@ -220,7 +233,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
             case OdysseyModelControllerType.Velocity:
               this.velocity = controller.data[0].value;
             break;
-            case OdysseyModelControllerType.RandVel:
+            case OdysseyModelControllerType.RandomVelocity:
               this.randVelocity = controller.data[0].value;
             break;
             case OdysseyModelControllerType.SizeStart:

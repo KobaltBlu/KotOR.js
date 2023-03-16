@@ -14,8 +14,8 @@ export class ColorStartController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.colorStart.copy(data);
-      manager.modelNode.emitter.material.uniforms.colorStart.value.copy(data);
+      manager.modelNode.emitter.colorStart.setRGB( data.x, data.y, data.z );
+      manager.modelNode.emitter.material.uniforms.colorStart.value.copy(manager.modelNode.emitter.colorStart);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }

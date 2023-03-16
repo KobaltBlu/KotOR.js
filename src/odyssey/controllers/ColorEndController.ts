@@ -14,8 +14,8 @@ export class ColorEndController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.colorEnd.set(data.x, data.y, data.z);
-      manager.modelNode.emitter.material.uniforms.colorEnd.value.set(data.x, data.y, data.z);
+      manager.modelNode.emitter.colorEnd.setRGB( data.x, data.y, data.z );
+      manager.modelNode.emitter.material.uniforms.colorEnd.value.copy(manager.modelNode.emitter.colorEnd);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }

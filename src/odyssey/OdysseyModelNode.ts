@@ -130,7 +130,7 @@ export class OdysseyModelNode {
       let tmpQuat = new THREE.Quaternion();
 
       if(this.odysseyModel.nodes.has(this.name)){
-        controller.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
+        controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
       }
     
       if(controller.frameCount != -1){
@@ -311,9 +311,9 @@ export class OdysseyModelNode {
                   let frame: any = {};
       
                   frame.time = data[controller.timeKeyIndex + r];
-                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
-                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
       
                   controller.data[r] = frame;
                 }
@@ -328,9 +328,9 @@ export class OdysseyModelNode {
                 for (let r = 0; r < controller.frameCount; r++) {
                   let frame: any = {};
                   frame.time = data[controller.timeKeyIndex + r];
-                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
                   controller.data[r] = frame
                 }
               break;
@@ -358,23 +358,24 @@ export class OdysseyModelNode {
                 for (let r = 0; r < controller.frameCount; r++) {
                   let frame: any = {};
                   frame.time = data[controller.timeKeyIndex + r];
-                  frame.r = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  frame.g = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-                  frame.b = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
                   controller.data[r] = frame
                 }
               break;
               case OdysseyModelControllerType.LifeExp:
               case OdysseyModelControllerType.BirthRate:
+              case OdysseyModelControllerType.RandomBirthRate:
               case OdysseyModelControllerType.Bounce_Co:
               case OdysseyModelControllerType.Drag:
-              case OdysseyModelControllerType.Grav:
+              case OdysseyModelControllerType.Gravity:
               case OdysseyModelControllerType.FPS:
               case OdysseyModelControllerType.Detonate:
               case OdysseyModelControllerType.CombineTime:
               case OdysseyModelControllerType.Spread:
               case OdysseyModelControllerType.Velocity:
-              case OdysseyModelControllerType.RandVel:
+              case OdysseyModelControllerType.RandomVelocity:
               case OdysseyModelControllerType.Mass:
               case OdysseyModelControllerType.ParticleRot:
               case OdysseyModelControllerType.SizeStart:
@@ -402,7 +403,13 @@ export class OdysseyModelNode {
               case OdysseyModelControllerType.FrameStart:
               case OdysseyModelControllerType.FrameEnd:
               case OdysseyModelControllerType.BlurLength:
-              case 240:
+                // --------------------- //
+              case OdysseyModelControllerType.TargetSize:
+              case OdysseyModelControllerType.ControlPTCount:
+              case OdysseyModelControllerType.ControlPTRadius:
+              case OdysseyModelControllerType.ControlPTDelay:
+              case OdysseyModelControllerType.TangentSpread:
+              case OdysseyModelControllerType.TangentLength:
                 for (let r = 0; r < controller.frameCount; r++) {
                   let frame: any = {};
                   frame.time = data[controller.timeKeyIndex + r];
