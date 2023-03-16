@@ -1,6 +1,8 @@
+import { OdysseyArrayDefinition } from "./OdysseyArrayDefinition";
+
 export interface OdysseyGeometryHeader {
-  unknown2ArrayDefinition: import("c:/Users/James/Documents/GitHub/KotOR.js/src/interface/odyssey/OdysseyArrayDefinition").OdysseyArrayDefinition;
-  unknown1ArrayDefinition: import("c:/Users/James/Documents/GitHub/KotOR.js/src/interface/odyssey/OdysseyArrayDefinition").OdysseyArrayDefinition;
+  unknown2ArrayDefinition: OdysseyArrayDefinition;
+  unknown1ArrayDefinition: OdysseyArrayDefinition;
   mdxOffset: number;
   mdxLength: number;
   padding: number;
