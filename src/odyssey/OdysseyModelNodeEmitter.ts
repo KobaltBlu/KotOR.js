@@ -4,83 +4,96 @@
 import { OdysseyModel, OdysseyModelNode } from ".";
 import { OdysseyModelEmitterFlag } from "../enums/odyssey/OdysseyModelEmitterFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelEmitterFlags } from "../interface/odyssey/OdysseyModelEmitterFlags";
 
 /* @file
  * The OdysseyModelNodeEmitter
  */
 
 export class OdysseyModelNodeEmitter extends OdysseyModelNode {
-  DeadSpace: number;
-  BlastRadius: number;
-  BlastLength: number;
-  GridX: number;
-  GridY: number;
-  SpaceType: number;
-  Update: string;
-  Render: string;
-  Blend: string;
-  Texture: string;
-  Chunk: string;
-  TwoSidedTex: number;
-  Loop: number;
-  RenderOrder: number;
-  Padding: number;
-  Flags: number;
-  isP2P: number;
-  isP2PSel: number;
-  affectedByWind: number;
-  isTinted: number;
-  canBounce: number;
-  isRandom: number;
-  canInherit: number;
-  canInheritVelocity: number;
-  canInheritLocal: number;
-  canSplat: number;
-  canInheritPart: number;
-  isDepthTexture: number;
+  deadSpace: number;
+  blastRadius: number;
+  blastLength: number;
+  gridX: number;
+  gridY: number;
+  spaceType: number;
+  updateMode: string;
+  renderMode: string;
+  blendMode: string;
+  textureResRef: string;
+  chunkResRef: string;
+  twoSidedTex: number;
+  loop: number;
+  renderOrder: number;
+  padding1: number;
+  nFlags: number;
+  branchCount: number;
+  controlPTSmoothing: number;
+
+  flags: OdysseyModelEmitterFlags = {
+    isP2P: false,
+    isP2PSel: false,
+    affectedByWind: false,
+    isTinted: false,
+    canBounce: false,
+    isRandom: false,
+    canInherit: false,
+    canInheritVelocity: false,
+    canInheritLocal: false,
+    canSplat: false,
+    canInheritPart: false,
+    isDepthTexture: false,
+  };
 
   constructor(parent: OdysseyModelNode){
     super(parent);
     this.type |= OdysseyModelNodeType.Emitter;
+    //SIZE: 224 BYTES
   }
 
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.odysseyModel.mdlReader.skip(8);
+    //angle at which the particle will be culled when aligned with the camera
+    this.deadSpace = this.odysseyModel.mdlReader.readSingle();
 
-    this.DeadSpace = this.odysseyModel.mdlReader.readSingle();
-    this.BlastRadius = this.odysseyModel.mdlReader.readSingle();
-    this.BlastLength = this.odysseyModel.mdlReader.readSingle();
-    this.GridX = this.odysseyModel.mdlReader.readUInt32();
-    this.GridY = this.odysseyModel.mdlReader.readUInt32();
-    this.SpaceType = this.odysseyModel.mdlReader.readUInt32();
+    //wind generation
+    this.blastRadius = this.odysseyModel.mdlReader.readSingle();
+    this.blastLength = this.odysseyModel.mdlReader.readSingle();
 
-    this.Update = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Render = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Blend = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.Texture = this.odysseyModel.mdlReader.readChars(64).replace(/\0[\s\S]*$/g,'');
-    this.Chunk = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g,'');
+    //lightning
+    this.branchCount = this.odysseyModel.mdlReader.readUInt32();
+    this.controlPTSmoothing = this.odysseyModel.mdlReader.readSingle();
 
-    this.TwoSidedTex = this.odysseyModel.mdlReader.readUInt32();
-    this.Loop = this.odysseyModel.mdlReader.readUInt32();
-    this.RenderOrder = this.odysseyModel.mdlReader.readUInt16();
-    this.Padding = this.odysseyModel.mdlReader.readUInt16();
+    this.gridX = this.odysseyModel.mdlReader.readUInt32();
+    this.gridY = this.odysseyModel.mdlReader.readUInt32();
+    this.spaceType = this.odysseyModel.mdlReader.readUInt32();
 
-    this.Flags = this.odysseyModel.mdlReader.readUInt32();
+    this.updateMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.renderMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.blendMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.textureResRef = this.odysseyModel.mdlReader.readChars(64).replace(/\0[\s\S]*$/g,'');
+    this.chunkResRef = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g,'');
 
-    this.isP2P = (this.Flags & OdysseyModelEmitterFlag.P2P);
-    this.isP2PSel = (this.Flags & OdysseyModelEmitterFlag.P2P_SEL);
-    this.affectedByWind = (this.Flags & OdysseyModelEmitterFlag.AFFECTED_WIND);
-    this.isTinted = (this.Flags & OdysseyModelEmitterFlag.TINTED);
-    this.canBounce = (this.Flags & OdysseyModelEmitterFlag.BOUNCE);
-    this.isRandom = (this.Flags & OdysseyModelEmitterFlag.RANDOM);
-    this.canInherit = (this.Flags & OdysseyModelEmitterFlag.INHERIT);
-    this.canInheritVelocity = (this.Flags & OdysseyModelEmitterFlag.INHERIT_VEL);
-    this.canInheritLocal = (this.Flags & OdysseyModelEmitterFlag.INHERIT_LOCAL);
-    this.canSplat = (this.Flags & OdysseyModelEmitterFlag.SPLAT);
-    this.canInheritPart = (this.Flags & OdysseyModelEmitterFlag.INHERIT_PART);
-    this.isDepthTexture = (this.Flags & OdysseyModelEmitterFlag.DEPTH_TEXTURE);
+    this.twoSidedTex = this.odysseyModel.mdlReader.readUInt32();
+    this.loop = this.odysseyModel.mdlReader.readUInt32();
+    this.renderOrder = this.odysseyModel.mdlReader.readUInt16();
+    this.padding1 = this.odysseyModel.mdlReader.readUInt16();
+
+    this.nFlags = this.odysseyModel.mdlReader.readUInt32();
+
+    this.flags.isP2P = (this.nFlags & OdysseyModelEmitterFlag.P2P) == OdysseyModelEmitterFlag.P2P;
+    this.flags.isP2PSel = (this.nFlags & OdysseyModelEmitterFlag.P2P_SEL) == OdysseyModelEmitterFlag.P2P_SEL;
+    this.flags.affectedByWind = (this.nFlags & OdysseyModelEmitterFlag.AFFECTED_WIND) == OdysseyModelEmitterFlag.AFFECTED_WIND;
+    this.flags.isTinted = (this.nFlags & OdysseyModelEmitterFlag.TINTED) == OdysseyModelEmitterFlag.TINTED;
+    this.flags.canBounce = (this.nFlags & OdysseyModelEmitterFlag.BOUNCE) == OdysseyModelEmitterFlag.BOUNCE;
+    this.flags.isRandom = (this.nFlags & OdysseyModelEmitterFlag.RANDOM) == OdysseyModelEmitterFlag.RANDOM;
+    this.flags.canInherit = (this.nFlags & OdysseyModelEmitterFlag.INHERIT) == OdysseyModelEmitterFlag.INHERIT;
+    this.flags.canInheritVelocity = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_VEL) == OdysseyModelEmitterFlag.INHERIT_VEL;
+    this.flags.canInheritLocal = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_LOCAL) == OdysseyModelEmitterFlag.INHERIT_LOCAL;
+    this.flags.canSplat = (this.nFlags & OdysseyModelEmitterFlag.SPLAT) == OdysseyModelEmitterFlag.SPLAT;
+    this.flags.canInheritPart = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_PART) == OdysseyModelEmitterFlag.INHERIT_PART;
+    this.flags.isDepthTexture = (this.nFlags & OdysseyModelEmitterFlag.DEPTH_TEXTURE) == OdysseyModelEmitterFlag.DEPTH_TEXTURE;
 
   }
 
