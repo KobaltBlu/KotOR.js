@@ -1,3 +1,4 @@
+import { OdysseyModelNodeType } from "../KotOR";
 import { SceneGraphNode } from "../SceneGraphNode";
 import { UI3DRenderer } from "../UI3DRenderer";
 
@@ -84,10 +85,48 @@ export class SceneGraphTreeViewManager {
         });
 
         model.nodes.forEach( (node) => {
+          let icon = '';
+
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header){
+            icon = 'fa-regular fa-square';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
+            icon = 'fa-solid fa-circle-nodes';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+            icon = 'fa-solid fa-lightbulb';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
+            icon = 'fa-solid fa-vector-square';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
+            icon = 'fa-solid fa-shirt';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
+            icon = 'fa-solid fa-person-walking-dashed-line-arrow-right';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
+            icon = 'fa-solid fa-flag';
+          }
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
+            icon = 'fa-solid fa-wand-magic';
+          }
+    
+          if ((node.odysseyModelNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
+            icon = 'fa-solid fa-burst';
+          }
+          
           modelNode.addChildNode(
             new SceneGraphNode({
               uuid: node.uuid,
               name: node.name,
+              icon: icon,
               data: node,
               onClick: (node) => {
                 this.context.selectObject(node.data);

@@ -3,6 +3,7 @@ import { EventListenerModel } from "./EventListenerModel";
 export interface SceneGraphNodeOptions {
   uuid?: string;
   name: string;
+  icon?: string;
   nodes?: SceneGraphNode[];
   onClick?: (node: SceneGraphNode) => void;
   parent?: SceneGraphNode;
@@ -26,6 +27,7 @@ export class SceneGraphNode extends EventListenerModel {
   id: number = 0;
   uuid: string;
   name: string = '';
+  icon: string = '';
   nodes: SceneGraphNode[] = [];
   onClick: (node: SceneGraphNode) => void;
   data: any = {};
@@ -37,6 +39,7 @@ export class SceneGraphNode extends EventListenerModel {
     super();
     props = Object.assign({
       name: '',
+      icon: '',
       nodes: [],
       onClick: undefined,
       parent: undefined,
@@ -45,6 +48,7 @@ export class SceneGraphNode extends EventListenerModel {
     }, props);
 
     this.name = props.name;
+    this.icon = props.icon as string;
     if(props.parent)  this.parent = props.parent;
     if(props.nodes)   this.nodes = props.nodes;
     if(props.onClick) this.onClick = props.onClick;

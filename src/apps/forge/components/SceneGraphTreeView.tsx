@@ -67,7 +67,10 @@ export const SceneGraphTreeViewNode = function (props: any) {
     return (
       <li onClick={(e) => onClickNode(e, props.node)}>
         <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
-        <label onClick={(e) => onLabelClick(e, props.node)}>{node.name}</label>
+        <label onClick={(e) => onLabelClick(e, props.node)}>
+          {node.icon?.length ? <i className={node.icon}></i> : <></>}
+          {node.name}
+        </label>
         <ul>
           {
             (openState) ? (
@@ -82,6 +85,7 @@ export const SceneGraphTreeViewNode = function (props: any) {
   }else{
     return (
       <li className="link" data-path={node.data.path} onClick={(e) => onClickNode(e, props.node)}>
+        {node.icon?.length ? <i className={node.icon}></i> : <></>}
         {node.name}
       </li>
     );
