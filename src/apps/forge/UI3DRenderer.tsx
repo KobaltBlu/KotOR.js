@@ -56,6 +56,8 @@ export class UI3DRenderer extends EventListenerModel {
   depthTarget: KotOR.THREE.WebGLRenderTarget;
   raycaster: KotOR.THREE.Raycaster = new KotOR.THREE.Raycaster();
 
+  referenceNode: KotOR.THREE.Object3D = new KotOR.THREE.Object3D();
+
   selectable: KotOR.THREE.Group = new KotOR.THREE.Group();
   unselectable: KotOR.THREE.Group = new KotOR.THREE.Group();
 
@@ -249,6 +251,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.lights);
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
+    this.scene.add(this.referenceNode);
     this.sceneGraphManager.rebuild();
   }
   

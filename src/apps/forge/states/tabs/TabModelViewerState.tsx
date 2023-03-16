@@ -131,6 +131,10 @@ export class TabModelViewerState extends TabState {
               this.processEventListener('onEditorFileLoad', [this]);
               this.ui3DRenderer.attachObject(this.model, true);
 
+              model.emitters.map( (emitter) => {
+                emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+              })
+
               if(model.camerahook){
                 const camera = new KotOR.THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
                 camera.name = model.name;
