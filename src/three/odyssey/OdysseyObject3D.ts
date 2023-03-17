@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import { OdysseyController } from "../../odyssey/controllers/OdysseyController";
 import { GUIControl } from "../../gui/GUIControl";
-import { OdysseyEmitter3D, OdysseyModel3D } from "./";
+import { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from "./";
 import { ModuleObject } from "../../module";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 export class OdysseyObject3D extends THREE.Object3D {
@@ -18,7 +18,6 @@ export class OdysseyObject3D extends THREE.Object3D {
     hasPosition: false,
     hasScale: false,
   };
-  emitter: OdysseyEmitter3D;
   matrixInverse: THREE.Matrix4;
   wasOffscreen: boolean = false;
   box: THREE.Box3;
@@ -35,6 +34,10 @@ export class OdysseyObject3D extends THREE.Object3D {
   getControl: () => GUIControl;
   head: any;
   lipping: boolean = false;
+  
+  emitter: OdysseyEmitter3D;
+  light: THREE.Light | OdysseyLight3D;
+
   constructor( node: OdysseyModelNode = undefined ){
     super();
     this.odysseyModelNode = node;

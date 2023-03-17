@@ -27,10 +27,10 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
     textures: []
   };
   color: THREE.Color;
-  radius: number;
-  intensity: number;
-  multiplier: number;
-  light: THREE.Light;
+  radius: number = 1;
+  intensity: number = 1;
+  multiplier: number = 1;
+  // light: THREE.Light;
 
   flareSizesArrayDefinition: OdysseyArrayDefinition;
   flarePositionsArrayDefinition: OdysseyArrayDefinition;

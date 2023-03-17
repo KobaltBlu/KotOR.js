@@ -17,10 +17,10 @@ import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelCont
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelMDXFlag } from "../../enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
-import { ShaderManager } from "../../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
+import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -219,7 +219,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }else if(object.type === 'OdysseyLight'){
         //console.log('Light', node);
-        LightManager.removeLight(node);
+        LightManager.removeLight(node as OdysseyLight3D);
       }else{
         if(object.hasOwnProperty('mesh')){
           (object as any).mesh = undefined;
@@ -957,22 +957,21 @@ export class OdysseyModel3D extends OdysseyObject3D {
     // LIGHT NODE
     //------------//
     if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode instanceof OdysseyModelNodeLight) {
-      OdysseyModel3D.NodeLightBuilder(odysseyModel, node, odysseyNode, options);      
+      node.light = OdysseyModel3D.NodeLightBuilder(odysseyModel, node, odysseyNode, options);      
     }
 
     if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode instanceof OdysseyModelNodeEmitter) {
-      let emitter = new OdysseyEmitter3D(odysseyNode);
-      emitter.context = odysseyModel.context;
-      emitter.name = odysseyNode.name + '_em'
-      node.emitter = emitter;
-      node.add(emitter);
-      odysseyModel.emitters.push(emitter);
+      node.emitter = new OdysseyEmitter3D(odysseyNode);
+      node.emitter.context = odysseyModel.context;
+      node.emitter.name = odysseyNode.name + '_em'
+      node.add(node.emitter);
+      odysseyModel.emitters.push(node.emitter);
     }
 
     if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
       //console.log('OdysseyModel', 'Reference Node', options.parent);
       if(parentNode.parent instanceof OdysseyEmitter3D)
-        parentNode.parent.emitter.referenceNode = node;
+        parentNode.parent.emitter.setReferenceNode(node)
     }
 
     switch(node.name){
@@ -1381,9 +1380,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
         if(odysseyNode.controllers.has(OdysseyModelControllerType.SelfIllumColor)){
           let selfIllumColor = odysseyNode.controllers.get(OdysseyModelControllerType.SelfIllumColor);
-          if(selfIllumColor.data[0].x || selfIllumColor.data[0].y || selfIllumColor.data[0].z){
+          const frame = selfIllumColor.data[0];
+          if(frame){
             material.defines.SELFILLUMCOLOR = "";
-            material.uniforms.selfIllumColor.value.copy(selfIllumColor.data[0]);
+            material.uniforms.selfIllumColor.value.setRGB(frame.x, frame.y, frame.z);
           }
         }
       }
@@ -1475,72 +1475,47 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return material;
   };
 
-  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions){
+  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions): THREE.Light|OdysseyLight3D {
 
-    odysseyNode.color = new THREE.Color(0xFFFFFF);
-    odysseyNode.radius = 5.0;
-    odysseyNode.intensity = 1.0;
-    odysseyNode.multiplier = 1.0;
-    //odysseyNode.position = new THREE.Vector3();
-    
-    odysseyNode.controllers.forEach( (controller) => {
-      switch(controller.type){
-        case OdysseyModelControllerType.Color:
-          odysseyNode.color = new THREE.Color(controller.data[0].x, controller.data[0].y, controller.data[0].z);
-        break;
-        case OdysseyModelControllerType.Position:
-          //odysseyNode.position.set(controller.data[0].x, controller.data[0].y, controller.data[0].z);
-        break;
-        case OdysseyModelControllerType.Radius:
-          odysseyNode.radius = controller.data[0].value;
-        break;
-        case OdysseyModelControllerType.Multiplier:
-          odysseyNode.multiplier = controller.data[0].value;
-        break;
-      }
-    });
+    // odysseyNode.color = new THREE.Color(0xFFFFFF);
+    // odysseyNode.radius = 5.0;
+    // odysseyNode.intensity = 1.0;
+    // odysseyNode.multiplier = 1.0;
 
     //if(GameKey != "TSL"){
     //  odysseyNode.intensity = odysseyNode.intensity > 1 ? odysseyNode.intensity * .01 : odysseyNode.intensity;
     //}else{
-      odysseyNode.intensity = odysseyNode.intensity * odysseyNode.multiplier;// > 1 ? odysseyNode.intensity * .01 : odysseyNode.intensity;
+      // odysseyNode.intensity = odysseyNode.intensity * odysseyNode.multiplier;// > 1 ? odysseyNode.intensity * .01 : odysseyNode.intensity;
     //}
 
+    let lightNode: THREE.Light|OdysseyLight3D;
+
     if(!options.manageLighting){
-      let lightNode: THREE.Light;
       if(odysseyNode.ambientFlag){
         lightNode = new THREE.AmbientLight( odysseyNode.color );
         lightNode.intensity = odysseyNode.multiplier * 0.5;
       }else{
-        //lightNode = new THREE.PointLight( odysseyNode.color, odysseyNode.intensity, odysseyNode.radius * 100 );
-        lightNode = new THREE.PointLight( odysseyNode.color, 1, odysseyNode.radius * odysseyNode.multiplier, 1 );
+        lightNode = new THREE.PointLight( odysseyNode.color, 1, 1, 1 );
         (lightNode.shadow.camera as any).far = odysseyNode.radius;
-        //lightNode.distance = radius;
-        lightNode.position.copy(odysseyNode.position);
       }
       lightNode.userData = {
         decay: 1,
         controllers: odysseyNode.controllers,
         helper: { visiable: false },
       }
-      // lightNode.decay = 1;
       lightNode.visible = true;
-      // lightNode.controllers = odysseyNode.controllers;
-      // lightNode.helper = {visible:false};
-    
-      //odysseyModel.lights.push(lightNode);
-      odysseyNode.light = lightNode;
+
+      lightNode.userData.radius = 5.0;
+      lightNode.userData.multiplier = 1;
+      lightNode.intensity = 1;
+      
       parentNode.add(lightNode);
       OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
     }else{
-      let lightNode: OdysseyLight3D;
       lightNode = new OdysseyLight3D(odysseyNode);
       lightNode.odysseyModel = odysseyModel;
       lightNode.isAnimated = !odysseyNode.roomStatic;
-      //if(!odysseyNode.ambientFlag){
-        lightNode.position.copy(odysseyNode.position);
-      //}
-      //odysseyNode.light = lightNode;
+      lightNode.position.copy(odysseyNode.position);
       parentNode.add(lightNode);
 
       lightNode.parentUUID = odysseyModel.uuid;
@@ -1554,28 +1529,62 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lightNode.castShadow = odysseyNode.shadowFlag ? true : false;
       lightNode.genFlare = odysseyNode.generateFlareFlag ? true : false;
       lightNode.isFading = odysseyNode.fadingLightFlag;
-      lightNode.maxIntensity = odysseyNode.intensity;
+      lightNode.maxIntensity = 1;
       lightNode.color = odysseyNode.color;
       OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
       LightManager.addLight(lightNode);
     }
+    
+    odysseyNode.controllers.forEach( (controller) => {
+      switch(controller.type){
+        case OdysseyModelControllerType.Color:
+          lightNode.color = new THREE.Color(controller.data[0].x, controller.data[0].y, controller.data[0].z);
+        break;
+        case OdysseyModelControllerType.Position:
+          //odysseyNode.position.set(controller.data[0].x, controller.data[0].y, controller.data[0].z);
+        break;
+        case OdysseyModelControllerType.Radius:
+          if(lightNode instanceof THREE.PointLight){
+            lightNode.userData.radius = controller.data[0].value;
+            lightNode.distance = lightNode.userData.radius * lightNode.userData.multiplier;
+          }else if(lightNode instanceof THREE.AmbientLight){
+            //Not supported on AmbientLights
+          }else if(lightNode instanceof OdysseyLight3D){
+            lightNode.radius = controller.data[0].value;
+          }
+        break;
+        case OdysseyModelControllerType.Multiplier:
+          if(lightNode instanceof THREE.PointLight){
+            lightNode.userData.multiplier = controller.data[0].value;
+            lightNode.distance = lightNode.userData.radius * lightNode.userData.multiplier;
+          }else if(lightNode instanceof THREE.AmbientLight){
+            lightNode.userData.multiplier = controller.data[0].value;
+            lightNode.intensity = lightNode.userData.multiplier * 0.5;
+          }else if(lightNode instanceof OdysseyLight3D){
+            lightNode.multiplier = controller.data[0].value;
+          }
+        break;
+      }
+    });
+
+    return lightNode;
   };
 
-  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions){
+  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Light|OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions){
     if(odysseyNode.flare.radius){
-      // let lensFlare = new Lensflare();
+      let lensFlare = new Lensflare();
 
-      // for(let i = 0, len = odysseyNode.flare.textures.length; i < len; i++){
-      //   TextureLoader.enQueue(odysseyNode.flare.textures[i], null, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-      //     lensFlare.addElement( new LensflareElement( texture, odysseyNode.flare.sizes[i],  odysseyNode.flare.positions[i],  odysseyNode.flare.colorShifts[i] ) );
-      //   });
-      // }
+      for(let i = 0, len = odysseyNode.flare.textures.length; i < len; i++){
+        TextureLoader.enQueue(odysseyNode.flare.textures[i], null, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          lensFlare.addElement( new LensflareElement( texture, odysseyNode.flare.sizes[i],  odysseyNode.flare.positions[i],  odysseyNode.flare.colorShifts[i] ) );
+        });
+      }
 
-      // if(!options.manageLighting){
-      //   //parentNode.add(lensFlare);
-      // }else{
-      //   (parentNode as any).lensFlare = lensFlare;
-      // }
+      if(!options.manageLighting){
+        //parentNode.add(lensFlare);
+      }else{
+        parentNode.userData.lensFlare = lensFlare;
+      }
     }
   }
 

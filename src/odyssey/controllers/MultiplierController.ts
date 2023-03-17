@@ -4,6 +4,8 @@ import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/Ody
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyController } from "./OdysseyController";
+import { OdysseyLight3D } from "../../three/odyssey";
+import * as THREE from "three";
 
 export class MultiplierController extends OdysseyController {
 
@@ -15,13 +17,25 @@ export class MultiplierController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
     if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
+      if(manager.modelNode.light instanceof THREE.PointLight){
+        manager.modelNode.light.intensity = data.value || 0.000000001;
+      }else if (manager.modelNode.light instanceof THREE.AmbientLight){
+        // manager.modelNode.light.intensity = data.value || 0.000000001;
+      }else if (manager.modelNode.light instanceof OdysseyLight3D){
+        manager.modelNode.light.multiplier = data.value || 0.000000001;
+      }
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
     if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      (manager.modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = ((next.value - last.value) * fl + last.value);
+      if(manager.modelNode.light instanceof THREE.PointLight){
+        manager.modelNode.light.intensity = ((next.value - last.value) * fl + last.value) || 0.000000001;
+      }else if (manager.modelNode.light instanceof THREE.AmbientLight){
+        // manager.modelNode.light.intensity = ((next.value - last.value) * fl + last.value) || 0.000000001;
+      }else if (manager.modelNode.light instanceof OdysseyLight3D){
+        manager.modelNode.light.multiplier = ((next.value - last.value) * fl + last.value) || 0.000000001;
+      }
     }
   }
 

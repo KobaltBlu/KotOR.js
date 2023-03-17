@@ -1,48 +1,60 @@
-// import { Forge } from "../../Forge";
 import { GameState } from "../../GameState";
-import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { OdysseyObject3D } from "./";
 import * as THREE from "three";
-import { OdysseyModel } from "../../odyssey/OdysseyModel";
-import { OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
+import { OdysseyModelNodeLight } from "../../odyssey";
 
 
 //THREE.js representation of an OdysseyLight
 export class OdysseyLight3D extends OdysseyObject3D {
 
-  worldPosition: THREE.Vector3;
-  sphere: THREE.Sphere;
-  isAnimated: boolean;
+  worldPosition: THREE.Vector3 = new THREE.Vector3();
+  sphere: THREE.Sphere = new THREE.Sphere();
+  isAnimated: boolean = false;
   parentUUID: string;
-  priority: number;
-  isAmbient: boolean;
-  isDynamic: boolean;
-  affectDynamic: boolean;
-  genFlare: boolean;
-  isFading: number;
-  maxIntensity: number;
-  color: THREE.Color;
+  priority: number = 0;
+
+  isAmbient: boolean = false;
+  isDynamic: boolean = false;
+  affectDynamic: boolean = false;
+  isFading: number = 0;
+
+  genFlare: boolean = false;
+
+  intensity: number = 0;
+  maxIntensity: number = 0.5;
+
+  color: THREE.Color = new THREE.Color(1, 1, 1);
+  multiplier: number = 0;
+  radius: number = 0;
+  shadowRadius: number = 0;
+  verticalDisplacement: number = 0;
+
+  cameraDistance: number = 0;
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
     this.type = 'OdysseyLight';
-    this.worldPosition = new THREE.Vector3();
-    this.sphere = new THREE.Sphere();
   }
 
   getIntensity(){
-    if(this.odysseyModelNode)
-      //return this.odysseyModelNode.multiplier;
-      return 0.5;//(this.odysseyModelNode.multiplier > 1 && (Number(this.odysseyModelNode.multiplier) === this.odysseyModelNode.multiplier && this.odysseyModelNode.multiplier % 1 === 0) ? this.odysseyModelNode.multiplier : this.odysseyModelNode.multiplier);
-    else
-      return 0;
+    return this.multiplier;
+    // if(this.odysseyModelNode)
+    //   //return this.odysseyModelNode.multiplier;
+    //   return 0.5;//(this.odysseyModelNode.multiplier > 1 && (Number(this.odysseyModelNode.multiplier) === this.odysseyModelNode.multiplier && this.odysseyModelNode.multiplier % 1 === 0) ? this.odysseyModelNode.multiplier : this.odysseyModelNode.multiplier);
+    // else
+    //   return 0;
   }
 
   getRadius(){
-    if(this.odysseyModelNode)
-      return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
-    else
-      return 0;
+    return this.radius;// * this.multiplier;
+    // if(this.odysseyModelNode)
+    //   return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
+    // else
+    //   return 0;
+  }
+
+  getShadowRadius(){
+    return this.shadowRadius;
   }
 
   isOnScreen( frustum = GameState.viewportFrustum ){
