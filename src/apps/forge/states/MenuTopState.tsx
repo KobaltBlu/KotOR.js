@@ -10,6 +10,7 @@ import { TabUTDEditorState } from "./tabs/TabUTDEditorState";
 import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
 
 import * as KotOR from "../KotOR";
+import { ModalNewProjectState } from "./modal/ModalNewProjectState";
 
 
 export class MenuTopState {
@@ -78,6 +79,9 @@ export class MenuTopState {
     this.menuItemNewProject = new MenuTopItem({name: 'New Project', onClick: () => {
       // let newProjectWizard = new NewProjectWizard();
       // newProjectWizard.Show();
+      const newProjectModalState = new ModalNewProjectState();
+      ForgeState.modalManager.addModal(newProjectModalState);
+      newProjectModalState.open();
     }});
 
     this.menuItemSaveProject = new MenuTopItem({name: 'Save Project', onClick: () => {

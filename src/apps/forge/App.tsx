@@ -9,6 +9,7 @@ import ModalGrantAccess from "./components/modal/ModalGrantAccess";
 import { ModalChangeGame } from "./components/modal/ModalChangeGame";
 import { useEffectOnce } from "./helpers/UseEffectOnce";
 import { useApp } from "./context/AppContext";
+import { ModalManager } from "./components/modal/ModalManager";
 
 export const App = (props: any) => {
 
@@ -83,6 +84,7 @@ export const App = (props: any) => {
         </div>
         <ModalChangeGame></ModalChangeGame>
       </div>
+      <ModalManager manager={ForgeState.modalManager}></ModalManager>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
     </>
   );

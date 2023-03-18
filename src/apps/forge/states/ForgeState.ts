@@ -4,15 +4,16 @@ import { EditorTabManager } from "../managers/EditorTabManager";
 import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
-import * as KotOR from '../KotOR';
 import { ProjectFileSystem } from "../ProjectFileSystem";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 import { pathParse } from "../helpers/PathParse";
 import { FileTypeManager } from "../FileTypeManager";
 import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import { TabStoreState } from "../interfaces/TabStoreState";
-import { TabState } from "./tabs/TabState";
 import { NWScriptParser } from "../../../nwscript/NWScriptParser";
+import { ModalManagerState } from "./modal/ModalManagerState";
+
+import * as KotOR from '../KotOR';
 
 declare const monaco: any;
 
@@ -20,6 +21,7 @@ export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
   static project: Project;
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
+  static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();
   static explorerTabManager: EditorTabManager = new EditorTabManager();
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
