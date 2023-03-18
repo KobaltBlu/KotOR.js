@@ -7,7 +7,9 @@
     "start": "electron .",
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
-    "webpack:prod": "cross-env NODE_ENV=production webpack"
+    "webpack:prod": "cross-env NODE_ENV=production webpack",
+    "electron:build": "npm run webpack:prod && electron-builder build --publish=never",
+    "electron:build2": "electron-builder build --publish=never"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -31,9 +33,7 @@
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "dxt-js": "^0.0.3",
-    "electron": "^13.3.0",
-    "electron-packager": "^14.2.1",
-    "electron-rebuild": "^1.11.0",
+    "electron": "^21.4.3",
     "escodegen": "^2.0.0",
     "esprima": "^4.0.1",
     "file-loader": "^6.2.0",

@@ -108,6 +108,7 @@ async function createWindowFromProfile( profile = {} ) {
       enableRemoteModule: false,
       //worldSafeExecuteJavaScript: true,
       contextIsolation: true,
+      sandbox: false,
     }
   });
 
@@ -167,6 +168,7 @@ function createLauncherWindow() {
       enableRemoteModule: false,
       //worldSafeExecuteJavaScript: true,
       contextIsolation: true,
+      sandbox: false,
     }
   });
   // and load the index.html of the app.
