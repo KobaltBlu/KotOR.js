@@ -313,4 +313,12 @@ export class TabModelViewerState extends TabState {
     // this.layout = undefined;
   }
 
+  setRandomReferencePosition(spread: number = 1){
+    this.ui3DRenderer.referenceNode.position.set(
+      (Math.random()-0.5*2) * spread,
+      (Math.random()-0.5*2) * spread,
+      (Math.random()-0.5*2) * spread
+    );
+  }
+
 }
