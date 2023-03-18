@@ -1,0 +1,41 @@
+{
+    "asar": true,
+    "directories": {
+      "output": "release/"
+    },
+    "appId": "com.kotor.js",
+    "files": [
+      "**/*",
+      "!**/*.ts",
+      "!*.map",
+      "!package.json",
+      "!package-lock.json",
+      {
+        "from": "../dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "icon": "dist/assets/icons",
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "splashImage": "dist/assets/icons/splash.bmp"
+    },
+    "mac": {
+      "icon": "dist/assets/icons",
+      "category": "public.app-category.games",
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "icon": "dist/assets/icons",
+      "target": [
+        "AppImage"
+      ]
+    }
+  }
+  

@@ -1,2 +1,0 @@
-electron-packager . KotOR-js --asar.unpack=*.{node,dll} --out=release --platform=win32 --arch=ia32 --ignore=projects --ignore=settings.json --ignore=k_assets --ignore=k2_assets --ignore=saves --ignore=release
-pause

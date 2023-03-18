@@ -1,2 +1,0 @@
-electron-packager . KotOR-js --overwrite --icon=icon.ico --out=release/x64 --platform=win32 --arch=x64 --ignore=projects --ignore=settings.json --ignore=k_assets --ignore=k2_assets --ignore=saves --no-asar
-pause

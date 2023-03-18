@@ -8,8 +8,7 @@
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
-    "electron:build": "npm run webpack:prod && electron-builder build --publish=never",
-    "electron:build2": "electron-builder build --publish=never"
+    "electron:build": "npm run webpack:prod && electron-builder build --publish=never"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
