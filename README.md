@@ -1,5 +1,7 @@
 # KotOR.js
 
+![KotOR.js](https://raw.githubusercontent.com/KobaltBlu/KotOR.js/master/src/assets/icons/icon.png)
+
 **A remake of the Odyssey Game Engine that powered KotOR I &amp; II written in JS (TypeScript)**
 
 KotOR.js is a TypeScript-based remake of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords. While still in the early stages of development, the project aims to make the games fully playable.
