@@ -66,6 +66,11 @@ const libraryConfig = (name, color) => ({
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
     }),
+    new CopyPlugin({
+      patterns: [
+        { from: "src/assets", to: "assets" },
+      ]
+    })
   ],
   resolve: {
     alias: {

@@ -269,12 +269,12 @@ app.on('ready', async () => {
   // }
 
   // console.log(__dirname);
-  if(!fs.existsSync(path.join(__dirname, 'icon.png'))){
-    fs.copyFileSync(path.join(app.getAppPath(), 'icon.png'), path.join(__dirname, 'icon.png'));
-  }
+  // if(!fs.existsSync(path.join(__dirname, 'icon.png'))){
+  //   fs.copyFileSync(path.join(app.getAppPath(), 'icon.png'), path.join(__dirname, 'icon.png'));
+  // }
 
   try{
-    tray = new Tray('icon.png');
+    tray = new Tray('dist/assets/icons/icon.png');
     const contextMenu = Menu.buildFromTemplate([{
       label: 'Exit', 
       type: 'normal', 
