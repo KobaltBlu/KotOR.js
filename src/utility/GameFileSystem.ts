@@ -328,14 +328,15 @@ export class GameFileSystem {
             for(let i = 0, len = dirs.length; i < len; i++){
               const isTargetDirectory = (i == dirs.length-1);
               const canCreate = (isTargetDirectory || !!opts.recursive);
-              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate })
+              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
+              console.log('handle', currentDirHandle, isTargetDirectory, canCreate);
               if(!currentDirHandle && !isTargetDirectory){
                 resolve(false);
                 return;
               }
             }
             console.log('mkdir', currentDirHandle);
-            await spleep(100);
+            await spleep(1000);
             resolve(true);
           }catch(e){
             console.error(e);
@@ -366,7 +367,6 @@ export class GameFileSystem {
               resolve(false);
               return;
             }
-            await spleep(100);
             resolve(true);
           }
         );
@@ -386,7 +386,6 @@ export class GameFileSystem {
               break;
             }
           }
-          await spleep(100);
           resolve(true);
           return;
         }catch(e){
@@ -396,6 +395,11 @@ export class GameFileSystem {
         }
       }
     });
+  }
+
+  static async opendir_web(dirPath: string = ''): Promise<FileSystemDirectoryHandle|undefined> {
+    const details = path.parse(dirPath);
+    return await this.resolvePathDirectoryHandle(dirPath);
   }
 
   static exists(dirOrFilePath: string): Promise<boolean> {
@@ -554,8 +558,6 @@ export class GameFileSystem {
       });
     }
   }
-
-  
 
   static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
     try{

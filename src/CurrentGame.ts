@@ -5,6 +5,7 @@ import { AsyncLoop } from "./utility/AsyncLoop";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { GameFileSystem } from "./utility/GameFileSystem";
+import { ApplicationEnvironment } from "./enums/ApplicationEnvironment";
 
 export class CurrentGame {
   static gameinprogress_dir = 'gameinprogress';
@@ -49,32 +50,66 @@ export class CurrentGame {
     });
   }
 
-  static async ClearGameInProgressFolder(){
-    return new Promise<void>( async (resolve, reject) => {
-      if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
-        GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true }).then( () => {
-          resolve();
-        }).catch( (e) => {
-          console.error(e);
-          resolve();
-        });
+  static async CleanGameInProgressFolder(create: boolean = true): Promise<boolean> {
+    console.log(`CurrentGame.CleanGameInProgressFolder`, `Cleaning...`);
+    try{
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+        console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: ELECTRON`);
+        let rm_response: boolean;
+        if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
+          rm_response = await GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true });
+          console.log(
+            `CurrentGame.CleanGameInProgressFolder`, 
+            `rmdir ${CurrentGame.gameinprogress_dir} - [${rm_response ? 'success' : 'fail'}]`
+          );
+        }
+        
+        if(create){
+          let mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+          console.log(
+            `CurrentGame.CleanGameInProgressFolder`, 
+            `mkdir ${CurrentGame.gameinprogress_dir} - [${mkdir_response ? 'success' : 'fail'}]`
+          );
+          return rm_response && mkdir_response;
+        }
+
+        return rm_response;
       }else{
-        resolve();
+        console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: BROWSER`);
+        try{
+          const directory_handle = await GameFileSystem.opendir_web(CurrentGame.gameinprogress_dir);
+          if(directory_handle instanceof FileSystemDirectoryHandle){
+            for await(let handle of directory_handle.values()){
+              if(handle.kind == 'file'){
+                await directory_handle.removeEntry(handle.name);
+              }
+            }
+          }else if(create){
+            const directory_handle = await GameFileSystem.rootDirectoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
+            console.log('exists', directory_handle);
+          }
+        }catch(e){
+          console.error(e);
+          if(create){
+            const directory_handle = await GameFileSystem.rootDirectoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
+            console.log('exists', directory_handle);
+          }
+        }
       }
-    });
+    }catch(e){
+      console.log(`CurrentGame.CleanGameInProgressFolder`, `Failed due to exception`);
+      console.error(e);
+      return false
+    }
   }
 
-  static async InitGameInProgressFolder(){
+  static async InitGameInProgressFolder(create: boolean = false): Promise<boolean> {
     try{ 
-      await CurrentGame.ClearGameInProgressFolder(); 
+      await CurrentGame.CleanGameInProgressFolder(create); 
+      return true;
     }catch(e){
       console.error(e);
-    }
-    
-    try{ 
-      await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
-    }catch(e){
-      console.error(e);
+      return false;
     }
   }
 
@@ -105,7 +140,7 @@ export class CurrentGame {
         let loop = new AsyncLoop({
           array: files,
           onLoop: (file: string, asyncLoop: AsyncLoop) => {
-            let file_path = path.join( CurrentGame.gameinprogress_dir, file );
+            let file_path = path.join( file );
             let file_info = path.parse(file);
             let ext = file_info.ext.split('.').pop();
             if(typeof ResourceTypes[ext] != 'undefined'){

@@ -81,10 +81,10 @@ contextBridge.exposeInMainWorld(
       return fs.mkdirSync(...args);
     },
     rmdir: (...args) => {
-      return fs.mkdir(...args);
+      return fs.rmdir(...args);
     },
     rmdirSync: (...args) => {
-      return fs.mkdirSync(...args);
+      return fs.rmdirSync(...args);
     },
     stat: (...args) => {
       return fs.stat(...args);

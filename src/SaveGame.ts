@@ -329,7 +329,7 @@ export class SaveGame {
   }
 
   InitGameInProgressFolder( onLoad?: Function ){
-    CurrentGame.InitGameInProgressFolder().then( () => {
+    CurrentGame.InitGameInProgressFolder(true).then( () => {
       CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME ).then( () => {
         if(typeof onLoad === 'function')
           onLoad();

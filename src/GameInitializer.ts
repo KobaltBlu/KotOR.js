@@ -41,7 +41,7 @@ export class GameInitializer {
 
     ResourceLoader.InitCache();
 
-    CurrentGame.ClearGameInProgressFolder().then( () => {
+    CurrentGame.CleanGameInProgressFolder().then( () => {
       if(GameInitializer.currentGame != props.game){
         GameInitializer.currentGame = props.game;
 

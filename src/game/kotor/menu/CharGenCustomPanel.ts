@@ -87,7 +87,7 @@ export class CharGenCustomPanel extends GameMenu {
         GlobalVariableManager.Init();
         PartyManager.Player = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder().then( () => {
+        CurrentGame.InitGameInProgressFolder(true).then( () => {
           GameState.LoadModule('end_m01aa');
         });
       });

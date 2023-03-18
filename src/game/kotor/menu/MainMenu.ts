@@ -145,7 +145,7 @@ export class MainMenu extends GameMenu {
     super.Show();
     GameState.audioEngine.SetBackgroundMusic(this.bgMusicBuffer);
     GameState.AlphaTest = 0.5;
-    CurrentGame.InitGameInProgressFolder().then( () => {
+    CurrentGame.InitGameInProgressFolder(false).then( () => {
 
     });
   }

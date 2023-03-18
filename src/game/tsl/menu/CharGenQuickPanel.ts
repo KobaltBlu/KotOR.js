@@ -56,7 +56,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         GlobalVariableManager.Init();
         PartyManager.Player = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder().then( () => {
+        CurrentGame.InitGameInProgressFolder(true).then( () => {
           GameState.LoadModule('001EBO');
         });
       });
