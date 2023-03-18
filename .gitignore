@@ -3,7 +3,6 @@ release/
 settings.json
 crash.log
 npm-debug.log
-package-lock.json
 *.gypi
 backup/
 
