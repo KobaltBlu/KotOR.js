@@ -1,43 +1,50 @@
 # KotOR.js
 
-**A remake of the Odyssey Game Engine that powered KotOR I &amp; II written in JavaScript**
+**A remake of the Odyssey Game Engine that powered KotOR I &amp; II written in JS (TypeScript)**
 
-This project is still in it's early stages. Things like displaying Ingame Menus, Models, Sound, Particle Effects, and Scripting are all in various stages of working. While some parts of the game are playable to some extent, there is still a long ways to go before it can play either game from beginning to end. My hope is that this project will eventually be able to play KotOR and TSL in full.
+KotOR.js is a TypeScript-based remake of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords. While still in the early stages of development, the project aims to make the games fully playable.
 
-There is also very early attempt at a Modding Suite called KotOR Forge packaged inside.
+In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge. 
 
-The code is written in Javascript. It uses THREE.js for the rendering engine, and Electron to package and run the code as an app.
-
-If you plan on trying to run either game you will have to already have them, or purchase them from an official retailer like GoG or Steam. Once you attempt to launch either game from the KotOR.js launcher for the first time you will be asked to locate the install directory of said game.
+## Technologies
+- The code has been re-written in TypeScript and compiles down into JavaScript. 
+- THREE.js is used for the base of the rendering engine. 
+- Electron is used to package and publish a desktop application. 
 
 [Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
 
 ## Supported Games
-
+The following games are currently supported:
 - [x] [Star Wars: Knights of the Old Republic (PC)](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic)
 - [x] [Star Wars: Knights of the Old Republic II The Sith Lords (PC)](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords)
 
-## Getting Started
+## Web Compatibility (NEW)
 
-You will need to have installed [npm (Node Package Manager)](https://www.npmjs.com/get-npm), then download the KotOR.js repository. 
-You can then follow the steps below to run the project.
+The recent transition to TypeScript has brought many improvements to the codebase, including Chrome support. When the project is compiled, the contents of the `dist` folder can be uploaded to a web server. The only requirement is that the site must be accessed from behind a valid SSL certificate. Using the latest version of Chrome is recommended.
 
-**Console/Shell**
+## Getting Started (Developer)
+To get started as a developer, follow these steps:
+
+1. Download and install [npm (Node Package Manager)](https://www.npmjs.com/get-npm).
+2. Clone the KotOR.js repository.
+3. Install the npm dependencies.
+
 ```bash
-# Install dependencies
 npm install
-# Rebuild compiled dependencies
-npm run rebuild
-# Run the app
-npm start
+```
+4. Run the build command
+
+```bash
+npm run webpack:dev-watch
+```
+5. Run the build command in a separate console/shell window
+
+```bash
+npm run start
 ```
 
-**Windows**
-
-- Navigate to the KotOR.js root directory
-- Run install.bat (You only need to do this before the first run)
-- Run start.bat to launch the program
+6. Enjoy
 
 ## Screenshots
 
