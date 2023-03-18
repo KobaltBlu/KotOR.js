@@ -1,0 +1,32 @@
+.TabImageViewerState {
+
+  canvas {
+    box-shadow: 0 0 25px 5px #00000047
+  }
+
+  .txi-pane {
+    display: flex;
+    flex-direction: column;
+    .txi-element {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      border-bottom: 1px solid #272727;
+      span {
+        &.txi-property {
+          flex: 0.75;
+          white-space: nowrap;
+          padding: 2.5px 5px;
+          border-right: 1px solid #272727;
+          font-weight: bold;
+        }
+        &.txi-value {
+          flex: 0.25;
+          white-space: nowrap;
+          padding: 2.5px 5px;
+        }
+      }
+    }
+  }
+
+}

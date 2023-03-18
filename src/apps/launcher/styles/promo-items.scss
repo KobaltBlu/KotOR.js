@@ -1,0 +1,85 @@
+
+.promo-elements {
+  display: block;
+  white-space: nowrap;
+  overflow: visible;
+  position: relative;
+  height: 250px;
+}
+
+.launcher-content.active .promo-elements {
+  animation: slide-fade-in .75s ease-in-out;
+}
+
+/* promo-elements-left */
+
+.promo-elements .promo-elements-left, .promo-elements .promo-elements-right {
+  display: none;
+}
+
+.promo-elements.scroll-left .promo-elements-left, .promo-elements.scroll-right .promo-elements-right {
+  display: block;
+}
+
+.promo-elements .promo-elements-left {
+  position: absolute;
+  top: calc(50% - 150px/2);
+  left: 10px;
+  width: 60px;
+  height: 150px;
+  border-radius: 5px;
+  opacity: 0;
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity .5s ease-in-out;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 150px;
+  z-index: 50;
+}
+
+.promo-elements .promo-elements-left:hover {
+  background: rgba(206, 158, 0, 0.75);
+}
+
+.promo-elements .promo-elements-right {
+  position: absolute;
+  top: calc(50% - 150px/2);
+  right: 10px;
+  width: 60px;
+  height: 150px;
+  border-radius: 5px;
+  opacity: 0;
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity .5s ease-in-out;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 150px;
+  z-index: 50;
+}
+
+.promo-elements .promo-elements-right:hover {
+  background: rgba(206, 158, 0, 0.75);
+}
+
+.promo-elements:hover .promo-elements-left, .promo-elements:hover .promo-elements-right {
+  opacity: 1;
+}
+
+.promo-elements-container {
+  transition: all .25s ease-in-out;
+}
+
+.promo-element {
+  display: inline-block;
+  background: black;
+  height: 250px;
+  border: 1px solid rgba(255, 255, 255, 0.31);
+  box-shadow: 0 0 10px 1px rgb(0, 0, 0);
+  cursor: pointer;
+  position: relative;
+  margin-left: 10px;
+}
+
+@import "./promo-items/promo-gallery.scss";
+@import "./promo-items/promo-webview.scss";
+@import "./promo-items/promo-video.scss";

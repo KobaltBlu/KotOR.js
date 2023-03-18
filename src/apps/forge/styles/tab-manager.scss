@@ -1,0 +1,238 @@
+
+//Tab Manager
+
+.tabManager {
+
+  height: 100%;
+
+  ul.tabs-menu {
+    height: 30px;
+    float: left;
+    clear: both;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    background: #212121;
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 1px solid #191919;
+
+    &.tabs-flex-wrap {
+      display: flex;
+      flex-flow: wrap;
+      height: auto;
+    }
+
+    li.btn.btn-tab {
+      display: inline-block;
+      height: 30px;
+      background-color: #1B1A1A;
+      color: #CCC;
+      padding: 2.5px 10px;
+      border-left: 3px solid #212121;
+      border-radius: 0;
+      border-top: none;
+      border-bottom: none;
+      border-right: none;
+
+      &.current, &.active {
+        position: relative;
+        background-color: #333333;
+        border: none;
+        border-left: 3px solid #128EC7;
+        z-index: 5;
+        a {
+          color: #CCC;
+        }
+      }
+
+      a {
+        text-transform: uppercase;
+        color: #CCC;
+        text-decoration: none;
+      }
+
+      .close {
+        text-shadow: 0 1px 0 #000000;
+        padding: 0;
+        margin: 0;
+        margin-left: 5px;
+        border-color: transparent;
+        background-color: transparent;
+
+        span {
+          display: block;
+          padding: 0px 5px;
+        }
+
+        &:focus, &:hover {
+          color: #FFF;
+        }
+
+      }
+
+      &:hover {
+        color: #CCC;
+      }
+
+      &:focus, &:hover, &:active {
+        border-top: none;
+        border-bottom: none;
+        border-right: none;
+      }
+
+    }
+
+  }
+
+  .tab-content {
+    position: absolute;
+    width: 100%;
+    top: 30px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    
+    // height: 100%;
+    // display: none;
+    // box-shadow: rgb(0, 0, 0) 0px 0px 5px inset;
+
+    .tab-pane > .tab-pane-content {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .tab-pane > .tab-pane-content.scroll-y {
+      overflow-y: auto;
+    }
+
+    .tab-pane > .tab-pane-content.scroll-x {
+      overflow-x: auto;
+    }
+
+    .tab-pane {
+      overflow: hidden;
+      &.active, &.show {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .flex-vertical {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .flex-horizontal {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .vertical-tabs {
+        .vertical-tabs-nav {
+          height: 30px;
+        }
+        .vertical-tabs-container {
+          position: relative;
+          height: calc(100% - 30px);
+        }
+      }
+
+    }
+
+    .tab-pane.TabQuickStartState {
+      background-image: url(https://img.wallpapersafari.com/desktop/1600/900/28/25/NHoSzk.jpg);
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: top center;
+      height: 100%;
+
+      &:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
+      }
+
+      & > .row {
+        background: rgba(17, 39, 56, 0.43);
+        background: rgba(25, 25, 25, 0.90);
+        height: 100%;
+        position: relative;
+        display: block;
+      }
+
+    }
+    
+  }
+  
+  .tab {
+    border: 1px solid #2196F3;
+    float: left;
+    width: 100%;
+    height: calc(100% - 30px);
+  }
+
+}
+
+// Tabs Scroller
+
+.tabs-scroll-control {
+  float: left;
+  position: relative;
+  width: 50px;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.tabs-scroll-control-btn {
+  background: #1b1a1a;
+  width: 50%;
+  height: 100%;
+  float: left;
+  position: relative;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tabs-scroll-control-btn:hover {
+  background: #265c8c;
+}
+
+.tabs-scroll-control-btn.left {
+  border-right: 1px solid #2e2e2e;
+}
+
+.tabs-scroll-control-btn.left::after {
+  content: "\3008";
+  line-height: 30px;
+  font-weight: bold;
+}
+
+.tabs-scroll-control-btn.right {
+  border-left: 1px solid #2e2e2e;
+}
+
+.tabs-scroll-control-btn.right::after {
+  content: "\3009";
+  line-height: 30px;
+  font-weight: bold;
+}
+
+.tab-container {
+  position: relative;
+}
+
+@import "./tabs/tab-image-viewer";
+@import "./tabs/tab-twoda-editor";
+

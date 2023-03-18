@@ -1,0 +1,10 @@
+// tsconfig.kotorjs.json
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "tests/kotor.ts"
+  ],
+  "compilerOptions": {
+    // "noResolve": true
+  }
+}

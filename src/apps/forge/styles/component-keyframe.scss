@@ -1,0 +1,85 @@
+.keyframe-track-wrapper {
+  background: #00000047;
+  height: 27px;
+  position: relative;
+
+  &:nth-child(even) {
+    background: #33333347;
+  }
+
+  &:hover {
+    background: #0095ff3d;
+
+    .track-label {
+      background: #000;
+    }
+
+  }
+
+  &.node {
+    .track-label {
+      text-indent: 5px;
+      color: #a9a9a9;
+    }
+  }
+
+  &.controller {
+    .track-label {
+      text-indent: 13.5px;
+      color: #337ab7;
+    }
+  }
+
+  .track-label {
+    border-right: 1px solid #000;
+    padding: 2.5px 0;
+    background: #00000059;
+    font-weight: bold;
+    height: 27px;
+    width: 200px;
+    position: absolute;
+    top:0;
+    left: 0;
+  }
+  
+
+  .track-keyframes {
+    height: 27px;
+    position: absolute;
+    top:0;
+    left: 200px;
+    .keyframe {
+      top: 8px!important;
+    }
+  }
+
+}
+
+.keyframe-controls {
+
+  .keyframe-controls-left {
+    display: flex;
+    flex-basis: 25%;
+    justify-content: flex-start;
+    font-size: 12pt;
+    align-items: center;
+  }
+
+  .keyframe-controls-center {
+    flex: 1;
+    font-size: 18pt;
+    flex-basis: 100%;
+  }
+
+  .keyframe-controls-right {
+    display: flex;
+    flex-basis: 25%;
+    justify-content: flex-end;
+  }
+
+  a {
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+}

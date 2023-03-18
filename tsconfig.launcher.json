@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "ESNext",
+    "module": "commonjs",
+    "declaration": false,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "sourceMap": false,
+    "listFiles": false,
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "types": [
+      "@types/wicg-file-system-access",
+      "node",
+      "offscreencanvas",
+      "jquery",
+      "jqueryui",
+    ],
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+    "outDir": "dist",
+  },
+  "include": ["src/apps/launcher/launcher.tsx", "src/types"],
+  "exclude": ["node_modules", "src/**/*.spec.ts"],
+  "paths" :{
+    "jison":["src/types/jison"],
+    "jquerylayout":["src/types/jquery.layout"],
+    "jquerypane":["src/types/jquery.pane"],
+  }
+}

@@ -1,0 +1,167 @@
+
+
+/* GFF Tab */
+#gffContainer {
+  padding-top:10px;
+  padding-left:10px;
+  white-space: nowrap;
+}
+
+ul.gff-struct, ul.gff-fields {
+  position: relative;
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.gff-struct {
+  &.gff-root-struct {
+    padding-left: 10px;
+    padding-top: 10px;
+  
+    background: linear-gradient(to bottom, rgba(137,255,241,0) 0%,rgba(26, 78, 109, 0.25) 100%);
+    background-size: 100% 50px;
+    background-position: bottom;
+    background-repeat: no-repeat;
+  }
+}
+
+ul.gff-fields {
+  /*padding-left: 0;*/
+}
+
+li.gff-field.selected, li.gff-struct.selected {
+  background: #133652;
+}
+
+li.gff-struct.gff-root-struct > label {
+  color: #8476A2;
+}
+
+li.gff-struct > label {
+  color: #a378ff;
+  // color: #8476A2;
+}
+
+li.gff-field span.field-label {
+  color: #FFFFFF;
+  // color: #337A9C;
+  // color: #BD18FF;
+}
+
+li.gff-field span.field-type {
+
+  &.BYTE {
+    color: #2e8b57;
+  }
+
+  &.CHAR {
+    color: #800000;
+  }
+  
+  &.WORD {
+    color: #808000;
+  }
+  
+  &.SHORT {
+    color: #8b008b;
+  }
+  
+  &.DWORD {
+    color: #ff0000;
+  }
+  
+  &.INT {
+    color: #ffa500;
+  }
+  
+  &.DWORD64 {
+    color: #ffff00;
+  }
+  
+  &.INT64 {
+    color: #0000cd;
+  }
+  
+  &.FLOAT {
+    color: #00ff00;
+  }
+  
+  &.DOUBLE {
+    color: #00fa9a;
+  }
+  
+  &.CEXOSTRING {
+    color: #4169e1;
+  }
+  
+  &.RESREF {
+    color: #00ffff;
+  }
+  
+  &.CEXOLOCSTRING {
+    color: #00bfff;
+  }
+  
+  &.VOID {
+    color: #696969;
+  }
+  
+  &.STRUCT {
+    color: #ff00ff;
+  }
+  
+  &.LIST {
+    color: #dda0dd;
+  }
+  
+  &.ORIENTATION {
+    color: #ff1493;
+  }
+  
+  &.VECTOR {
+    color: #ffdab9;
+  }
+
+}
+
+li.gff-field span.field-value {
+  /* color: #288A43; */
+}
+
+ul.gff-struct, ul.gff-fields, li.gff-field {
+  cursor: pointer;
+}
+
+#gffProperties legend {
+  margin-bottom:0;
+}
+
+li.gff-field.add {
+  display: flex;
+  align-items: center;
+
+  .field-icon {
+    margin-left: -2px;
+  }
+
+  .field-label {
+    margin-left: 6px;
+    font-weight: bold;
+    color: chartreuse;
+  }
+}
+
+li.gff-struct.add {
+  display: flex;
+  align-items: center;
+
+  .struct-icon {
+    margin-left: -2px;
+  }
+
+  .struct-label {
+    margin-left: 6px;
+    font-weight: bold;
+    color: mediumpurple;
+  }
+}

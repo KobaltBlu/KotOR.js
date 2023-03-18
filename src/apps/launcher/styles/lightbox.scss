@@ -1,0 +1,61 @@
+
+
+/* LIGHTBOX */
+
+.lightbox {
+  visibility: hidden;
+  background: rgba(0, 0, 0, 0.75);
+
+  display: flex;
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  align-content: center;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  opacity: 0;
+  transition: all .5s ease-in-out;
+  -webkit-app-region: no-drag;
+}
+
+.lightbox.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.lightbox .lightbox-content-wrapper {
+  position: relative;
+  display: block;
+  background: black;
+  transition: all 0.5s ease-in-out;
+}
+
+.lightbox.active .lightbox-content-wrapper {
+  width: 75%;
+  position: relative;
+}
+
+.lightbox .lightbox-content-wrapper .lightbox-close {
+  position: absolute;
+  top: calc(-25px/2);
+  right: calc(-25px/2);
+  width: 25px;
+  height: 25px;
+  font-size: 25px;
+  color: gold;
+  cursor: pointer;
+  z-index: 99;
+}
+
+.lightbox .lightbox-content-wrapper .lightbox-content {
+  display: block;
+  position: relative;
+  box-shadow: 0 0 10px #000;
+  border: 1px solid #191919;
+  width: 100%;
+}

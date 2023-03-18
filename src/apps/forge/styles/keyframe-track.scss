@@ -1,0 +1,147 @@
+
+
+
+.keyframe-controls {
+  display: flex;
+  position: absolute;
+  top: 0;
+  z-index: 1000;
+  height: auto!important;
+  font-size: 28pt;
+  width: 100%;
+  white-space: nowrap;
+  background: #1f1f25;
+  border-bottom: 2px solid #111;
+  padding: 10px;
+  line-height: 0;
+  user-select: none;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+
+  .keyframe-controls-left {
+    flex: 0.25;
+    display: flex;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    text-align: left;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .keyframe-controls-center {
+    display: flex;
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .keyframe-controls-right {
+    display: flex;
+    flex: 0.25;
+    text-align: right;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  a {
+    margin-left: 15px;
+    text-decoration: none;
+    &:nth-child(1) {
+      margin-left: initial;
+    }
+  }
+}
+
+.keyframe-bar {
+  position: absolute;
+  top: 59px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #30303D;
+  overflow-x: scroll;
+  user-select: none;
+
+  .keyframe-time-track {
+    position: absolute;
+    top:0;
+    left: 0;
+    right: 0;
+    height: 25px;
+    background: #222;
+    min-width: 100%;
+    cursor: pointer;
+  }
+
+  .keyframe-track {
+    position: absolute;
+    top: 25px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.25);
+
+    .keyframe {
+      display: block;
+      position: absolute;
+      top: calc(50% - 2px);
+      width: 14px;
+      height: 14px;
+      font-size: 14px;
+      margin-left: -7px;
+      filter: drop-shadow(0px 0px 2px rgba(127, 127, 127, 0.5));
+      background: radial-gradient(#e9ecef 0%, #777777 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    
+      &:hover, &.selected {
+        // border: 1px solid #f0ad4e;
+        // box-shadow: 0 0 5px 1px #f0ad4e;
+        // background: radial-gradient(#fff 0%, #f0ad4e 100%);
+        // z-index: 1;
+        // cursor: col-resize;
+        /* border: 1px solid #f0ad4e; */
+        /* box-shadow: 0 0 5px 1px #f0ad4e; */
+        /* text-shadow: 0 0 0px #f0ad4e, 0 0 5px #f0ad4e, 0 0 15px #ffc573; */
+        filter: drop-shadow(0px 0px 5px rgba(240, 173, 78, 1));
+        background: radial-gradient(#fff 0%, rgb(240 173 78) 100%);
+        z-index: 1;
+        cursor: col-resize;
+        color: #f9f1e6;
+        -webkit-text-fill-color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+      i {
+        display: block;
+      }
+    }
+  }
+
+  .keyframe-track-seeker {
+    position: absolute;
+    top: 12.5px;
+    bottom: 0;
+    left: 100%;
+    width: 1px;
+    background: #5bc0de;
+  
+    .seeker-thumb {
+      position: absolute;
+      margin-left: -9.5px;
+      margin-top: -12px;
+      cursor: col-resize;
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 20px solid #5bc0de;
+    }
+  }
+}

@@ -9,7 +9,9 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
-const ConfigManager = require(path.join(app.getAppPath(), 'js/ConfigManager.js'));
+const $ = jQuery = require('jquery');
+
+const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
 const Config = new ConfigManager('settings.json');
 
 const profile_categories = {
