@@ -22,11 +22,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   static PlaneGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
   updateType: string;
   _birthTimer: any;
-  offsets: any;
   maxParticleCount: number;
-  velocities: any;
-  props: any;
-  ids: any;
+
+  //Geometry BufferAttributes
+  offsets: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
+  velocities: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
+  props: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
+  ids: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
+
   particleCount: number;
   referenceNode: OdysseyObject3D;
   _lightningDelay: any;
@@ -83,6 +86,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   tangentSpread: number = 0;
   tangentLength: number = 0;
   controlPTRadius: number = 0;
+  speed: number;
 
   constructor(odysseyNode: OdysseyModelNode){
     super();
@@ -328,10 +332,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         break;
       }
   
-      let offsets: any[] = [];
-      let props: any[] = [];
-      let velocities: any[] = [];
-      let ids: any[] = [];
+      const offsets: number[] = [];
+      const props: number[] = [];
+      const velocities: number[] = [];
+      const ids: number[] = [];
+
       this.maxParticleCount = this.getMaxParticleCount();
   
       //Start Velocity Calculations
@@ -1077,7 +1082,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     //this.material.uniforms.mass.value.z = 0;
     let spawnableParticleCount = this.offsets.count;
     for(let i = 0; i < spawnableParticleCount; i++){
-      this.props.setX(0);
+      this.props.setX(i, 0);
     }
     this.props.needsUpdate = true;
     this.material.uniforms.time.value = 0;
