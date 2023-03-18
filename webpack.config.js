@@ -6,8 +6,12 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
+const isProd = (process.env.NODE_ENV?.trim() === 'production');
+console.log('NODE_ENV', process.env.NODE_ENV);
+console.log('isProd', isProd ? 'true' : 'false');
+
 const libraryConfig = (name, color) => ({
-  mode: 'development',
+  mode: isProd ? 'production': 'development',
   entry: {
     KotOR: [
       './src/KotOR.ts'
@@ -29,7 +33,7 @@ const libraryConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: 'eval-source-map',
+  devtool: !isProd ? 'eval-source-map' : undefined,
   module: {
     rules: [
       {
@@ -85,7 +89,7 @@ const libraryConfig = (name, color) => ({
 });
 
 const launcherConfig = (name, color) => ({
-  mode: 'development',
+  mode: isProd ? 'production': 'development',
   entry: {
     launcher: [
       './src/apps/launcher/launcher.tsx', 
@@ -111,7 +115,7 @@ const launcherConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: 'eval-source-map',
+  devtool: !isProd ? 'eval-source-map' : undefined,
   module: {
     rules: [
       {
@@ -207,7 +211,7 @@ const launcherConfig = (name, color) => ({
 });
 
 const gameConfig = (name, color) => ({
-  mode: 'development',
+  mode: isProd ? 'production': 'development',
   entry: {
     game: [
       './src/apps/game/game.ts', 
@@ -233,7 +237,7 @@ const gameConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: 'eval-source-map',
+  devtool: !isProd ? 'eval-source-map' : undefined,
   module: {
     rules: [
       {
@@ -330,7 +334,7 @@ const gameConfig = (name, color) => ({
 });
 
 const forgeConfig = (name, color) => ({
-  mode: 'development',
+  mode: isProd ? 'production': 'development',
   entry: {
     forge: [
       './src/apps/forge/forge.tsx', 
@@ -359,7 +363,7 @@ const forgeConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: 'eval-source-map',
+  devtool: !isProd ? 'eval-source-map' : undefined,
   module: {
     rules: [
       {

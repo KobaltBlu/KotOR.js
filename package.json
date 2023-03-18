@@ -5,8 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "webpack:dev": "webpack",
-    "webpack:dev-watch": "webpack --watch"
+    "webpack:dev": "cross-env NODE_ENV=development webpack",
+    "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
+    "webpack:prod": "cross-env NODE_ENV=production webpack"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -27,6 +28,7 @@
     "browserify-fs": "^1.0.0",
     "buffer": "^6.0.3",
     "copy-webpack-plugin": "^11.0.0",
+    "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "dxt-js": "^0.0.3",
     "electron": "^13.3.0",
