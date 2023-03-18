@@ -23,6 +23,8 @@ The following games are currently supported:
 
 The recent transition to TypeScript has brought many improvements to the codebase, including Chrome support. When the project is compiled, the contents of the `dist` folder can be uploaded to a web server. The only requirement is that the site must be accessed from behind a valid SSL certificate. Using the latest version of Chrome is recommended.
 
+[Online Demo](https://dm0wgsf1bpbo9.cloudfront.net/launcher/)
+
 ## Getting Started (Developer)
 To get started as a developer, follow these steps:
 
