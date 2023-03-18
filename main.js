@@ -13,10 +13,6 @@ const { execFile } = require('child_process');
 const { exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
-
-const ConfigManager = require(path.join(app.getAppPath(), 'launcher/ConfigManager.js'));
-const Config = new ConfigManager('settings.json');
-
 console.log(process.argv);
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -151,11 +147,11 @@ function createLauncherWindow() {
     winLauncher.focus();
     return;
   }
-  console.log(Config.get(['Launcher', 'width']), Config.get(['Launcher', 'height']))
+  
   // Create the browser window.
   winLauncher = new BrowserWindow({
-    width: Config.get(['Launcher', 'width']), 
-    height: Config.get(['Launcher', 'height']), 
+    width: 1200, 
+    height: 600, 
     minHeight: 600,
     minWidth: 1000,
     frame: false,
