@@ -1,4 +1,4 @@
-name: NodeJS with Webpack - PRODUCTION
+name: NodeJS with Webpack - PROD
 
 on:
   workflow_dispatch
