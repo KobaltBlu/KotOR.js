@@ -2,9 +2,6 @@
  */
 
 import { Module } from "../module";
-
-import * as fs from 'fs';
-import * as path from 'path';
 import { ResourceTypes } from "./ResourceTypes";
 import { Utility } from "../utility/Utility";
 import { ERFObject, ERFResource } from "./ERFObject";
@@ -13,7 +10,6 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { RIMObject } from "./RIMObject";
 import { KEYManager } from "../managers/KEYManager";
 import { RIMManager } from "../managers/RIMManager";
-import { ProjectManager } from "../managers/ProjectManage";
 import { CacheScope } from "../enums/resource/CacheScope";
 import { ResourceCacheScopes } from "../interface/resource/ResourceCacheScopes";
 import { BIFManager } from "../managers/BIFManager";
@@ -183,39 +179,6 @@ export class ResourceLoader {
   }
 
   static _searchLocal(resId: number, resRef = '', onLoad?: Function, onError?: Function){
-    if(ProjectManager.project){
-      let projectFilePath = path.join(ProjectManager.project.directory, 'files', resRef + '.' + ResourceTypes.getKeyByValue(resId));
-      //Check in the project directory
-      Utility.FileExists(projectFilePath, (exists: boolean) => {
-        //console.log('File Exists', exists, projectFilePath);
-        if(exists){
-          if(typeof onLoad === 'function')
-            onError();
-          // fs.readFile(projectFilePath, (err, data) => {
-          //   if(err){
-          //     this._searchOverride(resId, resRef, (data: Buffer) => {
-          //       if(typeof onLoad === 'function')
-          //         onLoad(data);
-          //     }, (e: any) => {
-          //       if(typeof onError === 'function')
-          //         onError();
-          //     });
-          //   }else{
-          //     if(typeof onLoad === 'function')
-          //       onLoad(data);
-          //   }
-          // });
-        }else{
-          this._searchOverride(resId, resRef, (data: Buffer) => {
-            if(typeof onLoad === 'function')
-              onLoad(data);
-          }, (e: any) => {
-            if(typeof onError === 'function')
-              onError();
-          });
-        }
-      });
-    }else{
       this._searchOverride(resId, resRef, (data: Buffer) => {
         if(typeof onLoad === 'function')
           onLoad(data);
@@ -223,7 +186,6 @@ export class ResourceLoader {
         if(typeof onError === 'function')
           onError();
       });
-    }
   }
 
   static _searchModuleArchives(resId: number, resRef = '', onLoad?: Function, onError?: Function){
