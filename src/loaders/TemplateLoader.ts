@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { Forge } from "../editor/Forge";
 import { GameState } from "../GameState";
 import { BIFManager } from "../managers/BIFManager";
 import { GFFObject } from "../resource/GFFObject";
@@ -35,113 +34,12 @@ export class TemplateLoader {
       onFail: null
     }, args);
 
-    if(typeof Forge.Project != 'undefined'){
-      TemplateLoader.LoadFromProject({
-        ResType: args.ResType, 
-        ResRef: args.ResRef, 
-        onLoad: (data: Buffer) => {
-          if(args.onLoad != null)
-              args.onLoad(data);
-        }, onFail: () => {
-          ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
-            new GFFObject(data, (gff) => {
-              if(args.onLoad != null)
-                args.onLoad(gff);
-            }); 
-          }, args.onFail);
-        }
-      });
-    }else{
-      ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
-        new GFFObject(data, (gff) => {
-          if(args.onLoad != null)
-            args.onLoad(gff);
-        }); 
-      }, args.onFail);
-    }
-
-
-
-    /*if(args.ResRef != null && args.ResType != null){
-
-      if(!TemplateLoader.cache.hasOwnProperty(args.ResType)){
-        TemplateLoader.cache[args.ResType] = {};
-      }
-
-      if(!TemplateLoader.cache[args.ResType].hasOwnProperty(args.ResRef)){
-        console.log('Load Fresh', args.ResRef);
-        
-
-          TemplateLoader.LoadFromResources({
-            ResRef: args.ResRef,
-            ResType: args.ResType,
-            onLoad: (buffer) => {
-              new GFFObject(buffer, (gff, rootNode) => {
-                gff.SetResourceID('//KOTOR/BIF/Templates/' + args.ResRef.toLowerCase() + '.' + ResourceTypes.getKeyByValue(args.ResType) );
-                TemplateLoader.cache[args.ResType][args.ResRef] = gff;
-                if(args.onLoad != null)
-                  args.onLoad(gff);
-              });
-            },
-            onFail: () => {
-
-              if(args.onFail != null)
-                args.onFail();
-
-            }
-          });
-
-        //}
-
-      }else{
-        console.log('Load Cache', args.ResRef);
+    ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
+      new GFFObject(data, (gff) => {
         if(args.onLoad != null)
-          args.onLoad(TemplateLoader.cache[args.ResType][args.ResRef]);
-
-      }
-
-    }else{
-
-      if(args.onFail != null)
-        args.onFail();
-
-    }*/
-
-  }
-
-  static LoadFromProject ( args: any = {} ) {
-
-    args = Object.assign({
-      ResRef: null,
-      ResType: null,
-      onLoad: null,
-      onFail: null
-    }, args);
-
-    if(typeof Forge.Project != 'undefined' && Forge.Project != null){
-      let projectFilePath = path.join(Forge.Project.directory, 'files', args.ResRef + '.' + ResourceTypes.getKeyByValue(args.ResType));
-      //Check in the project directory
-      Utility.FileExists(projectFilePath, (exists: boolean) => {
-        if(exists){
-          GameFileSystem.readFile(projectFilePath).then( (buffer) => {
-            new GFFObject(buffer, (gff: GFFObject) => {
-              if(typeof args.onLoad === 'function')
-                args.onLoad(gff);
-            });
-          }).catch( (err) => {
-            if(typeof args.onFail === 'function')
-              args.onFail();
-          });
-        }else{
-          if(typeof args.onFail === 'function')
-            args.onFail();
-        }
-      });
-
-    }else{
-      if(typeof args.onFail === 'function')
-        args.onFail();
-    }
+          args.onLoad(gff);
+      }); 
+    }, args.onFail);
 
   }
 
