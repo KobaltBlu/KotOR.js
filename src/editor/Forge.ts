@@ -43,7 +43,7 @@ export class Forge {
       onLoad: () => {
         OdysseyWalkMesh.Init();
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
-        LightManager.toggleLightHelpers();
+        // LightManager.toggleLightHelpers();
               
         // Forge.resourceExplorerTab.initialize( () => {
           LoadingScreen.main.Hide();

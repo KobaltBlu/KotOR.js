@@ -100,7 +100,7 @@ export class CharGenMain extends GameMenu {
         this._3dView.camera.quaternion.copy(this._3dViewModel.camerahook.quaternion);
         this._3dViewModel.playAnimation(0, true);
       },
-      manageLighting: false,
+      // manageLighting: false,
       context: this._3dView
     });
   }

@@ -187,7 +187,7 @@ export class CharGenPortCust extends GameMenu {
           console.error(e);
         }
       },
-      manageLighting: false,
+      // manageLighting: false,
       context: this._3dView
     });
     (control.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;

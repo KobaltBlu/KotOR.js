@@ -253,7 +253,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         this.cgmain_light = mdl;
 
         OdysseyModel3D.FromMDL(this.cgmain_light, {
-          manageLighting: false,
+          // manageLighting: false,
           context: this.LBL_3D_VIEW
         }).then((model: OdysseyModel3D) => {
           //console.log('Model Loaded', model);

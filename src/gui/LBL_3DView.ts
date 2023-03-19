@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { GameState } from "../GameState";
+import { LightManager } from "../managers/LightManager";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GUIControl } from "./GUIControl";
 
@@ -21,16 +22,27 @@ export class LBL_3DView {
   clearColor: THREE.Color;
   currentCamera: THREE.Camera;
   globalLight: THREE.AmbientLight;
+  lightManager: LightManager = new LightManager();
   emitters: any = {};
   _emitters: any = {};
-  group: { emitters: THREE.Group; lights: THREE.Group; light_helpers: THREE.Group; shadow_lights: THREE.Group; creatures: THREE.Group; };
+  group: { 
+    emitters: THREE.Group; 
+    lights: THREE.Group; 
+    light_helpers: THREE.Group; 
+    shadow_lights: THREE.Group; 
+    creatures: THREE.Group; 
+  };
   control: any;
+  frustumMat4: THREE.Matrix4;
+  viewportFrustum: THREE.Frustum;
 
   constructor(width: number = 800, height: number = 600){
 
     this.width = width;//window.innerWidth;
     this.height = height;//window.innerHeight;
     this.visible = false;
+    this.frustumMat4 = new THREE.Matrix4();
+    this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 22.5, this.width/this.height, 0.1, 15000 );
@@ -65,6 +77,7 @@ export class LBL_3DView {
     this.scene.add(this.group.shadow_lights);
     this.scene.add(this.group.creatures);
 
+    this.lightManager.init(this);
   }
 
   setControl(control: GUIControl){
@@ -128,12 +141,18 @@ export class LBL_3DView {
       }
     }
 
+    if(this.currentCamera){
+      this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
+      this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
+      this.lightManager.update(delta, this.currentCamera);
+    }
+
     let oldClearColor = new THREE.Color()
     GameState.renderer.getClearColor(oldClearColor);
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
-    GameState.renderer.render(this.scene, this.camera);
+    GameState.renderer.render(this.scene, this.currentCamera);
     (this.texture as any).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);

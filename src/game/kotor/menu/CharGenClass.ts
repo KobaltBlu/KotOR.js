@@ -222,7 +222,7 @@ export class CharGenClass extends GameMenu {
             });
           });
         },
-        manageLighting: false,
+        // manageLighting: false,
         context: _3dView
       });
     });

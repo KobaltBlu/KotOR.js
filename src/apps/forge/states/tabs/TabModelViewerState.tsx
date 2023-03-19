@@ -123,7 +123,7 @@ export class TabModelViewerState extends TabState {
           this.mdx = response.buffer2 as Buffer;
           this.odysseyModel = new KotOR.OdysseyModel(new BinaryReader(response.buffer), new BinaryReader(response.buffer2 as Buffer));
           KotOR.OdysseyModel3D.FromMDL(this.odysseyModel, {
-            manageLighting: false,
+            // manageLighting: false,
             context: this.ui3DRenderer,
             editorMode: true, 
             onComplete: (model: KotOR.OdysseyModel3D) => {
@@ -250,7 +250,7 @@ export class TabModelViewerState extends TabState {
             let mdl = await KotOR.GameState.ModelLoader.load(room.name);
             if(mdl){
               let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-                manageLighting: false,
+                // manageLighting: false,
                 context: this.ui3DRenderer, 
                 mergeStatic: false,
               });

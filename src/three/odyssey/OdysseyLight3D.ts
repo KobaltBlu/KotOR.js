@@ -46,7 +46,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
   }
 
   getRadius(){
-    return this.radius;// * this.multiplier;
+    return this.radius * this.multiplier;
     // if(this.odysseyModelNode)
     //   return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
     // else
@@ -58,25 +58,12 @@ export class OdysseyLight3D extends OdysseyObject3D {
   }
 
   isOnScreen( frustum = GameState.viewportFrustum ){
-    // if(ApplicationProfile.MODE == 'FORGE'){
-    //   if(Forge.tabManager.currentTab instanceof ModuleEditorTab){
-    //     if(!this.odysseyModel.visible)
-    //       return false;
-        
-    //     frustum = Forge.tabManager.currentTab.viewportFrustum;
-    //     this.sphere.center.copy(this.worldPosition);
-    //     this.sphere.radius = this.getRadius();
-    //     return frustum.intersectsSphere(this.sphere);
-    //   }
-    //   return false;
-    // }else{
-      if(!this.odysseyModel.visible)
-        return false;
+    if(!this.odysseyModel.visible)
+      return false;
 
-      this.sphere.center.copy(this.worldPosition);
-      this.sphere.radius = this.getRadius();
-      return frustum.intersectsSphere(this.sphere);
-    // }
+    this.sphere.center.copy(this.worldPosition);
+    this.sphere.radius = this.getRadius();
+    return frustum.intersectsSphere(this.sphere);
   }
 
 }

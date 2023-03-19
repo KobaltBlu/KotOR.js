@@ -274,7 +274,7 @@ export class ModelViewerTab extends EditorTab {
           }catch(e){}
 
           OdysseyModel3D.FromMDL(odysseyModel, {
-            manageLighting: false,
+            // manageLighting: false,
             context: this.renderComponent, 
             onComplete: (model: OdysseyModel3D) => {
               this.model = model;

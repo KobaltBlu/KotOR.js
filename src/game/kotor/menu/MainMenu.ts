@@ -96,7 +96,7 @@ export class MainMenu extends GameMenu {
         (this.LBL_3DVIEW.getFill().material as any).visible = true;
         
         OdysseyModel3D.FromMDL(mdl, { 
-          manageLighting: false,
+          // manageLighting: false,
           context: this._3dView
         }).then( (model: OdysseyModel3D) => {
           console.log('Model Loaded', model);

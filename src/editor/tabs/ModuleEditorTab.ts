@@ -425,7 +425,7 @@ export class ModuleEditorTab extends EditorTab {
 
     this.cam_controls.update();
 
-    LightManager.update(delta, this.currentCamera);
+    // LightManager.update(delta, this.currentCamera);
 
     this.renderer.clear();
     this.renderer.clearDepth();

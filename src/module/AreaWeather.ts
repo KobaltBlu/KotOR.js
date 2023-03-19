@@ -26,7 +26,7 @@ export class AreaWeather {
         GameState.ModelLoader.load('fx_snow')
         .then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            manageLighting: false
+            // manageLighting: false
           }).then((model: OdysseyModel3D) => {
             this.model = model;
             GameState.weather_effects.push(model);
@@ -39,7 +39,7 @@ export class AreaWeather {
         GameState.ModelLoader.load('fx_rain')
         .then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
-            manageLighting: false
+            // manageLighting: false
           }).then((model: OdysseyModel3D) => {
             this.model = model;
             GameState.weather_effects.push(model);

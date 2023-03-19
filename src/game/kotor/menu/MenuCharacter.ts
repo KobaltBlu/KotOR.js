@@ -143,7 +143,7 @@ export class MenuCharacter extends GameMenu {
         this.getControlByName('LBL_DARK').extent.left = 10;
         
         OdysseyModel3D.FromMDL(mdl, {
-          manageLighting: false,
+          // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
           //console.log('Model Loaded', model);

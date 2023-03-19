@@ -1141,7 +1141,7 @@ export class ModuleObject {
     if(this.model instanceof OdysseyModel3D){
       GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, { 
-          manageLighting: false
+          // manageLighting: false
         }).then( (effectMDL: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.effects.push(effectMDL);

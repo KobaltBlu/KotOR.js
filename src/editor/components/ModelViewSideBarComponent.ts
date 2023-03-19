@@ -337,7 +337,7 @@ export class ModelViewSideBarComponent extends Component {
         let mdl = await GameState.ModelLoader.load(room.name);
         if(mdl){
           let model = await OdysseyModel3D.FromMDL(mdl, {
-            manageLighting: false,
+            // manageLighting: false,
             context: this.tab.renderComponent, 
             mergeStatic: true,
           });

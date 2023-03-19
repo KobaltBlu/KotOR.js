@@ -153,6 +153,8 @@ export class GameState implements EngineContext {
   static clock: THREE.Clock;
   static stats: Stats;
 
+  static lightManager: LightManager = new LightManager();
+
   static limiter: { 
     fps: number; 
     fpsInterval: number; 
@@ -534,11 +536,11 @@ export class GameState implements EngineContext {
   static Start(){
 
     GameState.TutorialWindowTracker = [];
-    LightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
     GameState.audioEngine = new AudioEngine();
     GameState.initGUIAudio();
-    LightManager.init();
+    GameState.lightManager.init(GameState);
+    GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
     Planetary.Init();
 
@@ -1115,7 +1117,7 @@ export class GameState implements EngineContext {
     GameState.audioEngine.Reset();
     CombatEngine.Reset();
 
-    LightManager.clearLights();
+    GameState.lightManager.clearLights();
 
     GameState.selected = undefined;
     GameState.selectedObject = undefined;
@@ -1246,9 +1248,9 @@ export class GameState implements EngineContext {
         GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
         GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
         if(GameState.Mode == EngineMode.DIALOG){
-          LightManager.update(delta, GameState.currentCamera);
+          GameState.lightManager.update(delta, GameState.currentCamera);
         }else{
-          LightManager.update(delta, GameState.getCurrentPlayer());
+          GameState.lightManager.update(delta, GameState.getCurrentPlayer());
           GameState.currentCamera = GameState.camera;
         }
         
@@ -1262,7 +1264,7 @@ export class GameState implements EngineContext {
         }
       }else if(GameState.Mode == EngineMode.MINIGAME){
         FadeOverlayManager.Update(delta);
-        LightManager.update(delta, GameState.getCurrentPlayer());
+        GameState.lightManager.update(delta, GameState.getCurrentPlayer());
       }
 
       if(GameState.Mode == EngineMode.INGAME){

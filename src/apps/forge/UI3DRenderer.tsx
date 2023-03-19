@@ -56,6 +56,8 @@ export class UI3DRenderer extends EventListenerModel {
   depthTarget: KotOR.THREE.WebGLRenderTarget;
   raycaster: KotOR.THREE.Raycaster = new KotOR.THREE.Raycaster();
 
+  lightManager: KotOR.LightManager = new KotOR.LightManager();
+
   referenceNode: KotOR.THREE.Object3D = new KotOR.THREE.Object3D();
 
   selectable: KotOR.THREE.Group = new KotOR.THREE.Group();
@@ -77,6 +79,14 @@ export class UI3DRenderer extends EventListenerModel {
   transformControls: TransformControls;
   viewHelper: ViewHelper;
 
+  group: { 
+    lights: KotOR.THREE.Group; 
+    light_helpers: KotOR.THREE.Group; 
+    shadow_lights: KotOR.THREE.Group; 
+  };
+  frustumMat4: KotOR.THREE.Matrix4;
+  viewportFrustum: KotOR.THREE.Frustum;
+
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
     this.uuid = crypto.randomUUID();
@@ -86,11 +96,20 @@ export class UI3DRenderer extends EventListenerModel {
     this.width = width;
     this.height = height;
 
+    this.frustumMat4 = new KotOR.THREE.Matrix4();
+    this.viewportFrustum = new KotOR.THREE.Frustum();
+
     this.time = 0;
     this.deltaTime = 0;
 
     this.clock = new KotOR.THREE.Clock();
     this.selectionBox.visible = false;
+
+    this.group = {
+      lights: new KotOR.THREE.Group(),
+      light_helpers: new KotOR.THREE.Group(),
+      shadow_lights: new KotOR.THREE.Group(),
+    }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
       for(let i = 0; i < elements.length; i++){
@@ -116,6 +135,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildViewHelper();
     this.buildFlyControls();
 
+    this.lightManager.init(this);
   }
 
   buildTransformControls() {
@@ -252,6 +272,9 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.selectable);
     this.scene.add(this.unselectable);
     this.scene.add(this.referenceNode);
+    this.scene.add(this.group.lights);
+    this.scene.add(this.group.light_helpers);
+    this.scene.add(this.group.shadow_lights);
     this.sceneGraphManager.rebuild();
   }
   
@@ -357,7 +380,13 @@ export class UI3DRenderer extends EventListenerModel {
         KotOR.TextureLoader.LoadQueue( () => {
           this.loadingTextures = false;
         });
-      } 
+      }
+
+      if(this.currentCamera){
+        this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
+        this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
+        this.lightManager.update(delta, this.currentCamera);
+      }
 
       this.renderer.render( this.scene, this.currentCamera );
 
