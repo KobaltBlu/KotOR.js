@@ -68,7 +68,8 @@ const libraryConfig = (name, color) => ({
     }),
     new CopyPlugin({
       patterns: [
-        { from: "src/assets", to: "assets" },
+        { from: "src/assets/icons", to: "assets/icons" },
+        { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ]
     })
   ],
@@ -190,6 +191,7 @@ const launcherConfig = (name, color) => ({
       patterns: [
         { from: "src/assets/launcher", to: "" },
         { from: "src/apps/launcher/preload.js", to: "" },
+        { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
     new MiniCssExtractPlugin({
@@ -312,6 +314,7 @@ const gameConfig = (name, color) => ({
       patterns: [
         // { from: "src/assets/game", to: "" },
         { from: "src/apps/game/preload.js", to: "" },
+        { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
     new MiniCssExtractPlugin({
@@ -447,6 +450,7 @@ const forgeConfig = (name, color) => ({
       patterns: [
         { from: "src/assets/forge", to: "" },
         { from: "src/apps/forge/preload.js", to: "" },
+        { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
     new MiniCssExtractPlugin({
