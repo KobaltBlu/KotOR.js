@@ -1,20 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUIControl, MenuManager, LBL_3DView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CharGenManager } from "../../../managers/CharGenManager";
 import { ModulePlayer } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
-import { ThresholdController } from "../../../odyssey/controllers";
-import { GFFField } from "../../../resource/GFFField";
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClass as K1_CharGenClass } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenClass menu class.
