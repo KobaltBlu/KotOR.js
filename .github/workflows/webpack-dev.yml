@@ -25,14 +25,6 @@ jobs:
         npm install
         npm run webpack:dev
         
-    - name: Run find-and-replace to remove slashes
-      uses: mad9000/actions-find-and-replace-string@3
-      id: findandreplace1
-      with:
-        source: 'launcher/index.html'
-        find: '<head>'
-        replace: '<head> ${{ vars.DEV_GA }}'
-        
     - name: Upload To S3 Bucket
       uses: shallwefootball/s3-upload-action@master
       with:
