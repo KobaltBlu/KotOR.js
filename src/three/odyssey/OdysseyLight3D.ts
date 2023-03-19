@@ -21,7 +21,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
   genFlare: boolean = false;
 
   intensity: number = 0;
-  maxIntensity: number = 0.5;
+  maxIntensity: number = 1;
 
   color: THREE.Color = new THREE.Color(1, 1, 1);
   multiplier: number = 0;

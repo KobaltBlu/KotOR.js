@@ -265,17 +265,17 @@ export class LightManager {
           lightNode.castShadow = false;
 
           //Set Light Properties By Type
-          if(odysseyLight.isAmbient && odysseyLight.getRadius() > 150){
-            //Ambient light flags don't seem to reliably point to a usage of THREE.AmbientLight per se as some game modules seem to produce PointLight effects in the original game
-            //Like the red hangar lights in the Tatooine Docking Bay. The turret MiniGame uses this flag for one of the lights and seems to produce
-            //an AmbientLight effect in the original game. There must be another flag or property that differentiates the two cases that I am missing
-            lightNode.userData.isPointLight = false;
-            lightNode.userData.isAmbientLight = true;
-            lightNode.type = 'AmbientLight';
-            lightNode.intensity = 0.5;
-            lightNode.userData.helper.material.opacity = 1;
-            //lightNode.distance = Infinity;
-          }else{
+          // if(odysseyLight.isAmbient && odysseyLight.getRadius() > 150){
+          //   //Ambient light flags don't seem to reliably point to a usage of THREE.AmbientLight per se as some game modules seem to produce PointLight effects in the original game
+          //   //Like the red hangar lights in the Tatooine Docking Bay. The turret MiniGame uses this flag for one of the lights and seems to produce
+          //   //an AmbientLight effect in the original game. There must be another flag or property that differentiates the two cases that I am missing
+          //   lightNode.userData.isPointLight = false;
+          //   lightNode.userData.isAmbientLight = true;
+          //   lightNode.type = 'AmbientLight';
+          //   lightNode.intensity = 0.5;
+          //   lightNode.userData.helper.material.opacity = 1;
+          //   //lightNode.distance = Infinity;
+          // }else{
             lightNode.userData.isPointLight = true;
             lightNode.userData.isAmbientLight = false;
             lightNode.type = 'PointLight';
@@ -283,11 +283,11 @@ export class LightManager {
             if(odysseyLight.isFading){
               lightNode.intensity = 0;
             }else{
-              lightNode.intensity = 1;//light.getIntensity();
+              lightNode.intensity = 1;
             }
             
             lightNode.distance = odysseyLight.getRadius();
-          }
+          // }
 
           //Set Common Light Properties
           odysseyLight.position.set(0, 0, 0)
@@ -505,17 +505,17 @@ export class LightManager {
         if(this.lightsShown.indexOf(odysseyLight.uuid) == -1){
 
           //Set Light Properties By Type
-          if(odysseyLight.isAmbient && odysseyLight.getRadius() > 150){
-            //Ambient light flags don't seem to reliably point to a usage of THREE.AmbientLight per se as some game modules seem to produce PointLight effects in the original game
-            //Like the red hangar lights in the Tatooine Docking Bay. The turret MiniGame uses this flag for one of the lights and seems to produce
-            //an AmbientLight effect in the original game. There must be another flag or property that differentiates the two cases that I am missing
-            lightNode.userData.isPointLight = false;
-            lightNode.userData.isAmbientLight = true;
-            lightNode.type = 'AmbientLight';
-            lightNode.intensity = 0.5;
-            lightNode.userData.helper.material.opacity = 1;
-            //lightNode.distance = Infinity;
-          }else{
+          // if(odysseyLight.isAmbient && odysseyLight.getRadius() > 150){
+          //   //Ambient light flags don't seem to reliably point to a usage of THREE.AmbientLight per se as some game modules seem to produce PointLight effects in the original game
+          //   //Like the red hangar lights in the Tatooine Docking Bay. The turret MiniGame uses this flag for one of the lights and seems to produce
+          //   //an AmbientLight effect in the original game. There must be another flag or property that differentiates the two cases that I am missing
+          //   lightNode.userData.isPointLight = false;
+          //   lightNode.userData.isAmbientLight = true;
+          //   lightNode.type = 'AmbientLight';
+          //   lightNode.intensity = 0.5;
+          //   lightNode.userData.helper.material.opacity = 1;
+          //   //lightNode.distance = Infinity;
+          // }else{
             lightNode.userData.isPointLight = true;
             lightNode.userData.isAmbientLight = false;
             lightNode.type = 'PointLight';
@@ -527,7 +527,7 @@ export class LightManager {
             }
             
             lightNode.distance = odysseyLight.getRadius();
-          }
+          // }
 
           //Set Common Light Properties
           odysseyLight.getWorldPosition(lightNode.position)
