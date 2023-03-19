@@ -29,7 +29,7 @@ jobs:
       uses: mad9000/actions-find-and-replace-string@3
       id: findandreplace1
       with:
-        source: 'dist/launcher/index.html'
+        source: 'launcher/index.html'
         find: '<head>'
         replace: '<head> ${{ vars.DEV_GA }}'
         
