@@ -55,7 +55,7 @@ npm install
 ```bash
 npm run webpack:dev-watch
 ```
-5. Run the build command in a separate console/shell window
+5. Run the start command in a separate console/shell window
 
 ```bash
 npm run start
