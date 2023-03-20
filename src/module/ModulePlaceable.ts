@@ -35,11 +35,18 @@ import { AsyncLoop } from "../utility/AsyncLoop";
  * The ModulePlaceable class.
  */
 
+interface AnimStateInfo {
+  lastAnimState: ModulePlaceableAnimState;
+  currentAnimState: ModulePlaceableAnimState;
+  loop: boolean;
+  started: boolean;
+};
+
 export class ModulePlaceable extends ModuleObject {
   openState: boolean;
   _state: ModulePlaceableState;
   lastUsedBy: any;
-  animationState: number;
+  state: ModulePlaceableState;
   bodyBag: number;
   closeLockDC: number;
   disarmDC: number;
@@ -72,6 +79,13 @@ export class ModulePlaceable extends ModuleObject {
   lastObjectOpened: ModuleObject;
   lastObjectClosed: ModuleObject;
 
+  animStateInfo: AnimStateInfo = {
+    lastAnimState: ModulePlaceableAnimState.DEFAULT,
+    currentAnimState: ModulePlaceableAnimState.DEFAULT,
+    loop: false,
+    started: false
+  };
+
   constructor ( gff = new GFFObject()) {
     super(gff);
     this.template = gff;
@@ -80,7 +94,7 @@ export class ModulePlaceable extends ModuleObject {
     this._state = ModulePlaceableState.NONE;
     this.lastUsedBy = undefined;
 
-    this.animationState = 0;
+    this.state = ModulePlaceableState.DEFAULT;
     this.appearance = 0;
     this.autoRemoveKey = false;
     this.bodyBag = 0;
@@ -194,28 +208,46 @@ export class ModulePlaceable extends ModuleObject {
     this.action = this.actionQueue[0];
     this.actionQueue.process( delta );
 
-    if(this.animState == ModulePlaceableAnimState.DEFAULT){
-      if(this.isOpen()){
-        this.animState = ModulePlaceableAnimState.OPEN;
-      }else{
-        this.animState = ModulePlaceableAnimState.CLOSE;
-      }
-    }
+    // if(this.animState == ModulePlaceableAnimState.DEFAULT){
+    //   if(this.isOpen()){
+    //     this.setAnimationState(ModulePlaceableAnimState.OPEN);
+    //   }else{
+    //     this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+    //   }
+    // }
 
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
     let currentAnimation = this.model.getAnimationName();
-
-    let animation = this.animationConstantToAnimation(this.animState);
-    if(animation){
-      if(currentAnimation != animation.name.toLowerCase()){
-        let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-        this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
+    if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
+    if(this.animStateInfo.currentAnimState){
+      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      if(animation){
+        if(currentAnimation != animation.name.toLowerCase()){
+          if(!this.animStateInfo.started){
+            this.animStateInfo.started = true;
+            const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+            this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
+          }else{
+            //Animation completed
+            switch(this.animStateInfo.currentAnimState){
+              case ModulePlaceableAnimState.OPEN_CLOSE:
+                this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
+              break;
+              case ModulePlaceableAnimState.CLOSE_OPEN:
+                this.setAnimationState(ModulePlaceableAnimState.OPEN);
+              break;
+              default:
+                this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
+              break;
+            }
+          }
+        }
+      }else{
+        console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+        this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
       }
-    }else{
-      console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
-      this.animState = ModulePlaceableAnimState.DEFAULT;
     }
 
   }
@@ -264,12 +296,14 @@ export class ModulePlaceable extends ModuleObject {
     return this.keyRequired ? true : false;
   }
 
-  getAnimationState(){
-    return this.animationState;
+  getOpenState(){
+    return this.state;
   }
 
-  setAnimationState(state: ModulePlaceableState){
-    this.animationState = state;
+  setOpenState(state: ModulePlaceableState){
+    this.state = state;
+    if(this.state == ModulePlaceableState.OPEN) this.openState = true;
+    else this.openState = false
   }
 
   getOnClosed(){
@@ -389,17 +423,28 @@ export class ModulePlaceable extends ModuleObject {
     return this.model;
   }
 
+  setAnimationState(animState: ModulePlaceableAnimState = ModulePlaceableAnimState.DEFAULT){
+    this.animStateInfo.currentAnimState = animState;
+    this.animState = animState;
+    this.animStateInfo.lastAnimState = this.animState;
+    this.animStateInfo.loop = false;
+    this.animStateInfo.started = false;
+    if(animState == ModulePlaceableAnimState.OPEN) this.animStateInfo.loop = true;
+    if(animState == ModulePlaceableAnimState.DEFAULT) this.animStateInfo.loop = true;
+    if(this.model) this.model.stopAnimation();
+  }
+
   use(object: ModuleObject){
 
     this.lastUsedBy = object;
 
-    if(this.getAnimationState() == ModulePlaceableState.CLOSED){
-      this.animState = ModulePlaceableAnimState.CLOSE_OPEN;
+    if(!this.isOpen()){
+      this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);
     }else{
-      this.animState = ModulePlaceableAnimState.OPEN;
+      this.setAnimationState(ModulePlaceableAnimState.OPEN);
     }
 
-    this.setAnimationState(ModulePlaceableState.OPEN);
+    this.setOpenState(ModulePlaceableState.OPEN);
 
     if(this.getObjectSounds()['opened'] != '****'){
       this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
@@ -445,13 +490,13 @@ export class ModulePlaceable extends ModuleObject {
       this.scripts.onClosed.run(this);
     }
 
-    if(this.getAnimationState() == ModulePlaceableState.OPEN){
-      this.animState = ModulePlaceableAnimState.OPEN_CLOSE;
+    if(this.isOpen()){
+      this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
     }else{
-      this.animState = ModulePlaceableAnimState.CLOSE;
+      this.setAnimationState(ModulePlaceableAnimState.CLOSE);
     }
 
-    this.setAnimationState(ModulePlaceableState.CLOSED);
+    this.setOpenState(ModulePlaceableState.CLOSED);
 
     if(this.getObjectSounds()['closed'] != '****'){
       this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
@@ -669,7 +714,7 @@ export class ModulePlaceable extends ModuleObject {
       this.name = this.template.GetFieldByLabel('LocName').GetCExoLocString().GetValue()
 
     if(this.template.RootNode.HasField('Animation'))
-      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
+      this.setAnimationState(this.template.GetFieldByLabel('Animation').GetValue());
 
     if(this.template.RootNode.HasField('Appearance'))
       this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
