@@ -39,6 +39,7 @@ export class OdysseyWalkMesh {
   _vertices: THREE.Vector3[] = [];
   walkTypes: number[] = [];
   normals: THREE.Vector3[] = [];
+  _normals: THREE.Vector3[] = [];
   facePlaneCoefficients: number[] = [];
   aabbNodes: OdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
@@ -250,6 +251,11 @@ export class OdysseyWalkMesh {
       this.vertices[i].copy(this._vertices[i]);
       this.vertices[i].applyMatrix4(this.mat4);
     }
+    const normalMatrix = this.mat4.clone().setPosition(0, 0, 0);
+    for(let i = 0, len = this.normals.length; i < len; i++){
+      this.normals[i].copy(this._normals[i]);
+      this.normals[i].applyMatrix4(normalMatrix);
+    }
   }
 
   readBinary(){
@@ -281,8 +287,10 @@ export class OdysseyWalkMesh {
 
       //READ Normals
       this.wokReader.seek(this.header.offsetToNormalizedInvertedNormals);
-      for (let i = 0; i < this.header.facesCount; i++)
+      for (let i = 0; i < this.header.facesCount; i++){
         this.faces[i].normal = this.normals[i] = new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle());
+        this._normals[i] = this.normals[i].clone();
+      }
 
       //READ Face Plane Coefficients
       this.wokReader.seek(this.header.offsetToFacePlanesCoefficien);
