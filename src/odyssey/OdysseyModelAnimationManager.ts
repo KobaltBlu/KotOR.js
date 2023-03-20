@@ -27,6 +27,8 @@ export class OdysseyModelAnimationManager {
 
   transElapsed: number = 0;
 
+  animLoopStates: Map<number, any> = new Map();
+
   constructor(model: OdysseyModel3D){
     this.model = model;
 
@@ -65,7 +67,18 @@ export class OdysseyModelAnimationManager {
     //World Model Animation Loops
     if(this.model.bonesInitialized && this.model.animLoops.length){
       for(let i = 0, len = this.model.animLoops.length; i < len; i++){
-        this.updateAnimation(this.model.animLoops[i], {}, delta);
+        if(!this.animLoopStates.has(i)){
+          this.animLoopStates.set(i, {
+            loop: true,
+            cFrame: 0,
+            elapsed: 0,
+            lastTime: 0,
+            delta: 0,
+            lastEvent: -1,
+            events: [],
+          });
+        }
+        this.updateAnimation(this.model.animLoops[i], this.animLoopStates.get(i), delta);
       }
     }
 
