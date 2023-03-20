@@ -37,6 +37,13 @@ import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
  * The ModuleDoor class.
  */
 
+interface AnimStateInfo {
+  lastAnimState: ModuleDoorAnimState;
+  currentAnimState: ModuleDoorAnimState;
+  loop: boolean;
+  started: boolean;
+};
+
 export class ModuleDoor extends ModuleObject {
   openState: boolean;
 
@@ -79,6 +86,13 @@ export class ModuleDoor extends ModuleObject {
   transitionLine: THREE.Line3;
   transitionClosestPoint: THREE.Vector3 = new THREE.Vector3();
   transitionDistance: number = Infinity;
+
+  animStateInfo: AnimStateInfo = {
+    lastAnimState: ModuleDoorAnimState.DEFAULT,
+    currentAnimState: ModuleDoorAnimState.DEFAULT,
+    loop: false,
+    started: false
+  };
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -515,6 +529,11 @@ export class ModuleDoor extends ModuleObject {
       }
     }
 
+  }
+
+  destroy(): void {
+    super.destroy();
+    MenuManager.InGameAreaTransition.unsetTransitionObject(this);
   }
 
   generateTransitionLine(){
