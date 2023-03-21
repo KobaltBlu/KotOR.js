@@ -218,8 +218,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
           object.geometry.dispose();
         }
       }else if(object.type === 'OdysseyLight'){
-        //console.log('Light', node);
-        this.context.lightManager.removeLight(node as OdysseyLight3D);
+        if(!!this.context && !!this.context.lightManager){
+          this.context.lightManager.removeLight(node as OdysseyLight3D);
+        }
       }else{
         if(object.hasOwnProperty('mesh')){
           (object as any).mesh = undefined;
@@ -1532,7 +1533,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lightNode.maxIntensity = 1;
       lightNode.color = odysseyNode.color;
       OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
-      odysseyModel.context.lightManager.addLight(lightNode);
+      if(!!odysseyModel.context && !!odysseyModel.context.lightManager){
+        odysseyModel.context.lightManager.addLight(lightNode);
+      }
     }
     
     odysseyNode.controllers.forEach( (controller) => {
