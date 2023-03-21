@@ -5,21 +5,7 @@ import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
-import { GFFObject } from "../../../resource/GFFObject";
-import { DLGObject } from "../../../resource/DLGObject";
-import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { NWScript } from "../../../nwscript/NWScript";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
-import { ModuleCreature, ModuleObject } from "../../../module";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
-import { ResourceLoader } from "../../../resource/ResourceLoader";
-import { LIPObject } from "../../../resource/LIPObject";
-import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { DLGNode } from "../../../resource/DLGNode";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The InGameDialog menu class.

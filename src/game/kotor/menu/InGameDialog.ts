@@ -240,30 +240,33 @@ export class InGameDialog extends GameMenu {
 
   isContinueDialog(node: DLGNode) {
     let returnValue = null;
+    let parsedText = node.getCompiledString();
     if (typeof node.entries !== 'undefined') {
-      returnValue = node.text == '' && node.entries.length;
+      returnValue = parsedText == '' && node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
-      returnValue = node.text == '' && node.replies.length;
+      returnValue = parsedText == '' && node.replies.length;
     } else {
-      returnValue = node.text == '';
+      returnValue = parsedText == '';
     }
     return returnValue;
   }
 
   isEndDialog(node: DLGNode) {
     let returnValue = null;
+    let parsedText = node.getCompiledString();
     if (typeof node.entries !== 'undefined') {
-      returnValue = node.text == '' && !node.entries.length;
+      returnValue = parsedText == '' && !node.entries.length;
     } else if (typeof node.replies !== 'undefined') {
-      returnValue = node.text == '' && !node.replies.length;
+      returnValue = parsedText == '' && !node.replies.length;
     } else {
-      returnValue = node.text == '';
+      returnValue = parsedText == '';
     }
     return returnValue;
   }
 
   playerSkipEntry(currentEntry: DLGNode) {
     if (this.currentEntry != null) {
+      if(!this.currentEntry.skippable) return;
       this.currentEntry.checkList.isSkipped = true;
       this.updateCamera();
       this.audioEmitter.Stop();

@@ -59,6 +59,7 @@ export class DLGNode {
 
   checkList: any = {};
   timeout: any;
+  skippable: boolean;
 
   constructor(args = {}){
     this.nodeEngineType = DLGNodeEngineType.K1;
@@ -730,12 +731,18 @@ export class DLGNode {
       node.fade.delay = struct.GetFieldByLabel('FadeDelay').GetValue();
     }
 
+    if(struct.HasField('NodeUnskippable')){
+      node.skippable = !struct.GetFieldByLabel('NodeUnskippable').GetValue();
+    }else{
+      node.skippable = true;
+    }
+
     return node;
   }
 
   getCompiledString(): string {
     let text = this.text;
-    text = text.split('##')[0];
+    text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
     //if(this.speaker instanceof ModuleCreature){
       text = text.replace(/<FullName>/gm, GameState.player.firstName);
       text = text.replace(/<LastName>/gm, GameState.player.lastName);
@@ -750,15 +757,16 @@ export class DLGNode {
   
 
   isContinueDialog() {
+    let parsedText = this.getCompiledString();
     switch(this.nodeType){
       case DLGNodeType.REPLY:
-        return this.text == '' && this.entries.length == 1;
+        return parsedText == '' && this.entries.length == 1;
       break;
       case DLGNodeType.ENTRY:
-        return this.text == '' && this.replies.length == 1;
+        return parsedText == '' && this.replies.length == 1;
       break;
       default: 
-        return this.text == '';
+        return parsedText == '';
       break;
     }
 
@@ -766,15 +774,16 @@ export class DLGNode {
   }
 
   isEndDialog() {
+    let parsedText = this.getCompiledString();
     switch(this.nodeType){
       case DLGNodeType.REPLY:
-        return this.text == '' && !this.entries.length;
+        return parsedText == '' && !this.entries.length;
       break;
       case DLGNodeType.ENTRY:
-        return this.text == '' && !this.replies.length;
+        return parsedText == '' && !this.replies.length;
       break;
       default: 
-        return this.text == '';
+        return parsedText == '';
       break;
     }
   }
