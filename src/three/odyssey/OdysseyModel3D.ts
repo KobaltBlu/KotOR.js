@@ -1240,6 +1240,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //----------------//
           // MERGE GEOMETRY
           //----------------//
+          if(odysseyNode.roomStatic){
+            if(!odysseyNode.tvectors[0].length) odysseyNode.roomStatic = false;
+          }
           if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && odysseyNode.roomStatic && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
