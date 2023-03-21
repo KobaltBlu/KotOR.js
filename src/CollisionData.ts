@@ -5,9 +5,11 @@ import { OdysseyWalkMesh } from "./odyssey";
 import * as THREE from "three";
 import { Utility } from "./utility/Utility";
 import { ConfigClient } from "./utility/ConfigClient";
+import { OdysseyFace3 } from "./three/odyssey";
 
 interface AABBFaceData {
-
+  object: ModuleObject,
+  faces: OdysseyFace3[],
 }
 
 export class CollisionData {
@@ -62,7 +64,7 @@ export class CollisionData {
     GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     GameState.raycaster.ray.direction.set(0, 0,-1);
 
-    let aabbFaces = [];
+    let aabbFaces: AABBFaceData[] = [];
     let intersects = [];
     let obj = undefined;
 
@@ -70,6 +72,8 @@ export class CollisionData {
     
     //Check creature collision
     let creature = undefined;
+    const pd_cos = Math.cos(this.object.rotation.z + Math.PI/2);
+    const pd_sin = Math.sin(this.object.rotation.z + Math.PI/2);
     if(true || ConfigClient.options?.Game?.debug?.creature_collision){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         creature = GameState.module.area.creatures[i];
@@ -86,8 +90,8 @@ export class CollisionData {
           if( distance < hitdist ){
             let pDistance = hitdist - distance;
             scratchVec3.set(
-              pDistance * Math.cos(this.object.rotation.z + Math.PI/2),
-              pDistance * Math.sin(this.object.rotation.z + Math.PI/2),
+              pDistance * pd_cos,
+              pDistance * pd_sin,
               0 
             );
             position.sub(scratchVec3);
@@ -155,11 +159,13 @@ export class CollisionData {
       let worldCollide = false;
       let collider = undefined;
       let world_collisions = [];
-      let castableFaces: any = [];
+      let castableFaces: AABBFaceData;
+      let intersect: THREE.Intersection;
       let dot = 0;
       for(let i = 0; i < 12; i++){
         GameState.raycaster.ray.direction.set(ModuleObject.DX_LIST[i], ModuleObject.DY_LIST[i], 0);
         for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+          if(!castableFaces.object?.collisionData?.walkmesh) continue;
           playerFeetRay.copy(this.object.position).add(this.object.AxisFront);
           GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
 
@@ -168,22 +174,23 @@ export class CollisionData {
           intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
           if (intersects && intersects.length > 0 ) {
             for(let j = 0, jLen = intersects.length; j < jLen; j++){
-              if(intersects[j].distance < hitdist_half){
-                if(intersects[j].face.walkIndex == 7 || intersects[j].face.walkIndex == 2){
+              intersect = intersects[j];
+              if(intersect.distance < hitdist_half){
+                if(intersect.face.materialIndex == 7 || intersect.face.materialIndex == 2){
 
-                  if(intersects[j].object.userData.moduleObject instanceof ModuleDoor){
-                    this.blockingObject = intersects[j].object.userData.moduleObject;
+                  if(intersect.object.userData.moduleObject instanceof ModuleDoor){
+                    this.blockingObject = intersect.object.userData.moduleObject;
                   }
 
-                  if(!collider || collider.distance < intersects[j].distance)
-                    collider = intersects[j];
+                  if(!collider || collider.distance < intersect.distance)
+                    collider = intersect;
 
                   world_collisions.push(collider);
-                  dot = _axisFront.clone().dot(intersects[j].face.normal);
+                  dot = _axisFront.clone().dot(intersect.face.normal);
                   
                   if(dot){
                     this.object.AxisFront.add(
-                      intersects[j].face.normal.clone().multiplyScalar(-dot)
+                      intersect.face.normal.clone().multiplyScalar(-dot)
                     );
                   }
                   worldCollide = true;
