@@ -649,11 +649,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleObject){
-        return args[0].getHP();
-      }else{
-        return 0;
-      }
+      if(!(args[0] instanceof ModuleObject)) return 0;
+      return args[0].getHP();
     }
   },
   50:{
@@ -662,6 +659,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!(args[0] instanceof ModuleObject)) return 0;
       return args[0].getMaxHP();
     }
   },
@@ -7484,10 +7482,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
-      //console.log('SetGlobalFadeIn', FadeOverlayManager.holdForScript);
+      console.log('SetGlobalFadeIn', args[1], args[2], args[3], args[4]);
       setTimeout( () => {
         FadeOverlayManager.holdForScript = false;
-        //console.log('SetGlobalFadeIn', FadeOverlayManager.holdForScript);
         FadeOverlayManager.FadeIn( args[1], args[2], args[3], args[4]);
       }, args[0] * 1000);
   
@@ -7499,7 +7496,9 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
+      console.log('SetGlobalFadeOut', args[1], args[2], args[3], args[4]);
       setTimeout( () => {
+        FadeOverlayManager.holdForScript = false;
         FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4]);
       }, args[0] * 1000);
     }
