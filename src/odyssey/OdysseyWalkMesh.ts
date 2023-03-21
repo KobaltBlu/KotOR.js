@@ -73,7 +73,8 @@ export class OdysseyWalkMesh {
     //Build Face Colors
     for (let i = 0, len = this.faces.length; i < len; i++){
       let face = this.faces[i];
-      face.walkIndex = this.walkTypes[i];
+      face.materialIndex = this.walkTypes[i];
+      face.walkIndex = face.materialIndex;
       face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
       face.surfacemat = OdysseyWalkMesh.SURFACEMATERIALS[face.walkIndex];
       face.triangle = new THREE.Triangle(
