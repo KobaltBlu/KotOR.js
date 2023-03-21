@@ -455,6 +455,9 @@ export class InGameDialog extends GameMenu {
         }
       }
       this.dialog.releaseStuntActors();
+      if(this.dialog.isAnimatedCutscene){
+        FadeOverlayManager.FadeInFromCutscene();
+      }
     }
     GameState.videoEffect = -1;
   }

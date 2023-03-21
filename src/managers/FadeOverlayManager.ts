@@ -40,6 +40,12 @@ export class FadeOverlayManager {
     FadeOverlayManager.state = FadeOverlayState.FADING_IN;
   }
 
+  static FadeInFromCutscene(){
+    if(FadeOverlayManager.state == FadeOverlayState.FADED_OUT || FadeOverlayManager.state == FadeOverlayState.FADING_OUT){
+      FadeOverlayManager.FadeIn(1, 0, 0, 0);
+    }
+  }
+
   static Update(delta = 0){
 
     if(FadeOverlayManager.state == FadeOverlayState.NONE || FadeOverlayManager.state == FadeOverlayState.FADED_IN || FadeOverlayManager.state == FadeOverlayState.FADED_OUT){
