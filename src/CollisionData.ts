@@ -165,11 +165,11 @@ export class CollisionData {
       for(let i = 0; i < 12; i++){
         GameState.raycaster.ray.direction.set(ModuleObject.DX_LIST[i], ModuleObject.DY_LIST[i], 0);
         for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+          castableFaces = aabbFaces[k];
           if(!castableFaces.object?.collisionData?.walkmesh) continue;
           playerFeetRay.copy(this.object.position).add(this.object.AxisFront);
           GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
 
-          castableFaces = aabbFaces[k];
           castableFaces.object.collisionData.walkmesh.mesh.visible = true;
           intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
           if (intersects && intersects.length > 0 ) {
@@ -219,7 +219,7 @@ export class CollisionData {
         if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
           obj.box.setFromObject(obj.container);
           if(obj.box.intersectsBox(box) || obj.box.containsBox(box)){
-            for (const [index, edge] of obj.room.collisionData.walkmesh.edges) {
+            for (const [index, edge] of obj.collisionData.walkmesh.edges) {
               edge.line.closestPointToPoint(this.object.tmpPos, true, closestPoint);
               distance = closestPoint.distanceTo(this.object.tmpPos);
               if(distance < hitdist_half){
