@@ -352,7 +352,7 @@ export class DLGNode {
         if (this.checkList.alreadyAllowed || this.checkList.isSkipped) {
           return false;
         }
-        if (this.dialog.isAnimatedCutscene) {
+        if (this.dialog.isAnimatedCutscene && !!this.dialog.animatedCamera) {
           if (this.checkList.cameraAnimationComplete) {
             this.checkList.alreadyAllowed = true;
             return true;
