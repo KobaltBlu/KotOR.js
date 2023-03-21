@@ -354,8 +354,12 @@ export class SaveGame {
       for(let i = 0; i < catNumbers.length; i++){
         let numCat = catNumbers[i];
         let numLabel = numCat.GetFieldByLabel('Name').GetValue();
+        let value = numBytes.readByte();
         if(GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
-          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = numBytes.readByte();
+          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
+        }else{
+          GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
+          console.warn('Global Number: missing', numLabel.toLowerCase(), value);
         }
       }
 
@@ -391,8 +395,12 @@ export class SaveGame {
           let boolCat = catBooleans[index];
           if(boolCat){
             let boolLabel = boolCat.GetFieldByLabel('Name').GetValue();
+            let value = !!bit;
             if(GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
-              GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = !!bit;
+              GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
+            }else{
+              GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+              console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
             }
           }
         }
@@ -407,6 +415,9 @@ export class SaveGame {
           let strValue = stringValues[i].GetFieldByLabel('String').GetValue();
           if(GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
             GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
+          }else{
+            GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
+            console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
           }
         }
       }
