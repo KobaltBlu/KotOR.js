@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GameState } from "../GameState";
+import { FadeOverlayState } from "../enums/engine/FadeOverlayState";
 
 export class FadeOverlayManager {
 
@@ -9,15 +10,8 @@ export class FadeOverlayManager {
   static fading = false;
   static duration = 0;
   static elapsed = 0;
-  static state = 0;
+  static state: FadeOverlayState = FadeOverlayState.NONE;
 
-  static STATES: any = {
-    NONE: 0,
-    FADING_IN: 1,
-    FADING_OUT: 2,
-    FADED_IN: 3,
-    FADED_OUT: 4
-  }
   static holdForScript: boolean;
   /* Fade Geometry */
 
@@ -34,7 +28,7 @@ export class FadeOverlayManager {
     FadeOverlayManager.material.color.setRGB(r,g,b);
     FadeOverlayManager.duration = duration*2;
     FadeOverlayManager.elapsed = 0;
-    FadeOverlayManager.state = FadeOverlayManager.STATES.FADING_OUT;
+    FadeOverlayManager.state = FadeOverlayState.FADING_OUT;
   }
 
   static FadeIn(duration = 0, r = 0, g = 0, b = 0){
@@ -43,12 +37,12 @@ export class FadeOverlayManager {
     FadeOverlayManager.material.color.setRGB(r,g,b);
     FadeOverlayManager.duration = duration*2;
     FadeOverlayManager.elapsed = 0;
-    FadeOverlayManager.state = FadeOverlayManager.STATES.FADING_IN;
+    FadeOverlayManager.state = FadeOverlayState.FADING_IN;
   }
 
   static Update(delta = 0){
 
-    if(FadeOverlayManager.state == FadeOverlayManager.STATES.NONE || FadeOverlayManager.state == FadeOverlayManager.STATES.FADED_IN || FadeOverlayManager.state == FadeOverlayManager.STATES.FADED_OUT){
+    if(FadeOverlayManager.state == FadeOverlayState.NONE || FadeOverlayManager.state == FadeOverlayState.FADED_IN || FadeOverlayManager.state == FadeOverlayState.FADED_OUT){
       return;
     }
 
@@ -59,7 +53,7 @@ export class FadeOverlayManager {
     }
 
     switch(FadeOverlayManager.state){
-      case FadeOverlayManager.STATES.FADING_IN:
+      case FadeOverlayState.FADING_IN:
         if(FadeOverlayManager.elapsed >= FadeOverlayManager.duration){
           FadeOverlayManager.material.visible = false;
         }else{
@@ -70,17 +64,17 @@ export class FadeOverlayManager {
         }
 
         if(FadeOverlayManager.elapsed >= FadeOverlayManager.duration){
-          FadeOverlayManager.state = FadeOverlayManager.STATES.FADED_IN;
+          FadeOverlayManager.state = FadeOverlayState.FADED_IN;
         }
       break;
-      case FadeOverlayManager.STATES.FADING_OUT:
+      case FadeOverlayState.FADING_OUT:
         FadeOverlayManager.material.opacity += ( 1 - FadeOverlayManager.material.opacity ) * (FadeOverlayManager.elapsed / FadeOverlayManager.duration);
         if(isNaN(FadeOverlayManager.material.opacity)){
           FadeOverlayManager.material.opacity = 1;
         }
 
         if(FadeOverlayManager.elapsed >= FadeOverlayManager.duration){
-          FadeOverlayManager.state = FadeOverlayManager.STATES.FADED_OUT;
+          FadeOverlayManager.state = FadeOverlayState.FADED_OUT;
         }
       break;
     }
