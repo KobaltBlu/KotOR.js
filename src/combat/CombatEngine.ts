@@ -324,7 +324,7 @@ export class CombatEngine {
     }
 
     let attackAnimation = creature.model.getAnimationByName(combatAction.animation);
-    let attackDamageDelay = attackAnimation.getDamageDelay();
+    let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     creature.setFacing(
       Math.atan2(
