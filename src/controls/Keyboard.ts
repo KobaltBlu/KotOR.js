@@ -223,8 +223,12 @@ export class Keyboard {
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       // console.log('keydown', e);
-
       const code = e.code as KeyboardAction;
+
+      if(code == KeyboardAction.Tab){
+        e.preventDefault();
+      }
+
       const input = this.action[code];
       if(input){
         input.keyDown();
@@ -234,10 +238,6 @@ export class Keyboard {
         if(typeof GameState.activeGUIElement.onKeyDown === 'function'){
           GameState.activeGUIElement.onKeyDown(e);
         }
-      }
-
-      if(code == KeyboardAction.Tab){
-        return false;
       }
     });
 
