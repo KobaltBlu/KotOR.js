@@ -11,7 +11,7 @@
 
 **A remake of the Odyssey Game Engine that powered KotOR I &amp; II written in JS (TypeScript)**
 
-KotOR.js is a TypeScript-based remake of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords. While still in the early stages of development, the project aims to make the games fully playable.
+KotOR.js is a TypeScript-based reimplementation of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords (TSL). The project aims to support the complete feature set of the original engine. While still in the early stages of development, many systems are already online in some form or fashion.
 
 In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge. 
 
@@ -29,6 +29,9 @@ In addition to the game engine, the project includes an early attempt at a moddi
 The following games are currently supported:
 - [x] [Star Wars: Knights of the Old Republic (PC)](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic)
 - [x] [Star Wars: Knights of the Old Republic II The Sith Lords (PC)](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords)
+
+## Requirements
+You will need a valid copy of either KotOR I or KotOR II installed on your system if you want to use KotOR.js to interface with the files of either game. No game files are distributed with this project.
 
 ## Web Compatibility (NEW)
 
