@@ -1215,7 +1215,7 @@ export class ModuleArea extends ModuleObject {
                   dwk.mesh.geometry.applyMatrix4(dwk.mat4);
                   dwk.updateMatrix();
                   //dwk.mesh.position.copy(door.position);
-                  if(!door.openState){
+                  if(!door.isOpen()){
                     GameState.group.room_walkmeshes.add( dwk.mesh );
                   }
                 }
