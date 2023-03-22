@@ -42,6 +42,9 @@ export * from "./enums/ApplicationMode";
 
 export * from "./loaders/TextureLoader";
 export * from "./AnimatedTexture";
+export * from "./managers/FadeOverlayManager";
+export * from "./managers/GlobalVariableManager";
+export * from "./managers/CheatConsoleManager";
 
 export * from "./resource/BIFObject";
 export * from "./resource/BIKObject";
