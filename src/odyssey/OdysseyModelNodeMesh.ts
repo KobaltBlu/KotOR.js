@@ -274,6 +274,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2){
         this.odysseyModel.mdxReader.position = basePosition + this.MDXUVOffset2;
         this.tvectors[1].push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
+      }else{
+        this.tvectors[1] = this.tvectors[0].slice(0);
       }
 
       // TexCoords3
