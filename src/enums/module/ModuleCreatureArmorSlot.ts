@@ -14,5 +14,7 @@ export enum ModuleCreatureArmorSlot {
   CLAW1         = 0x4000,
   CLAW2         = 0x8000,
   CLAW3         = 0x10000,
-  HIDE          =  0x20000,
+  HIDE          = 0x20000,
+  RIGHTHAND2    = 0x40000,
+  LEFTHAND2     = 0x80000,
 };

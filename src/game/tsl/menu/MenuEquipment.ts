@@ -15,6 +15,9 @@ import { TextureType } from "../../../enums/loaders/TextureType";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
+import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 
 /* @file
 * The MenuEquipment menu class.
@@ -83,63 +86,122 @@ export class MenuEquipment extends K1_MenuEquipment {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.defaultControl = this.BTN_INV_BODY;
+
+      this.LB_ITEMS.offset.x = 0;
+      
+      this.LB_DESC.hide();
+      this.LBL_CANTEQUIP.hide();
+
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        if(this.equipmentSelectionActive){
+          this.slot = null;
+          this.equipmentSelectionActive = false;
+          this.UpdateList();
+        }else{
+          this.Close();
+        }
       });
+      this._button_b = this.BTN_BACK;
 
       this.BTN_INV_IMPLANT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
       this.BTN_INV_HEAD.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.HEAD;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
       this.BTN_INV_HANDS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMS;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
       this.BTN_INV_ARM_L.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
       this.BTN_INV_BODY.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMOR;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
       this.BTN_INV_ARM_R.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
       this.BTN_INV_WEAP_L.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
       this.BTN_INV_BELT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.BELT;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
       this.BTN_INV_WEAP_R.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
+        this.equipmentSelectionActive = true;
         this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
+      });
+
+      this.BTN_INV_WEAP_L2.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.slot = ModuleCreatureArmorSlot.LEFTHAND2;
+        this.equipmentSelectionActive = true;
+        this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
+      });
+
+      this.BTN_INV_WEAP_R2.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.slot = ModuleCreatureArmorSlot.RIGHTHAND2;
+        this.equipmentSelectionActive = true;
+        this.UpdateList();
+      }).addEventListener('hover', (e: any) => {
+        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
       });
 
       this.BTN_EQUIP.addEventListener('click', (e: any) => {
@@ -156,253 +218,120 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.UpdateSlotIcons();
         }
       });
+
+      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
+        this.UpdateSelected(item);
+      }
+
+      this.BTN_SWAPWEAPONS.addEventListener('click', (e: any) => {
+        let currentPC = PartyManager.party[0];
+        if(currentPC){
+          const right_1 = currentPC.equipment.RIGHTHAND;
+          const right_2 = currentPC.equipment.RIGHTHAND2;
+          currentPC.equipment.RIGHTHAND = undefined;
+          currentPC.equipment.RIGHTHAND2 = undefined;
+
+          if(right_1) right_1.destroy();
+
+          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1, () => { this.UpdateSlotIcons(true); });
+          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2, () => { this.UpdateSlotIcons(true); });
+
+          const left_1 = currentPC.equipment.LEFTHAND;
+          const left_2 = currentPC.equipment.LEFTHAND2;
+          currentPC.equipment.LEFTHAND = undefined;
+          currentPC.equipment.LEFTHAND2 = undefined;
+
+          if(left_1) left_1.destroy();
+
+          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1, () => { this.UpdateSlotIcons(true); });
+          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2, () => { this.UpdateSlotIcons(true); });
+          this.UpdateSlotIcons(true);
+        }
+      });
+
       resolve();
     });
   }
 
   UpdateList() {
-    this.LB_ITEMS.clearItems();
-    this.selectedItem = undefined as any;
-    this.UpdateSelected(undefined as any);
-    let currentPC = PartyManager.party[0];
-    if (this.slot) {
-      let inv = InventoryManager.getInventory(this.slot, currentPC);
-      for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i], undefined, (control: any, type: any) => {
-          this.ListItemBuilder(inv[i], control, type);
-        });
-      }
-      TextureLoader.LoadQueue();
+    super.UpdateList();
+    if (!this.equipmentSelectionActive) {
+      this.LBL_BACK1.show();
+      this.LBL_ATKL.show();
+      this.LBL_ATKR.show();
+      this.LBL_ATTACKMOD.show();
+
+      this.LBL_DEF_TEXT.show();
+      this.LBL_DEF_BACK.show();
+      this.LBL_DEF.show();
+
+      this.LBL_DAMTEXT.show();
+      this.LBL_DAMAGE.show();
+
+      this.LBL_TOHIT.show();
+      this.LBL_TOHITL.show();
+      this.LBL_TOHITR.show();
+
+      this.LBL_INV_WEAP_L2.show();
+      this.LBL_INV_WEAP_R2.show();
+      this.BTN_INV_WEAP_L2.show();
+      this.BTN_INV_WEAP_R2.show();
+      this.BTN_SWAPWEAPONS.show();
+    }else{
+      this.LBL_BACK1.hide();
+      this.LBL_ATKL.hide();
+      this.LBL_ATKR.hide();
+      this.LBL_ATTACKMOD.hide();
+
+      this.LBL_DEF_TEXT.hide();
+      this.LBL_DEF_BACK.hide();
+      this.LBL_DEF.hide();
+
+      this.LBL_DAMTEXT.hide();
+      this.LBL_DAMAGE.hide();
+
+      this.LBL_TOHIT.hide();
+      this.LBL_TOHITL.hide();
+      this.LBL_TOHITR.hide();
+      
+      this.LBL_INV_WEAP_L2.hide();
+      this.LBL_INV_WEAP_R2.hide();
+      this.BTN_INV_WEAP_L2.hide();
+      this.BTN_INV_WEAP_R2.hide();
+      this.BTN_SWAPWEAPONS.hide();
     }
   }
 
-  ListItemBuilder(item: any, control: GFFStruct, type: any) {
-    control.GetFieldByLabel('TEXT').GetChildStructs()[0].GetFieldByLabel('TEXT').SetValue(item.getName());
-    let _ctrl2 = new GUIProtoItem(this, control, this.LB_ITEMS, this.LB_ITEMS.scale);
-    _ctrl2.extent.width -= 52;
-    _ctrl2.extent.left -= 46;
-    _ctrl2.setList(this.LB_ITEMS);
-    this.LB_ITEMS.children.push(_ctrl2);
-    let idx2 = this.LB_ITEMS.itemGroup.children.length;
-    let item2 = _ctrl2.createControl();
-    let iconMaterial = new THREE.SpriteMaterial({
-      map: null,
-      color: 16777215
-    });
-    iconMaterial.transparent = true;
-    let iconSprite = new THREE.Sprite(iconMaterial);
-    TextureLoader.enQueue(item.getIcon(), iconMaterial, TextureType.TEXTURE);
-    item2.userData.spriteGroup = new THREE.Group();
-    item2.userData.spriteGroup.position.x = -(_ctrl2.extent.width / 2) - 52 / 2;
-    item2.userData.spriteGroup.position.y += 1;
-    iconSprite.scale.x = 48;
-    iconSprite.scale.y = 48;
-    for (let i = 0; i < 7; i++) {
-      let hexMaterial = new THREE.SpriteMaterial({
-        map: null,
-        color: 16777215
-      });
-      hexMaterial.transparent = true;
-      let hexSprite = new THREE.Sprite(hexMaterial);
-      if (!i) {
-        hexSprite.name = 'lbl_hex';
-        TextureLoader.enQueue('lbl_hex', hexMaterial, TextureType.TEXTURE);
-        hexSprite.visible = true;
-      } else {
-        hexSprite.name = 'lbl_hex_' + (i + 1);
-        TextureLoader.enQueue('lbl_hex_' + (i + 1), hexMaterial, TextureType.TEXTURE);
-        hexSprite.visible = false;
-      }
-      hexSprite.scale.x = hexSprite.scale.y = 64;
-      item2.userData.spriteGroup.add(hexSprite);
-    }
-    item2.add(item2.userData.spriteGroup);
-    item2.userData.spriteGroup.add(iconSprite);
-    this.LB_ITEMS.itemGroup.add(item2);
-    _ctrl2.addEventListener('click', (e: any) => {
-      e.stopPropagation();
-      this.UpdateSelected(item);
-    });
-  }
-
-  UpdateSelected(item: ModuleItem) {
-    this.selectedItem = item;
-    if (this.selectedItem instanceof ModuleItem) {
-
-    } else {
-
-    }
-  }
-
-  UpdateSlotIcons() {
+  UpdateSlotIcons(force: boolean = false) {
+    super.UpdateSlotIcons(force);
     let currentPC = PartyManager.party[0];
     if (currentPC.getRace() == 6) {
-      let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
-      if (implant) {
-        let icon = 'i' + implant.getBaseItem().itemclass + '_' + ('000' + implant.getModelVariation()).slice(-3);
-        if (this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
-          this.LBL_INV_IMPLANT.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_IMPLANT.setFillTexture(texture);
-          // });
+      let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
+      if (l_weap2) {
+        let icon = 'i' + l_weap2.getBaseItem().itemclass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
+        if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon) {
+          this.LBL_INV_WEAP_L2.setFillTextureName(icon);
+
         }
-      } else if (this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
-        this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
-        // TextureLoader.tpcLoader.fetch('iimplant', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_IMPLANT.setFillTexture(texture);
-        // });
+      } else if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != 'iweap_l') {
+        this.LBL_INV_WEAP_L2.setFillTextureName('iweap_l');
       }
-      let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
-      if (head) {
-        let icon = 'i' + head.getBaseItem().itemclass + '_' + ('000' + head.getModelVariation()).slice(-3);
-        if (this.LBL_INV_HEAD.getFillTextureName() != icon) {
-          this.LBL_INV_HEAD.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_HEAD.setFillTexture(texture);
-          // });
+      let r_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+      if (r_weap2) {
+        let icon = 'i' + r_weap2.getBaseItem().itemclass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
+        if (force || this.LBL_INV_WEAP_R2.getFillTextureName() != icon) {
+          this.LBL_INV_WEAP_R2.setFillTextureName(icon);
         }
-      } else if (this.LBL_INV_HEAD.getFillTextureName() != 'ihead') {
-        this.LBL_INV_HEAD.setFillTextureName('ihead');
-        // TextureLoader.tpcLoader.fetch('ihead', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_HEAD.setFillTexture(texture);
-        // });
+      } else if (force || this.LBL_INV_WEAP_R2.getFillTextureName() != 'iweap_r') {
+        this.LBL_INV_WEAP_R2.setFillTextureName('iweap_r');
       }
-      let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
-      if (hands) {
-        let icon = 'i' + hands.getBaseItem().itemclass + '_' + ('000' + hands.getModelVariation()).slice(-3);
-        if (this.LBL_INV_HANDS.getFillTextureName() != icon) {
-          this.LBL_INV_HANDS.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_HANDS.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_HANDS.getFillTextureName() != 'ihands') {
-        this.LBL_INV_HANDS.setFillTextureName('ihands');
-        // TextureLoader.tpcLoader.fetch('ihands', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_HANDS.setFillTexture(texture);
-        // });
-      }
-      let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-      if (l_arm) {
-        let icon = 'i' + l_arm.getBaseItem().itemclass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
-        if (this.LBL_INV_ARM_L.getFillTextureName() != icon) {
-          this.LBL_INV_ARM_L.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_ARM_L.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l') {
-        this.LBL_INV_ARM_L.setFillTextureName('iforearm_l');
-        // TextureLoader.tpcLoader.fetch('iforearm_l', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_ARM_L.setFillTexture(texture);
-        // });
-      }
-      let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
-      if (armor) {
-        let icon = 'i' + armor.getBaseItem().itemclass + '_' + ('000' + armor.getModelVariation()).slice(-3);
-        if (this.LBL_INV_BODY.getFillTextureName() != icon) {
-          this.LBL_INV_BODY.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_BODY.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_BODY.getFillTextureName() != 'iarmor') {
-        this.LBL_INV_BODY.setFillTextureName('iarmor');
-        // TextureLoader.tpcLoader.fetch('iarmor', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_BODY.setFillTexture(texture);
-        // });
-      }
-      let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      if (r_arm) {
-        let icon = 'i' + r_arm.getBaseItem().itemclass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
-        if (this.LBL_INV_ARM_R.getFillTextureName() != icon) {
-          this.LBL_INV_ARM_R.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_ARM_R.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r') {
-        this.LBL_INV_ARM_R.setFillTextureName('iforearm_r');
-        // TextureLoader.tpcLoader.fetch('iforearm_r', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_ARM_R.setFillTexture(texture);
-        // });
-      }
-      let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
-      if (l_weap) {
-        let icon = 'i' + l_weap.getBaseItem().itemclass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
-        if (this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
-          this.LBL_INV_WEAP_L.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_WEAP_L.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l') {
-        this.LBL_INV_WEAP_L.setFillTextureName('iweap_l');
-        // TextureLoader.tpcLoader.fetch('iweap_l', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_WEAP_L.setFillTexture(texture);
-        // });
-      }
-      let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
-      if (belt) {
-        let icon = 'i' + belt.getBaseItem().itemclass + '_' + ('000' + belt.getModelVariation()).slice(-3);
-        if (this.LBL_INV_BELT.getFillTextureName() != icon) {
-          this.LBL_INV_BELT.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_BELT.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_BELT.getFillTextureName() != 'ibelt') {
-        this.LBL_INV_BELT.setFillTextureName('ibelt');
-        // TextureLoader.tpcLoader.fetch('ibelt', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_BELT.setFillTexture(texture);
-        // });
-      }
-      let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-      if (r_weap) {
-        let icon = 'i' + r_weap.getBaseItem().itemclass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
-        if (this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
-          this.LBL_INV_WEAP_R.setFillTextureName(icon);
-          // TextureLoader.tpcLoader.fetch(icon, (texture: OdysseyTexture) => {
-          //   this.LBL_INV_WEAP_R.setFillTexture(texture);
-          // });
-        }
-      } else if (this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r') {
-        this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
-        // TextureLoader.tpcLoader.fetch('iweap_r', (texture: OdysseyTexture) => {
-        //   this.LBL_INV_WEAP_R.setFillTexture(texture);
-        // });
-      }
-    } else {
     }
   }
 
   Show() {
     super.Show();
-    this.UpdateList();
-    this['BTN_CHANGE1'].hide();
-    this['BTN_CHANGE2'].hide();
+    this.LBL_BACK1.widget.position.z = 0;
     this.UpdateSlotIcons();
-    for (let i = 0; i < PartyManager.party.length; i++) {
-      let partyMember = PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
-      if (!i) {
-        if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
-          this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-          //   this.LBL_PORTRAIT.setFillTexture(texture);
-          // });
-        }
-      } else {
-        this.getControlByName('BTN_CHANGE' + i).show();
-        if (this.getControlByName('BTN_CHANGE' + i).getFillTextureName() != portrait.baseresref) {
-          this.getControlByName('BTN_CHANGE' + i).setFillTextureName(portrait.baseresref);
-          // TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-          //   this.getControlByName('BTN_CHANGE' + i).setFillTexture(texture);
-          // });
-        }
-      }
-    }
   }
   
 }

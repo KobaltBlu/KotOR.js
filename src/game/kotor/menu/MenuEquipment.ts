@@ -1,14 +1,12 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl, MenuManager } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
-import * as THREE from "three";
+import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
+import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "../../../module";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -19,8 +17,6 @@ import { InventoryManager } from "../../../managers/InventoryManager";
 /* @file
 * The MenuEquipment menu class.
 */
-
-const STR_EQUIPPED = 32346;
 
 export class MenuEquipment extends GameMenu {
 
@@ -203,7 +199,6 @@ export class MenuEquipment extends GameMenu {
           this.UpdateList();
         }
       });
-      
 
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.UpdateSelected(item);
@@ -220,8 +215,9 @@ export class MenuEquipment extends GameMenu {
       let currentPC = PartyManager.party[0];
       this.LB_ITEMS.addItem(new GUIItemNone());
       if(currentPC.GetItemInSlot(slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)))
+        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
       }
+      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -231,60 +227,60 @@ export class MenuEquipment extends GameMenu {
 
   UpdateList() {
     if (!this.equipmentSelectionActive) {
-      this.BTN_EQUIP.hide();
-      this.BTN_BACK.setText(TLKManager.GetStringById(1582).Value);
-      this.LB_DESC.hide();
-      this.BTN_INV_IMPLANT.show();
-      this.BTN_INV_HEAD.show();
-      this.BTN_INV_HANDS.show();
-      this.BTN_INV_ARM_L.show();
-      this.BTN_INV_BODY.show();
-      this.BTN_INV_ARM_R.show();
-      this.BTN_INV_WEAP_L.show();
-      this.BTN_INV_BELT.show();
-      this.BTN_INV_WEAP_R.show();
-      this.LBL_INV_IMPLANT.show();
-      this.LBL_INV_HEAD.show();
-      this.LBL_INV_HANDS.show();
-      this.LBL_INV_ARM_L.show();
-      this.LBL_INV_BODY.show();
-      this.LBL_INV_ARM_R.show();
-      this.LBL_INV_WEAP_L.show();
-      this.LBL_INV_BELT.show();
-      this.LBL_INV_WEAP_R.show();
-      this.LBL_PORTRAIT.show();
-      this.LBL_PORT_BORD.show();
-      this.LBL_SLOTNAME.show();
-      this.LBL_TXTBAR.show();
-      this.LBL_SELECTTITLE.setText('');
+      this.BTN_EQUIP?.hide();
+      this.BTN_BACK?.setText(TLKManager.GetStringById(1582).Value);
+      this.LB_DESC?.hide();
+      this.BTN_INV_IMPLANT?.show();
+      this.BTN_INV_HEAD?.show();
+      this.BTN_INV_HANDS?.show();
+      this.BTN_INV_ARM_L?.show();
+      this.BTN_INV_BODY?.show();
+      this.BTN_INV_ARM_R?.show();
+      this.BTN_INV_WEAP_L?.show();
+      this.BTN_INV_BELT?.show();
+      this.BTN_INV_WEAP_R?.show();
+      this.LBL_INV_IMPLANT?.show();
+      this.LBL_INV_HEAD?.show();
+      this.LBL_INV_HANDS?.show();
+      this.LBL_INV_ARM_L?.show();
+      this.LBL_INV_BODY?.show();
+      this.LBL_INV_ARM_R?.show();
+      this.LBL_INV_WEAP_L?.show();
+      this.LBL_INV_BELT?.show();
+      this.LBL_INV_WEAP_R?.show();
+      this.LBL_PORTRAIT?.show();
+      this.LBL_PORT_BORD?.show();
+      this.LBL_SLOTNAME?.show();
+      this.LBL_TXTBAR?.show();
+      this.LBL_SELECTTITLE?.setText('');
     } else {
-      this.BTN_EQUIP.show();
-      this.BTN_EQUIP.setText(TLKManager.GetStringById(31387).Value);
-      this.BTN_BACK.setText(TLKManager.GetStringById(1581).Value);
-      this.LB_DESC.show();
-      this.BTN_INV_IMPLANT.hide();
-      this.BTN_INV_HEAD.hide();
-      this.BTN_INV_HANDS.hide();
-      this.BTN_INV_ARM_L.hide();
-      this.BTN_INV_BODY.hide();
-      this.BTN_INV_ARM_R.hide();
-      this.BTN_INV_WEAP_L.hide();
-      this.BTN_INV_BELT.hide();
-      this.BTN_INV_WEAP_R.hide();
-      this.LBL_INV_IMPLANT.hide();
-      this.LBL_INV_HEAD.hide();
-      this.LBL_INV_HANDS.hide();
-      this.LBL_INV_ARM_L.hide();
-      this.LBL_INV_BODY.hide();
-      this.LBL_INV_ARM_R.hide();
-      this.LBL_INV_WEAP_L.hide();
-      this.LBL_INV_BELT.hide();
-      this.LBL_INV_WEAP_R.hide();
-      this.LBL_PORTRAIT.hide();
-      this.LBL_PORT_BORD.hide();
-      this.LBL_SLOTNAME.hide();
-      this.LBL_TXTBAR.hide();
-      this.LBL_SELECTTITLE.setText('');
+      this.BTN_EQUIP?.show();
+      this.BTN_EQUIP?.setText(TLKManager.GetStringById(31387).Value);
+      this.BTN_BACK?.setText(TLKManager.GetStringById(1581).Value);
+      this.LB_DESC?.show();
+      this.BTN_INV_IMPLANT?.hide();
+      this.BTN_INV_HEAD?.hide();
+      this.BTN_INV_HANDS?.hide();
+      this.BTN_INV_ARM_L?.hide();
+      this.BTN_INV_BODY?.hide();
+      this.BTN_INV_ARM_R?.hide();
+      this.BTN_INV_WEAP_L?.hide();
+      this.BTN_INV_BELT?.hide();
+      this.BTN_INV_WEAP_R?.hide();
+      this.LBL_INV_IMPLANT?.hide();
+      this.LBL_INV_HEAD?.hide();
+      this.LBL_INV_HANDS?.hide();
+      this.LBL_INV_ARM_L?.hide();
+      this.LBL_INV_BODY?.hide();
+      this.LBL_INV_ARM_R?.hide();
+      this.LBL_INV_WEAP_L?.hide();
+      this.LBL_INV_BELT?.hide();
+      this.LBL_INV_WEAP_R?.hide();
+      this.LBL_PORTRAIT?.hide();
+      this.LBL_PORT_BORD?.hide();
+      this.LBL_SLOTNAME?.hide();
+      this.LBL_TXTBAR?.hide();
+      this.LBL_SELECTTITLE?.setText('');
     }
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
@@ -297,6 +293,7 @@ export class MenuEquipment extends GameMenu {
       if(currentPC.GetItemInSlot(this.slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
       }
+      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -401,6 +398,7 @@ export class MenuEquipment extends GameMenu {
         this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
       }
     } else {
+
     }
   }
 
@@ -410,28 +408,30 @@ export class MenuEquipment extends GameMenu {
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;
     this.UpdateList();
-    this['BTN_CHANGE1'].hide();
-    this['BTN_CHANGE2'].hide();
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
     this.UpdateSlotIcons(true);
     let currentPC = PartyManager.party[0];
     if (currentPC) {
-      this.LBL_VITALITY.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
-      this.LBL_DEF.setText(currentPC.getAC());
+      this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
+      this.LBL_DEF?.setText(currentPC.getAC());
     }
     let btn_change: GUIControl;
     for (let i = 0; i < PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
-      let partyMember = PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
-      if (!i) {
-        if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
-          this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
-        }
-      } else {
-        btn_change.show();
-        if (btn_change.getFillTextureName() != portrait.baseresref) {
-          btn_change.setFillTextureName(portrait.baseresref);
+      if(btn_change){
+        let partyMember = PartyManager.party[i];
+        let portraitId = partyMember.getPortraitId();
+        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        if (!i) {
+          if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
+            this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);
+          }
+        } else {
+          btn_change.show();
+          if (btn_change.getFillTextureName() != portrait.baseresref) {
+            btn_change.setFillTextureName(portrait.baseresref);
+          }
         }
       }
     }
@@ -601,192 +601,4 @@ export class MenuEquipment extends GameMenu {
     }
   }
   
-}
-
-class GUIItemNone {
-  constructor(){
-    // super()
-  }
-
-  getIcon(){
-    return 'inone';
-  }
-
-  getStackSize(){
-    return 1;
-  }
-
-  getName(){
-    //None String
-    return TLKManager.GetStringById(363).Value;
-  }
-
-}
-
-class GUIItemEquipped {
-  node: ModuleItem;
-  equipped: boolean = true;
-  constructor(node: ModuleItem){
-    this.node = node;
-  }
-
-  getIcon(){
-    return this.node.getIcon();
-  }
-
-  getStackSize(){
-    return 1;
-  }
-
-  getName(){
-    return `${this.node.getName()} (${TLKManager.GetStringById(STR_EQUIPPED).Value})`;
-  }
-
-}
-
-class GUIInventoryItem extends GUIProtoItem {
-
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
-    super(menu, control, parent, scale);
-  }
-
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
-  buildText(){}
-
-  createControl(){
-    try{
-      super.createControl();
-      //Create the actual control elements below
-      let button = new GUIButton(this.menu, this.control, this, this.scale);
-      button.extent.width = 190;
-      button.text.text = this.node.getName();
-      button.autoCalculatePosition = false;
-      this.children.push(button);
-
-      let _buttonWidget = button.createControl();
-      _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
-      _buttonWidget.position.y = 0;
-      _buttonWidget.position.z = this.zIndex + 1;
-      this.widget.add(_buttonWidget);
-
-      let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
-      buttonIcon.disableTextAlignment();
-      buttonIcon.extent.width = 55;
-      buttonIcon.extent.height = 55;
-      buttonIcon.extent.top = 0;
-      buttonIcon.extent.left = 0;
-      buttonIcon.disableBorder();
-      buttonIcon.disableHighlight();
-      buttonIcon.hasText = true;
-      buttonIcon.autoCalculatePosition = false;
-      this.children.push(buttonIcon);
-
-      let _buttonIconWidget = buttonIcon.createControl();
-      _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
-      _buttonIconWidget.position.y = 0;
-      _buttonIconWidget.position.z = this.zIndex + 1;
-
-      //Stack Count Text Position
-      if(this.node.getStackSize() >= 100){
-        buttonIcon.widget.userData.text.position.set(6, -10, 5);
-      }else if(this.node.getStackSize() >= 10){
-        buttonIcon.widget.userData.text.position.set(10, -10, 5);
-      }else{
-        buttonIcon.widget.userData.text.position.set(14, -10, 5);
-      }
-
-      this.widget.add(_buttonIconWidget);
-
-      this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-      this.widget.userData.iconMaterial.transparent = true;
-      this.widget.userData.iconMaterial.visible = false;
-      this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
-      //console.log(this.node.getIcon());
-      TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        this.widget.userData.iconMaterial.visible = true;
-      });
-      
-      this.widget.userData.spriteGroup = new THREE.Group();
-      //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
-      //this.widget.spriteGroup.position.y -= 4;
-      this.widget.userData.iconSprite.scale.x = 52;
-      this.widget.userData.iconSprite.scale.y = 52;
-      this.widget.userData.iconSprite.position.z = 1;
-
-      this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-      this.widget.userData.hexMaterial.transparent = true;
-      this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
-      this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 64;
-      this.widget.userData.hexSprite.position.z = 1;
-
-      if(GameState.GameKey != 'TSL')
-        this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
-        
-      this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
-
-      if(this.node.getStackSize() >= 100){
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_7');
-        this.widget.userData.hexMaterial.needsUpdate = true;
-      }else if(this.node.getStackSize() > 1){
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_6');
-        this.widget.userData.hexMaterial.needsUpdate = true;
-      }else{
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_3');
-        this.widget.userData.hexMaterial.needsUpdate = true;
-      }
-
-      this.onSelect = () => {
-        if(this.selected){
-          this.showHighlight();
-          this.hideBorder();
-          this.pulsing = true;
-          this.text.color.setRGB(1, 1, 0);
-          this.text.material.uniforms.diffuse.value = this.text.color;
-          this.text.material.needsUpdate = true;
-  
-          button.showHighlight();
-          button.hideBorder();
-          this.widget.userData.hexMaterial.color.setRGB(1, 1, 0);
-          button.setHighlightColor(1, 1, 0);
-          button.pulsing = true;
-          buttonIcon.pulsing = true;
-
-          button.text.color.setRGB(1, 1, 0);
-          button.text.material.uniforms.diffuse.value = button.text.color;
-          button.text.material.needsUpdate = true;
-        }else{
-          this.hideHighlight();
-          this.showBorder();
-          this.pulsing = false;
-          this.text.color.setRGB(0, 0.658824, 0.980392);
-          this.text.material.uniforms.diffuse.value = this.text.color;
-          this.text.material.needsUpdate = true;
-  
-          button.hideHighlight();
-          button.showBorder();
-          this.widget.userData.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
-          button.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
-          button.pulsing = false;
-          buttonIcon.pulsing = false;
-
-          button.text.color.setRGB(0, 0.658824, 0.980392);
-          button.text.material.uniforms.diffuse.value = button.text.color;
-          button.text.material.needsUpdate = true;
-        }
-      };
-      this.onSelect.call(this);
-
-      //StackCount Text
-      _buttonIconWidget.add(this.widget.userData.spriteGroup);
-      return this.widget;
-    }catch(e){
-      console.error(e);
-    }
-    return this.widget;
-
-  }
-
 }

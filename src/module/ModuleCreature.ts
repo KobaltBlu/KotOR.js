@@ -131,7 +131,9 @@ export class ModuleCreature extends ModuleObject {
     ARMOR: ModuleItem; 
     ARMS: ModuleItem; 
     RIGHTHAND: ModuleItem; 
+    RIGHTHAND2: ModuleItem; 
     LEFTHAND: ModuleItem; 
+    LEFTHAND2: ModuleItem; 
     LEFTARMBAND: ModuleItem; 
     RIGHTARMBAND: ModuleItem; 
     IMPLANT: ModuleItem; 
@@ -232,7 +234,9 @@ export class ModuleCreature extends ModuleObject {
       ARMOR: undefined,
       ARMS: undefined,
       RIGHTHAND: undefined,
+      RIGHTHAND2: undefined,
       LEFTHAND: undefined,
+      LEFTHAND2: undefined,
       LEFTARMBAND: undefined,
       RIGHTARMBAND: undefined,
       IMPLANT: undefined,
@@ -3473,6 +3477,12 @@ export class ModuleCreature extends ModuleObject {
                 onLoad();
             });
           break;
+          case ModuleCreatureArmorSlot.RIGHTHAND2:
+            this.equipment.RIGHTHAND2 = item;
+          break;
+          case ModuleCreatureArmorSlot.LEFTHAND2:
+            this.equipment.LEFTHAND2 = item;
+          break;
           case ModuleCreatureArmorSlot.CLAW1:
             this.equipment.CLAW1 = item;
           break;
@@ -3600,6 +3610,18 @@ export class ModuleCreature extends ModuleObject {
             
           }
         break;
+        case ModuleCreatureArmorSlot.RIGHTHAND2:
+          try{
+            if(this.equipment.RIGHTHAND2 instanceof ModuleItem){
+              this.equipment.RIGHTHAND2.onUnEquip(this);
+              // this.model.rhand.remove(this.equipment.RIGHTHAND2.model);
+              this.equipment.RIGHTHAND2.destroy();
+              this.equipment.RIGHTHAND2 = undefined;
+            }
+          }catch(e){
+            
+          }
+        break;
         case ModuleCreatureArmorSlot.BELT:
           try{
             if(this.equipment.BELT instanceof ModuleItem){
@@ -3619,6 +3641,18 @@ export class ModuleCreature extends ModuleObject {
               this.model.lhand.remove(this.equipment.LEFTHAND.model);
               this.equipment.LEFTHAND.destroy();
               this.equipment.LEFTHAND = null;
+            }
+          }catch(e){
+            
+          }
+        break;
+        case ModuleCreatureArmorSlot.LEFTHAND2:
+          try{
+            if(this.equipment.LEFTHAND2 instanceof ModuleItem){
+              this.equipment.LEFTHAND2.onUnEquip(this);
+              // this.model.lhand.remove(this.equipment.LEFTHAND2.model);
+              this.equipment.LEFTHAND2.destroy();
+              this.equipment.LEFTHAND2 = null;
             }
           }catch(e){
             
@@ -3664,11 +3698,17 @@ export class ModuleCreature extends ModuleObject {
       case ModuleCreatureArmorSlot.LEFTHAND:
         return this.equipment.LEFTHAND;
       break;
+      case ModuleCreatureArmorSlot.LEFTHAND2:
+        return this.equipment.LEFTHAND2;
+      break;
       case ModuleCreatureArmorSlot.BELT:
         return this.equipment.BELT;
       break;
       case ModuleCreatureArmorSlot.RIGHTHAND:
         return this.equipment.RIGHTHAND;
+      break;
+      case ModuleCreatureArmorSlot.RIGHTHAND2:
+        return this.equipment.RIGHTHAND2;
       break;
       case ModuleCreatureArmorSlot.HIDE:
         return this.equipment.HIDE;
@@ -4063,8 +4103,14 @@ export class ModuleCreature extends ModuleObject {
               case ModuleCreatureArmorSlot.LEFTHAND:
                 this.equipment.LEFTHAND = equipped_item;
               break;
+              case ModuleCreatureArmorSlot.LEFTHAND2:
+                this.equipment.LEFTHAND2 = equipped_item;
+              break;
               case ModuleCreatureArmorSlot.RIGHTHAND:
                 this.equipment.RIGHTHAND = equipped_item;
+              break;
+              case ModuleCreatureArmorSlot.RIGHTHAND2:
+                this.equipment.RIGHTHAND2 = equipped_item;
               break;
               case ModuleCreatureArmorSlot.LEFTARMBAND:
                 this.equipment.LEFTARMBAND = equipped_item;
@@ -4091,6 +4137,9 @@ export class ModuleCreature extends ModuleObject {
               break;
               case ModuleCreatureArmorSlot.CLAW3:
                 this.equipment.CLAW3 = equipped_item;
+              break;
+              default:
+                console.warn('ModuleCreature.InitProperties', 'Unhandled Equipment Slot', equipped_item);
               break;
             }
           }
