@@ -4,6 +4,7 @@ import { ModuleItem } from "../module";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { KEYManager } from "./KEYManager";
 
 export class CheatConsoleManager {
 
@@ -106,6 +107,16 @@ export class CheatConsoleManager {
   //Will display your character's current coordinates
   static whereami (){
     //todo
+  }
+
+  static giveRandomLoot(amount: number = 1) {
+    const items = KEYManager.Key.keys.filter( (k) => k.ResType == ResourceTypes.uti );
+    for(let i = 0; i < amount; i++){
+      const item = items[Math.floor(Math.random()*items.length)];
+      if(item){
+        CheatConsoleManager.giveItem(item.ResRef, 1);
+      }
+    }
   }
 
 }
