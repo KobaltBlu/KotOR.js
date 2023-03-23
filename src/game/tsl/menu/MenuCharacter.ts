@@ -91,6 +91,16 @@ export class MenuCharacter extends K1_MenuCharacter {
         e.stopPropagation();
         this.Close();
       });
+      this._button_b = this.BTN_EXIT;
+
+      this.BTN_AUTO.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        if(GameState.getCurrentPlayer().canLevelUp()){
+          GameState.getCurrentPlayer().autoLevelUp();
+          this.updateCharacterStats(GameState.getCurrentPlayer());
+        }
+      });
+      this._button_y = this.BTN_AUTO;
 
       GameState.ModelLoader.load('charmain_light').then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
@@ -146,26 +156,8 @@ export class MenuCharacter extends K1_MenuCharacter {
   Show() {
     super.Show();
     this.RecalculatePosition();
-    if (this.char) {
-      this._3dViewModel.children[0].children[1].remove(this.char);
-    }
-    this._3dView.camera.position.z = 1;
-    let objectCreature = new ModuleCreature();
-    let clone = PartyManager.party[0];
-    objectCreature.appearance = clone.appearance;
-    objectCreature.LoadModel().then((model: OdysseyModel3D) => {
-      model.position.set(0, 0, 0);
-      model.rotation.x = -Math.PI / 2;
-      model.rotation.z = Math.PI;
-      model.box = new THREE.Box3().setFromObject(model);
-      this.char = model;
-      this._3dViewModel.children[0].children[1].add(this.char);
-      TextureLoader.LoadQueue(() => {
-        setTimeout(() => {
-          this.char.playAnimation('good', true);
-        }, 100);
-      });
-    });
+    this.updateCharacterPortrait(PartyManager.party[0]);
+    this.updateCharacterStats(PartyManager.party[0]);
     
     this['BTN_CHANGE1'].hide();
     this['BTN_CHANGE2'].hide();
