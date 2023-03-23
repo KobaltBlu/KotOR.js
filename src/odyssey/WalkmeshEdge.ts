@@ -4,7 +4,7 @@ import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
 
 export class WalkmeshEdge {
   transition: number;
-  line: any;
+  line: THREE.Line3;
   normal: THREE.Vector3;
   _normal_a: THREE.Vector3;
   _normal_b: THREE.Vector3;
