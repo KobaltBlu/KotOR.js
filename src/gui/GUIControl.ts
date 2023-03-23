@@ -666,8 +666,8 @@ export class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.anisotropy = 1;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         if(!this.border.edge_material.transparent){
           this.border.mesh.renderOrder = 0;
         }
@@ -690,8 +690,8 @@ export class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.anisotropy = 1;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         if(!this.border.corner_material.transparent){
           this.border.mesh.renderOrder = 0;
         }
@@ -713,8 +713,8 @@ export class GUIControl {
           this.border.fill.material.visible = false;
         }else{
           texture.anisotropy = 1;
-          texture.minFilter = THREE.NearestFilter;
-          texture.magFilter = THREE.NearestFilter;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
           if(!this.border.fill.material.transparent){
             this.border.fill.mesh.renderOrder = 0;
           }
@@ -742,8 +742,8 @@ export class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.anisotropy = 1;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         if(!this.highlight.edge_material.transparent){
           this.highlight.mesh.renderOrder = 0;
         }
@@ -766,8 +766,8 @@ export class GUIControl {
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.anisotropy = 1;
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         if(!this.highlight.corner_material.transparent){
           this.highlight.mesh.renderOrder = 0;
         }
@@ -791,8 +791,8 @@ export class GUIControl {
               this.highlight.fill.material.visible = false;
             }else{
               texture.anisotropy = 1;
-              texture.minFilter = THREE.NearestFilter;
-              texture.magFilter = THREE.NearestFilter;
+              texture.minFilter = THREE.LinearFilter;
+              texture.magFilter = THREE.LinearFilter;
               if(this.highlight.fill.mesh && !this.highlight.fill.material.transparent){
                 this.highlight.fill.mesh.renderOrder = 0;
               }
@@ -826,8 +826,8 @@ export class GUIControl {
           this.text.material.transparent = true;
           this.text.material.needsUpdate = true;
           texture.anisotropy = 1;
-          texture.minFilter = THREE.NearestFilter;
-          texture.magFilter = THREE.NearestFilter;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
           texture.needsUpdate = true;
           this.onFontTextureLoaded();
           this.text.material.visible = true;
@@ -1912,8 +1912,8 @@ export class GUIControl {
     let texture = this.text.texture;
     texture.flipY = false;
     texture.anisotropy = 1;
-    texture.minFilter = THREE.NearestFilter;
-    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof TLKManager.TLKStrings[this.text.strref] != 'undefined'))
