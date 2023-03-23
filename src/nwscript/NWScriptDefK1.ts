@@ -575,7 +575,10 @@ NWScriptDefK1.Actions = {
     type: 4,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return this.caller.getPosition().distanceTo( args[0].getPosition() );
+      if(this.caller instanceof ModuleObject && args[0] instanceof ModuleObject){
+        return this.caller.position.distanceTo( args[0].position );
+      }
+      return -1.0;
     }
   },
   42:{
@@ -1755,7 +1758,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(args[0] instanceof ModuleObject && args[1] instanceof ModuleObject){
-        return args[0].getPosition().distanceTo( args[1].getPosition() );
+        return args[0].position.distanceTo( args[1].position );
       }else{
         return 0.00;
       }
