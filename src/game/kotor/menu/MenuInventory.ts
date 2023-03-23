@@ -56,8 +56,6 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
-      
-
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
@@ -71,8 +69,8 @@ export class MenuInventory extends GameMenu {
 
   UpdateSelected(){
     if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION.clearItems();
-      this.LB_DESCRIPTION.addItem(this.selected.getDescription());
+      this.LB_DESCRIPTION?.clearItems();
+      this.LB_DESCRIPTION?.addItem(this.selected.getDescription());
     }
   }
 
@@ -86,29 +84,31 @@ export class MenuInventory extends GameMenu {
       this.LB_ITEMS.addItem(inv[i]);
     }
     TextureLoader.LoadQueue();
-    this['BTN_CHANGE1'].hide();
-    this['BTN_CHANGE2'].hide();
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
     let currentPC = PartyManager.party[0];
     if (currentPC) {
-      this.LBL_VIT.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
-      this.LBL_DEF.setText(currentPC.getAC());
+      this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
+      this.LBL_DEF?.setText(currentPC.getAC());
     }
     this.LBL_CREDITS_VALUE.setText(PartyManager.Gold);
 
     let btn_change: GUIControl;
     for (let i = 0; i < PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
-      let partyMember = PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
-      if (!i) {
-        if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
-          this.LBL_PORT.setFillTextureName(portrait.baseresref);
-        }
-      } else {
-        btn_change.show();
-        if (btn_change.getFillTextureName() != portrait.baseresref) {
-          btn_change.setFillTextureName(portrait.baseresref);
+      if(btn_change){
+        let partyMember = PartyManager.party[i];
+        let portraitId = partyMember.getPortraitId();
+        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        if (!i) {
+          if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
+            this.LBL_PORT.setFillTextureName(portrait.baseresref);
+          }
+        } else {
+          btn_change.show();
+          if (btn_change.getFillTextureName() != portrait.baseresref) {
+            btn_change.setFillTextureName(portrait.baseresref);
+          }
         }
       }
     }

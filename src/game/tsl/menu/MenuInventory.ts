@@ -8,6 +8,7 @@ import { TextureLoader } from "../../../loaders/TextureLoader";
 import { InventoryManager } from "../../../managers/InventoryManager";
 import { PartyManager } from "../../../managers/PartyManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { ModuleItem } from "../../../module";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
 
@@ -50,41 +51,25 @@ export class MenuInventory extends K1_MenuInventory {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_EXIT;
+
+      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+        this.selected = item;
+        this.UpdateSelected();
+      }
+
+      this.LB_ITEMS.padding = 5;
+      this.LB_ITEMS.offset.x = 0;
       resolve();
     });
   }
 
   Show() {
     super.Show();
-    this.LB_ITEMS.clearItems();
-    let inv = InventoryManager.getNonQuestInventory();
-    for (let i = 0; i < inv.length; i++) {
-      this.LB_ITEMS.addItem(inv[i]);
-    }
-    TextureLoader.LoadQueue();
-    this['BTN_CHANGE1'].hide();
-    this['BTN_CHANGE2'].hide();
-    for (let i = 0; i < PartyManager.party.length; i++) {
-      let partyMember = PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
-      if (!i) {
-        if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
-          this.LBL_PORT.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            this.LBL_PORT.setFillTexture(texture);
-          });
-        }
-      } else {
-        this.getControlByName('BTN_CHANGE' + i).show();
-        if (this.getControlByName('BTN_CHANGE' + i).getFillTextureName() != portrait.baseresref) {
-          this.getControlByName('BTN_CHANGE' + i).setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
-            this.getControlByName('BTN_CHANGE' + i).setFillTexture(texture);
-          });
-        }
-      }
-    }
   }
   
 }
