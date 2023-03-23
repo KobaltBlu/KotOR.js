@@ -912,10 +912,13 @@ export class ModuleObject {
   }
 
   getName(): any {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
+    return '';
   }
+
   getRace(): any {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
+    return 0;
   }
 
   addItem(template: GFFObject|ModuleItem){
@@ -1028,11 +1031,11 @@ export class ModuleObject {
   }
   
   resetExcitedDuration() {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
   }
 
   setCommadable(arg0: any) {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
   }
 
   damage(amount = 0, oAttacker?: ModuleObject){
@@ -2018,19 +2021,19 @@ export class ModuleObject {
   }
 
   use(object: ModuleObject){
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
   }
 
   attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag, target);
   }
   
   setCommandable(arg0: boolean) {
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
   }
 
   PlaySoundSet(ssfType: SSFObjectType){
-    throw new Error("Method not implemented.");
+    console.warn("Method not implemented.", this.tag);
   }
 
 
