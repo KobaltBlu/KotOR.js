@@ -24,6 +24,7 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ShaderManager } from "../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";
+import { GUIControlColors } from "../interface/gui/GUIControlColors";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -40,24 +41,20 @@ export class GUIControl {
     return;
   }
   
-  static colors = {
-    normal: {
-      r: 0, 
-      g: 0, 
-      b: 0
-    },
-    hover: {
-      r: 0.9296875, 
-      g: 1, 
-      b: 0.9296875
-    }
+  static COLORS: GUIControlColors = {
+    BORDER: new THREE.Color(1, 1, 1),
+    BORDER_HOVER: new THREE.Color(1, 1, 1),
+    BORDER_HIGHLIGHT: new THREE.Color(1, 1, 1),
+    BORDER_HIGHLIGHT_HOVER: new THREE.Color(1, 1, 1),
+    TEXT: new THREE.Color(1, 1, 1),
+    TEXT_HIGHLIGHT: new THREE.Color(1, 1, 1),
   };
 
   id: number = 0;
   name: string;
   menu: GameMenu;
   control: GFFStruct;
-  parent: GUIControl|undefined;
+  parent: GUIControl;
   scale: boolean;
   iniProperty: string = "";
   autoCalculatePosition: boolean = true;
@@ -1474,17 +1471,23 @@ export class GUIControl {
 
     return {
       top: top,
-      left: left + this.border.dimension,
-      width: this.extent.width,
-      height: this.extent.height
+      left: left,// + this.border.dimension,
+      width: this.extent.width - this.border.dimension,
+      height: this.extent.height - this.border.dimension
     };
 
   }
 
   getInnerSize(){
+    let width = this.extent.width - this.border.dimension;
+    if(width < this.border.dimension) width = this.border.dimension;
+
+    let height = this.extent.height - this.border.dimension;
+    if(height < this.border.dimension) height = this.border.dimension;
+
     return {
-      width: this.extent.width - this.border.dimension,// + (this.padding * 2),
-      height: this.extent.height - this.border.dimension// + (this.padding * 2)
+      width: width,
+      height: height
     };
   }
 
@@ -1503,7 +1506,12 @@ export class GUIControl {
     let inner = this.getInnerSize();
     //console.log('size', extent, inner);
 
-    let width = inner.width - this.border.dimension;
+    let shrinkWidth = 0;
+    if(this instanceof GUIListBox){
+      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    }
+
+    let width = inner.width - this.border.dimension - shrinkWidth;
     let height = inner.height - this.border.dimension;
 
     if(width < 0){
@@ -1516,7 +1524,7 @@ export class GUIControl {
 
     return {
       top: extent.top, 
-      left: extent.left, 
+      left: extent.left - shrinkWidth/2, 
       width: width,
       height: height
     };
@@ -1539,22 +1547,27 @@ export class GUIControl {
   }
 
   getBorderExtent(side: string){
-    let extent = this.getControlExtent();
+    // let extent = this.getControlExtent();
     let inner = this.getInnerSize();
 
     let top = 0, left = 0, width = 0, height = 0;
 
+    let shrinkWidth = 0;
+    if(this instanceof GUIListBox){
+      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    }
+
     switch(side){
       case 'top':
         top = -(inner.height/2); 
-        left = 0; 
-        width = inner.width - (this.getBorderSize());
+        left =  -shrinkWidth/2; 
+        width = inner.width - (this.getBorderSize()) - shrinkWidth;
         height = this.getBorderSize();
       break;
       case 'bottom':
         top = (inner.height/2); 
-        left = 0; 
-        width = inner.width - (this.getBorderSize());
+        left = -shrinkWidth/2; 
+        width = inner.width - (this.getBorderSize()) - shrinkWidth;
         height = this.getBorderSize();
       break;
       case 'left':
@@ -1565,7 +1578,7 @@ export class GUIControl {
       break;
       case 'right':
         top = 0; 
-        left = (inner.width/2); 
+        left = (inner.width/2) - shrinkWidth; 
         width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
         height = this.getBorderSize();
       break;
@@ -1577,7 +1590,7 @@ export class GUIControl {
       break;
       case 'topRight':
         top = (inner.height/2); 
-        left = (inner.width/2); 
+        left = (inner.width/2) - shrinkWidth; 
         width = this.getBorderSize();
         height = this.getBorderSize();
       break;
@@ -1589,7 +1602,7 @@ export class GUIControl {
       break;
       case 'bottomRight':
         top = -((inner.height/2)); 
-        left = ((inner.width / 2)); 
+        left = ((inner.width / 2)) - shrinkWidth; 
         width = this.getBorderSize();
         height = this.getBorderSize();
       break;
@@ -1615,20 +1628,26 @@ export class GUIControl {
   getHighlightExtent(side: string){
     let extent = this.getControlExtent();
     let inner = this.getInnerSize();
+
+    let shrinkWidth = 0;
+    if(this instanceof GUIListBox){
+      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    }
+
     switch(side){
       case 'top':
         return {
           top: -( (inner.height/2) ), 
-          left: 0, 
-          width: inner.width - (this.getHightlightSize()),
+          left: -shrinkWidth/2,
+          width: inner.width - (this.getHightlightSize()) - shrinkWidth,
           height: this.getHightlightSize()
         };
       break;
       case 'bottom':
         return {
           top: (inner.height/2), 
-          left: 0, 
-          width: inner.width - (this.getHightlightSize()),
+          left: -shrinkWidth/2, 
+          width: inner.width - (this.getHightlightSize()) - shrinkWidth,
           height: this.getHightlightSize()
         };
       break;
@@ -1659,7 +1678,7 @@ export class GUIControl {
       case 'topRight':
         return {
           top: (inner.height/2), 
-          left: (inner.width/2), 
+          left: (inner.width/2) - shrinkWidth, 
           width: this.getHightlightSize(),
           height: this.getHightlightSize()
         };
@@ -1675,7 +1694,7 @@ export class GUIControl {
       case 'bottomRight':
         return {
           top: -((inner.height/2)), 
-          left: ((inner.width / 2)), 
+          left: ((inner.width / 2)) - shrinkWidth, 
           width: this.getHightlightSize(),
           height: this.getHightlightSize()
         };
@@ -1690,6 +1709,12 @@ export class GUIControl {
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
       this.border.fill.mesh.position.z = this.zOffset;
+
+      let shrinkWidth = 0;
+      if(this instanceof GUIListBox){
+        shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+      }
+      this.border.fill.mesh.position.x = -shrinkWidth/2;
     }
   }
 
