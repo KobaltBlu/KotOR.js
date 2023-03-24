@@ -99,8 +99,8 @@ export class GameMenu {
             this.tGuiPanel.widget.add(this.backgroundSprite);
           }
           
-          panelControl.position.x = 0;//tGuiPanel.extent.left - ( (jQuery(window).innerWidth() - tGuiPanel.extent.width) / 2 );
-          panelControl.position.y = 0;//-tGuiPanel.extent.top + ( (jQuery(window).innerHeight() - tGuiPanel.extent.height) / 2 );
+          panelControl.position.x = 0;
+          panelControl.position.y = 0;
   
           //This auto assigns references for the controls to the menu object.
           //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
