@@ -34,14 +34,17 @@ export class GUIScrollBar extends GUIControl{
   thumb: THREE.Mesh<any, any>;
   inner_box: any;
 
+  arrowSize: number = 16;
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
 
     this.scrollPos = 0;
     this.scrollMax = 1;
     this.mouseOffset = {x: 0, y: 0};
+    this.arrowSize = this.extent.width;
 
-    this.extent.height -= (16*2);
+    this.extent.height -= (this.arrowSize + this.border.dimension) * 2;
 
     this.arrowTex = undefined;
 
@@ -58,11 +61,11 @@ export class GUIScrollBar extends GUIControl{
 
           this.widget.add(this.upArrow);
           this.upArrow.name = 'SCROLLBAR up arrow';
-          this.upArrow.scale.x = this.extent.width;
-          this.upArrow.scale.y = this.extent.width;
+          this.upArrow.scale.x = this.arrowSize;
+          this.upArrow.scale.y = this.arrowSize;
           this.upArrow.position.z = 5;
 
-          this.upArrow.position.y = this.extent.height/2 + 16/2;
+          this.upArrow.position.y = this.extent.height/2 + this.arrowSize/2;
           this.upArrow.userData.worldPosition = new THREE.Vector3();
 
           this.upArrowMaterial.transparent = true;
@@ -93,10 +96,10 @@ export class GUIScrollBar extends GUIControl{
 
           this.widget.add(this.downArrow);
           this.downArrow.name = 'SCROLLBAR up arrow';
-          this.downArrow.scale.x = this.extent.width;
-          this.downArrow.scale.y = this.extent.width;
+          this.downArrow.scale.x = this.arrowSize;
+          this.downArrow.scale.y = this.arrowSize;
           this.downArrow.position.z = 5;
-          this.downArrow.position.y = -(this.extent.height/2 + 16/2);
+          this.downArrow.position.y = -(this.extent.height/2 + this.arrowSize/2);
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
 
@@ -328,18 +331,11 @@ export class GUIScrollBar extends GUIControl{
       this.list.scroll = Math.floor(this.list.maxScroll * this.scrollPos) || 0;
       this.list.updateList();
 
-      let scrollThumbOffset = (this.extent.height - this.thumb.scale.y)
+      let scrollThumbOffset = (this.extent.height - this.thumb.scale.y) - (this.border.dimension*2);
       this.thumb.position.y = scrollThumbOffset/2 - (scrollThumbOffset * this.list.scroll / this.list.maxScroll) || 0;
 
     }
 
-  }
-
-  getInnerSize2(){
-    return {
-      width: this.extent.width - 8,// + (this.padding * 2),
-      height: this.extent.height - 8// + (this.padding * 2)
-    };
   }
 
   calculatePosition(){
@@ -362,9 +358,9 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.list){
       if(this.list.isScrollBarLeft()){
-        this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset) + this.border.dimension/2, 0);
+        this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset), 0);
       }else{
-        this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset) + this.border.dimension/2, 0);
+        this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset), 0);
       }      
     }else{
       this.anchorOffset.set(0, 0);

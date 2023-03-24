@@ -2102,29 +2102,35 @@ export class GUIControl {
 
     let horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
     let vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
+    
+    const innerSize = this.getInnerSize()
 
     switch(horizontal){
       case GUIControlAlignment.HorizontalLeft:
-        this.widget.userData.text.position.x = -(this.extent.width/2 - size.x/2) - size.x/2;
+        this.widget.userData.text.position.x = -(innerSize.width/2 - size.x/2) - size.x/2;
       break;
       case GUIControlAlignment.HorizontalCenter:
         this.widget.userData.text.position.x = -size.x/2;
       break;
       case GUIControlAlignment.HorizontalRight:
-        this.widget.userData.text.position.x = (this.extent.width/2 - size.x/2) - size.x/2;
+        this.widget.userData.text.position.x = (innerSize.width/2 - size.x/2) - size.x/2;
       break;
     }
 
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (this.extent.height/2 - size.y/2) + size.y/2;
+        this.widget.userData.text.position.y = (innerSize.height/2 - size.y/2) + size.y/2;
       break;
       case GUIControlAlignment.VerticalCenter:
         this.widget.userData.text.position.y = size.y/2;
       break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(this.extent.height/2 - size.y/2) + size.y/2;
+        this.widget.userData.text.position.y = -(innerSize.height/2 - size.y/2) + size.y/2;
       break;
+    }
+
+    if(this.parent instanceof GUIListBox){
+      // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
     }
     
   }

@@ -28,7 +28,7 @@ export class GUIListBox extends GUIControl {
   _scrollbar: GFFStruct;
   itemGroup: THREE.Group;
   scene: THREE.Scene;
-  scrollbar: any;
+  scrollbar: GUIScrollBar;
   scrollWrapper: THREE.Group;
   width: number;
   height: number;
@@ -69,6 +69,7 @@ export class GUIListBox extends GUIControl {
 
     this.itemGroup = new THREE.Group();
     this.itemGroup.name = 'ListItems';
+    this.itemGroup.position.set(this.border.inneroffset || 0, -this.border.inneroffsety || 0, 0)
     //this.widget.add(this.itemGroup);
 
     this.scene = new THREE.Scene();
@@ -609,5 +610,15 @@ GUIListBox.InitTextures = function(){
         GUIListBox.hexTextures.set(texture?.name, texture);
       });
     }
+  }else{
+    TextureLoader.Load('uibit_eqp_itm1', (texture: OdysseyTexture) => {
+      GUIListBox.hexTextures.set(texture?.name, texture);
+    });
+    TextureLoader.Load('uibit_eqp_itm2', (texture: OdysseyTexture) => {
+      GUIListBox.hexTextures.set(texture?.name, texture);
+    });
+    TextureLoader.Load('uibit_eqp_itm3', (texture: OdysseyTexture) => {
+      GUIListBox.hexTextures.set(texture?.name, texture);
+    });
   }
 }
