@@ -103,6 +103,8 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
 
   app_profile = await getProfile();
   KotOR.ApplicationProfile.InitEnvironment(app_profile);
+
+  document.title = `${app_profile?.full_name ? app_profile?.full_name : 'N/A' }`;
   
   switch(app_profile.launch.args.gameChoice){
     case 2:
