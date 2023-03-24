@@ -30,7 +30,7 @@
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "dxt-js": "^0.0.3",
-    "electron": "^21.4.3",
+    "electron": "^23.2.0",
     "escodegen": "^2.0.0",
     "esprima": "^4.0.1",
     "file-loader": "^6.2.0",
