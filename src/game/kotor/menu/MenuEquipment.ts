@@ -81,7 +81,7 @@ export class MenuEquipment extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      this.LB_ITEMS.offset.x = 0;
+      // this.LB_ITEMS.offset.x = 0;
       
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();

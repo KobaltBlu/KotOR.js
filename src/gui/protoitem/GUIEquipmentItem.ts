@@ -1,12 +1,15 @@
-import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "..";
-import { GameEngineType } from "../../enums/engine/GameEngineType";
+import { GUIButton, GUIListBox, GUIProtoItem } from "..";
 import { GameState } from "../../GameState";
+import { TextureType } from "../../enums/loaders/TextureType";
 import { TextureLoader } from "../../loaders/TextureLoader";
 import { GFFStruct } from "../../resource/GFFStruct";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
+import { GUIControl } from "../GUIControl";
+import { GameMenu } from "../GameMenu";
 import * as THREE from "three";
 
-export class GUIInventoryItem extends GUIProtoItem {
+
+export class GUIEquipmentItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -21,35 +24,23 @@ export class GUIInventoryItem extends GUIProtoItem {
     try{
       super.createControl();
       //Create the actual control elements below
+      let button = new GUIButton(this.menu, this.control, this, this.scale);
+      button.extent.width = 190;
+      button.text.text = this.node.getName();
+      button.autoCalculatePosition = false;
+      this.children.push(button);
 
-      const spacing = 5;
-      const protoWidth = this.extent.width;
-      const protoHeight = this.extent.height;
-      const iconWidth = this.extent.height;
-      const iconHeight = this.extent.height;
-
-      const labelWidth = protoWidth - iconWidth - this.parent.border.inneroffset;
-
-      //Label
-      const buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonLabel.extent.left = 0;
-      buttonLabel.extent.width = labelWidth;
-      buttonLabel.text.text = this.node.getName();
-      buttonLabel.autoCalculatePosition = false;
-      this.children.push(buttonLabel);
-
-      const _buttonWidget = buttonLabel.createControl();
-      _buttonWidget.position.x = (protoWidth - buttonLabel.extent.width) / 2;
+      let _buttonWidget = button.createControl();
+      _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
-      //Icon
-      const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+      let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
       buttonIcon.disableTextAlignment();
-      buttonIcon.extent.width = iconWidth;
-      buttonIcon.extent.height = iconHeight;
+      buttonIcon.extent.width = 55;
+      buttonIcon.extent.height = 55;
       buttonIcon.extent.top = 0;
       buttonIcon.extent.left = 0;
       buttonIcon.disableBorder();
@@ -58,8 +49,8 @@ export class GUIInventoryItem extends GUIProtoItem {
       buttonIcon.autoCalculatePosition = false;
       this.children.push(buttonIcon);
 
-      const _buttonIconWidget = buttonIcon.createControl();
-      _buttonIconWidget.position.x = -(protoWidth/2 - buttonIcon.extent.width/2);
+      let _buttonIconWidget = buttonIcon.createControl();
+      _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
 
@@ -76,40 +67,39 @@ export class GUIInventoryItem extends GUIProtoItem {
 
       this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.widget.userData.iconMaterial.transparent = true;
+      this.widget.userData.iconMaterial.visible = false;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
       //console.log(this.node.getIcon());
-      TextureLoader.Load(this.node.getIcon(), (texture: OdysseyTexture) => {
-        if(texture){
-          this.widget.userData.iconMaterial.map = texture;
-          this.widget.userData.iconMaterial.needsUpdate = true;
-        }
+      TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        this.widget.userData.iconMaterial.visible = true;
       });
       
       this.widget.userData.spriteGroup = new THREE.Group();
-      //this.widget.spriteGroup.position.x = -(protoWidth/2)-(52/2); //HACK
+      //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
       //this.widget.spriteGroup.position.y -= 4;
-      this.widget.userData.iconSprite.scale.x = iconWidth * 0.95;
-      this.widget.userData.iconSprite.scale.y = iconHeight * 0.95;
-      this.widget.userData.iconSprite.position.z = 2;
+      this.widget.userData.iconSprite.scale.x = 52;
+      this.widget.userData.iconSprite.scale.y = 52;
+      this.widget.userData.iconSprite.position.z = 1;
 
       this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.widget.userData.hexMaterial.transparent = true;
       this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
-      this.widget.userData.hexSprite.scale.x = 
-        this.widget.userData.hexSprite.scale.y = iconWidth;
+      this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 64;
       this.widget.userData.hexSprite.position.z = 1;
 
-      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);  
+      if(GameState.GameKey != 'TSL')
+        this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
+        
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
       if(this.node.getStackSize() >= 100){
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_7' : 'uibit_eqp_itm3');
+        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_7');
         this.widget.userData.hexMaterial.needsUpdate = true;
       }else if(this.node.getStackSize() > 1){
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_6' : 'uibit_eqp_itm2');
+        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_6');
         this.widget.userData.hexMaterial.needsUpdate = true;
       }else{
-        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_3' : 'uibit_eqp_itm1');
+        this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_3');
         this.widget.userData.hexMaterial.needsUpdate = true;
       }
 
@@ -122,16 +112,16 @@ export class GUIInventoryItem extends GUIProtoItem {
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
-          buttonLabel.showHighlight();
-          buttonLabel.hideBorder();
+          button.showHighlight();
+          button.hideBorder();
           this.widget.userData.hexMaterial.color.setRGB(1, 1, 0);
-          buttonLabel.setHighlightColor(1, 1, 0);
-          buttonLabel.pulsing = true;
+          button.setHighlightColor(1, 1, 0);
+          button.pulsing = true;
           buttonIcon.pulsing = true;
 
-          buttonLabel.text.color.setRGB(1, 1, 0);
-          buttonLabel.text.material.uniforms.diffuse.value = buttonLabel.text.color;
-          buttonLabel.text.material.needsUpdate = true;
+          button.text.color.setRGB(1, 1, 0);
+          button.text.material.uniforms.diffuse.value = button.text.color;
+          button.text.material.needsUpdate = true;
         }else{
           this.hideHighlight();
           this.showBorder();
@@ -140,16 +130,16 @@ export class GUIInventoryItem extends GUIProtoItem {
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
   
-          buttonLabel.hideHighlight();
-          buttonLabel.showBorder();
+          button.hideHighlight();
+          button.showBorder();
           this.widget.userData.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
-          buttonLabel.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
-          buttonLabel.pulsing = false;
+          button.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
+          button.pulsing = false;
           buttonIcon.pulsing = false;
 
-          buttonLabel.text.color.setRGB(0, 0.658824, 0.980392);
-          buttonLabel.text.material.uniforms.diffuse.value = buttonLabel.text.color;
-          buttonLabel.text.material.needsUpdate = true;
+          button.text.color.setRGB(0, 0.658824, 0.980392);
+          button.text.material.uniforms.diffuse.value = button.text.color;
+          button.text.material.needsUpdate = true;
         }
       };
       this.onSelect.call(this);

@@ -9,12 +9,6 @@ import { InventoryManager } from "../../../managers/InventoryManager";
 import { PartyManager } from "../../../managers/PartyManager";
 import { ModuleItem } from "../../../module";
 import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
-import * as THREE from "three";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
@@ -88,7 +82,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      this.LB_ITEMS.offset.x = 0;
+      // this.LB_ITEMS.offset.x = 0;
       
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
