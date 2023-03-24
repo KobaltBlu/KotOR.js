@@ -19,8 +19,6 @@
       "@types/wicg-file-system-access",
       "node",
       "offscreencanvas",
-      "jquery",
-      "jqueryui",
     ],
     "lib": [
       "ESNext",

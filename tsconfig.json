@@ -21,8 +21,6 @@
       "@types/wicg-file-system-access",
       "node",
       "offscreencanvas",
-      "jquery",
-      "jqueryui",
     ],
     "lib": [
       "ESNext",
@@ -34,7 +32,5 @@
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],
-    "jquerylayout":["src/types/jquery.layout"],
-    "jquerypane":["src/types/jquery.pane"],
   }
 }

@@ -180,8 +180,6 @@ const launcherConfig = (name, color) => ({
     // https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-      $: "jquery",
-      jQuery: "jquery",
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -303,8 +301,6 @@ const gameConfig = (name, color) => ({
     // https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({
       // Buffer: ['buffer', 'Buffer'],
-      // $: "jquery",
-      // jQuery: "jquery"
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -438,9 +434,6 @@ const forgeConfig = (name, color) => ({
     // https://github.com/webpack/changelog-v5/issues/10
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-      // "$":"jquery",
-      // "jQuery":"jquery",
-      // "window.jQuery":"jquery"
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
