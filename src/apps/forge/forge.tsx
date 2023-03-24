@@ -34,10 +34,6 @@ const loadReactApplication = () => {
   })();
 }
 
-const loadJQueryApplication = () => {
-
-};
-
 ( async () => {
   await KotOR.ConfigClient.Init();
   const getProfile = () => {
