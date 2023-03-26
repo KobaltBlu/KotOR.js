@@ -2462,7 +2462,7 @@ NWScriptDefK1.Actions = {
         console.log('ActionStartConversation', args, this.caller);
         //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
         //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
-        args[0].actionDialogObject( this.caller, args[1], true );
+        this.caller.actionDialogObject( args[0], args[1], true );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
         //console.log(args, this.caller);
