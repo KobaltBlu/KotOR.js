@@ -11,7 +11,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ActionParameter } from "./ActionParameter";
 
 export class Action {
-  type: number;
+  type: ActionType;
   actionId: number = -1;
   groupId: number = -1;
   owner: ModuleObject;
@@ -25,7 +25,7 @@ export class Action {
   queue: ActionQueue;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    this.type = 0;
+    this.type = ActionType.ActionInvalid;
     this.groupId = groupId;
     this.actionId = actionId;
 
