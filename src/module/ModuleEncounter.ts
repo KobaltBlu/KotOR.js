@@ -183,7 +183,7 @@ export class ModuleEncounter extends ModuleObject {
   Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ute'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
@@ -453,7 +453,7 @@ export class ModuleEncounter extends ModuleObject {
 
   save(){
     let gff = new GFFObject();
-    gff.FileType = 'UTT ';
+    gff.FileType = 'UTE ';
 
     let actionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(this.commandable);
