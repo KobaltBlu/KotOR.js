@@ -100,7 +100,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if(sTag == ''){
+    if(sTag == '' || sTag == 'player'){
       return GameState.player;
     }else if(results.length){
       return results[iNum];
