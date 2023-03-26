@@ -93,7 +93,7 @@ export class ActionMoveToPoint extends Action {
 
           this.owner.AxisFront.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
-          this.owner.walk = !run;
+          // this.owner.walk = !run;
           this.owner.animState = run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING;
         }else{
           this.owner.computedPath.points.shift();

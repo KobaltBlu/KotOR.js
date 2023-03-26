@@ -2841,6 +2841,13 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  isWalking(){
+    if(this.action && this.action.type == ActionType.ActionMoveToPoint){
+      return !this.action.getParameter(5) ? true : false;
+    }
+    return this.walk;
+  }
+
   getRunSpeed(){
     if(this.getWalkRateId() == 7){
       return parseFloat(this.getAppearance().rundist)
@@ -2862,7 +2869,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getMovementSpeed(){
-    return (this.walk ? this.getWalkSpeed() : this.getRunSpeed()) * this.movementSpeed;
+    return (this.isWalking() ? this.getWalkSpeed() : this.getRunSpeed()) * this.movementSpeed;
   }
 
   getHitDistance(){
