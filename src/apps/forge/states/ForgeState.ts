@@ -478,14 +478,18 @@ export class ForgeState {
       for(let i = 0; i < action.args.length; i++){
         const arg = action.args[i];
         const def_arg = action_definition.arguments[i];
-        // if(i > 0) args += ', ';
-        if(def_arg.value){
-          const value = arg_value_parser(def_arg.value);
-          args.push(`\${${(i+1)}:${arg} ${def_arg.name} = ${value}}`);
-          args2.push(`${arg} ${def_arg.name} = ${value}`);
+        if(def_arg){
+          // if(i > 0) args += ', ';
+          if(def_arg.value){
+            const value = arg_value_parser(def_arg.value);
+            args.push(`\${${(i+1)}:${arg} ${def_arg.name} = ${value}}`);
+            args2.push(`${arg} ${def_arg.name} = ${value}`);
+          }else{
+            args.push(`\${${(i+1)}:${arg} ${def_arg.name}}`);
+            args2.push(`${arg} ${def_arg.name}`);
+          }
         }else{
-          args.push(`\${${(i+1)}:${arg} ${def_arg.name}}`);
-          args2.push(`${arg} ${def_arg.name}`);
+          console.warn('invalid argument', i, action_definition)
         }
       }
       
@@ -581,11 +585,15 @@ export class ForgeState {
               const arg = action[1].args[i];
               const def_arg = function_definition.arguments[i];
               if(i > 0) args += ', ';
-              if(def_arg.value){
-                const value = arg_value_parser(def_arg.value);
-                args += `${arg} ${def_arg.name} = ${value}`;
+              if(def_arg){
+                if(def_arg.value){
+                  const value = arg_value_parser(def_arg.value);
+                  args += `${arg} ${def_arg.name} = ${value}`;
+                }else{
+                  args += `${arg} ${def_arg.name}`;
+                }
               }else{
-                args += `${arg} ${def_arg.name}`;
+                console.warn('invalid argument', i, function_definition)
               }
             }
             return {
@@ -649,11 +657,15 @@ export class ForgeState {
               let args: any[] = [];
               for(let i = 0; i < l_function.arguments.length; i++){
                 const def_arg = l_function.arguments[i];
-                if(def_arg.value){
-                  const value = arg_value_parser(def_arg.value);
-                  args.push(`${def_arg.datatype.value} ${def_arg.name} = ${value}`);
+                if(def_arg){
+                  if(def_arg.value){
+                    const value = arg_value_parser(def_arg.value);
+                    args.push(`${def_arg.datatype.value} ${def_arg.name} = ${value}`);
+                  }else{
+                    args.push(`${def_arg.datatype.value} ${def_arg.name}`);
+                  }
                 }else{
-                  args.push(`${def_arg.datatype.value} ${def_arg.name}`);
+                  console.warn('invalid argument', i, l_function)
                 }
               }
               return {
