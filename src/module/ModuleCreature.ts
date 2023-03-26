@@ -1137,6 +1137,34 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  randomWalk(){
+
+    if(this.room && this.room.collisionData.walkmesh){
+      let run = false;
+      let maxDistance = 1.5
+      let position = new THREE.Vector3();
+
+      const faces = this.room.collisionData.walkmesh.walkableFaces;
+      const face = faces[Math.floor(Math.random()*faces.length)];
+      if(face){
+        position.copy(face.centroid);
+        let action = new ActionMoveToPoint();
+        action.setParameter(0, ActionParameterType.FLOAT, position.x);
+        action.setParameter(1, ActionParameterType.FLOAT, position.y);
+        action.setParameter(2, ActionParameterType.FLOAT, position.z);
+        action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
+        action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
+        action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
+        action.setParameter(7, ActionParameterType.INT, 0);
+        action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+        this.actionQueue.add(action);
+      }
+
+    }
+
+  }
+
   moveToLocation(target: ModuleObject|EngineLocation, bRun = true){
 
     if(target instanceof EngineLocation || target instanceof ModuleObject){

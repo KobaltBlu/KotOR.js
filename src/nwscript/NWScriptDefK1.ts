@@ -312,6 +312,11 @@ NWScriptDefK1.Actions = {
     name: "ActionRandomWalk",
     type: 0,
     args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(this.caller instanceof ModuleCreature){
+        this.caller.randomWalk();
+      }
+    }
   },
   21:{
     comment: "21: The action subject will move to lDestination.\n- lDestination: The object will move to this location.  If the location is\ninvalid or a path cannot be found to it, the command does nothing.\n- bRun: If this is TRUE, the action subject will run rather than walk\n* No return value, but if an error occurs the log file will contain\n'MoveToPoint failed.'\n",
