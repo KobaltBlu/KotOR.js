@@ -369,9 +369,11 @@ export class ModuleArea extends ModuleObject {
     switch(GameState.Mode){
       case EngineMode.DIALOG:
         pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
+
         for(let i = 0, il = this.rooms.length; i < il; i++){
           const room = this.rooms[i];
-          if(!room.hasVISObject || room.box.containsPoint(pos)){
+          const inCamera = GameState.viewportFrustum.intersectsBox(room.box);
+          if(!room.hasVISObject || room.box.containsPoint(pos) || inCamera){
             roomList.push(room);
           }
         }
