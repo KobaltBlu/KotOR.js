@@ -96,6 +96,8 @@ export class ModuleDoor extends ModuleObject {
   };
   destroyAnimationPlayed: boolean = false;
 
+  collisionDelay: number = 0;
+
   constructor ( gff = new GFFObject() ) {
     super(gff);
     this.template = gff;
@@ -557,6 +559,16 @@ export class ModuleDoor extends ModuleObject {
 
     this.updateAnimationState(delta);
 
+    if(
+      this.animStateInfo.currentAnimState != ModuleDoorAnimState.CLOSING1 &&
+      this.animStateInfo.currentAnimState != ModuleDoorAnimState.CLOSING2
+    ){
+      this.collisionDelay = 0;
+    }else{
+      this.collisionDelay -= delta;
+      if(this.collisionDelay < 0) this.collisionDelay = 0;
+    }
+
     if(this.isDead() && !this.isOpen()){
       this.openDoor(this);
     }
@@ -606,6 +618,12 @@ export class ModuleDoor extends ModuleObject {
       if(animation){
         if(currentAnimation != animation.name.toLowerCase()){
           if(!this.animStateInfo.started){
+            if(
+              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 || 
+              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING2
+            ){
+              this.collisionDelay = 0.75;
+            }
             this.animStateInfo.started = true;
             const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
             this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);

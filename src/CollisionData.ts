@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Utility } from "./utility/Utility";
 import { ConfigClient } from "./utility/ConfigClient";
 import { OdysseyFace3 } from "./three/odyssey";
+import { ModuleDoorAnimState } from "./enums/module/ModuleDoorAnimState";
 
 interface AABBFaceData {
   object: ModuleObject,
@@ -147,7 +148,8 @@ export class CollisionData {
       if(true || ConfigClient.options?.Game?.debug?.door_collision){
         for(let j = 0, jl = this.object.room.doors.length; j < jl; j++){
           obj = this.object.room.doors[j];
-          if(obj && obj.collisionData.walkmesh && !obj.isOpen()){
+          if(obj && obj.collisionData.walkmesh && !obj.isOpen() && !obj.collisionDelay
+          ){
             aabbFaces.push({
               object: obj,
               faces: obj.collisionData.walkmesh.faces
