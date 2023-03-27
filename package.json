@@ -4,11 +4,13 @@
   "description": "KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "tsc-watch --project tsconfig.electron.json --onSuccess \"electron .\"",
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
-    "electron:build": "npm run webpack:prod && electron-builder build --publish=never"
+    "electron:watch": "tsc-watch --project tsconfig.electron.json",
+    "electron:compile": "tsc --project tsconfig.electron.json",
+    "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -58,6 +60,7 @@
     "style-loader": "^3.3.1",
     "ts-jison": "^0.0.6",
     "ts-loader": "^9.4.1",
+    "tsc-watch": "^6.0.0",
     "typescript": "^4.8.4",
     "url-loader": "^4.1.1",
     "webpack": "^5.74.0",

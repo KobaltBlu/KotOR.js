@@ -1,0 +1,22 @@
+{ 
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "sourceMap": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "removeComments": false,
+    "noImplicitAny": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "electron",
+      "node",
+    ],
+    "outDir": "dist/electron"
+  },
+  "exclude": [ "node_modules" ],
+  "include": ["src/electron/index.ts", "src/electron/preload.ts"]
+}

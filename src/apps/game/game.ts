@@ -125,7 +125,7 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
     if(await KotOR.GameFileSystem.exists('chitin.key')){
       initializeApp();
     }else{
-      (window as any).electron.locate_game_directory(app_profile).then( (directory: string) => {
+      window.electron.locate_game_directory(app_profile).then( (directory: string) => {
         console.log('directory', directory);
         if(directory){
           KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory`, directory);

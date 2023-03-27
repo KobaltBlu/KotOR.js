@@ -1,22 +1,7 @@
-const { contextBridge, ipcRenderer } = require('electron');
-const fs = require('fs');
-// remote.app.allowRendererProcessReuse = false; 
-// const dxt = require('dxt');
+import { contextBridge, ipcRenderer, shell } from "electron";
+import * as fs from "fs";
 
 const query = new URLSearchParams(window.location.search);
-
-// contextBridge.exposeInMainWorld(
-//   'dxt', {
-//     kDxt1: dxt.kDxt1,
-//     kDxt5: dxt.kDxt5,
-//     decompress: (buffer, frameWidth, frameHeight, encoding) => {
-//       return dxt.decompress(Buffer.from(buffer), frameWidth, frameHeight, encoding);
-//     },
-//     compress: (buffer, frameWidth, frameHeight, encoding) => {
-//       return dxt.compress(Buffer.from(buffer), frameWidth, frameHeight, encoding); 
-//     }
-//   }
-// );
 
 contextBridge.exposeInMainWorld(
   'dialog', {
@@ -51,49 +36,49 @@ contextBridge.exposeInMainWorld(
 contextBridge.exposeInMainWorld(
   'fs', {
     open: (...args) => {
-      return fs.open(...args);
+      return (fs as any).open(...args);
     },
     close: (...args) => {
-      return fs.close(...args);
+      return (fs as any).close(...args);
     },
     read: (...args) => {
-      return fs.read(...args);
+      return (fs as any).read(...args);
     },
     readFile: (...args) => {
-      return fs.readFile(...args);
+      return (fs as any).readFile(...args);
     },
     writeFile: (...args) => {
-      return fs.writeFile(...args);
+      return (fs as any).writeFile(...args);
     },
     createReadStream: (...args) => {
-      return fs.createReadStream(...args);
+      return (fs as any).createReadStream(...args);
     },
     createWriteStream: (...args) => {
-      return fs.createWriteStream(...args);
+      return (fs as any).createWriteStream(...args);
     },
     readdir: (...args) => {
-      return fs.readdir(...args);
+      return (fs as any).readdir(...args);
     },
     mkdir: (...args) => {
-      return fs.mkdir(...args);
+      return (fs as any).mkdir(...args);
     },
     mkdirSync: (...args) => {
-      return fs.mkdirSync(...args);
+      return (fs as any).mkdirSync(...args);
     },
     rmdir: (...args) => {
-      return fs.rmdir(...args);
+      return (fs as any).rmdir(...args);
     },
     rmdirSync: (...args) => {
-      return fs.rmdirSync(...args);
+      return (fs as any).rmdirSync(...args);
     },
     stat: (...args) => {
-      return fs.stat(...args);
+      return (fs as any).stat(...args);
     },
     statSync: (...args) => {
-      return fs.statSync(...args);
+      return (fs as any).statSync(...args);
     },
     exists: (...args) => {
-      return fs.exists(...args);
+      return (fs as any).exists(...args);
     },
     constants: fs.constants
   }
@@ -104,14 +89,14 @@ contextBridge.exposeInMainWorld(
     isMac: () => {
       process.platform === 'darwin'
     },
-    minimize: () => {
+    minimize: (profile) => {
       return new Promise( (resolve, reject) => {
         ipcRenderer.invoke('win-minimize', profile).then( (response) => {
           resolve(response);
         });
       })
     },
-    maximize: () => {
+    maximize: (profile) => {
       return new Promise( (resolve, reject) => {
         ipcRenderer.invoke('win-maximize', profile).then( (response) => {
           resolve(response);
@@ -124,6 +109,12 @@ contextBridge.exposeInMainWorld(
           resolve(response);
         });
       })
-    }
+    },
+    launchProfile: (profile: any) => {
+      ipcRenderer.send('launch_profile', profile);
+    },
+    openExternal: (src, options) => {
+      shell.openExternal(src, options);
+    },
   }
 );

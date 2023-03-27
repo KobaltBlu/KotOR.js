@@ -101,9 +101,6 @@ const launcherConfig = (name, color) => ({
       './src/apps/launcher/launcher.tsx', 
       './src/apps/launcher/app.scss'
     ],
-    // preload: [
-    //   './src/launcher/preload.ts',
-    // ]
   },
   stats: {
     colors: true,
@@ -188,7 +185,6 @@ const launcherConfig = (name, color) => ({
     new CopyPlugin({
       patterns: [
         { from: "src/assets/launcher", to: "" },
-        { from: "src/apps/launcher/preload.js", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
@@ -222,9 +218,6 @@ const gameConfig = (name, color) => ({
       './src/apps/game/game.ts', 
       './src/apps/game/game.scss'
     ],
-    // preload: [
-    //   './src/apps/game/preload.ts',
-    // ]
   },
   stats: {
     colors: true,
@@ -309,7 +302,6 @@ const gameConfig = (name, color) => ({
     new CopyPlugin({
       patterns: [
         // { from: "src/assets/game", to: "" },
-        { from: "src/apps/game/preload.js", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
@@ -347,9 +339,6 @@ const forgeConfig = (name, color) => ({
     "worker-tex": [
       './src/worker/worker-tex.ts'
     ],
-    // preload: [
-    //   './src/apps/forge/preload.ts',
-    // ]
   },
   stats: {
     colors: true,
@@ -442,7 +431,6 @@ const forgeConfig = (name, color) => ({
     new CopyPlugin({
       patterns: [
         { from: "src/assets/forge", to: "" },
-        { from: "src/apps/forge/preload.js", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),

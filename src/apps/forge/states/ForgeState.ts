@@ -153,7 +153,7 @@ export class ForgeState {
         onVerified();
       }else{
         try{
-          let dir = await (window as any).dialog.locateDirectoryDialog(); 
+          let dir = await window.dialog.locateDirectoryDialog();
           if(dir){
             KotOR.ApplicationProfile.profile.directory = dir;
             onVerified();
@@ -780,7 +780,7 @@ export class ForgeState {
           let parsed = pathParse(file_path);
           let fileParts = parsed.name.split('.');
           if(parsed.ext == '.mdl'){
-            (window as any).dialog.showOpenDialog({
+            window.dialog.showOpenDialog({
               title: `Open MDX File (${fileParts[0]}.mdx)`,
               filters: [
                 {name: 'Model File', extensions: ['mdx']},

@@ -15,7 +15,7 @@ import { Launcher } from "./context/Launcher";
 
 if(window.location.origin === 'file://'){
   ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
-  ApplicationProfile.isMac = (window as any).electron.isMac();
+  ApplicationProfile.isMac = window.electron.isMac();
 }else{
   ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
   let menuTopRight = document.getElementById('launcher-menu-top-right');
@@ -121,13 +121,13 @@ const App = function() {
   const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
     // e.preventDefault();
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      (window as any).electron.minimize();
+      window.electron.minimize();
     }
   }
   const onBtnMaximize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      (window as any).electron.maximize();
+      window.electron.maximize();
     }
   }
   const onBtnClose = (e: React.MouseEvent<HTMLDivElement>) => {

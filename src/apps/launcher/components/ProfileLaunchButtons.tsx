@@ -45,7 +45,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
 
   const btnLocate = () => {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      (window as any).electron.locate_game_directory(profile).then( (directory: string) => {
+      window.electron.locate_game_directory(profile).then( (directory: string) => {
         console.log('directory', directory);
         if(directory){
           ConfigClient.set(`Profiles.${profile.key}.directory`, directory);
@@ -78,7 +78,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
       console.log('s', forgeSelectValue, clean_game_profile);
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         clean_profile.key = clean_game_profile.key;
-        (window as any).electron.launchProfile(clean_profile);
+        window.electron.launchProfile(clean_profile);
       }else{
         window.open(`/${clean_profile.launch.path}?key=${clean_game_profile.key}`);
       }
@@ -87,7 +87,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         //TODO: Add EXE/APP Support
       }else{
         if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-          (window as any).electron.launchProfile(clean_profile);
+          window.electron.launchProfile(clean_profile);
         }else{
           window.open(`/${clean_profile.launch.path}?key=${clean_profile.key}`);
         }

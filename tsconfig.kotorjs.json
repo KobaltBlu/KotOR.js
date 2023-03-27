@@ -2,7 +2,7 @@
 {
   "extends": "./tsconfig.json",
   "include": [
-    "tests/kotor.ts"
+    "src/index.d.ts"
   ],
   "compilerOptions": {
     // "noResolve": true
