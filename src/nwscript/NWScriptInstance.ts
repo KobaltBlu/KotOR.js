@@ -1,6 +1,7 @@
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
 import { ModuleObject } from "../module";
@@ -40,7 +41,7 @@ export class NWScriptInstance {
   paramString: string;
   verified: boolean;
   stack: NWScriptStack;
-  delayCommands: any[];
+  delayCommands: EventTimedEvent[] = [];
   lastSpeaker: any;
   firstLoop: boolean;
   address: any;

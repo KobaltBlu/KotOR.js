@@ -1,9 +1,10 @@
 import { GameState } from "../GameState";
+import { EventTimedEvent } from "../events";
 
 export class NWScriptSubroutine {
 
   returnAddress = -1;
-  delayCommands: any = [];
+  delayCommands: EventTimedEvent[] = [];
 
   constructor( returnAddress = -1 ){
     this.returnAddress = returnAddress;
