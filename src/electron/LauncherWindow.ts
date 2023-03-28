@@ -76,6 +76,14 @@ export class LauncherWindow {
         this.browserWindow.hide() : this.browserWindow.show();
   }
 
+  hide(){
+    if(this.browserWindow) this.browserWindow.hide();
+  }
+
+  show(){
+    if(this.browserWindow) this.browserWindow.show();
+  }
+
   send(event: string, data: any) {
     if(this.browserWindow)
       this.browserWindow.webContents.send(event, data);

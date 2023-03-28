@@ -14,6 +14,7 @@ export class WindowManager {
     if(!WindowManager.launcherWindow){
       WindowManager.launcherWindow = new LauncherWindow();
     }
+    WindowManager.launcherWindow.show();
   }
 
   static toggleLauncherWindow(){
@@ -39,12 +40,16 @@ export class WindowManager {
   }
 
   static hideLauncher(){
-
+    if(WindowManager.launcherWindow){
+      WindowManager.launcherWindow.hide();
+    }
   }
 
   static showLauncher(){
     if(!WindowManager.launcherWindow){
       WindowManager.createLauncherWindow();
+    }else{
+      WindowManager.launcherWindow.show();
     }
   }
 
@@ -117,6 +122,7 @@ export class WindowManager {
     ipcMain.on('launch_profile', (event, profile) => {
       const window = new ApplicationWindow(profile);
       WindowManager.addWindow(window);
+      WindowManager.hideLauncher();
     });
     
     ipcMain.on('launch_executable', (event, exe_path) => {

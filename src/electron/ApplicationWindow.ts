@@ -26,8 +26,19 @@ export class ApplicationWindow {
         //worldSafeExecuteJavaScript: true,
         contextIsolation: true,
         sandbox: false,
+        experimentalFeatures: true,
       }
     });
+
+    // Enable SharedArrayBuffer
+    this.browserWindow.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+        if(!details.responseHeaders) details.responseHeaders = {};
+        details.responseHeaders['Cross-Origin-Opener-Policy'] = ['same-origin'];
+        details.responseHeaders['Cross-Origin-Embedder-Policy'] = ['require-corp'];
+        callback({ responseHeaders: details.responseHeaders });
+      }
+    );
     
     this.profile = profile;
 
