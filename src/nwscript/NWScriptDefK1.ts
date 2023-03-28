@@ -5875,7 +5875,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return args[0].getAppearance()['(Row Label)'];
+      return parseInt(args[0].getAppearance().__rowlabel);
     }
   },
   525:{
@@ -7733,7 +7733,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       MenuManager.MenuGalaxyMap.Open();
-      MenuManager.MenuGalaxyMap.selectedPlanet = args[0];
+      Planetary.SetSelectedPlanet(args[0]);
     }
   },
   740:{
@@ -7778,7 +7778,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return Planetary.planets.indexOf(Planetary.current);
+      return Planetary.selectedIndex;
     }
   },
   745:{

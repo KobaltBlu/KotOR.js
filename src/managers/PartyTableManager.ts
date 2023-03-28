@@ -32,7 +32,7 @@ export class PartyTableManager {
           Planetary.SetPlanetAvailable(i,  (planetBits>>i) % 2 != 0);
         }
 
-        Planetary.SetCurrentPlanet(currentPlanet);
+        Planetary.SetSelectedPlanet(currentPlanet);
       }
 
       //Init the TutorialWindowTracker      

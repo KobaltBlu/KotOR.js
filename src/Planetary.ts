@@ -1,9 +1,11 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
+import { GameState } from "./GameState";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { TLKManager } from "./managers/TLKManager";
 import { TwoDAManager } from "./managers/TwoDAManager";
+import { OdysseyModel } from "./odyssey";
 import { GFFField } from "./resource/GFFField";
 import { GFFStruct } from "./resource/GFFStruct";
 import { TwoDAObject } from "./resource/TwoDAObject";
@@ -13,28 +15,39 @@ import { TwoDAObject } from "./resource/TwoDAObject";
  */
 
 export class Planetary {
-  static planets: any[];
-  static currentIndex: number;
-  static current: any;
+  static planets: Planet[];
+  static selectedIndex: number;
+  static selected: Planet;
 
-  static Init(){
+  static models: Map<string, OdysseyModel> = new Map();
+
+  static async Init(){
 
     Planetary.planets = [];
-    Planetary.currentIndex = -1;
+    Planetary.selectedIndex = -1;
     const planetary2DA = TwoDAManager.datatables.get('planetary');
-    Planetary.current = undefined;
+    Planetary.selected = undefined;
     let planetList = planetary2DA.rows;
     for(let i = 0; i < planetary2DA.RowCount; i++){
-      Planetary.planets.push(
-        new Planet(planetList[i])
-      )
+      const planet = new Planet(planetList[i]);
+      Planetary.planets.push(planet);
+      if(planet.model != '****'){
+        try{
+          const mdl = await GameState.ModelLoader.load(planet.model);
+          if(mdl){
+            Planetary.models.set(planet.model, mdl);
+          }
+        }catch(e){
+          console.error(e);
+        }
+      }
     }
 
   }
 
-  static SetCurrentPlanet( index = 0 ){
-    Planetary.currentIndex = index;
-    Planetary.current = Planetary.planets[index];
+  static SetSelectedPlanet( index = 0 ){
+    Planetary.selectedIndex = index;
+    Planetary.selected = Planetary.planets[index];
   }
 
   static SetPlanetAvailable(index: number, bState: boolean){
@@ -45,15 +58,19 @@ export class Planetary {
     Planetary.planets[index].selectable = bState;
   }
 
-  static GetPlanetByGUITag(sTag = ''){
+  static GetPlanetByGUITag(sTag = ''): Planet{
 
     for(let i = 0; i < Planetary.planets.length; i++){
-      if(Planetary.planets[i].guitag === sTag){
+      if(Planetary.planets[i].guitag?.toLowerCase() === sTag.toLowerCase()){
         return Planetary.planets[i];
       }
     }
 
-    return null;
+    return;
+  }
+  
+  static GetPlanetByIndex(index: number = 0): Planet {
+    return Planetary.planets[index];
   }
 
   static SaveStruct(){
@@ -70,7 +87,7 @@ export class Planetary {
       planetMask = planetMask >>> 0;
     }
     struct.AddField( new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk') ).SetValue(planetMask);
-    struct.AddField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).SetValue(Planetary.current);
+    struct.AddField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).SetValue(Planetary.selectedIndex);
 
     return struct;
   }
@@ -79,20 +96,20 @@ export class Planetary {
 
 export class Planet {
   id: number;
-  label: any;
-  name: any;
-  description: any;
-  icon: any;
-  model: any;
-  guitag: any;
+  label: string;
+  name: number;
+  description: number;
+  icon: string;
+  model: string;
+  guitag: string;
   enabled: boolean;
   selectable: boolean;
 
   constructor(_2da: any = {}){
-    this.id = parseInt(TwoDAObject.cellParser(_2da['(Row Label)']));
+    this.id = parseInt(TwoDAObject.cellParser(_2da.__rowlabel));
     this.label = TwoDAObject.cellParser(_2da.label);
-    this.name = TwoDAObject.cellParser(_2da.name);
-    this.description = TwoDAObject.cellParser(_2da.description);
+    this.name = parseInt( TwoDAObject.cellParser(_2da.name) );
+    this.description = parseInt( TwoDAObject.cellParser(_2da.description) );
     this.icon = TwoDAObject.cellParser(_2da.icon);
     this.model = TwoDAObject.cellParser(_2da.model);
     this.guitag = TwoDAObject.cellParser(_2da.guitag);
@@ -109,11 +126,11 @@ export class Planet {
     return this.label;
   }
 
-  getName(){
+  getName(): string {
     return TLKManager.TLKStrings[this.name].Value;
   }
 
-  getDescription(){
+  getDescription(): string {
     if(this.description)
       return TLKManager.TLKStrings[this.description].Value;
     else

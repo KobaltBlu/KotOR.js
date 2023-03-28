@@ -9,12 +9,18 @@ import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
-import { Planetary } from "../../../Planetary";
+import { Planet, Planetary } from "../../../Planetary";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
 /* @file
 * The MenuGalaxyMap menu class.
 */
+
+interface PlanetAnimStateInfo {
+  lastAnimState: 'zoomin'|'rotate';
+  currentAnimState: 'zoomin'|'rotate';
+  started: boolean;
+};
 
 export class MenuGalaxyMap extends GameMenu {
 
@@ -44,6 +50,15 @@ export class MenuGalaxyMap extends GameMenu {
   _3dViewModel: OdysseyModel3D;
   selectedPlanet: any;
 
+  _3dViewPlanet: LBL_3DView;
+  _3dViewPlanetModel: OdysseyModel3D;
+
+  planetModelAnimationState: PlanetAnimStateInfo = {
+    lastAnimState: undefined,
+    currentAnimState: undefined,
+    started: false
+  }
+
   constructor(){
     super();
     this.gui_resref = 'galaxymap';
@@ -58,7 +73,7 @@ export class MenuGalaxyMap extends GameMenu {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
-        Planetary.SetCurrentPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
+        Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
@@ -72,6 +87,10 @@ export class MenuGalaxyMap extends GameMenu {
 
       });
 
+      this._3dViewPlanet = new LBL_3DView();
+      this._3dViewPlanet.visible = true;
+      this._3dViewPlanet.setControl(this._3D_PlanetModel);
+
       this.script = NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
@@ -81,9 +100,7 @@ export class MenuGalaxyMap extends GameMenu {
 
         this._3dView = new LBL_3DView();
         this._3dView.visible = true;
-        (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
-        (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).transparent = false;
-
+        this._3dView.setControl(this._3D_PlanetDisplay);
         
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView
@@ -108,11 +125,52 @@ export class MenuGalaxyMap extends GameMenu {
 
   Update(delta = 0) {
     super.Update(delta);
+    this.UpdateScale();
+    this.updatePlanetView(delta);
+  }
+
+  updateGalaxyMapView(delta: number = 0){
     try {
       this._3dView.render(delta);
       (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
-      
+      console.error(e);
+    }
+  }
+
+  updatePlanetView(delta: number = 0){
+    try {
+      const planetControl = this._3D_PlanetModel;
+      const planetModel = this._3dViewPlanetModel;
+      const _3dView = this._3dViewPlanet;
+      if(planetModel){
+        const currentAnimation = planetModel.getAnimationName();
+        if(!currentAnimation){
+          if(!this.planetModelAnimationState.started){
+            this.planetModelAnimationState.started = true;
+            planetModel.playAnimation(this.planetModelAnimationState.currentAnimState, false);
+          }else{
+            if(this.planetModelAnimationState.currentAnimState == 'rotate'){
+              this.planetModelAnimationState.lastAnimState = 'zoomin';
+              this.planetModelAnimationState.currentAnimState = 'rotate';
+              this.planetModelAnimationState.started = false;
+            }else{
+              this.planetModelAnimationState.lastAnimState = 'rotate';
+              this.planetModelAnimationState.currentAnimState = 'rotate';
+              this.planetModelAnimationState.started = false;
+            }
+          }
+        }
+
+        planetModel.update(delta);
+        _3dView.camera.position.copy(planetModel.camerahook.position);
+        _3dView.camera.quaternion.copy(planetModel.camerahook.quaternion);
+      }
+
+      _3dView.render(delta);
+      (planetControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+    } catch (e: any) {
+      console.error(e);
     }
   }
 
@@ -122,39 +180,76 @@ export class MenuGalaxyMap extends GameMenu {
       let control = controls[i];
       let plnt = Planetary.GetPlanetByGUITag(control.name);
       if (plnt) {
-        if (plnt == Planetary.current) {
-          control.widget.scale.setScalar(1.25);
-        } else {
-          control.widget.scale.setScalar(1);
+        if (plnt.enabled) {
+          control.show();
+          if (plnt == Planetary.selected) {
+            control.widget.scale.setScalar(1.25);
+          } else {
+            control.widget.scale.setScalar(1);
+          }
+        }else{
+          control.hide();
         }
+      }
+    }
+  }
+
+  changePlanet(planet: Planet){
+    if(planet){
+      this.LBL_PLANETNAME.setText(planet.getName());
+      this.LBL_DESC.setText(planet.getDescription());
+      Planetary.SetSelectedPlanet(planet.getId());
+      if(Planetary.models.has(planet.model)){
+        this._3dViewPlanet.removeModel(this._3dViewPlanetModel);
+        const mdl = Planetary.models.get(planet.model);
+        OdysseyModel3D.FromMDL(mdl, {
+          context: this._3dView
+        }).then((model: OdysseyModel3D) => {
+          this._3dViewPlanetModel = model;
+          
+          this._3dViewPlanet.camera.position.copy(model.camerahook.position);
+          this._3dViewPlanet.camera.quaternion.copy(model.camerahook.quaternion);
+
+          this._3dViewPlanet.addModel(this._3dViewPlanetModel);
+          this.planetModelAnimationState.started = false;
+          this.planetModelAnimationState.lastAnimState = undefined;
+          this.planetModelAnimationState.currentAnimState = 'zoomin';
+
+          TextureLoader.LoadQueue();
+        });
       }
     }
   }
 
   Show() {
     super.Show();
-    this.selectedPlanet = GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET');
+    Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
+    this.changePlanet(Planetary.selected);
     this.UpdateScale();
-    let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;
-    for (let i = 0; i < controls.length; i++) {
-      let control = controls[i];
-      let plnt = Planetary.GetPlanetByGUITag(control.name);
-      if (plnt) {
-        if (plnt.enabled) {
-          control.show();
-          control.disableBorder();
-          control.addEventListener('click', (e: any) => {
-            e.stopPropagation();
-            this.LBL_PLANETNAME.setText(plnt.getName());
-            this.LBL_DESC.setText(plnt.getDescription());
-            Planetary.SetCurrentPlanet(plnt.getId());
-            this.UpdateScale();
-          });
-        } else {
-          control.hide();
-          control.disableBorder();
+    const planets = Planetary.planets;
+    for (let i = 0; i < planets.length; i++) {
+      const planet = planets[i];
+      if(planet){
+        const control = this.getControlByName(planet.guitag);
+        if (control) {
           control.removeEventListener('click');
+          console.log(planet.label, planet.enabled);
+          if (planet.enabled) {
+            control.show();
+            control.disableBorder();
+            control.addEventListener('click', (e: any) => {
+              e.stopPropagation();
+              this.changePlanet(Planetary.selected);
+            });
+          } else {
+            control.hide();
+            control.disableBorder();
+          }
+        }else{
+          console.warn('invalid guitag', planet.guitag);
         }
+      }else{
+        console.warn('invalid planet index', i);
       }
     }
   }

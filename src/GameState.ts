@@ -542,8 +542,6 @@ export class GameState implements EngineContext {
     GameState.lightManager.init(GameState);
     GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
-    Planetary.Init();
-
     GameState.audioEmitter = new AudioEmitter({
       engine: GameState.audioEngine,
       props: {
@@ -574,45 +572,51 @@ export class GameState implements EngineContext {
     GameState.State = EngineState.RUNNING;
     GameState.inMenu = false;
     GlobalVariableManager.Init();
+
     
-    console.log('SaveGames: Loading');
-    SaveGame.GetSaveGames().then( () => {
-      console.log('SaveGames: Complete');
-      
-      console.log('CursorManager: Init');
-      CursorManager.init( () => {
-        console.log('CursorManager: Complete');
-        console.log('MenuLoader: Init');
-        MenuManager.Init();
-        MenuManager.LoadGameMenus().then( () => {
-          console.log('MenuLoader: Complete');
+    console.log('Planetary: Loading');
+    Planetary.Init().then( () => {
+    
+      console.log('SaveGames: Loading');
+      SaveGame.GetSaveGames().then( () => {
+        console.log('SaveGames: Complete');
+        
+        console.log('CursorManager: Init');
+        CursorManager.init( () => {
+          console.log('CursorManager: Complete');
+          console.log('MenuLoader: Init');
+          MenuManager.Init();
+          MenuManager.LoadGameMenus().then( () => {
+            console.log('MenuLoader: Complete');
 
-          MenuManager.MenuJournal.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuInventory.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuEquipment.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuCharacter.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuMessages.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuOptions.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuMap.childMenu = MenuManager.MenuTop;
-          MenuManager.MenuAbilities.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuJournal.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuInventory.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuEquipment.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuCharacter.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuMessages.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuOptions.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuMap.childMenu = MenuManager.MenuTop;
+            MenuManager.MenuAbilities.childMenu = MenuManager.MenuTop;
 
-          //Preload fx textures
-          TextureLoader.enQueue(
-            ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
-            'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
-            'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
-            'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
-            undefined,
-            TextureType.TEXTURE
-          );
+            //Preload fx textures
+            TextureLoader.enQueue(
+              ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
+              'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
+              'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
+              'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
+              undefined,
+              TextureType.TEXTURE
+            );
 
-          TextureLoader.LoadQueue(() => {
-            GameState.Ready = true;
-            LoadingScreen.main.Hide();
-            if(GameState.OpeningMoviesComplete){
-              GameState.OnReady();
-            }
+            TextureLoader.LoadQueue(() => {
+              GameState.Ready = true;
+              LoadingScreen.main.Hide();
+              if(GameState.OpeningMoviesComplete){
+                GameState.OnReady();
+              }
+            });
           });
+
         });
 
       });
