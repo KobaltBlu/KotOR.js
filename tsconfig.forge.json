@@ -27,7 +27,7 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/forge/forge.ts", "src/types", "src/index.d.ts"],
+  "include": ["src/apps/forge/forge.ts", "src/types", "src/index.d.ts", "src/types/mux.js.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],

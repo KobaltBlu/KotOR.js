@@ -70,6 +70,7 @@ const libraryConfig = (name, color) => ({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
+        { from: "src/thirdparty", to: "thirdparty" },
       ]
     })
   ],
@@ -147,9 +148,6 @@ const launcherConfig = (name, color) => ({
               url: false
             }
           },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
           "sass-loader",
         ]
       },
@@ -264,9 +262,6 @@ const gameConfig = (name, color) => ({
               url: false
             }
           },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
           "sass-loader",
         ]
       },
@@ -339,6 +334,9 @@ const forgeConfig = (name, color) => ({
     "worker-tex": [
       './src/worker/worker-tex.ts'
     ],
+    "worker-ffmpeg": [
+      './src/worker/worker-ffmpeg.ts'
+    ],
   },
   stats: {
     colors: true,
@@ -393,9 +391,6 @@ const forgeConfig = (name, color) => ({
               url: false
             }
           },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
           "sass-loader",
         ]
       },

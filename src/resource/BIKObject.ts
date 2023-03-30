@@ -445,7 +445,7 @@ export class BIKObject {
   toFloat32Array(channel: Uint8Array){
     if(channel instanceof Uint8Array){
       let i, l = channel.length/4;
-      let buffer = new Buffer(channel);
+      let buffer = Buffer.from(channel);
       let float32 = new Float32Array(l);
 
       for(i = 0; i < l; i++){

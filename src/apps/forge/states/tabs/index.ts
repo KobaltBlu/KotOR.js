@@ -21,3 +21,5 @@ export * from "./TabScriptInspectorState";
 
 export * from "./tab-lip-editor/TabLIPEditorState";
 export * from "./tab-lip-editor/TabLIPEditorOptionsState";
+
+export * from "./TabVideoPlayerState";
