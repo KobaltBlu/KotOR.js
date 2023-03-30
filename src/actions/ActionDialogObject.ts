@@ -25,12 +25,12 @@ export class ActionDialogObject extends Action {
     this.clearable = false;
 
     //PARAMS
-    // 0 - dword: speaker object id
-    // 1 - string : conversation resref
-    // 2 - int: 
-    // 3 - int: 
-    // 4 - int: ignoreStartRange
-    // 5 - dword: listener? object_invalid mostly
+    // 0 - dword:   speaker object id
+    // 1 - string:  conversation resref
+    // 2 - int:     bPrivateConversation 
+    // 3 - int:     (?) nConversationType
+    // 4 - int:     ignoreStartRange
+    // 5 - dword:   (?) listener - `appears to be object_invalid mostly`
     
   }
 
