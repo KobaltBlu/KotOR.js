@@ -1210,7 +1210,7 @@ export class GameState implements EngineContext {
         if(player){
           const appearance = player.getAppearance();
           if(appearance){
-            const effectId = parseInt(appearance.freelookeffect);
+            const effectId = appearance.freelookeffect;
             if(!isNaN(effectId)){
               GameState.videoEffect = effectId;
             }

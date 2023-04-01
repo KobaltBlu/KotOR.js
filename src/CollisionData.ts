@@ -1,6 +1,6 @@
 import { GameState } from "./GameState";
 import { PartyManager } from "./managers/PartyManager";
-import { ModuleDoor, ModuleObject, ModuleRoom } from "./module";
+import { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "./module";
 import { OdysseyWalkMesh } from "./odyssey";
 import * as THREE from "three";
 import { Utility } from "./utility/Utility";
@@ -45,7 +45,8 @@ export class CollisionData {
     let _oPosition = this.object.position.clone();
 
     //this.object.getCurrentRoom();
-    let hitdist = this.object.getAppearance().hitdist;
+    let hitdist = 1;
+    if(this.object instanceof ModuleCreature) this.object.getAppearance().hitdist;
     let hitdist_half = hitdist/2;
     
     let box = new THREE.Box3()
