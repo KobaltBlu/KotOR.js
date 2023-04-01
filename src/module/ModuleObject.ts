@@ -42,6 +42,10 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { AppearanceManager } from "../managers/AppearanceManager";
+import { PlaceableAppearance } from "../engine/PlaceableAppearance";
+import { CreatureAppearance } from "../engine/CreatureAppearance";
+import { DoorAppearance } from "../engine/DoorAppearance";
 
 /* @file
  * The ModuleObject class.
@@ -179,7 +183,7 @@ export class ModuleObject {
   portraidId: any;
   setByPlayerParty: any;
   highlightHeight: any;
-  appearance: any;
+  appearance: number = -1;
   cursor: any;
   isDeadSelectable: boolean = true;
   isDestroyable: boolean = true;
@@ -866,8 +870,8 @@ export class ModuleObject {
     }
   }
 
-  getAppearance(): any {
-    
+  getAppearance(): PlaceableAppearance|CreatureAppearance|DoorAppearance {
+    return;
   }
 
   initEffects(){
@@ -2080,8 +2084,9 @@ export class ModuleObject {
     if(this.template.RootNode.HasField('Animation'))
       this.animState = this.template.GetFieldByLabel('Animation').GetValue();
     
-    if(this.template.RootNode.HasField('Appearance'))
+    if(this.template.RootNode.HasField('Appearance')){
       this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
+    }
     
     if(this.template.RootNode.HasField('Description'))
       this.description = this.template.GetFieldByLabel('Description').GetCExoLocString();

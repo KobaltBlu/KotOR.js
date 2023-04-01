@@ -46,14 +46,16 @@ import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineState } from "../enums/engine/EngineState";
 import { DLGObject } from "../resource/DLGObject";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { CreatureAppearance } from "../engine/CreatureAppearance";
+import { AppearanceManager } from "../managers/AppearanceManager";
 
 /* @file
  * The ModuleCreature class.
  */
 
 export class ModuleCreature extends ModuleObject {
-  pm_IsDisguised: any;
-  pm_Appearance: any;
+  pm_IsDisguised: boolean; //polymorphIsDisguised
+  pm_Appearance: number; //polymorphAppearance
   anim: any;
   head: OdysseyModel3D;
   aiStyle: number;
@@ -155,6 +157,7 @@ export class ModuleCreature extends ModuleObject {
   animSpeed: number;
   portrait: number;
   selectedNPC: number;
+  creatureAppearance: CreatureAppearance;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -210,7 +213,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.appearance = 0;
     this.pm_Appearance = 0;
-    this.pm_IsDisguised = 0;
+    this.pm_IsDisguised = false;
     this.bodyBag = 0;
     this.bodyVariation = 0;
     this.cha = 0;
@@ -1480,7 +1483,7 @@ export class ModuleCreature extends ModuleObject {
     
     let attackAnimIndex = -1;
 
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
@@ -1531,7 +1534,7 @@ export class ModuleCreature extends ModuleObject {
 
     let attackAnimIndex = -1;
 
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
@@ -1592,7 +1595,7 @@ export class ModuleCreature extends ModuleObject {
 
     let attackAnimIndex = -1;
 
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
@@ -1824,7 +1827,7 @@ export class ModuleCreature extends ModuleObject {
   playEvent(event: any){
     this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
-    let appearance = this.getAppearance();
+    let appearance = this.creatureAppearance;
 
     let rhSounds, lhSounds;
 
@@ -1938,7 +1941,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getIdleAnimation(){
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
 
     switch(modeltype.toLowerCase()){
       case 's':
@@ -1988,7 +1991,7 @@ export class ModuleCreature extends ModuleObject {
     if(isSimple || !weaponType)
       return;
 
-    //let modeltype = this.getAppearance().modeltype;
+    //let modeltype = this.creatureAppearance.modeltype;
     //let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
 
     let lWeapon = this.equipment.LEFTHAND;
@@ -2064,7 +2067,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getWalkAnimation(){
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
 
     switch(modeltype){
       case 'S':
@@ -2081,7 +2084,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getRunAnimation(){
-    let modeltype = this.getAppearance().modeltype;
+    let modeltype = this.creatureAppearance.modeltype;
 
     switch(modeltype){
       case 'S':
@@ -2104,7 +2107,7 @@ export class ModuleCreature extends ModuleObject {
 
   getClosesetOpenSpot(oObject: ModuleObject){
     let maxDistance = Infinity;
-    let radius = parseInt(this.getAppearance().hitdist);
+    let radius = this.creatureAppearance.hitdist;
     let closest = undefined;
     let distance = 0;
     let origin = this.position;
@@ -2446,7 +2449,7 @@ export class ModuleCreature extends ModuleObject {
       break;
       case ModuleCreatureArmorSlot.RIGHTHAND:
         try{
-          if(this.getAppearance().modeltype != 'S'){
+          if(this.creatureAppearance.modeltype != 'S'){
             if(this.equipment.RIGHTHAND instanceof ModuleItem && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
               this.model.rhand.add(this.equipment.RIGHTHAND.model);
             }
@@ -2457,7 +2460,7 @@ export class ModuleCreature extends ModuleObject {
       break;
       case ModuleCreatureArmorSlot.LEFTHAND:
         try{
-          if(this.getAppearance().modeltype != 'S' && this.getAppearance().modeltype != 'L'){
+          if(this.creatureAppearance.modeltype != 'S' && this.creatureAppearance.modeltype != 'L'){
             if(this.equipment.LEFTHAND instanceof ModuleItem && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
               this.model.lhand.add(this.equipment.LEFTHAND.model);
             }
@@ -2829,16 +2832,17 @@ export class ModuleCreature extends ModuleObject {
     return this.firstName;
   }
 
-  getAppearance(){
-    const appearance2DA = TwoDAManager.datatables.get('appearance');
-    if(appearance2DA){
-      let eDisguise = this.getEffect(GameEffectType.EffectDisguise);
-      if(eDisguise){
-        return appearance2DA.rows[eDisguise.getInt(0)];
-      }else{
-        return appearance2DA.rows[this.appearance] || appearance2DA.rows[0];
-      }
-    }
+  getAppearance(): CreatureAppearance {
+    return this.creatureAppearance;
+    // const appearance2DA = TwoDAManager.datatables.get('appearance');
+    // if(appearance2DA){
+    //   let eDisguise = this.getEffect(GameEffectType.EffectDisguise);
+    //   if(eDisguise){
+    //     return appearance2DA.rows[eDisguise.getInt(0)];
+    //   }else{
+    //     return appearance2DA.rows[this.appearance] || appearance2DA.rows[0];
+    //   }
+    // }
   }
 
   isWalking(){
@@ -2850,7 +2854,7 @@ export class ModuleCreature extends ModuleObject {
 
   getRunSpeed(){
     if(this.getWalkRateId() == 7){
-      return parseFloat(this.getAppearance().rundist)
+      return this.creatureAppearance.rundist
     }
     const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
@@ -2860,7 +2864,7 @@ export class ModuleCreature extends ModuleObject {
 
   getWalkSpeed(){
     if(this.getWalkRateId() == 7){
-      return parseFloat(this.getAppearance().walkdist)
+      return this.creatureAppearance.walkdist
     }
     const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
@@ -2873,7 +2877,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHitDistance(){
-    return parseFloat(this.getAppearance().hitdist);
+    return this.creatureAppearance.hitdist;
   }
 
   getMainClass(){
@@ -3158,7 +3162,7 @@ export class ModuleCreature extends ModuleObject {
 
 
   isSimpleCreature(){
-    return this.getAppearance().modeltype === 'S' || this.getAppearance().modeltype === 'L';
+    return this.creatureAppearance.modeltype === 'S' || this.creatureAppearance.modeltype === 'L';
   }
 
   hasPerceived(creature: ModuleObject){
@@ -3176,7 +3180,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPersonalSpace(){
-    return parseFloat(this.getAppearance()['perspace']);
+    return this.creatureAppearance.perspace;
   }
 
   Load(){
@@ -3251,7 +3255,7 @@ export class ModuleCreature extends ModuleObject {
 
   LoadBody(): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      let appearance = this.getAppearance();
+      let appearance = this.creatureAppearance;
       this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
       this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();
       this.textureVar = 1;
@@ -3337,7 +3341,7 @@ export class ModuleCreature extends ModuleObject {
 
           let match = raceTex.match(/\d+/);
           if(match && this.textureVar > 1){
-            match = match[0];
+            match = match[0] as any;
             this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? Utility.PadInt( this.textureVar, match.length ) : '' );
           }else{
             this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
@@ -3412,10 +3416,10 @@ export class ModuleCreature extends ModuleObject {
 
   LoadHead(): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      let appearance = this.getAppearance();
-      let headId = appearance.normalhead.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      let appearance = this.creatureAppearance;
+      let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
       this.headModel = undefined;
-      if(headId != '****' && appearance.modeltype == 'B'){
+      if(headId >= 0 && appearance.modeltype == 'B'){
         const heads2DA = TwoDAManager.datatables.get('heads');
         if(heads2DA){
           let head = heads2DA.rows[headId];
@@ -3852,8 +3856,10 @@ export class ModuleCreature extends ModuleObject {
         ModuleObject.List.set(this.id, this);
       }
 
-      if(this.template.RootNode.HasField('Appearance_Type'))
+      if(this.template.RootNode.HasField('Appearance_Type')){
         this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
+        this.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.appearance);
+      }
 
       if(this.template.RootNode.HasField('Animation'))
         this.animState = this.template.GetFieldByLabel('Animation').GetValue();
@@ -4092,7 +4098,7 @@ export class ModuleCreature extends ModuleObject {
         this.pm_Appearance = this.template.RootNode.GetFieldByLabel('PM_Appearance').GetValue();
 
       if(this.template.RootNode.HasField('PM_IsDisguised'))
-        this.pm_IsDisguised = this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
+        this.pm_IsDisguised = !!this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
 
       try{
         if(this.template.RootNode.HasField('EffectList')){
@@ -4366,7 +4372,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).SetValue(0);
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Animation') ).SetValue(this.animState);
     //gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(this.getAppearance().__index);
+    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(this.appearance);
     //gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'AreaId') ).SetValue(1);
     gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).SetValue(this.getAC());
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(this.bodyBag);

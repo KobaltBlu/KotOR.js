@@ -15,6 +15,7 @@ import { MenuManager } from "../gui";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { TemplateLoader } from "../loaders/TemplateLoader";
+import { AppearanceManager } from "../managers/AppearanceManager";
 import { InventoryManager } from "../managers/InventoryManager";
 import { KEYManager } from "../managers/KEYManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
@@ -30,6 +31,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 
 /* @file
  * The ModulePlaceable class.
@@ -85,6 +87,7 @@ export class ModulePlaceable extends ModuleObject {
     loop: false,
     started: false
   };
+  placeableAppearance: PlaceableAppearance;
 
   constructor ( gff = new GFFObject()) {
     super(gff);
@@ -378,34 +381,20 @@ export class ModulePlaceable extends ModuleObject {
     return this.inventory;
   }
 
-  getAppearanceId(){
-    if(this.appearance){
-      return this.appearance;
-    }
-    return 0;
-  }
-
-  getAppearance(){
-    const plc2DA = TwoDAManager.datatables.get('placeables');
-    if(plc2DA){
-      if(GameState.GameKey == GameEngineType.TSL){
-        return plc2DA.getRowByIndex(this.getAppearanceId());
-      }else{
-        return plc2DA.rows[this.getAppearanceId()];
-      }
-    }
+  getAppearance(): PlaceableAppearance {
+    return this.placeableAppearance;
   }
 
   getObjectSounds(){
     let plc = this.getAppearance();
-    let soundIdx = parseInt(plc.soundapptype.replace(/\0[\s\S]*$/g,''));
+    let soundIdx = plc.soundapptype;
     if(!isNaN(soundIdx)){
       const plcSnd2DA = TwoDAManager.datatables.get('placeableobjsnds');
       if(plcSnd2DA){
         return plcSnd2DA.rows[soundIdx];
       }
     }
-    return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    return {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
   }
 
   retrieveInventory(){
@@ -716,8 +705,14 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.HasField('Animation'))
       this.setAnimationState(this.template.GetFieldByLabel('Animation').GetValue());
 
-    if(this.template.RootNode.HasField('Appearance'))
+    if(this.template.RootNode.HasField('Appearance')){
       this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
+      try{
+        this.placeableAppearance = AppearanceManager.GetPlaceableAppearanceById(this.appearance);
+      }catch(e){
+        console.error(e);
+      }
+    }
 
     if(this.template.RootNode.HasField('AutoRemoveKey'))
       this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();
@@ -878,7 +873,7 @@ export class ModulePlaceable extends ModuleObject {
 
     let actionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Animation') ).SetValue(this.animState);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Appearance') ).SetValue(this.getAppearanceId());
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Appearance') ).SetValue(this.appearance);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).SetValue(this.autoRemoveKey);
     gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).SetValue(this.bearing);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(this.bodyBag);

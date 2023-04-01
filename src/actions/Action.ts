@@ -72,7 +72,7 @@ export class Action {
         if(creature === this.owner || creature.isDead())
           continue;
 
-        let hitDistance = parseInt(creature.getAppearance().hitdist);
+        let hitDistance = creature.getAppearance().hitdist;
         let creaturePos = creature.position.clone();
         let distance = this.owner.position.distanceTo(creature.position);
 
@@ -95,7 +95,7 @@ export class Action {
         if(creature === this.owner || creature.isDead())
           continue;
 
-        let hitDistance = parseInt(creature.getAppearance().hitdist);
+        let hitDistance = creature.getAppearance().hitdist;
         let creaturePos = creature.position.clone();
         let distance = this.owner.position.distanceTo(creature.position);
 

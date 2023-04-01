@@ -1,30 +1,24 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { AppearanceManager } from "../managers/AppearanceManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { ModuleCreature, ModuleObject } from "../module";
 
 export class EffectDisguise extends GameEffect {
   appearance: any;
-  constructor( disguise_id: number = 0 ){
+  constructor(){
     super();
     this.type = GameEffectType.EffectDisguise;
 
     //intList[0] : appearance.2da id / disguise id
-    this.setInt(0, disguise_id);
-    const appearance2DA = TwoDAManager.datatables.get('appearance');
-    if(appearance2DA){
-      this.appearance = appearance2DA.rows[this.getInt(0)];
-    }
+    this.appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
     
   }
 
   initialize(){
     super.initialize();
 
-    const appearance2DA = TwoDAManager.datatables.get('appearance');
-    if(appearance2DA){
-      this.appearance = appearance2DA.rows[this.getInt(0)];
-    }
+    this.appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
 
     return this;
   }
@@ -34,11 +28,19 @@ export class EffectDisguise extends GameEffect {
       return;
       
     super.onApply();
-    
-    if(this.object instanceof ModuleCreature){
-      //this.object.LoadModel(() => {
-        //console.log('Disguise applied', this.object, this);
-      //});
+
+    const disguise_appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
+    if(disguise_appearance){
+      if(this.object instanceof ModuleCreature){
+        this.object.pm_Appearance = this.object.appearance;
+        this.object.pm_IsDisguised = true;
+        this.object.appearance = this.getInt(0);
+        this.object.creatureAppearance = disguise_appearance;
+        console.log('Disguise applying', this.object, this);
+        this.object.LoadModel().then( () => {
+          console.log('Disguise applied', this.object, this);
+        });
+      }
     }
   }
 
@@ -46,11 +48,13 @@ export class EffectDisguise extends GameEffect {
     if(this.object instanceof ModuleCreature){
       if(this.object.pm_IsDisguised){
         this.object.appearance = this.object.pm_Appearance;
-        this.object.pm_IsDisguised = 0;
+        this.object.pm_IsDisguised = false;
+        this.object.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.object.appearance);
       }
-      //this.object.LoadModel(() => {
-      //  
-      //});
+      console.log('Disguise removing', this.object, this);
+      this.object.LoadModel().then( () => {
+        console.log('Disguise removed', this.object, this);
+      });
     }
   }
 

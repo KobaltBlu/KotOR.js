@@ -21,6 +21,7 @@ import { JournalManager } from "./managers/JournalManager";
 import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
+import { AppearanceManager } from "./managers/AppearanceManager";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -249,6 +250,7 @@ export class GameInitializer {
   static Load2DAs(onSuccess?: Function){
     LoadingScreen.main.SetMessage('Loading: 2DA\'s');
     TwoDAManager.Load2DATables(() => {
+      AppearanceManager.Init();
       if(typeof onSuccess === 'function')
         onSuccess();
     });

@@ -221,4 +221,28 @@ export class TwoDAObject {
     }
   }
 
+  static normalizeValue(value: any, datatype: 'number'|'string'|'boolean', default_value: any){
+    switch(datatype){
+      case 'number':
+        if(typeof default_value === 'undefined') default_value = 0;
+        if(value === '****') return default_value;
+        value = parseFloat(value);
+        if(isNaN(value)) value = default_value;
+        return value;
+      break;
+      case 'string':
+        if(typeof default_value === 'undefined') default_value = '';
+        if(value === '****') return default_value;
+        return value;
+      break;
+      case 'boolean':
+        if(typeof default_value === 'undefined') default_value = false;
+        if(value === '****') return default_value;
+        return !!value;
+      break;
+    }
+    console.warn('normalizeValue', 'unhandled datatype', value);
+    return '';
+  }
+
 }

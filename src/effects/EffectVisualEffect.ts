@@ -166,7 +166,7 @@ export class EffectVisualEffect extends GameEffect {
 
   getImpactRootModel(){
     if(this.object instanceof ModuleCreature){
-      switch(parseInt(this.object.getAppearance().sizecategory)){
+      switch(this.object.getAppearance().sizecategory){
         case 1: //TINY
           return this.visualEffect.imp_root_s_node;
         case 2: //SMALL

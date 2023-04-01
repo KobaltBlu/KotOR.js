@@ -32,6 +32,7 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { AppearanceManager } from "../managers/AppearanceManager";
 
 /* @file
  * The ModuleDoor class.
@@ -97,6 +98,7 @@ export class ModuleDoor extends ModuleObject {
   destroyAnimationPlayed: boolean = false;
 
   collisionDelay: number = 0;
+  doorAppearance: import("c:/Users/James/Documents/GitHub/KotOR.js/src/engine/DoorAppearance").DoorAppearance;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -215,22 +217,19 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getDoorAppearance(){
-    const genericdoors2DA = TwoDAManager.datatables.get('genericdoors');
-    if(genericdoors2DA){
-      return genericdoors2DA.rows[this.getGenericType()];
-    }
+    return this.doorAppearance;
   }
 
   getObjectSounds(){
-    let door = this.getDoorAppearance();
-    let soundIdx = parseInt(door.soundapptype.replace(/\0[\s\S]*$/g,''));
+    let appearance = this.getDoorAppearance();
+    let soundIdx = appearance.soundapptype;
     if(!isNaN(soundIdx)){
       const placeableobjsnds2DA = TwoDAManager.datatables.get('placeableobjsnds');
       if(placeableobjsnds2DA){
         return placeableobjsnds2DA.rows[soundIdx];
       }
     }
-    return {"(Row Label)":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    return {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
   }
 
   /*getTemplateResRef(){
@@ -971,8 +970,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.HasField('Fort'))
       this.fort = this.template.GetFieldByLabel('Fort').GetValue();
   
-    if(this.template.RootNode.HasField('GenericType'))
+    if(this.template.RootNode.HasField('GenericType')){
       this.genericType = this.template.RootNode.GetFieldByLabel('GenericType').GetValue();
+      this.doorAppearance = AppearanceManager.GetDoorAppearanceById(this.genericType);
+    }
         
     if(this.template.RootNode.HasField('HP'))
       this.hp = this.template.RootNode.GetFieldByLabel('HP').GetValue();

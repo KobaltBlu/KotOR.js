@@ -5474,7 +5474,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(args[0] instanceof ModuleCreature){
-        return parseInt(args[0].getAppearance().sizecategory);
+        return args[0].getAppearance().sizecategory;
       }
     }
   },
@@ -5875,7 +5875,10 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return parseInt(args[0].getAppearance().__rowlabel);
+      if(args[0] instanceof ModuleCreature){
+        return args[0].appearance;
+      }
+      return 0;
     }
   },
   525:{

@@ -621,7 +621,8 @@ export class ModuleItem extends ModuleObject {
     if(oCreature instanceof ModuleCreature){
       if(this.isDisguise()){
         oCreature.removeEffectsByType( GameEffectType.EffectDisguise ); //EFFECT_DISGUISE
-        let eDisguise = new EffectDisguise( this.getDisguiseAppearanceId() );
+        let eDisguise = new EffectDisguise();
+        eDisguise.setInt(0, this.getDisguiseAppearanceId());
         eDisguise.setCreator(this);
         eDisguise.setAttachedObject(oCreature);
         oCreature.addEffect( eDisguise );

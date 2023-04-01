@@ -74,8 +74,8 @@ export class FollowerCamera {
     if(GameState.Mode == EngineMode.MINIGAME){
       offsetHeight = 1;
     }else{
-      if(!isNaN(parseFloat(followee.getAppearance().cameraheightoffset))){
-        offsetHeight = parseFloat(followee.getAppearance().cameraheightoffset);
+      if( followee.getAppearance().cameraheightoffset >= 0 ){
+        offsetHeight = followee.getAppearance().cameraheightoffset;
       }
     }
     
