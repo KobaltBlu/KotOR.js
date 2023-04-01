@@ -33,6 +33,7 @@ import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { AppearanceManager } from "../managers/AppearanceManager";
+import { DoorAppearance } from "../engine/DoorAppearance";
 
 /* @file
  * The ModuleDoor class.
@@ -98,7 +99,7 @@ export class ModuleDoor extends ModuleObject {
   destroyAnimationPlayed: boolean = false;
 
   collisionDelay: number = 0;
-  doorAppearance: import("c:/Users/James/Documents/GitHub/KotOR.js/src/engine/DoorAppearance").DoorAppearance;
+  doorAppearance: DoorAppearance;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
