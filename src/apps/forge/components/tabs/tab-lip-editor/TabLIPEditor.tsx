@@ -413,10 +413,10 @@ export const UILIPKeyFramePanel = function(props: any){
         {
           !!selectedFrame ? (
             <div className="selected-keyframe-edit-options">
-              <Form.Select onChange={onKeyFrameShapeChange} defaultValue={selectedFrame.shape}>
+              <Form.Select onChange={onKeyFrameShapeChange} value={selectedFrame.shape}>
                 {
                   LIPShapeLabels.map( (label: string, i: number) => {
-                    return <option value={i} selected={selectedFrame.shape == i}>{label}</option>
+                    return <option value={i}>{label}</option>
                   })
                 }
               </Form.Select>

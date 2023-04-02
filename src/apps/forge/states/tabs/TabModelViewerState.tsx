@@ -49,7 +49,8 @@ export class TabModelViewerState extends TabState {
 
   // controls: ModelViewerControls;
 
-  selectedAnimationIndex: number = 0;
+  selectedAnimationIndex: number = -1;
+  animations: KotOR.OdysseyModelAnimation[] = [];
   currentAnimation: KotOR.OdysseyModelAnimation;
 
   timelineOffset: number = 200;
@@ -57,8 +58,8 @@ export class TabModelViewerState extends TabState {
   seeking: boolean = false;
   playing: boolean = false;
   looping: boolean = false;
-  min_timeline_zoom: any = 1000;
-  max_timeline_zoom: any = 50;
+  min_timeline_zoom: any = 50;
+  max_timeline_zoom: any = 1000;
 
   dragging_frame: any;
   selected_frame: any;
@@ -72,6 +73,12 @@ export class TabModelViewerState extends TabState {
   selectedLayoutIndex: number = -1;
   layoutSceneGraphNode: SceneGraphNode;
   layout: KotOR.LYTObject;
+  currentAnimationState: any = {
+    elapsed: 0
+  };
+  scrubbing: boolean = false;
+  scrubbingTimeout: NodeJS.Timeout;
+  paused: boolean = false;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -128,10 +135,15 @@ export class TabModelViewerState extends TabState {
             editorMode: true, 
             onComplete: (model: KotOR.OdysseyModel3D) => {
               this.model = model;
-              this.processEventListener('onEditorFileLoad', [this]);
               this.ui3DRenderer.attachObject(this.model, true);
 
-              this.currentAnimation = model.odysseyAnimations[0];
+              this.animations = this.model.odysseyAnimations.slice(0).sort( (a, b) => {
+                return a.name.localeCompare(b.name);
+              });
+
+              this.selectedAnimationIndex = 0;
+              this.currentAnimation = this.animations[this.selectedAnimationIndex];
+              this.paused = true;
 
               model.emitters.map( (emitter) => {
                 emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
@@ -146,6 +158,7 @@ export class TabModelViewerState extends TabState {
               this.ui3DRenderer.sceneGraphManager.rebuild();
 
               // this.updateCameraFocus();
+              this.processEventListener('onEditorFileLoad', [this]);
               resolve(this.model);
             }
           });
@@ -171,8 +184,30 @@ export class TabModelViewerState extends TabState {
   animate(delta: number = 0){
     // this.controls.update(delta);
     if(this.model){
-      this.model.update(delta);
+      if(this.currentAnimation != this.model.animationManager.currentAnimation){
+        this.model.animationManager.currentAnimation = this.currentAnimation;
+        this.model.animationManager.currentAnimationState = this.currentAnimationState;
+      }
+      const cachedAnimationState = this.model.animationManager.currentAnimationState;
+      if(!this.paused){
+        const elapsed = this.currentAnimationState.elapsed;
+        this.model.update(delta);
+        let cElapsed = this.model.animationManager.currentAnimationState.elapsed;
+        if(isNaN(cElapsed)) cElapsed = elapsed;
+        if(cElapsed < elapsed && !this.looping) cElapsed = elapsed;
+      }else{
+        const elapsed = this.model.animationManager.currentAnimationState.elapsed;
+        this.model.update(delta);
+        if(!isNaN(elapsed)){
+          this.model.animationManager.currentAnimationState.elapsed = elapsed;
+        }
+      }
+      if(!this.model.animationManager.currentAnimationState){
+        this.model.animationManager.currentAnimationState = cachedAnimationState;
+      }
+      this.currentAnimationState = this.model.animationManager.currentAnimationState;
     }
+    this.processEventListener('onAnimate', [delta]);
   }
 
   
@@ -197,27 +232,71 @@ export class TabModelViewerState extends TabState {
 
   setAnimationByIndex(index: number = 0){
     this.selectedAnimationIndex = index;
-    const animation = this.model.odysseyAnimations[index];
+    const animation = this.animations[index];
     if(animation){
       this.model.playAnimation(animation, this.looping);
       this.currentAnimation = animation;
     }else{
       this.selectedAnimationIndex = 0;
-      this.currentAnimation = this.model.odysseyAnimations[0];
+      this.currentAnimation = this.animations[0];
     }
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onAnimationChange', [this]);
   }
 
+  getCurrentAnimationLength(){
+    if(!this.currentAnimation) return 0;
+    return this.currentAnimation.length;
+  }
+
+  getCurrentAnimationElapsed(){
+    if(!this.currentAnimationState) return 0;
+    return this.currentAnimationState.elapsed;
+  }
+
   playAnimation(){
-    if(this.currentAnimation){
-      this.model.playAnimation(this.currentAnimation, this.looping);
-    }else{
-      this.stopAnimation();
-    }
+    // if(!this.currentAnimation){
+    //   this.pause();
+    //   return;
+    // }
+    // if(this.currentAnimation != this.model.animationManager.currentAnimation){
+    //   this.model.playAnimation(this.currentAnimation, this.looping);
+    // }else{
+    //   this.stopAnimation();
+    // }
+    // this.play();
   }
 
   stopAnimation(){
     this.model.stopAnimation();
+    this.pause();
+  }
+
+  play(){
+    if(!this.currentAnimation) return;
+
+    this.paused = false;
+    if(this.currentAnimation != this.model.animationManager.currentAnimation){
+      this.model.playAnimation(this.currentAnimation, this.looping);
+    }
+    this.processEventListener('onPlay');
+  }
+
+  pause(){
+    this.paused = true;
+    this.processEventListener('onPause');
+  }
+
+  stop(){
+    this.paused = true;
+    this.stopAnimation();
+  }
+
+  seek(time: number = 0){
+    if(this.currentAnimation && this.currentAnimationState){
+      if(time < 0) time = 0;
+      if(time > this.currentAnimation.length) time = this.currentAnimation.length;
+      this.currentAnimationState.elapsed = time;
+    }
   }
 
   setLooping(loop: boolean = false){

@@ -85,10 +85,10 @@ export const TabLIPEditorOptions = function(props: any){
           !!selectedFrame ? (
             <div className="selected-keyframe-edit-options">
               <b>Mouth Shape</b>
-              <Form.Select onChange={onKeyFrameShapeChange} defaultValue={selectedFrame.shape}>
+              <Form.Select onChange={onKeyFrameShapeChange} value={selectedFrame.shape}>
                 {
                   LIPShapeLabels.map( (label: string, i: number) => {
-                    return <option value={i} selected={selectedFrame.shape == i}>{label}</option>
+                    return <option value={i}>{label}</option>
                   })
                 }
               </Form.Select>
@@ -103,11 +103,11 @@ export const TabLIPEditorOptions = function(props: any){
           !!selectedFrame ? (
             <div className="selected-keyframe-head-options">
               <b>Heads</b>
-              <Form.Select onChange={onPreviewHeadChange} defaultValue={parentTab.current_head} value={selectedHead}>
+              <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>
                 {
                   heads.map( (row: any, i: number) => {
                     const head = (row.head as string).toLocaleLowerCase();
-                    return <option value={head} selected={selectedHead == head}>{head}</option>
+                    return <option value={head}>{head}</option>
                   })
                 }
               </Form.Select>

@@ -22,7 +22,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   const [cameraSpeed, setCameraSpeed] = useState<number>(ModelViewerControls.CameraMoveSpeed);
 
   const onEditorFileLoad = () => {
-    setAnimations(tab.model.odysseyAnimations);
+    setAnimations(tab.animations);
   }
 
   const onAnimationChange = function(){
@@ -130,11 +130,11 @@ export const ModelViewerSidebarComponent = function(props: any){
             <div className="toolbar-header">
               <b>Animations</b>
             </div>
-            <Form.Select defaultValue={-1} value={selectedAnimation} onChange={onAnimationSelectChange}>
-              <option value={-1} selected={selectedAnimation == -1}>None</option>
+            <Form.Select value={selectedAnimation} onChange={onAnimationSelectChange}>
+              <option value={-1}>None</option>
               {
                 animations.map( (animation, index) => {
-                  return <option value={index} selected={selectedAnimation == index}>{animation.name}</option>
+                  return <option value={index}>{animation.name}</option>
                 })
               }
             </Form.Select>
@@ -164,11 +164,11 @@ export const ModelViewerSidebarComponent = function(props: any){
             <div className="toolbar-header">
               <b>Layout</b>
             </div>
-            <Form.Select defaultValue={-1} value={selectedLayout} onChange={onLayoutSelectChange}>
-              <option value={-1} selected={selectedLayout == -1}>None</option>
+            <Form.Select value={selectedLayout} onChange={onLayoutSelectChange}>
+              <option value={-1}>None</option>
               {
                 layouts.map( (lytKEY) => {
-                  return <option value={lytKEY.ResID} selected={selectedLayout == lytKEY.ResID}>{lytKEY.ResRef}</option>
+                  return <option value={lytKEY.ResID}>{lytKEY.ResRef}</option>
                 })
               }
             </Form.Select>
