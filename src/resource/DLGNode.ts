@@ -61,6 +61,14 @@ export class DLGNode {
   timeout: any;
   skippable: boolean;
 
+  alienRaceNode: number = 0;
+  emotion: number = 4;
+  facialAnimation: number = 0;
+  postProcessNode: number = 0;
+  recordNoVOOverride: number = 0;
+  recordVO: number = 0;
+  voTextChanged: boolean = true;
+
   constructor(args = {}){
     this.nodeEngineType = DLGNodeEngineType.K1;
 
@@ -735,6 +743,34 @@ export class DLGNode {
       node.skippable = !struct.GetFieldByLabel('NodeUnskippable').GetValue();
     }else{
       node.skippable = true;
+    }
+
+    if(struct.HasField('AlienRaceNode')){
+      node.alienRaceNode = struct.GetFieldByLabel('AlienRaceNode').GetValue();
+    }
+
+    if(struct.HasField('Emotion')){
+      node.emotion = struct.GetFieldByLabel('Emotion').GetValue();
+    }
+
+    if(struct.HasField('FacialAnim')){
+      node.facialAnimation = struct.GetFieldByLabel('FacialAnim').GetValue();
+    }
+
+    if(struct.HasField('PostProcNode')){
+      node.postProcessNode = struct.GetFieldByLabel('PostProcNode').GetValue();
+    }
+
+    if(struct.HasField('RecordNoVOOverri')){
+      node.recordNoVOOverride = struct.GetFieldByLabel('RecordNoVOOverri').GetValue();
+    }
+
+    if(struct.HasField('RecordVO')){
+      node.recordVO = struct.GetFieldByLabel('RecordVO').GetValue();
+    }
+
+    if(struct.HasField('VOTextChanged')){
+      node.voTextChanged = !!struct.GetFieldByLabel('VOTextChanged').GetValue();
     }
 
     return node;
