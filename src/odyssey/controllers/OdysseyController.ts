@@ -21,6 +21,7 @@ import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelCont
 export class OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;
+  uuid: string = crypto.randomUUID();
 
   vec3;
   quaternion;

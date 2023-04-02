@@ -13,6 +13,7 @@ import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinit
  */
 
 export class OdysseyModelNode {
+  uuid: string = crypto.randomUUID();
   parent: OdysseyModelNode;
   type: OdysseyModelNodeType;
   nodeType: OdysseyModelNodeType;
@@ -338,6 +339,11 @@ export class OdysseyModelNode {
                   frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
                   frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
                   frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+
+                  if(frame.x < 0) frame.x = 1.0 + frame.x;
+                  if(frame.y < 0) frame.y = 1.0 + frame.y;
+                  if(frame.z < 0) frame.z = 1.0 + frame.z;
+
                   controller.data[r] = frame
                 }
               break;
