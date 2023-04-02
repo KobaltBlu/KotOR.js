@@ -44,6 +44,10 @@ export class DLGObject {
   isAnimatedCutscene: boolean;
   animatedCameraResRef: string;
   animatedCamera: OdysseyModel3D;
+  recordNoVO: boolean;
+  oldHitCheck: boolean;
+  postProcOwner: number;
+  alienRaceOwner: number;
 
   constructor(resref = ''){
     this.resref = resref;
@@ -103,6 +107,22 @@ export class DLGObject {
 
     if(this.gff.RootNode.HasField('UnequipItems')){
       this.unequipItems = this.gff.RootNode.GetFieldByLabel('UnequipItems').GetValue() ? true : false;
+    }
+
+    if(this.gff.RootNode.HasField('AlienRaceOwner')){
+      this.alienRaceOwner = this.gff.RootNode.GetFieldByLabel('AlienRaceOwner').GetValue();
+    }
+
+    if(this.gff.RootNode.HasField('RecordNoVO')){
+      this.recordNoVO = this.gff.RootNode.GetFieldByLabel('RecordNoVO').GetValue() ? true : false;
+    }
+
+    if(this.gff.RootNode.HasField('OldHitCheck')){
+      this.oldHitCheck = this.gff.RootNode.GetFieldByLabel('OldHitCheck').GetValue() ? true : false;
+    }
+
+    if(this.gff.RootNode.HasField('PostProcOwner')){
+      this.postProcOwner = this.gff.RootNode.GetFieldByLabel('PostProcOwner').GetValue();
     }
 
     if(this.gff.RootNode.HasField('EntryList')){
