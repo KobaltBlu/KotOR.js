@@ -1,4 +1,5 @@
 import { TwoDAObject } from "../resource/TwoDAObject";
+import { TwoDAManager } from "../managers/TwoDAManager";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponSize } from "../enums/combat/WeaponSize";
@@ -68,8 +69,16 @@ export class BaseItem {
   armorType: string = '';
   storePanelSort: number = 0;
 
-  static From2DA (row: any = {}): BaseItem {
+  static From2DA (baseItemId: number = -1): BaseItem {
     const baseItem = new BaseItem();
+
+    let row: any = {};
+    if(baseItemId >= 0){
+      const datatable = TwoDAManager.datatables.get('baseitems');
+      if(datatable){
+        row = datatable.getRowByIndex(baseItemId);
+      }
+    }
     
     baseItem.id = parseInt(row.__index);
 
@@ -104,7 +113,7 @@ export class BaseItem {
     if(row.hasOwnProperty('weaponsize'))
       baseItem.weaponSize = TwoDAObject.normalizeValue(row.weaponsize, 'number', 0) as number;
     if(row.hasOwnProperty('rangedweapon'))
-      baseItem.rangedWeapon = TwoDAObject.normalizeValue(row.rangedweapon, 'boolean', false) as false;
+      baseItem.rangedWeapon = TwoDAObject.normalizeValue(row.rangedweapon, 'boolean', false) as boolean;
     if(row.hasOwnProperty('maxattackrange'))
       baseItem.maxAttackRange = TwoDAObject.normalizeValue(row.maxattackrange, 'number', 0) as number;
     if(row.hasOwnProperty('prefattackdist'))
@@ -180,7 +189,7 @@ export class BaseItem {
     if(row.hasOwnProperty('itemtype'))
       baseItem.itemType = TwoDAObject.normalizeValue(row.itemtype, 'number', 0) as number;
     if(row.hasOwnProperty('bodyvar'))
-      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'number', undefined) as any;
+      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as any;
     if(row.hasOwnProperty('specfeat'))
       baseItem.specFeat = TwoDAObject.normalizeValue(row.specfeat, 'number', -1) as number;
     if(row.hasOwnProperty('focfeat'))
