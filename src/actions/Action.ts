@@ -1,4 +1,4 @@
-import { ActionCastSpell, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionDropItem, ActionEquipItem, ActionFollowLeader, ActionGiveItem, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionLockObject, ActionMoveToPoint, ActionOpenDoor, ActionPauseDialog, ActionPhysicalAttacks, ActionPlayAnimation, ActionQueue, ActionResumeDialog, ActionSetCommandable, ActionTakeItem, ActionUnlockObject, ActionUseObject, ActionWait } from ".";
+import { ActionCombat, ActionCastSpell, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionDropItem, ActionEquipItem, ActionFollowLeader, ActionGiveItem, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionLockObject, ActionMoveToPoint, ActionOpenDoor, ActionPauseDialog, ActionPhysicalAttacks, ActionPlayAnimation, ActionQueue, ActionResumeDialog, ActionSetCommandable, ActionTakeItem, ActionUnlockObject, ActionUseObject, ActionWait } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -206,6 +206,9 @@ export class Action {
       paramStructs = struct.GetFieldByLabel('Paramaters').GetChildStructs();
 
     switch(actionId){
+      case ActionType.ActionCombat:
+        action = new ActionCombat(actionId, groupId);
+      break;
       case ActionType.ActionCastSpell:
         action = new ActionCastSpell(actionId, groupId);
       break;

@@ -1054,7 +1054,6 @@ export class ModuleArea extends ModuleObject {
           //Reset the players actions between modules
           GameState.player.clearAllActions();
           GameState.player.force = 0;
-          GameState.player.animState = ModuleCreatureAnimState.IDLE;
           GameState.player.collisionData.groundFace = undefined;
           GameState.player.collisionData.lastGroundFace = undefined;
           GameState.player.Load();

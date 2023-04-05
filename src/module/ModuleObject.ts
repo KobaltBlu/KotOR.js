@@ -37,15 +37,14 @@ import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
 import { CombatAction } from "../interface/combat/CombatAction";
-import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
-import { AppearanceManager } from "../managers/AppearanceManager";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
+import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
 
 /* @file
  * The ModuleObject class.
@@ -110,6 +109,13 @@ export class ModuleObject {
     animation: OdysseyModelAnimation,
     data: TwoDAAnimation,
     started: boolean,
+  };
+
+  dialogAnimationState: DialogAnimationState = {
+    animationIndex: -1,
+    animation: undefined,
+    data: undefined,
+    started: false,
   };
 
   templateResRef: string = '';
@@ -1042,8 +1048,12 @@ export class ModuleObject {
     console.warn("Method not implemented.", this.tag);
   }
 
-  damage(amount = 0, oAttacker?: ModuleObject){
-    this.subtractHP(amount);
+  damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0){
+    // if(delayTime){
+    //   this.damageList.push({amount: amount, delay: delayTime});
+    // }else{
+      this.subtractHP(amount);
+    // }
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
     this.onDamage();
@@ -1341,13 +1351,6 @@ export class ModuleObject {
     return Math.floor(this.GetFacing() * 180) + 180;
   }
 
-  // GetRotation(){
-  //   if(this.model){
-  //     return Math.floor(this.model.rotation.z * 180) + 180
-  //   }
-  //   return 0;
-  // }
-
   GetLocation(){
     let rotation = this.GetRotationFromBearing();
 
@@ -1360,15 +1363,16 @@ export class ModuleObject {
     return location;
   }
 
-  GetRotationFromBearing( bearing: number = 0 ){
-    let theta = this.rotation.z * Math.PI;
+  GetRotationFromBearing( bearing: number = undefined ){
+    let theta = this.rotation.z;
 
     if(typeof bearing == 'number')
-      theta = bearing * Math.PI;
+      theta = bearing;
 
+    // console.log(this.tag, theta, Math.cos(theta), Math.sin(theta), this);
     return new THREE.Vector3(
-      1 * Math.cos(theta),
-      1 * Math.sin(theta),
+      Math.cos(theta),
+      Math.sin(theta),
       0
     );
   }
@@ -1559,12 +1563,11 @@ export class ModuleObject {
   }
 
   JumpToLocation(lLocation: EngineLocation){
-    console.log('JumpToLocation', lLocation, this);
     if(typeof lLocation === 'object'){
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
       this.computeBoundingBox();
 
-      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+      this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
       this.collisionData.groundFace = undefined;
       this.collisionData.lastGroundFace = undefined;
 
@@ -2019,9 +2022,31 @@ export class ModuleObject {
       return false;
     }
   }
+  
+  setAnimationState(animState: any){
+    this.animState = animState;
+  }
 
   dialogPlayAnimation(anim: TwoDAAnimation = {} as TwoDAAnimation){
-    
+    if(this.model){
+      const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
+      if(odysseyAnimation){
+        this.dialogAnimation = {
+          animation: odysseyAnimation,
+          data: anim,
+          started: false,
+        }
+      }
+    }
+  }
+
+  dialogResetAnimationState(){
+    this.dialogAnimationState = {
+      animationIndex: -1,
+      animation: undefined,
+      data: undefined,
+      started: false,
+    };
   }
 
   use(object: ModuleObject){

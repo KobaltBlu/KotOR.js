@@ -302,7 +302,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     if (currentPC.getRace() == 6) {
       let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
       if (l_weap2) {
-        let icon = 'i' + l_weap2.getBaseItem().itemclass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
+        let icon = 'i' + l_weap2._baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L2.setFillTextureName(icon);
 
@@ -312,7 +312,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       }
       let r_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
       if (r_weap2) {
-        let icon = 'i' + r_weap2.getBaseItem().itemclass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
+        let icon = 'i' + r_weap2._baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_R2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R2.setFillTextureName(icon);
         }

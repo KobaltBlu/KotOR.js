@@ -21,6 +21,7 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
+import { TwoDAAnimation } from "../../interface/twoDA/TwoDAAnimation";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -432,6 +433,32 @@ export class OdysseyModel3D extends OdysseyObject3D {
       return this.animationManager.currentAnimation;
     }
     return undefined;
+  }
+
+  playOverlayAnimation(anim: OdysseyModelAnimation|string|number, data: TwoDAAnimation){
+    const state: any = {
+      loop: data.looping == '1',
+      blend: true,
+      cFrame: 0,
+      elapsed: 0,
+      transElapsed: 0,
+      lastTime: 0,
+      delta: 0,
+      lastEvent: -1,
+      events: []
+    };
+    
+    if(typeof anim === 'number'){
+      this.animationManager.setOverlayAnimation(this.odysseyAnimations[anim], state);
+    }else if(typeof anim === 'string'){
+      this.animationManager.setOverlayAnimation(this.getAnimationByName(anim), state);
+    }else{
+      this.animationManager.setOverlayAnimation(anim, state);
+    }
+
+    if(typeof this.animationManager.overlayAnimationState != 'undefined'){
+      this.animationManager.overlayAnimationState.animation = data;
+    }
   }
 
   stopAnimation(){

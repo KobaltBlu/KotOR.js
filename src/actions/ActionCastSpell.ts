@@ -55,9 +55,11 @@ export class ActionCastSpell extends Action {
         return ActionStatus.IN_PROGRESS;
 
       }else{
-        this.owner.animState = ModuleCreatureAnimState.IDLE;
-        this.owner.force = 0;
-        this.owner.speed = 0;
+        if(this.owner instanceof ModuleCreature){
+          this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+          this.owner.force = 0;
+          this.owner.speed = 0;
+        }
         this.spell.useTalentOnObject(this.target, this.owner);
         return ActionStatus.COMPLETE;
       }

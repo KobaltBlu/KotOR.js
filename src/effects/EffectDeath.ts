@@ -22,7 +22,7 @@ export class EffectDeath extends GameEffect {
     if(this.isSpeactacular()){
       //this.object.animState = ModuleCreatureAnimState.DEAD;
     }else{
-      this.object.animState = ModuleCreatureAnimState.DEAD;
+      // this.object.animState = ModuleCreatureAnimState.DEAD;
     }
   }
 

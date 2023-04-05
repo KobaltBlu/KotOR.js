@@ -68,7 +68,7 @@ export class ActionDialogObject extends Action {
 
           return ActionStatus.IN_PROGRESS;
         }else{
-          this.owner.animState = ModuleCreatureAnimState.IDLE;
+          this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
           this.owner.force = 0;
           this.owner.speed = 0;
 

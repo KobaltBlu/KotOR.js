@@ -65,6 +65,8 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { DialogMessageManager } from "../managers/DialogMessageManager";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { WeaponType } from "../enums/combat/WeaponType";
+import { WeaponWield } from "../enums/combat/WeaponWield";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -4636,37 +4638,44 @@ NWScriptDefK1.Actions = {
 
       if(args[0] instanceof ModuleCreature){
         let inventory = args[0].getInventory();
-        let weapon = undefined
+        const equipped = args[1] ? args[0].equipment.LEFTHAND : args[0].equipment.RIGHTHAND;
+        let weapon: ModuleItem = equipped;
         if(!args[0].isSimpleCreature()){
 
           for(let i = 0, len = inventory.length; i < len; i++){
             let item = inventory[i];
-            let baseItem = item.getBaseItem();
-            if(baseItem.weapontype == 1){
-              if(!weapon){
-                weapon = item;
-              }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
+            let baseItem = item._baseItem;
+            if(
+              baseItem.weaponWield == WeaponWield.DAGGER || 
+              baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
+              baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
+            ){
+              if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                 weapon = item;
               }
             }
           }
 
+          //If no melee found, equip ranged
           if(!weapon){
             for(let i = 0, len = inventory.length; i < len; i++){
               let item = inventory[i];
-              let baseItem = item.getBaseItem();
-              if(baseItem.weapontype == 4){
+              let baseItem = item._baseItem;
+              if(
+                baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
+                baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
+                baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
+              ){
                 if(!weapon){
                   weapon = item;
-                }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
+                }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                   weapon = item;
                 }
               }
             }
           }
 
-          //console.log('ActionEquipMostDamagingMelee', weapon);
-          if(weapon){
+          if(weapon != equipped){
             args[0].equipItem(args[1] ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND, weapon);
           }
   
@@ -4688,31 +4697,37 @@ NWScriptDefK1.Actions = {
       //console.log('ActionEquipMostDamagingRanged', args);
       if(args[0] instanceof ModuleCreature){
         let inventory = args[0].getInventory();
-        let weapon = undefined
+        const equipped = args[0].equipment.RIGHTHAND;
+        let weapon: ModuleItem = equipped;
         if(!args[0].isSimpleCreature()){
 
           for(let i = 0, len = inventory.length; i < len; i++){
             let item = inventory[i];
-            let baseItem = item.getBaseItem();
-            if(baseItem.weapontype == 4){
-              if(!weapon){
-                weapon = item;
-              }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
-                //console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
+            let baseItem = item._baseItem;
+            if(
+              baseItem.weaponWield == WeaponWield.DAGGER || 
+              baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
+              baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
+            ){
+              if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                 weapon = item;
               }
             }
           }
 
+          //If no melee found, equip ranged
           if(!weapon){
             for(let i = 0, len = inventory.length; i < len; i++){
               let item = inventory[i];
-              let baseItem = item.getBaseItem();
-              if(baseItem.weapontype == 1){
+              let baseItem = item._baseItem;
+              if(
+                baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
+                baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
+                baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
+              ){
                 if(!weapon){
                   weapon = item;
-                }else if(baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice){
-                  //console.log('ActionEquipMostDamagingRanged', baseItem.dietoroll * baseItem.numdice > weapon.dietoroll * baseItem.numdice);
+                }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                   weapon = item;
                 }
               }
@@ -6098,8 +6113,6 @@ NWScriptDefK1.Actions = {
       
       if(typeof args[0] == 'undefined')
         return undefined;
-
-      //console.log('GetLastHostileActor', args[0].getName(), args[0].lastAttackTarget, args[0].lastDamager, args[0].lastAttacker );
 
       return args[0].combatData.lastAttackTarget || args[0].combatData.lastAttacker || args[0].combatData.lastDamager || undefined;
     }

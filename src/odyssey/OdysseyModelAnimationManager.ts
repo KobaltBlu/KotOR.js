@@ -12,6 +12,8 @@ export class OdysseyModelAnimationManager {
   currentAnimationState: any;
   lastAnimation: OdysseyModelAnimation;
   lastAnimationState: any;
+  overlayAnimation: OdysseyModelAnimation;
+  overlayAnimationState: any;
   _vec3: THREE.Vector3 = new THREE.Vector3();
   _quat: THREE.Quaternion = new THREE.Quaternion();
   _animPosition: THREE.Vector3 = new THREE.Vector3();
@@ -38,6 +40,9 @@ export class OdysseyModelAnimationManager {
     this.lastAnimation = undefined;
     this.lastAnimationState = {};
 
+    this.overlayAnimation = undefined;
+    this.overlayAnimationState = {};
+
     this.trans = false;
     this.modelNode = undefined;
 
@@ -59,6 +64,17 @@ export class OdysseyModelAnimationManager {
               this.setLastAnimation(this.currentAnimation, this.currentAnimationState);
             }
             this.currentAnimationState.events = [];
+          }
+        }
+      }
+    }
+
+    //Overlay Animation: update
+    if(this.overlayAnimation && this.overlayAnimation.type == 'OdysseyModelAnimation'){
+      if(this.model.bonesInitialized){
+        if(!this.updateOverlayAnimation(this.overlayAnimation, this.overlayAnimationState, delta)){
+          if(!this.overlayAnimationState.loop){
+            this.stopOverlayAnimation();
           }
         }
       }
@@ -107,6 +123,19 @@ export class OdysseyModelAnimationManager {
     };
   }
 
+  stopOverlayAnimation(){
+    this.overlayAnimation = undefined;
+    this.overlayAnimationState = {
+      loop: false,
+      cFrame: 0,
+      elapsed: 0,
+      lastTime: 0,
+      delta: 0,
+      lastEvent: -1,
+      events: [],
+    };
+  }
+
   setCurrentAnimation(anim: OdysseyModelAnimation, state: any = {}){
     // if(anim) console.log(this.model?.name, anim.name);
     if(this.currentAnimation){
@@ -129,6 +158,11 @@ export class OdysseyModelAnimationManager {
     );
   }
 
+  setOverlayAnimation(anim: OdysseyModelAnimation, state: any = {}){
+    this.overlayAnimation = anim;
+    this.overlayAnimationState = state;
+  }
+
   updateAnimation(anim: OdysseyModelAnimation, state: any = {}, delta: number = 0){
     state.delta = delta;
 
@@ -143,9 +177,9 @@ export class OdysseyModelAnimationManager {
 
     //Update animation nodes if the model is being rendered
     if(this.model.animateFrame){
-      let node;
+      let node: OdysseyModelAnimationNode;
       for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-        let node = anim.nodes[i];
+        node = anim.nodes[i];
         if(this.trans){
           this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodePosition == node.nodePosition ), this.lastAnimationState, false);
         }
@@ -188,6 +222,70 @@ export class OdysseyModelAnimationManager {
         //     this.updateAnimationNode(anim, anim.nodes[i], state, false);
         //   }
         // }
+      }
+
+      state.lastTime = anim.length;
+      state.elapsed = 0;
+      state.elapsedCount++;
+
+      return false;
+    }
+    return true;
+  }
+
+  updateOverlayAnimation(anim: OdysseyModelAnimation, state: any = {}, delta: number = 0){
+    state.delta = delta;
+
+    if(!state.elapsedCount) state.elapsedCount = 0;
+
+    this.trans = false;//(anim.transition && this.lastAnimation && this.lastAnimation.name != anim.name && this.transElapsed < anim.transition);
+
+    if(!this.model.bonesInitialized)
+      return;
+    
+    this.updateAnimationEvents(anim);
+
+    //Update animation nodes if the model is being rendered
+    if(this.model.animateFrame){
+      let node: OdysseyModelAnimationNode;
+      for(let i = 0, nl = anim.nodes.length; i < nl; i++){
+        node = anim.nodes[i];
+        // if(this.trans){
+        //   this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodePosition == node.nodePosition ), this.lastAnimationState, false);
+        // }
+        this.updateAnimationNode(anim, node, state, this.trans);
+      }
+    }
+
+
+
+    //this.updateAnimationNode(anim, anim.rooNode);
+    state.lastTime = state.elapsed;
+    state.elapsed += delta;
+
+    // if(this.lastAnimation && this.lastAnimationState){
+    //   this.lastAnimationState.lastTime = this.lastAnimationState.elapsed;
+    //   this.lastAnimationState.elapsed += delta;
+    //   // this.transElapsed += delta;
+    //   if(this.lastAnimationState.elapsed >= this.lastAnimation.length){
+    //     this.lastAnimationState.elapsed = this.lastAnimation.length;
+    //     this.lastAnimationState.lastTime = this.lastAnimation.length;
+    //     if(this.lastAnimationState.loop) this.lastAnimationState.elapsed = 0;
+    //     this.lastAnimationState.elapsedCount++;
+    //   }
+    //   // if(this.transElapsed >= this.currentAnimation.transition){
+    //   //   this.transElapsed = 0;
+    //   //   this.setLastAnimation(undefined, undefined);
+    //   // }
+    // }else{
+    //   // this.transElapsed = 0;
+    // }
+
+    if(state.elapsed >= anim.length){
+
+      if(state.elapsed > anim.length){
+        state.elapsed = anim.length;
+        this.updateAnimationEvents(anim, state);
       }
 
       state.lastTime = anim.length;

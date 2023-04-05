@@ -25,7 +25,7 @@ export class ActionFollowLeader extends Action {
   update(delta: number = 0): ActionStatus {
     if(this.owner instanceof ModuleCreature){
       if(GameState.Mode == EngineMode.DIALOG){
-        this.owner.animState = ModuleCreatureAnimState.IDLE;
+        this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         return ActionStatus.FAILED;
       }
 
@@ -50,7 +50,7 @@ export class ActionFollowLeader extends Action {
 
         return ActionStatus.IN_PROGRESS;
       }else{
-        this.owner.animState = ModuleCreatureAnimState.IDLE;
+        this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
         this.owner.speed = 0;
         return ActionStatus.COMPLETE;

@@ -83,7 +83,7 @@ export class InventoryManager {
     if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
       return false;
 
-    let droidorhuman = parseInt(item.getBaseItem().droidorhuman);
+    let droidorhuman = item._baseItem.droidOrHuman;
     
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
@@ -93,8 +93,8 @@ export class InventoryManager {
   }
 
   static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
-    let baseItem = item.getBaseItem();
-    return (parseInt(baseItem.equipableslots) & slot || parseInt(baseItem.equipableslots) === slot) ? true : false;
+    let baseItem = item._baseItem;
+    return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
   static addItem(template: GFFObject|ModuleItem = new GFFObject(), limitOne = false): ModuleItem {

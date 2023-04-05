@@ -3,13 +3,14 @@ import { ActionType } from "../../enums/actions/ActionType";
 import { ModuleObject } from "../../module";
 import { TalentFeat, TalentSpell } from "../../talents";
 import { Action } from "../../actions";
+import { TwoDAAnimation } from "../twoDA/TwoDAAnimation";
 
 export interface CombatAction {
   action?: Action,
   target: ModuleObject;
   type: ActionType;
   icon: string;
-  animation: string;
+  animation: TwoDAAnimation;
   feat?: TalentFeat,
   spell?: TalentSpell,
   isMelee?: boolean,
@@ -23,4 +24,5 @@ export interface CombatAction {
   castTime?: number,
   catchTime?: number,
   completed?: boolean,
+  damageCalculated?: boolean,
 }

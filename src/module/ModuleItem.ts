@@ -2,8 +2,11 @@
  */
 
 import { ModuleCreature, ModuleObject } from ".";
+import { BaseItem } from "../engine/BaseItem";
 import { CombatEngine } from "../combat/CombatEngine";
 import { EffectDisguise } from "../effects/EffectDisguise";
+import { WeaponWield } from "../enums/combat/WeaponWield";
+import { WeaponType } from "../enums/combat/WeaponType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
@@ -30,6 +33,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 export class ModuleItem extends ModuleObject {
   equippedRes: any;
   baseItem: number;
+  _baseItem: BaseItem;
   addCost: number;
   cost: number;
   modelVariation: number;
@@ -104,15 +108,8 @@ export class ModuleItem extends ModuleObject {
     return this.baseItem;
   }
 
-  getBaseItem(){
-    const _2DA = TwoDAManager.datatables.get('baseitems');
-    if(_2DA){
-      return _2DA.rows[this.getBaseItemId()];
-    }
-  }
-
   getBodyVariation(){
-    return this.getBaseItem().bodyvar;
+    return this._baseItem.bodyVar;
   }
 
   getModelVariation(){
@@ -124,19 +121,19 @@ export class ModuleItem extends ModuleObject {
   }
 
   getIcon(){
-    return 'i'+this.getBaseItem().itemclass+'_'+("000" + this.getModelVariation()).slice(-3);
+    return 'i'+this._baseItem.itemClass+'_'+("000" + this.getModelVariation()).slice(-3);
   }
 
-  getWeaponWield(){
-    return parseInt(this.getBaseItem().weaponwield);
+  getWeaponWield(): WeaponWield{
+    return this._baseItem.weaponWield;
   }
 
-  getWeaponType(){
-    return parseInt(this.getBaseItem().weapontype);
+  getWeaponType(): WeaponType {
+    return this._baseItem.weaponType;
   }
 
   isRangedWeapon(){
-    return this.getBaseItem().rangedweapon == 1;
+    return this._baseItem.rangedWeapon;
   }
 
   isStolen(){
@@ -224,12 +221,12 @@ export class ModuleItem extends ModuleObject {
         bonus += property.getValue();
       }
     }
-    return parseInt(this.getBaseItem().baseac) + bonus;
+    return this._baseItem.baseAC + bonus;
   }
 
   getDexBonus(){
     if(this.baseItem){
-      return parseInt(this.getBaseItem().dexbonus) || 0;
+      return this._baseItem.dexBonus || 0;
     }
     return 0;
   }
@@ -245,8 +242,8 @@ export class ModuleItem extends ModuleObject {
   }
 
   getBaseDamage(){
-    if(parseInt(this.getBaseItem().numdice)){
-      return CombatEngine.DiceRoll(parseInt(this.getBaseItem().numdice), 'd'+this.getBaseItem().dietoroll);
+    if(this._baseItem.numDice){
+      return CombatEngine.DiceRoll(this._baseItem.numDice, 'd'+this._baseItem.dieToRoll);
     }
     return 0;
   }
@@ -272,7 +269,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   getDamageType(){
-    return this.getBaseItem().damageflags;
+    return this._baseItem.damageFlags;
   }
 
   getSTRBonus(){
@@ -337,7 +334,7 @@ export class ModuleItem extends ModuleObject {
 
   castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
-      let ammunitiontype = parseInt(this.getBaseItem().ammunitiontype);
+      let ammunitiontype = this._baseItem.ammunitionType;
       if( ammunitiontype >= 1 ){
         const _2DA = TwoDAManager.datatables.get('ammunitiontypes');
         if(_2DA){
@@ -388,8 +385,8 @@ export class ModuleItem extends ModuleObject {
   }
 
   LoadModel(): Promise<OdysseyModel3D> {
-    let itemclass = this.getBaseItem()['itemclass'];
-    let DefaultModel = this.getBaseItem()['defaultmodel'];
+    let itemclass = this._baseItem.itemClass;
+    let DefaultModel = this._baseItem.defaultModel;
     itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
     DefaultModel = DefaultModel.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
 
@@ -501,8 +498,10 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.HasField('AddCost'))
       this.addCost = parseInt(this.template.GetFieldByLabel('AddCost').GetValue());
 
-    if(this.template.RootNode.HasField('BaseItem'))
+    if(this.template.RootNode.HasField('BaseItem')){
       this.baseItem = this.template.GetFieldByLabel('BaseItem').GetValue();
+      this._baseItem = BaseItem.From2DA(this.baseItem);
+    }
 
     if(this.template.RootNode.HasField('Charges'))
       this.charges = this.template.GetFieldByLabel('Charges').GetValue();

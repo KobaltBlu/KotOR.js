@@ -343,7 +343,7 @@ export class CollisionData {
         }
       
         //DETECT: ROOM TRANSITION
-      for (const [index, edge] of this.object.room.collisionData.walkmesh.edges) {
+        for (const [index, edge] of this.object.room.collisionData.walkmesh.edges) {
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(

@@ -29,7 +29,7 @@ export class ActionPlayAnimation extends Action {
     this.time = this.getParameter(2);
 
     if(this.animation >= 10000){
-      this.owner.animState = this.animation;
+      this.owner.setAnimationState(this.animation);
     }else{
       console.error('ActionPlayAnimation Invalid animation', this.owner.getName(), this.animation, this);
       return ActionStatus.FAILED;

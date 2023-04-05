@@ -13,6 +13,18 @@ export class ActionPhysicalAttacks extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionPhysicalAttacks;
+
+    //PARAMS
+    // 0 - (?)
+    // 1 - Target (DWORD)
+    // 2 - (?)
+    // 3 - AnimationIndex (INT)
+    // 4 - AnimationLength (INT)
+    // 5 - (?)
+    // 6 - (?)
+    // 7 - (?)
+    // 8 - (?)
+    // 9 - (?)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -65,7 +77,6 @@ export class ActionPhysicalAttacks extends Action {
 
           return ActionStatus.IN_PROGRESS;
         }else{
-          this.owner.animState = ModuleCreatureAnimState.IDLE;
           this.owner.force = 0;
           this.owner.speed = 0;
           this.owner.openSpot = undefined;

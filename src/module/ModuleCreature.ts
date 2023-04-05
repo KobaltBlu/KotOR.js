@@ -48,6 +48,10 @@ import { DLGObject } from "../resource/DLGObject";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { AppearanceManager } from "../managers/AppearanceManager";
+import { CreatureAnimationState } from "../interface/animation/CreatureAnimationState";
+import { OverlayAnimationState } from "../interface/animation/OverlayAnimationState";
+import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
+import { WeaponWield } from "../enums/combat/WeaponWield";
 
 /* @file
  * The ModuleCreature class.
@@ -127,6 +131,9 @@ export class ModuleCreature extends ModuleObject {
   partyID: number;
   // appearance: any;
 
+  animationState: CreatureAnimationState;
+  overlayAnimationState: OverlayAnimationState;
+  // dialogAnimationState: DialogAnimationState;
   
   equipment: { 
     HEAD: ModuleItem; 
@@ -148,7 +155,6 @@ export class ModuleCreature extends ModuleObject {
   regenTimer: number;
   regenTimerMax: number;
   excitedDuration: number;
-  overlayAnimation: string;
   turning: number;
   deathAnimationPlayed: boolean;
   openSpot: any;
@@ -230,7 +236,8 @@ export class ModuleCreature extends ModuleObject {
     this.dec = 0;
     this.disarmable = 0;
     this.isHologram = false;
-    this.overlayAnimation = undefined;
+    this.resetAnimationState();
+    this.resetOverlayAnimationState();
 
     this.equipment = {
       HEAD: undefined,
@@ -315,7 +322,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.perceptionList = [];
 
-    this.animState = ModuleCreatureAnimState.IDLE;
+    this.setAnimationState(ModuleCreatureAnimState.IDLE);
     this.combatData.combatActionTimer = 3; 
     this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.combatState = false;
@@ -420,7 +427,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG){
 
-      if(this.animState == ModuleCreatureAnimState.IDLE){
+      if(this.animationState.index == ModuleCreatureAnimState.IDLE){
         this.footstepEmitter.Stop();
       }
 
@@ -447,14 +454,14 @@ export class ModuleCreature extends ModuleObject {
       }*/
 
       if(!this.isDead() && (
-          this.animState == ModuleCreatureAnimState.DEAD ||
-          this.animState == ModuleCreatureAnimState.DEAD1 ||
-          this.animState == ModuleCreatureAnimState.GET_UP_DEAD || 
-          this.animState == ModuleCreatureAnimState.GET_UP_DEAD1
+          this.animationState.index == ModuleCreatureAnimState.DEAD ||
+          this.animationState.index == ModuleCreatureAnimState.DEAD1 ||
+          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD || 
+          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1
         )
       ){
         this.deathAnimationPlayed = false;
-        this.animState = ModuleCreatureAnimState.GET_UP_DEAD;
+        this.setAnimationState(ModuleCreatureAnimState.GET_UP_DEAD);
       }
 
       if(!this.isDead()){
@@ -482,7 +489,7 @@ export class ModuleCreature extends ModuleObject {
 
         this.deathStarted = false;
         
-        if(this.animState != ModuleCreatureAnimState.DEAD){
+        if(this.animationState.index != ModuleCreatureAnimState.DEAD){
           this.updateActionQueue(delta);
         }
 
@@ -527,10 +534,10 @@ export class ModuleCreature extends ModuleObject {
         this.getUpAnimationPlayed = false;
         if(
           this.deathStarted && 
-          this.animState != ModuleCreatureAnimState.DEAD && 
-          this.animState != ModuleCreatureAnimState.DIE
+          this.animationState.index != ModuleCreatureAnimState.DEAD && 
+          this.animationState.index != ModuleCreatureAnimState.DIE
         ){
-          this.animState = ModuleCreatureAnimState.DEAD;
+          this.setAnimationState(ModuleCreatureAnimState.DEAD);
           this.deathAnimationPlayed = true;
         }
         if(!this.deathStarted){
@@ -539,15 +546,15 @@ export class ModuleCreature extends ModuleObject {
           this.clearAllActions();
           this.onDeath();
           this.PlaySoundSet(SSFObjectType.DEAD);
-          this.overlayAnimation = undefined;
-          this.animState = ModuleCreatureAnimState.DIE;
+          this.resetOverlayAnimationState();
+          this.setAnimationState(ModuleCreatureAnimState.DIE);
         }
       }
 
       if(this.isDebilitated()){
         this.force = 0;
         this.speed = 0;
-        this.animState = ModuleCreatureAnimState.IDLE;
+        this.setAnimationState(ModuleCreatureAnimState.IDLE);
       }
 
       //-------------------------//
@@ -557,10 +564,10 @@ export class ModuleCreature extends ModuleObject {
       if(
         this.isDead() ||
         (
-          this.animState == ModuleCreatureAnimState.DIE ||
-          this.animState == ModuleCreatureAnimState.DIE1 ||
-          this.animState == ModuleCreatureAnimState.GET_UP_DEAD ||
-          this.animState == ModuleCreatureAnimState.GET_UP_DEAD1 
+          this.animationState.index == ModuleCreatureAnimState.DIE ||
+          this.animationState.index == ModuleCreatureAnimState.DIE1 ||
+          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD ||
+          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1 
         )
       ){
         this.force = 0;
@@ -591,9 +598,9 @@ export class ModuleCreature extends ModuleObject {
         this.AxisFront.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
         if(this.AxisFront.length()){
           if(this.animSpeed > 0.75){
-            this.animState = ModuleCreatureAnimState.RUNNING;
+            this.setAnimationState(ModuleCreatureAnimState.RUNNING);
           }else{
-            this.animState = ModuleCreatureAnimState.WALKING;
+            this.setAnimationState(ModuleCreatureAnimState.WALKING);
           }
         }
         //this.AxisFront.z = gravityDelta;
@@ -609,8 +616,8 @@ export class ModuleCreature extends ModuleObject {
         this.speed = 0;
       }
 
-      if(!this.AxisFront.length() && ( this.animState == ModuleCreatureAnimState.RUNNING || this.animState == ModuleCreatureAnimState.WALKING )){
-        this.animState = ModuleCreatureAnimState.IDLE;
+      if(!this.AxisFront.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING )){
+        this.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.speed = 0;
         this.force = 0;
       }
@@ -619,8 +626,8 @@ export class ModuleCreature extends ModuleObject {
       // END: Move Speed Logic //
       //-----------------------//
 
-      if(this.combatData.combatState && this.animState == ModuleCreatureAnimState.PAUSE){
-        this.animState = ModuleCreatureAnimState.READY;
+      if(this.combatData.combatState && this.animationState.index == ModuleCreatureAnimState.PAUSE){
+        this.setAnimationState(ModuleCreatureAnimState.READY);
       }
 
       this.updateExcitedDuration(delta);
@@ -954,8 +961,9 @@ export class ModuleCreature extends ModuleObject {
       }
       CombatEngine.AddCombatant(this);
     }else{
-      if(this.animState == ModuleCreatureAnimState.READY)
-        this.animState = ModuleCreatureAnimState.PAUSE;
+      if(this.animationState.index == ModuleCreatureAnimState.READY){
+        this.setAnimationState(ModuleCreatureAnimState.PAUSE);
+      }
     }
   }
 
@@ -1040,48 +1048,44 @@ export class ModuleCreature extends ModuleObject {
 
     let currentAnimation = this.model.getAnimationName();
 
-    if(this.overlayAnimation && !this.isDead()){
-      let overlayAnimationData = OdysseyModelAnimation.GetAnimation2DA(this.overlayAnimation);
-      if(overlayAnimationData){
-        if( (this.animState != ModuleCreatureAnimState.WALKING && this.animState != ModuleCreatureAnimState.RUNNING) || overlayAnimationData.overlay == 1){
-          if(currentAnimation != this.overlayAnimation){
-            this.dialogAnimation = undefined;
-            const anim = this.model.playAnimation(this.overlayAnimation, false);
-            setTimeout( () => {
-              this.overlayAnimation = undefined;
-            }, anim ? anim.length * 1000 : 1500 );
+    if(this.overlayAnimationState.animationName && !this.isDead()){
+      //(this.animationState.index != ModuleCreatureAnimState.WALKING && this.animationState.index != ModuleCreatureAnimState.RUNNING)
+      // if( this.overlayAnimationState.animation.overlay == '1'){
+        if(currentAnimation != this.overlayAnimationState.animationName){
+          if(!this.overlayAnimationState.started){
+            this.overlayAnimationState.started = true;
+            this.model.playOverlayAnimation(this.overlayAnimationState.animationName, this.overlayAnimationState.animation);
+          }else{
+            this.resetOverlayAnimationState();
           }
-          return;
-        }else{
-          this.overlayAnimation = undefined;
         }
-      }else{
-        this.overlayAnimation = undefined;
-      }
+        return;
+      // }else{
+      //   this.resetOverlayAnimationState();
+      // }
     }else{
-      this.overlayAnimation = undefined;
+      this.resetOverlayAnimationState();
     }
-
-    //if(this.action && this.action.type == ActionType.ActionPlayAnimation)
-    //  return;
 
     if((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation && !this.speed && !this.isDead())
       return;
 
-    let animation = this.animationConstantToAnimation(this.animState);
-    if(animation){
-      if(currentAnimation != animation.name.toLowerCase()){
-        let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-        const anim = this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
-        if(!aLooping){
-          setTimeout( () => {
-            this.animState = ModuleCreatureAnimState.PAUSE;
-          }, anim ? anim.length * 1000 : 1500 );
+    if(this.animationState.animation){
+      if(currentAnimation != this.animationState.animation.name.toLowerCase()){
+        if(!this.animationState.started){
+          if(this.tag == 'end_jedi01'){
+            console.log(this.animationState.animation.name);
+          }
+          this.animationState.started = true;
+          let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
+          this.model.playAnimation(this.animationState.animation.name.toLowerCase(), aLooping);
+        }else{
+          this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
       }
     }else{
-      console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
-      this.animState = ModuleCreatureAnimState.PAUSE;
+      console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
+      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
     }
 
   }
@@ -1104,12 +1108,12 @@ export class ModuleCreature extends ModuleObject {
 
   canMove(){
     return !this.isParalyzed() && !this.isStunned() && (
-      this.animState != ModuleCreatureAnimState.DEAD && 
-      this.animState != ModuleCreatureAnimState.DEAD1 && 
-      this.animState != ModuleCreatureAnimState.DIE && 
-      this.animState != ModuleCreatureAnimState.DIE1 && 
-      this.animState != ModuleCreatureAnimState.GET_UP_DEAD && 
-      this.animState != ModuleCreatureAnimState.GET_UP_DEAD1
+      this.animationState.index != ModuleCreatureAnimState.DEAD && 
+      this.animationState.index != ModuleCreatureAnimState.DEAD1 && 
+      this.animationState.index != ModuleCreatureAnimState.DIE && 
+      this.animationState.index != ModuleCreatureAnimState.DIE1 && 
+      this.animationState.index != ModuleCreatureAnimState.GET_UP_DEAD && 
+      this.animationState.index != ModuleCreatureAnimState.GET_UP_DEAD1
     ) && !this.casting.length;
   }
 
@@ -1275,7 +1279,19 @@ export class ModuleCreature extends ModuleObject {
   }
 
   isDueling(): boolean {
-    return (this.combatData.lastAttackTarget?.combatData.lastAttackTarget == this && this.combatData.lastAttackTarget?.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
+    const target = this.combatData.lastAttackTarget;
+    if(!(target instanceof ModuleCreature)) return false;
+    if(target.combatData.lastAttackTarget != this) return false;
+    return (target.isDuelingWeaponEquipped() && this.isDuelingWeaponEquipped());
+  }
+
+  isDuelingWeaponEquipped(){
+    if(!this.equipment.RIGHTHAND) return false;
+    return (
+      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.DAGGER ||
+      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
+      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD
+    );
   }
 
   isDuelingObject( oObject: ModuleObject ){
@@ -1374,13 +1390,13 @@ export class ModuleCreature extends ModuleObject {
       animation = attackAnimation;
     }
 
-    //console.log('Combat Animation', animation);
+    const _animation = OdysseyModelAnimation.GetAnimation2DA(animation);
 
     let combatAction: CombatAction = {
       target: target,
       type: ActionType.ActionPhysicalAttacks,
       icon: icon,
-      animation: animation,
+      animation: _animation,
       feat: feat,
       spell: undefined,
       isMelee: isMelee,
@@ -1441,14 +1457,61 @@ export class ModuleCreature extends ModuleObject {
     return action;
   }
 
-  playOverlayAnimation(NWScriptAnimId = -1){
+  setAnimationState(animState: ModuleCreatureAnimState){
+    if(animState){
+      this.animationState.index = animState;
+      this.animationState.animation = this.animationConstantToAnimation(animState);
+      this.animationState.started = false;
+    }
+  }
+  
+  resetAnimationState(){
+    this.animationState = {
+      index: ModuleCreatureAnimState.PAUSE,
+      animation: undefined,
+      started: false,
+      speed: 1,
+    }
+  }
 
+  playTwoDAAnimation(animation: TwoDAAnimation){
+    if(animation){
+      this.resetAnimationState();
+      this.animationState = {
+        index: ModuleCreatureAnimState.PAUSE,
+        animation: animation,
+        started: false,
+        speed: 1,
+      }
+    }
+  }
+
+  playOverlayAnimation(NWScriptAnimId = -1){
+    this.resetOverlayAnimationState();
     switch(NWScriptAnimId){
       case 123:
-        this.overlayAnimation = 'diveroll';
+        this.overlayAnimationState.animationName = 'diveroll';
       break;
     }
 
+    if(this.overlayAnimationState.animationName){
+      const anim = OdysseyModelAnimation.GetAnimation2DA(this.overlayAnimationState.animationName);
+      if(anim && anim.overlay == '1'){
+        this.overlayAnimationState.animation = anim;
+      }else{
+        this.resetOverlayAnimationState();
+      }
+    }
+  }
+  
+  resetOverlayAnimationState(){
+    this.overlayAnimationState = {
+      animationIndex: -1,
+      animationName: '',
+      animation: undefined,
+      started: false,
+      speed: 1,
+    }
   }
 
   dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
@@ -1474,12 +1537,12 @@ export class ModuleCreature extends ModuleObject {
     this.clearTarget();
     this.combatData.combatState = false;
     this.cancelExcitedDuration();
-    this.overlayAnimation = undefined;
-    if(this.animState == ModuleCreatureAnimState.READY)
-      this.animState = ModuleCreatureAnimState.PAUSE;
+    this.resetOverlayAnimationState();
+    if(this.animationState.index == ModuleCreatureAnimState.READY)
+      this.setAnimationState(ModuleCreatureAnimState.PAUSE)
   }
 
-  getDamageAnimation( attackAnim: any ){
+  getDamageAnimation( attackAnim: string ): TwoDAAnimation {
     
     let attackAnimIndex = -1;
 
@@ -1502,35 +1565,35 @@ export class ModuleCreature extends ModuleObject {
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
         //console.log('damage anim', this.getName(), damageAnim.name)
-        return damageAnim.name;
+        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
       }
     }
 
     switch(modeltype){
       case 'S':
       case 'L':
-        return 'cdamages';
+        return OdysseyModelAnimation.GetAnimation2DA('cdamages');
     }
     //console.log(attackAnim);
     
     switch(attackAnim){
       case 'c2a1':
-        return 'c2d1'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d1')
       case 'c2a2':
-        return 'c2d2'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d2')
       case 'c2a3':
-        return 'c2d3'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d3')
       case 'c2a4':
-        return 'c2d4'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d4')
       case 'c2a5':
-        return 'c2d5'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d5')
     }
 
-    return 'g'+weaponWield+'d1';
+    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'d1');
 
   }
 
-  getDodgeAnimation( attackAnim: any ){
+  getDodgeAnimation( attackAnim: string ): TwoDAAnimation {
 
     let attackAnimIndex = -1;
 
@@ -1563,35 +1626,35 @@ export class ModuleCreature extends ModuleObject {
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
         //console.log('dodge anim', this.getName(), damageAnim.name)
-        return damageAnim.name;
+        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
       }
     }
 
     switch(modeltype){
       case 'S':
       case 'L':
-        return 'cdodgeg';
+        return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
     }
     //console.log(attackAnim);
     
     switch(attackAnim){
       case 'c2a1':
-        return 'c2d1'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d1')
       case 'c2a2':
-        return 'c2d2'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d2')
       case 'c2a3':
-        return 'c2d3'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d3')
       case 'c2a4':
-        return 'c2d4'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d4')
       case 'c2a5':
-        return 'c2d5'
+        return OdysseyModelAnimation.GetAnimation2DA('c2d5')
     }
 
-    return 'g'+weaponWield+'g1';
+    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'g1');
 
   }
 
-  getParryAnimation( attackAnim: any ){
+  getParryAnimation( attackAnim: string ): TwoDAAnimation {
 
     let attackAnimIndex = -1;
 
@@ -1614,41 +1677,41 @@ export class ModuleCreature extends ModuleObject {
       let damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
         //console.log('parry anim', this.getName(), damageAnim.name)
-        return damageAnim.name;
+        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
       }
     }
 
     switch(modeltype){
       case 'S':
       case 'L':
-        return 'cdodgeg';
+        return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
     }
     //console.log(attackAnim);
     switch(attackAnim){
       case 'c2a1':
-        return 'c2p1'
+        return OdysseyModelAnimation.GetAnimation2DA('c2p1')
       case 'c2a2':
-        return 'c2p2'
+        return OdysseyModelAnimation.GetAnimation2DA('c2p2')
       case 'c2a3':
-        return 'c2p3'
+        return OdysseyModelAnimation.GetAnimation2DA('c2p3')
       case 'c2a4':
-        return 'c2p4'
+        return OdysseyModelAnimation.GetAnimation2DA('c2p4')
       case 'c2a5':
-        return 'c2p5'
+        return OdysseyModelAnimation.GetAnimation2DA('c2p5')
     }
 
-    return 'g'+weaponWield+'g1';
+    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'g1');
     
   }
 
-  getDeflectAnimation(){
+  getDeflectAnimation(): TwoDAAnimation {
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     //console.log('getDamageAnimation', 'g'+weaponWield+'d1');
-    return 'g'+weaponWield+'n1';
+    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'n1');
   }
 
-  getCombatAnimationAttackType(){
+  getCombatAnimationAttackType(): string {
     let weapon = this.equipment.RIGHTHAND;
     let weaponType = 0;
     //let weaponWield = this.getCombatAnimationWeaponType();
@@ -1832,10 +1895,10 @@ export class ModuleCreature extends ModuleObject {
     let rhSounds, lhSounds;
 
     if(this.equipment.RIGHTHAND)
-      rhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.RIGHTHAND.getBaseItem().powereditem];
+      rhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.RIGHTHAND._baseItem.poweredItem];
 
     if(this.equipment.LEFTHAND)
-      lhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.LEFTHAND.getBaseItem().powereditem];
+      lhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.LEFTHAND._baseItem.poweredItem];
 
 
     let sndIdx = Math.round(Math.random()*2);
@@ -1978,7 +2041,7 @@ export class ModuleCreature extends ModuleObject {
     if(!isSimple){
       if(weaponType){
         this.clearAllActions();
-        this.animState = ModuleCreatureAnimState.FLOURISH;
+        this.setAnimationState(ModuleCreatureAnimState.FLOURISH);
         this.weaponPowered(true);
       }
     }
@@ -2472,7 +2535,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  getInventory(){
+  getInventory(): ModuleItem[] {
     if(this.isPartyMember()){
       return InventoryManager.getInventory();
     }else{
@@ -3162,6 +3225,7 @@ export class ModuleCreature extends ModuleObject {
 
 
   isSimpleCreature(){
+    if(!this.creatureAppearance) return false;
     return this.creatureAppearance.modeltype === 'S' || this.creatureAppearance.modeltype === 'L';
   }
 
@@ -3861,8 +3925,11 @@ export class ModuleCreature extends ModuleObject {
         this.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.appearance);
       }
 
-      if(this.template.RootNode.HasField('Animation'))
-        this.animState = this.template.GetFieldByLabel('Animation').GetValue();
+      if(this.template.RootNode.HasField('Animation')){
+        this.setAnimationState(
+          this.template.GetFieldByLabel('Animation').GetValue()
+        );
+      }
 
       if(this.template.RootNode.HasField('BodyBag'))
         this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
@@ -4370,7 +4437,7 @@ export class ModuleCreature extends ModuleObject {
     let actionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);
     gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Animation') ).SetValue(this.animState);
+    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Animation') ).SetValue(this.animationState.index);
     //gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).SetValue(1);
     gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(this.appearance);
     //gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'AreaId') ).SetValue(1);

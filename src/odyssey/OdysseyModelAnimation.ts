@@ -4,6 +4,7 @@
 import { OdysseyModel, OdysseyModelAnimationNode } from "./";
 import * as THREE from 'three';
 import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 
 /* @file
  * The OdysseyModelAnimation class holds the values used in animations.
@@ -184,7 +185,7 @@ export class OdysseyModelAnimation {
     return 0.5;
   }
 
-  static GetAnimation2DA(name = ''){
+  static GetAnimation2DA(name = ''): TwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){
       for(let i = 0, len = animations2DA.RowCount; i < len; i++){

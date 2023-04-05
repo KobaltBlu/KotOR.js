@@ -25,3 +25,4 @@ export * from "./ActionTakeItem";
 export * from "./ActionUnlockObject";
 export * from "./ActionUseObject";
 export * from "./ActionWait";
+export * from "./ActionCombat";

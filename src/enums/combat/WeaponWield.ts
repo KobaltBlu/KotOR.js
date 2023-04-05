@@ -1,0 +1,9 @@
+export enum WeaponWield {
+  INVALID = 0,
+  DAGGER = 1,
+  ONE_HANDED_SWORD = 2,
+  TWO_HANDED_SWORD = 3,
+  BLASTER_PISTOL = 4,
+  BLASTER_RIFLE = 5,
+  BLASTER_HEAVY = 6,
+}

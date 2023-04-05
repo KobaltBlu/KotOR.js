@@ -94,7 +94,7 @@ export class ActionMoveToPoint extends Action {
           this.owner.AxisFront.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
           // this.owner.walk = !run;
-          this.owner.animState = run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING;
+          this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
         }else{
           this.owner.computedPath.points.shift();
         }
@@ -130,7 +130,7 @@ export class ActionMoveToPoint extends Action {
 
       return ActionStatus.IN_PROGRESS;
     }else{
-      this.owner.animState = ModuleCreatureAnimState.IDLE;
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
       if(this.owner.computedPath) this.owner.computedPath.dispose();
