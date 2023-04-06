@@ -16,10 +16,24 @@ export class ActionQueue extends Array {
     this.owner = undefined;
   }
 
+  /**
+   * set the owner object of the queue
+   *
+   * @param owner - the owner ModuleObject
+   * @returns void
+   *
+   */
   setOwner( owner: ModuleObject ){
     this.owner = owner;
   }
 
+  /**
+   * add action to the back of the queue
+   *
+   * @param actionNode - the action node to add
+   * @returns void
+   *
+   */
   add( actionNode: Action ){
     if(actionNode instanceof Action){
       actionNode.owner = this.owner;
@@ -27,6 +41,13 @@ export class ActionQueue extends Array {
     }
   }
 
+  /**
+   * Add the supplied action to the front of the queue
+   *
+   * @param actionNode - the action node to add
+   * @returns void
+   *
+   */
   addFront( actionNode: Action ){
     if(actionNode instanceof Action){
       actionNode.owner = this.owner;
@@ -34,6 +55,14 @@ export class ActionQueue extends Array {
     }
   }
 
+
+  /**
+   * push the actionNode into the queue
+   *
+   * @param actionNode - the action node to push
+   * @returns void
+   *
+   */
   //@ts-expect-error
   push( actionNode: Action ){
     actionNode.owner = this.owner;
@@ -47,6 +76,13 @@ export class ActionQueue extends Array {
     this.add( actionNode );
   }
 
+  /**
+   * shifts the actionNode to the beginning of the queue
+   *
+   * @param actionNode - the action node to push
+   * @returns void
+   *
+   */
   //@ts-expect-error
   unshift( actionNode: Action ){
     actionNode.owner = this.owner;
@@ -54,6 +90,13 @@ export class ActionQueue extends Array {
     this.addFront( actionNode );
   }
 
+  /**
+   * updates the current action in the queue
+   *
+   * @param delta - deltaTime
+   * @returns void
+   *
+   */
   process( delta: number = 0 ){
     let action = this[0];
     if(action instanceof Action){
@@ -65,10 +108,23 @@ export class ActionQueue extends Array {
     }
   }
 
+  /**
+   * clears all actions from the queue
+   *
+   * @returns void
+   *
+   */
   clear(){
     this.splice(0, this.length);
   }
 
+  /**
+   * removes the action from the queue
+   *
+   * @param actionNode - node to remove
+   * @returns void
+   *
+   */
   clearAction(action: Action){
     if(action){
       const index = this.indexOf(action);
@@ -79,6 +135,13 @@ export class ActionQueue extends Array {
     }
   }
 
+  /**
+   * removes actions with the supplied groupId from the queue
+   *
+   * @param groupId - groupId to remove
+   * @returns void
+   *
+   */
   clearActionsByGroupId(groupId: number = -1){
     if(groupId > 0) return;
     let index = this.length;
