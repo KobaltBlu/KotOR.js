@@ -82,6 +82,9 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   default6: string;
   default7: string;
   default8: string;
+  default9: string;
+  default10: string;
+  default11: string;
   char: any;
   LBL_3D_VIEW: any;
   lbl_count: any;
@@ -112,6 +115,9 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.default6 = this.LBL_NA6.getFillTextureName();
       this.default7 = this.LBL_NA7.getFillTextureName();
       this.default8 = this.LBL_NA8.getFillTextureName();
+      this.default9 = this.LBL_NA9.getFillTextureName();
+      this.default10 = this.LBL_NA10.getFillTextureName();
+      this.default11 = this.LBL_NA11.getFillTextureName();
       this.BTN_NPC0.addEventListener('click', (e: any) => {
         e.stopPropagation();
         if(PartyManager.IsAvailable(0)){
@@ -400,6 +406,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   }
 
   Update(delta: number) {
+    super.Update(delta);
     if (!this.bVisible)
       return;
     if (this.char instanceof ModuleCreature)
