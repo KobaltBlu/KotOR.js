@@ -7,7 +7,7 @@ import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyModelNodeLight } from "../OdysseyModelNodeLight";
 import { OdysseyController } from "./OdysseyController";
 import * as THREE from "three";
-import { OdysseyLight3D } from "../../KotOR";
+import { OdysseyLight3D } from "../../three/odyssey";
 
 export class RadiusController extends OdysseyController {
 
