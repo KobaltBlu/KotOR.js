@@ -4,7 +4,8 @@
   "description": "KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II",
   "main": "main.js",
   "scripts": {
-    "start": "tsc-watch --project tsconfig.electron.json --onSuccess \"electron .\"",
+    "start": "tsc --project tsconfig.electron.json && electron .",
+    "start-watch": "tsc-watch --project tsconfig.electron.json --onSuccess \"electron .\"",
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
