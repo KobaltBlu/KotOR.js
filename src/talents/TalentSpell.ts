@@ -3,16 +3,17 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
 import * as THREE from "three";
-import { CombatEngine } from "../combat/CombatEngine";
 import { GameState } from "../GameState";
 import { ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { TwoDAManager } from "../managers/TwoDAManager";
+import { CombatRoundAction } from "../combat";
+import { CombatActionType } from "../enums/combat/CombatActionType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ActionType } from "../enums/actions/ActionType";
-import { ActionCastSpell } from "../actions";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionCombat } from "../actions";
 
 export class TalentSpell extends TalentObject {
   conjtime: string;
@@ -73,7 +74,7 @@ export class TalentSpell extends TalentObject {
       }else{
         return 'throwgren';
 
-        //throwgen1 is an unnder-handed throw. I think it's used if the target is close
+        //throwgen1 is an under-handed throw. I think it's used if the target is close
         //this.conjanim = 'throwgen1';
       }
     }
@@ -122,20 +123,21 @@ export class TalentSpell extends TalentObject {
       if(this.hostilesetting == 1){
         oCaster.resetExcitedDuration();
       }
-      CombatEngine.AddCombatant(oCaster);
 
-      // oCaster.combatData.combatQueue.push({
-      //   target: oTarget,
-      //   type: ActionType.ActionCastSpell,
-      //   icon: this.iconresref,
-      //   spell: this,
-      //   ready: false,
-      //   animation: this.getConjureAnimation(),
-      //   conjureTime: this.getConjureTime(),
-      //   castTime: this.getCastTime(),
-      //   catchTime: this.getCatchTime(),
-      //   completed: false
-      // });
+      const combatAction = new CombatRoundAction();
+      combatAction.actionType = CombatActionType.CAST_SPELL;
+      combatAction.target = oTarget;
+      combatAction.setSpell(this);
+      combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
+      combatAction.animationName = this.getConjureAnimation();
+      combatAction.animationTime = 1500;
+
+      oCaster.combatRound.addAction(combatAction);
+
+      if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+        const action = new ActionCombat(0xFFFF);
+        oCaster.actionQueue.add(action);
+      }
 
       this.projectileHook = undefined;
       this.projectileOrigin = new THREE.Vector3();

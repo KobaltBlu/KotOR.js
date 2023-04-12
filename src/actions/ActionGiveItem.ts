@@ -3,12 +3,12 @@ import { ActionType } from "../enums/actions/ActionType";
 import { InventoryManager } from "../managers/InventoryManager";
 import { PartyManager } from "../managers/PartyManager";
 import { ModuleCreature, ModuleItem, ModulePlaceable, ModuleStore } from "../module";
-import { Action } from "./Action";
+import { Action, ActionQueue } from ".";
 
 export class ActionGiveItem extends Action {
   item: ModuleItem;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionGiveItem;
   }

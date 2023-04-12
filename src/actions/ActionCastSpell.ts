@@ -1,4 +1,4 @@
-import { Action, ActionMoveToPoint } from ".";
+import { Action, ActionMoveToPoint, ActionQueue } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -11,13 +11,13 @@ export class ActionCastSpell extends Action {
   
   spell: any = {}
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionCastSpell;
 
     //PARAMS
     // 0 - int: nSpellId
-    // 1 - int: Unknown: -1 if cheat enabled
+    // 1 - int: nSpellClassIndex - creature's class index that can cast the spell
     // 2 - int: nDomainLevel
     // 3 - int: Unknown: Always 0?
     // 4 - int: Unknown: Always 0?
@@ -27,7 +27,7 @@ export class ActionCastSpell extends Action {
     // 8 - float: target z
     // 9 - int: nProjectilePath
     // 10 - int: Unknown: Always -1?
-    // 11 - int: Unknown: -1 if cheat enabled
+    // 11 - int: nSpellId (2?)
 
   }
 
@@ -40,7 +40,7 @@ export class ActionCastSpell extends Action {
       if(!this.spell.inRange(this.target, this.owner)){
 
         (this.owner as ModuleCreature).openSpot = undefined;
-        let actionMoveToTarget = new ActionMoveToPoint(undefined, this.groupId);
+        let actionMoveToTarget = new ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -60,7 +60,7 @@ export class ActionCastSpell extends Action {
           this.owner.force = 0;
           this.owner.speed = 0;
         }
-        this.spell.useTalentOnObject(this.target, this.owner);
+        // this.spell.useTalentOnObject(this.target, this.owner);
         return ActionStatus.COMPLETE;
       }
     }

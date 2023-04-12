@@ -1,7 +1,7 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreature } from "../module";
-import { Action } from "./Action";
+import { Action, ActionQueue } from ".";
 import * as THREE from "three";
 
 export class ActionJumpToPoint extends Action {
@@ -10,7 +10,7 @@ export class ActionJumpToPoint extends Action {
   z: number;
   facing: number;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionJumpToPoint;
 

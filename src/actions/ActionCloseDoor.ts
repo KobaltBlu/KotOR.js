@@ -5,11 +5,11 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { GameState } from "../GameState";
 import { ModuleDoor, ModuleCreature } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action, ActionMoveToPoint } from "./";
+import { Action, ActionMoveToPoint, ActionQueue } from "./";
 
 export class ActionCloseDoor extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionCloseDoor;
 

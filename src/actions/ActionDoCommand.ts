@@ -1,11 +1,11 @@
+import { ActionQueue, Action } from ".";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { Action } from "./Action";
 
 export class ActionDoCommand extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionDoCommand;
 

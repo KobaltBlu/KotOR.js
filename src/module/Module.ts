@@ -328,7 +328,7 @@ export class Module {
 
     if(this.readyToProcessEvents){
       
-      CombatEngine.Update(delta);
+      // CombatEngine.Update(delta);
 
       //Process EventQueue
       let eqLen = this.eventQueue.length - 1;

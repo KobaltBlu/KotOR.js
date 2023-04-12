@@ -3,6 +3,7 @@ import { TwoDAManager } from "../managers/TwoDAManager";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponSize } from "../enums/combat/WeaponSize";
+import { DiceType } from "../enums/combat/DiceType";
 
 export class BaseItem {
 
@@ -30,6 +31,7 @@ export class BaseItem {
   bloodColor: 'S'|undefined = undefined;
   numDice: number = 0;
   dieToRoll: number = 0;
+  die: DiceType = DiceType.d8;
   criticalThreat: number = 0;
   criticalHitMultiplier: number = 0;
   baseCost: number = 0;
@@ -68,6 +70,38 @@ export class BaseItem {
   denySubrace: number = 0;
   armorType: string = '';
   storePanelSort: number = 0;
+
+  postProcess(){
+    switch(this.dieToRoll){
+      case 2:
+        this.die = DiceType.d2;
+      break;
+      case 3:
+        this.die = DiceType.d3;
+      break;
+      case 4:
+        this.die = DiceType.d4;
+      break;
+      case 6:
+        this.die = DiceType.d6;
+      break;
+      case 8:
+        this.die = DiceType.d8;
+      break;
+      case 10:
+        this.die = DiceType.d10;
+      break;
+      case 12:
+        this.die = DiceType.d12;
+      break;
+      case 20:
+        this.die = DiceType.d20;
+      break;
+      case 100:
+        this.die = DiceType.d100;
+      break;
+    }
+  }
 
   static From2DA (baseItemId: number = -1): BaseItem {
     const baseItem = new BaseItem();
@@ -202,6 +236,8 @@ export class BaseItem {
       baseItem.armorType = TwoDAObject.normalizeValue(row.armortype, 'string', '') as string;
     if(row.hasOwnProperty('storepanelsort'))
       baseItem.storePanelSort = TwoDAObject.normalizeValue(row.storepanelsort, 'number', 1.7) as number;
+
+    baseItem.postProcess();
 
     return baseItem;
   }

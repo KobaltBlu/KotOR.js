@@ -329,7 +329,6 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e: any) => {
           e.stopPropagation();
           const action = ActionMenuManager.ActionPanels.targetPanels[i].getSelectedAction();
-
           if(action){
             if(i==0){
               if(!action.talent){
@@ -680,15 +679,16 @@ export class InGameOverlay extends GameMenu {
     if (!this.bVisible)
       return;
     if (!GameState.module.area.miniGame) {
-      ActionMenuManager.SetPC(GameState.getCurrentPlayer());
+      const oPC = GameState.getCurrentPlayer();
+      ActionMenuManager.SetPC(oPC);
       ActionMenuManager.SetTarget(GameState.selectedObject);
       ActionMenuManager.UpdateMenuActions();
       this.UpdateTargetUIPanels();
       this.UpdateSelfUIPanels();
       let mapTexture = this.LBL_MAPVIEW.getFillTexture();
       if (mapTexture) {
-        let pointX = (GameState.getCurrentPlayer().position.x - GameState.module.area.Map.WorldPt1X) / (GameState.module.area.Map.WorldPt2X + GameState.module.area.Map.WorldPt1X);
-        let pointY = (GameState.getCurrentPlayer().position.y - GameState.module.area.Map.WorldPt1Y) / (GameState.module.area.Map.WorldPt2Y + GameState.module.area.Map.WorldPt1Y);
+        let pointX = (oPC.position.x - GameState.module.area.Map.WorldPt1X) / (GameState.module.area.Map.WorldPt2X + GameState.module.area.Map.WorldPt1X);
+        let pointY = (oPC.position.y - GameState.module.area.Map.WorldPt1Y) / (GameState.module.area.Map.WorldPt2Y + GameState.module.area.Map.WorldPt1Y);
         mapTexture.offset.x = pointX + 0.125;
         mapTexture.offset.y = pointY + 0.35;
         mapTexture.updateMatrix();
@@ -726,16 +726,19 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
         }
       }
-      if (GameState.getCurrentPlayer().combatData.combatAction || GameState.getCurrentPlayer().combatData.combatQueue.length) {
+
+      const combatRound = oPC.combatRound;
+
+      if (combatRound) {
         this.showCombatUI();
-        let action0 = GameState.getCurrentPlayer().combatData.combatAction;
-        let action1 = GameState.getCurrentPlayer().combatData.combatQueue[0];
-        let action2 = GameState.getCurrentPlayer().combatData.combatQueue[1];
-        let action3 = GameState.getCurrentPlayer().combatData.combatQueue[2];
+        let action0 = combatRound.action;
+        let action1 = combatRound.scheduledActionList[0];
+        let action2 = combatRound.scheduledActionList[1];
+        let action3 = combatRound.scheduledActionList[2];
         if (action0 != undefined) {
-          if (this.LBL_QUEUE0.getFillTextureName() != action0.icon) {
-            this.LBL_QUEUE0.setFillTextureName(action0.icon);
-            TextureLoader.tpcLoader.fetch(action0.icon, (texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
+            this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
+            TextureLoader.tpcLoader.fetch(action0.iconResRef, (texture: OdysseyTexture) => {
               this.LBL_QUEUE0.setFillTexture(texture);
               this.LBL_QUEUE0.border.fill.material.transparent = true;
             });
@@ -745,9 +748,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE0.setFillTexture(undefined);
         }
         if (action1 != undefined) {
-          if (this.LBL_QUEUE1.getFillTextureName() != action1.icon) {
-            this.LBL_QUEUE1.setFillTextureName(action1.icon);
-            TextureLoader.tpcLoader.fetch(action1.icon, (texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE1.getFillTextureName() != action1.iconResRef) {
+            this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
+            TextureLoader.tpcLoader.fetch(action1.iconResRef, (texture: OdysseyTexture) => {
               this.LBL_QUEUE1.setFillTexture(texture);
               this.LBL_QUEUE1.border.fill.material.transparent = true;
             });
@@ -757,9 +760,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE1.setFillTexture(undefined);
         }
         if (action2 != undefined) {
-          if (this.LBL_QUEUE2.getFillTextureName() != action2.icon) {
-            this.LBL_QUEUE2.setFillTextureName(action2.icon);
-            TextureLoader.tpcLoader.fetch(action2.icon, (texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE2.getFillTextureName() != action2.iconResRef) {
+            this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
+            TextureLoader.tpcLoader.fetch(action2.iconResRef, (texture: OdysseyTexture) => {
               this.LBL_QUEUE2.setFillTexture(texture);
               this.LBL_QUEUE2.border.fill.material.transparent = true;
             });
@@ -769,9 +772,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE2.setFillTexture(undefined);
         }
         if (action3 != undefined) {
-          if (this.LBL_QUEUE3.getFillTextureName() != action3.icon) {
-            this.LBL_QUEUE3.setFillTextureName(action3.icon);
-            TextureLoader.tpcLoader.fetch(action3.icon, (texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE3.getFillTextureName() != action3.iconResRef) {
+            this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
+            TextureLoader.tpcLoader.fetch(action3.iconResRef, (texture: OdysseyTexture) => {
               this.LBL_QUEUE3.setFillTexture(texture);
               this.LBL_QUEUE3.border.fill.material.transparent = true;
             });

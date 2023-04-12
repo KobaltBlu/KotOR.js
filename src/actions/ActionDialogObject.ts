@@ -1,4 +1,4 @@
-import { ActionMoveToPoint } from ".";
+import { Action, ActionMoveToPoint, ActionQueue } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -11,7 +11,6 @@ import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { DLGObject } from "../resource/DLGObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
 
 export class ActionDialogObject extends Action {
   declare target: ModuleObject;
@@ -19,7 +18,7 @@ export class ActionDialogObject extends Action {
   validate_conversation_resref: boolean = false;
   conversation: DLGObject;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionDialogObject;
     this.clearable = false;

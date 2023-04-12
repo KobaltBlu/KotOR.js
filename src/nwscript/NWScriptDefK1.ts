@@ -5760,9 +5760,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      //This will kinda work for now but I think it is supposed to check if any actions in the queue were set by the player
-      if(this.caller instanceof ModuleObject){// && this.caller == GameState.player){
-        return this.caller.combatData.combatQueue.length ? 1 : 0;//this.caller.actionQueue.length ? 1 : 0;
+      if(this.caller instanceof ModuleObject){
+        return this.caller.actionQueue.find( action => action.isUserAction ) ? 1 : 0;
       }else{
         return 0;
       }
@@ -7548,11 +7547,40 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(args[0] instanceof ModuleObject){
         switch(args[0].combatData.lastAttackAction){
+          case ActionType.ActionMoveToPoint:
+            return 0;
+          case ActionType.ActionPickUpItem:
+            return 1;
+          case ActionType.ActionDropItem:
+            return 2;
           case ActionType.ActionPhysicalAttacks:
             return 3;
           case ActionType.ActionCastSpell:
-          case ActionType.ActionItemCastSpell:
             return 4;
+          case ActionType.ActionOpenDoor:
+            return 5;
+          case ActionType.ActionCloseDoor:
+            return 6;
+          case ActionType.ActionDialogObject:
+            return 7;
+          case ActionType.ActionDisarmMine:
+            return 8;
+          case ActionType.ActionRecoverMine:
+            return 9;
+          case ActionType.ActionFlagMine:
+            return 10;
+          case ActionType.ActionExamineMine:
+            return 11;
+          case ActionType.ActionSetMine:
+            return 12;
+          case ActionType.ActionUnlockObject:
+            return 13;
+          case ActionType.ActionLockObject:
+            return 14;
+          case ActionType.ActionUseObject:
+            return 15;
+          case ActionType.ActionItemCastSpell:
+            return 19;
         }
       }
       return -1;

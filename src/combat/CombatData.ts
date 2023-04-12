@@ -1,4 +1,4 @@
-import { CombatRoundData } from "./";
+import { CombatRound } from "./";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreature, ModuleObject } from "../module";
 import { CombatAction } from "../interface/combat/CombatAction";
@@ -7,11 +7,10 @@ import { TalentFeat, TalentSpell } from "../talents";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { GameInitializer } from "../GameInitializer";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { WeaponType } from "../enums/combat/WeaponType";
 
 export class CombatData {
   object: ModuleObject;
-  
-  combatRoundData: CombatRoundData;
   
   lastAttemptedAttackTarget: ModuleObject;
   lastAttackTarget: ModuleObject;
@@ -23,7 +22,7 @@ export class CombatData {
   lastCombatFeatUsed: TalentFeat;
   lastForcePowerUsed: TalentSpell;
   lastAttackResult: AttackResult;
-  combatQueue: CombatAction[];
+  combatQueue: CombatAction[] = [];
   combatAction: CombatAction;
   lastAttackObject: ModuleObject;
   lastForcePowerSuccess: boolean;
@@ -107,48 +106,6 @@ export class CombatData {
     if(this.combatAction != combatAction){
       this.combatAction = combatAction;
     }
-    if(combatAction){
-      switch(combatAction.type){
-        case ActionType.ActionPhysicalAttacks:
-          if(!combatAction.isCutsceneAttack){
-            this.object.actionQueue.clear();
-            const action = new ActionPhysicalAttacks();
-            action.setParameter(0, ActionParameterType.INT, 0);
-            action.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
-            action.setParameter(2, ActionParameterType.INT, 1);
-            action.setParameter(3, ActionParameterType.INT, 25);
-            action.setParameter(4, ActionParameterType.INT, -36);
-            action.setParameter(5, ActionParameterType.INT, 1);
-            action.setParameter(6, ActionParameterType.INT, combatAction.feat instanceof TalentFeat ? combatAction.feat.id : 0);
-            action.setParameter(7, ActionParameterType.INT, 0);
-            action.setParameter(8, ActionParameterType.INT, 4);
-            action.setParameter(9, ActionParameterType.INT, 0);
-            combatAction.action = action;
-            this.object.actionQueue.clear();
-            this.object.actionQueue.add(action);
-          }
-        break;
-        case ActionType.ActionCastSpell:
-          const action = new ActionCastSpell();
-          action.setParameter(0, ActionParameterType.INT, combatAction.spell instanceof TalentSpell ? combatAction.spell.id : 0); //Spell Id
-          action.setParameter(1, ActionParameterType.INT, -1); //
-          action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
-          action.setParameter(3, ActionParameterType.INT, 0);
-          action.setParameter(4, ActionParameterType.INT, 0);
-          action.setParameter(5, ActionParameterType.DWORD, combatAction.target.id || ModuleObject.OBJECT_INVALID); //Target Object
-          action.setParameter(6, ActionParameterType.FLOAT, combatAction.target.position.x); //Target X
-          action.setParameter(7, ActionParameterType.FLOAT, combatAction.target.position.y); //Target Y
-          action.setParameter(8, ActionParameterType.FLOAT, combatAction.target.position.z); //Target Z
-          action.setParameter(9, ActionParameterType.INT, 0); //ProjectilePath
-          action.setParameter(10, ActionParameterType.INT, -1);
-          action.setParameter(11, ActionParameterType.INT, -1);
-          combatAction.action = action;
-          this.object.actionQueue.clear();
-          this.object.actionQueue.add(action);
-        break;
-      }
-    }
-
   }
 
   clearCombatAction(combatAction: CombatAction = undefined, clearAll: boolean = false){
@@ -209,7 +166,7 @@ export class CombatData {
       }
     }
 
-    return 0;
+    return WeaponType.INVALID;
   }
 
 }

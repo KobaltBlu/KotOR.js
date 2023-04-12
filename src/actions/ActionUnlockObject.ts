@@ -6,14 +6,13 @@ import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
-import { ActionMoveToPoint } from "./ActionMoveToPoint";
+import { Action, ActionMoveToPoint, ActionQueue } from ".";
 
 export class ActionUnlockObject extends Action {
   timer: number;
   shouted: any;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionUnlockObject;
     this.timer = 1.5;

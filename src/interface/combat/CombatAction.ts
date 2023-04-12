@@ -25,4 +25,5 @@ export interface CombatAction {
   catchTime?: number,
   completed?: boolean,
   damageCalculated?: boolean,
+  waiting?: boolean,
 }

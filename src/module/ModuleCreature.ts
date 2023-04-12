@@ -3,7 +3,7 @@
 
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { Action, ActionCastSpell, ActionFollowLeader, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
+import { Action, ActionCastSpell, ActionCombat, ActionFollowLeader, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CombatEngine } from "../combat/CombatEngine";
 import { CreatureClass } from "../combat/CreatureClass";
@@ -28,7 +28,7 @@ import { TalentSkill } from "../talents/TalentSkill";
 import { TalentSpell } from "../talents/TalentSpell";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { ModuleObject, ModuleItem, ModuleRoom } from "./";
+import { ModuleObject, ModuleItem, ModuleRoom, Module } from "./";
 import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { TwoDAManager } from "../managers/TwoDAManager";
@@ -52,6 +52,9 @@ import { CreatureAnimationState } from "../interface/animation/CreatureAnimation
 import { OverlayAnimationState } from "../interface/animation/OverlayAnimationState";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
+import { CombatRoundAction } from "../combat";
+import { CombatActionType } from "../enums/combat/CombatActionType";
+import { WeaponType } from "../enums/combat/WeaponType";
 
 /* @file
  * The ModuleCreature class.
@@ -326,7 +329,6 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatActionTimer = 3; 
     this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.combatState = false;
-    this.combatData.combatQueue = [];
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.collisionData.blockingTimer = 0;
 
@@ -876,7 +878,7 @@ export class ModuleCreature extends ModuleObject {
                 if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
                   GameState.State = EngineState.PAUSED
                 }
-                CombatEngine.AddCombatant(this);
+                // CombatEngine.AddCombatant(this);
               }
             }
             
@@ -941,15 +943,13 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.isDead()){
       this.clearTarget();
-      if(CombatEngine.combatants.indexOf(this) >= 0){
-        CombatEngine.RemoveCombatant(this);
-      }
+      this.combatRound.clearActions();
     }
 
     if(this.combatData.combatState){
       //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
       if(GameState.getCurrentPlayer() == this){
-        if(!this.combatData.combatQueue.length && !this.combatData.combatAction){
+        if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
           if( this.combatData.lastAttackTarget ){
             this.attackCreature(this.combatData.lastAttackTarget, undefined);
           }else if( this.combatData.lastAttacker ){
@@ -959,7 +959,7 @@ export class ModuleCreature extends ModuleObject {
           }
         }
       }
-      CombatEngine.AddCombatant(this);
+      // CombatEngine.AddCombatant(this);
     }else{
       if(this.animationState.index == ModuleCreatureAnimState.READY){
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -985,12 +985,11 @@ export class ModuleCreature extends ModuleObject {
 
   clearTarget(){
     //console.log('clearTarget');
-    this.combatData.combatQueue = [];
     this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.lastAttackTarget = undefined;
     this.combatData.lastDamager = undefined;
     //this.combatActionTimer = 0;
-    //CombatEngine.RemoveCombatant(this);
+    // CombatEngine.RemoveCombatant(this);
   }
 
   actionInRange(action: Action): boolean {
@@ -1288,14 +1287,13 @@ export class ModuleCreature extends ModuleObject {
   isDuelingWeaponEquipped(){
     if(!this.equipment.RIGHTHAND) return false;
     return (
-      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.DAGGER ||
       this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
       this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD
     );
   }
 
   isDuelingObject( oObject: ModuleObject ){
-    return (oObject instanceof ModuleObject && this.combatData.lastAttackTarget == oObject && oObject.combatData.lastAttackTarget == this && oObject.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
+    return (oObject instanceof ModuleCreature && this.combatData.lastAttackTarget == oObject && oObject.combatData.lastAttackTarget == this && oObject.isDuelingWeaponEquipped() && this.isDuelingWeaponEquipped());
   }
 
   attackCreature(
@@ -1312,122 +1310,45 @@ export class ModuleCreature extends ModuleObject {
     if(target.isDead())
       return;
 
-    this.resetExcitedDuration();
+    let combatAction = new CombatRoundAction();
+    combatAction.actionType = CombatActionType.ATTACK;
+    combatAction.target = target;
+    combatAction.animation = ModuleCreatureAnimState.ATTACK;
+    combatAction.animationTime = 1500;
+    combatAction.isCutsceneAttack = isCutsceneAttack;
 
-    CombatEngine.AddCombatant(this);
-
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
-    let attackType = 1;
-    let icon = 'i_attack';
-    let isMelee = true;
-    let isRanged = false;
-
-    if(attackKey == 'b'){
-      isMelee = false;
-      isRanged = true;
+    if(feat){
+      combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
+      combatAction.setFeat(feat);
     }
 
-    if(typeof feat != 'undefined'){
-      icon = feat.icon;
-      //console.log('Attacking with feat', feat);
-      if(attackKey == 'm'){
-        attackKey = 'f';
-        switch(feat.id){
-          case 81:
-          case 19:
-          case 8:
-            attackType = 1;
-          break;
-          case 83:
-          case 17:
-          case 28:
-            attackType = 3;
-          break;
-          case 53:
-          case 91:
-          case 11:
-            attackType = 2;
-          break;
-        }
-      }else if(attackKey == 'b'){
-        switch(feat.id){
-          case 77:
-          case 20:
-          case 31:
-            attackType = 3;
-          break;
-          case 82:
-          case 18:
-          case 29:
-            attackType = 4;
-          break;
-          case 26:
-          case 92:
-          case 30:
-            attackType = 2;
-          break;
-        }
-      }
-    }
+    combatAction.attackResult = attackResult;
+    combatAction.attackDamage = attackDamage;
 
-    this.weaponPowered(true);
-
-    this.combatData.lastAttackAction = ActionType.ActionPhysicalAttacks;
-    this.combatData.lastAttackTarget = target;
-    this.combatData.lastAttemptedAttackTarget = target;
-
-    //Get random basic melee attack in combat with another melee creature that is targeting you
-    if(attackKey == 'm'){
-      if(this.combatData.lastAttackTarget?.combatData.lastAttackTarget == this && this.combatData.lastAttackTarget?.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1){
-        attackKey = 'c';
-        attackType = Math.round(Math.random()*4)+1;
-      }
-    }
-    
-    let animation = attackKey+weaponWield+'a'+attackType;
     if(isCutsceneAttack){
-      animation = attackAnimation;
+      combatAction.animationName = attackAnimation;
+      combatAction.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(attackAnimation);
     }
 
-    const _animation = OdysseyModelAnimation.GetAnimation2DA(animation);
+    this.combatRound.addAction(combatAction);
 
-    let combatAction: CombatAction = {
-      target: target,
-      type: ActionType.ActionPhysicalAttacks,
-      icon: icon,
-      animation: _animation,
-      feat: feat,
-      spell: undefined,
-      isMelee: isMelee,
-      isRanged: isRanged,
-      ready: false,
-      isCutsceneAttack: isCutsceneAttack,
-      attackResult: attackResult,
-      damage: attackDamage
-    };
-
-    this.combatData.combatQueue.push(combatAction);
+    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+      const action = new ActionCombat(0xFFFF);
+      this.actionQueue.add(action);
+    }
 
   }
 
-  useTalent(talent: any, oTarget: ModuleObject): Action {
+  useTalent(talent: TalentObject, oTarget: ModuleObject): Action {
     let action: Action;
     if(talent instanceof TalentObject){
+      const combatAction = new CombatRoundAction();
       switch(talent.type){
         case 1: //FEAT
-          action = new ActionPhysicalAttacks();
-          action.setParameter(0, ActionParameterType.INT, 0);
-          action.setParameter(1, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID);
-          action.setParameter(2, ActionParameterType.INT, 1);
-          action.setParameter(3, ActionParameterType.INT, 25);
-          action.setParameter(4, ActionParameterType.INT, -36);
-          action.setParameter(5, ActionParameterType.INT, 1);
-          action.setParameter(6, ActionParameterType.INT, talent.id);
-          action.setParameter(7, ActionParameterType.INT, 0);
-          action.setParameter(8, ActionParameterType.INT, 4);
-          action.setParameter(9, ActionParameterType.INT, 0);
-          this.actionQueue.add(action);
+          combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
+          combatAction.target = oTarget;
+          combatAction.setFeat(talent as TalentFeat);
+          this.combatRound.addAction(combatAction);
         break;
         case 2: //SKILL
           if(talent.id == 6){ //Security
@@ -1437,20 +1358,10 @@ export class ModuleCreature extends ModuleObject {
           }
         break;
         case 0: //SPELL
-          action = new ActionCastSpell();
-          action.setParameter(0, ActionParameterType.INT, talent.id); //Spell Id
-          action.setParameter(1, ActionParameterType.INT, -1); //
-          action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
-          action.setParameter(3, ActionParameterType.INT, 0);
-          action.setParameter(4, ActionParameterType.INT, 0);
-          action.setParameter(5, ActionParameterType.DWORD, oTarget.id || ModuleObject.OBJECT_INVALID); //Target Object
-          action.setParameter(6, ActionParameterType.FLOAT, oTarget.position.x); //Target X
-          action.setParameter(7, ActionParameterType.FLOAT, oTarget.position.y); //Target Y
-          action.setParameter(8, ActionParameterType.FLOAT, oTarget.position.z); //Target Z
-          action.setParameter(9, ActionParameterType.INT, 0); //ProjectilePath
-          action.setParameter(10, ActionParameterType.INT, -1);
-          action.setParameter(11, ActionParameterType.INT, -1);
-          this.actionQueue.add(action);
+          combatAction.actionType = CombatActionType.CAST_SPELL;
+          combatAction.setSpell(talent as TalentSpell);
+          combatAction.target = oTarget;
+          this.combatRound.addAction(combatAction);
         break;
       }
     }
@@ -1712,59 +1623,17 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getCombatAnimationAttackType(): string {
-    let weapon = this.equipment.RIGHTHAND;
-    let weaponType = 0;
-    //let weaponWield = this.getCombatAnimationWeaponType();
-
     if(this.equipment.RIGHTHAND){
-      weaponType = (this.equipment.RIGHTHAND.getWeaponType());
-
-      switch(weaponType){
-        case 4:
-          return 'b';
-        case 1:
-          return 'm';
-        break;
-      }
-
+      return this.equipment.RIGHTHAND.isRangedWeapon() ? 'b' : 'm';
     }else if(this.equipment.CLAW1){
-      weaponType = (this.equipment.CLAW1.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
+      return 'm';
     }else if(this.equipment.CLAW2){
-      weaponType = (this.equipment.CLAW2.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
+      return 'm';
     }else if(this.equipment.CLAW3){
-      weaponType = (this.equipment.CLAW3.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
+      return 'm';
     }else{
       return 'g';
     }
-
-    /*if(weaponWield == 0)//this.isSimpleCreature())
-      return 'm';
-
-    if(weaponWield == 5 || weaponWield == 6 || weaponWield == 7 || weaponWield == 8 || weaponWield == 9){
-      return 'b';
-    }
-    return 'c';*/
   }
 
   //Return the WeaponType ID for the current equipped items
@@ -1784,37 +1653,35 @@ export class ModuleCreature extends ModuleObject {
 
     let weapon = rWeapon || lWeapon;
 
-    if(weapon){
+    if(!weapon) return 8;
 
-      if(bothHands){
-        switch((weapon.getWeaponWield())){
-          case 1: //Stun Baton
-          case 2: //Single Blade Melee
-            return 4;
-          case 4: //Blaster
-            return 6;
-        }
-      }else{
-        switch((weapon.getWeaponWield())){
-          case 1: //Stun Baton
-            return 1;
-          case 2: //Single Blade Melee
-            return 2;
-          case 3: //Double Blade Melee
-            return 3;
-          case 4: //Blaster
-            return 5;
-          case 5: //Blaster Rifle
-            return 7;
-          case 6: //Heavy Carbine
-            return 9;
-        }
+    if(bothHands){
+      switch((weapon.getWeaponWield())){
+        case WeaponWield.DAGGER: //Stun Baton
+        case WeaponWield.ONE_HANDED_SWORD: //Single Blade Melee
+          return 4;
+        case WeaponWield.BLASTER_PISTOL: //Blaster
+          return 6;
+      }
+    }else{
+      switch((weapon.getWeaponWield())){
+        case WeaponWield.DAGGER: //Stun Baton
+          return 1;
+        case WeaponWield.ONE_HANDED_SWORD: //Single Blade Melee
+          return 2;
+        case WeaponWield.TWO_HANDED_SWORD: //Double Blade Melee
+          return 3;
+        case WeaponWield.BLASTER_PISTOL: //Blaster
+          return 5;
+        case WeaponWield.BLASTER_RIFLE: //Blaster Rifle
+          return 7;
+        case WeaponWield.BLASTER_HEAVY: //Heavy Carbine
+          return 9;
       }
     }
 
     //If no weapons are equipped then use unarmed animations
     return 8;
-
   }
 
   getEquippedWeaponType(){
@@ -2339,7 +2206,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(){
-    CombatEngine.AddCombatant(this);
+    // CombatEngine.AddCombatant(this);
     if(this.scripts.onAttacked instanceof NWScriptInstance){
       let instance = this.scripts.onAttacked.nwscript.newInstance();
       let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
@@ -2352,7 +2219,7 @@ export class ModuleCreature extends ModuleObject {
       return true;
 
     this.resetExcitedDuration();
-    CombatEngine.AddCombatant(this);
+    // CombatEngine.AddCombatant(this);
     
     if(this.scripts.onDamaged instanceof NWScriptInstance){
       let instance = this.scripts.onDamaged.nwscript.newInstance();

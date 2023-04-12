@@ -1,4 +1,4 @@
-import { ActionMoveToPoint } from ".";
+import { Action, ActionMoveToPoint, ActionQueue } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -6,11 +6,10 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { GameState } from "../GameState";
 import { ModuleCreature, ModuleDoor } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
 
 export class ActionOpenDoor extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionOpenDoor;
 

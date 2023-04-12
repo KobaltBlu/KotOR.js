@@ -2,7 +2,7 @@ import { ActionMenuItem } from "./ActionMenuItem";
 
 export class ActionMenuPanel {
   selectedIndex = 0;
-  actions: any[] = [];
+  actions: ActionMenuItem[] = [];
 
   constructor(){
 
@@ -28,13 +28,13 @@ export class ActionMenuPanel {
     }
   }
 
-  addAction(action: any){
+  addAction(action: ActionMenuItem){
     if(action instanceof ActionMenuItem){
       this.actions.push(action);
     }
   }
 
-  getSelectedAction(){
+  getSelectedAction(): ActionMenuItem {
     return this.actions[this.selectedIndex];
   }
 

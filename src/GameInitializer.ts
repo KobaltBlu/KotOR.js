@@ -22,6 +22,7 @@ import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
 import { AppearanceManager } from "./managers/AppearanceManager";
+import { SWRuleSet } from "./engine/SWRuleSet";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
@@ -250,6 +251,7 @@ export class GameInitializer {
   static Load2DAs(onSuccess?: Function){
     LoadingScreen.main.SetMessage('Loading: 2DA\'s');
     TwoDAManager.Load2DATables(() => {
+      SWRuleSet.Init();
       AppearanceManager.Init();
       if(typeof onSuccess === 'function')
         onSuccess();

@@ -1,9 +1,9 @@
-import { Action } from ".";
+import { Action, ActionQueue } from ".";
 import { ActionType } from "../enums/actions/ActionType";
 
 export class ActionDropItem extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionDropItem;
   }

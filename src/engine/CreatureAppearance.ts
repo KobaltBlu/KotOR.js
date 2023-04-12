@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../KotOR";
+import { TwoDAObject } from "../resource/TwoDAObject";
 
 export class CreatureAppearance {
   id: number = -1;

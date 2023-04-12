@@ -6,6 +6,7 @@ import { TLKManager } from "../managers/TLKManager";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import { TwoDAObject } from "../resource/TwoDAObject";
 import { TalentFeat, TalentSpell } from "../talents";
 
 /* @file
@@ -14,22 +15,67 @@ import { TalentFeat, TalentSpell } from "../talents";
 
 export class CreatureClass {
 
-  id: number;
+  id: number = -1;
+  label: string = '';
+  name: number = -1;
+  plural: number = -1;
+  lower: number = -1;
+  description: number = -1;
+  icon: string = '';
+  hitdie: number = 8;
+  attackbonustable: 'CLS_ATK_1'|'CLS_ATK_2' = 'CLS_ATK_1';
+  featstable: string = '';
+  savingthrowtable: string = '';
+  skillstable: string = '';
+  skillpointbase: number = 0;
+  spellgaintable: string = '';
+  spellknowntable: string ='';
+  playerclass: boolean = false;
+  spellcaster: boolean = false;
+  str: number = 10;
+  dex: number = 10;
+  con: number = 10;
+  wis: number = 10;
+  int: number = 10;
+  cha: number = 10;
+  primaryabil: 'STR'|'DEX'|'WIS'|'CON'|'INT'|'CHA' = 'STR';
+  alignrestrict: number = 0;
+  alignrstrcttype: number = 0;
+  constant: string = '';
+
+  effectiveCRLevel_1: number = 1;
+  effectiveCRLevel_2: number = 1;
+  effectiveCRLevel_3: number = 1;
+  effectiveCRLevel_4: number = 1;
+  effectiveCRLevel_5: number = 1;
+  effectiveCRLevel_6: number = 1;
+  effectiveCRLevel_7: number = 1;
+  effectiveCRLevel_8: number = 1;
+  effectiveCRLevel_9: number = 1;
+  effectiveCRLevel_10: number = 1;
+  effectiveCRLevel_11: number = 1;
+  effectiveCRLevel_12: number = 1;
+  effectiveCRLevel_13: number = 1;
+  effectiveCRLevel_14: number = 1;
+  effectiveCRLevel_15: number = 1;
+  effectiveCRLevel_16: number = 1;
+  effectiveCRLevel_17: number = 1;
+  effectiveCRLevel_18: number = 1;
+  effectiveCRLevel_19: number = 1;
+  effectiveCRLevel_20: number = 1;
+
+  forcedie: number = 0;
+  armorclasscolumn: string = '';
+  featgain: string = '';
+
   level: number;
-  spells: any[] = [];
-  name: number;
-  description: number;
+  spells: TalentSpell[] = [];
 
-  spellcaster: number;
-  attackbonustable: any;
-  armorclasscolumn: any;
-  featstable: any;
-
-  constructor(id = 0){
+  constructor(id = -1){
     this.id = id;
     this.level = 0;
     this.spells = [];
-    Object.assign(this, TwoDAManager.datatables.get('classes').rows[this.id]);
+    if(id >= 0) Object.assign(this, TwoDAManager.datatables.get('classes').rows[this.id]);
   }
 
   getName(){
@@ -135,13 +181,24 @@ export class CreatureClass {
     return undefined;
   }
 
+  static From2DA(row: any){
+    const cls = new CreatureClass();
+
+    cls.id = parseInt(row.__index);
+
+    if(row.hasOwnProperty('label'))
+      cls.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+
+    return cls;
+  }
+
   save(){
     let _class = new GFFStruct(2);
     _class.AddField( new GFFField(GFFDataType.INT, 'Class') ).SetValue(this.id);
     _class.AddField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).SetValue(this.level);
 
     //Spell Caster specific data
-    if(this.spellcaster == 1){
+    if(this.spellcaster){
       //Not sure what this is or if it is used in KOTOR
       let spellsPerDay = _class.AddField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
       let spellsPerDayStruct = new GFFStruct(17767);

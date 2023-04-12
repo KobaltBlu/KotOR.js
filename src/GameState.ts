@@ -1119,7 +1119,7 @@ export class GameState implements EngineContext {
     GameState.holdWorldFadeInForDialog = false;
     GameState.audioEngine.stopBackgroundMusic();
     GameState.audioEngine.Reset();
-    CombatEngine.Reset();
+    // CombatEngine.Reset();
 
     GameState.lightManager.clearLights();
 

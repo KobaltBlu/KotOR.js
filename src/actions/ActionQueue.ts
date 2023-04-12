@@ -1,17 +1,28 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObject } from "../module";
 import { Action } from "./Action";
 
 export class ActionQueue extends Array {
-  NEXT_GROUP_ID: number = 0;
-  NEXT_ACTION_ID: number = 0;
-  groupId: number;
-  lastGroupId: number;
-  owner: any;
 
-  constructor(...items: any[]){
-    super(...items);
-    this.groupId = 1;
+  static AUTO_INCREMENT_GROUP_ID = 0xFFFF;
+  static MAX_GROUP_ID = 0xFFFE;
+
+  nextGroupId: number;
+  lastGroupId: number;
+  owner: ModuleObject;
+
+  /**
+   * ActionQueue
+   * initializes a new ActionQueue object
+   *
+   * @param ...items - an array of actions to initialize the queue with
+   * @returns void
+   *
+   */
+  constructor(...items: Action[]){
+    super(...items as any[]);
+    this.nextGroupId = 1;
     this.lastGroupId = 0;
     this.owner = undefined;
   }
@@ -28,30 +39,59 @@ export class ActionQueue extends Array {
   }
 
   /**
-   * add action to the back of the queue
+   * add the supplied action to the end of the queue
+   * It's position will be actionQueue.length-1 after the push operation
+   * Alias for push
    *
    * @param actionNode - the action node to add
    * @returns void
    *
    */
   add( actionNode: Action ){
-    if(actionNode instanceof Action){
-      actionNode.owner = this.owner;
-      super.push( actionNode );
-    }
+    this.push( actionNode );
   }
 
   /**
    * Add the supplied action to the front of the queue
+   * It's position will be actionQueue[0] after the unshift operation
+   * Alias for unshift
    *
    * @param actionNode - the action node to add
    * @returns void
    *
    */
   addFront( actionNode: Action ){
-    if(actionNode instanceof Action){
-      actionNode.owner = this.owner;
-      super.unshift( actionNode );
+    this.unshift(actionNode);
+  }
+
+  /**
+   * handles the groupId parameter.
+   * It can either be set to auto increment or use the value passed as it's groupId
+   *
+   * @param actionNode - the action node to push
+   * @returns void
+   *
+   */
+  #processGroupId(actionNode: Action){
+    let newGroupId = actionNode.groupId;
+    if(newGroupId < 0 || newGroupId > 0xFFFF){
+      console.warn('Invalid GroupID', newGroupId);
+      newGroupId = 0xFFFF;
+    }
+    if(newGroupId == ActionQueue.AUTO_INCREMENT_GROUP_ID){
+      newGroupId = this.nextGroupId;
+      if(newGroupId >= ActionQueue.MAX_GROUP_ID){
+        newGroupId = this.lastGroupId = 0;
+        this.nextGroupId = 1;
+      }else{
+        this.lastGroupId = newGroupId;
+        this.nextGroupId++;
+      }
+      actionNode.groupId = newGroupId;
+    }else if(actionNode.groupId == ActionQueue.MAX_GROUP_ID){
+      actionNode.groupId = this.lastGroupId;
+    }else{
+      actionNode.groupId = newGroupId;
     }
   }
 
@@ -67,13 +107,8 @@ export class ActionQueue extends Array {
   push( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = this;
-    if(actionNode.actionId == -1){
-      actionNode.actionId = this.NEXT_ACTION_ID++;
-    }
-    if(actionNode.groupId == -1){
-      actionNode.groupId = this.NEXT_GROUP_ID++;
-    }
-    this.add( actionNode );
+    this.#processGroupId(actionNode);
+    super.push( actionNode );
   }
 
   /**
@@ -85,9 +120,12 @@ export class ActionQueue extends Array {
    */
   //@ts-expect-error
   unshift( actionNode: Action ){
-    actionNode.owner = this.owner;
-    actionNode.queue = undefined;
-    this.addFront( actionNode );
+    if(actionNode instanceof Action){
+      actionNode.owner = this.owner;
+      actionNode.queue = this;
+      this.#processGroupId(actionNode);
+      super.unshift( actionNode );
+    }
   }
 
   /**
@@ -143,7 +181,7 @@ export class ActionQueue extends Array {
    *
    */
   clearActionsByGroupId(groupId: number = -1){
-    if(groupId > 0) return;
+    if(groupId < 0 || groupId >= ActionQueue.AUTO_INCREMENT_GROUP_ID) return;
     let index = this.length;
     while(index--){
       const action = this[index];
@@ -151,6 +189,10 @@ export class ActionQueue extends Array {
         this.splice(index, 1);
       }
     }
+  }
+
+  actionTypeExists(actionType: ActionType){
+    return this.findIndex( (a: Action) => a.type == actionType ) >= 0;
   }
 
 }

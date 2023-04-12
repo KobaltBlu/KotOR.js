@@ -45,6 +45,9 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
+import { CombatRound } from "../combat";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
 
 /* @file
  * The ModuleObject class.
@@ -82,6 +85,7 @@ export class ModuleObject {
   collisionData: CollisionData = new CollisionData(this);
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
+  combatRound = new CombatRound(this);
 
   facing: number;
   wasFacing: number;
@@ -541,7 +545,7 @@ export class ModuleObject {
   }
 
   clearAllActions(skipUnclearable = false){
-    this.combatData.combatQueue = [];
+    this.combatRound.clearActions();
     //Reset the anim state
     //this.animState = 0;
     //this.actionQueue.clear();
@@ -1416,7 +1420,7 @@ export class ModuleObject {
   }
 
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatEngine.GetMod(this.getCON());
     
     if((roll + this.getFortitudeSave() + bonus) > nDC){
@@ -1431,7 +1435,7 @@ export class ModuleObject {
   }
 
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatEngine.GetMod(this.getDEX());
     
     if((roll + this.getReflexSave() + bonus) > nDC){
@@ -1450,7 +1454,7 @@ export class ModuleObject {
   }
 
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
+    let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatEngine.GetMod(this.getWIS());
 
     if((roll + this.getWillSave() + bonus) > nDC){
@@ -1472,7 +1476,7 @@ export class ModuleObject {
     if(this instanceof ModuleCreature && oCaster instanceof ModuleCreature){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
-      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
+      let roll = Dice.roll(1, DiceType.d20, this.getTotalClassLevel());
       return (roll > 10 + oCaster.getTotalClassLevel());
     }
     return 0;

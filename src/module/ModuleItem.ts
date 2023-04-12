@@ -3,7 +3,6 @@
 
 import { ModuleCreature, ModuleObject } from ".";
 import { BaseItem } from "../engine/BaseItem";
-import { CombatEngine } from "../combat/CombatEngine";
 import { EffectDisguise } from "../effects/EffectDisguise";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
@@ -25,6 +24,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
+import { Dice } from "../utility/Dice";
 
 /* @file
  * The ModuleItem class.
@@ -243,7 +243,7 @@ export class ModuleItem extends ModuleObject {
 
   getBaseDamage(){
     if(this._baseItem.numDice){
-      return CombatEngine.DiceRoll(this._baseItem.numDice, 'd'+this._baseItem.dieToRoll);
+      return Dice.roll(this._baseItem.numDice, this._baseItem.die);
     }
     return 0;
   }
@@ -833,7 +833,8 @@ export class ItemProperty {
           costTableRow = this.costTableRandomCheck();
 
           if(costTableRow.numdice != '****'){
-            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+
+            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
           }else{
             return parseInt(costTableRow.label);
           }
@@ -866,7 +867,7 @@ export class ItemProperty {
           costTableRow = this.costTableRandomCheck();
 
           if(costTableRow.numdice != '****'){
-            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
+            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
           }
         break;
 

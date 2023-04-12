@@ -1,12 +1,12 @@
+import { Action, ActionQueue } from ".";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObject } from "../module";
-import { Action } from "./Action";
 
 export class ActionSetCommandable extends Action {
   object: ModuleObject;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionSetCommandable;
 

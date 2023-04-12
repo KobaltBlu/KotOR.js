@@ -1,12 +1,11 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
+import { Action, ActionJumpToPoint, ActionQueue } from ".";
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject } from "../module";
 import { Utility } from "../utility/Utility";
 import { GameState } from "../GameState";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ActionJumpToPoint } from "./ActionJumpToPoint";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 
 export class ActionMoveToPoint extends Action {
@@ -14,7 +13,7 @@ export class ActionMoveToPoint extends Action {
   target_position: THREE.Vector3 = new THREE.Vector3();
   real_target_position: THREE.Vector3 = new THREE.Vector3();
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionMoveToPoint;
 
@@ -114,7 +113,7 @@ export class ActionMoveToPoint extends Action {
 
       let timeout = this.getParameter(8) - delta;
       if(timeout <= 0){
-        let fallback_action = new ActionJumpToPoint(undefined, this.groupId);
+        let fallback_action = new ActionJumpToPoint(this.groupId);
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
         fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
         fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);

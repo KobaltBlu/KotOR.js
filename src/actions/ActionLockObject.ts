@@ -5,12 +5,12 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { GameState } from "../GameState";
 import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { Action, ActionQueue } from ".";
 import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
 export class ActionLockObject extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
     super(groupId);
     this.type = ActionType.ActionLockObject;
 

@@ -130,58 +130,134 @@ export class CombatEngine {
         //Sort the combatGroup to make sure the combatants stay in the correct order
         combatGroups[i].sort(CombatEngine.GroupSort);
 
+        const duelingCreatures: ModuleObject[] = [];
+
         for(let j = 0, jlen = combatGroups[i].length; j < jlen; j++){
 
-          //Get the first combatant of the group
-          let combatant = combatGroups[i][j];
-          if(!combatant.isDead()){
+          //Get the current combatant in the group
+          const combatant = combatGroups[i][j];
+          if(combatant.isDead()) continue;
+          if(!combatant.combatData.combatAction) continue;
+          const combatAction = combatant.combatData.combatAction;
 
-            if(combatant.combatData.combatAction){
-              //BEGIN: DUELING SYNC
-              if(!combatant.combatData.combatAction.ready){
-                //Check to see if the combatant is dueling it's target. If so make sure the target's combatRoundTimer is synced properly
-                if(combatant.isDueling() && combatant.combatData.combatAction){
-                  // combatant.combatData.combatAction.target.combatRoundTimer = 1.5 - delta;
-                }
+          //check for dueling creatures
+          if( combatant.isDueling() ){
+            const target = combatAction.target;
+            if( !combatant.isDebilitated() && !target.isDebilitated() ){
+              if( 
+                combatant.actionInRange(combatAction.action) && 
+                target.actionInRange(target.combatData.combatAction.action) 
+              ){
+                duelingCreatures.push(combatant);
+                continue;
               }
-              //END: DUELING SYNC
+            }
+          }
 
+          //Combat action is ready
+          if(!combatAction.ready){
+            if(!combatant.isDebilitated() && combatant.actionInRange(combatAction.action)){
+              combatAction.ready = true;
+            }
+          }
+
+          //Progress the combatant's combatRoundTimer
+          if(combatAction.ready){
+            if(!combatAction.damageCalculated){
+              console.log('CalculateAttackDamage', 'generic');
+              CombatEngine.CalculateAttackDamage(combatAction, combatant as ModuleCreature);
+            }
+            if(combatant.combatData.combatActionTimer >= 3.0){
+              //Get the index of the current combatant from the combatants list
+              let index = CombatEngine.combatants.indexOf(combatant);
+              //Remove the combatant from the combatants list
+              CombatEngine.combatants.splice(index, 1);
+              //And push it to the end of the combatants list
+              CombatEngine.combatants.push( combatant );
+              //Reset the combatant's roundTimer
+              combatant.combatData.combatActionTimer = 0;
+              //Call the combatant's onCombatRoundEnd script
+              console.log('onCombatRoundEnd', 'generic');
+              combatant.onCombatRoundEnd();
+              combatant.clearCombatAction(combatAction);
+            }else{
+              //Increment the combatant's roundTimer since it hasn't ended yet
+              combatant.combatData.combatActionTimer += delta;
+            }
+          }
+
+        }
+
+        //DuelingCreatures Logic
+        if(duelingCreatures.length){
+          if(duelingCreatures.length == 2){
+            const attaker = duelingCreatures[0];
+            const target = duelingCreatures[1];
+            if(attaker && target){
+              const attakerCombatAction = attaker.combatData.combatAction;
+              const targetCombatAction = target.combatData.combatAction;
               //Combat action is ready
-              if(!combatant.combatData.combatAction.ready){
-                if(!combatant.isDebilitated() && combatant.actionInRange(combatant.combatData.combatAction.action)){
-                  combatant.combatData.combatAction.ready = true;
-                }
+              target.combatData.combatActionTimer = attaker.combatData.combatActionTimer;
+              if(!attakerCombatAction.ready && attaker.combatData.combatActionTimer >= 0.0){
+                attakerCombatAction.ready = true;
               }
 
-              //Progress the combatant's combatRoundTimer
-              if(combatant.combatData.combatAction.ready){
-                if(!combatant.combatData.combatAction.damageCalculated){
-                  CombatEngine.CalculateAttackDamage(combatant.combatData.combatAction, combatant);
+              if(!targetCombatAction.ready && target.combatData.combatActionTimer >= 1.5){
+                targetCombatAction.ready = true;
+              }
+
+              //Progress the attacker's combatRoundTimer
+              if(attakerCombatAction.ready){
+                if(!attakerCombatAction.damageCalculated){
+                  console.log('CalculateAttackDamage', 'attacker');
+                  CombatEngine.CalculateAttackDamage(attakerCombatAction, attaker as ModuleCreature);
                 }
-                if(combatant.combatData.combatActionTimer >= 3.0){
+                if(attaker.combatData.combatActionTimer >= 3.0){
                   //Get the index of the current combatant from the combatants list
-                  let index = CombatEngine.combatants.indexOf(combatant);
+                  let index = CombatEngine.combatants.indexOf(attaker);
                   //Remove the combatant from the combatants list
                   CombatEngine.combatants.splice(index, 1);
                   //And push it to the end of the combatants list
-                  CombatEngine.combatants.push( combatant );
+                  CombatEngine.combatants.push( attaker );
                   //Reset the combatant's roundTimer
-                  combatant.combatData.combatActionTimer = 0;
+                  attaker.combatData.combatActionTimer = 0;
                   //Call the combatant's onCombatRoundEnd script
-                  combatant.onCombatRoundEnd();
-                  combatant.clearCombatAction(combatant.combatData.combatAction);
+                  console.log('onCombatRoundEnd', 'attacker');
+                  attaker.onCombatRoundEnd();
+                  attaker.clearCombatAction(attakerCombatAction);
                 }else{
                   //Increment the combatant's roundTimer since it hasn't ended yet
-                  combatant.combatData.combatActionTimer += delta;
+                  attaker.combatData.combatActionTimer += delta;
                 }
               }
 
-              //Break the loop now that a combatant in the group was updated
-              //break;
+              //Progress the target's combatRoundTimer
+              if(targetCombatAction.ready){
+                if(!targetCombatAction.damageCalculated){
+                  console.log('CalculateAttackDamage', 'target');
+                  CombatEngine.CalculateAttackDamage(targetCombatAction, target as ModuleCreature);
+                }
+                if(target.combatData.combatActionTimer >= 3.0){
+                  //Get the index of the current combatant from the combatants list
+                  let index = CombatEngine.combatants.indexOf(target);
+                  //Remove the combatant from the combatants list
+                  CombatEngine.combatants.splice(index, 1);
+                  //And push it to the end of the combatants list
+                  CombatEngine.combatants.push( target );
+                  //Reset the combatant's roundTimer
+                  target.combatData.combatActionTimer = 0;
+                  //Call the combatant's onCombatRoundEnd script
+                  console.log('onCombatRoundEnd', 'target');
+                  target.onCombatRoundEnd();
+                  target.clearCombatAction(targetCombatAction);
+                }
+              }
             }
-
+          }else if(duelingCreatures.length > 2){
+            console.warn('Too many creatures dueling the same target', duelingCreatures);
+          }else if(duelingCreatures.length < 2){
+            console.warn('Not enough creatures dueling the same target', duelingCreatures);
           }
-
         }
 
         //Remove dead combatants from the initiative order
@@ -194,36 +270,10 @@ export class CombatEngine {
 
       }
     }
-
-    /*if(!CombatEngine.active || GameState.Mode != EngineMode.INGAME){
-      CombatEngine.timer = 0;
-      return;
-    }
-
-    CombatEngine.timer += delta;
-
-    if(CombatEngine.timer >= 0 && CombatEngine.timer < (CombatEngine.roundLength/2)){
-      CombatEngine.roundType = CombatEngine.ROUNDTYPES.PLAYER;
-    }
-    
-    if(CombatEngine.timer >= (CombatEngine.roundLength/2) && CombatEngine.timer <= CombatEngine.roundLength){
-      CombatEngine.roundType = CombatEngine.ROUNDTYPES.CREATURE;
-    }
-
-    if(CombatEngine.timer >= CombatEngine.roundLength){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        GameState.module.area.creatures[i].onCombatRoundEnd();
-      }
-
-      for(let i = 0, len = PartyManager.party.length; i < len; i++){
-        PartyManager.party[i].onCombatRoundEnd();
-      }
-      CombatEngine.timer = 0;
-    }*/
     
   }
 
-  static CalculateAttackDamage(combatAction: CombatAction, creature: ModuleObject){
+  static CalculateAttackDamage(combatAction: CombatAction, creature: ModuleCreature){
     if(!combatAction || combatAction.damageCalculated)
       return;
 
