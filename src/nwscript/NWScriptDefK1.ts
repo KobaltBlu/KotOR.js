@@ -3,7 +3,6 @@
 
 import * as THREE from "three";
 import { ActionPauseDialog, ActionPlayAnimation, ActionResumeDialog } from "../actions";
-import { CombatEngine } from "../combat/CombatEngine";
 import { 
   EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAreaOfEffect, 
   EffectAssuredDeflection, EffectAssuredHit, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, 
@@ -67,6 +66,7 @@ import { DialogMessageManager } from "../managers/DialogMessageManager";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
+import { CombatRound } from "../combat";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -3934,17 +3934,17 @@ NWScriptDefK1.Actions = {
 
           switch(args[0]){
             case 0: //ABILITY_STRENGTH
-              return CombatEngine.GetMod(args[1].getSTR());
+              return CombatRound.GetMod(args[1].getSTR());
             case 1: //ABILITY_DEXTERITY
-              return CombatEngine.GetMod(args[1].getDEX());
+              return CombatRound.GetMod(args[1].getDEX());
             case 2: //ABILITY_CONSTITUTION
-              return CombatEngine.GetMod(args[1].getCON());
+              return CombatRound.GetMod(args[1].getCON());
             case 3: //ABILITY_INTELLIGENCE
-              return CombatEngine.GetMod(args[1].getINT());
+              return CombatRound.GetMod(args[1].getINT());
             case 4: //ABILITY_WISDOM
-              return CombatEngine.GetMod(args[1].getWIS());
+              return CombatRound.GetMod(args[1].getWIS());
             case 5: //ABILITY_CHARISMA
-              return CombatEngine.GetMod(args[1].getCHA());
+              return CombatRound.GetMod(args[1].getCHA());
           }
 
           return 0;
