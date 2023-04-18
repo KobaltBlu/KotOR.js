@@ -10,7 +10,6 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
 import { ModuleArea, ModuleTimeManager } from "./";
 import * as THREE from "three";
-import { CombatEngine } from "../combat";
 import { MenuManager } from "../gui";
 import { TLKManager } from "../managers/TLKManager";
 import { ModuleObject, ModulePlayer } from ".";
