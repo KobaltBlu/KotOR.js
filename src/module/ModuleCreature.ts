@@ -2554,6 +2554,26 @@ export class ModuleCreature extends ModuleObject {
 
     let dexBonus = Math.floor((this.getDEX() - 10) / 2);
 
+    if(
+      this.getHasFeat(CombatFeatType.MASTER_SCOUNDRELS_LUCK) || 
+      this.getHasFeat(CombatFeatType.LOGIC_UPGRADE_BATTLE_DROID) || 
+      this.getHasFeat(CombatFeatType.MASTER_SENSE)
+    ){
+      baseac += 6;
+    }else if(
+      this.getHasFeat(CombatFeatType.IMPROVED_SCOUNDRELS_LUCK) || 
+      this.getHasFeat(CombatFeatType.LOGIC_UPGRADE_TACTICIAN) || 
+      this.getHasFeat(CombatFeatType.KNIGHT_SENSE)
+    ){
+      baseac += 4;
+    }else if(
+      this.getHasFeat(CombatFeatType.SCOUNDRELS_LUCK) || 
+      this.getHasFeat(CombatFeatType.LOGIC_UPGRADE_COMBAT) || 
+      this.getHasFeat(CombatFeatType.JEDI_SENSE)
+    ){
+      baseac += 2;
+    }
+
     return baseac + classBonus + armorAC + dexBonus;
   }
 
