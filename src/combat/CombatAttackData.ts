@@ -8,6 +8,7 @@ import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType"
 import { AttackResult } from "../enums/combat/AttackResult";
 import { TalentFeat } from "../talents";
 import { CombatFeatType } from "../enums/combat/CombatFeatType";
+import { WeaponWield } from "../enums/combat/WeaponWield";
 
 export class CombatAttackData {
   attackGroup: number = 0;
@@ -77,6 +78,11 @@ export class CombatAttackData {
         this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
       }
 
+      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      if(specBonus > 0){
+        this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
+      }
+
     }else{
       this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getMonsterDamage() * damageMultiplier);
       if(this.attackWeapon.hasDamageBonus()){
@@ -88,6 +94,41 @@ export class CombatAttackData {
     if(this.attackWeapon.getWeaponType() == 1){
       this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
     }
+  }
+
+  calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
+    let bonus = 0;
+    if(creature instanceof ModuleCreature){
+      switch(weapon.getWeaponWield()){
+        case WeaponWield.BLASTER_PISTOL:
+          if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER)){
+            bonus += 2;
+          }
+        break;
+        case WeaponWield.BLASTER_RIFLE:
+          if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER_RIFLE)){
+            bonus += 2;
+          }
+        break;
+        case WeaponWield.BLASTER_HEAVY:
+          if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_HEAVY_WEAPONS)){
+            bonus += 2;
+          }
+        break;
+        case WeaponWield.ONE_HANDED_SWORD:
+        case WeaponWield.TWO_HANDED_SWORD:
+        case WeaponWield.STUN_BATON:
+          if(weapon.baseItem == 8 || weapon.baseItem == 9 || weapon.baseItem == 10){
+            if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_LIGHTSABER)){
+              bonus += 2;
+            }
+          }else if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_MELEE_WEAPONS)){
+            bonus += 2;
+          }
+        break;
+      }
+    }
+    return bonus;
   }
 
   applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
