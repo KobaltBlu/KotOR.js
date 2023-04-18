@@ -22,7 +22,7 @@ import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
 import { AppearanceManager } from "./managers/AppearanceManager";
-import { SWRuleSet } from "./engine/SWRuleSet";
+import { SWRuleSet } from "./engine/rules/SWRuleSet";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime
