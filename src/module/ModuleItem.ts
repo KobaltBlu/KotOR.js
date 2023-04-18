@@ -26,6 +26,7 @@ import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
 import { Dice } from "../utility/Dice";
 import { ItemProperty } from "../engine/ItemProperty";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 
 /* @file
  * The ModuleItem class.
@@ -234,13 +235,47 @@ export class ModuleItem extends ModuleObject {
   }
 
   getAttackBonus(): number {
+    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
-        return property.getValue();
+        bonus += property.getValue();
+        break;
       }
     }
-    return 0;
+
+    if(this.possessor instanceof ModuleCreature){
+      switch(this.getWeaponWield()){
+        case WeaponWield.BLASTER_PISTOL:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_BLASTER)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.BLASTER_RIFLE:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_BLASTER_RIFLE)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.BLASTER_HEAVY:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_HEAVY_WEAPONS)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.ONE_HANDED_SWORD:
+        case WeaponWield.TWO_HANDED_SWORD:
+        case WeaponWield.STUN_BATON:
+          if(this.baseItem == 8 || this.baseItem == 9 || this.baseItem == 10){
+            if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_LIGHTSABER)){
+              bonus += 1;
+            }
+          }else if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_MELEE_WEAPONS)){
+            bonus += 1;
+          }
+        break;
+      }
+    }
+
+    return bonus;
   }
 
   getBaseDamage(){
