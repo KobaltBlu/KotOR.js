@@ -874,7 +874,6 @@ export class ModuleCreature extends ModuleObject {
                 if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
                   GameState.State = EngineState.PAUSED
                 }
-                // CombatEngine.AddCombatant(this);
               }
             }
             
@@ -956,7 +955,6 @@ export class ModuleCreature extends ModuleObject {
           }
         }
       }
-      // CombatEngine.AddCombatant(this);
     }else{
       if(this.animationState.index == ModuleCreatureAnimState.READY){
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -2185,7 +2183,6 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(){
-    // CombatEngine.AddCombatant(this);
     if(this.scripts.onAttacked instanceof NWScriptInstance){
       let instance = this.scripts.onAttacked.nwscript.newInstance();
       let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
@@ -2198,7 +2195,6 @@ export class ModuleCreature extends ModuleObject {
       return true;
 
     this.resetExcitedDuration();
-    // CombatEngine.AddCombatant(this);
     
     if(this.scripts.onDamaged instanceof NWScriptInstance){
       let instance = this.scripts.onDamaged.nwscript.newInstance();
