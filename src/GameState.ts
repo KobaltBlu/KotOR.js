@@ -1,7 +1,6 @@
 import * as THREE from "three";
 
 import { AnimatedTexture } from "./AnimatedTexture";
-import { CombatEngine } from "./combat";
 import { GameMenu, MenuManager, GUIListBox } from "./gui";
 import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
 import { IngameControls, Mouse } from "./controls";
